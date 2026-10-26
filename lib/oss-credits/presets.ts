@@ -93,6 +93,15 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Data and storage",
     reason: "Serverless Postgres driver for Neon.",
   },
+  "@duckdb/duckdb-wasm": {
+    group: "Data and storage",
+    reason:
+      "DuckDB compiled to WebAssembly, the in-browser engine behind the Clinical Data Platform's SQL workbench.",
+  },
+  "apache-arrow": {
+    group: "Data and storage",
+    reason: "Reads the columnar results the SQL workbench's engine returns.",
+  },
   "@upstash/redis": {
     group: "Data and storage",
     reason: "Serverless Redis for read-through caching and buffered counters.",
@@ -365,6 +374,8 @@ export const LICENSE_TEXT_INHERITANCE: readonly {
  * rather than guess. Reviewed against each package's registry page.
  */
 export const LICENSE_HOLDER_OVERRIDES: Record<string, string> = {
+  // The line in the LICENSE of the duckdb/duckdb-wasm repository.
+  "@duckdb/duckdb-wasm": "2018-2025 Stichting DuckDB Foundation",
   "client-only":
     "client-only package authors (the package publishes no copyright line)",
   "server-only":

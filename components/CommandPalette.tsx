@@ -1394,6 +1394,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-platform-sql",
+        title: "Clinical SQL Workbench",
+        subtitle: "Run read-only SQL on the gold tables, in your browser.",
+        category: "navigation",
+        url: "/platform/sql",
+        icon: <IconTerminal className="h-4 w-4 text-amber-400" />,
+        badge: "DuckDB-WASM",
+        status: "Interactive",
+        description:
+          "DuckDB compiled to WebAssembly over your own copy of the synthetic warehouse: a schema browser from the data contracts, saved queries, each governed metric in DuckDB, PostgreSQL and T-SQL, and EXPLAIN.",
+        techStack: ["Next.js 16", "DuckDB-WASM", "Apache Arrow", "Web Worker"],
+        highlights: [
+          "Read-only, with file and network access off",
+          "Queries stop after 30 seconds or on request",
+          "CSV download of any result",
+        ],
+      },
+      {
         id: "nav-platform",
         title: "Clinical Data Platform",
         subtitle:

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1193,
-    "runtime": 570,
-    "tooling": 623,
-    "direct": 75
+    "total": 1211,
+    "runtime": 593,
+    "tooling": 618,
+    "direct": 77
   },
   "packages": [
     {
@@ -717,6 +717,17 @@
       "direct": false,
       "homepage": "https://rapier.rs",
       "repository": "https://github.com/dimforge/rapier.js"
+    },
+    {
+      "name": "@duckdb/duckdb-wasm",
+      "version": "1.32.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": true,
+      "homepage": "https://github.com/duckdb/duckdb-wasm",
+      "repository": "https://github.com/duckdb/duckdb-wasm",
+      "group": "Data and storage",
+      "reason": "DuckDB compiled to WebAssembly, the in-browser engine behind the Clinical Data Platform's SQL workbench."
     },
     {
       "name": "@duckdb/node-api",
@@ -3266,6 +3277,24 @@
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
     },
     {
+      "name": "@types/command-line-args",
+      "version": "5.2.3",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/command-line-args",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/command-line-usage",
+      "version": "5.0.4",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/command-line-usage",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
       "name": "@types/d3",
       "version": "7.4.3",
       "license": "MIT",
@@ -3679,6 +3708,15 @@
       "scope": "tooling",
       "direct": false,
       "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ms",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/node",
+      "version": "20.19.43",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
     },
     {
@@ -4440,7 +4478,7 @@
       "name": "ansi-styles",
       "version": "4.3.0",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/chalk/ansi-styles",
       "repository": "https://github.com/chalk/ansi-styles"
@@ -4462,6 +4500,17 @@
       "direct": false,
       "homepage": "https://github.com/chalk/ansi-styles",
       "repository": "https://github.com/chalk/ansi-styles"
+    },
+    {
+      "name": "apache-arrow",
+      "version": "17.0.0",
+      "license": "Apache-2.0",
+      "scope": "runtime",
+      "direct": true,
+      "homepage": "https://github.com/apache/arrow/blob/main/js/README.md",
+      "repository": "https://github.com/apache/arrow",
+      "group": "Data and storage",
+      "reason": "Reads the columnar results the SQL workbench's engine returns."
     },
     {
       "name": "argparse",
@@ -4489,6 +4538,24 @@
       "direct": false,
       "homepage": "https://github.com/A11yance/aria-query",
       "repository": "https://github.com/A11yance/aria-query"
+    },
+    {
+      "name": "array-back",
+      "version": "3.1.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/array-back",
+      "repository": "https://github.com/75lb/array-back"
+    },
+    {
+      "name": "array-back",
+      "version": "6.2.3",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/array-back",
+      "repository": "https://github.com/75lb/array-back"
     },
     {
       "name": "array-buffer-byte-length",
@@ -4802,7 +4869,7 @@
       "name": "chalk",
       "version": "4.1.2",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/chalk/chalk",
       "repository": "https://github.com/chalk/chalk"
@@ -4815,6 +4882,15 @@
       "direct": false,
       "homepage": "https://github.com/chalk/chalk",
       "repository": "https://github.com/chalk/chalk"
+    },
+    {
+      "name": "chalk-template",
+      "version": "0.4.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/chalk/chalk-template",
+      "repository": "https://github.com/chalk/chalk-template"
     },
     {
       "name": "character-entities",
@@ -4930,7 +5006,7 @@
       "name": "color-convert",
       "version": "2.0.1",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/Qix-/color-convert",
       "repository": "https://github.com/Qix-/color-convert"
@@ -4939,10 +5015,28 @@
       "name": "color-name",
       "version": "1.1.4",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/colorjs/color-name",
       "repository": "https://github.com/colorjs/color-name"
+    },
+    {
+      "name": "command-line-args",
+      "version": "5.2.1",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/command-line-args",
+      "repository": "https://github.com/75lb/command-line-args"
+    },
+    {
+      "name": "command-line-usage",
+      "version": "7.0.4",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/command-line-usage",
+      "repository": "https://github.com/75lb/command-line-usage"
     },
     {
       "name": "commander",
@@ -6376,6 +6470,15 @@
       "repository": "https://github.com/delvedor/find-my-way"
     },
     {
+      "name": "find-replace",
+      "version": "3.0.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/find-replace",
+      "repository": "https://github.com/75lb/find-replace"
+    },
+    {
       "name": "find-up",
       "version": "5.0.0",
       "license": "MIT",
@@ -6392,6 +6495,15 @@
       "direct": false,
       "homepage": null,
       "repository": "https://github.com/jaredwray/flat-cache"
+    },
+    {
+      "name": "flatbuffers",
+      "version": "24.12.23",
+      "license": "Apache-2.0",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://google.github.io/flatbuffers",
+      "repository": "https://github.com/google/flatbuffers"
     },
     {
       "name": "flatted",
@@ -7500,6 +7612,15 @@
       "repository": "https://github.com/mathiasbynens/jsesc"
     },
     {
+      "name": "json-bignum",
+      "version": "0.0.3",
+      "license": "UNKNOWN",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/datalanche/json-bignum",
+      "repository": "https://github.com/datalanche/json-bignum"
+    },
+    {
       "name": "json-buffer",
       "version": "3.0.1",
       "license": "MIT",
@@ -7982,6 +8103,15 @@
       "scope": "runtime",
       "direct": false,
       "homepage": "https://lodash.com/custom-builds",
+      "repository": "https://github.com/lodash/lodash"
+    },
+    {
+      "name": "lodash.camelcase",
+      "version": "4.3.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://lodash.com",
       "repository": "https://github.com/lodash/lodash"
     },
     {
@@ -10029,7 +10159,7 @@
       "name": "supports-color",
       "version": "7.2.0",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/chalk/supports-color",
       "repository": "https://github.com/chalk/supports-color"
@@ -10087,6 +10217,15 @@
       "direct": false,
       "homepage": "https://github.com/jsdom/js-symbol-tree",
       "repository": "https://github.com/jsdom/js-symbol-tree"
+    },
+    {
+      "name": "table-layout",
+      "version": "4.1.1",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/table-layout",
+      "repository": "https://github.com/75lb/table-layout"
     },
     {
       "name": "tagged-tag",
@@ -10427,6 +10566,24 @@
       "repository": "https://github.com/typescript-eslint/typescript-eslint"
     },
     {
+      "name": "typical",
+      "version": "4.0.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/typical",
+      "repository": "https://github.com/75lb/typical"
+    },
+    {
+      "name": "typical",
+      "version": "7.3.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/typical",
+      "repository": "https://github.com/75lb/typical"
+    },
+    {
       "name": "uc.micro",
       "version": "2.1.0",
       "license": "MIT",
@@ -10733,6 +10890,15 @@
       "direct": false,
       "homepage": "https://github.com/jonschlinkert/word-wrap",
       "repository": "https://github.com/jonschlinkert/word-wrap"
+    },
+    {
+      "name": "wordwrapjs",
+      "version": "5.1.1",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/75lb/wordwrapjs",
+      "repository": "https://github.com/75lb/wordwrapjs"
     },
     {
       "name": "wrap-ansi",

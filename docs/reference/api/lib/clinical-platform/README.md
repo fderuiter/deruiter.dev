@@ -2408,6 +2408,24 @@ Re-exports [WorkbenchColumn](types/workbench/interfaces/WorkbenchColumn.md)
 
 ***
 
+### workbenchLoad
+
+Re-exports [workbenchLoad](internal/workbench/load/functions/workbenchLoad.md)
+
+***
+
+### WorkbenchLoad
+
+Re-exports [WorkbenchLoad](types/workbench/interfaces/WorkbenchLoad.md)
+
+***
+
+### WorkbenchLoadFile
+
+Re-exports [WorkbenchLoadFile](types/workbench/interfaces/WorkbenchLoadFile.md)
+
+***
+
 ### workbenchQueries
 
 Re-exports [workbenchQueries](internal/workbench/queries/functions/workbenchQueries.md)
@@ -2417,6 +2435,24 @@ Re-exports [workbenchQueries](internal/workbench/queries/functions/workbenchQuer
 ### WorkbenchQuery
 
 Re-exports [WorkbenchQuery](types/workbench/interfaces/WorkbenchQuery.md)
+
+***
+
+### WorkbenchResult
+
+Re-exports [WorkbenchResult](types/workbench/interfaces/WorkbenchResult.md)
+
+***
+
+### WorkbenchResultColumn
+
+Re-exports [WorkbenchResultColumn](types/workbench/interfaces/WorkbenchResultColumn.md)
+
+***
+
+### workbenchResultCsv
+
+Re-exports [workbenchResultCsv](internal/workbench/output/functions/workbenchResultCsv.md)
 
 ***
 

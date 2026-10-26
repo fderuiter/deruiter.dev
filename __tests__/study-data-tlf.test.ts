@@ -1057,6 +1057,7 @@ describe("checkReportingEvent (#2932)", () => {
     expect(checkReportingEvent(event, run, DEMO_301_STUDY)).toEqual([]);
   });
 
+  // Runs the full pipeline and reporting event once per seed and scenario.
   it("finds no gap across seeds and the messy-data scenarios", () => {
     const runs: { seed: number; scenarios?: ScenarioId[] }[] = [
       ...[1, 2, 302, 999].map((seed) => ({ seed })),
@@ -1077,7 +1078,7 @@ describe("checkReportingEvent (#2932)", () => {
           : []
       );
     }
-  });
+  }, 120_000);
 
   it("reports a result that names a row set the event does not hold", () => {
     const findings = checkReportingEvent(

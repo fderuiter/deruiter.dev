@@ -102,8 +102,12 @@ function rowValues(data: ReportData, label: string) {
   );
 }
 
-/** The reports whose empty cells read zero, by panel id (#2759, #2880). */
-const ZERO_FILLED = ["query-age-bands", "site-activation-funnel"] as const;
+/** The reports whose empty cells read zero, by panel id (#2759, #2880, #2881). */
+const ZERO_FILLED = [
+  "query-age-bands",
+  "site-activation-funnel",
+  "cec-adjudication-backlog",
+] as const;
 
 /** The site start-up stage counts, in the order sites reach them (#2880). */
 const FUNNEL = [
@@ -627,13 +631,75 @@ describe("operations sections (#2630)", () => {
       "Query rate per 100 CRF pages #none",
       "eTMF completeness #none",
     ]);
-    const cec = (study: string) =>
-      operationsDashboard(warehouse, { study })
-        .sections.find((s) => s.id === "milestones")!
-        .gaps.map((g) => g.name);
-    expect(cec("DEV-402")).toEqual(["CEC adjudication backlog"]);
-    expect(cec("DEV-401")).toEqual([]);
-    expect(cec("DEMO-301")).toEqual([]);
+    // A device study's adjudication backlog is a report now, not a gap.
+    expect(
+      dashboardAt({ study: "DEV-402" })
+        .sections.flatMap((s) => s.gaps)
+        .map((g) => g.name)
+    ).not.toContain("CEC adjudication backlog");
+  });
+});
+
+describe("event adjudication backlog (#2881)", () => {
+  const BACKLOG = "cec-adjudication-backlog";
+  const TIME = "cec-adjudication-time";
+  const adjudicating = new Set(
+    studies
+      .filter((s) => s.has_cec_adjudication === true)
+      .map((s) => s.study_id)
+  );
+  const shown = (dashboard: OperationsDashboard) =>
+    dashboard.sections
+      .flatMap((s) => s.reports)
+      .map((r) => r.spec.id)
+      .filter((id) => id.startsWith("cec-"));
+
+  it("appears only where a study in scope sends events to its committee", () => {
+    expect([...adjudicating]).toEqual(["DEV-402"]);
+    for (const scope of EVERY_SCOPE) {
+      const expected =
+        scope.study === undefined || adjudicating.has(scope.study);
+      expect(shown(dashboardAt(scope)).length > 0, JSON.stringify(scope)).toBe(
+        expected
+      );
+    }
+    // A run-by choice without a device study hides it at the portfolio.
+    expect(
+      shown(operationsDashboard(warehouse, { runBy: "VEN-CRO-02" }))
+    ).toEqual([]);
+    // The spec list the dashboard is built from agrees.
+    expect(
+      operationsReportSpecs(warehouse, { study: "DEMO-301" })
+        .map((spec) => spec.id)
+        .filter((id) => id.startsWith("cec-"))
+    ).toEqual([]);
+    expect(
+      operationsReportSpecs(warehouse, { study: "DEV-402" })
+        .map((spec) => spec.id)
+        .filter((id) => id.startsWith("cec-"))
+    ).toEqual([`${BACKLOG}-by-country`, `${TIME}-by-country`]);
+  });
+
+  it("adds up: every event reported is adjudicated or waiting, at every scope", () => {
+    const events = warehouse.tables["gold.fct_cec_adjudication"];
+    const portfolio = panel(dashboardAt({}), BACKLOG);
+    expect(portfolio.rows.map((r) => r.labels)).toEqual([["DEV-402"]]);
+    expect(portfolio.rows[0].cells.map((c) => c.value)).toEqual([
+      events.length,
+      events.filter((e) => e.adjudicated_date_key !== null).length,
+      events.filter((e) => e.adjudicated_date_key === null).length,
+    ]);
+    for (const scope of EVERY_SCOPE.filter((s) => s.study === "DEV-402")) {
+      for (const row of panel(dashboardAt(scope), BACKLOG).rows) {
+        const [reported, adjudicated, waiting] = row.cells.map((c) => c.value);
+        const label = `${JSON.stringify(scope)} ${row.labels.join()}`;
+        expect(
+          row.cells.map((c) => c.text),
+          label
+        ).not.toContain(NO_METRIC_ROWS);
+        expect(adjudicated! + waiting!, label).toBe(reported);
+      }
+    }
   });
 });
 
@@ -708,6 +774,7 @@ describe("operations data freshness (#2630, #2626)", () => {
     const { sources } = operationsDashboard(warehouse);
     expect(sources.map((s) => s.productId)).toEqual([
       "gold.dim_site",
+      "gold.fct_cec_adjudication",
       "gold.fct_deviation",
       "gold.fct_enrollment",
       "gold.fct_milestone",

@@ -54,7 +54,7 @@ export interface TableDraft {
   readonly primaryKey: readonly string[];
   readonly uniqueKeys?: readonly (readonly string[])[];
   readonly scd2?: Scd2Definition;
-  /** Date columns reached in order. Default none. */
+  /** Date or date-key columns reached in order. Default none. */
   readonly sequences?: readonly (readonly string[])[];
   /** Default classification of the table's columns. */
   readonly classification: DataClassification;

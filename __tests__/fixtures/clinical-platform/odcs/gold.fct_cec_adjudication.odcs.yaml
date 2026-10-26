@@ -1,0 +1,167 @@
+# ODCS v3.2.0 data contract for gold.fct_cec_adjudication. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_cec_adjudication"
+name: "Event adjudication facts"
+version: "1.0.0"
+status: active
+domain: "Safety mart"
+tags:
+  - gold
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "Events sent to the clinical events committee, with when each was reported and adjudicated (#2881)."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_cec_adjudication
+    name: fct_cec_adjudication
+    physicalName: gold.fct_cec_adjudication
+    physicalType: table
+    logicalType: object
+    description: "Events sent to the clinical events committee, with when each was reported and adjudicated (#2881)."
+    dataGranularityDescription: "One row per event sent for adjudication."
+    properties:
+      - name: event_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Event id (degenerate dimension)."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force when the event was reported."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: occurred_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the event occurred."
+        required: true
+        classification: internal
+      - name: reported_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the site reported the event."
+        required: true
+        classification: internal
+      - name: adjudicated_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the committee adjudicated the event, or null while it waits."
+        required: false
+        classification: internal
+      - name: days_to_adjudicate
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days from the site's report to adjudication."
+        required: false
+        classification: internal
+      - name: site_device_related
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the site judged the event device-related."
+        required: true
+        classification: internal
+      - name: cec_device_related
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the committee judged the event device-related."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_cec_adjudication_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - event_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (event_id) identifies one row."
+team:
+  name: "Safety mart"
+  members:
+    - username: medical-safety-lead
+      name: "Medical Safety Lead"
+      role: owner
+    - username: safety-data-steward
+      name: "Safety Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.cec_adjudication
+      - silver.site
+  - property: consumers
+    value:
+      - "metric:cec_events_reported"
+      - "metric:cec_events_adjudicated"
+      - "metric:cec_adjudication_backlog"
+      - "metric:cec_adjudication_time_median"

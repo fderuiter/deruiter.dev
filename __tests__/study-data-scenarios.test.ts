@@ -114,6 +114,8 @@ describe("messy-data scenarios: the library", () => {
       "rescreened-subject",
       "death-during-treatment",
       "withdrawal-before-week-12",
+      "qtcf-outlier",
+      "ecg-missing-rr",
     ]);
     for (const scenario of MESSY_DATA_SCENARIOS) {
       expect(scenario.title.length).toBeGreaterThan(0);
@@ -513,6 +515,68 @@ describe("messy-data scenarios: derivations, early end of participation", () => 
       expect(row.ANL01FL).toBeNull();
       expect(String(row.ADT) <= String(withdrawal.DSSTDTC)).toBe(true);
     }
+  });
+});
+
+describe("messy-data scenarios: ECG", () => {
+  /** The subject's EG rows that differ from the scenario-free run. */
+  function changedEg(run: PipelineRun, subject: string) {
+    const before = subjectRows(baseline, "collected", "EG", subject);
+    const after = subjectRows(run, "collected", "EG", subject);
+    return {
+      removed: before.filter(
+        (row) => !after.some((r) => r.SRCID === row.SRCID)
+      ),
+      edited: after.filter((row) => {
+        const old = before.find((r) => r.SRCID === row.SRCID);
+        return old && JSON.stringify(old) !== JSON.stringify(row);
+      }),
+    };
+  }
+
+  it("qtcf-outlier: one QT raised, QTcF flagged by both ICH E14 criteria", () => {
+    const run = withScenarios(["qtcf-outlier"]);
+    const subject = targetOf(run, "qtcf-outlier");
+    const { removed, edited } = changedEg(run, subject);
+    expect(removed).toEqual([]);
+    expect(edited.map((row) => row.EGTESTCD)).toEqual(["QTAG"]);
+    const [qt] = edited;
+    const flagged = subjectRows(run, "adam", "ADEG", subject).filter(
+      (row) => row.PARAMCD === "QTCFAG" && row.DTYPE === null
+    );
+    const outlier = flagged.find((row) => row.ADT === qt!.EGDTC)!;
+    expect(outlier.AVAL as number).toBeGreaterThanOrEqual(530);
+    expect(outlier.CHG as number).toBeGreaterThan(60);
+    expect(outlier).toMatchObject({ CRIT1FL: "Y", CRIT2FL: "Y" });
+    // Only the raised ECG is an outlier.
+    expect(
+      flagged
+        .filter((row) => row !== outlier)
+        .every((row) => row.CRIT1FL === "N" && row.CRIT2FL !== "Y")
+    ).toBe(true);
+  });
+
+  it("ecg-missing-rr: one RR removed, no QTcF for that ECG, noted in the ADRG", () => {
+    const run = withScenarios(["ecg-missing-rr"]);
+    const subject = targetOf(run, "ecg-missing-rr");
+    const { removed, edited } = changedEg(run, subject);
+    expect(edited).toEqual([]);
+    expect(removed.map((row) => row.EGTESTCD)).toEqual(["RRAG"]);
+    const date = removed[0]!.EGDTC;
+    const ecg = subjectRows(run, "adam", "ADEG", subject).filter(
+      (row) => row.ADT === date && row.DTYPE === null
+    );
+    expect(ecg.map((row) => row.PARAMCD).sort()).toEqual([
+      "EGHRMN",
+      "PRAG",
+      "QRSAG",
+      "QTAG",
+    ]);
+    const issue = buildReviewerGuides(run).adrg.conformance.issues.find(
+      (item) => item.ruleId === "AD-015"
+    )!;
+    expect(issue).toMatchObject({ dataset: "ADEG", count: 1, expected: true });
+    expect(issue.explanation).toMatch(/Injected on purpose.*ECG without an RR/);
   });
 });
 

@@ -124,7 +124,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.2.0";
+export const CONFORMANCE_RULES_VERSION = "1.3.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -513,7 +513,7 @@ function adamRule(
 
 function exceptionRule(
   id: string,
-  domain: "SV" | "LB" | "AE",
+  domain: "SV" | "LB" | "AE" | "ADEG",
   variable: string,
   message: string,
   predicate: (
@@ -522,11 +522,12 @@ function exceptionRule(
     datasets: readonly Dataset[]
   ) => boolean
 ): ConformanceRule {
+  const layer = domain === "ADEG" ? "adam" : "sdtm";
   return {
     id,
     severity: "warning",
-    scope: { layer: "sdtm", domain },
-    citation: SDTM_CITATION,
+    scope: { layer, domain },
+    citation: layer === "adam" ? ADAM_CITATION : SDTM_CITATION,
     kind: "exception",
     variable,
     check(dataset, datasets) {
@@ -534,6 +535,42 @@ function exceptionRule(
       for (let row = 0; row < dataset.rowCount; row += 1)
         if (predicate(dataset, row, datasets))
           issues.push({ row, variable, message });
+      return issues;
+    },
+  };
+}
+
+/**
+ * A collected QT interval with no QTcF beside it: the ECG's RR interval is
+ * missing or not positive, so Fridericia's correction could not be applied.
+ * The derived record carries the QT record's SRCSEQ, which pairs them.
+ */
+function qtcfNotDerivedRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "warning",
+    scope: { layer: "adam", domain: "ADEG" },
+    citation: ADAM_CITATION,
+    kind: "exception",
+    variable: "PARAMCD",
+    check(dataset) {
+      const collected = (row: number, paramcd: string) =>
+        at(dataset, "PARAMCD", row) === paramcd &&
+        at(dataset, "DTYPE", row) === null;
+      const key = (row: number) =>
+        `${at(dataset, "USUBJID", row)}|${at(dataset, "SRCSEQ", row)}`;
+      const derived = new Set<string>();
+      for (let row = 0; row < dataset.rowCount; row += 1)
+        if (collected(row, "QTCFAG")) derived.add(key(row));
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1)
+        if (collected(row, "QTAG") && !derived.has(key(row)))
+          issues.push({
+            row,
+            variable: "PARAMCD",
+            message:
+              "No QTcF was derived for this ECG: its RR interval is missing or not positive.",
+          });
       return issues;
     },
   };
@@ -742,6 +779,18 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   adamRule("AD-011", "ADEG", "base"),
   adamRule("AD-012", "ADEG", "chg"),
   adamSourceRule("AD-013", "ADEG"),
+  exceptionRule(
+    "AD-014",
+    "ADEG",
+    "CRIT1FL",
+    "QTcF is above 500 ms or rose more than 60 ms from baseline, an ICH E14 categorical outlier to review.",
+    (dataset, row) =>
+      at(dataset, "PARAMCD", row) === "QTCFAG" &&
+      at(dataset, "DTYPE", row) === null &&
+      (at(dataset, "CRIT1FL", row) === "Y" ||
+        at(dataset, "CRIT2FL", row) === "Y")
+  ),
+  qtcfNotDerivedRule("AD-015"),
   ...(["DM", "SV", "EX", "AE", "VS", "LB", "DS", "SUPPDM"] as const).map(
     (domain, index) => sourceLineageRule(`SD-0${40 + index}`, domain)
   ),

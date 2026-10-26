@@ -410,7 +410,9 @@ export type ScenarioId =
   | "unscheduled-visit-in-window"
   | "rescreened-subject"
   | "death-during-treatment"
-  | "withdrawal-before-week-12";
+  | "withdrawal-before-week-12"
+  | "qtcf-outlier"
+  | "ecg-missing-rr";
 
 /** What a scenario expects of the pipeline, declared as data. */
 export interface ScenarioExpectation {

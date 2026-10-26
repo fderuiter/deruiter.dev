@@ -8,6 +8,12 @@
 
 ## References
 
+### AdverseEventSeverity
+
+Re-exports [AdverseEventSeverity](platform/type-aliases/AdverseEventSeverity.md)
+
+***
+
 ### BronzeFeeds
 
 Re-exports [BronzeFeeds](platform/interfaces/BronzeFeeds.md)
@@ -305,6 +311,12 @@ Re-exports [DqStatus](platform/type-aliases/DqStatus.md)
 ### DqTrendPoint
 
 Re-exports [DqTrendPoint](quality/interfaces/DqTrendPoint.md)
+
+***
+
+### EdcAdverseEvent
+
+Re-exports [EdcAdverseEvent](platform/interfaces/EdcAdverseEvent.md)
 
 ***
 

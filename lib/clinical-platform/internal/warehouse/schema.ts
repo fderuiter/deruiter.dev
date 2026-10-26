@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.7.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.8.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -378,6 +378,56 @@ const SILVER: readonly TableDraft[] = [
         "string",
         "State at the data cut.",
         { classification: "internal", from: ["status"] },
+      ],
+      [
+        "source_system",
+        "string",
+        "Source system the record came from.",
+        { classification: "internal", from: ["source"] },
+      ],
+    ],
+  },
+  {
+    layer: "silver",
+    name: "edc_adverse_event",
+    kind: "conformed",
+    description:
+      "EDC adverse events, each on the visit it was reported at (#2956).",
+    grain: "One row per adverse event.",
+    primaryKey: ["ae_id"],
+    classification: "confidential",
+    source: "bronze.edc.adverseEvents",
+    synthetic: true,
+    sequences: [["onset_on", "reported_on"]],
+    columns: [
+      ["ae_id", "string", "Adverse event id."],
+      ["visit_id", "string", "Visit record id the event was reported at."],
+      ["subject_id", "string", "Subject id."],
+      ["study_id", "string", "Protocol id.", { classification: "internal" }],
+      ["site_id", "string", "Site id.", { classification: "internal" }],
+      [
+        "ae_term",
+        "string",
+        "Reported term, from a short fictional list.",
+        { length: 80, from: ["term"] },
+      ],
+      ["onset_on", "date", "Date the event began."],
+      [
+        "reported_on",
+        "date",
+        "Date the site reported the event, the day it entered the visit's data.",
+      ],
+      [
+        "is_serious",
+        "boolean",
+        "Whether the event is serious (ICH E2A).",
+        { from: ["serious"] },
+      ],
+      [
+        "severity",
+        "string",
+        "Severity: mild, moderate or severe.",
+        { length: 16 },
       ],
       [
         "source_system",
@@ -1673,6 +1723,89 @@ const FACTS: readonly TableDraft[] = [
         "boolean",
         "Whether the committee judged the event device-related.",
         { nullable: true },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_adverse_event",
+    kind: "fact",
+    description:
+      "Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956).",
+    grain: "One row per adverse event.",
+    primaryKey: ["ae_id"],
+    classification: "internal",
+    source: "silver.edc_adverse_event",
+    synthetic: true,
+    sequences: [["onset_date_key", "reported_date_key"]],
+    columns: [
+      ["ae_id", "string", "Adverse event id (degenerate dimension)."],
+      [
+        "visit_id",
+        "string",
+        "Visit record id the event was reported at (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "subject_id",
+        "string",
+        "Subject id (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        { ...key.study, from: ["study_id", "gold.dim_study.study_key"] },
+      ],
+      [
+        "site_key",
+        "integer",
+        "Site version in force when the site reported the event.",
+        {
+          ...key.site,
+          from: ["site_id", "reported_on", "gold.dim_site.site_key"],
+        },
+      ],
+      [
+        "country_key",
+        "integer",
+        "Country of the site.",
+        {
+          ...key.country,
+          from: ["silver.site.country_code", "gold.dim_country.country_key"],
+        },
+      ],
+      [
+        "onset_date_key",
+        "integer",
+        "Date the event began.",
+        { ...key.date, from: ["onset_on"] },
+      ],
+      [
+        "reported_date_key",
+        "integer",
+        "Date the site reported the event.",
+        { ...key.date, from: ["reported_on"] },
+      ],
+      [
+        "days_to_report",
+        "integer",
+        "Days from onset to the site's report.",
+        { from: ["onset_on", "reported_on"], how: "date-diff" },
+      ],
+      [
+        "ae_term",
+        "string",
+        "Reported term.",
+        { length: 80, classification: "confidential" },
+      ],
+      ["is_serious", "boolean", "Whether the event is serious (ICH E2A)."],
+      [
+        "severity",
+        "string",
+        "Severity: mild, moderate or severe.",
+        { length: 16 },
       ],
     ],
   },

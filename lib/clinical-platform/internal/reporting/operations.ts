@@ -442,12 +442,6 @@ const SECTIONS: readonly SectionPlan[] = [
     panels: [],
     gaps: () => [
       {
-        name: "Adverse event under-reporting",
-        reason:
-          "The operational portfolio has no adverse event feed, so a site's AE rate cannot be tested against its peers.",
-        issue: GENERATOR_FEEDS_ISSUE,
-      },
-      {
         name: "Digit preference in vital signs",
         reason:
           "The operational portfolio has no vital signs feed to test for rounded or repeated readings.",
@@ -457,11 +451,6 @@ const SECTIONS: readonly SectionPlan[] = [
         name: "Weekend and holiday visit dates",
         reason:
           "The generator has no weekday calendar, so every site sees weekend visits at the same base rate and the test would find nothing.",
-        issue: GENERATOR_FEEDS_ISSUE,
-      },
-      {
-        name: "Time of day of data entry",
-        reason: "Gold keeps entry lag in days, not the time data was entered.",
         issue: GENERATOR_FEEDS_ISSUE,
       },
     ],

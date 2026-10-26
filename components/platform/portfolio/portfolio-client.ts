@@ -5,19 +5,41 @@
  * (jsdom tests, very old browsers) the same session module is loaded on
  * demand and runs on the main thread.
  */
-import type { PortfolioDashboard } from "@/lib/clinical-platform";
-import type { PortfolioRequest, PortfolioResponse } from "./protocol";
+import type {
+  EnrollmentWhatIf,
+  PortfolioDashboard,
+  PortfolioForecast,
+} from "@/lib/clinical-platform";
+import type {
+  PortfolioRequest,
+  PortfolioResponse,
+  PortfolioResult,
+} from "./protocol";
 
 /** Asynchronous handle to the dashboard engine. */
 interface PortfolioClient {
   /** The portfolio dashboard. */
   dashboard(): Promise<PortfolioDashboard>;
+  /** One study's enrollment forecast, with sites added by a what-if or without. */
+  forecast(
+    studyId: string,
+    whatIf: EnrollmentWhatIf | null
+  ): Promise<PortfolioForecast>;
   /** Releases the worker and rejects every pending request. */
   dispose(): void;
 }
 
+/** A request without its id, which the client assigns. */
+type Ask =
+  | { readonly type: "dashboard" }
+  | {
+      readonly type: "forecast";
+      readonly studyId: string;
+      readonly whatIf: EnrollmentWhatIf | null;
+    };
+
 interface Waiter {
-  resolve(value: PortfolioDashboard): void;
+  resolve(value: PortfolioResult): void;
   reject(error: Error): void;
 }
 
@@ -34,7 +56,7 @@ function createWorker(): Worker | null {
 export function createPortfolioClient(): PortfolioClient {
   let worker: Worker | null = null;
   let inThread: Promise<{
-    handle(request: PortfolioRequest): Promise<PortfolioDashboard>;
+    handle(request: PortfolioRequest): Promise<PortfolioResult>;
   }> | null = null;
   let nextId = 1;
   const pending = new Map<number, Waiter>();
@@ -64,20 +86,31 @@ export function createPortfolioClient(): PortfolioClient {
     return worker;
   };
 
+  const send = (ask: Ask): Promise<PortfolioResult> => {
+    const request: PortfolioRequest = { ...ask, id: nextId++ };
+    const target = ensureWorker();
+    if (!target) {
+      inThread ??= import("./portfolio-session").then((module) =>
+        module.createPortfolioSession()
+      );
+      return inThread.then((session) => session.handle(request));
+    }
+    return new Promise<PortfolioResult>((resolve, reject) => {
+      pending.set(request.id, { resolve, reject });
+      target.postMessage(request);
+    });
+  };
+
   return {
     dashboard() {
-      const request: PortfolioRequest = { id: nextId++, type: "dashboard" };
-      const target = ensureWorker();
-      if (!target) {
-        inThread ??= import("./portfolio-session").then((module) =>
-          module.createPortfolioSession()
-        );
-        return inThread.then((session) => session.handle(request));
-      }
-      return new Promise<PortfolioDashboard>((resolve, reject) => {
-        pending.set(request.id, { resolve, reject });
-        target.postMessage(request);
-      });
+      return send({ type: "dashboard" }) as Promise<PortfolioDashboard>;
+    },
+    forecast(studyId, whatIf) {
+      return send({
+        type: "forecast",
+        studyId,
+        whatIf,
+      }) as Promise<PortfolioForecast>;
     },
     dispose() {
       worker?.terminate();

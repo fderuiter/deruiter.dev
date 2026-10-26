@@ -13,25 +13,27 @@ import {
   buildWarehouse,
   generatePortfolio,
   portfolioDashboard,
-  type PortfolioDashboard,
+  portfolioForecast,
   type Warehouse,
 } from "@/lib/clinical-platform";
-import type { PortfolioRequest } from "./protocol";
+import type { PortfolioRequest, PortfolioResult } from "./protocol";
 
 /** Answers portfolio requests over one warehouse. */
 interface PortfolioSession {
-  handle(request: PortfolioRequest): Promise<PortfolioDashboard>;
+  handle(request: PortfolioRequest): Promise<PortfolioResult>;
 }
 
 /** Creates a session; the warehouse is built on the first request. */
 export function createPortfolioSession(): PortfolioSession {
   let warehouse: Warehouse | null = null;
   return {
-    async handle() {
+    async handle(request) {
       warehouse ??= buildWarehouse(
         generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED })
       );
-      return portfolioDashboard(warehouse);
+      return request.type === "forecast"
+        ? portfolioForecast(warehouse, request.studyId, request.whatIf)
+        : portfolioDashboard(warehouse);
     },
   };
 }

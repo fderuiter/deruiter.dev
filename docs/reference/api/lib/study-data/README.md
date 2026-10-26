@@ -326,6 +326,12 @@ Re-exports [CellValue](types/type-aliases/CellValue.md)
 
 ***
 
+### checkReportingEvent
+
+Re-exports [checkReportingEvent](internal/tlf/check-reporting-event/functions/checkReportingEvent.md)
+
+***
+
 ### chiSquareSurvival
 
 Re-exports [chiSquareSurvival](internal/tlf/km/functions/chiSquareSurvival.md)
@@ -1079,6 +1085,12 @@ Re-exports [renderDefineHtml](internal/define/render-define-html/functions/rende
 ### renderReviewerGuideHtml
 
 Re-exports [renderReviewerGuideHtml](internal/guides/render-reviewer-guide/functions/renderReviewerGuideHtml.md)
+
+***
+
+### REPORTING\_EVENT\_RULES
+
+Re-exports [REPORTING_EVENT_RULES](internal/tlf/check-reporting-event/variables/REPORTING_EVENT_RULES.md)
 
 ***
 

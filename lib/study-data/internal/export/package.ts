@@ -30,6 +30,7 @@ import { buildDefine, DEFINE_XML_VERSION } from "../define/build-define";
 import { writeDefineXml } from "../define/write-define-xml";
 import { writeReviewerGuideDocument } from "../guides/render-reviewer-guide";
 import { buildReviewerGuides } from "../guides/reviewer-guides";
+import { checkReportingEvent } from "../tlf/check-reporting-event";
 import { utf8 } from "./columns";
 import { writeCsv } from "./csv";
 import { writeDatasetJson } from "./dataset-json";
@@ -132,7 +133,8 @@ export interface PackageOptions {
   readonly generatedAt: string;
   /**
    * The run's ARS reporting event, from `buildTlfOutputs`. When given, the
-   * ADRG-lite lists every output and the analyses it displays.
+   * ADRG-lite lists every output and the analyses it displays, and every
+   * result whose rows do not resolve in the run is a finding.
    */
   readonly reportingEvent?: ArsReportingEvent;
 }
@@ -291,6 +293,9 @@ export async function buildStudyDataPackage(
         )
       ),
     }));
+  if (options.reportingEvent) {
+    findings.push(...checkReportingEvent(options.reportingEvent, run));
+  }
   const guides = buildReviewerGuides(run, options.reportingEvent);
   const guideFiles: PackageFile[] = [
     { path: CSDRG_PATH, guide: guides.csdrg },

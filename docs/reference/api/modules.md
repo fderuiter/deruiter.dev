@@ -578,6 +578,7 @@
 - [lib/study-data/internal/sdtm/units](lib/study-data/internal/sdtm/units/README.md)
 - [lib/study-data/internal/synth/generate-collected-data](lib/study-data/internal/synth/generate-collected-data/README.md)
 - [lib/study-data/internal/synth/scenarios](lib/study-data/internal/synth/scenarios/README.md)
+- [lib/study-data/internal/tlf/check-reporting-event](lib/study-data/internal/tlf/check-reporting-event/README.md)
 - [lib/study-data/internal/tlf/evaluate](lib/study-data/internal/tlf/evaluate/README.md)
 - [lib/study-data/internal/tlf/html](lib/study-data/internal/tlf/html/README.md)
 - [lib/study-data/internal/tlf/km](lib/study-data/internal/tlf/km/README.md)

@@ -8,8 +8,10 @@ import {
   DOCK_KEY_CLASS,
   DOCK_KEY_STYLE,
   dockActionLabel,
-  useDockHeight,
   type DockSize,
+  useDockHandedness,
+  useDockHeight,
+  useDockSize,
 } from "./dock-kit";
 
 /** The most face buttons a cluster holds. */
@@ -22,9 +24,9 @@ export interface ActionClusterProps<A extends string> {
   actions: readonly A[];
   /** An icon per action, drawn above its label. */
   icons?: Partial<Record<A, React.ReactNode>>;
-  /** Which thumb works the cluster. Defaults to `right`. */
+  /** Which thumb works the cluster. Defaults to this device's hand. */
   handedness?: Handedness;
-  /** Defaults to `md`. */
+  /** Defaults to this device's key size, from the Setup sheet. */
   size?: DockSize;
   /** Actions that cannot act now, such as a tool out of ammo. */
   disabled?: Partial<Record<A, boolean>>;
@@ -55,11 +57,13 @@ export function ActionCluster<A extends string>({
   map,
   actions,
   icons = {},
-  handedness = "right",
-  size = "md",
+  handedness: handednessProp,
+  size: sizeProp,
   disabled = {},
   className = "",
 }: ActionClusterProps<A>) {
+  const size = useDockSize(sizeProp);
+  const handedness = useDockHandedness(handednessProp);
   const dockRef = useDockHeight<HTMLDivElement>();
   const shown = actions.slice(0, ACTION_CLUSTER_MAX);
   const single = shown.length === 1;

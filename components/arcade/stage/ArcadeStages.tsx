@@ -3,6 +3,7 @@
 import React from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { Handedness } from "@/components/arcade/mobile";
+import { useDockHandedness } from "@/components/arcade/mobile/docks";
 
 /** Which template a stage lays out. `auto` follows the viewport. */
 export type StageOrientation = "auto" | "portrait" | "landscape";
@@ -30,7 +31,7 @@ export interface StageSlotsProps {
   moveDock?: React.ReactNode;
   /** The action dock: the right thumb, or the left one when left-handed. */
   actionDock?: React.ReactNode;
-  /** Which thumb works the actions. Defaults to `right`. */
+  /** Which thumb works the actions. Defaults to this device's hand. */
   handedness?: Handedness;
   /** Which template to use. Defaults to `auto`, the viewport's orientation. */
   orientation?: StageOrientation;
@@ -76,13 +77,14 @@ function StageLayout({
   panel,
   panelSide = "right",
   panelLabel,
-  handedness = "right",
+  handedness: handednessProp,
   orientation = "auto",
   portraitFill = "stage",
   dockAlign = "center",
   className,
   classNames = {},
 }: StageLayoutProps) {
+  const handedness = useDockHandedness(handednessProp);
   const portraitViewport = useMediaQuery(PORTRAIT_QUERY);
   const resolved =
     orientation === "auto"

@@ -12,7 +12,7 @@ export interface ActionDockProps {
   move?: React.ReactNode;
   /** The action preset: a cluster, a strip or a hold button. */
   actions?: React.ReactNode;
-  /** Which thumb works the actions. Defaults to `right`. */
+  /** Which thumb works the actions. Defaults to this device's hand. */
   handedness?: Handedness;
   className?: string;
 }
@@ -29,7 +29,7 @@ export interface ActionDockProps {
 export function ActionDock({
   move,
   actions,
-  handedness = "right",
+  handedness,
   className = "",
 }: ActionDockProps) {
   return (

@@ -552,6 +552,7 @@
 - [lib/study-data/internal/conformance/terminology](lib/study-data/internal/conformance/terminology/README.md)
 - [lib/study-data/internal/define/build-define](lib/study-data/internal/define/build-define/README.md)
 - [lib/study-data/internal/define/model](lib/study-data/internal/define/model/README.md)
+- [lib/study-data/internal/define/parity](lib/study-data/internal/define/parity/README.md)
 - [lib/study-data/internal/define/render-define-html](lib/study-data/internal/define/render-define-html/README.md)
 - [lib/study-data/internal/define/value-level](lib/study-data/internal/define/value-level/README.md)
 - [lib/study-data/internal/define/write-define-xml](lib/study-data/internal/define/write-define-xml/README.md)

@@ -108,9 +108,10 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     const { container } = renderGame({ touch: true });
 
     expect(screen.getByTestId("labyrinth-phone-floor").textContent).toBe(
-      "ROOM 01"
+      "01Room"
     );
-    expect(screen.getByTestId("labyrinth-phone-score")).toBeTruthy();
+    // The score is in the status subtree; the phone HUD leaves it out (#2918).
+    expect(container.querySelector('output[for="retro-score"]')).not.toBeNull();
     expect(container.querySelector("[data-hold-dpad]")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Move Up" })).toBeTruthy();
     expect(
@@ -119,6 +120,41 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     // The inline disclosure is desktop only. The phone opens options as a sheet.
     expect(container.querySelector(".arcade-labyrinth-options")).toBeNull();
     expect(screen.queryByRole("button", { name: "Tap" })).toBeNull();
+  });
+
+  it("plays a phone on the phone stage with a one-row HUD and 12px keys (#2918)", () => {
+    window.history.replaceState(null, "", "/?view=phone");
+    try {
+      const { container } = renderGame({ touch: true });
+      const stage = container.querySelector(".arcade-stage");
+      expect(stage?.getAttribute("data-stage")).toBe("phone");
+      expect(stage?.getAttribute("data-stage-orientation")).toBe("landscape");
+
+      const hud = screen.getByTestId("phone-hud");
+      expect(hud.getAttribute("aria-label")).toBe("Room status");
+      expect(screen.getByTestId("labyrinth-phone-floor").textContent).toBe(
+        "01Room"
+      );
+      expect(screen.getByTestId("labyrinth-phone-hp")).toBeTruthy();
+      expect(screen.getByTestId("labyrinth-phone-crypto")).toBeTruthy();
+      expect(screen.getByTestId("labyrinth-phone-ram")).toBeTruthy();
+      expect(
+        hud.querySelector("button[aria-controls='labyrinth-options-sheet']")
+          ?.textContent
+      ).toBe("Options");
+      // The tablet's route and objective cards stay off the phone.
+      expect(screen.queryByTestId("labyrinth-tablet-route")).toBeNull();
+      expect(screen.queryByTestId("labyrinth-room-panel")).toBeNull();
+
+      // No key label is set below 12px.
+      const keys = container.querySelectorAll("[data-touch-button]");
+      expect(keys.length).toBeGreaterThan(0);
+      for (const key of keys) {
+        expect(key.outerHTML).not.toMatch(/text-\[(9|10|11)px\]/);
+      }
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
   });
 
   it("answers an EMP press with a toast that names the tool and its outcome", () => {

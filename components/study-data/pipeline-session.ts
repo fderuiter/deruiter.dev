@@ -371,7 +371,7 @@ export function createStudyDataSession() {
       `Seed ${seed}, ${nSubjects} subjects. The same study, seed and subject count give the same files, byte for byte.`,
       "",
       "Each table is written as accessible HTML and as RTF, and the Kaplan-Meier figure as SVG and as HTML with its data tables.",
-      `ars-reporting-event.json holds every analysis result in an ${standardCitation("ARS")}-shaped model, with the ADaM rows each result was computed from.`,
+      `ars-reporting-event.json holds every analysis result as an ${standardCitation("ARS")} reporting event, and ars-result-lineage.json the ADaM rows each result was computed from.`,
       "MANIFEST.json lists the SHA-256 of every other file.",
       "",
     ].join("\r\n");

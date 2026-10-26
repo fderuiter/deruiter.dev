@@ -5,6 +5,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   ARS_REPORTING_EVENT_PATH,
+  ARS_RESULT_LINEAGE_PATH,
   DEMO_301_STUDY,
   MAX_RAW_DECIMALS,
   MESSY_DATA_SCENARIOS,
@@ -28,6 +29,7 @@ import {
   selectAdamRows,
   statisticDecimals,
   writeArsJson,
+  writeArsLineageJson,
   writeTableHtml,
   writeTableRtf,
   writeTlfFiles,
@@ -498,7 +500,7 @@ describe("ARS reporting event", () => {
       outputs.tables.map((source) => [
         {
           name: `${source.fileBase}.html`,
-          fileType: { controlledTerm: "html" },
+          fileType: { sponsorTermId: "SponsorTerm_FileType_HTML" },
           location: `${source.fileBase}.html`,
         },
         {
@@ -766,6 +768,7 @@ describe("HTML, RTF and ARS JSON files", () => {
   it("writes each table as HTML and RTF, and the figure as HTML and SVG, next to the ARS JSON", () => {
     expect(files.map((file) => [file.path, file.mediaType])).toEqual([
       [ARS_REPORTING_EVENT_PATH, "application/json"],
+      [ARS_RESULT_LINEAGE_PATH, "application/json"],
       [`${TLF_OUTPUT_DIR}/f-14-2-2.html`, "text/html"],
       [`${TLF_OUTPUT_DIR}/f-14-2-2.svg`, "image/svg+xml"],
       [`${TLF_OUTPUT_DIR}/t-14-1-1.html`, "text/html"],
@@ -775,9 +778,8 @@ describe("HTML, RTF and ARS JSON files", () => {
       [`${TLF_OUTPUT_DIR}/t-14-3-1.html`, "text/html"],
       [`${TLF_OUTPUT_DIR}/t-14-3-1.rtf`, "application/rtf"],
     ]);
-    expect(JSON.parse(text(files[0].bytes))).toEqual(
-      JSON.parse(JSON.stringify(event))
-    );
+    expect(text(files[0].bytes)).toBe(writeArsJson(event));
+    expect(text(files[1].bytes)).toBe(writeArsLineageJson(event));
   });
 
   it("carries the synthetic-data notice in every file", () => {
@@ -959,8 +961,8 @@ describe("where clauses", () => {
   });
 
   it("applies ADSL conditions to records through the subject and combines clauses", () => {
-    const female = where("ADSL", "SEX", "EQ", "F");
-    const teae = where("ADAE", "TRTEMFL", "EQ", "Y");
+    const female = { level: 2, order: 1, ...where("ADSL", "SEX", "EQ", "F") };
+    const teae = { level: 2, order: 2, ...where("ADAE", "TRTEMFL", "EQ", "Y") };
     const subjects = new Map(records(adsl).map((item) => [item.USUBJID, item]));
     expect(
       selectAdamRows(run.datasets, "ADAE", {
@@ -992,7 +994,10 @@ describe("where clauses", () => {
     );
     expect(
       selectAdamRows(run.datasets, "ADAE", {
-        compoundExpression: { logicalOperator: "NOT", whereClauses: [teae] },
+        compoundExpression: {
+          logicalOperator: "NOT",
+          whereClauses: [{ ...teae, order: 1 }],
+        },
       })
     ).toEqual(indexes(adae, (item) => item.TRTEMFL !== "Y"));
   });

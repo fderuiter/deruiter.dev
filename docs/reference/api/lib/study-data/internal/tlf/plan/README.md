@@ -23,6 +23,7 @@
 - [KM\_PARAMCD](variables/KM_PARAMCD.md)
 - [SEX\_GROUPS](variables/SEX_GROUPS.md)
 - [SUMMARY\_OPERATIONS](variables/SUMMARY_OPERATIONS.md)
+- [TERMINOLOGY\_EXTENSIONS](variables/TERMINOLOGY_EXTENSIONS.md)
 
 ## Functions
 

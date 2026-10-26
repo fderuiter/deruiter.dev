@@ -17,7 +17,7 @@ of time to first TEAE leading to discontinuation, with the number at
 risk, Greenwood log-log 95% limits and the log-rank test, Safety Set).
 
 Analysis sets, groupings, data subsets, methods and analyses are declared
-as data and returned in an ARS 1.0-shaped reporting event. Every result
+as data and returned in an ARS 1.0 reporting event. Every result
 records, through row sets, the ADaM rows it was computed from: the ADSL
 rows of its population and the records it counted, summarised or
 estimated from. Nothing

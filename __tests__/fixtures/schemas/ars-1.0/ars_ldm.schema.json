@@ -1,0 +1,2038 @@
+{
+    "$defs": {
+        "Analysis": {
+            "additionalProperties": false,
+            "description": "An analysis that is designed to meet a requirement of the reporting event. Each analysis is defined as a set of specifications, including:\n* The analysis variable that is the subject of the analysis.\n* The analysis method (set of statistical operations) that is performed for the analysis variable.\n* The analysis set (subject population) for which the analysis is performed.\n* The subset of data records on which the analysis is performed (optional).\n* One or more factors by which either subjects or data records are grouped for analysis (optional).",
+            "properties": {
+                "analysisSetId": {
+                    "description": "The identifier of the referenced analysis set.",
+                    "type": "string"
+                },
+                "categoryIds": {
+                    "description": "References to any implementer-defined categories that apply to the analysis.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "dataSubsetId": {
+                    "description": "The identifier of the referenced data subset.",
+                    "type": "string"
+                },
+                "dataset": {
+                    "description": "The name of the analysis dataset.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "documentRefs": {
+                    "description": "References to external documents containing additional information.",
+                    "items": {
+                        "$ref": "#/$defs/DocumentReference"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "methodId": {
+                    "description": "A reference to the set of one or more statistical operations performed for the analysis.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "orderedGroupings": {
+                    "description": "An ordered list of grouping factors used in the analysis.",
+                    "items": {
+                        "$ref": "#/$defs/OrderedGroupingFactor"
+                    },
+                    "type": "array"
+                },
+                "programmingCode": {
+                    "$ref": "#/$defs/AnalysisOutputProgrammingCode",
+                    "description": "Programming statements and/or a reference to the program used to perform the specific analysis."
+                },
+                "purpose": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/AnalysisPurpose"
+                        },
+                        {
+                            "$ref": "#/$defs/SponsorAnalysisPurpose"
+                        }
+                    ],
+                    "description": "The purpose of the analysis within the body of evidence (e.g., section in the clinical study report)."
+                },
+                "reason": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/AnalysisReason"
+                        },
+                        {
+                            "$ref": "#/$defs/SponsorAnalysisReason"
+                        }
+                    ],
+                    "description": "The rationale for performing this analysis. It indicates when the analysis was planned."
+                },
+                "referencedAnalysisOperations": {
+                    "description": "Indications of which analysis contains the results for each referenced operation.",
+                    "items": {
+                        "$ref": "#/$defs/ReferencedAnalysisOperation"
+                    },
+                    "type": "array"
+                },
+                "results": {
+                    "description": "The results of the analysis.",
+                    "items": {
+                        "$ref": "#/$defs/OperationResult"
+                    },
+                    "type": "array"
+                },
+                "variable": {
+                    "description": "The name of the variable.",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "An ordinal indicating the version of the identified instance of the class.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "reason",
+                "purpose",
+                "methodId",
+                "name"
+            ],
+            "title": "Analysis",
+            "type": "object"
+        },
+        "AnalysisMethod": {
+            "additionalProperties": false,
+            "description": "A set of one or more statistical operations.",
+            "properties": {
+                "codeTemplate": {
+                    "$ref": "#/$defs/AnalysisProgrammingCodeTemplate",
+                    "description": "Template programming statements used to perform the statistical operations for any analysis that uses this method."
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "documentRefs": {
+                    "description": "References to external documents containing additional information.",
+                    "items": {
+                        "$ref": "#/$defs/DocumentReference"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "operations": {
+                    "description": "The calculations performed for the method. Each operation generates a statistical result.",
+                    "items": {
+                        "$ref": "#/$defs/Operation"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "id",
+                "operations",
+                "name"
+            ],
+            "title": "AnalysisMethod",
+            "type": "object"
+        },
+        "AnalysisOutputCategorization": {
+            "additionalProperties": false,
+            "description": "A set of related implementer-defined categories that can be used to categorize analyses or outputs.",
+            "properties": {
+                "categories": {
+                    "description": "Implementer-defined categories of analyses/outputs, each of which may include one or more sub-categorization.",
+                    "items": {
+                        "$ref": "#/$defs/AnalysisOutputCategory"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "categories"
+            ],
+            "title": "AnalysisOutputCategorization",
+            "type": "object"
+        },
+        "AnalysisOutputCategory": {
+            "additionalProperties": false,
+            "description": "An implementer-defined category of analyses/outputs, which may include one or more sub-categorization.",
+            "properties": {
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "subCategorizations": {
+                    "description": "Sets of related implementer-defined sub-categories that can be used to categorize analyses or outputs.",
+                    "items": {
+                        "$ref": "#/$defs/AnalysisOutputCategorization"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "id"
+            ],
+            "title": "AnalysisOutputCategory",
+            "type": "object"
+        },
+        "AnalysisOutputCodeParameter": {
+            "additionalProperties": false,
+            "description": "A parameter whose value is used in programming code for a specific analysis or output.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "The value of the parameter.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "maxItems": 1,
+                    "type": "array"
+                }
+            },
+            "required": [
+                "value",
+                "name"
+            ],
+            "title": "AnalysisOutputCodeParameter",
+            "type": "object"
+        },
+        "AnalysisOutputProgrammingCode": {
+            "additionalProperties": false,
+            "description": "Programming statements and/or a reference to the program used to perform a specific analysis or create a specific output.",
+            "properties": {
+                "code": {
+                    "description": "Programming statements used to perform the specific analysis.",
+                    "type": "string"
+                },
+                "context": {
+                    "description": "The name and version of the computer language used for the actual programming statements provided.",
+                    "type": "string"
+                },
+                "documentRef": {
+                    "$ref": "#/$defs/DocumentReference",
+                    "description": "A reference to the document containing programming code."
+                },
+                "parameters": {
+                    "description": "Parameter values used to generate or execute the programming code.",
+                    "items": {
+                        "$ref": "#/$defs/AnalysisOutputCodeParameter"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "context"
+            ],
+            "title": "AnalysisOutputProgrammingCode",
+            "type": "object"
+        },
+        "AnalysisProgrammingCodeTemplate": {
+            "additionalProperties": false,
+            "description": "Programming statements and/or a reference to a used as a template for creation of a program to perform method operations for a specific analysis.",
+            "properties": {
+                "code": {
+                    "description": "Programming statements used to perform the specific analysis.",
+                    "type": "string"
+                },
+                "context": {
+                    "description": "The name and version of the computer language used for the actual programming statements provided.",
+                    "type": "string"
+                },
+                "documentRef": {
+                    "$ref": "#/$defs/DocumentReference",
+                    "description": "A reference to the document containing programming code."
+                },
+                "parameters": {
+                    "description": "Parameters whose values will be used to generate or execute the programming code for a specific analysis.",
+                    "items": {
+                        "$ref": "#/$defs/TemplateCodeParameter"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "context"
+            ],
+            "title": "AnalysisProgrammingCodeTemplate",
+            "type": "object"
+        },
+        "AnalysisPurpose": {
+            "additionalProperties": false,
+            "description": "The purpose of the analysis within the body of evidence (e.g., section in the clinical study report).",
+            "properties": {
+                "controlledTerm": {
+                    "$ref": "#/$defs/AnalysisPurposeEnum",
+                    "description": "One of the permissible values from the referenced enumeration."
+                },
+                "sponsorTermId": {
+                    "description": "NOT USED",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "controlledTerm"
+            ],
+            "title": "AnalysisPurpose",
+            "type": "object"
+        },
+        "AnalysisPurposeEnum": {
+            "description": "The purpose of the analysis within the body of evidence (e.g., section in the clinical study report).",
+            "enum": [
+                "PRIMARY OUTCOME MEASURE",
+                "SECONDARY OUTCOME MEASURE",
+                "EXPLORATORY OUTCOME MEASURE"
+            ],
+            "title": "AnalysisPurposeEnum",
+            "type": "string"
+        },
+        "AnalysisReason": {
+            "additionalProperties": false,
+            "description": "The rationale for performing this analysis.",
+            "properties": {
+                "controlledTerm": {
+                    "$ref": "#/$defs/AnalysisReasonEnum",
+                    "description": "One of the permissible values from the referenced enumeration."
+                },
+                "sponsorTermId": {
+                    "description": "NOT USED",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "controlledTerm"
+            ],
+            "title": "AnalysisReason",
+            "type": "object"
+        },
+        "AnalysisReasonEnum": {
+            "description": "The rationale for performing this analysis. It indicates when the analysis was planned.",
+            "enum": [
+                "SPECIFIED IN PROTOCOL",
+                "SPECIFIED IN SAP",
+                "DATA DRIVEN",
+                "REQUESTED BY REGULATORY AGENCY"
+            ],
+            "title": "AnalysisReasonEnum",
+            "type": "string"
+        },
+        "AnalysisSet": {
+            "additionalProperties": false,
+            "description": "A set of subjects whose data are to be included in the main analyses. This should be defined in the statistical section of the protocol. NOTE: There are a number of potential analysis sets, including, for example, the set based upon the intent-to-treat principle. [ICH E9]",
+            "properties": {
+                "compoundExpression": {
+                    "$ref": "#/$defs/CompoundSetExpression",
+                    "description": "A compound expression that combines or negates where clauses."
+                },
+                "condition": {
+                    "$ref": "#/$defs/WhereClauseCondition",
+                    "description": "A simple selection criterion exressed as [dataset].[variable] [comparator] [value(s)]"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "name",
+                "level",
+                "order"
+            ],
+            "title": "AnalysisSet",
+            "type": "object"
+        },
+        "CompoundGroupExpression": {
+            "additionalProperties": false,
+            "description": "A compound expression consisting of either two or more sub-clauses combined with the `AND` or `OR` logical operator, or a single sub-clause negated with the `NOT` logical operator. Each sub-clause is either a fully-defined `WhereClause` (containing either a `condition` or a `compoundExpression`) or a `ReferencedGroup` (containing a `subClauseId` indicating the `id` of the referenced `Group`).",
+            "properties": {
+                "logicalOperator": {
+                    "$ref": "#/$defs/ExpressionLogicalOperatorEnum",
+                    "description": "The boolean operator that is used to combine (AND, OR) or negate (NOT) the where claus(s) in the compound expression."
+                },
+                "whereClauses": {
+                    "description": "A list of one or more where clauses (selection criteria) to be combined or negated.",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ReferencedGroup"
+                            },
+                            {
+                                "$ref": "#/$defs/WhereClause"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "logicalOperator"
+            ],
+            "title": "CompoundGroupExpression",
+            "type": "object"
+        },
+        "CompoundSetExpression": {
+            "additionalProperties": false,
+            "description": "A compound expression consisting of either two or more sub-clauses combined with the `AND` or `OR` logical operator, or a single sub-clause negated with the `NOT` logical operator. Each sub-clause is either a fully-defined `WhereClause` (containing either a `condition` or a `compoundExpression`) or a `ReferencedAnalysisSet` (containing a `subClauseId` indicating the `id` of the referenced `AnalysisSet`).",
+            "properties": {
+                "logicalOperator": {
+                    "$ref": "#/$defs/ExpressionLogicalOperatorEnum",
+                    "description": "The boolean operator that is used to combine (AND, OR) or negate (NOT) the where claus(s) in the compound expression."
+                },
+                "whereClauses": {
+                    "description": "A list of one or more where clauses (selection criteria) to be combined or negated.",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ReferencedAnalysisSet"
+                            },
+                            {
+                                "$ref": "#/$defs/WhereClause"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "logicalOperator"
+            ],
+            "title": "CompoundSetExpression",
+            "type": "object"
+        },
+        "CompoundSubsetExpression": {
+            "additionalProperties": false,
+            "description": "A compound expression consisting of either two or more sub-clauses combined with the `AND` or `OR` logical operator, or a single sub-clause negated with the `NOT` logical operator. Each sub-clause is either a fully-defined `WhereClause` (containing either a `condition` or a `compoundExpression`) or a `ReferencedDataSubset` (containing a `subClauseId` indicating the `id` of the referenced `DataSubset`).",
+            "properties": {
+                "logicalOperator": {
+                    "$ref": "#/$defs/ExpressionLogicalOperatorEnum",
+                    "description": "The boolean operator that is used to combine (AND, OR) or negate (NOT) the where claus(s) in the compound expression."
+                },
+                "whereClauses": {
+                    "description": "A list of one or more where clauses (selection criteria) to be combined or negated.",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ReferencedDataSubset"
+                            },
+                            {
+                                "$ref": "#/$defs/WhereClause"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "logicalOperator"
+            ],
+            "title": "CompoundSubsetExpression",
+            "type": "object"
+        },
+        "ConditionComparatorEnum": {
+            "description": "Comparison operators indicating how the value of a variable is compared to a (list of) prespecified value(s).",
+            "enum": [
+                "EQ",
+                "NE",
+                "GT",
+                "GE",
+                "LT",
+                "LE",
+                "IN",
+                "NOTIN"
+            ],
+            "title": "ConditionComparatorEnum",
+            "type": "string"
+        },
+        "DataSubset": {
+            "additionalProperties": false,
+            "description": "A subset of data identified by selection criteria for inclusion in the analysis.",
+            "properties": {
+                "compoundExpression": {
+                    "$ref": "#/$defs/CompoundSubsetExpression",
+                    "description": "A compound expression that combines or negates where clauses."
+                },
+                "condition": {
+                    "$ref": "#/$defs/WhereClauseCondition",
+                    "description": "A simple selection criterion exressed as [dataset].[variable] [comparator] [value(s)]"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "name",
+                "level",
+                "order"
+            ],
+            "title": "DataSubset",
+            "type": "object"
+        },
+        "DisplaySection": {
+            "additionalProperties": false,
+            "description": "A part of a tabular display containing one or more pieces of informational text (e.g., title, footnote).",
+            "properties": {
+                "orderedSubSections": {
+                    "description": "An ordered list of the informational text to display in the display section.",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/OrderedSubSection"
+                            },
+                            {
+                                "$ref": "#/$defs/OrderedSubSectionRef"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                },
+                "sectionType": {
+                    "$ref": "#/$defs/DisplaySectionTypeEnum",
+                    "description": "The type of display section that contains one or more pieces of informational text."
+                }
+            },
+            "title": "DisplaySection",
+            "type": "object"
+        },
+        "DisplaySectionTypeEnum": {
+            "description": "Types of display section that contain one or more pieces of informational text.",
+            "enum": [
+                "Header",
+                "Title",
+                "Rowlabel Header",
+                "Legend",
+                "Abbreviation",
+                "Footnote",
+                "Footer"
+            ],
+            "title": "DisplaySectionTypeEnum",
+            "type": "string"
+        },
+        "DisplaySubSection": {
+            "additionalProperties": false,
+            "description": "An occurrence of a display section containing text.",
+            "properties": {
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "text": {
+                    "description": "The text to be displayed in the display section.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "text"
+            ],
+            "title": "DisplaySubSection",
+            "type": "object"
+        },
+        "DocumentReference": {
+            "additionalProperties": false,
+            "description": "A reference to an external document.",
+            "properties": {
+                "pageRefs": {
+                    "description": "A list of references to specific parts of a document, which may be referenced as a list of one or more page numbers, a range of page numbers, or a list of named destinations in the document (e.g. bookmarks).",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/PageNumberListRef"
+                            },
+                            {
+                                "$ref": "#/$defs/PageNumberRangeRef"
+                            },
+                            {
+                                "$ref": "#/$defs/PageNameRef"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                },
+                "referenceDocumentId": {
+                    "description": "The identifier of the referenced document.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "referenceDocumentId"
+            ],
+            "title": "DocumentReference",
+            "type": "object"
+        },
+        "ExpressionLogicalOperatorEnum": {
+            "description": "Boolean operators denoting a logical operation (e.g., and, or, not).",
+            "enum": [
+                "AND",
+                "OR",
+                "NOT"
+            ],
+            "title": "ExpressionLogicalOperatorEnum",
+            "type": "string"
+        },
+        "ExtensibleTerminologyEnum": {
+            "description": "Extensible ARS enumerations.",
+            "enum": [
+                "AnalysisReasonEnum",
+                "AnalysisPurposeEnum",
+                "OperationRoleEnum",
+                "OutputFileTypeEnum"
+            ],
+            "title": "ExtensibleTerminologyEnum",
+            "type": "string"
+        },
+        "GlobalDisplaySection": {
+            "additionalProperties": false,
+            "description": "A global definition for part of a tabular display containing one or more pieces of informational text that may be used in multiple displays.",
+            "properties": {
+                "sectionType": {
+                    "$ref": "#/$defs/DisplaySectionTypeEnum",
+                    "description": "The type of display section that contains one or more pieces of informational text."
+                },
+                "subSections": {
+                    "description": "A list of defined pieces of information text that may be displayed in display sections of the same type.",
+                    "items": {
+                        "$ref": "#/$defs/DisplaySubSection"
+                    },
+                    "type": "array"
+                }
+            },
+            "title": "GlobalDisplaySection",
+            "type": "object"
+        },
+        "Group": {
+            "additionalProperties": false,
+            "description": "A subdivision of the subject population or analysis dataset record set based on a defined factor.",
+            "properties": {
+                "compoundExpression": {
+                    "$ref": "#/$defs/CompoundGroupExpression",
+                    "description": "A compound expression that combines or negates where clauses."
+                },
+                "condition": {
+                    "$ref": "#/$defs/WhereClauseCondition",
+                    "description": "A simple selection criterion exressed as [dataset].[variable] [comparator] [value(s)]"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "name",
+                "level",
+                "order"
+            ],
+            "title": "Group",
+            "type": "object"
+        },
+        "GroupingFactor": {
+            "additionalProperties": false,
+            "description": "A factor used to subdivide either the subject population or data records in an analysis dataset for analysis.",
+            "properties": {
+                "dataDriven": {
+                    "description": "Indicates whether the groups defined by the grouping are prespecified (false) or obtained from distinct data values of the groupingVariable (true).",
+                    "type": "boolean"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "groupingDataset": {
+                    "description": "For groupings based on a single variable, a reference to the dataset containing the variable upon which grouping is based.",
+                    "type": "string"
+                },
+                "groupingVariable": {
+                    "description": "For groupings based on a single variable, a reference to the dataset variable upon which grouping is based.",
+                    "type": "string"
+                },
+                "groups": {
+                    "description": "The pre-specified groups within the grouping.",
+                    "items": {
+                        "$ref": "#/$defs/Group"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "dataDriven",
+                "name"
+            ],
+            "title": "GroupingFactor",
+            "type": "object"
+        },
+        "ListOfContents": {
+            "additionalProperties": false,
+            "description": "A structured list of analyses and outputs included in the reporting event.",
+            "properties": {
+                "contentsList": {
+                    "$ref": "#/$defs/NestedList",
+                    "description": "A structured list of the analyses and outputs defined for the reporting event."
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "contentsList",
+                "name"
+            ],
+            "title": "ListOfContents",
+            "type": "object"
+        },
+        "NestedList": {
+            "additionalProperties": false,
+            "description": "A list of items (analyses or outputs) that may be organized within sub-lists.",
+            "properties": {
+                "listItems": {
+                    "description": "Items in the list. Each item may include a reference to an analysis, a reference to an output, or a sub-list.",
+                    "items": {
+                        "$ref": "#/$defs/OrderedListItem"
+                    },
+                    "type": "array"
+                }
+            },
+            "title": "NestedList",
+            "type": "object"
+        },
+        "Operation": {
+            "additionalProperties": false,
+            "description": "A statistical operation that produces a single analysis result value as part of an analysis method.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "referencedOperationRelationships": {
+                    "description": "Relationships to other operations indicating how the result of the referenced operation are used in the calculation of the result for this operation.",
+                    "items": {
+                        "$ref": "#/$defs/ReferencedOperationRelationship"
+                    },
+                    "type": "array"
+                },
+                "resultPattern": {
+                    "description": "The default pattern or format to apply to the result for display.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "order",
+                "name"
+            ],
+            "title": "Operation",
+            "type": "object"
+        },
+        "OperationResult": {
+            "additionalProperties": false,
+            "description": "The result of an analysis method operation performed on a subdivision of subjects or data records.",
+            "properties": {
+                "formattedValue": {
+                    "description": "The result value formatted for display according to the resultPattern.",
+                    "type": "string"
+                },
+                "operationId": {
+                    "description": "The identifier of the referenced operation.",
+                    "type": "string"
+                },
+                "rawValue": {
+                    "description": "The raw result value (e.g., with no rounding applied).",
+                    "type": "string"
+                },
+                "resultGroups": {
+                    "description": "The group values associated with the result.",
+                    "items": {
+                        "$ref": "#/$defs/ResultGroup"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "operationId"
+            ],
+            "title": "OperationResult",
+            "type": "object"
+        },
+        "OperationRole": {
+            "additionalProperties": false,
+            "description": "The role that the referenced operation's result plays in the calculation of the result of this operation.",
+            "properties": {
+                "controlledTerm": {
+                    "$ref": "#/$defs/OperationRoleEnum",
+                    "description": "One of the permissible values from the referenced enumeration."
+                },
+                "sponsorTermId": {
+                    "description": "NOT USED",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "controlledTerm"
+            ],
+            "title": "OperationRole",
+            "type": "object"
+        },
+        "OperationRoleEnum": {
+            "description": "The role that the referenced operation's result plays in the calculation of the result of this operation.",
+            "enum": [
+                "NUMERATOR",
+                "DENOMINATOR"
+            ],
+            "title": "OperationRoleEnum",
+            "type": "string"
+        },
+        "OrderedDisplay": {
+            "additionalProperties": false,
+            "description": "A display ordered with respect to other displays in an analysis output.",
+            "properties": {
+                "display": {
+                    "$ref": "#/$defs/OutputDisplay",
+                    "description": "A display contained in the output."
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "order",
+                "display"
+            ],
+            "title": "OrderedDisplay",
+            "type": "object"
+        },
+        "OrderedGroupingFactor": {
+            "additionalProperties": false,
+            "description": "A reference to a defined factor by which subjects or data records are grouped for the analysis, ordered with respect to other grouping factors.",
+            "properties": {
+                "groupingId": {
+                    "description": "The identifier of the referenced subject or data grouping factor.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "resultsByGroup": {
+                    "description": "Indicates whether a result is expected for each group in the grouping.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "order",
+                "groupingId",
+                "resultsByGroup"
+            ],
+            "title": "OrderedGroupingFactor",
+            "type": "object"
+        },
+        "OrderedListItem": {
+            "additionalProperties": false,
+            "description": "An item (analysis, output or sub-list) ordered relative to other items within a list or sub-list.",
+            "properties": {
+                "analysisId": {
+                    "description": "The identifier of the referenced analysis.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "outputId": {
+                    "description": "The identifier of the referenced output.",
+                    "type": "string"
+                },
+                "sublist": {
+                    "$ref": "#/$defs/NestedList",
+                    "description": "A sub-list of items (analyses or outputs) that may be further organized within sub-lists."
+                }
+            },
+            "required": [
+                "level",
+                "order",
+                "name"
+            ],
+            "title": "OrderedListItem",
+            "type": "object"
+        },
+        "OrderedSubSection": {
+            "additionalProperties": false,
+            "description": "A subsection ordered with respect to other subsections of the same type.",
+            "properties": {
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "subSection": {
+                    "$ref": "#/$defs/DisplaySubSection",
+                    "description": "A defined piece of information text to display in a display section."
+                },
+                "subSectionId": {
+                    "description": "NOT USED",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "order",
+                "subSection"
+            ],
+            "title": "OrderedSubSection",
+            "type": "object"
+        },
+        "OrderedSubSectionRef": {
+            "additionalProperties": false,
+            "description": "A reference to a subsection defined either globally or in another display section, ordered with respect to other subsections of the same type.",
+            "properties": {
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "subSection": {
+                    "$ref": "#/$defs/DisplaySubSection",
+                    "description": "NOT USED"
+                },
+                "subSectionId": {
+                    "description": "The identifier of the referenced subsection.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "order",
+                "subSectionId"
+            ],
+            "title": "OrderedSubSectionRef",
+            "type": "object"
+        },
+        "Output": {
+            "additionalProperties": false,
+            "description": "A report of results and their evaluation based on planned analyses performed during the course of a trial.",
+            "properties": {
+                "categoryIds": {
+                    "description": "References to any implementer-defined categories that apply to the output.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "displays": {
+                    "description": "An ordered list of the displays included in the output.",
+                    "items": {
+                        "$ref": "#/$defs/OrderedDisplay"
+                    },
+                    "type": "array"
+                },
+                "documentRefs": {
+                    "description": "References to external documents containing additional information.",
+                    "items": {
+                        "$ref": "#/$defs/DocumentReference"
+                    },
+                    "type": "array"
+                },
+                "fileSpecifications": {
+                    "description": "Specifications of output files.",
+                    "items": {
+                        "$ref": "#/$defs/OutputFile"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "programmingCode": {
+                    "$ref": "#/$defs/AnalysisOutputProgrammingCode",
+                    "description": "Programming statements and/or a reference to the program used to perform the specific output."
+                },
+                "version": {
+                    "description": "An ordinal indicating the version of the identified instance of the class.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "displays",
+                "name"
+            ],
+            "title": "Output",
+            "type": "object"
+        },
+        "OutputDisplay": {
+            "additionalProperties": false,
+            "description": "A tabular representation of the results of one or more analyses.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "displaySections": {
+                    "description": "The parts of the display containing one or more pieces of informational text (e.g. title, footnote).",
+                    "items": {
+                        "$ref": "#/$defs/DisplaySection"
+                    },
+                    "type": "array"
+                },
+                "displayTitle": {
+                    "description": "Display description which uniquely identifies the display in the report.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "An ordinal indicating the version of the identified instance of the class.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "name"
+            ],
+            "title": "OutputDisplay",
+            "type": "object"
+        },
+        "OutputFile": {
+            "additionalProperties": false,
+            "description": "A file containing analysis output displays.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "fileType": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OutputFileType"
+                        },
+                        {
+                            "$ref": "#/$defs/SponsorOutputFileType"
+                        }
+                    ],
+                    "description": "The format of the output file."
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "location": {
+                    "description": "A path (relative or absolute) indicating the location of the file.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "style": {
+                    "description": "Reference to the specification of the style used for the output.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "OutputFile",
+            "type": "object"
+        },
+        "OutputFileType": {
+            "additionalProperties": false,
+            "description": "The file format of the file containing output from analyses.",
+            "properties": {
+                "controlledTerm": {
+                    "$ref": "#/$defs/OutputFileTypeEnum",
+                    "description": "One of the permissible values from the referenced enumeration."
+                },
+                "sponsorTermId": {
+                    "description": "NOT USED",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "controlledTerm"
+            ],
+            "title": "OutputFileType",
+            "type": "object"
+        },
+        "OutputFileTypeEnum": {
+            "description": "The file format of the file containing output from analyses.",
+            "enum": [
+                "pdf",
+                "rtf",
+                "txt"
+            ],
+            "title": "OutputFileTypeEnum",
+            "type": "string"
+        },
+        "PageNameRef": {
+            "additionalProperties": false,
+            "description": "One or more pages in the reference document, referenced by named destination.",
+            "properties": {
+                "firstPage": {
+                    "description": "NOT USED",
+                    "type": "integer"
+                },
+                "label": {
+                    "description": "Alternative label to provide a more specific and description to a page link.",
+                    "type": "string"
+                },
+                "lastPage": {
+                    "description": "NOT USED",
+                    "type": "integer"
+                },
+                "pageNames": {
+                    "description": "One or more named document references which each correspond with a page.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "pageNumbers": {
+                    "description": "NOT USED",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                },
+                "refType": {
+                    "$ref": "#/$defs/PageRefTypeEnum",
+                    "const": "NamedDestination",
+                    "description": "The type of reference for page references."
+                }
+            },
+            "required": [
+                "refType",
+                "pageNames"
+            ],
+            "title": "PageNameRef",
+            "type": "object"
+        },
+        "PageNumberListRef": {
+            "additionalProperties": false,
+            "description": "One or more individual pages in the reference document, referenced by page number.",
+            "properties": {
+                "firstPage": {
+                    "description": "NOT USED",
+                    "type": "integer"
+                },
+                "label": {
+                    "description": "Alternative label to provide a more specific and description to a page link.",
+                    "type": "string"
+                },
+                "lastPage": {
+                    "description": "NOT USED",
+                    "type": "integer"
+                },
+                "pageNames": {
+                    "description": "NOT USED",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "pageNumbers": {
+                    "description": "One or more page numbers.",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                },
+                "refType": {
+                    "$ref": "#/$defs/PageRefTypeEnum",
+                    "const": "PhysicalRef",
+                    "description": "The type of reference for page references."
+                }
+            },
+            "required": [
+                "refType",
+                "pageNumbers"
+            ],
+            "title": "PageNumberListRef",
+            "type": "object"
+        },
+        "PageNumberRangeRef": {
+            "additionalProperties": false,
+            "description": "A range of pages in the reference document, indicated by the first and last page number in the range.",
+            "properties": {
+                "firstPage": {
+                    "description": "The page number of the first page in a range of pages.",
+                    "type": "integer"
+                },
+                "label": {
+                    "description": "Alternative label to provide a more specific and description to a page link.",
+                    "type": "string"
+                },
+                "lastPage": {
+                    "description": "The page number of the last page in a range of pages.",
+                    "type": "integer"
+                },
+                "pageNames": {
+                    "description": "NOT USED",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "pageNumbers": {
+                    "description": "NOT USED",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                },
+                "refType": {
+                    "$ref": "#/$defs/PageRefTypeEnum",
+                    "const": "PhysicalRef",
+                    "description": "The type of reference for page references."
+                }
+            },
+            "required": [
+                "refType",
+                "firstPage",
+                "lastPage"
+            ],
+            "title": "PageNumberRangeRef",
+            "type": "object"
+        },
+        "PageRefTypeEnum": {
+            "description": "Type of reference for page references.",
+            "enum": [
+                "PhysicalRef",
+                "NamedDestination"
+            ],
+            "title": "PageRefTypeEnum",
+            "type": "string"
+        },
+        "ReferenceDocument": {
+            "additionalProperties": false,
+            "description": "An external document containing supporting documentation or programming code.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "location": {
+                    "description": "A path (relative or absolute) indicating the location of the file.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "name"
+            ],
+            "title": "ReferenceDocument",
+            "type": "object"
+        },
+        "ReferencedAnalysisOperation": {
+            "additionalProperties": false,
+            "description": "An indication of the analysis that contains results of a referenced operation.",
+            "properties": {
+                "analysisId": {
+                    "description": "The identifier of the referenced analysis.",
+                    "type": "string"
+                },
+                "referencedOperationRelationshipId": {
+                    "description": "The identifier of the defined referenced operation relationship.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "referencedOperationRelationshipId",
+                "analysisId"
+            ],
+            "title": "ReferencedAnalysisOperation",
+            "type": "object"
+        },
+        "ReferencedAnalysisSet": {
+            "additionalProperties": false,
+            "description": "An `AnalysisSet` referenced by identifier (`subClauseId`) as the sub-clause of a compound expression.",
+            "properties": {
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "subClauseId": {
+                    "description": "The identifier of the analysis set, data subset or group referenced in the compound expression.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "subClauseId",
+                "level",
+                "order"
+            ],
+            "title": "ReferencedAnalysisSet",
+            "type": "object"
+        },
+        "ReferencedDataSubset": {
+            "additionalProperties": false,
+            "description": "A `DataSubset` referenced by identifier (`subClauseId`) as the sub-clause of a compound expression.",
+            "properties": {
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "subClauseId": {
+                    "description": "The identifier of the analysis set, data subset or group referenced in the compound expression.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "subClauseId",
+                "level",
+                "order"
+            ],
+            "title": "ReferencedDataSubset",
+            "type": "object"
+        },
+        "ReferencedGroup": {
+            "additionalProperties": false,
+            "description": "A `Group` referenced by identifier (`subClauseId`) as the sub-clause of a compound expression.",
+            "properties": {
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                },
+                "subClauseId": {
+                    "description": "The identifier of the analysis set, data subset or group referenced in the compound expression.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "subClauseId",
+                "level",
+                "order"
+            ],
+            "title": "ReferencedGroup",
+            "type": "object"
+        },
+        "ReferencedOperationRelationship": {
+            "additionalProperties": false,
+            "description": "A reference to a statistical operation whose results are used in the calculation of the result for this operation.",
+            "properties": {
+                "analysisId": {
+                    "description": "The identifier of the referenced analysis.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "operationId": {
+                    "description": "The identifier of the referenced operation.",
+                    "type": "string"
+                },
+                "referencedOperationRole": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OperationRole"
+                        },
+                        {
+                            "$ref": "#/$defs/SponsorOperationRole"
+                        }
+                    ],
+                    "description": "The role that the referenced operation's result plays in the calculation of the result of the parent operation."
+                }
+            },
+            "required": [
+                "id",
+                "referencedOperationRole",
+                "operationId"
+            ],
+            "title": "ReferencedOperationRelationship",
+            "type": "object"
+        },
+        "ReportingEvent": {
+            "additionalProperties": false,
+            "description": "A set of analyses and outputs created to meet a specific reporting requirement, such as a CSR or interim analysis.",
+            "properties": {
+                "analyses": {
+                    "description": "The analyses defined for the reporting event.",
+                    "items": {
+                        "$ref": "#/$defs/Analysis"
+                    },
+                    "type": "array"
+                },
+                "analysisGroupings": {
+                    "description": "Characteristics used to subdivide the subject population (e.g., treatment, sex, age group) or data records in analysis datasets (e.g., visit, system organ class).",
+                    "items": {
+                        "$ref": "#/$defs/GroupingFactor"
+                    },
+                    "type": "array"
+                },
+                "analysisOutputCategorizations": {
+                    "description": "Sets of related implementer-defined categories that can be used to categorize analyses or outputs.",
+                    "items": {
+                        "$ref": "#/$defs/AnalysisOutputCategorization"
+                    },
+                    "type": "array"
+                },
+                "analysisSets": {
+                    "description": "The analysis sets (subject populations) defined for the reporting event.",
+                    "items": {
+                        "$ref": "#/$defs/AnalysisSet"
+                    },
+                    "type": "array"
+                },
+                "dataSubsets": {
+                    "description": "Subsets of data identified by selection criteria for inclusion in analysis definitions.",
+                    "items": {
+                        "$ref": "#/$defs/DataSubset"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "globalDisplaySections": {
+                    "description": "Display section specifications that may be applied to any display.",
+                    "items": {
+                        "$ref": "#/$defs/GlobalDisplaySection"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "mainListOfContents": {
+                    "$ref": "#/$defs/ListOfContents",
+                    "description": "The main list of the analyses and outputs defined for the reporting event."
+                },
+                "methods": {
+                    "description": "The defined methods used to analyze any analysis variable.",
+                    "items": {
+                        "$ref": "#/$defs/AnalysisMethod"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "otherListsOfContents": {
+                    "description": "Other lists of the analyses and outputs defined for the reporting event.",
+                    "items": {
+                        "$ref": "#/$defs/ListOfContents"
+                    },
+                    "type": "array"
+                },
+                "outputs": {
+                    "description": "The outputs defined for the reporting event.",
+                    "items": {
+                        "$ref": "#/$defs/Output"
+                    },
+                    "type": "array"
+                },
+                "referenceDocuments": {
+                    "description": "External documents containing information referenced for the reporting event.",
+                    "items": {
+                        "$ref": "#/$defs/ReferenceDocument"
+                    },
+                    "type": "array"
+                },
+                "terminologyExtensions": {
+                    "description": "Any sponsor-defined extensions to extensible terminology.",
+                    "items": {
+                        "$ref": "#/$defs/TerminologyExtension"
+                    },
+                    "type": "array"
+                },
+                "version": {
+                    "description": "An ordinal indicating the version of the identified instance of the class.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "mainListOfContents",
+                "name"
+            ],
+            "title": "ReportingEvent",
+            "type": "object"
+        },
+        "ResultGroup": {
+            "additionalProperties": false,
+            "description": "For the specified grouping factor, an indication of the specific group of subjects or data records associated with the analysis result.",
+            "properties": {
+                "groupId": {
+                    "description": "The identifier of a referenced predefined group within a grouping.",
+                    "type": "string"
+                },
+                "groupValue": {
+                    "description": "The data value used as a group within a data-driven grouping.",
+                    "type": "string"
+                },
+                "groupingId": {
+                    "description": "The identifier of the referenced subject or data grouping factor.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "groupingId"
+            ],
+            "title": "ResultGroup",
+            "type": "object"
+        },
+        "SponsorAnalysisPurpose": {
+            "additionalProperties": false,
+            "description": "The sponsor-defined purpose of the analysis within the body of evidence (e.g., section in the clinical study report).",
+            "properties": {
+                "controlledTerm": {
+                    "description": "NOT USED",
+                    "type": "string"
+                },
+                "sponsorTermId": {
+                    "description": "A reference to a sponsor term in the TerminologyExtension with enumeration=AnalysisPurposeEnum",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "sponsorTermId"
+            ],
+            "title": "SponsorAnalysisPurpose",
+            "type": "object"
+        },
+        "SponsorAnalysisReason": {
+            "additionalProperties": false,
+            "description": "The sponsor-defined rationale for performing this analysis.",
+            "properties": {
+                "controlledTerm": {
+                    "description": "NOT USED",
+                    "type": "string"
+                },
+                "sponsorTermId": {
+                    "description": "A reference to a sponsor term in the TerminologyExtension with enumeration=AnalysisReasonEnum",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "sponsorTermId"
+            ],
+            "title": "SponsorAnalysisReason",
+            "type": "object"
+        },
+        "SponsorOperationRole": {
+            "additionalProperties": false,
+            "description": "The sponsor-defined role that the referenced operation's result plays in the calculation of the result of this operation.",
+            "properties": {
+                "controlledTerm": {
+                    "description": "NOT USED",
+                    "type": "string"
+                },
+                "sponsorTermId": {
+                    "description": "A reference to a sponsor term in the TerminologyExtension with enumeration=OperationRoleEnum",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "sponsorTermId"
+            ],
+            "title": "SponsorOperationRole",
+            "type": "object"
+        },
+        "SponsorOutputFileType": {
+            "additionalProperties": false,
+            "description": "The sponsor-defined file format of the file containing output from analyses.",
+            "properties": {
+                "controlledTerm": {
+                    "description": "NOT USED",
+                    "type": "string"
+                },
+                "sponsorTermId": {
+                    "description": "A reference to a sponsor term in the TerminologyExtension with enumeration=OutputFileTypeEnum",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "sponsorTermId"
+            ],
+            "title": "SponsorOutputFileType",
+            "type": "object"
+        },
+        "SponsorTerm": {
+            "additionalProperties": false,
+            "description": "A sponsor-defined term that is included in an extensible set of controlled terminology.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "submissionValue": {
+                    "description": "The specific value expected for submissions.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "submissionValue"
+            ],
+            "title": "SponsorTerm",
+            "type": "object"
+        },
+        "TemplateCodeParameter": {
+            "additionalProperties": false,
+            "description": "A replacement parameter whose value is substituted in template programming code to create statements required for a specific analysis.",
+            "properties": {
+                "description": {
+                    "description": "A textual description of the instance of the class.",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "A short informative description that may be used for display.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name for the instance of the class.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "The value to be used for the parameter when the method is used in an analysis. Multiple values may be specified to indicate a choice.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "valueSource": {
+                    "description": "A reference to the prespecified source of the value for the parameter.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "TemplateCodeParameter",
+            "type": "object"
+        },
+        "TerminologyExtension": {
+            "additionalProperties": false,
+            "description": "An extensible set of controlled terminology that has been extended with at least one sponsor-defined term.",
+            "properties": {
+                "enumeration": {
+                    "$ref": "#/$defs/ExtensibleTerminologyEnum",
+                    "description": "The name of the extensible enumeration."
+                },
+                "id": {
+                    "description": "The assigned identifying value for the instance of the class.",
+                    "type": "string"
+                },
+                "sponsorTerms": {
+                    "description": "The sponsor-defined terms added to the extensible terminology.",
+                    "items": {
+                        "$ref": "#/$defs/SponsorTerm"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "id",
+                "sponsorTerms"
+            ],
+            "title": "TerminologyExtension",
+            "type": "object"
+        },
+        "WhereClause": {
+            "additionalProperties": false,
+            "description": "Selection criteria defined as either a simple condition ([variable] [comparator] [value(s)]) or a compound expression that may combine simple conditions or compound expressions.",
+            "properties": {
+                "compoundExpression": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/CompoundSetExpression"
+                        },
+                        {
+                            "$ref": "#/$defs/CompoundSubsetExpression"
+                        },
+                        {
+                            "$ref": "#/$defs/CompoundGroupExpression"
+                        }
+                    ],
+                    "description": "A compound expression that combines or negates where clauses."
+                },
+                "condition": {
+                    "$ref": "#/$defs/WhereClauseCondition",
+                    "description": "A simple selection criterion exressed as [dataset].[variable] [comparator] [value(s)]"
+                },
+                "level": {
+                    "description": "The level of the entry within a hierarchical structure.",
+                    "type": "integer"
+                },
+                "order": {
+                    "description": "The ordinal of the instance with respect to other instances.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "level",
+                "order"
+            ],
+            "title": "WhereClause",
+            "type": "object"
+        },
+        "WhereClauseCondition": {
+            "additionalProperties": false,
+            "description": "A simple selection criterion exressed as [dataset].[variable] [comparator] [value(s)]",
+            "properties": {
+                "comparator": {
+                    "$ref": "#/$defs/ConditionComparatorEnum",
+                    "description": "Comparison operator indicating how the variable is compared to the value(s)."
+                },
+                "dataset": {
+                    "description": "The name of the analysis dataset.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "The value(s) for comparison with the variable.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "variable": {
+                    "description": "The name of the variable.",
+                    "type": "string"
+                }
+            },
+            "title": "WhereClauseCondition",
+            "type": "object"
+        }
+    },
+    "$id": "https://www.cdisc.org/ars/1-0",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": true,
+    "description": "A set of analyses and outputs created to meet a specific reporting requirement, such as a CSR or interim analysis.",
+    "metamodel_version": "1.7.0",
+    "properties": {
+        "analyses": {
+            "description": "The analyses defined for the reporting event.",
+            "items": {
+                "$ref": "#/$defs/Analysis"
+            },
+            "type": "array"
+        },
+        "analysisGroupings": {
+            "description": "Characteristics used to subdivide the subject population (e.g., treatment, sex, age group) or data records in analysis datasets (e.g., visit, system organ class).",
+            "items": {
+                "$ref": "#/$defs/GroupingFactor"
+            },
+            "type": "array"
+        },
+        "analysisOutputCategorizations": {
+            "description": "Sets of related implementer-defined categories that can be used to categorize analyses or outputs.",
+            "items": {
+                "$ref": "#/$defs/AnalysisOutputCategorization"
+            },
+            "type": "array"
+        },
+        "analysisSets": {
+            "description": "The analysis sets (subject populations) defined for the reporting event.",
+            "items": {
+                "$ref": "#/$defs/AnalysisSet"
+            },
+            "type": "array"
+        },
+        "dataSubsets": {
+            "description": "Subsets of data identified by selection criteria for inclusion in analysis definitions.",
+            "items": {
+                "$ref": "#/$defs/DataSubset"
+            },
+            "type": "array"
+        },
+        "description": {
+            "description": "A textual description of the instance of the class.",
+            "type": "string"
+        },
+        "globalDisplaySections": {
+            "description": "Display section specifications that may be applied to any display.",
+            "items": {
+                "$ref": "#/$defs/GlobalDisplaySection"
+            },
+            "type": "array"
+        },
+        "id": {
+            "description": "The assigned identifying value for the instance of the class.",
+            "type": "string"
+        },
+        "label": {
+            "description": "A short informative description that may be used for display.",
+            "type": "string"
+        },
+        "mainListOfContents": {
+            "$ref": "#/$defs/ListOfContents",
+            "description": "The main list of the analyses and outputs defined for the reporting event."
+        },
+        "methods": {
+            "description": "The defined methods used to analyze any analysis variable.",
+            "items": {
+                "$ref": "#/$defs/AnalysisMethod"
+            },
+            "type": "array"
+        },
+        "name": {
+            "description": "The name for the instance of the class.",
+            "type": "string"
+        },
+        "otherListsOfContents": {
+            "description": "Other lists of the analyses and outputs defined for the reporting event.",
+            "items": {
+                "$ref": "#/$defs/ListOfContents"
+            },
+            "type": "array"
+        },
+        "outputs": {
+            "description": "The outputs defined for the reporting event.",
+            "items": {
+                "$ref": "#/$defs/Output"
+            },
+            "type": "array"
+        },
+        "referenceDocuments": {
+            "description": "External documents containing information referenced for the reporting event.",
+            "items": {
+                "$ref": "#/$defs/ReferenceDocument"
+            },
+            "type": "array"
+        },
+        "terminologyExtensions": {
+            "description": "Any sponsor-defined extensions to extensible terminology.",
+            "items": {
+                "$ref": "#/$defs/TerminologyExtension"
+            },
+            "type": "array"
+        },
+        "version": {
+            "description": "An ordinal indicating the version of the identified instance of the class.",
+            "type": "integer"
+        }
+    },
+    "required": [
+        "id",
+        "mainListOfContents",
+        "name"
+    ],
+    "title": "ars_ldm",
+    "type": "object",
+    "version": null
+}

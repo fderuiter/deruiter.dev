@@ -7,8 +7,9 @@
 # Interface: ArsOperationResult
 
 One result: the value of one operation for one combination of groups.
-`id` and `rowReferences` extend the ARS 1.0 shape, so a displayed cell
-can name its results and each result the rows that produced it.
+`id` and `rowReferences` extend the ARS 1.0 class, so a displayed cell
+can name its results and each result the rows that produced it. The ARS
+file leaves them out; the result lineage file carries them.
 
 ## Properties
 

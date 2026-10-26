@@ -86,6 +86,12 @@ Re-exports [ARS_REPORTING_EVENT_PATH](internal/tlf/outputs/variables/ARS_REPORTI
 
 ***
 
+### ARS\_RESULT\_LINEAGE\_PATH
+
+Re-exports [ARS_RESULT_LINEAGE_PATH](internal/tlf/outputs/variables/ARS_RESULT_LINEAGE_PATH.md)
+
+***
+
 ### ArsAnalysis
 
 Re-exports [ArsAnalysis](types/interfaces/ArsAnalysis.md)
@@ -158,6 +164,12 @@ Re-exports [ArsDisplaySubSection](types/interfaces/ArsDisplaySubSection.md)
 
 ***
 
+### ArsExtensibleTerm
+
+Re-exports [ArsExtensibleTerm](types/type-aliases/ArsExtensibleTerm.md)
+
+***
+
 ### ArsFileSpecification
 
 Re-exports [ArsFileSpecification](types/interfaces/ArsFileSpecification.md)
@@ -179,6 +191,12 @@ Re-exports [ArsGroupingFactor](types/interfaces/ArsGroupingFactor.md)
 ### ArsListItem
 
 Re-exports [ArsListItem](types/interfaces/ArsListItem.md)
+
+***
+
+### ArsNestedWhereClause
+
+Re-exports [ArsNestedWhereClause](types/type-aliases/ArsNestedWhereClause.md)
 
 ***
 
@@ -272,9 +290,27 @@ Re-exports [ArsRowSet](types/interfaces/ArsRowSet.md)
 
 ***
 
+### ArsSponsorTerm
+
+Re-exports [ArsSponsorTerm](types/interfaces/ArsSponsorTerm.md)
+
+***
+
+### ArsSponsorTermRef
+
+Re-exports [ArsSponsorTermRef](types/interfaces/ArsSponsorTermRef.md)
+
+***
+
 ### ArsTerm
 
 Re-exports [ArsTerm](types/interfaces/ArsTerm.md)
+
+***
+
+### ArsTerminologyExtension
+
+Re-exports [ArsTerminologyExtension](types/interfaces/ArsTerminologyExtension.md)
 
 ***
 
@@ -1529,6 +1565,12 @@ Re-exports [whereClauseOid](internal/export/oids/functions/whereClauseOid.md)
 ### writeArsJson
 
 Re-exports [writeArsJson](internal/tlf/outputs/functions/writeArsJson.md)
+
+***
+
+### writeArsLineageJson
+
+Re-exports [writeArsLineageJson](internal/tlf/outputs/functions/writeArsLineageJson.md)
 
 ***
 

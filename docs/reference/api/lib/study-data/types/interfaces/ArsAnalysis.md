@@ -66,11 +66,12 @@ Grouping factors, in order.
 
 ***
 
-### purpose?
+### purpose
 
-> `readonly` `optional` **purpose?**: [`ArsTerm`](ArsTerm.md)
+> `readonly` **purpose**: [`ArsExtensibleTerm`](../type-aliases/ArsExtensibleTerm.md)
 
-What the analysis is for, when it measures a study endpoint.
+What the analysis is for: an outcome measure, or a sponsor term for a
+descriptive analysis that measures no endpoint.
 
 ***
 
@@ -79,7 +80,9 @@ What the analysis is for, when it measures a study endpoint.
 > `readonly` `optional` **rawDecimals?**: `number`
 
 Decimals the summarised data is recorded with, which set the display
-precision. Present for descriptive summaries only.
+precision. Present for descriptive summaries only. It extends the ARS
+1.0 class, so the ARS file leaves it out and the result lineage file
+carries it.
 
 ***
 

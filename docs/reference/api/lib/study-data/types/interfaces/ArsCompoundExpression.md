@@ -20,6 +20,6 @@ The logical operator. NOT takes exactly one clause.
 
 ### whereClauses
 
-> `readonly` **whereClauses**: readonly [`ArsWhereClause`](../type-aliases/ArsWhereClause.md)[]
+> `readonly` **whereClauses**: readonly [`ArsNestedWhereClause`](../type-aliases/ArsNestedWhereClause.md)[]
 
-The clauses it joins.
+The clauses it joins, in order.

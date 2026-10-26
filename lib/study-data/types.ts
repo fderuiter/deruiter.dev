@@ -549,7 +549,7 @@ export interface PipelineRun {
 }
 
 // ---------------------------------------------------------------------------
-// Analysis results: an ARS 1.0-shaped metadata model (#2593)
+// Analysis results: the ARS 1.0 metadata model, with lineage extensions (#2593, #3025)
 // ---------------------------------------------------------------------------
 
 /** Summary statistics of one set of values, from `descriptiveStatistics`. */
@@ -607,12 +607,24 @@ export interface ArsCompoundClause {
 /** A where clause: one condition, or a compound expression. */
 export type ArsWhereClause = ArsConditionClause | ArsCompoundClause;
 
+/**
+ * A where clause inside a compound expression, with its position: `level`
+ * is one more than the level of the clause that holds it, and `order` its
+ * place among its siblings, from 1. ARS 1.0 requires both.
+ */
+export type ArsNestedWhereClause = ArsWhereClause & {
+  /** Nesting level: 2 under a top-level entity, 3 below that. */
+  readonly level: number;
+  /** Position among its siblings, from 1. */
+  readonly order: number;
+};
+
 /** Where clauses joined by AND or OR, or one negated by NOT. */
 export interface ArsCompoundExpression {
   /** The logical operator. NOT takes exactly one clause. */
   readonly logicalOperator: "AND" | "OR" | "NOT";
-  /** The clauses it joins. */
-  readonly whereClauses: readonly ArsWhereClause[];
+  /** The clauses it joins, in order. */
+  readonly whereClauses: readonly ArsNestedWhereClause[];
 }
 
 /** Identity and position shared by analysis sets, groups and data subsets. */
@@ -664,6 +676,43 @@ export interface ArsGroupingFactor {
 export interface ArsTerm {
   /** The term, for example `DENOMINATOR`. */
   readonly controlledTerm: string;
+}
+
+/**
+ * A sponsor-defined term, used where ARS terminology is extensible and no
+ * controlled term fits. It refers to an entry of the reporting event's
+ * `terminologyExtensions`.
+ */
+export interface ArsSponsorTermRef {
+  /** The id of the sponsor term. */
+  readonly sponsorTermId: string;
+}
+
+/** A value of an extensible ARS enumeration: a controlled or a sponsor term. */
+export type ArsExtensibleTerm = ArsTerm | ArsSponsorTermRef;
+
+/** One sponsor-defined term added to an extensible ARS enumeration. */
+export interface ArsSponsorTerm {
+  /** Stable id, for example `SponsorTerm_Purpose_BASELINE`. */
+  readonly id: string;
+  /** The value, for example `BASELINE CHARACTERISTICS`. */
+  readonly submissionValue: string;
+  /** What the term means. */
+  readonly description: string;
+}
+
+/** The sponsor terms added to one extensible ARS enumeration. */
+export interface ArsTerminologyExtension {
+  /** Stable id, for example `TermExt_AnalysisPurpose`. */
+  readonly id: string;
+  /** The enumeration extended. */
+  readonly enumeration:
+    | "AnalysisReasonEnum"
+    | "AnalysisPurposeEnum"
+    | "OperationRoleEnum"
+    | "OutputFileTypeEnum";
+  /** The terms added. */
+  readonly sponsorTerms: readonly ArsSponsorTerm[];
 }
 
 /** A link from one operation to another whose result it uses. */
@@ -776,8 +825,9 @@ export interface ArsRowReference {
 
 /**
  * One result: the value of one operation for one combination of groups.
- * `id` and `rowReferences` extend the ARS 1.0 shape, so a displayed cell
- * can name its results and each result the rows that produced it.
+ * `id` and `rowReferences` extend the ARS 1.0 class, so a displayed cell
+ * can name its results and each result the rows that produced it. The ARS
+ * file leaves them out; the result lineage file carries them.
  */
 export interface ArsOperationResult {
   /** Stable id, for example `An_14_1_1_AGE.004`. */
@@ -804,8 +854,11 @@ export interface ArsAnalysis {
   readonly version: number;
   /** Why the analysis is performed, for example `SPECIFIED IN SAP`. */
   readonly reason: ArsTerm;
-  /** What the analysis is for, when it measures a study endpoint. */
-  readonly purpose?: ArsTerm;
+  /**
+   * What the analysis is for: an outcome measure, or a sponsor term for a
+   * descriptive analysis that measures no endpoint.
+   */
+  readonly purpose: ArsExtensibleTerm;
   /** The analysis dataset. */
   readonly dataset: string;
   /** The analysis variable. */
@@ -822,7 +875,9 @@ export interface ArsAnalysis {
   readonly referencedAnalysisOperations?: readonly ArsReferencedAnalysisOperation[];
   /**
    * Decimals the summarised data is recorded with, which set the display
-   * precision. Present for descriptive summaries only.
+   * precision. Present for descriptive summaries only. It extends the ARS
+   * 1.0 class, so the ARS file leaves it out and the result lineage file
+   * carries it.
    */
   readonly rawDecimals?: number;
   /** The results, one per operation and group combination. */
@@ -889,8 +944,11 @@ export interface ArsOrderedDisplay {
 export interface ArsFileSpecification {
   /** File name. */
   readonly name: string;
-  /** File type, for example `html` or `rtf`. */
-  readonly fileType: ArsTerm;
+  /**
+   * File type: the controlled term `rtf`, or a sponsor term for `html` and
+   * `svg`, which ARS 1.0 does not list.
+   */
+  readonly fileType: ArsExtensibleTerm;
   /** Path relative to the output folder. */
   readonly location: string;
 }
@@ -930,7 +988,8 @@ export interface ArsListItem {
  * analysis and output of a run, with the results. It holds no timestamps,
  * so the same study, seed and subject count give the same JSON. `notice`,
  * `studyId`, `seed`, `nSubjects`, `standards` and `rowSets` extend the
- * ARS 1.0 shape.
+ * ARS 1.0 class: `writeArsJson` leaves them out, so the file validates
+ * against the ARS 1.0 schema, and `writeArsLineageJson` writes them.
  */
 export interface ArsReportingEvent {
   /** Stable id, for example `RE_DEMO-301`. */
@@ -951,6 +1010,8 @@ export interface ArsReportingEvent {
   readonly nSubjects: number;
   /** Pinned versions of the standards the model and data follow. */
   readonly standards: Readonly<Record<"ARS" | "ADaMIG", string>>;
+  /** Sponsor terms the event uses where ARS terminology is extensible. */
+  readonly terminologyExtensions: readonly ArsTerminologyExtension[];
   /** Outputs and the analyses each one displays. */
   readonly mainListOfContents: {
     readonly name: string;

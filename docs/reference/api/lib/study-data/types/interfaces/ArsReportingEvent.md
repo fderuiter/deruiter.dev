@@ -10,7 +10,8 @@ The reporting event: every analysis set, grouping, data subset, method,
 analysis and output of a run, with the results. It holds no timestamps,
 so the same study, seed and subject count give the same JSON. `notice`,
 `studyId`, `seed`, `nSubjects`, `standards` and `rowSets` extend the
-ARS 1.0 shape.
+ARS 1.0 class: `writeArsJson` leaves them out, so the file validates
+against the ARS 1.0 schema, and `writeArsLineageJson` writes them.
 
 ## Properties
 
@@ -151,6 +152,14 @@ Pinned versions of the standards the model and data follow.
 > `readonly` **studyId**: `string`
 
 Study identifier.
+
+***
+
+### terminologyExtensions
+
+> `readonly` **terminologyExtensions**: readonly [`ArsTerminologyExtension`](ArsTerminologyExtension.md)[]
+
+Sponsor terms the event uses where ARS terminology is extensible.
 
 ***
 

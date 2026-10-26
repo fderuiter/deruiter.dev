@@ -180,6 +180,23 @@ function createTable(table: WarehouseTable, dialect: Dialect): string {
 }
 
 /**
+ * `CREATE SCHEMA` for each layer, then `CREATE TABLE` for each table, as
+ * separate statements without descriptions: Aurora DSQL runs one DDL
+ * statement per transaction (ADR 0070).
+ *
+ * @param schema - The schema or a subset of it, in schema order.
+ * @returns One PostgreSQL statement per element.
+ */
+export function postgresStatements(schema: WarehouseSchema): string[] {
+  const d = DIALECTS.postgres;
+  const layers = [...new Set(schema.tables.map((t) => t.layer))];
+  return [
+    ...layers.map((layer) => d.createSchema(layer)),
+    ...schema.tables.map((table) => createTable(table, d)),
+  ];
+}
+
+/**
  * Writes the warehouse DDL for one SQL dialect: schemas, then every table
  * with its columns, primary key, unique keys, foreign keys and the checks
  * that keep its date sequences in order, then its

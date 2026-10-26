@@ -165,6 +165,7 @@
 - [lib/clinical-platform/internal/warehouse/dates](lib/clinical-platform/internal/warehouse/dates/README.md)
 - [lib/clinical-platform/internal/warehouse/ddl](lib/clinical-platform/internal/warehouse/ddl/README.md)
 - [lib/clinical-platform/internal/warehouse/define](lib/clinical-platform/internal/warehouse/define/README.md)
+- [lib/clinical-platform/internal/warehouse/dsql](lib/clinical-platform/internal/warehouse/dsql/README.md)
 - [lib/clinical-platform/internal/warehouse/erd](lib/clinical-platform/internal/warehouse/erd/README.md)
 - [lib/clinical-platform/internal/warehouse/export](lib/clinical-platform/internal/warehouse/export/README.md)
 - [lib/clinical-platform/internal/warehouse/gold](lib/clinical-platform/internal/warehouse/gold/README.md)

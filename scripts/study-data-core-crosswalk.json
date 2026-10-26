@@ -388,6 +388,54 @@
       "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
     },
     {
+      "ruleId": "SD-064",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Dropped MH.MHTERM.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-065",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second MH record of one subject the same MHSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-066",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set MH.MHDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-067",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set MH.MHSTDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-068",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set MH.MHENDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-069",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to MHDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-070",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
       "ruleId": "AD-001",
       "core": [],
       "coverage": "none",

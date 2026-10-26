@@ -1,6 +1,6 @@
 /** Seeded, schedule-driven synthetic source data for the study-data pipeline. */
 import { uniformAt } from "@/lib/utils/prng";
-import { AE_DICTIONARY } from "../sdtm/ae-dictionary";
+import { AE_DICTIONARY, HISTORY_DICTIONARY } from "../sdtm/ae-dictionary";
 import { CM_DICTIONARY } from "../sdtm/cm-dictionary";
 import type {
   CellValue,
@@ -12,7 +12,17 @@ import type {
 
 type Row = Record<string, CellValue>;
 type Domain =
-  "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "EG" | "AE" | "CM" | "DS";
+  | "DM"
+  | "RAND"
+  | "SV"
+  | "EX"
+  | "VS"
+  | "LB"
+  | "EG"
+  | "AE"
+  | "CM"
+  | "MH"
+  | "DS";
 
 const BASE_DATE = "2030-01-01";
 
@@ -107,6 +117,22 @@ const RESCUE: Regimen = {
   frequency: "QD",
   indication: "Hypertension",
 };
+
+/** A reported condition, checked once here against the dictionary. */
+function condition(reported: string): string {
+  return HISTORY_DICTIONARY.find((entry) => entry.reported === reported)!
+    .reported;
+}
+
+/**
+ * Past conditions a subject may report that have resolved, with the share of
+ * subjects who do and how far back, in years, they happened. Round,
+ * illustrative figures, not prevalence statistics.
+ */
+const RESOLVED_CONDITIONS = [
+  { reported: condition("Appendicitis"), share: 0.06, years: [10, 30] },
+  { reported: condition("Pneumonia"), share: 0.08, years: [2, 8] },
+] as const;
 
 /** Medications taken for an adverse event, keyed by its preferred term. */
 const AE_TREATMENTS: Readonly<
@@ -290,6 +316,16 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("CMONGO", "Ongoing at end of study"),
     TEXT("CMAENO", "Related adverse event number"),
   ],
+  MH: [
+    SRC,
+    SUBJ,
+    TEXT("MHTERM", "Medical history term"),
+    TEXT("MHCAT", "Medical history category"),
+    DATE("MHDTC", "Date collected"),
+    DATE("MHSTDTC", "Onset date"),
+    DATE("MHENDTC", "End date"),
+    TEXT("MHONGO", "Ongoing at screening"),
+  ],
   AE: [
     SRC,
     SUBJ,
@@ -426,6 +462,7 @@ export function generateCollectedData(
     EG: [],
     AE: [],
     CM: [],
+    MH: [],
     DS: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
@@ -530,6 +567,7 @@ export function generateCollectedData(
 
     const baselineSbp = 142 + (pick("VS", "baseline-sbp") - 0.5) * 12;
     const qtcBaseline = 405 + (pick("EG", "baseline-qtc") - 0.5) * 30;
+    let screeningDate = addDays(baselineDate, offset(firstDay));
     for (const visit of design.visits) {
       if (screenFailure && visit.targetDay > 0) continue;
       const visitKey = visit.id;
@@ -554,6 +592,7 @@ export function generateCollectedData(
       );
       const actualDay = actualOffset >= 0 ? actualOffset + 1 : actualOffset;
       const visitDate = missed ? null : addDays(baselineDate, actualOffset);
+      if (visit.targetDay === firstDay && visitDate) screeningDate = visitDate;
       rows.SV.push({
         SRCID: sourceId(studyId, "SV", number, visitKey),
         USUBJID: subject,
@@ -661,6 +700,20 @@ export function generateCollectedData(
       });
     }
 
+    // A long-term medication's start, and the condition it treats, are
+    // remembered to the month only.
+    const startedYearsAgo = (key: string, domain = "CM") => {
+      const years = 1 + Math.floor(pick(domain, `${key}:years`) * 6);
+      const month = 1 + Math.floor(pick(domain, `${key}:month`) * 12);
+      return `${Number(consentDate.slice(0, 4)) - years}-${String(month).padStart(2, "0")}`;
+    };
+    // Whether a subject takes each medication is its own draw, so medical
+    // history can name the condition behind it even for a screen failure,
+    // whose medications are never recorded.
+    const washedOut = pick("CM", "washout") < 0.3;
+    const takes = (regimen: (typeof BACKGROUND_MEDICATIONS)[number]) =>
+      pick("CM", regimen.reported.toLowerCase()) < regimen.share;
+
     if (randomized) {
       const predose = !discontinued && pick("AE", "predose") < 0.07;
       const hasAe = predose || discontinued || pick("AE", "postdose") < 0.32;
@@ -713,20 +766,14 @@ export function generateCollectedData(
           CMAENO: null,
           ...fields,
         });
-      // A long-term medication's start is remembered to the month only.
-      const startedYearsAgo = (key: string) => {
-        const years = 1 + Math.floor(pick("CM", `${key}:years`) * 6);
-        const month = 1 + Math.floor(pick("CM", `${key}:month`) * 12);
-        return `${Number(consentDate.slice(0, 4)) - years}-${String(month).padStart(2, "0")}`;
-      };
-      if (pick("CM", "washout") < 0.3)
+      if (washedOut)
         medication("washout", WASHED_OUT, {
           CMSTDTC: startedYearsAgo("washout"),
           CMENDTC: addDays(baselineDate, -7),
         });
       for (const background of BACKGROUND_MEDICATIONS) {
         const key = background.reported.toLowerCase();
-        if (pick("CM", key) < background.share)
+        if (takes(background))
           medication(key, background, {
             CMSTDTC: startedYearsAgo(key),
             CMONGO: "Y",
@@ -755,9 +802,63 @@ export function generateCollectedData(
         });
       }
     }
+
+    // Medical history is taken at the screening visit for every subject who
+    // consented. Hypertension is the condition the study enrols; a subject
+    // who stopped an antihypertensive for the washout was diagnosed when
+    // they started it. The conditions behind long-term medications start
+    // with them, and are ongoing at screening.
+    const history = (key: string, fields: Row) =>
+      rows.MH.push({
+        SRCID: sourceId(studyId, "MH", number, key),
+        USUBJID: subject,
+        MHCAT: "GENERAL MEDICAL HISTORY",
+        MHDTC: screeningDate,
+        MHENDTC: null,
+        MHONGO: "Y",
+        ...fields,
+      });
+    history("primary", {
+      MHTERM: condition(WASHED_OUT.indication),
+      MHCAT: "PRIMARY DIAGNOSIS",
+      MHSTDTC: washedOut
+        ? startedYearsAgo("washout")
+        : startedYearsAgo("hypertension", "MH"),
+    });
+    for (const background of BACKGROUND_MEDICATIONS) {
+      const treats = HISTORY_DICTIONARY.some(
+        (entry) => entry.reported === background.indication
+      );
+      if (!treats || !takes(background)) continue;
+      const key = background.reported.toLowerCase();
+      history(key, {
+        MHTERM: background.indication,
+        MHSTDTC: startedYearsAgo(key),
+      });
+    }
+    for (const past of RESOLVED_CONDITIONS) {
+      const key = past.reported.toLowerCase();
+      if (pick("MH", key) >= past.share) continue;
+      const [from, to] = past.years;
+      const year =
+        Number(consentDate.slice(0, 4)) -
+        from -
+        Math.floor(pick("MH", `${key}:years`) * (to - from + 1));
+      const month = String(
+        1 + Math.floor(pick("MH", `${key}:month`) * 12)
+      ).padStart(2, "0");
+      // An old episode is remembered to the year; a recent one to the month.
+      const when = from >= 10 ? String(year) : `${year}-${month}`;
+      history(key, {
+        MHTERM: past.reported,
+        MHSTDTC: when,
+        MHENDTC: when,
+        MHONGO: "N",
+      });
+    }
   }
 
   return (
-    ["DM", "RAND", "SV", "EX", "VS", "LB", "EG", "AE", "CM", "DS"] as const
+    ["DM", "RAND", "SV", "EX", "VS", "LB", "EG", "AE", "CM", "DS", "MH"] as const
   ).map((domain) => dataset(domain, rows[domain]));
 }

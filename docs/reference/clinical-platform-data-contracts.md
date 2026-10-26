@@ -77,7 +77,7 @@ would carry.
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | Spend forecast facts | `gold.fct_spend_forecast` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.7.0 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.8.0 |
 
 ## Retention
 
@@ -146,6 +146,7 @@ would carry.
 | EX | Exposure | One record per constant-dosing interval per subject | STUDYID, USUBJID, EXSEQ | 13 |
 | CM | Concomitant/Prior Medications | One record per recorded intervention occurrence or constant-dosing interval per subject | STUDYID, USUBJID, CMSEQ | 21 |
 | AE | Adverse Events | One record per adverse event per subject | STUDYID, USUBJID, AESEQ | 31 |
+| MH | Medical History | One record per medical history event per subject | STUDYID, USUBJID, MHSEQ | 14 |
 | VS | Vital Signs | One record per vital sign measurement per visit per subject | STUDYID, USUBJID, VSSEQ | 17 |
 | LB | Laboratory Test Results | One record per lab test per visit per subject | STUDYID, USUBJID, LBSEQ | 23 |
 | EG | ECG Test Results | One record per ECG observation per replicate per time point or one record per ECG observation per beat per visit per subject | STUDYID, USUBJID, EGSEQ | 17 |

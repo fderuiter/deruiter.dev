@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.7.0"
+version: "2.8.0"
 status: active
 domain: "Study data"
 tags:
@@ -1325,6 +1325,140 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, USUBJID, AESEQ) identifies one row."
+  - id: MH
+    name: MH
+    physicalName: "m5/datasets/tabulations/sdtm/mh.json"
+    physicalType: file
+    logicalType: object
+    description: "Medical History"
+    dataGranularityDescription: "One record per medical history event per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: MHSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: MHTERM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reported Term for the Medical History"
+        required: true
+        classification: confidential
+      - name: MHDECOD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Dictionary-Derived Term"
+        required: false
+        classification: confidential
+      - name: MHCAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Category for Medical History"
+        required: false
+        classification: confidential
+      - name: MHBODSYS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Body System or Organ Class"
+        required: false
+        classification: confidential
+      - name: MHDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date/Time of History Collection"
+        required: false
+        classification: confidential
+      - name: MHSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date/Time of Medical History Event"
+        required: false
+        classification: confidential
+      - name: MHENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "End Date/Time of Medical History Event"
+        required: false
+        classification: confidential
+      - name: MHDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of History Collection"
+        required: false
+        classification: confidential
+      - name: MHENRTPT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "End Relative to Reference Time Point"
+        required: false
+        classification: confidential
+      - name: MHENTPT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "End Reference Time Point"
+        required: false
+        classification: confidential
+    quality:
+      - id: MH_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - MHSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, MHSEQ) identifies one row."
   - id: VS
     name: VS
     physicalName: "m5/datasets/tabulations/sdtm/vs.json"

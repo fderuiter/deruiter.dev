@@ -40,6 +40,10 @@ export const SDTM_METHODS = {
     "Looked up from the reported name (CMTRT) in the study's fictional drug dictionary, which has WHODrug's shape but is not WHODrug: standardized names are generic drug names, class names are plain descriptions and class codes are synthetic, starting with Z, a letter the ATC classification does not use. Missing when the reported name is not in the dictionary.",
   CM_ONGOING:
     "When the medication was marked ongoing at the end of the subject's participation, CMENRTPT is ONGOING (Relation to Reference Period, C66728) and CMENTPT is END OF STUDY; both are missing otherwise.",
+  MH_DICTIONARY_CODING:
+    "Looked up from the reported term (MHTERM) in the study's fictional event dictionary, the one adverse events are coded with, which has MedDRA's shape but is not MedDRA: MHDECOD is the preferred term and MHBODSYS its primary system organ class, and the codes are synthetic, from 99000000. Missing when the reported term is not in the dictionary.",
+  MH_ONGOING:
+    "When the condition was marked ongoing at the screening visit, MHENRTPT is ONGOING (Relation to Reference Period, C66728) and MHENTPT is SCREENING; both are missing otherwise.",
   CT_RELATIONSHIP_MAPPING:
     "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
   USDM_ASSESSMENT:
@@ -50,7 +54,7 @@ export const SDTM_METHODS = {
   LAST_PRE_DOSE:
     "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
   LAST_PARTICIPATION:
-    "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored.",
+    "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored.",
   DEATH_DATE:
     "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
   DEATH_FLAG:

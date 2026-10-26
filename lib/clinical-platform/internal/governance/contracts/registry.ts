@@ -352,6 +352,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     // 2.5.0 (#2942): the SDTM EG dataset.
     // 2.6.0 (#2943): the ADaM ADEG dataset.
     // 2.7.0 (#2961): the SDTM CM dataset.
-    version: "2.7.0",
+    // 2.8.0 (#2963): the SDTM MH dataset.
+    version: "2.8.0",
   },
 };

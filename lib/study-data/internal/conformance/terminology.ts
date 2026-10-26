@@ -150,6 +150,7 @@ const CODELISTS = [
     term("EG", "C49626"),
     term("EX", "C49587"),
     term("LB", "C49592"),
+    term("MH", "C49603"),
     term("SV", "C49617"),
     term("TA", "C49618"),
     term("TE", "C49619"),

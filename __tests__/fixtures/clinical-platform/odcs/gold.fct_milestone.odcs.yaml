@@ -135,5 +135,6 @@ customProperties:
       - silver.ctms_milestone
   - property: consumers
     value:
+      - "metric:protocol_final_to_fpi_days"
       - "metric:fpi_to_lpi_days"
       - "metric:lplv_to_dbl_days"

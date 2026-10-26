@@ -1031,6 +1031,28 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     },
     2881
   ),
+  define(
+    {
+      id: "protocol_final_to_fpi_days",
+      name: "Protocol final to first subject in",
+      description:
+        "Days from protocol finalisation to the first subject's enrollment in one study: study start-up, through regulatory approval and the first site's activation. A study that has not reached both milestones has no value.",
+      formula: {
+        kind: "milestone-span",
+        from: "protocol-final",
+        to: "first-subject-in",
+      },
+      grain: "study",
+      allowedDimensions: STUDY_DIMENSIONS,
+      unit: "days",
+      format: WHOLE,
+      owner: "Portfolio Management Lead",
+      steward: "Portfolio Data Steward",
+      glossaryTerm: "study-start-up-term",
+      displayFolder: "Milestones",
+    },
+    2911
+  ),
   define({
     id: "fpi_to_lpi_days",
     name: "First subject in to last subject in",

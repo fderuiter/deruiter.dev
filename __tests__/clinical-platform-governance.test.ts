@@ -340,6 +340,7 @@ describe("business glossary", () => {
       "screening-term",
       "screen-failure-term",
       "enrollment-term",
+      "study-start-up-term",
       "enrollment-period-term",
       "randomisation-term",
       "early-termination-term",

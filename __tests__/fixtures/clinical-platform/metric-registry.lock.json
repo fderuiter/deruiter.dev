@@ -1743,6 +1743,29 @@
           "therapeutic_area",
           "phase",
           "product_type",
+          "operating_model"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "from": "protocol-final",
+          "kind": "milestone-span",
+          "to": "first-subject-in"
+        },
+        "grain": "study",
+        "unit": "days"
+      },
+      "id": "protocol_final_to_fpi_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
           "operating_model",
           "site",
           "country",

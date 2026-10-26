@@ -16,7 +16,6 @@ import type {
   OperationsGap,
   OperationsLevel,
   OperationsMember,
-  OperationsMilestone,
   OperationsRunByOption,
   OperationsScope,
   OperationsSection,
@@ -35,6 +34,7 @@ import { formulaSources } from "../semantic/plan";
 import { METRIC_GAPS, METRIC_REGISTRY } from "../semantic/registry";
 import { buildReport } from "./build";
 import { formatMetricValue } from "./format";
+import { MILESTONE_TABLES, studyMilestones } from "./milestones";
 import { operationsRisk, operationsRiskTables } from "./operations-risk";
 
 /** Run-by choice that keeps the studies the sponsor runs itself. */
@@ -495,12 +495,6 @@ const SECTIONS: readonly SectionPlan[] = [
 function text(row: WarehouseRow, column: string): string {
   const value = row[column];
   return typeof value === "string" ? value : String(value ?? "");
-}
-
-/** `20240603` as `2024-06-03`. */
-function isoDate(key: number): string {
-  const digits = String(key);
-  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
 }
 
 function rows(warehouse: Warehouse, table: string): readonly WarehouseRow[] {
@@ -982,34 +976,6 @@ function members(warehouse: Warehouse, resolved: Resolved): OperationsMember[] {
   return [];
 }
 
-function milestones(
-  warehouse: Warehouse,
-  study: WarehouseRow
-): OperationsMilestone[] {
-  const kinds = new Map(
-    rows(warehouse, "gold.dim_milestone").map((m) => [m.milestone_key, m])
-  );
-  return rows(warehouse, "gold.fct_milestone")
-    .filter((m) => m.study_key === study.study_key)
-    .slice()
-    .sort(
-      (a, b) =>
-        Number(kinds.get(a.milestone_key)?.milestone_sequence) -
-        Number(kinds.get(b.milestone_key)?.milestone_sequence)
-    )
-    .map((m) => ({
-      kind: text(kinds.get(m.milestone_key) ?? {}, "milestone_kind"),
-      label: text(m, "milestone_label"),
-      planned: isoDate(Number(m.planned_date_key)),
-      actual:
-        typeof m.actual_date_key === "number"
-          ? isoDate(m.actual_date_key)
-          : null,
-      varianceDays:
-        typeof m.variance_days === "number" ? m.variance_days : null,
-    }));
-}
-
 /** The current sites of the study in scope, narrowed to its country or site, with their country codes. */
 function scopeSites(
   warehouse: Warehouse,
@@ -1028,9 +994,6 @@ function scopeSites(
       .map((s) => [text(s, "site_id"), text(s, "country_code")])
   );
 }
-
-/** Tables the milestone table reads, outside any metric. */
-const MILESTONE_TABLES = ["gold.dim_milestone", "gold.fct_milestone"];
 
 /**
  * The data products behind the numbers shown: every gold table a shown
@@ -1103,9 +1066,9 @@ export function operationsDashboard(
     gaps: section.gaps(study),
   }));
   const glance = buildReport(warehouse, glanceSpec(resolved.level, filters));
-  const studyMilestones =
+  const milestones =
     resolved.level === "study" && resolved.study !== null
-      ? milestones(warehouse, resolved.study)
+      ? studyMilestones(warehouse, resolved.study.study_key)
       : null;
   const risk =
     resolved.study === null
@@ -1127,13 +1090,13 @@ export function operationsDashboard(
     study,
     glance,
     sections,
-    milestones: studyMilestones,
+    milestones,
     risk,
     sources: sources(
       [glance, ...sections.flatMap((section) => section.reports)].map(
         (r) => r.spec
       ),
-      studyMilestones !== null,
+      milestones !== null,
       risk !== null
     ),
   };

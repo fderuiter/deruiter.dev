@@ -121,6 +121,17 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     cec_events_adjudicated: 28,
     cec_adjudication_backlog: 11,
     cec_adjudication_time_median: 27.5,
+    // Study start-up (#2911): every study has reached both milestones.
+    protocol_final_to_fpi_days: {
+      "DEMO-101": 90,
+      "DEMO-201": 90,
+      "DEMO-202": 132,
+      "DEMO-203": 147,
+      "DEMO-301": 93,
+      "DEMO-302": 185,
+      "DEV-401": 114,
+      "DEV-402": 86,
+    },
     fpi_to_lpi_days: {
       "DEMO-101": 128,
       "DEMO-201": 457,
@@ -135,8 +146,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 47 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(47);
+  it("defines 48 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(48);
     expect(checkMetricRegistry()).toEqual([]);
   });
 

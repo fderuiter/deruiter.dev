@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { IconDeviceTv } from "@tabler/icons-react";
@@ -17,9 +23,23 @@ import {
   useInputModality,
   type Handedness,
 } from "@/components/arcade/mobile";
+import {
+  ActionCluster,
+  DOCK_KEY_CLASS,
+  DpadDock,
+  type DockSize,
+} from "@/components/arcade/mobile/docks";
+import { BottomSheet } from "@/components/arcade/mobile/ui";
 import { PhoneStage, TabletStage } from "@/components/arcade/stage";
 import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/arcade/DynamicCRTCalibrationModal";
-import { useActionInput, type ActionInput } from "@/lib/arcade";
+import {
+  ActionSinkProvider,
+  useActionInput,
+  useDeviceSettings,
+  type ActionDefinition,
+  type ActionInput,
+  type ActionMap,
+} from "@/lib/arcade";
 import { triggerHaptic } from "@/lib/haptics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { DarknetMarket } from "@/components/retro-labyrinth/parts/DarknetMarket";
@@ -63,6 +83,8 @@ import {
   STAGE_1_MAZE,
   type CRTThemeId,
   type CyberdeckClassId,
+  type Weapon,
+  type WeaponId,
 } from "@/lib/dungeon";
 import {
   LABYRINTH_ACTIONS,
@@ -109,6 +131,22 @@ const PHOSPHOR_THEME_OPTIONS: { id: CRTThemeId; label: string }[] = [
 const HOTBAR_NAME_CLASS =
   "sr-only @4xl:not-sr-only group-focus-visible:not-sr-only";
 
+/** The phone d-pad's arrows, each one of the map's move actions (#2919). */
+const PHONE_DPAD_ACTIONS = {
+  up: "move-up",
+  down: "move-down",
+  left: "move-left",
+  right: "move-right",
+} as const satisfies Record<string, LabyrinthActionName>;
+
+/**
+ * The narrowest phone window each key size fits (#2919): the d-pad and the
+ * action cluster are three keys wide each, and the maze keeps at least half
+ * the width between them. A narrower phone in landscape steps the keys
+ * down, to the 44px floor at the smallest.
+ */
+const PHONE_DOCK_MIN_WIDTH = { md: 720, lg: 816 } as const;
+
 /** How long a phone tool toast stays up before it clears (ADR 0061). */
 const PHONE_TOAST_MS = 2200;
 
@@ -118,6 +156,52 @@ const RESUME_HINT = controlHint({
   touch: "Tap Resume",
   desktop: "P, Esc or Enter to resume",
 });
+
+/** One loadout slot as a touch key shows it. */
+interface ToolSlot {
+  readonly weaponId: WeaponId | undefined;
+  /** The short name on the key, or "---" for an empty slot. */
+  readonly label: string;
+  readonly hasAmmo: boolean;
+}
+
+function toolSlot(
+  loadout: readonly WeaponId[],
+  weapons: Readonly<Record<WeaponId, Weapon>>,
+  slotIdx: number
+): ToolSlot {
+  const weaponId = loadout[slotIdx];
+  const weapon = weaponId ? weapons[weaponId] : null;
+  return {
+    weaponId,
+    label: weaponId
+      ? PHONE_TOOL_LABELS[weaponId] ||
+        WEAPON_SHORT_LABELS[weaponId] ||
+        weapon?.name ||
+        weaponId
+      : "---",
+    hasAmmo: !!weapon && weapon.ammo > 0,
+  };
+}
+
+/**
+ * The action map the phone docks name their keys from (#2919): the game's
+ * own map, with each tool named for the class's loadout and the EMP key
+ * short enough for a 44px key.
+ */
+function phoneActionMap(
+  slots: readonly ToolSlot[]
+): ActionMap<LabyrinthActionName> {
+  const actions: Record<LabyrinthActionName, ActionDefinition> = {
+    ...LABYRINTH_ACTIONS.actions,
+  };
+  slots.forEach((slot, slotIdx) => {
+    const action = `tool-${slotIdx + 1}` as LabyrinthActionName;
+    actions[action] = { ...actions[action], label: slot.label };
+  });
+  actions.emp = { ...actions.emp, label: "EMP" };
+  return { ...LABYRINTH_ACTIONS, actions };
+}
 
 /** Props for {@link LabyrinthLayout}. */
 interface LabyrinthLayoutProps {
@@ -242,6 +326,32 @@ export function LabyrinthLayout({
     pauseController.pause("sheet");
     return () => pauseController.resume("sheet");
   }, [sheetHoldsPause, pauseController]);
+  // The phone's More sheet (#2919) holds tools 4 and 5 and the Market. A
+  // pick there waits for the sheet's pause to lift, so it acts on the
+  // running room rather than the paused one.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const pendingMoreRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (moreOpen || gameStatus !== "playing") return;
+    const pending = pendingMoreRef.current;
+    pendingMoreRef.current = null;
+    pending?.();
+  }, [moreOpen, gameStatus]);
+  const { dockSize: chosenDockSize } = useDeviceSettings();
+  const roomForMd = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.md}px)`);
+  const roomForLg = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.lg}px)`);
+  // A phone held upright shows the rotate prompt, not the maze, so its keys
+  // keep the chosen size.
+  let dockSize: DockSize = chosenDockSize;
+  if (!portraitView) {
+    if (dockSize === "lg" && !roomForLg) dockSize = "md";
+    if (dockSize === "md" && !roomForMd) dockSize = "sm";
+  }
+  const toolSlots = useMemo(
+    () => [0, 1, 2, 3, 4].map((slot) => toolSlot(loadout, weapons, slot)),
+    [loadout, weapons]
+  );
+  const phoneActions = useMemo(() => phoneActionMap(toolSlots), [toolSlots]);
   const [handedness, setHandedness] = useState<Handedness>("right");
   const swipeStartRef = useRef<{ id: number; x: number; y: number } | null>(
     null
@@ -1527,6 +1637,117 @@ export function LabyrinthLayout({
     </div>
   );
 
+  // The phone's action column (#2919): the class's first three tools and EMP
+  // in a thumb arc, then Exploit and More. A starter slot holding EMP would
+  // duplicate the EMP key, so the key stands for it alone. Each key sends its
+  // action through the stage's action sink, named from the action map.
+  const phoneClusterActions: LabyrinthActionName[] = [
+    ...toolSlots
+      .slice(0, 3)
+      .flatMap((slot, slotIdx) =>
+        slot.weaponId && slot.weaponId !== "emp_blast"
+          ? [`tool-${slotIdx + 1}` as LabyrinthActionName]
+          : []
+      ),
+    "emp",
+  ];
+  const phoneClusterDisabled: Partial<Record<LabyrinthActionName, boolean>> =
+    Object.fromEntries(
+      toolSlots
+        .slice(0, 3)
+        .map((slot, slotIdx) => [`tool-${slotIdx + 1}`, !slot.hasAmmo])
+    );
+  const phoneKeyClass = DOCK_KEY_CLASS[dockSize];
+  const phoneActionDock = (
+    <div className="flex flex-col items-center gap-1">
+      <ActionCluster
+        map={phoneActions}
+        actions={phoneClusterActions}
+        disabled={phoneClusterDisabled}
+        handedness={handedness}
+        size={dockSize}
+      />
+      <div className="flex gap-1">
+        <TouchButton
+          action="exploit"
+          label={phoneActions.actions.exploit.label}
+          className={`${phoneKeyClass} flex items-center justify-center rounded-xl border border-cyan-700/60 bg-cyan-950/50 text-xs font-bold text-cyan-200`}
+        >
+          {phoneActions.actions.exploit.label}
+        </TouchButton>
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={moreOpen}
+          className={`${phoneKeyClass} flex items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-200 touch-manipulation active:scale-[0.98]`}
+        >
+          More
+        </button>
+      </div>
+    </div>
+  );
+
+  // Picks in the More sheet close it first; the pick runs once the room
+  // plays again.
+  const pickFromMore = (pick: () => void) => {
+    pendingMoreRef.current = pick;
+    setMoreOpen(false);
+  };
+  const moreSheet = (
+    <BottomSheet
+      open={phoneCabinet && phoneDevice && moreOpen}
+      onClose={() => setMoreOpen(false)}
+      title="More"
+      initialSnap="half"
+      testId="labyrinth-more-sheet"
+    >
+      <div className="grid grid-cols-3 gap-2 font-mono">
+        {[3, 4].map((slotIdx) => {
+          const slot = toolSlots[slotIdx];
+          // The name starts with the key's visible text, so speech input
+          // can say what it reads.
+          const key = `T${slotIdx + 1} ${slot.label}`;
+          let label = `${key}: tool ${slotIdx + 1} is empty`;
+          if (slot.weaponId) {
+            label = slot.hasAmmo
+              ? `${key}: fire tool ${slotIdx + 1}`
+              : `${key}: tool ${slotIdx + 1} is out of ammo`;
+          }
+          return (
+            <button
+              key={`more-tool-${slotIdx}`}
+              type="button"
+              aria-label={label}
+              disabled={!slot.hasAmmo}
+              onClick={() => pickFromMore(() => intents.fireTool(slotIdx))}
+              className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-2 text-xs font-bold text-amber-300 touch-manipulation active:scale-[0.98] disabled:opacity-40"
+            >
+              <span className="text-amber-200/80">T{slotIdx + 1}</span>{" "}
+              <span className="max-w-full truncate">{slot.label}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-label={
+            marketOpen
+              ? "Market: open the darknet market"
+              : `Market: ${MARKET_CLOSED_REASON}`
+          }
+          disabled={!marketOpen}
+          onClick={() => pickFromMore(() => openOverlay("darknet_shop"))}
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 px-2 text-xs font-bold text-amber-300 touch-manipulation active:scale-[0.98] disabled:opacity-40"
+        >
+          {phoneActions.actions.market.label}
+        </button>
+      </div>
+      {!marketOpen && (
+        <p className="mt-2 text-xs text-zinc-400">{MARKET_CLOSED_REASON}</p>
+      )}
+    </BottomSheet>
+  );
+
   // The phone stage (#2918): the HUD row over the d-pad column, the maze and
   // the tool column. The phone only plays landscape (it asks a portrait
   // phone to turn), and the stage mirrors the columns for left-handed
@@ -1548,16 +1769,17 @@ export function LabyrinthLayout({
       // them back (ADR 0061).
       moveDock={
         <TouchControlsGate>
-          {/* 44px keys beside the maze; a phone held upright, behind the
-              rotate prompt, keeps the 48px keys. */}
-          <HoldDpad
-            onMove={intents.move}
-            compact={!portraitView}
-            paused={gameStatus !== "playing" || optionsOpen}
+          {/* The keys follow the device's key size; a held arrow repeats
+              at 220ms, then every 140ms. */}
+          <DpadDock
+            map={phoneActions}
+            actions={PHONE_DPAD_ACTIONS}
+            size={dockSize}
+            paused={gameStatus !== "playing" || optionsOpen || moreOpen}
           />
         </TouchControlsGate>
       }
-      actionDock={<TouchControlsGate>{touchActionGrid}</TouchControlsGate>}
+      actionDock={<TouchControlsGate>{phoneActionDock}</TouchControlsGate>}
     >
       {canvasFrameNode}
     </PhoneStage>
@@ -1682,11 +1904,23 @@ export function LabyrinthLayout({
           />
         )}
         {!phoneCabinet && <RoomHud />}
-        {phoneCabinet
-          ? phoneDevice
-            ? phoneStage
-            : tabletStage
-          : canvasFrameNode}
+        {phoneCabinet ? (
+          phoneDevice ? (
+            // The phone docks send their actions to the same handler the
+            // keys and the gamepad use (#2919).
+            <ActionSinkProvider
+              actions={LABYRINTH_ACTIONS}
+              onAction={handleAction}
+            >
+              {phoneStage}
+              {moreSheet}
+            </ActionSinkProvider>
+          ) : (
+            tabletStage
+          )
+        ) : (
+          canvasFrameNode
+        )}
         {!phoneCabinet && footerNode}
       </div>
 

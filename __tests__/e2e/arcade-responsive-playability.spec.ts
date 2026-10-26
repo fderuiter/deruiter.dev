@@ -76,7 +76,7 @@ for (const view of views) {
       }
       if (game === "retro-labyrinth" && view.name === "landscape") {
         await expectFullyVisible(
-          cabinet.getByRole("button", { name: "Move Down", exact: true }),
+          cabinet.getByRole("button", { name: /^Move down$/i }),
           view
         );
       }

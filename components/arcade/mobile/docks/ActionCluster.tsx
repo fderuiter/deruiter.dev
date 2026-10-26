@@ -26,6 +26,8 @@ export interface ActionClusterProps<A extends string> {
   handedness?: Handedness;
   /** Defaults to `md`. */
   size?: DockSize;
+  /** Actions that cannot act now, such as a tool out of ammo. */
+  disabled?: Partial<Record<A, boolean>>;
   className?: string;
 }
 
@@ -55,6 +57,7 @@ export function ActionCluster<A extends string>({
   icons = {},
   handedness = "right",
   size = "md",
+  disabled = {},
   className = "",
 }: ActionClusterProps<A>) {
   const dockRef = useDockHeight<HTMLDivElement>();
@@ -80,6 +83,7 @@ export function ActionCluster<A extends string>({
             key={action}
             action={action}
             label={label}
+            disabled={disabled[action]}
             data-dock-action={action}
             style={
               single
@@ -89,7 +93,7 @@ export function ActionCluster<A extends string>({
                     gridColumn: handedness === "left" ? 4 - column : column,
                   }
             }
-            className={`${DOCK_KEY_CLASS[size]} ${DOCK_KEY_STYLE} flex-col gap-0.5 rounded-full`}
+            className={`${DOCK_KEY_CLASS[size]} ${DOCK_KEY_STYLE} flex-col gap-0.5 rounded-full disabled:opacity-40`}
           >
             {icons[action] && (
               <span aria-hidden="true" className="inline-flex">

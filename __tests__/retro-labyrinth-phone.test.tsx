@@ -112,11 +112,9 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     );
     // The score is in the status subtree; the phone HUD leaves it out (#2918).
     expect(container.querySelector('output[for="retro-score"]')).not.toBeNull();
-    expect(container.querySelector("[data-hold-dpad]")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Move Up" })).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "EMP: fire an EMP burst" })
-    ).toBeTruthy();
+    expect(container.querySelector('[data-dock-preset="dpad"]')).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Move up" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "EMP" })).toBeTruthy();
     // The inline disclosure is desktop only. The phone opens options as a sheet.
     expect(container.querySelector(".arcade-labyrinth-options")).toBeNull();
     expect(screen.queryByRole("button", { name: "Tap" })).toBeNull();
@@ -162,10 +160,11 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(screen.queryByTestId("labyrinth-phone-toast")).toBeNull();
 
     act(() => {
-      fireEvent.pointerDown(
-        screen.getByRole("button", { name: "EMP: fire an EMP burst" }),
-        { pointerId: 1, isPrimary: true, button: 0 }
-      );
+      fireEvent.pointerDown(screen.getByRole("button", { name: "EMP" }), {
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+      });
     });
 
     const toast = screen.getByTestId("labyrinth-phone-toast");
@@ -178,10 +177,11 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
   it("answers an Exploit press with a toast, even when no tool has ammo to fire", () => {
     renderGame({ touch: true });
     act(() => {
-      fireEvent.pointerDown(
-        screen.getByRole("button", { name: /Exploit: cycle/ }),
-        { pointerId: 1, isPrimary: true, button: 0 }
-      );
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Exploit" }), {
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+      });
     });
     expect(
       screen.getByTestId("labyrinth-phone-toast").textContent
@@ -203,6 +203,7 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(container.querySelector(".arcade-labyrinth-options")).not.toBeNull();
     expect(screen.queryByTestId("labyrinth-phone-floor")).toBeNull();
     expect(container.querySelector("[data-hold-dpad]")).toBeNull();
+    expect(container.querySelector("[data-dock-preset]")).toBeNull();
   });
 
   it("the closed desktop disclosure is inert, so its controls cannot take focus", () => {
@@ -368,7 +369,7 @@ describe("RetroLabyrinth phone input (ADR 0061)", () => {
   it("the phone d-pad is wired into the game: a press moves the player", () => {
     renderGame({ touch: true });
     const before = playerLocation();
-    const moved = ["Move Up", "Move Down", "Move Left", "Move Right"].some(
+    const moved = ["Move up", "Move down", "Move left", "Move right"].some(
       (name) => {
         const button = screen.getByRole("button", { name });
         fireEvent.pointerDown(button, { pointerId: 3, pointerType: "touch" });
@@ -377,6 +378,43 @@ describe("RetroLabyrinth phone input (ADR 0061)", () => {
       }
     );
     expect(moved, "some direction should step the player").toBe(true);
+  });
+
+  it("the action cluster holds the first tools and EMP, and More opens a sheet with tools 4 and 5 and the Market (#2919)", async () => {
+    const { container } = renderGame({ touch: true });
+    const cluster = container.querySelector('[data-dock-preset="cluster"]');
+    expect(cluster).not.toBeNull();
+    const clusterKeys = Array.from(cluster!.querySelectorAll("button")).map(
+      (key) => key.getAttribute("aria-label") ?? key.textContent
+    );
+    expect(clusterKeys.length).toBeLessThanOrEqual(4);
+    expect(clusterKeys.at(-1)).toBe("EMP");
+    expect(screen.getByRole("button", { name: "Exploit" })).toBeTruthy();
+    // The d-pad names its arrows from the action map.
+    expect(
+      container
+        .querySelector('[data-dock-preset="dpad"]')
+        ?.getAttribute("aria-label")
+    ).toBe("Directional pad");
+
+    const more = screen.getByRole("button", { name: "More" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    more.focus();
+    fireEvent.click(more);
+    const sheet = screen.getByRole("dialog", { name: "More" });
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: /tool 4/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /tool 5/ })).toBeTruthy();
+    // Room 01 of a run is not the rest stop, so the Market is shut.
+    const market = screen.getByRole("button", { name: /^Market: / });
+    expect((market as HTMLButtonElement).disabled).toBe(true);
+    await waitFor(() =>
+      expect(sheet.contains(document.activeElement)).toBe(true)
+    );
+
+    fireEvent.keyDown(sheet, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "More" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(more));
   });
 
   it("the options sheet is a modal dialog: focus moves in, Escape closes it, and focus returns to Options", async () => {
@@ -408,7 +446,7 @@ describe("RetroLabyrinth phone input (ADR 0061)", () => {
     vi.useFakeTimers();
     try {
       renderGame({ touch: true });
-      const right = screen.getByRole("button", { name: "Move Right" });
+      const right = screen.getByRole("button", { name: "Move right" });
       fireEvent.pointerDown(right, { pointerId: 4, pointerType: "touch" });
       act(() => {
         fireEvent.click(screen.getByRole("button", { name: "Options" }));

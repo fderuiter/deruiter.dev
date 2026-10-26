@@ -10,5 +10,9 @@
   "ADLB": {
     "rows": 2640,
     "sha256": "19dc02b5126d348a5e48c84412ebef7dd08ca6f50cd37527c4433d1e7d6e566f"
+  },
+  "ADEG": {
+    "rows": 1980,
+    "sha256": "d22f1dafb980992f505ee5632696aea0177edc04c5177338d99323df040a2495"
   }
 }

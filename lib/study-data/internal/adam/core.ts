@@ -171,7 +171,7 @@ function groupBySubject(
 function baseline(
   records: readonly OriginRow[],
   firstDose: string | null,
-  domain: "VS" | "LB",
+  domain: "VS" | "LB" | "EG",
   param: string
 ): OriginRow | null {
   if (!firstDose) return null;
@@ -365,14 +365,74 @@ function attachBaseline(row: AnalysisRow, baselineValue: number | null): void {
       : null;
 }
 
+/** ADEG's QTcF outlier criteria (ICH E14 categorical analysis). */
+const QTCF_CRITERIA = {
+  CRIT1: { text: "QTcF > 500 ms", exceeds: 500, variable: "AVAL" },
+  CRIT2: {
+    text: "QTcF increase from baseline > 60 ms",
+    exceeds: 60,
+    variable: "CHG",
+  },
+} as const;
+
+/** The QTcF parameter ADEG derives, and the collected ones it comes from. */
+const QTCF = {
+  code: "QTCFAG",
+  name: "QTcF Interval, Aggregate",
+  qt: "QTAG",
+  rr: "RRAG",
+} as const;
+
+/**
+ * Fridericia's QTcF for each ECG that has both a QT and an RR result:
+ * QT / (RR / 1000)^(1/3), rounded to 0.1 ms. The derived record carries
+ * the QT record's identifiers, so its SRCSEQ points at the QT result, and
+ * the lineage of both inputs.
+ */
+function qtcfRecords(records: readonly OriginRow[]): OriginRow[] {
+  const ecgs = new Map<string, OriginRow[]>();
+  for (const record of records) {
+    const key = `${string(record.row.USUBJID)}|${string(record.row.EGDTC)}|${number(record.row.VISITNUM)}`;
+    ecgs.set(key, [...(ecgs.get(key) ?? []), record]);
+  }
+  const derived: OriginRow[] = [];
+  for (const ecg of ecgs.values()) {
+    const result = (code: string) =>
+      ecg.find(
+        ({ row }) =>
+          row.EGTESTCD === code &&
+          number(row.EGSTRESN) !== null &&
+          row.EGSTRESU === "ms"
+      );
+    const qt = result(QTCF.qt);
+    const rr = result(QTCF.rr);
+    const rrValue = number(rr?.row.EGSTRESN);
+    if (!qt || !rr || rrValue === null || rrValue <= 0) continue;
+    const value = number(qt.row.EGSTRESN)! / Math.cbrt(rrValue / 1000);
+    derived.push({
+      row: {
+        ...qt.row,
+        EGTESTCD: QTCF.code,
+        EGTEST: QTCF.name,
+        EGSTRESN: Math.round(value * 10) / 10,
+      },
+      lineage: [...new Set([...qt.lineage, ...rr.lineage])],
+    });
+  }
+  return derived;
+}
+
 function deriveBdsDomain(
-  domain: "VS" | "LB",
+  domain: "VS" | "LB" | "EG",
   definition: StudyDefinition,
   sdtm: readonly Dataset[],
   adsl: Dataset
 ): Dataset {
   const source = sdtm.find((dataset) => dataset.name === domain);
-  const sourceRecords = records(source);
+  const collectedRecords = records(source);
+  const derivedRecords = domain === "EG" ? qtcfRecords(collectedRecords) : [];
+  const derivedRows = new Set(derivedRecords.map(({ row }) => row));
+  const sourceRecords = [...collectedRecords, ...derivedRecords];
   const adslBySubject = new Map(
     rows(adsl).map((row) => [string(row.USUBJID), row])
   );
@@ -409,6 +469,9 @@ function deriveBdsDomain(
           ASEQ: null,
           PARAMCD: param,
           PARAM: record[`${domain}TEST`],
+          ...(domain === "EG"
+            ? { PARAMTYP: derivedRows.has(record) ? "DERIVED" : null }
+            : {}),
           AVAL: number(record[`${domain}STRESN`]),
           AVALU: record[`${domain}STRESU`],
           ADT: observedDate,
@@ -436,6 +499,18 @@ function deriveBdsDomain(
           SRCSEQ: number(record[`${domain}SEQ`]),
         };
         attachBaseline(row, baseValue);
+        if (domain === "EG")
+          for (const [name, criterion] of Object.entries(QTCF_CRITERIA)) {
+            const value = number(row[criterion.variable]);
+            const applies = param === QTCF.code;
+            row[name] = applies ? criterion.text : null;
+            row[`${name}FL`] =
+              applies && value !== null
+                ? value > criterion.exceeds
+                  ? "Y"
+                  : "N"
+                : null;
+          }
         observed.push({ row, lineage: sourceRecord.lineage });
       }
       const candidatesByVisit = new Map<number, typeof observed>();
@@ -475,7 +550,9 @@ function deriveBdsDomain(
                   activity.id === cell.activityId &&
                   activity.domain === domain &&
                   activity.assessments.some(
-                    (assessment) => assessment.testCode === param
+                    (assessment) =>
+                      assessment.testCode ===
+                      (param === QTCF.code ? QTCF.qt : param)
                   )
               )
           )
@@ -525,19 +602,54 @@ function deriveBdsDomain(
     sequence.set(subject, next);
     item.row.ASEQ = next;
   }
+  const name = `AD${domain}` as const;
+  const variables =
+    domain === "EG"
+      ? BDS_VARIABLES.flatMap((variable) =>
+          variable.name === "PARAM"
+            ? [
+                variable,
+                column("PARAMTYP", "Parameter Type", "text", "Assigned"),
+              ]
+            : variable.name === "BNRIND"
+              ? [
+                  variable,
+                  ...Object.keys(QTCF_CRITERIA).flatMap((name, index) => [
+                    column(
+                      name,
+                      `Analysis Criterion ${index + 1}`,
+                      "text",
+                      "Assigned"
+                    ),
+                    column(
+                      `${name}FL`,
+                      `Criterion ${index + 1} Evaluation Result Flag`,
+                      "text",
+                      "Derived",
+                      "ADEG_CRIT"
+                    ),
+                  ]),
+                ]
+              : [variable]
+        )
+      : BDS_VARIABLES;
   return table(
-    domain === "VS" ? "ADVS" : "ADLB",
-    domain === "VS" ? "Vital Signs Analysis" : "Laboratory Analysis",
+    name,
+    {
+      VS: "Vital Signs Analysis",
+      LB: "Laboratory Analysis",
+      EG: "ECG Analysis",
+    }[domain],
     {
       class: "BDS",
       structure:
         "One or more records per subject per parameter per analysis visit",
       codelists: {
-        PARAMCD: domain === "VS" ? "ADVS.PARAMCD" : "ADLB.PARAMCD",
+        PARAMCD: `${name}.PARAMCD`,
         AVALU: domain === "VS" ? "VSRESU" : "UNIT",
       },
     },
-    BDS_VARIABLES.map((variable) => {
+    variables.map((variable) => {
       if (variable.name === "PARAMCD" || variable.name === "PARAM")
         return {
           ...variable,
@@ -552,7 +664,7 @@ function deriveBdsDomain(
       if (variable.name === "ANRIND")
         return domain === "LB"
           ? { ...variable, source: "LB.LBNRIND" }
-          : // VS has no reference ranges, so ADVS has no source for ANRIND.
+          : // VS and EG carry no reference ranges, so ANRIND has no source.
             { ...variable, origin: "Not Available" as const };
       return variable;
     }),
@@ -571,5 +683,6 @@ export function deriveAdamCore(
     adsl,
     deriveBdsDomain("VS", definition, sdtm, adsl),
     deriveBdsDomain("LB", definition, sdtm, adsl),
+    deriveBdsDomain("EG", definition, sdtm, adsl),
   ];
 }

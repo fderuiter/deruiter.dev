@@ -739,6 +739,9 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   adamRule("AD-003", "ADVS", "base"),
   adamRule("AD-004", "ADVS", "chg"),
   adamRule("AD-005", "ADAE", "trtemfl"),
+  adamRule("AD-011", "ADEG", "base"),
+  adamRule("AD-012", "ADEG", "chg"),
+  adamSourceRule("AD-013", "ADEG"),
   ...(["DM", "SV", "EX", "AE", "VS", "LB", "DS", "SUPPDM"] as const).map(
     (domain, index) => sourceLineageRule(`SD-0${40 + index}`, domain)
   ),

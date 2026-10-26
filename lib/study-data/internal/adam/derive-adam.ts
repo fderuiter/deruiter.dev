@@ -9,7 +9,7 @@ export interface AdamDerivation {
   readonly findings: readonly Finding[];
 }
 
-/** Derive ADSL, ADVS, ADLB, ADAE and ADTTE from a study's SDTM layer. */
+/** Derive ADSL, ADVS, ADLB, ADEG, ADAE and ADTTE from a study's SDTM layer. */
 export function deriveAdamDatasets(
   definition: StudyDefinition,
   sdtm: readonly Dataset[]

@@ -584,13 +584,22 @@ export function buildDefine(
         const subset = column.values.filter(
           (_, row) => byColumn.values[row] === parameter
         );
+        const derived = spec.derived?.[parameter]?.variables.includes(name)
+          ? spec.derived[parameter].method
+          : undefined;
+        if (derived && !methodIds.includes(derived)) {
+          methodText(layer, derived);
+          methodIds.push(derived);
+        }
         items.push({
           oid: valueItemOid(dataset.name, name, parameter),
           name,
           label: `${decodeOf(parameter)}: ${column.variable.label}`,
           ...facets(column.variable, column.storage, subset),
           ...(parent.codeListOid ? { codeListOid: parent.codeListOid } : {}),
-          origin: parent.origin,
+          origin: derived
+            ? { type: "Derived", source: "Sponsor" }
+            : parent.origin,
           dataset: dataset.name,
           whereValue: parameter,
         });
@@ -599,7 +608,11 @@ export function buildDefine(
           name,
           orderNumber: index + 1,
           mandatory: false,
-          ...(parentRef.methodOid ? { methodOid: parentRef.methodOid } : {}),
+          ...(derived
+            ? { methodOid: methodOid(derived) }
+            : parentRef.methodOid
+              ? { methodOid: parentRef.methodOid }
+              : {}),
           whereClauseOid: whereClauseOid(dataset.name, spec.by, parameter),
         };
       });

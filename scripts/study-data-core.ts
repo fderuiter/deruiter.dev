@@ -9,6 +9,7 @@ import {
   DEFAULT_SUBJECT_COUNT,
   DEMO_301_STUDY,
   DEMO_301_USDM,
+  MESSY_DATA_SCENARIOS,
   PACKAGE_FIXED_TIMESTAMP,
   SDTM_DEFINE_PATH,
   SDTM_PACKAGE_DIR,
@@ -16,6 +17,9 @@ import {
   buildStudyDataPackage,
   runConformance,
   runPipeline,
+  sha256Hex,
+  writeDatasetJson,
+  type ScenarioId,
 } from "../lib/study-data";
 
 /**
@@ -75,6 +79,98 @@ export interface ExportOptions {
    * release it cannot load, and reports every USDM code that carries one.
    */
   readonly ctVersion?: string;
+  /**
+   * The "Inject an issue" scenario to apply before export (#2992). Absent:
+   * the default run.
+   */
+  readonly scenario?: ScenarioId;
+}
+
+/** The default run, then each "Inject an issue" scenario, by view id. */
+export type CoreView = "default" | ScenarioId;
+
+/** Every view CI runs CORE over: the default run and all 16 scenarios. */
+export const CORE_VIEWS: readonly CoreView[] = [
+  "default",
+  ...MESSY_DATA_SCENARIOS.map((scenario) => scenario.id),
+];
+
+/**
+ * Fingerprint of what CORE reads for one view: the SDTM Dataset-JSON files
+ * and Define-XML, as the pipeline declares them (before any CT release is
+ * substituted for CORE's cache). Recorded findings carry it, so a test can
+ * tell they are stale without running CORE.
+ */
+export async function viewInputSha256(
+  files: readonly { readonly path: string; readonly bytes: Uint8Array }[]
+): Promise<string> {
+  const lines = await Promise.all(
+    files
+      .filter((file) => file.path.startsWith(`${SDTM_PACKAGE_DIR}/`))
+      .filter(
+        (file) => file.path.endsWith(".json") || file.path === SDTM_DEFINE_PATH
+      )
+      .sort((a, b) => a.path.localeCompare(b.path))
+      .map(async (file) => `${await sha256Hex(file.bytes)}  ${file.path}`)
+  );
+  return sha256Hex(new TextEncoder().encode(`${lines.join("\n")}\n`));
+}
+
+/** One file CORE reads, by its package path. */
+interface ViewFile {
+  readonly path: string;
+  readonly bytes: Uint8Array;
+}
+
+/**
+ * Runs the pipeline for one view and returns the files CORE reads. A
+ * scenario that puts a value outside a non-extensible codelist makes
+ * `buildDefine` refuse to describe it, so that view's Dataset-JSON is
+ * validated against the default run's Define-XML: the planned metadata,
+ * which is what a reviewer would hold the data against.
+ */
+export async function buildView(view: CoreView): Promise<{
+  run: ReturnType<typeof runPipeline>;
+  files: readonly ViewFile[];
+  defineFrom: CoreView;
+}> {
+  const runOf = (scenarios: readonly ScenarioId[]) =>
+    runPipeline(DEMO_301_STUDY, {
+      seed: DEFAULT_SEED,
+      nSubjects: DEFAULT_SUBJECT_COUNT,
+      scenarios,
+    });
+  const packageOf = async (run: ReturnType<typeof runPipeline>) =>
+    (await buildStudyDataPackage(run, { generatedAt: PACKAGE_FIXED_TIMESTAMP }))
+      .files;
+  const run = runOf(view === "default" ? [] : [view]);
+  try {
+    return { run, files: await packageOf(run), defineFrom: view };
+  } catch (error) {
+    if (
+      view === "default" ||
+      !(error instanceof RangeError) ||
+      !/outside the non-extensible codelist/.test(error.message)
+    ) {
+      throw error;
+    }
+  }
+  const planned = await packageOf(runOf([]));
+  const datasets: ViewFile[] = run.datasets
+    .filter((dataset) => dataset.layer === "sdtm" || dataset.layer === "adam")
+    .map((dataset) => ({
+      path: `${dataset.layer === "sdtm" ? SDTM_PACKAGE_DIR : ADAM_PACKAGE_DIR}/${dataset.name.toLowerCase()}.json`,
+      bytes: new TextEncoder().encode(
+        writeDatasetJson(dataset, {
+          studyId: run.manifest.studyId,
+          createdAt: PACKAGE_FIXED_TIMESTAMP,
+        })
+      ),
+    }));
+  const defines = planned.filter(
+    (file) => file.path === SDTM_DEFINE_PATH || file.path === ADAM_DEFINE_PATH
+  );
+  return { run, files: [...datasets, ...defines], defineFrom: "default" };
 }
 
 /** Replaces each whole occurrence of one CT release date with another. */
@@ -100,13 +196,8 @@ export async function exportCoreInputs(
   const ct = options.ctVersion ?? declaredCt;
   const forCore = (text: string) =>
     ct === declaredCt ? text : substituteCtVersion(text, declaredCt, ct);
-  const run = runPipeline(DEMO_301_STUDY, {
-    seed: DEFAULT_SEED,
-    nSubjects: DEFAULT_SUBJECT_COUNT,
-  });
-  const built = await buildStudyDataPackage(run, {
-    generatedAt: PACKAGE_FIXED_TIMESTAMP,
-  });
+  const view: CoreView = options.scenario ?? "default";
+  const { run, files, defineFrom } = await buildView(view);
   const written: string[] = [];
   const write = (relative: string, bytes: Uint8Array | string) => {
     const target = path.join(root, relative);
@@ -114,7 +205,7 @@ export async function exportCoreInputs(
     fs.writeFileSync(target, bytes);
     written.push(relative);
   };
-  for (const file of built.files) {
+  for (const file of files) {
     const inLayer = CORE_TARGETS.some(
       (target) =>
         target.dataDir !== "usdm" &&
@@ -145,6 +236,9 @@ export async function exportCoreInputs(
       {
         seed: DEFAULT_SEED,
         nSubjects: DEFAULT_SUBJECT_COUNT,
+        view,
+        inputSha256: await viewInputSha256(files),
+        defineFrom,
         declaredCt,
         validatedCt: ct,
       },
@@ -450,6 +544,258 @@ export function reconcileFolder(
   };
 }
 
+/** The committed CORE findings for every view, relative to the workspace root. */
+export const RECORDED_FINDINGS_FILE =
+  "lib/study-data/internal/core/recorded-findings.json";
+
+/** One rule's outcome in a CORE run, from its `Rules_Report`. */
+export interface RecordedRule {
+  /** SUCCESS, ISSUE REPORTED, SKIPPED (not applicable) or EXECUTION ERROR. */
+  readonly status: string;
+  /** The CDISC conformance rule ids CORE cites (CG, TIG), comma separated. */
+  readonly cdisc: string;
+  /** The FDA Business or Validator Rule ids CORE cites, comma separated. */
+  readonly fda: string;
+  readonly message: string;
+}
+
+/** The pinned engine and inputs every recorded finding came from. */
+export interface RecordedLock {
+  readonly engine: string;
+  readonly tag: string;
+  readonly commit: string;
+  readonly standards: Readonly<Record<CoreTarget["id"], string>>;
+  readonly ct: { readonly declared: string; readonly validated: string };
+}
+
+/**
+ * How many example lines are kept per rule and dataset. CORE can report a
+ * cascade of thousands of rows for one planted defect (a duplicated DM
+ * record breaks every study day), so the file keeps the first examples, in
+ * sorted order, and the full count, as CORE's own issue limit does.
+ */
+export const RECORDED_EXAMPLES_PER_RULE = 20;
+
+/** Sorted finding lines, capped per rule and dataset, with full counts. */
+export interface RecordedLines {
+  readonly lines: readonly string[];
+  /** Findings per "rule dataset", before the cap. */
+  readonly counts: Readonly<Record<string, number>>;
+}
+
+/** The default view's findings. */
+export interface RecordedDefaultView {
+  readonly inputSha256: string;
+  readonly sdtm: RecordedLines;
+  readonly usdm: RecordedLines;
+}
+
+/** A scenario view, as its change to the default view's SDTM findings. */
+export interface RecordedScenarioView {
+  readonly inputSha256: string;
+  readonly added: RecordedLines;
+  readonly removed: RecordedLines;
+  /** SDTM rules whose status differs from the default view's. */
+  readonly status: Readonly<Record<string, string>>;
+}
+
+/** The file `record` writes and the site reads (#2992). */
+export interface RecordedFindings {
+  readonly $comment: string;
+  readonly lock: RecordedLock;
+  readonly rules: {
+    readonly sdtm: Readonly<Record<string, RecordedRule>>;
+    readonly usdm: Readonly<Record<string, RecordedRule>>;
+  };
+  readonly views: {
+    readonly default: RecordedDefaultView;
+  } & Readonly<Partial<Record<ScenarioId, RecordedScenarioView>>>;
+}
+
+/**
+ * One CORE finding as a line: rule, dataset or entity, the record (subject
+ * and --SEQ, so a scenario that adds a row does not renumber every finding
+ * after it) and the variables with the values CORE saw.
+ */
+export function findingLine(detail: Record<string, unknown>): string {
+  const text = (value: unknown) =>
+    value === null || value === undefined || value === ""
+      ? "-"
+      : String(value).replaceAll("\n", " ");
+  const names = detail.variables ?? detail.attributes;
+  const variables = Array.isArray(names) ? names : [];
+  const values = Array.isArray(detail.values) ? detail.values : [];
+  const record =
+    detail.USUBJID !== undefined
+      ? `${text(detail.USUBJID)}#${text(detail.SEQ ?? detail.row)}`
+      : text(detail.instance_id ?? detail.path ?? detail.row);
+  return [
+    String(detail.core_id),
+    text(detail.dataset ?? detail.entity),
+    record,
+    variables
+      .map((name, index) => `${String(name)}=${text(values[index])}`)
+      .join("|") || "-",
+  ].join(" ");
+}
+
+function reportOf(report: unknown, target: string) {
+  const value = report as {
+    Issue_Details?: Record<string, unknown>[];
+    Rules_Report?: Record<string, unknown>[];
+    Conformance_Details?: Record<string, unknown>;
+  };
+  if (
+    !Array.isArray(value?.Issue_Details) ||
+    !Array.isArray(value?.Rules_Report)
+  ) {
+    throw new TypeError(
+      `The ${target} CORE report has no Issue_Details or Rules_Report.`
+    );
+  }
+  const rules: Record<string, RecordedRule> = {};
+  for (const row of [...value.Rules_Report].sort((a, b) =>
+    String(a.core_id).localeCompare(String(b.core_id))
+  )) {
+    rules[String(row.core_id)] = {
+      status: String(row.status),
+      cdisc: String(row.cdisc_rule_id ?? ""),
+      fda: String(row.fda_rule_id ?? ""),
+      message: String(row.message ?? ""),
+    };
+  }
+  return {
+    lines: value.Issue_Details.map(findingLine).sort(),
+    rules,
+    engineVersion: String(value.Conformance_Details?.CORE_Engine_Version ?? ""),
+  };
+}
+
+/** Caps sorted lines per rule and dataset, keeping the full counts. */
+export function capLines(lines: readonly string[]): RecordedLines {
+  const counts: Record<string, number> = {};
+  const kept: string[] = [];
+  for (const line of [...lines].sort()) {
+    const key = line.split(" ", 2).join(" ");
+    counts[key] = (counts[key] ?? 0) + 1;
+    if (counts[key] <= RECORDED_EXAMPLES_PER_RULE) kept.push(line);
+  }
+  return { lines: kept, counts };
+}
+
+/** Lines in `next` but not `base`, and in `base` but not `next`, by count. */
+export function lineDifference(
+  base: readonly string[],
+  next: readonly string[]
+): { added: string[]; removed: string[] } {
+  const count = (lines: readonly string[]) => {
+    const counts = new Map<string, number>();
+    for (const item of lines) counts.set(item, (counts.get(item) ?? 0) + 1);
+    return counts;
+  };
+  const before = count(base);
+  const after = count(next);
+  const extra = (a: Map<string, number>, b: Map<string, number>) =>
+    [...a].flatMap(([item, n]) =>
+      Array<string>(Math.max(0, n - (b.get(item) ?? 0))).fill(item)
+    );
+  return { added: extra(after, before), removed: extra(before, after) };
+}
+
+/** Options for {@link recordFindings}. */
+export interface RecordOptions {
+  readonly tag: string;
+  readonly commit: string;
+}
+
+/**
+ * Builds the committed findings file from a folder of per-view exports
+ * (`<inputs>/<view>/`) and per-view CORE reports (`<reports>/<view>/`).
+ * The default view needs SDTM and USDM reports and an ADaM report or skip
+ * note; a scenario view needs only SDTM, since scenarios change collected
+ * data and nothing else.
+ */
+export function recordFindings(
+  inputsDir: string,
+  reportsDir: string,
+  options: RecordOptions
+): RecordedFindings {
+  const read = (file: string) => JSON.parse(fs.readFileSync(file, "utf8"));
+  const notesOf = (view: CoreView) => {
+    const notes = read(path.join(inputsDir, view, EXPORT_NOTES_FILE));
+    if (notes.view !== view) {
+      throw new Error(`The ${view} export notes are for ${notes.view}.`);
+    }
+    return notes as {
+      inputSha256: string;
+      declaredCt: string;
+      validatedCt: string;
+    };
+  };
+  const sdtmOf = (view: CoreView) => {
+    const result = reportOf(
+      read(path.join(reportsDir, view, "sdtm.json")),
+      `${view} sdtm`
+    );
+    if (`v${result.engineVersion}` !== options.tag) {
+      throw new Error(
+        `The ${view} report is from CORE ${result.engineVersion}, not ${options.tag}.`
+      );
+    }
+    return result;
+  };
+  const notes = notesOf("default");
+  const sdtm = sdtmOf("default");
+  const usdm = reportOf(
+    read(path.join(reportsDir, "default", "usdm.json")),
+    "default usdm"
+  );
+  const adamReport = path.join(reportsDir, "default", "adam.json");
+  const adamSkip = path.join(reportsDir, "default", "adam.skipped");
+  const adam = fs.existsSync(adamReport)
+    ? "ADaMIG 1.3"
+    : fs.existsSync(adamSkip)
+      ? `not run: ${fs.readFileSync(adamSkip, "utf8").trim()}`
+      : null;
+  if (adam === null) {
+    throw new Error("No CORE report or skip note for the default adam.");
+  }
+  const views: Record<string, RecordedDefaultView | RecordedScenarioView> = {
+    default: {
+      inputSha256: notes.inputSha256,
+      sdtm: capLines(sdtm.lines),
+      usdm: capLines(usdm.lines),
+    },
+  };
+  for (const view of CORE_VIEWS.filter((item) => item !== "default")) {
+    const scenario = sdtmOf(view);
+    const status: Record<string, string> = {};
+    for (const [id, rule] of Object.entries(scenario.rules)) {
+      if (sdtm.rules[id]?.status !== rule.status) status[id] = rule.status;
+    }
+    const change = lineDifference(sdtm.lines, scenario.lines);
+    views[view] = {
+      inputSha256: notesOf(view).inputSha256,
+      added: capLines(change.added),
+      removed: capLines(change.removed),
+      status,
+    };
+  }
+  return {
+    $comment:
+      "Generated by scripts/study-data-core.ts record from CDISC CORE runs in .github/workflows/study-data-core.yml (#2992). Do not edit: see docs/how-to/refresh-cdisc-core-findings.md.",
+    lock: {
+      engine: "CDISC CORE",
+      tag: options.tag,
+      commit: options.commit,
+      standards: { sdtm: "SDTMIG 3.4", adam, usdm: "USDM 4.0" },
+      ct: { declared: notes.declaredCt, validated: notes.validatedCt },
+    },
+    rules: { sdtm: sdtm.rules, usdm: usdm.rules },
+    views: views as RecordedFindings["views"],
+  };
+}
+
 async function main(argv: readonly string[]): Promise<number> {
   const [command, root, ...rest] = argv;
   if (command === "export" && root) {
@@ -458,6 +804,40 @@ async function main(argv: readonly string[]): Promise<number> {
       ctVersion: flag >= 0 ? rest[flag + 1] : undefined,
     });
     console.log(`Wrote ${written.length} files to ${root}.`);
+    return 0;
+  }
+  if (command === "export-views" && root) {
+    const flag = rest.indexOf("--ct-version");
+    for (const view of CORE_VIEWS) {
+      await exportCoreInputs(path.resolve(root, view), {
+        ctVersion: flag >= 0 ? rest[flag + 1] : undefined,
+        scenario: view === "default" ? undefined : view,
+      });
+    }
+    console.log(`Exported ${CORE_VIEWS.length} views to ${root}.`);
+    return 0;
+  }
+  if (command === "record" && root && rest[0]) {
+    const option = (name: string) => {
+      const at = rest.indexOf(name);
+      return at >= 0 ? rest[at + 1] : undefined;
+    };
+    const tag = option("--core-tag");
+    const commit = option("--core-commit");
+    if (!tag || !commit) {
+      console.error("record needs --core-tag and --core-commit.");
+      return 2;
+    }
+    const recorded = recordFindings(path.resolve(root), path.resolve(rest[0]), {
+      tag,
+      commit,
+    });
+    const out = path.resolve(option("--out") ?? RECORDED_FINDINGS_FILE);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, `${JSON.stringify(recorded, null, 2)}\n`);
+    console.log(
+      `Recorded CORE findings for ${CORE_VIEWS.length} views to ${out}.`
+    );
     return 0;
   }
   if (command === "reconcile" && root && rest[0]) {
@@ -475,6 +855,8 @@ async function main(argv: readonly string[]): Promise<number> {
   console.error(
     [
       "Usage: tsx scripts/study-data-core.ts export <dir> [--ct-version YYYY-MM-DD]",
+      "       tsx scripts/study-data-core.ts export-views <dir> [--ct-version YYYY-MM-DD]",
+      "       tsx scripts/study-data-core.ts record <dir> <reports> --core-tag <tag> --core-commit <sha> [--out <file>]",
       "       tsx scripts/study-data-core.ts reconcile <dir> <reports> [--engine <label>]",
     ].join("\n")
   );

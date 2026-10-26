@@ -5,14 +5,20 @@ import { afterAll, describe, expect, it } from "vitest";
 import {
   ALLOWLIST_FILE,
   CORE_TARGETS,
+  CORE_VIEWS,
+  RECORDED_EXAMPLES_PER_RULE,
   EXPORT_NOTES_FILE,
   GATE_FINDINGS_FILE,
+  capLines,
   coreIssues,
   exportCoreInputs,
+  findingLine,
   gateCounts,
+  lineDifference,
   parseAllowlist,
   reconcile,
   reconcileFolder,
+  recordFindings,
   renderReconciliation,
   substituteCtVersion,
   type AllowlistEntry,
@@ -245,6 +251,155 @@ describe("CDISC CORE reconciliation (#2603)", () => {
   });
 });
 
+describe("recording CORE findings for every view (#2992)", () => {
+  const detail = (overrides: Record<string, unknown> = {}) => ({
+    core_id: "CORE-000529",
+    dataset: "LB",
+    USUBJID: "DEMO-301-0001",
+    SEQ: 3,
+    row: 7,
+    variables: ["LBDY", "LBDTC"],
+    values: [4, "2026-01-04"],
+    ...overrides,
+  });
+  const rulesReport = (status = "ISSUE REPORTED") => [
+    {
+      core_id: "CORE-000529",
+      cdisc_rule_id: "CG0006",
+      fda_rule_id: "",
+      message: "--DY is not correctly calculated.",
+      status,
+    },
+  ];
+  const sdtmReport = (details: Record<string, unknown>[], status?: string) => ({
+    Conformance_Details: { CORE_Engine_Version: "0.17.1" },
+    Issue_Details: details,
+    Rules_Report: rulesReport(status),
+  });
+
+  it("writes a finding as rule, dataset, subject and sequence, and values", () => {
+    expect(findingLine(detail())).toBe(
+      "CORE-000529 LB DEMO-301-0001#3 LBDY=4|LBDTC=2026-01-04"
+    );
+    expect(findingLine(detail({ SEQ: null, values: [null, ""] }))).toBe(
+      "CORE-000529 LB DEMO-301-0001#7 LBDY=-|LBDTC=-"
+    );
+    expect(
+      findingLine({
+        core_id: "CORE-000419",
+        entity: "Activity",
+        instance_id: "act_dm",
+        attributes: ["nextId"],
+        values: ["act_vs"],
+      })
+    ).toBe("CORE-000419 Activity act_dm nextId=act_vs");
+  });
+
+  it("caps the examples per rule and dataset but keeps the full count", () => {
+    const lines = Array.from(
+      { length: RECORDED_EXAMPLES_PER_RULE + 5 },
+      (_, index) =>
+        `CORE-000529 LB DEMO-301-${String(index).padStart(4, "0")}#1 -`
+    ).reverse();
+    const capped = capLines([...lines, "CORE-000001 DM DEMO-301-0001#1 -"]);
+    expect(capped.counts).toEqual({
+      "CORE-000001 DM": 1,
+      "CORE-000529 LB": RECORDED_EXAMPLES_PER_RULE + 5,
+    });
+    expect(capped.lines).toHaveLength(RECORDED_EXAMPLES_PER_RULE + 1);
+    expect(capped.lines).toEqual([...capped.lines].sort());
+  });
+
+  it("diffs findings by count, so a duplicate line still counts", () => {
+    expect(lineDifference(["a", "b", "b"], ["b", "c"])).toEqual({
+      added: ["c"],
+      removed: ["a", "b"],
+    });
+  });
+
+  it("records the default view in full and each scenario as its change", () => {
+    const inputs = path.join(scratch, "views-in");
+    const reports = path.join(scratch, "views-out");
+    for (const view of CORE_VIEWS) {
+      fs.mkdirSync(path.join(inputs, view), { recursive: true });
+      fs.writeFileSync(
+        path.join(inputs, view, EXPORT_NOTES_FILE),
+        JSON.stringify({
+          view,
+          inputSha256: `sha-${view}`,
+          declaredCt: "2026-09-25",
+          validatedCt: "2026-03-27",
+        })
+      );
+      fs.mkdirSync(path.join(reports, view), { recursive: true });
+      const scenario = view === "impossible-date";
+      fs.writeFileSync(
+        path.join(reports, view, "sdtm.json"),
+        JSON.stringify(
+          sdtmReport(
+            scenario ? [detail(), detail({ SEQ: 4 })] : [detail()],
+            scenario ? "ISSUE REPORTED" : "SUCCESS"
+          )
+        )
+      );
+    }
+    fs.writeFileSync(
+      path.join(reports, "default", "usdm.json"),
+      JSON.stringify({ Issue_Details: [], Rules_Report: [] })
+    );
+    const options = { tag: "v0.17.1", commit: "a".repeat(40) };
+    expect(() => recordFindings(inputs, reports, options)).toThrow(
+      /No CORE report or skip note for the default adam/
+    );
+    fs.writeFileSync(
+      path.join(reports, "default", "adam.skipped"),
+      "No ADaMIG rules.\n"
+    );
+    const recorded = recordFindings(inputs, reports, options);
+    expect(recorded.lock).toEqual({
+      engine: "CDISC CORE",
+      tag: "v0.17.1",
+      commit: "a".repeat(40),
+      standards: {
+        sdtm: "SDTMIG 3.4",
+        adam: "not run: No ADaMIG rules.",
+        usdm: "USDM 4.0",
+      },
+      ct: { declared: "2026-09-25", validated: "2026-03-27" },
+    });
+    expect(recorded.rules.sdtm["CORE-000529"]).toEqual({
+      status: "SUCCESS",
+      cdisc: "CG0006",
+      fda: "",
+      message: "--DY is not correctly calculated.",
+    });
+    expect(recorded.views.default.sdtm.lines).toEqual([
+      "CORE-000529 LB DEMO-301-0001#3 LBDY=4|LBDTC=2026-01-04",
+    ]);
+    expect(recorded.views["impossible-date"]).toEqual({
+      inputSha256: "sha-impossible-date",
+      added: {
+        lines: ["CORE-000529 LB DEMO-301-0001#4 LBDY=4|LBDTC=2026-01-04"],
+        counts: { "CORE-000529 LB": 1 },
+      },
+      removed: { lines: [], counts: {} },
+      status: { "CORE-000529": "ISSUE REPORTED" },
+    });
+    expect(recorded.views["unit-change"]?.added.lines).toEqual([]);
+
+    fs.writeFileSync(
+      path.join(reports, "duplicate-record", "sdtm.json"),
+      JSON.stringify({
+        ...sdtmReport([detail()]),
+        Conformance_Details: { CORE_Engine_Version: "0.16.0" },
+      })
+    );
+    expect(() => recordFindings(inputs, reports, options)).toThrow(
+      /duplicate-record report is from CORE 0.16.0, not v0.17.1/
+    );
+  });
+});
+
 describe("study-data-core.yml (#2603)", () => {
   const workflow = read(".github/workflows/study-data-core.yml");
 
@@ -261,6 +416,14 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).toMatch(/timeout-minutes: \d+/);
     expect(workflow).toContain("permissions:\n  contents: read");
     expect(read(".github/workflows/ci.yml")).not.toContain("study-data-core");
+  });
+
+  it("runs CORE over every view and fails when the recorded findings are stale", () => {
+    expect(workflow).toContain("study-data-core.ts export-views");
+    expect(workflow).toContain("scripts/study-data-core-views.sh");
+    expect(workflow).toContain("study-data-core.ts record");
+    expect(workflow).toContain('git diff --quiet -- "$file"');
+    expect(workflow).toContain("name: study-data-core-recorded-findings");
   });
 
   it("reconciles, publishes the summary and uploads the reports", () => {

@@ -168,7 +168,7 @@ describe("OperationsView (#2630)", () => {
 
   it("marks the current step in the breadcrumb trail", () => {
     view({ study: "DEMO-302", site: "DEMO-302-DE-103" });
-    const trail = screen.getByRole("navigation", { name: "Breadcrumb" });
+    const trail = screen.getByRole("navigation", { name: "Dashboard level" });
     expect(
       within(trail)
         .getAllByRole("link")

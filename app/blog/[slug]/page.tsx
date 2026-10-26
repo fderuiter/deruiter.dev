@@ -18,6 +18,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { resolveBaseUrl } from "@/lib/domain";
 import { getBreadcrumbSchema, getBlogPostingSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -146,11 +147,9 @@ export default async function BlogPostPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Blog", url: "/blog" },
-            { name: post.title, url: `/blog/${post.slug}` },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema(`/blog/${post.slug}`, post.title)
+          ),
         }}
       />
       <script
@@ -163,9 +162,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       <div className="relative z-10 w-full max-w-5xl">
         {/* Breadcrumbs Navigation */}
         <div className="mb-6">
-          <Breadcrumbs
-            items={[{ label: "Blog", href: "/blog" }, { label: post.title }]}
-          />
+          <Breadcrumbs path={`/blog/${post.slug}`} label={post.title} />
         </div>
 
         {/* Content Pillar Badge */}

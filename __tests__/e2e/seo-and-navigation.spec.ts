@@ -72,7 +72,7 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
     const breadcrumbNav = page.locator('nav[aria-label="Breadcrumb"]');
     await expect(breadcrumbNav).toBeVisible();
 
-    // Click 'Arcade Hub' in breadcrumbs
+    // Click the Arcade group crumb
     await breadcrumbNav.locator('a[href="/arcade"]').click();
     await page.waitForURL("**/arcade");
     expect(page.url()).toContain("/arcade");

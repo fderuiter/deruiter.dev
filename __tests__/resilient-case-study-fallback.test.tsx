@@ -9,6 +9,7 @@ import React from "react";
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { prisma } from "@/lib/db";
+import { getBreadcrumbTrail } from "@/lib/navigation";
 import CaseStudyPage, {
   generateMetadata,
   generateStaticParams,
@@ -258,11 +259,11 @@ describe("Resilient Hybrid Case Study Fallback Suite", () => {
       expect(breadcrumbs).not.toBeNull();
       expect(nextPrevNav).not.toBeNull();
 
-      const breadcrumbItems = breadcrumbs!.props!.items as Array<{
-        label: string;
-        href?: string;
-      }>;
-      const caseStudiesCrumb = breadcrumbItems.find(
+      const { path, label } = breadcrumbs!.props! as {
+        path: string;
+        label?: string;
+      };
+      const caseStudiesCrumb = getBreadcrumbTrail(path, label).find(
         (c) => c.label === "Case Studies"
       );
       const backToHub = nextPrevNav!.props!.backToHub as {

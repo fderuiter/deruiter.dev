@@ -36,12 +36,7 @@ export const PattyDriveThruClient: React.FC = () => (
           <IconArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Back to Arcade Hub</span>
         </Link>
-        <Breadcrumbs
-          items={[
-            { label: "Arcade Hub", href: "/arcade" },
-            { label: "Patty's Drive-Thru" },
-          ]}
-        />
+        <Breadcrumbs path="/arcade/patty-drive-thru" />
       </div>
 
       <div className="mb-8 min-w-0">

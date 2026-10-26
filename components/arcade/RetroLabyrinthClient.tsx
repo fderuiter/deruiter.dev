@@ -56,12 +56,7 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>Back to Arcade Hub</span>
             </Link>
             <span className="text-zinc-700 hidden sm:inline">|</span>
-            <Breadcrumbs
-              items={[
-                { label: "Arcade Hub", href: "/arcade" },
-                { label: "Retro Labyrinth" },
-              ]}
-            />
+            <Breadcrumbs path="/arcade/retro-labyrinth" />
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-500/10 text-rose-300 border border-rose-500/30">

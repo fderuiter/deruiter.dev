@@ -533,7 +533,7 @@ export const ArcadeHubClient: React.FC = () => {
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Navigation Breadcrumbs */}
         <div className="mb-8">
-          <Breadcrumbs items={[{ label: "Arcade Hub", href: "/arcade" }]} />
+          <Breadcrumbs path="/arcade" />
         </div>
 
         {/* Header Hero Section */}

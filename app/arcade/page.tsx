@@ -9,6 +9,7 @@ import {
 import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
 import { ARCADE_GAME_ROUTES } from "@/lib/arcade";
 import { PageLayout } from "@/components/PageLayout";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.arcade
@@ -54,10 +55,7 @@ export default function ArcadePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/arcade")),
         }}
       />
       <ArcadeHubClient />

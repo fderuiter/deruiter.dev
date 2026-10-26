@@ -43,12 +43,7 @@ export const ForBetterOrBulkClient: React.FC = () => (
           <IconArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Back to Arcade Hub</span>
         </Link>
-        <Breadcrumbs
-          items={[
-            { label: "Arcade Hub", href: "/arcade" },
-            { label: "For Better or Bulk" },
-          ]}
-        />
+        <Breadcrumbs path="/arcade/for-better-or-bulk" />
       </div>
 
       <div className="mb-8 min-w-0">

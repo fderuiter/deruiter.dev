@@ -138,3 +138,12 @@ The top bar keeps six items.
 - Journey entries carry their step number, shown before the title in the
   menu and the drawer.
 - No URLs changed.
+- Breadcrumb trails come from the navigation (#2952 N3).
+  `getBreadcrumbTrail(path)` gives Home, the group's overview, the index page
+  the path extends (Clinical Data Platform for `/platform/sql`, Blog for a
+  post), then the page under its menu name. `Breadcrumbs` takes a `path`, and
+  `getBreadcrumbTrailSchema` feeds the JSON-LD, so the visible trail and the
+  structured data cannot disagree. Every public page but Home and the offline
+  fallback now shows one trail. The
+  Operations dashboard's drill-down path is labelled "Dashboard level", so
+  each page has a single Breadcrumb landmark.

@@ -2,7 +2,6 @@ import React from "react";
 import Image from "next/image";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ExternalLink } from "@/components/acknowledgments/ExternalLink";
-import { getNavBreadcrumbParents } from "@/lib/navigation";
 import {
   WEDDING_ALBUM_URL,
   WEDDING_DETAILS,
@@ -30,12 +29,7 @@ export function WeddingArchiveView() {
     <div className="bg-zinc-950 px-4 pb-24 text-foreground sm:px-6 md:px-12 lg:px-24">
       <div className="mx-auto w-full min-w-0 max-w-5xl space-y-16">
         <header className="space-y-5">
-          <Breadcrumbs
-            items={[
-              ...getNavBreadcrumbParents("/wedding"),
-              { label: "Our Wedding" },
-            ]}
-          />
+          <Breadcrumbs path="/wedding" />
           <p className="font-mono text-xs uppercase tracking-wider text-amber-400">
             <time dateTime={WEDDING_DETAILS.date}>
               {WEDDING_DETAILS.dateLabel}

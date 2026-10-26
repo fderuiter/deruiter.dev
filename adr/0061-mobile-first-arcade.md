@@ -118,8 +118,8 @@ helpers, await their first game consumer.
   required accessible name, takes `touch-action: none`, vibrates through
   `lib/haptics.ts`, and also answers Enter and Space. Its press motion is gated
   with `motion-safe:`. `DockFrame` lays a dock row out for the player's hand
-  (`handedness`), reversing the order of its two sides; Retro Labyrinth reads
-  it from its Options sheet. `DpadActionDock`, `TwinStickAimDock`,
+  (`handedness`), reversing the order of its two sides. The hand is a device
+  setting that the cabinet's Setup sheet sets for every game (#2362). `DpadActionDock`, `TwinStickAimDock`,
   `BezelClusterDock`, `ActionStripDock` and `VirtualGamepad` remain the
   controls.
 - **Control hints.** `controlHint({ key, touch })` names a control both ways, and

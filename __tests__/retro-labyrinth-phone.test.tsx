@@ -9,9 +9,8 @@ import {
   act,
   fireEvent,
   waitFor,
-  within,
 } from "@testing-library/react";
-import { getDeviceSettings, setDeviceSettings } from "@/lib/arcade";
+import { setDeviceSettings } from "@/lib/arcade";
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
 import {
@@ -419,35 +418,26 @@ describe("RetroLabyrinth phone input (ADR 0061)", () => {
     await waitFor(() => expect(document.activeElement).toBe(more));
   });
 
-  it("the options sheet's Dominant hand writes the shared device setting, and the stage follows it (#2924)", () => {
+  it("takes the dominant hand from the device settings, live, and leaves the choice to the cabinet's Setup sheet (#2862)", () => {
     window.history.replaceState(null, "", "/?view=phone");
     try {
       const { container } = renderGame({ touch: true });
-      const stage = () =>
-        container
-          .querySelector(".arcade-stage")
-          ?.getAttribute("data-handedness");
-      expect(stage()).toBe("right");
+      const hands = () =>
+        [".arcade-stage", '[data-dock-preset="cluster"]'].map((selector) =>
+          container.querySelector(selector)?.getAttribute("data-handedness")
+        );
+      expect(hands()).toEqual(["right", "right"]);
 
+      // A change made in the cabinet's Setup sheet applies live.
+      act(() => {
+        setDeviceSettings({ handedness: "left" });
+      });
+      expect(hands()).toEqual(["left", "left"]);
+
+      // The game's own Options sheet no longer offers the hand.
       fireEvent.click(screen.getByRole("button", { name: "Options" }));
-      const hands = screen.getByRole("group", { name: "Dominant hand" });
-      act(() => {
-        fireEvent.click(within(hands).getByRole("button", { name: "left" }));
-      });
-      expect(getDeviceSettings().handedness).toBe("left");
-      expect(stage()).toBe("left");
-      expect(
-        container
-          .querySelector('[data-dock-preset="cluster"]')
-          ?.getAttribute("data-handedness")
-      ).toBe("left");
-
-      // A change made elsewhere, such as the cabinet's Setup sheet, applies
-      // live too.
-      act(() => {
-        setDeviceSettings({ handedness: "right" });
-      });
-      expect(stage()).toBe("right");
+      expect(screen.getByTestId("labyrinth-options-sheet")).toBeTruthy();
+      expect(screen.queryByRole("group", { name: "Dominant hand" })).toBeNull();
     } finally {
       window.history.replaceState(null, "", "/");
     }

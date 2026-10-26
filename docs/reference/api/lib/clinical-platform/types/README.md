@@ -398,6 +398,12 @@ Re-exports [FinanceLine](platform/interfaces/FinanceLine.md)
 
 ***
 
+### FinancePlanLine
+
+Re-exports [FinancePlanLine](platform/interfaces/FinancePlanLine.md)
+
+***
+
 ### GovernanceDecision
 
 Re-exports [GovernanceDecision](governance/interfaces/GovernanceDecision.md)

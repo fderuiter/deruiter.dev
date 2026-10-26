@@ -132,3 +132,4 @@ customProperties:
     value:
       - "metric:budget_burn_vs_plan"
       - "metric:cost_per_enrolled_subject"
+      - "metric:actual_spend"

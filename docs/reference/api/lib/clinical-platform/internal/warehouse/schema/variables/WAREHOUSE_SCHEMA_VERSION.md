@@ -6,6 +6,6 @@
 
 # Variable: WAREHOUSE\_SCHEMA\_VERSION
 
-> `const` **WAREHOUSE\_SCHEMA\_VERSION**: `"1.5.0"` = `"1.5.0"`
+> `const` **WAREHOUSE\_SCHEMA\_VERSION**: `"1.6.0"` = `"1.6.0"`
 
 Semantic version of the warehouse schema.

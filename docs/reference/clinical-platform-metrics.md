@@ -73,6 +73,11 @@ metrics.
 | Last subject last visit to database lock | `lplv_to_dbl_days` | certified | 1.0.0 | study | DEMO-101: 75 days; DEMO-301: 46 days; DEV-401: 43 days |
 | Budget burn vs plan | `budget_burn_vs_plan` | certified | 1.0.0 | portfolio | 103.6% |
 | Cost per enrolled subject | `cost_per_enrolled_subject` | certified | 1.0.0 | portfolio | $37,839 |
+| Actual spend | `actual_spend` | certified | 1.0.0 | portfolio | $46,465,932 |
+| Budget at completion | `budget_at_completion` | certified | 1.0.0 | portfolio | $67,121,250 |
+| Forecast at completion | `forecast_at_completion` | certified | 1.0.0 | portfolio | $69,930,442 |
+| Variance at completion | `variance_at_completion` | certified | 1.0.0 | portfolio | $2,809,192 |
+| Forecast against budget at completion | `forecast_vs_budget_at_completion` | certified | 1.0.0 | portfolio | 104.2% |
 
 ## Enrollment
 
@@ -656,6 +661,66 @@ Actual spend up to the data cut divided by the number of subjects enrolled. The 
 - Owner: Clinical Finance Lead. Steward: Finance Data Steward.
 - Glossary term: Enrollment (`enrollment-term`).
 
+### Actual spend
+
+Actual spend booked up to the data cut, in US dollars, with each quarter spread evenly over its three months.
+
+- Id: `actual_spend`, version 1.0.0, certified.
+- Formula: sum of actual_usd over gold.fct_spend rows.
+- Unit: USD. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `vendor`, `month`.
+- Default filters: none.
+- Owner: Clinical Finance Lead. Steward: Finance Data Steward.
+- Glossary term: Budget burn (`budget-burn-term`).
+
+### Budget at completion
+
+The budget booked up to the data cut plus the planned budget for every quarter after it, up to the planned final report. Once the final report is in, nothing remains and it is the budget booked.
+
+- Id: `budget_at_completion`, version 1.0.0, certified.
+- Formula: sum of budget_at_completion_usd over gold.fct_spend_forecast rows.
+- Unit: USD. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `vendor`.
+- Default filters: none.
+- Owner: Clinical Finance Lead. Steward: Finance Data Steward.
+- Glossary term: Forecast at completion (`forecast-at-completion-term`).
+
+### Forecast at completion
+
+Actual spend up to the data cut plus the planned budget still to come, scaled by each vendor's actual spend over its budget to date. A vendor running 10% over budget is forecast to stay 10% over for the rest of the study. Each vendor is forecast on its own ratio, so the vendors add up to the study.
+
+- Id: `forecast_at_completion`, version 1.0.0, certified.
+- Formula: sum of forecast_at_completion_usd over gold.fct_spend_forecast rows.
+- Unit: USD. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `vendor`.
+- Default filters: none.
+- Owner: Clinical Finance Lead. Steward: Finance Data Steward.
+- Glossary term: Forecast at completion (`forecast-at-completion-term`).
+
+### Variance at completion
+
+Forecast at completion minus budget at completion. Above 0 is a forecast overrun, below 0 an underrun, the same sign as spend variance.
+
+- Id: `variance_at_completion`, version 1.0.0, certified.
+- Formula: sum of variance_at_completion_usd over gold.fct_spend_forecast rows.
+- Unit: USD. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `vendor`.
+- Default filters: none.
+- Owner: Clinical Finance Lead. Steward: Finance Data Steward.
+- Glossary term: Forecast at completion (`forecast-at-completion-term`).
+
+### Forecast against budget at completion
+
+Forecast at completion as a share of the budget at completion. Above 100% means the study or vendor is forecast to overrun its budget.
+
+- Id: `forecast_vs_budget_at_completion`, version 1.0.0, certified.
+- Formula: (sum of forecast_at_completion_usd over gold.fct_spend_forecast rows) / (sum of budget_at_completion_usd over gold.fct_spend_forecast rows).
+- Unit: share of budget. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `vendor`.
+- Default filters: none.
+- Owner: Clinical Finance Lead. Steward: Finance Data Steward.
+- Glossary term: Forecast at completion (`forecast-at-completion-term`).
+
 ## Dimensions
 
 | Dimension | Id | Attribute | Description |
@@ -684,7 +749,6 @@ gold model cannot compute yet. They are left out rather than approximated.
 | Metric | Why | Gold data it needs | Nearest registry metric |
 | --- | --- | --- | --- |
 | eTMF completeness | Expected and filed eTMF documents reach silver (silver.etmf_document) but no gold fact. | A gold fact of expected eTMF documents with due and filed date keys and the site and study keys. | none |
-| Forecast at completion | gold.fct_spend holds budget only for months up to the data cut, so there is no budget at completion to forecast against. | The approved budget for future periods, or a budget at completion per study and vendor. | `budget_burn_vs_plan` |
 | Cost per randomised subject | Randomisations reach silver (silver.irt_randomization) but no gold fact. | A gold fact of randomisations with the study, site and date keys. | `cost_per_enrolled_subject` |
 | Query rate per 100 CRF pages | No gold table counts the CRF pages a visit produces; sdv_pages_due counts only the pages due for source data verification. | The number of CRF pages entered per visit in gold.fct_visit. | `query_rate_per_100_visits` |
 | Enrollment against a time-phased plan | Gold holds each site's total enrollment target but no planned enrollment by month. | Planned cumulative enrollment per study or site and month. | `enrollment_vs_plan` |

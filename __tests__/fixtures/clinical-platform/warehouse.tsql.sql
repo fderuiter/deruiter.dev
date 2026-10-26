@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.5.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.6.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -1106,6 +1106,63 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'silver',
   @level1type = N'TABLE', @level1name = N'finance_line',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [silver].[finance_plan_line] (
+  [study_id]         NVARCHAR(64) NOT NULL,
+  [vendor_id]        NVARCHAR(64),
+  [cost_category]    NVARCHAR(64) NOT NULL,
+  [fiscal_quarter]   NVARCHAR(7) NOT NULL,
+  [quarter_start_on] DATE NOT NULL,
+  [budget_usd]       INT NOT NULL,
+  [source_system]    NVARCHAR(64) NOT NULL,
+  [is_synthetic]     BIT NOT NULL,
+  CONSTRAINT [pk_finance_plan_line] PRIMARY KEY ([study_id], [cost_category], [fiscal_quarter])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'The approved budget plan per study, cost category and calendar quarter, from the study''s start to its planned final report. Grain: One row per study, cost category and quarter.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Protocol id.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'study_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Vendor id, or null for investigator grants.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'vendor_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Cost category.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'cost_category';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Calendar quarter, for example 2027-Q1.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'fiscal_quarter';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'First day of the quarter.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'quarter_start_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Planned budget, whole US dollars.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'budget_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Source system the record came from.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
+  @level2type = N'COLUMN', @level2name = N'source_system';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'finance_plan_line',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 
@@ -2446,6 +2503,78 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_spend',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [gold].[fct_spend_forecast] (
+  [study_key]                  INT NOT NULL,
+  [vendor_key]                 INT NOT NULL,
+  [as_of_date_key]             INT NOT NULL,
+  [budget_to_date_usd]         INT NOT NULL,
+  [actual_to_date_usd]         INT NOT NULL,
+  [remaining_budget_usd]       INT NOT NULL,
+  [budget_at_completion_usd]   INT NOT NULL,
+  [forecast_at_completion_usd] INT NOT NULL,
+  [variance_at_completion_usd] INT NOT NULL,
+  [is_synthetic]               BIT NOT NULL,
+  CONSTRAINT [pk_fct_spend_forecast] PRIMARY KEY ([study_key], [vendor_key]),
+  CONSTRAINT [fk_fct_spend_forecast_study_key] FOREIGN KEY ([study_key]) REFERENCES [gold].[dim_study] ([study_key]),
+  CONSTRAINT [fk_fct_spend_forecast_vendor_key] FOREIGN KEY ([vendor_key]) REFERENCES [gold].[dim_vendor] ([vendor_key]),
+  CONSTRAINT [fk_fct_spend_forecast_as_of_date_key] FOREIGN KEY ([as_of_date_key]) REFERENCES [gold].[dim_date] ([date_key])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Budget, actual spend and forecast at completion per study and vendor at the data cut. The forecast is the actual spend to date plus the planned budget still to come, scaled by the vendor''s spend-to-budget ratio to date. Grain: One row per study and vendor at the data cut.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Study.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'study_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Vendor; 0 for investigator grants.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'vendor_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'The data cut the forecast was made at.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'as_of_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Budget for every quarter booked up to the data cut, whole US dollars.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'budget_to_date_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Actual spend for every quarter booked up to the data cut, whole US dollars.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'actual_to_date_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Planned budget for the quarters after the data cut, whole US dollars; 0 once the study''s final report is in.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'remaining_budget_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Budget to date plus the remaining budget, whole US dollars.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'budget_at_completion_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Actual spend to date plus the remaining budget times actual over budget to date, rounded to whole US dollars; the remaining budget as planned when nothing was budgeted to date.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'forecast_at_completion_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Forecast minus budget at completion, whole US dollars; above 0 is a forecast overrun.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
+  @level2type = N'COLUMN', @level2name = N'variance_at_completion_usd';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_spend_forecast',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 

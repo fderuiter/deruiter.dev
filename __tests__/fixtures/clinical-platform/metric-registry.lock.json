@@ -73,6 +73,71 @@
         ],
         "defaultFilters": [],
         "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "actual_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend",
+            "timeKey": "month_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "USD"
+      },
+      "id": "actual_spend",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "vendor"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "budget_at_completion_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend_forecast",
+            "timeKey": "as_of_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "USD"
+      },
+      "id": "budget_at_completion",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "vendor",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
           "denominator": {
             "aggregation": "sum",
             "expression": {
@@ -631,6 +696,81 @@
         "unit": "share of target"
       },
       "id": "enrollment_vs_plan",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "vendor"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "forecast_at_completion_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend_forecast",
+            "timeKey": "as_of_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "USD"
+      },
+      "id": "forecast_at_completion",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "vendor"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "budget_at_completion_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend_forecast",
+            "timeKey": "as_of_date_key",
+            "where": []
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "forecast_at_completion_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend_forecast",
+            "timeKey": "as_of_date_key",
+            "where": []
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of budget"
+      },
+      "id": "forecast_vs_budget_at_completion",
       "status": "certified",
       "version": "1.0.0"
     },
@@ -2713,6 +2853,38 @@
         "unit": "share of enrolled subjects"
       },
       "id": "subjects_with_important_deviation",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "vendor"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "variance_at_completion_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend_forecast",
+            "timeKey": "as_of_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "USD"
+      },
+      "id": "variance_at_completion",
       "status": "certified",
       "version": "1.0.0"
     }

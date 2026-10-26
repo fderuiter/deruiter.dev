@@ -1699,3 +1699,155 @@ FROM [numerator] AS [n]
 FULL OUTER JOIN [denominator] AS [d]
   ON [d].[study] = [n].[study] AND [d].[phase] = [n].[phase]
 ORDER BY 1, 2;
+
+-- Actual spend: actual_spend 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    SUM(CAST([f].[actual_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend] AS [f]
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Actual spend: actual_spend 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, month. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_date].[year_month] AS [month],
+    SUM(CAST([f].[actual_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  JOIN [gold].[dim_date] AS [dim_date] ON [dim_date].[date_key] = [f].[month_date_key]
+  GROUP BY [dim_study].[study_id], [dim_date].[year_month]
+)
+SELECT
+  [study],
+  [month],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Budget at completion: budget_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    SUM(CAST([f].[budget_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Budget at completion: budget_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, phase. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_study].[phase] AS [phase],
+    SUM(CAST([f].[budget_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  GROUP BY [dim_study].[study_id], [dim_study].[phase]
+)
+SELECT
+  [study],
+  [phase],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Forecast at completion: forecast_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    SUM(CAST([f].[forecast_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Forecast at completion: forecast_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, phase. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_study].[phase] AS [phase],
+    SUM(CAST([f].[forecast_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  GROUP BY [dim_study].[study_id], [dim_study].[phase]
+)
+SELECT
+  [study],
+  [phase],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Variance at completion: variance_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    SUM(CAST([f].[variance_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Variance at completion: variance_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, phase. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_study].[phase] AS [phase],
+    SUM(CAST([f].[variance_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  GROUP BY [dim_study].[study_id], [dim_study].[phase]
+)
+SELECT
+  [study],
+  [phase],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Forecast against budget at completion: forecast_vs_budget_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [numerator] AS (
+  SELECT
+    SUM(CAST([f].[forecast_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+),
+[denominator] AS (
+  SELECT
+    SUM(CAST([f].[budget_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+)
+SELECT CAST(COALESCE((SELECT [value] FROM [numerator]), 0) AS FLOAT) / NULLIF(CAST(COALESCE((SELECT [value] FROM [denominator]), 0) AS FLOAT), 0) AS [value];
+
+-- Forecast against budget at completion: forecast_vs_budget_at_completion 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, phase. Filters: none.
+WITH [numerator] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_study].[phase] AS [phase],
+    SUM(CAST([f].[forecast_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  GROUP BY [dim_study].[study_id], [dim_study].[phase]
+),
+[denominator] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_study].[phase] AS [phase],
+    SUM(CAST([f].[budget_at_completion_usd] AS FLOAT)) AS [value]
+  FROM [gold].[fct_spend_forecast] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  GROUP BY [dim_study].[study_id], [dim_study].[phase]
+)
+SELECT
+  COALESCE([n].[study], [d].[study]) AS [study],
+  COALESCE([n].[phase], [d].[phase]) AS [phase],
+  CAST(COALESCE([n].[value], 0) AS FLOAT) / NULLIF(CAST(COALESCE([d].[value], 0) AS FLOAT), 0) AS [value]
+FROM [numerator] AS [n]
+FULL OUTER JOIN [denominator] AS [d]
+  ON [d].[study] = [n].[study] AND [d].[phase] = [n].[phase]
+ORDER BY 1, 2;

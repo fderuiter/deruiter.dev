@@ -836,6 +836,12 @@ Re-exports [FinanceLine](types/platform/interfaces/FinanceLine.md)
 
 ***
 
+### FinancePlanLine
+
+Re-exports [FinancePlanLine](types/platform/interfaces/FinancePlanLine.md)
+
+***
+
 ### findClinicalClaims
 
 Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)

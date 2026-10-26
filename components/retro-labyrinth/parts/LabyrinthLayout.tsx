@@ -142,8 +142,8 @@ const PHONE_DPAD_ACTIONS = {
 /**
  * The narrowest phone window each key size fits (#2919): the d-pad and the
  * action cluster are three keys wide each, and the maze keeps at least half
- * the width between them. A narrower phone steps the keys down, to the 44px
- * floor at the smallest.
+ * the width between them. A narrower phone in landscape steps the keys
+ * down, to the 44px floor at the smallest.
  */
 const PHONE_DOCK_MIN_WIDTH = { md: 720, lg: 816 } as const;
 
@@ -340,9 +340,13 @@ export function LabyrinthLayout({
   const { dockSize: chosenDockSize } = useDeviceSettings();
   const roomForMd = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.md}px)`);
   const roomForLg = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.lg}px)`);
-  let dockSize: DockSize = "sm";
-  if (chosenDockSize === "lg" && roomForLg) dockSize = "lg";
-  else if (chosenDockSize !== "sm" && roomForMd) dockSize = "md";
+  // A phone held upright shows the rotate prompt, not the maze, so its keys
+  // keep the chosen size.
+  let dockSize: DockSize = chosenDockSize;
+  if (!portraitView) {
+    if (dockSize === "lg" && !roomForLg) dockSize = "md";
+    if (dockSize === "md" && !roomForMd) dockSize = "sm";
+  }
   const toolSlots = useMemo(
     () => [0, 1, 2, 3, 4].map((slot) => toolSlot(loadout, weapons, slot)),
     [loadout, weapons]

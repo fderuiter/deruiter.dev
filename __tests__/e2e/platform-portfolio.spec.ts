@@ -122,6 +122,8 @@ test("hovering a milestone shows its dates", async ({ page }) => {
   await page.goto("/platform/portfolio");
   await settled(page);
   const swimlane = page.getByTestId("portfolio-swimlane");
+  // The heatmap comes first, so the swimlane starts below the fold.
+  await swimlane.scrollIntoViewIfNeeded();
   const box = (await swimlane.boundingBox())!;
   // The middle of the first lane, 56 of the chart's 360 units down, at its
   // left end: DEMO-101's protocol final.

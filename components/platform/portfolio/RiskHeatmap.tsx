@@ -90,11 +90,11 @@ function Cell({
 }) {
   const { href, text } = evidence(row, cell.dimension);
   return (
-    <td className="p-1">
+    <td className="p-0.5 @min-[26rem]:p-1">
       <a
         href={href}
         title={cell.reason}
-        className={`flex min-h-11 items-center gap-1.5 border px-2 py-1.5 text-xs underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-amber-400 active:scale-[0.98] ${RATING[cell.rating].cell}`}
+        className={`flex min-h-11 flex-col items-center justify-center gap-0.5 border px-1 py-1.5 text-center text-xs underline-offset-4 @min-[26rem]:flex-row @min-[26rem]:justify-start @min-[26rem]:gap-1.5 @min-[26rem]:px-2 @min-[26rem]:text-left hover:underline focus-visible:outline-2 focus-visible:outline-amber-400 active:scale-[0.98] ${RATING[cell.rating].cell}`}
       >
         <Mark rating={cell.rating} />
         <span>{RATING[cell.rating].label}</span>
@@ -159,20 +159,23 @@ export function RiskHeatmap({ heatmap }: { heatmap: PortfolioRiskHeatmap }) {
         role="region"
         aria-label="Risk heatmap"
       >
-        <table className="w-full min-w-[17rem] border-collapse text-left text-xs">
+        <table className="w-full border-collapse text-left text-xs">
           <caption className="sr-only">
             Schedule, budget and quality rating of every study
           </caption>
           <thead>
             <tr>
-              <th scope="col" className="px-2 py-2 font-medium text-slate-300">
+              <th
+                scope="col"
+                className="py-2 pr-1 font-medium text-slate-300 @min-[26rem]:px-2"
+              >
                 Study
               </th>
               {COLUMNS.map((dimension) => (
                 <th
                   key={dimension}
                   scope="col"
-                  className="px-2 py-2 font-medium text-slate-300"
+                  className="px-1 py-2 font-medium text-slate-300 @min-[26rem]:px-2"
                 >
                   {names[dimension]}
                 </th>
@@ -184,7 +187,7 @@ export function RiskHeatmap({ heatmap }: { heatmap: PortfolioRiskHeatmap }) {
               <tr key={row.studyId}>
                 <th
                   scope="row"
-                  className="whitespace-nowrap px-2 py-1 text-left font-mono font-normal text-slate-100"
+                  className="whitespace-nowrap py-1 pr-1 text-left font-mono font-normal text-slate-100 @min-[26rem]:px-2"
                 >
                   {row.studyId}
                 </th>
@@ -253,7 +256,10 @@ export function RiskHeatmap({ heatmap }: { heatmap: PortfolioRiskHeatmap }) {
               </h4>
               <dl className="mt-1 space-y-1 text-sm leading-relaxed text-slate-300">
                 {(["green", "amber", "red"] as const).map((rating) => (
-                  <div key={rating} className="flex min-w-0 gap-2">
+                  <div
+                    key={rating}
+                    className="flex min-w-0 flex-col @min-[26rem]:flex-row @min-[26rem]:gap-2"
+                  >
                     <dt className="shrink-0">
                       <Mark rating={rating} />{" "}
                       <span>{`${RATING[rating].label}:`}</span>

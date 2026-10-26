@@ -90,6 +90,15 @@ const serwist = new Serwist({
         ],
       }),
     },
+    // The SQL workbench's engine binary (#2633) is 34 MB and its file name
+    // is content-hashed, so the browser's HTTP cache already keeps it; a
+    // second copy in Cache Storage would only spend the visitor's disk.
+    {
+      matcher: ({ url }) =>
+        url.pathname.startsWith("/_next/static/media/duckdb-") &&
+        url.pathname.endsWith(".wasm"),
+      handler: new NetworkOnly(),
+    },
     ...defaultCache,
   ],
   fallbacks: {

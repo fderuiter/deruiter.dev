@@ -6,7 +6,7 @@
 
 # Function: buildSecurityHeaders()
 
-> **buildSecurityHeaders**(`admin`): `Record`\<`string`, `string`\>
+> **buildSecurityHeaders**(`admin`, `wasm?`): `Record`\<`string`, `string`\>
 
 Builds the standard security header set for the public or admin surface.
 
@@ -15,6 +15,14 @@ Builds the standard security header set for the public or admin surface.
 ### admin
 
 `boolean`
+
+Whether the headers are for the admin surface.
+
+### wasm?
+
+`boolean` = `false`
+
+Whether the policy also allows WebAssembly compilation.
 
 ## Returns
 

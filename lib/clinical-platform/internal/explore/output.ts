@@ -9,6 +9,7 @@ import type {
   ReportData,
   ReportSpec,
 } from "../../types";
+import { csvText } from "../csv";
 import { checkReportSpec } from "../reporting/check";
 import { METRIC_REGISTRY } from "../semantic/registry";
 import {
@@ -16,17 +17,6 @@ import {
   EXPLORATION_OWNER,
   EXPLORATION_PURPOSE,
 } from "./model";
-
-/**
- * One CSV text field, quoted when it holds a comma, quote or line break.
- * Text a spreadsheet would read as a formula (starting with `=`, `+`, `-`,
- * `@`, a tab or a carriage return) is prefixed with an apostrophe, so
- * opening the file never runs anything. Numbers are written as numbers.
- */
-function csvText(value: string): string {
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
-}
 
 /**
  * A built report as CSV: one column per grouped dimension, then one per

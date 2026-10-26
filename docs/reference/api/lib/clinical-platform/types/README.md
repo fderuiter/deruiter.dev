@@ -1412,9 +1412,33 @@ Re-exports [WorkbenchColumn](workbench/interfaces/WorkbenchColumn.md)
 
 ***
 
+### WorkbenchLoad
+
+Re-exports [WorkbenchLoad](workbench/interfaces/WorkbenchLoad.md)
+
+***
+
+### WorkbenchLoadFile
+
+Re-exports [WorkbenchLoadFile](workbench/interfaces/WorkbenchLoadFile.md)
+
+***
+
 ### WorkbenchQuery
 
 Re-exports [WorkbenchQuery](workbench/interfaces/WorkbenchQuery.md)
+
+***
+
+### WorkbenchResult
+
+Re-exports [WorkbenchResult](workbench/interfaces/WorkbenchResult.md)
+
+***
+
+### WorkbenchResultColumn
+
+Re-exports [WorkbenchResultColumn](workbench/interfaces/WorkbenchResultColumn.md)
 
 ***
 

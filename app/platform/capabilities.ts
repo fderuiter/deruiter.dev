@@ -138,7 +138,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     evidence: [
       issue(2628, "SQL Server plan"),
       issue(2629, "Power BI plan"),
-      issue(2633, "SQL workbench plan"),
+      route("/platform/sql", "SQL workbench"),
     ],
   },
   {

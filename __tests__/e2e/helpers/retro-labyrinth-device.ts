@@ -30,6 +30,31 @@ const STAGE = `${IMMERSIVE} .arcade-cabinet-stage`;
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
 // The touch target floor (ADR 0061, rule 4).
 const MIN_TARGET_PX = 44;
+// The EMP key: "EMP" on the phone's action cluster, which names its keys from
+// the action map (#2919), and a longer name in the tablet's tool grid.
+const EMP_KEY = { name: /^EMP(: fire an EMP burst)?$/ };
+
+/**
+ * Shows the Market key. The phone keeps it in the More sheet (#2919); the
+ * tablet's tool grid shows it already.
+ */
+async function showMarketKey(page: Page) {
+  const more = page.getByRole("button", { name: "More", exact: true });
+  if ((await more.count()) === 0) return;
+  const sheet = page.getByRole("dialog", { name: "More" });
+  await expect(async () => {
+    if ((await sheet.count()) === 0) await more.tap({ timeout: 2000 });
+    await expect(sheet).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 15000 });
+}
+
+/** Closes the phone's More sheet, if it is open. */
+async function hideMarketKey(page: Page) {
+  const close = page.getByRole("button", { name: "Close More" });
+  if ((await close.count()) === 0) return;
+  await close.tap();
+  await expect(page.getByRole("dialog", { name: "More" })).toHaveCount(0);
+}
 
 /** A phone-width window held upright is asked to turn: the cabinet is landscape. Tablets and Split View panes keep their orientation. */
 async function turnForCabinet(page: Page) {
@@ -65,9 +90,9 @@ async function launchCabinet(page: Page) {
   }).toPass({ timeout: 90000 });
   // The game loads as a separate chunk behind a "Building the dungeon" stub.
   // Wait for its controls, so the checks below run against the mounted game.
-  await expect(
-    page.getByRole("button", { name: "EMP: fire an EMP burst" })
-  ).toBeVisible({ timeout: 90000 });
+  await expect(page.getByRole("button", EMP_KEY)).toBeVisible({
+    timeout: 90000,
+  });
 }
 
 // The iPad sizes the result card and the market are checked at, both ways up.
@@ -346,12 +371,17 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       expect(stage.scrollHeight).toBeLessThanOrEqual(stage.clientHeight + 1);
 
       // The maze is the largest part of the screen: at least half of each side.
+      // The smallest phone (568x320) gives a little more to its two 3-key
+      // thumb docks, the d-pad and the action cluster (#2919), at the 44px
+      // floor.
       const canvas = await page
         .locator(`${PLAYFIELD} canvas`)
         .first()
         .boundingBox();
       expect(canvas).not.toBeNull();
-      expect(canvas!.width).toBeGreaterThanOrEqual(viewport.width * 0.5);
+      expect(canvas!.width).toBeGreaterThanOrEqual(
+        viewport.width * (viewport.width < 600 ? 0.45 : 0.5)
+      );
       expect(canvas!.height).toBeGreaterThanOrEqual(viewport.height * 0.3);
     });
 
@@ -361,7 +391,8 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       const field = page.locator(PLAYFIELD);
       const controls = field
         .locator("[data-touch-button], [data-hold-dpad] button")
-        .or(field.getByRole("button", { name: "Options", exact: true }));
+        .or(field.getByRole("button", { name: "Options", exact: true }))
+        .or(field.getByRole("button", { name: "More", exact: true }));
       const count = await controls.count();
       // Ten or more: a starter slot that holds EMP is hidden, since the EMP key
       // already fires it.
@@ -386,9 +417,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       const dpad = await page
         .getByRole("button", { name: "Move Right" })
         .boundingBox();
-      const emp = await page
-        .getByRole("button", { name: "EMP: fire an EMP burst" })
-        .boundingBox();
+      const emp = await page.getByRole("button", EMP_KEY).boundingBox();
       expect(dpad).not.toBeNull();
       expect(emp).not.toBeNull();
       for (const box of [dpad!, emp!]) {
@@ -521,9 +550,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       for (let step = 0; step < 240 && !changed; step++) {
         // Fire the EMP now and then: it is how a bug is cleared for score.
         if (step % 4 === 3) {
-          await page
-            .getByRole("button", { name: "EMP: fire an EMP burst" })
-            .tap();
+          await page.getByRole("button", EMP_KEY).tap();
         } else {
           await page
             .getByRole("button", {
@@ -874,15 +901,17 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       const dpad = (await page
         .getByRole("button", { name: "Move Right" })
         .boundingBox())!;
-      const emp = (await page
-        .getByRole("button", { name: "EMP: fire an EMP burst" })
-        .boundingBox())!;
+      const emp = (await page.getByRole("button", EMP_KEY).boundingBox())!;
       expect(dpad.x + dpad.width).toBeLessThanOrEqual(canvas.x + 1);
       expect(emp.x).toBeGreaterThanOrEqual(canvas.x + canvas.width - 1);
       const share =
         (canvas.width * canvas.height) / (viewport.width * viewport.height);
-      // About 520x312 at 852x393; the smallest phone keeps a smaller share.
-      expect(share).toBeGreaterThanOrEqual(viewport.width >= 800 ? 0.4 : 0.25);
+      // About 500x300 at 852x393; the smaller phones keep a smaller share,
+      // the 568x320 one about 265x159 beside its 44px docks (#2919).
+      let minShare = 0.25;
+      if (viewport.width >= 800) minShare = 0.4;
+      else if (viewport.width < 600) minShare = 0.22;
+      expect(share).toBeGreaterThanOrEqual(minShare);
       await assertNoHorizontalOverflow(page);
       await shoot(page, testInfo, `phone-stage-${projectSize(page)}`);
     });
@@ -1005,11 +1034,13 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       const market = page.getByRole("button", {
         name: "Market: open the darknet market",
       });
+      await showMarketKey(page);
       await expect(
         page.getByRole("button", {
           name: "Market: Market opens at the rest stop",
         })
       ).toBeDisabled();
+      await hideMarketKey(page);
       const sheet = page.getByTestId("labyrinth-options-sheet");
       await expect(async () => {
         if ((await sheet.count()) === 0) {
@@ -1026,6 +1057,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
             .tap({ timeout: 2000 });
         }
         await expect(sheet).toHaveCount(0, { timeout: 2000 });
+        await showMarketKey(page);
         await expect(market).toBeEnabled({ timeout: 2000 });
       }).toPass({ timeout: 15000 });
       await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
@@ -1036,7 +1068,10 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
         name: /DARKNET EXPLOIT BLACK-MARKET/,
       });
       await expect(async () => {
-        if ((await dialog.count()) === 0) await market.tap({ timeout: 2000 });
+        if ((await dialog.count()) === 0) {
+          await showMarketKey(page);
+          await market.tap({ timeout: 2000 });
+        }
         await expect(dialog).toBeVisible({ timeout: 2000 });
       }).toPass({ timeout: 15000 });
       await expect(
@@ -1081,6 +1116,49 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
 
       await page.getByRole("button", { name: "Close Darknet Market" }).tap();
       await expect(dialog).toHaveCount(0);
+    });
+
+    test("the phone's More sheet is a dialog with 44px controls, and closing it hands focus back to More (#2919)", async ({
+      page,
+    }) => {
+      await launchCabinet(page);
+      const more = page.getByRole("button", { name: "More", exact: true });
+      test.skip((await more.count()) === 0, "the tablet has no More sheet");
+
+      // A key press would hide the touch controls (ADR 0061), so this works
+      // by touch alone; the unit suite checks Escape.
+      await more.tap();
+      const sheet = page.getByRole("dialog", { name: "More" });
+      await expect(sheet).toBeVisible();
+      await expect(sheet.getByRole("button", { name: /tool 4/ })).toBeVisible();
+      await expect(sheet.getByRole("button", { name: /tool 5/ })).toBeVisible();
+      await expect(
+        sheet.getByRole("button", { name: /^Market: / })
+      ).toBeVisible();
+      const controls = sheet.getByRole("button");
+      const count = await controls.count();
+      for (let i = 0; i < count; i++) {
+        const box = (await controls.nth(i).boundingBox())!;
+        expect(box.width, `More control ${i} width`).toBeGreaterThanOrEqual(
+          MIN_TARGET_PX - 0.5
+        );
+        expect(box.height, `More control ${i} height`).toBeGreaterThanOrEqual(
+          MIN_TARGET_PX - 0.5
+        );
+      }
+      const results = await new AxeBuilder({ page })
+        .include('[role="dialog"]')
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(
+        results.violations
+          .filter((v) => BLOCKING.has(v.impact ?? ""))
+          .map((v) => v.id)
+      ).toEqual([]);
+
+      await sheet.getByRole("button", { name: "Close More" }).tap();
+      await expect(sheet).toHaveCount(0);
+      await expect(more).toBeFocused();
     });
 
     test("walks Room 1 along the solved route to the exit and reaches Room 02", async ({
@@ -1140,7 +1218,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
         floorBadge("Room", "02")
       );
-      await page.getByRole("button", { name: "EMP: fire an EMP burst" }).tap();
+      await page.getByRole("button", EMP_KEY).tap();
       await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(
         "EMP: "
       );

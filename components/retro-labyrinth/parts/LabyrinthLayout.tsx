@@ -1548,9 +1548,11 @@ export function LabyrinthLayout({
       // them back (ADR 0061).
       moveDock={
         <TouchControlsGate>
+          {/* 44px keys beside the maze; a phone held upright, behind the
+              rotate prompt, keeps the 48px keys. */}
           <HoldDpad
             onMove={intents.move}
-            compact
+            compact={!portraitView}
             paused={gameStatus !== "playing" || optionsOpen}
           />
         </TouchControlsGate>

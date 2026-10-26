@@ -778,6 +778,51 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>Most code does not need this. Derivations do, along with anything where a wrong answer looks like a right one: a count that is off by the subjects on a boundary day still renders as a perfectly good table. For that kind of code, coverage tells you the tests were there. Mutants tell you they were paying attention.</p>
 `.trim(),
   },
+  {
+    id: "fallback-blog-15",
+    slug: "a-check-that-always-fails",
+    title: "A Check That Always Fails Is Worse Than None",
+    dek: "For twelve days every release of this site needed a manual override past a failing check. The fix was to delete the check, and the reason is worth keeping.",
+    pillar: "field-notes",
+    tags: "deployment, vercel, ci, quality-gates, incidents, engineering-practice",
+    published: true,
+    reading_time_minutes: 5,
+    hero_image_url: null,
+    created_at: new Date("2026-10-26T12:00:00.000Z"),
+    updated_at: new Date("2026-10-26T12:00:00.000Z"),
+    body: `
+<h2>Twelve days of Force Promote</h2>
+<p>Every production deploy of this site since 14 October went the same way. The build finished and the deployment showed READY. Then nothing happened. The domain stayed on the old deployment until I opened the Vercel dashboard and pressed Force Promote. On 25 October one deployment sat READY for almost an hour before I did.</p>
+<p>I had stopped noticing. Pressing Force Promote had become a step in the release, the same as pressing Deploy.</p>
+
+<h2>What was actually failing</h2>
+<p>Vercel holds a production deployment off its domains until the project's Deployment Checks pass. This project had two, Lint and Typecheck, which Vercel runs itself in a separate sandbox. The runbook, the deployment guide and an architecture decision record all said something else: that the check waited for the GitHub Merge Gate. That check had never been configured. The documents described a control that did not exist, and nobody re-read the settings page, because the documents were confident.</p>
+<p>Lint passed every time. Typecheck printed "Types generated successfully", ran for about 80 seconds, and exited with code 137. Every production deployment checked since the 14th had failed the same way: eight of them.</p>
+<p>Exit 137 is a SIGKILL from the out-of-memory killer. The sandbox ran <code>tsc</code> with a 3,584 MB heap ceiling alongside ESLint, and the two did not fit in its memory together. This project had already raised that ceiling twice, most recently on 24 October, after two pull requests crossed the CI budget together. A third raise would not have helped: <code>--max-old-space-size</code> moves V8's limit, not the machine's.</p>
+
+<h2>Remove it, don't fix it</h2>
+<p>The tempting fix was to make the check pass: a smaller program, a bigger sandbox, lint on its own. The better question was what the check caught that nothing else did. The answer was nothing.</p>
+<ul>
+  <li><strong>CI already runs both.</strong> The static gate runs lint and a cold type check on every pull request and every push to main, and the main branch requires it.</li>
+  <li><strong>The production build type-checks itself.</strong> It runs the type check as its own step before anything is compiled. A type error fails the build, so it never gets far enough for a deployment check to hold it.</li>
+</ul>
+<p>The Typecheck check was a third run of the same verification, on a machine too small for it. When it worked, it added nothing. When it failed, which was always, it taught the person releasing to override it. I removed both checks. The next production deploy had the domain 2.6 seconds after it was READY.</p>
+
+<h2>Don't swap in the obvious replacement</h2>
+<p>The documents had promised a Merge Gate check, so wiring one up looked like the honest fix. It would have failed in a new way. CI cancels an in-progress run on main when a newer merge lands, which keeps the queue short. A commit whose run was cancelled never gets a passing Merge Gate, so on a busy day the check would have held back any commit that was not the last to land. The documents now say what is configured, which is nothing, and why.</p>
+
+<h2>A gate is worth what only it catches</h2>
+<p>An earlier post here, <a href="/blog/the-cost-of-being-wrong-quietly">The Cost of Being Wrong Quietly</a>, argued that a green check is only evidence when a red one was possible. The converse is just as true and does more damage. A check that is always red is not evidence either, and it is worse than no check at all, because it trains people to click past red. By the time a real failure arrived, Force Promote would have been muscle memory.</p>
+<p>Questions I now ask of any gate:</p>
+<ul>
+  <li><strong>What does it catch that nothing earlier catches?</strong> If the answer is nothing, it is cost and noise.</li>
+  <li><strong>When did it last pass?</strong> A gate that has not passed in a week is not a gate. It is a step people skip.</li>
+  <li><strong>Does the documentation match the settings page?</strong> Check the provider, not the runbook. Here they disagreed about which check even existed.</li>
+  <li><strong>Is the fix more resources, or less duplication?</strong> Raising a limit is right when the work is necessary. Here it was the third copy of the same work.</li>
+</ul>
+<p>An override button is useful. It should feel unusual every time you press it. When pressing it has become routine, the thing it overrides is what needs attention.</p>
+`.trim(),
+  },
 ];
 
 /**

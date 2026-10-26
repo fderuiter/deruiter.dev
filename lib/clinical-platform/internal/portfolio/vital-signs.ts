@@ -26,7 +26,7 @@ interface VitalSignModel {
 }
 
 /** Vital signs taken at every visit, in the order a site records them. */
-export const VITAL_SIGN_MODELS: readonly VitalSignModel[] = [
+const VITAL_SIGN_MODELS: readonly VitalSignModel[] = [
   {
     test: "SYSBP",
     unit: "mmHg",
@@ -73,7 +73,7 @@ export const VITAL_SIGN_MODELS: readonly VitalSignModel[] = [
  * Share of the usual visit-to-visit spread a site with a data integrity
  * signal shows: readings copied forward or invented vary too little.
  */
-export const INTEGRITY_WITHIN_SHARE = 0.3;
+const INTEGRITY_WITHIN_SHARE = 0.3;
 
 /**
  * What a site with a data integrity signal rounds its readings to: blood

@@ -37,9 +37,14 @@ import {
   IconGitCompare,
   IconBooks,
   IconSearch,
+  IconArrowRight,
 } from "@tabler/icons-react";
 import { getStudyBranding } from "@/lib/crf/branding-defaults";
 import { safeSetRawItem } from "@/lib/safe-storage";
+import {
+  STUDY_DATA_HANDOFF_PATH,
+  storeStudyHandoff,
+} from "@/components/study-data/handoff-storage";
 
 interface StudioHeaderProps {
   study: StudyProtocol;
@@ -107,6 +112,29 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
 }) => {
   const router = useRouter();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isSendingToPipeline, setIsSendingToPipeline] = useState(false);
+
+  // Hands the study's USDM export to /study-data in this tab, the same
+  // handoff the Exports USDM tab offers. When the browser cannot store it,
+  // the Exports mode is the fallback, where the file can be downloaded.
+  const sendToPipeline = async () => {
+    if (isSendingToPipeline) return;
+    setIsSendingToPipeline(true);
+    let failed = true;
+    try {
+      const { exportStudyToUsdmObject } =
+        await import("@/lib/crf/usdm-adapter");
+      failed = storeStudyHandoff(exportStudyToUsdmObject(study)) !== null;
+    } catch {
+      failed = true;
+    }
+    setIsSendingToPipeline(false);
+    if (failed) {
+      onChangeMode("export");
+      return;
+    }
+    router.push(STUDY_DATA_HANDOFF_PATH);
+  };
   const [presets] = useState<
     Array<{
       id: string;
@@ -357,6 +385,18 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             </span>
           </button>
 
+          {/* The clinical journey's next step for this study (#2927) */}
+          <button
+            type="button"
+            onClick={sendToPipeline}
+            disabled={isSendingToPipeline}
+            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 font-mono text-xs font-bold rounded-lg border border-amber-500/50 transition-all shrink-0 whitespace-nowrap shadow-xs disabled:opacity-60"
+            title="Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables"
+          >
+            <IconArrowRight className="w-3.5 h-3.5 shrink-0" />
+            <span>Run Pipeline</span>
+          </button>
+
           {/* Primary 1-Click CDASH Quick Scaffolder Button */}
           <button
             onClick={onOpenCdashScaffolder}
@@ -523,6 +563,24 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     className="hidden sm:block xl:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
                   >
                     Add CDASH form
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      void sendToPipeline();
+                    }}
+                    disabled={isSendingToPipeline}
+                    className="xl:hidden w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-amber-950/40 hover:bg-amber-900/40 text-amber-200 border border-amber-800/40 transition-colors disabled:opacity-60"
+                  >
+                    <IconArrowRight className="w-4 h-4 text-amber-400" />
+                    <div className="flex-1">
+                      <div className="font-bold">Run Pipeline</div>
+                      <div className="text-[10px] text-amber-400/80">
+                        Tabulate this study into SDTM, ADaM and tables
+                      </div>
+                    </div>
                   </button>
 
                   <button

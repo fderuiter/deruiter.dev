@@ -44,6 +44,7 @@ import {
 } from "@/components/retro-labyrinth/labels";
 import { MazeCanvas } from "@/components/retro-labyrinth/parts/MazeCanvas";
 import { HexTerminal } from "@/components/retro-labyrinth/parts/HexTerminal";
+import { LabyrinthPhoneHud } from "@/components/retro-labyrinth/parts/LabyrinthPhoneHud";
 import { RoomHud } from "@/components/retro-labyrinth/parts/RoomHud";
 import { RoomStatusCards } from "@/components/retro-labyrinth/parts/RoomStatusCards";
 import { RoomTelemetry } from "@/components/retro-labyrinth/parts/RoomTelemetry";
@@ -137,9 +138,9 @@ interface LabyrinthLayoutProps {
 /**
  * Retro Labyrinth's layout (ADR 0062): the maze, its HUD, hotbar, cards and
  * controls, drawn from the session above it. The views choose `touch` and
- * `phone` for it, so it reads no device itself. Desktop and phone share it
- * until the phone view lands (#2379); the tablet view passes a touch cabinet
- * until it has its own layout (#2860, #2861).
+ * `phone` for it, so it reads no device itself. The phone lays out on
+ * PhoneStage with its own HUD (#2918), the tablet on TabletStage (#2860,
+ * #2861), and the desktop in its column.
  */
 export function LabyrinthLayout({
   isMounted = true,
@@ -522,7 +523,8 @@ export function LabyrinthLayout({
       ? `ROOM ${String(roomIndex + 1).padStart(2, "0")}`
       : `SUBNET 0${stage}`;
 
-  const phoneHud = (
+  // The tablet's HUD row. The phone has its own (LabyrinthPhoneHud).
+  const tabletHud = (
     <div className="flex h-full w-full min-w-0 items-center gap-2 pl-1 text-xs font-bold">
       <span
         className="shrink-0 text-neutral-300"
@@ -532,7 +534,7 @@ export function LabyrinthLayout({
       </span>
       {wallShiftLabel && (
         <span
-          className="hidden landscape:min-[700px]:inline shrink-0 text-amber-300 text-[10px]"
+          className="hidden landscape:min-[700px]:inline shrink-0 text-amber-300"
           data-testid="labyrinth-wall-telegraph-phone"
         >
           {wallShiftLabel}
@@ -578,7 +580,7 @@ export function LabyrinthLayout({
         {threatLevel !== "none" && (
           <span
             role="status"
-            className={`font-bold uppercase text-[10px] ${
+            className={`font-bold uppercase ${
               threatLevel === "red" ? "text-rose-400" : "text-amber-400"
             }`}
           >
@@ -609,7 +611,7 @@ export function LabyrinthLayout({
   const roomNodes = tspNodes ?? [];
   const routeVisited = roomNodes.filter((node) => node.visited).length;
   const empWeapon = weapons.emp_blast;
-  const phoneRoomPanel = (
+  const roomPanel = (
     <section
       aria-label="Room status"
       data-testid="labyrinth-room-panel"
@@ -714,7 +716,9 @@ export function LabyrinthLayout({
     </section>
   );
 
-  const phoneActionGrid = (
+  // The touch tools. Landscape (the phone) keys are 44px tall and wide enough
+  // for a 12px label; a portrait tablet scales them to its dock.
+  const touchActionGrid = (
     <div
       role="group"
       aria-label="Tools and actions"
@@ -743,17 +747,17 @@ export function LabyrinthLayout({
             }
             disabled={!hasAmmo}
             onPress={() => intents.fireTool(slotIdx)}
-            className="relative flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
+            className="relative flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
           >
             {showKeyHints && (
               <span
                 aria-hidden="true"
-                className="absolute left-1.5 top-1 text-[11px] leading-none text-amber-200/80"
+                className="absolute left-1.5 top-1 text-xs leading-none text-amber-200/80"
               >
                 {slotIdx + 1}
               </span>
             )}
-            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)]">
+            <span className="max-w-full truncate text-xs leading-tight portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)]">
               {shortLabel}
             </span>
           </TouchButton>
@@ -762,14 +766,14 @@ export function LabyrinthLayout({
       <TouchButton
         label="EMP: fire an EMP burst"
         onPress={intents.emp}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
+        className="flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-xs portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Exploit: cycle to the next tool and fire it"
         onPress={intents.exploit}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
+        className="flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-xs portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
@@ -781,7 +785,7 @@ export function LabyrinthLayout({
         }
         disabled={!marketOpen}
         onPress={() => openOverlay("darknet_shop")}
-        className="disabled:opacity-40 flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
+        className="disabled:opacity-40 flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-xs portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -945,6 +949,7 @@ export function LabyrinthLayout({
       <MazeCanvas
         onFrame={session.onFrame}
         scale={phoneCabinet ? "fractional" : "integer"}
+        maxDpr={phoneDevice ? 2 : undefined}
         grid={{
           cols: currentMaze[0]?.length || 15,
           rows: currentMaze.length || 9,
@@ -1006,6 +1011,16 @@ export function LabyrinthLayout({
               </div>
             )}
 
+            {/* The phone's HUD has no room for the wall countdown, so it
+                sits where the toast does while no toast is up (#2918). */}
+            {phoneDevice && wallShiftLabel && !phoneToast && (
+              <div
+                data-testid="labyrinth-wall-telegraph-phone"
+                className="pointer-events-none absolute bottom-2 left-1/2 z-10 w-max max-w-[90%] -translate-x-1/2 rounded border border-amber-500/40 bg-zinc-950/90 px-3 py-1 text-center text-xs font-bold text-amber-300"
+              >
+                {wallShiftLabel}
+              </div>
+            )}
             {phoneToast && (
               <div
                 key={phoneToast.id}
@@ -1512,17 +1527,51 @@ export function LabyrinthLayout({
     </div>
   );
 
-  // The touch layout is a stage (#2358): PhoneStage on a phone, TabletStage
-  // on a tablet. Landscape: movement, maze, tools in one row. Portrait (the
-  // tablet held upright): the maze takes the first full-width row at its own
-  // height, the room panel the next, and the movement and tool docks share
-  // the rest, so the controls sit under the thumbs. Each portrait dock is a
-  // size container below 480px, so its keys scale to fill it. The stage
-  // mirrors the docks for left-handed players.
-  const TouchStage = phoneDevice ? PhoneStage : TabletStage;
-  const phoneRow = (
-    <TouchStage
-      hud={phoneHud}
+  // The phone stage (#2918): the HUD row over the d-pad column, the maze and
+  // the tool column. The phone only plays landscape (it asks a portrait
+  // phone to turn), and the stage mirrors the columns for left-handed
+  // players. The maze takes the largest 5:3 box between the columns.
+  const phoneStage = (
+    <PhoneStage
+      orientation="landscape"
+      handedness={handedness}
+      // The playfield already pads 4px, which the toolbar inset counts too.
+      className="[--arcade-stage-edge:4px]"
+      hud={
+        <LabyrinthPhoneHud
+          optionsButtonRef={optionsButtonRef}
+          optionsOpen={optionsOpen}
+          onOptions={openOptionsSheet}
+        />
+      }
+      // The controls sit in a gate: a keyboard hides them, a touch brings
+      // them back (ADR 0061).
+      moveDock={
+        <TouchControlsGate>
+          {/* 44px keys beside the maze; a phone held upright, behind the
+              rotate prompt, keeps the 48px keys. */}
+          <HoldDpad
+            onMove={intents.move}
+            compact={!portraitView}
+            paused={gameStatus !== "playing" || optionsOpen}
+          />
+        </TouchControlsGate>
+      }
+      actionDock={<TouchControlsGate>{touchActionGrid}</TouchControlsGate>}
+    >
+      {canvasFrameNode}
+    </PhoneStage>
+  );
+
+  // The tablet stage (#2358). Landscape: movement, maze, tools in one row.
+  // Portrait: the maze takes the first full-width row at its own height, the
+  // room panel the next, and the movement and tool docks share the rest, so
+  // the controls sit under the thumbs. Each portrait dock is a size container
+  // below 480px, so its keys scale to fill it. The stage mirrors the docks for
+  // left-handed players.
+  const tabletStage = (
+    <TabletStage
+      hud={tabletHud}
       handedness={handedness}
       portraitFill="dock"
       // The playfield already pads 4px, which the toolbar inset counts too.
@@ -1537,8 +1586,6 @@ export function LabyrinthLayout({
         actionDock:
           "portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[480px]:h-auto portrait:min-[480px]:self-end portrait:min-[480px]:items-end portrait:min-[480px]:[container-type:normal]",
       }}
-      // The controls sit in a gate: a keyboard hides them, a touch brings
-      // them back (ADR 0061).
       moveDock={
         tabletLandscape ? (
           tabletMoveColumn
@@ -1556,26 +1603,26 @@ export function LabyrinthLayout({
       status={
         tabletPortrait ? (
           <div className="flex min-h-0 flex-col gap-2">
-            {phoneRoomPanel}
+            {roomPanel}
             <div className="grid min-h-0 grid-cols-2 gap-2">
               {tabletRouteCard}
               {tabletObjectiveCard}
             </div>
           </div>
         ) : (
-          phoneRoomPanel
+          roomPanel
         )
       }
       actionDock={
         tabletLandscape ? (
           tabletActionColumn
         ) : (
-          <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
+          <TouchControlsGate>{touchActionGrid}</TouchControlsGate>
         )
       }
     >
       {canvasFrameNode}
-    </TouchStage>
+    </TabletStage>
   );
 
   return (
@@ -1635,7 +1682,11 @@ export function LabyrinthLayout({
           />
         )}
         {!phoneCabinet && <RoomHud />}
-        {phoneCabinet ? phoneRow : canvasFrameNode}
+        {phoneCabinet
+          ? phoneDevice
+            ? phoneStage
+            : tabletStage
+          : canvasFrameNode}
         {!phoneCabinet && footerNode}
       </div>
 

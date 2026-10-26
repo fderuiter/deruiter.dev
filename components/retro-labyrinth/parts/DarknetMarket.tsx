@@ -126,7 +126,7 @@ export function DarknetMarket({
           <div
             aria-hidden="true"
             data-testid="market-more-cue"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 flex items-end justify-center bg-gradient-to-t from-neutral-950 to-transparent pb-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 flex items-end justify-center bg-gradient-to-t from-neutral-950 to-transparent pb-0.5 text-xs font-bold uppercase tracking-wider text-amber-300"
           >
             More below
           </div>

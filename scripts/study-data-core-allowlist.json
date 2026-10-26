@@ -3,54 +3,6 @@
   "entries": [
     {
       "target": "sdtm",
-      "coreId": "CORE-000852",
-      "dataset": "AE",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
-      "dataset": "DS",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
-      "dataset": "EX",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
-      "dataset": "LB",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
-      "dataset": "VS",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-000701",
       "dataset": "AE",
       "category": "by-design",

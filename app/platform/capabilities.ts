@@ -97,7 +97,8 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
       "Study and portfolio measures with drill-down and accessible table equivalents.",
     evidence: [
       route("/platform/operations", "Operations dashboards"),
-      issue(2632, "Portfolio dashboard plan"),
+      route("/platform/portfolio", "Portfolio dashboard"),
+      issue(2632, "Portfolio forecast and finance plan"),
     ],
   },
   {

@@ -78,7 +78,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
                 <Link
                   href={crumb.href}
                   onMouseEnter={handleHover}
-                  className="hover:text-accent transition-colors duration-150 inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent rounded px-0.5"
+                  className="hover:text-accent transition-colors duration-150 inline-flex items-center gap-1 pointer-coarse:min-h-11 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent rounded px-0.5"
                 >
                   {isFirst && <IconHome className="w-3.5 h-3.5" />}
                   <span>{crumb.label}</span>

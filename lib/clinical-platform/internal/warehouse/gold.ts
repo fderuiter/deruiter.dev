@@ -592,6 +592,26 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     };
   });
 
+  // Events the clinical events committee adjudicates, keyed by the site
+  // version in force when the site reported them (#2881).
+  const fctCecAdjudication = silver.cec_adjudication.map((e) => {
+    const reported = str(e, "reported_on");
+    const adjudicated = optStr(e, "adjudicated_on");
+    return {
+      event_id: e.event_id,
+      subject_id: e.subject_id,
+      ...dims(e, reported),
+      occurred_date_key: dk(str(e, "occurred_on")),
+      reported_date_key: dk(reported),
+      adjudicated_date_key: optDk(adjudicated),
+      days_to_adjudicate:
+        adjudicated === null ? null : daysBetween(reported, adjudicated),
+      site_device_related: e.site_device_related,
+      cec_device_related: e.cec_device_related,
+      is_synthetic: e.is_synthetic,
+    };
+  });
+
   const dimMonitoringPlan = silver.ctms_monitoring_plan.map((p, index) => ({
     monitoring_plan_key: index + 1,
     monitoring_plan_id: p.monitoring_plan_id,
@@ -730,6 +750,7 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     fct_visit: fctVisit,
     fct_query: fctQuery,
     fct_deviation: fctDeviation,
+    fct_cec_adjudication: fctCecAdjudication,
     fct_monitoring_visit: fctMonitoringVisit,
     fct_planned_monitoring_visit: fctPlannedMonitoringVisit,
     fct_milestone: fctMilestone,

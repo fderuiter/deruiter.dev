@@ -32,6 +32,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  platformPortfolio: {
+    title: "Clinical Portfolio Dashboard",
+    description:
+      "Eight synthetic studies against their plans: every milestone on one timeline with its slips, and start-up, enrollment and close-out times compared.",
+    path: "/platform/portfolio",
+    keywords: [
+      "Clinical Portfolio Management",
+      "Clinical Data Platform",
+      "Study Milestones",
+      "Cycle Time Benchmarks",
+      "Semantic Layer",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platformOperations: {
     title: "Clinical Operations Dashboards",
     description:

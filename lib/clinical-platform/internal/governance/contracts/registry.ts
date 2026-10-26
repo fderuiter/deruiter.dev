@@ -69,6 +69,10 @@ const OUTSOURCING = {
   owner: "Clinical Outsourcing Lead",
   steward: "Vendor Data Steward",
 } as const;
+const SAFETY = {
+  owner: "Medical Safety Lead",
+  steward: "Safety Data Steward",
+} as const;
 const FINANCE = {
   owner: "Clinical Finance Lead",
   steward: "Finance Data Steward",
@@ -232,7 +236,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
   "silver.cec_adjudication": silver(
     "Event adjudications",
     "Clinical events committee",
-    { owner: "Medical Safety Lead", steward: "Safety Data Steward" },
+    SAFETY,
     DAILY,
     TRIAL
   ),
@@ -279,6 +283,12 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     version: "1.1.0",
   },
   "gold.fct_deviation": gold("Deviation facts", "Operations mart", QUALITY),
+  // 1.0.0 (#2881): the device studies' adjudication backlog.
+  "gold.fct_cec_adjudication": gold(
+    "Event adjudication facts",
+    "Safety mart",
+    SAFETY
+  ),
   "gold.fct_monitoring_visit": {
     ...gold("Monitoring visit facts", "Operations mart", MONITORING),
     // 1.1.0 (#2736): the plan in force and the report due date.
@@ -300,6 +310,6 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     freshnessHours: MONTHLY_TRANSFER,
     availability: GOLD_AVAILABILITY,
     retention: TRIAL,
-    version: "2.2.0",
+    version: "2.3.0",
   },
 };

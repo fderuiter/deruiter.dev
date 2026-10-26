@@ -172,4 +172,5 @@ customProperties:
     value:
       - bronze.cec
   - property: consumers
-    value: []
+    value:
+      - "product:gold.fct_cec_adjudication"

@@ -63,6 +63,7 @@ describe("navigation structure (#1842, #1843)", () => {
       "/study-data",
       "/platform/strategy",
       "/platform/operations",
+      "/platform/portfolio",
       "/simulator",
       "/patrol",
     ]);
@@ -117,6 +118,7 @@ describe("navigation structure (#1842, #1843)", () => {
       "/study-data",
       "/platform/strategy",
       "/platform/operations",
+      "/platform/portfolio",
       "/patrol",
     ]);
     expect(filterNavItems(sims, "professional")).toHaveLength(sims.length);

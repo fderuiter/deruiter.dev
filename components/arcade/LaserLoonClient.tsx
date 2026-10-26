@@ -37,7 +37,7 @@ export const LaserLoonClient: React.FC = () => {
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             <Link
               href="/arcade"
-              className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-brand-cyan transition-colors"
+              className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-xs font-mono text-zinc-400 hover:text-brand-cyan transition-colors"
             >
               <IconArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Arcade Hub</span>

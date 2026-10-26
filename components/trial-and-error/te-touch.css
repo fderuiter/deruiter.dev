@@ -228,6 +228,165 @@
     min-width: 0;
   }
 }
+/* A phone held sideways is too short for the stacked table: Play Hand sat
+   about 500px down the cabinet's scroll (#2897). Below 500px of height the
+   table fits the stage instead. The toolbar is one scrolling row, the Blind
+   panel and the relic rail share a narrow left column, and the hand takes the
+   rest with its actions in a column under the right thumb. The play zone
+   shows only while a hand scores, when the hand is inert, so each gets the
+   full height in turn. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch > header {
+    flex-wrap: nowrap;
+    padding-block: 0.25rem;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    > header
+    > div:first-child {
+    display: none;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    > header
+    > div:last-child {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    > header
+    > div:last-child
+    > * {
+    flex: none;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    > header
+    [role="group"] {
+    flex-wrap: nowrap;
+  }
+  /* The guided Blind's coach keeps a short strip that scrolls. */
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    > header
+    + div:not(.te-table-grid) {
+    flex: none;
+    max-height: 4.5rem;
+    overflow-y: auto;
+    padding-block: 0.5rem;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch > .te-table-grid {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, auto);
+    grid-template-areas:
+      "blind hand"
+      "rail hand";
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-area-blind {
+    grid-area: blind;
+    contain: size;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-area-blind dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* The sponsor and stake badges stay in Run Info, so CPU and Hands show
+     without scrolling the panel. */
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-run-badges {
+    display: none;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    .te-area-blind
+    dl
+    > .col-span-3 {
+    grid-column: 1 / -1;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-area-rail {
+    grid-area: rail;
+    contain: none;
+    max-height: 7rem;
+    overflow-y: auto;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-area-play {
+    display: none;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-area-hand {
+    grid-area: hand;
+    /* The cards give up a little height so a whole card shows beside the
+       actions at 375px. */
+    --te-card-scale: 0.8;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch.te-playing
+    .te-area-play {
+    display: block;
+    grid-area: hand;
+    overflow-y: auto;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch.te-playing
+    .te-area-hand {
+    display: none;
+  }
+  /* The hand and its actions side by side; notes and panels run under the
+     hand. */
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    .te-area-hand
+    > div:has(> [data-testid="hand"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 8.5rem;
+    column-gap: 0.5rem;
+    align-items: start;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    .te-area-hand
+    > div:has(> [data-testid="hand"])
+    > * {
+    grid-column: 1;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    .te-area-hand
+    > div:has(> [data-testid="hand"])
+    > .te-hand-actions {
+    grid-column: 2;
+    grid-row: 1 / span 8;
+    grid-template-columns: minmax(0, 1fr);
+    align-self: center;
+    margin-top: 0;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-hand-primary {
+    grid-column: auto;
+    flex-direction: column;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    .te-hand-primary
+    > button {
+    flex: none;
+  }
+}
 .te-sheet-host [role="dialog"].h-dvh {
   height: 100%;
 }

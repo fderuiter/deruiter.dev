@@ -167,7 +167,7 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
               disabled={isLoading || isReacted}
               aria-pressed={isReacted}
               aria-label={`React with ${label}: ${count} so far`}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-medium border transition-all duration-150 active:scale-95 ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 pointer-coarse:min-h-11 rounded-lg text-xs font-mono font-medium border transition-all duration-150 active:scale-95 ${
                 isReacted
                   ? "bg-accent/15 border-accent/40 text-accent shadow-sm shadow-accent/10 cursor-default"
                   : "bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-neutral-100 hover:bg-zinc-900 cursor-pointer"

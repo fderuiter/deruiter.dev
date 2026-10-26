@@ -80,3 +80,67 @@ test("Retro Labyrinth lays a landscape iPad out in two columns (#2860)", async (
   expect(up!.x + up!.width).toBeLessThanOrEqual(canvas!.x);
   await assertNoHorizontalOverflow(page);
 });
+
+// A portrait iPad keeps the maze full width on top, the room status and the
+// route and objective under it, and the d-pad and tools in the bottom corners
+// (#2861). The maze keeps its own aspect, so on a tall iPad the spare height
+// sits above the thumbs, never between the maze and its status (the band
+// #2037 closed).
+test("Retro Labyrinth lays a portrait iPad out under the maze (#2861)", async ({
+  page,
+}, testInfo) => {
+  const viewport = testInfo.project.use.viewport;
+  test.skip(
+    !/^iPad/.test(testInfo.project.name) ||
+      !viewport ||
+      viewport.width > viewport.height,
+    "portrait iPad projects only"
+  );
+  await launchOnTablet(page);
+
+  const canvas = await page
+    .locator("[data-arcade-cabinet] canvas")
+    .first()
+    .boundingBox();
+  const status = await page.getByTestId("labyrinth-room-panel").boundingBox();
+  const objective = await page
+    .getByTestId("labyrinth-tablet-objective")
+    .boundingBox();
+  const route = await page.getByTestId("labyrinth-tablet-route").boundingBox();
+  expect(canvas && status && objective && route).toBeTruthy();
+  expect(canvas!.width).toBeGreaterThanOrEqual(viewport!.width * 0.9);
+  expect(status!.y).toBeGreaterThanOrEqual(canvas!.y + canvas!.height);
+  expect(status!.y - (canvas!.y + canvas!.height)).toBeLessThanOrEqual(16);
+  expect(objective!.y).toBeGreaterThanOrEqual(status!.y + status!.height);
+  expect(route!.y).toBe(objective!.y);
+  expect(route!.x + route!.width).toBeLessThanOrEqual(objective!.x);
+
+  const pad = page.getByRole("group", { name: "Directional pad" });
+  const up = await pad.getByRole("button", { name: "Move Up" }).boundingBox();
+  const left = await pad
+    .getByRole("button", { name: "Move Left" })
+    .boundingBox();
+  expect(up && left).toBeTruthy();
+  expect(left!.x).toBeLessThan(viewport!.width / 2);
+  expect(up!.y).toBeGreaterThanOrEqual(objective!.y + objective!.height);
+  const down = await pad
+    .getByRole("button", { name: "Move Down" })
+    .boundingBox();
+  expect(viewport!.height - (down!.y + down!.height)).toBeLessThanOrEqual(48);
+
+  const emp = await page
+    .getByRole("button", { name: "EMP: fire an EMP burst" })
+    .boundingBox();
+  expect(emp!.x).toBeGreaterThanOrEqual(viewport!.width / 2);
+
+  for (const key of await page
+    .locator('[data-dock] button:visible, [data-dock] [role="button"]:visible')
+    .all()) {
+    const box = await key.boundingBox();
+    if (!box) continue;
+    expect(box.width).toBeGreaterThanOrEqual(48);
+    expect(box.height).toBeGreaterThanOrEqual(48);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport!.height);
+  }
+  await assertNoHorizontalOverflow(page);
+});

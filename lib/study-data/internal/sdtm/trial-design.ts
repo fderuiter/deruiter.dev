@@ -62,6 +62,8 @@ const SPECS: Record<DomainName, DomainSpec> = {
       timing("TAETORD", "Element Order"),
       column("ETCD", "Element Code", "Record Qualifier"),
       column("ELEMENT", "Description of Element", "Synonym Qualifier"),
+      column("TABRANCH", "Branch", "Rule"),
+      column("TATRANS", "Transition Rule", "Rule"),
       column("EPOCH", "Epoch", "Timing"),
     ],
   },
@@ -89,6 +91,8 @@ const SPECS: Record<DomainName, DomainSpec> = {
       column("VISITNUM", "Visit Number", "Topic", "integer"),
       column("VISIT", "Visit Name", "Synonym Qualifier"),
       timing("VISITDY", "Planned Study Day"),
+      // Every arm has the same visits, so ARMCD is null on every visit.
+      column("ARMCD", "Planned Arm Code", "Record Qualifier"),
       column("TVSTRL", "Rule for Start of Visit", "Rule"),
       column("TVENRL", "Rule for End of Visit", "Rule"),
     ],
@@ -204,32 +208,54 @@ export function deriveTrialDesign(
   const elementById = new Map(
     design.elements.map((element) => [element.id, element])
   );
+  const epochs = [...design.epochs].sort((a, b) => a.order - b.order);
+  const pathOf = (armId: string) =>
+    epochs.flatMap((epoch) =>
+      design.cells
+        .filter(
+          (candidate) =>
+            candidate.armId === armId && candidate.epochId === epoch.id
+        )
+        .flatMap((cell) =>
+          cell.elementIds.map((elementId) => {
+            const element = elementById.get(elementId);
+            if (!element)
+              throw new RangeError(`Unknown USDM element ${elementId}`);
+            return { element, epoch };
+          })
+        )
+    );
+  const paths = design.arms.map((arm) => {
+    const path = pathOf(arm.id);
+    return { arm, path, codes: path.map(({ element }) => element.elementCode) };
+  });
   const ta: Row[] = [];
-  for (const arm of design.arms) {
-    let order = 0;
-    for (const epoch of [...design.epochs].sort((a, b) => a.order - b.order)) {
-      for (const cell of design.cells.filter(
-        (candidate) =>
-          candidate.armId === arm.id && candidate.epochId === epoch.id
-      )) {
-        for (const elementId of cell.elementIds) {
-          const element = elementById.get(elementId);
-          if (!element)
-            throw new RangeError(`Unknown USDM element ${elementId}`);
-          order += 1;
-          ta.push({
-            STUDYID: studyId,
-            DOMAIN: "TA",
-            ARMCD: arm.armCode,
-            ARM: arm.name,
-            TAETORD: order,
-            ETCD: element.elementCode,
-            ELEMENT: element.name,
-            EPOCH: epoch.name,
-          });
-        }
-      }
-    }
+  for (const { arm, path, codes } of paths) {
+    path.forEach(({ element, epoch }, index) => {
+      // Arms that share every element so far and differ in the next one
+      // part at the end of this element, which in a parallel design is
+      // randomization. Subjects pass through every element of their arm in
+      // order, so no record has a transition rule.
+      const branches = paths.some(
+        (other) =>
+          other.arm.id !== arm.id &&
+          other.codes.slice(0, index + 1).join() ===
+            codes.slice(0, index + 1).join() &&
+          other.codes[index + 1] !== codes[index + 1]
+      );
+      ta.push({
+        STUDYID: studyId,
+        DOMAIN: "TA",
+        ARMCD: arm.armCode,
+        ARM: arm.name,
+        TAETORD: index + 1,
+        ETCD: element.elementCode,
+        ELEMENT: element.name,
+        TABRANCH: branches ? `Randomized to ${arm.name}` : null,
+        TATRANS: null,
+        EPOCH: epoch.name,
+      });
+    });
   }
   const te: Row[] = design.elements.map((element) => {
     const cell = design.cells.find((candidate) =>
@@ -264,6 +290,7 @@ export function deriveTrialDesign(
     VISITNUM: visit.visitNum,
     VISIT: visit.name,
     VISITDY: visit.targetDay,
+    ARMCD: null,
     TVSTRL: `${visit.targetDay - visit.windowBefore} study days after reference start`,
     TVENRL: `${visit.targetDay + visit.windowAfter} study days after reference start`,
   }));

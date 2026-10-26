@@ -289,7 +289,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
           <p className="text-zinc-400 font-mono text-xs">
             No active edit checks or logic rules.
           </p>
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-[11px] text-zinc-400">
             Create conditional show/hide branching, cross-field validation range
             checks, or automated discrepancy queries.
           </p>
@@ -785,7 +785,7 @@ const RuleExplanationPanel: React.FC<RuleExplanationPanelProps> = ({
       </span>
 
       {referencedFieldIds.length === 0 ? (
-        <p className="text-[11px] text-zinc-500">
+        <p className="text-[11px] text-zinc-400">
           Add a condition to test sample values.
         </p>
       ) : (

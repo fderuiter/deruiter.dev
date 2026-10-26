@@ -7,11 +7,15 @@ import {
   ARS_REPORTING_EVENT_PATH,
   DEMO_301_STUDY,
   MAX_RAW_DECIMALS,
+  MESSY_DATA_SCENARIOS,
+  REPORTING_EVENT_RULES,
   STATISTIC_PRECISION,
   SYNTHETIC_DATA_NOTICE,
   TLF_OUTPUT_DIR,
   adamRowId,
+  buildStudyDataPackage,
   buildTlfOutputs,
+  checkReportingEvent,
   descriptiveStatistics,
   escapeHtml,
   escapeRtf,
@@ -29,10 +33,12 @@ import {
   writeTlfFiles,
   type ArsComparator,
   type ArsOperationResult,
+  type ArsReportingEvent,
   type ArsWhereClause,
   type CellValue,
   type Dataset,
   type PipelineRun,
+  type ScenarioId,
   type TlfCell,
   type TlfTable,
 } from "@/lib/study-data";
@@ -1018,5 +1024,179 @@ describe("where clauses", () => {
         indexes(adsl, (item) => item[flag] === "Y")
       );
     }
+  });
+});
+
+describe("checkReportingEvent (#2932)", () => {
+  const event = outputs.reportingEvent;
+  const ruleIds = (findings: readonly { ruleId: string }[]) =>
+    findings.map((finding) => finding.ruleId);
+  /** The event with one result replaced. */
+  const withResult = (
+    id: string,
+    change: (result: ArsOperationResult) => ArsOperationResult
+  ): ArsReportingEvent => ({
+    ...event,
+    analyses: event.analyses.map((analysis) => ({
+      ...analysis,
+      results: analysis.results.map((result) =>
+        result.id === id ? change(result) : result
+      ),
+    })),
+  });
+  const counted = event.analyses
+    .flatMap((analysis) => analysis.results)
+    .find(
+      (result) =>
+        result.rowReferences.length === 2 &&
+        result.rawValue !== undefined &&
+        Number(result.rawValue) > 1
+    )!;
+
+  it("finds every seed-301 result resolves and reproduces", () => {
+    expect(checkReportingEvent(event, run, DEMO_301_STUDY)).toEqual([]);
+  });
+
+  it("finds no gap across seeds and the messy-data scenarios", () => {
+    const runs: { seed: number; scenarios?: ScenarioId[] }[] = [
+      ...[1, 2, 302, 999].map((seed) => ({ seed })),
+      ...MESSY_DATA_SCENARIOS.map((scenario) => ({
+        seed: 301,
+        scenarios: [scenario.id],
+      })),
+    ];
+    for (const options of runs) {
+      const source = runPipeline(DEMO_301_STUDY, { ...options, nSubjects: 60 });
+      const built = buildTlfOutputs(DEMO_301_STUDY, source).reportingEvent;
+      const findings = checkReportingEvent(built, source, DEMO_301_STUDY);
+      // A rescreened subject has two ADSL records under one USUBJID until
+      // the rescreen gets its own number, so its rows cannot be told apart.
+      expect(ruleIds(findings), JSON.stringify(options)).toEqual(
+        options.scenarios?.[0] === "rescreened-subject"
+          ? [REPORTING_EVENT_RULES.rowIdDuplicate]
+          : []
+      );
+    }
+  });
+
+  it("reports a result that names a row set the event does not hold", () => {
+    const findings = checkReportingEvent(
+      withResult(counted.id, (result) => ({
+        ...result,
+        rowReferences: [
+          ...result.rowReferences.slice(0, 1),
+          { role: "analysis", rowSetId: "RowSet_9999" },
+        ],
+      })),
+      run
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        ruleId: REPORTING_EVENT_RULES.rowSetUnresolved,
+        severity: "error",
+        layer: "adam",
+        message: expect.stringContaining("RowSet_9999"),
+      }),
+    ]);
+  });
+
+  it("reports a result with no rows that is not a zero count, and allows one that is", () => {
+    const empty = (rawValue: string) =>
+      checkReportingEvent(
+        withResult(counted.id, (result) => ({
+          ...result,
+          rawValue,
+          rowReferences: [],
+        })),
+        run
+      );
+    expect(ruleIds(empty(counted.rawValue!))).toEqual([
+      REPORTING_EVENT_RULES.rowSetEmpty,
+    ]);
+    expect(empty("0")).toEqual([]);
+  });
+
+  it("reports a result whose value disagrees with its rows", () => {
+    const findings = checkReportingEvent(
+      withResult(counted.id, (result) => ({
+        ...result,
+        rawValue: String(Number(result.rawValue) + 1),
+        formattedValue: String(Number(result.rawValue) + 1),
+      })),
+      run,
+      DEMO_301_STUDY
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        ruleId: REPORTING_EVENT_RULES.resultNotReproduced,
+        message: expect.stringContaining(
+          `Result ${counted.id} does not reproduce`
+        ),
+      }),
+    ]);
+  });
+
+  it("reports a result whose rows are another result's rows", () => {
+    const other = event.analyses
+      .flatMap((analysis) => analysis.results)
+      .find(
+        (result) =>
+          result.id !== counted.id &&
+          result.rowReferences.length === 2 &&
+          result.rowReferences[1].rowSetId !==
+            counted.rowReferences[1].rowSetId &&
+          result.rowReferences[0].rowSetId === counted.rowReferences[0].rowSetId
+      )!;
+    const findings = checkReportingEvent(
+      withResult(counted.id, (result) => ({
+        ...result,
+        rowReferences: other.rowReferences,
+      })),
+      run,
+      DEMO_301_STUDY
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        ruleId: REPORTING_EVENT_RULES.resultNotReproduced,
+        message: expect.stringContaining("its rows differ"),
+      }),
+    ]);
+  });
+
+  it("reports a result the analyses produce but the event lacks", () => {
+    const findings = checkReportingEvent(
+      {
+        ...event,
+        analyses: event.analyses.map((analysis) => ({
+          ...analysis,
+          results: analysis.results.filter(
+            (result) => result.id !== counted.id
+          ),
+        })),
+      },
+      run,
+      DEMO_301_STUDY
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        ruleId: REPORTING_EVENT_RULES.resultMissing,
+        message: expect.stringContaining(counted.id),
+      }),
+    ]);
+  });
+
+  it("puts unresolved results in the package manifest", async () => {
+    const pkg = await buildStudyDataPackage(run, {
+      generatedAt: "2026-10-23T12:00:00.000Z",
+      reportingEvent: withResult(counted.id, (result) => ({
+        ...result,
+        rowReferences: [{ role: "analysis", rowSetId: "RowSet_9999" }],
+      })),
+    });
+    expect(
+      ruleIds(pkg.packageManifest.findings).filter((id) =>
+        id.startsWith("ARS-")
+      )
+    ).toEqual([REPORTING_EVENT_RULES.rowSetUnresolved]);
   });
 });

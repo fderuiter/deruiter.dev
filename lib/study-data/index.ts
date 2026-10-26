@@ -163,6 +163,10 @@ export {
   resolveResultRows,
   rowSetRowIds,
 } from "./internal/tlf/row-ids";
+export {
+  checkReportingEvent,
+  REPORTING_EVENT_RULES,
+} from "./internal/tlf/check-reporting-event";
 export { selectAdamRows } from "./internal/tlf/where";
 export { escapeHtml, writeTableHtml } from "./internal/tlf/html";
 export { escapeRtf, writeTableRtf } from "./internal/tlf/rtf";

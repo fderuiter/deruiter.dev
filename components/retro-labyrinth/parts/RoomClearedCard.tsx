@@ -92,7 +92,7 @@ const CHOICE_OFF =
 function RouteMap({ seed, map }: Pick<RouteChoiceProps, "seed" | "map">) {
   return (
     <div className="w-full max-w-md mt-1.5">
-      <p className="text-[11px] uppercase tracking-widest text-zinc-500 font-mono">
+      <p className="text-xs uppercase tracking-widest text-zinc-500 font-mono">
         Route map · seed{" "}
         <span className="text-zinc-300" data-testid="labyrinth-run-seed">
           {seed}
@@ -100,7 +100,7 @@ function RouteMap({ seed, map }: Pick<RouteChoiceProps, "seed" | "map">) {
       </p>
       <ol
         aria-label="Route map"
-        className="mt-1 flex flex-wrap justify-center gap-1 font-mono text-[11px]"
+        className="mt-1 flex flex-wrap justify-center gap-1 font-mono text-xs"
       >
         {map.map((step) => {
           const names =
@@ -272,7 +272,7 @@ export function RoomClearedCard({
           >
             <h3
               id={routeHeadingId}
-              className="text-[11px] font-bold uppercase tracking-widest text-zinc-400"
+              className="text-xs font-bold uppercase tracking-widest text-zinc-400"
             >
               {route.options.length > 1 ? "Choose the next room" : "Next room"}
             </h3>
@@ -291,7 +291,7 @@ export function RoomClearedCard({
                     className={`${CHOICE_CLASS} ${on ? CHOICE_ON : CHOICE_OFF}`}
                   >
                     <span className="font-bold break-words">{room.name}</span>
-                    <span className="text-[11px] text-zinc-400">
+                    <span className="text-xs text-zinc-400">
                       {TIER_LABELS[room.tier]}
                     </span>
                   </button>
@@ -309,7 +309,7 @@ export function RoomClearedCard({
           >
             <h3
               id={rewardHeadingId}
-              className="text-[11px] font-bold uppercase tracking-widest text-zinc-400"
+              className="text-xs font-bold uppercase tracking-widest text-zinc-400"
             >
               Pick a reward
             </h3>
@@ -331,11 +331,11 @@ export function RoomClearedCard({
                     }}
                     className={`${CHOICE_CLASS} ${on ? CHOICE_ON : CHOICE_OFF} disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700`}
                   >
-                    <span className="text-[11px] uppercase tracking-wider text-zinc-400">
+                    <span className="text-xs uppercase tracking-wider text-zinc-400">
                       {REWARD_KIND_LABELS[reward.kind]}
                     </span>
                     <span className="font-bold break-words">{reward.name}</span>
-                    <span className="text-[11px] text-zinc-400 break-words">
+                    <span className="text-xs text-zinc-400 break-words">
                       {reason ?? reward.description}
                     </span>
                   </button>

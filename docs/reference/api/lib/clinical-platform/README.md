@@ -1514,6 +1514,18 @@ Re-exports [Portfolio](types/platform/interfaces/Portfolio.md)
 
 ***
 
+### PORTFOLIO\_FORECAST\_ASSUMPTIONS
+
+Re-exports [PORTFOLIO_FORECAST_ASSUMPTIONS](internal/reporting/portfolio-forecast/variables/PORTFOLIO_FORECAST_ASSUMPTIONS.md)
+
+***
+
+### PORTFOLIO\_WHAT\_IF\_LIMITS
+
+Re-exports [PORTFOLIO_WHAT_IF_LIMITS](internal/reporting/portfolio-forecast/variables/PORTFOLIO_WHAT_IF_LIMITS.md)
+
+***
+
 ### PortfolioBenchmark
 
 Re-exports [PortfolioBenchmark](types/portfolio-dashboard/interfaces/PortfolioBenchmark.md)
@@ -1535,6 +1547,24 @@ Re-exports [PortfolioDashboard](types/portfolio-dashboard/interfaces/PortfolioDa
 ### PortfolioFinance
 
 Re-exports [PortfolioFinance](types/portfolio-dashboard/interfaces/PortfolioFinance.md)
+
+***
+
+### portfolioForecast
+
+Re-exports [portfolioForecast](internal/reporting/portfolio-forecast/functions/portfolioForecast.md)
+
+***
+
+### PortfolioForecast
+
+Re-exports [PortfolioForecast](types/portfolio-dashboard/interfaces/PortfolioForecast.md)
+
+***
+
+### PortfolioForecastCountry
+
+Re-exports [PortfolioForecastCountry](types/portfolio-dashboard/interfaces/PortfolioForecastCountry.md)
 
 ***
 

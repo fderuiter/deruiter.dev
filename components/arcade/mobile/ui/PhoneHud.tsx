@@ -21,6 +21,8 @@ export interface PhoneHudChip {
    * for a value that ticks every frame, such as a timer.
    */
   announce?: boolean;
+  /** A test id for the chip, for end-to-end specs. */
+  testId?: string;
 }
 
 /** Props for {@link PhoneHud}. */
@@ -33,6 +35,11 @@ export interface PhoneHudProps {
    * Defaults to 3000, so a fast score does not talk over play.
    */
   announceEveryMs?: number;
+  /**
+   * A control at the row's right end, such as a game's Options key. It
+   * should be at least 44px square.
+   */
+  action?: React.ReactNode;
 }
 
 /** The most chips the row shows before the rest move into the overflow chip. */
@@ -100,7 +107,10 @@ function useThrottledAnnouncement(
 
 function Chip({ chip }: { chip: PhoneHudChip }) {
   return (
-    <li className="flex min-w-0 flex-1 flex-col items-center justify-center leading-none">
+    <li
+      data-testid={chip.testId}
+      className="flex min-w-0 flex-1 flex-col items-center justify-center leading-none"
+    >
       <span
         className={`inline-flex max-w-full items-center gap-1 truncate text-base font-bold tabular-nums ${
           chip.accent ? "arcade-accent-text" : "text-zinc-100"
@@ -124,7 +134,8 @@ function Chip({ chip }: { chip: PhoneHudChip }) {
  * The phone HUD (#2361): one 44px row of up to four stat chips, each a big
  * number over its label. More stats than that go behind an overflow chip that
  * opens a sheet listing every stat. Changed values are read out through a
- * polite live region, throttled to `announceEveryMs`.
+ * polite live region, throttled to `announceEveryMs`. A game's own control,
+ * such as Options, can close the row through `action`.
  *
  * Put it in PhoneStage's `hud` slot.
  *
@@ -135,6 +146,7 @@ export function PhoneHud({
   chips,
   label = "Game status",
   announceEveryMs = DEFAULT_ANNOUNCE_MS,
+  action,
 }: PhoneHudProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const message = useThrottledAnnouncement(chips, announceEveryMs);
@@ -167,6 +179,7 @@ export function PhoneHud({
           </span>
         </button>
       )}
+      {action}
       <span role="status" aria-live="polite" className="sr-only">
         {message}
       </span>

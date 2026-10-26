@@ -10,6 +10,10 @@ import type {
 } from "@/lib/clinical-platform";
 import { ReportView } from "../ReportView";
 import {
+  EnrollmentForecastSection,
+  type RunWhatIf,
+} from "./EnrollmentForecast";
+import {
   MilestoneMark,
   MilestoneSwimlane,
   milestoneStatusText,
@@ -341,14 +345,19 @@ function FinanceSection({ finance }: { finance: PortfolioFinance }) {
 /**
  * The /platform/portfolio dashboard: every study's milestones on one time
  * axis, then each cycle time compared across the studies, then budget
- * against forecast at completion, with the governed report behind each.
+ * against forecast at completion, with the governed report behind each,
+ * then when each study still enrolling is forecast to enroll its last
+ * subject.
  *
  * @param dashboard - The dashboard from `portfolioDashboard`.
+ * @param onWhatIf - Runs an enrollment what-if; without it the forecasts show their baseline alone.
  */
 export function PortfolioView({
   dashboard,
+  onWhatIf,
 }: {
   dashboard: PortfolioDashboard;
+  onWhatIf?: RunWhatIf;
 }) {
   const { swimlane, benchmarks } = dashboard;
   return (
@@ -410,6 +419,11 @@ export function PortfolioView({
       {dashboard.finance.reports.map((report) => (
         <ReportView key={report.spec.id} report={report} />
       ))}
+
+      <EnrollmentForecastSection
+        forecasts={dashboard.forecasts}
+        onWhatIf={onWhatIf}
+      />
     </div>
   );
 }

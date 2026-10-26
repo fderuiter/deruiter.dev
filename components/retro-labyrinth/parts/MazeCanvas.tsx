@@ -21,9 +21,9 @@ import { createFogCache, paintMaze } from "./paint-maze";
 /** The maze's logical size, which the stage fit keeps the shape of. */
 const MAZE_ASPECT = { width: LOGICAL_WIDTH, height: LOGICAL_HEIGHT } as const;
 /**
- * The maze follows the device's pixel ratio with no cap. Its pixel art is
- * stamped nearest-neighbour, so a backing store capped below a 3x phone would
- * be stretched by 1.5 and draw uneven pixels.
+ * By default the maze follows the device's pixel ratio with no cap. Its pixel
+ * art is stamped nearest-neighbour, so at an integer scale a backing store
+ * capped below a 3x screen would be stretched by 1.5 and draw uneven pixels.
  */
 const MAZE_MAX_DPR = Number.POSITIVE_INFINITY;
 
@@ -37,6 +37,12 @@ interface MazeCanvasProps {
    * the touch cabinet's slot with the largest 5:3 box (#2358).
    */
   readonly scale: "integer" | "fractional";
+  /**
+   * The highest device pixel ratio the backing store follows. The phone caps
+   * it at 2 (#2918): its fractional scale is uneven at any ratio, and a 3x
+   * store costs more than twice the fill for no sharper art.
+   */
+  readonly maxDpr?: number;
   /** The room's size in cells, for mapping the pointer to a cell. */
   readonly grid: { readonly cols: number; readonly rows: number };
   /** The cell under the pointer, or null when it leaves the maze. */
@@ -67,6 +73,7 @@ interface MazeCanvasProps {
 export function MazeCanvas({
   onFrame,
   scale,
+  maxDpr = MAZE_MAX_DPR,
   grid,
   onPointAt,
   onPointerDown,
@@ -84,7 +91,7 @@ export function MazeCanvas({
   const { fit, toGame } = useStageFit(frameRef, {
     aspect: MAZE_ASPECT,
     scale,
-    maxDpr: MAZE_MAX_DPR,
+    maxDpr,
   });
   useContextLossPause(canvas);
 

@@ -4,6 +4,7 @@
 
 import React from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -21,11 +22,15 @@ import {
   buildWarehouse,
   generatePortfolio,
   portfolioDashboard,
+  portfolioForecast,
+  type EnrollmentWhatIf,
+  type PortfolioForecast,
 } from "@/lib/clinical-platform";
 
-const dashboard = portfolioDashboard(
-  buildWarehouse(generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED }))
+const warehouse = buildWarehouse(
+  generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED })
 );
+const dashboard = portfolioDashboard(warehouse);
 
 async function violations(container: HTMLElement) {
   const result = await axe.run(container, {
@@ -241,6 +246,278 @@ describe("budget against forecast at completion (#2912)", () => {
   });
 });
 
+describe("the enrollment forecast and its what-if (#2913)", () => {
+  const card = (studyId: string) =>
+    screen
+      .getByRole("heading", { level: 3, name: new RegExp(`^${studyId} `) })
+      .closest("article")!;
+  /** Answers a what-if the way the worker does, from the same warehouse. */
+  const answer = (studyId: string, whatIf: EnrollmentWhatIf) =>
+    Promise.resolve(portfolioForecast(warehouse, studyId, whatIf));
+  const ask = (
+    studyId: string,
+    fields: { country?: string; sites?: string; days?: string } = {}
+  ) => {
+    const form = within(card(studyId));
+    if (fields.country !== undefined) {
+      fireEvent.change(form.getByLabelText("Country"), {
+        target: { value: fields.country },
+      });
+    }
+    if (fields.sites !== undefined) {
+      fireEvent.change(form.getByLabelText(/^Sites to add/), {
+        target: { value: fields.sites },
+      });
+    }
+    if (fields.days !== undefined) {
+      fireEvent.change(form.getByLabelText(/^Days until they recruit/), {
+        target: { value: fields.days },
+      });
+    }
+    fireEvent.click(form.getByRole("button", { name: "Run the what-if" }));
+  };
+
+  it("forecasts each study still enrolling, with the plan in words", () => {
+    view();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "When the last subject is in",
+      })
+    ).toBeTruthy();
+    const late = within(card("DEMO-302"));
+    expect(late.getAllByRole("definition").map((d) => d.textContent)).toEqual([
+      "Planned date passed",
+      "2027-09-25",
+      "2027-08-23 to 2027-11-01",
+    ]);
+    expect(card("DEMO-302").textContent).toContain(
+      "350 of 600 subjects are enrolled. The planned last subject in, 2026-06-14, passed before the data cut, so no run can meet it"
+    );
+    expect(
+      within(card("DEV-402")).getAllByRole("definition")[0].textContent
+    ).toBe("0.2%");
+    expect(card("DEV-402").textContent).toContain(
+      "279 of 350 subjects are enrolled. 4 of 2,000 simulated runs enroll the last subject by the planned 2026-12-13."
+    );
+    // Without a way to ask the worker, the baseline is shown alone.
+    expect(
+      screen.queryByRole("button", { name: "Run the what-if" })
+    ).toBeNull();
+  });
+
+  it("shows the assumptions and the runs with every forecast", () => {
+    view();
+    for (const studyId of ["DEMO-302", "DEV-402"]) {
+      const text = card(studyId).textContent;
+      expect(text).toContain(
+        "Sites still in start-up at the data cut are left out"
+      );
+      expect(text).toContain(
+        "2,000 simulated runs from seed 2632, so the same inputs always give the same forecast."
+      );
+    }
+  });
+
+  it("tabulates the weekly curve the chart draws", () => {
+    view();
+    const forecast = dashboard.forecasts[1].forecast;
+    const table = within(card("DEV-402")).getByRole("table");
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(forecast.curve.length);
+    expect(
+      rows.map((row) => within(row).getByRole("rowheader").textContent)
+    ).toEqual(forecast.curve.map((point) => point.on));
+    expect(within(rows[rows.length - 1]).getByRole("cell").textContent).toBe(
+      `${Math.round(forecast.curve[forecast.curve.length - 1].completed * 100)}%`
+    );
+  });
+
+  it("reads each week of the curve aloud from the keyboard", () => {
+    view();
+    const chart = within(card("DEV-402")).getByRole("group", {
+      name: /Use the arrow keys to read each week/,
+    });
+    fireEvent.keyDown(chart, { key: "Home" });
+    const live = chart.querySelector("[aria-live]")!;
+    expect(live.textContent).toBe("2026-09-30: 0% of runs complete.");
+    fireEvent.keyDown(chart, { key: "End" });
+    const last = dashboard.forecasts[1].forecast.curve.at(-1)!;
+    expect(live.textContent).toBe(
+      `${last.on}: ${Math.round(last.completed * 100)}% of runs complete.`
+    );
+  });
+
+  it("runs a what-if in the worker and compares it with the baseline", async () => {
+    const onWhatIf = vi.fn(answer);
+    render(
+      <main>
+        <PortfolioView dashboard={dashboard} onWhatIf={onWhatIf} />
+      </main>
+    );
+    ask("DEMO-302", { country: "DE", sites: "5", days: "90" });
+    expect(onWhatIf).toHaveBeenCalledWith("DEMO-302", {
+      countryCode: "DE",
+      sites: 5,
+      activationDelayDays: 90,
+    });
+    const expected = portfolioForecast(warehouse, "DEMO-302", {
+      countryCode: "DE",
+      sites: 5,
+      activationDelayDays: 90,
+    });
+    expect(
+      await within(card("DEMO-302")).findByRole("heading", {
+        level: 4,
+        name: "With 5 sites in Germany from day 90",
+      })
+    ).toBeTruthy();
+    expect(card("DEMO-302").textContent).toContain(
+      `With 5 sites in Germany from day 90, the median moves from 2027-09-25 to ${expected.forecast.quantiles.p50},`
+    );
+    expect(
+      within(within(card("DEMO-302")).getByRole("table")).getByRole(
+        "columnheader",
+        { name: "With the what-if" }
+      )
+    ).toBeTruthy();
+    // The other study keeps its baseline.
+    expect(card("DEV-402").textContent).toContain(
+      "Add sites below to see how much sooner"
+    );
+    expect(await violations(screen.getByRole("main"))).toEqual([]);
+  });
+
+  it("reads the weeks after a shorter curve ends as all, or at least, its last share", async () => {
+    render(<PortfolioView dashboard={dashboard} onWhatIf={answer} />);
+    ask("DEMO-302", { country: "DE", sites: "20", days: "90" });
+    await within(card("DEMO-302")).findByRole("heading", {
+      level: 4,
+      name: "With 20 sites in Germany from day 90",
+    });
+    const shorter = portfolioForecast(warehouse, "DEMO-302", {
+      countryCode: "DE",
+      sites: 20,
+      activationDelayDays: 90,
+    }).forecast.curve;
+    const baseline = dashboard.forecasts[0].forecast.curve;
+    expect(shorter.length).toBeLessThan(baseline.length);
+    const end = shorter[shorter.length - 1].completed;
+    const after = end >= 1 ? "100%" : `${Math.floor(end * 100)}% or more`;
+    const rows = within(
+      within(card("DEMO-302")).getByRole("table")
+    ).getAllByRole("row");
+    expect(rows).toHaveLength(baseline.length + 1);
+    const cells = (row: number) =>
+      within(rows[row])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent);
+    expect(cells(shorter.length)[1]).toBe(`${Math.round(end * 100)}%`);
+    expect(cells(shorter.length + 1)[1]).toBe(after);
+    expect(cells(baseline.length)[1]).toBe(after);
+    expect(after).not.toBe("100% or more");
+  });
+
+  it("checks the what-if before it asks", () => {
+    const onWhatIf = vi.fn(answer);
+    render(<PortfolioView dashboard={dashboard} onWhatIf={onWhatIf} />);
+    ask("DEV-402", { sites: "0", days: "400" });
+    expect(onWhatIf).not.toHaveBeenCalled();
+    const form = within(card("DEV-402"));
+    const sites = form.getByLabelText(/^Sites to add/);
+    expect(sites.getAttribute("aria-invalid")).toBe("true");
+    expect(
+      form.getByText("Enter a whole number of sites from 1 to 50.")
+    ).toBeTruthy();
+    expect(
+      form.getByText("Enter a whole number of days from 0 to 365.")
+    ).toBeTruthy();
+    ask("DEV-402", { sites: "2.5", days: "30" });
+    expect(onWhatIf).not.toHaveBeenCalled();
+    ask("DEV-402", { sites: "2", days: "30" });
+    expect(onWhatIf).toHaveBeenCalledTimes(1);
+    expect(sites.getAttribute("aria-invalid")).toBe("false");
+  });
+
+  it("never lets a stale answer replace a newer one", async () => {
+    const answers: ((value: PortfolioForecast) => void)[] = [];
+    const onWhatIf = vi.fn(
+      () =>
+        new Promise<PortfolioForecast>((resolve) => {
+          answers.push(resolve);
+        })
+    );
+    render(<PortfolioView dashboard={dashboard} onWhatIf={onWhatIf} />);
+    ask("DEV-402", { country: "US", sites: "3" });
+    ask("DEV-402", { country: "US", sites: "10" });
+    const ten = portfolioForecast(warehouse, "DEV-402", {
+      countryCode: "US",
+      sites: 10,
+      activationDelayDays: 90,
+    });
+    answers[1](ten);
+    expect(
+      await within(card("DEV-402")).findByRole("heading", {
+        level: 4,
+        name: "With 10 sites in United States from day 90",
+      })
+    ).toBeTruthy();
+    // The first answer arrives last and is dropped.
+    await act(async () => {
+      answers[0](
+        portfolioForecast(warehouse, "DEV-402", {
+          countryCode: "US",
+          sites: 3,
+          activationDelayDays: 90,
+        })
+      );
+    });
+    expect(
+      within(card("DEV-402")).queryByRole("heading", {
+        level: 4,
+        name: "With 3 sites in United States from day 90",
+      })
+    ).toBeNull();
+
+    // Back to the baseline drops an answer still on its way, too.
+    ask("DEV-402", { sites: "4" });
+    fireEvent.click(
+      within(card("DEV-402")).getByRole("button", {
+        name: "Back to the baseline",
+      })
+    );
+    await act(async () => {
+      answers[2](ten);
+    });
+    expect(
+      within(card("DEV-402")).queryByRole("heading", {
+        level: 4,
+        name: /^With /,
+      })
+    ).toBeNull();
+  });
+
+  it("says what failed when the worker cannot answer", async () => {
+    render(
+      <PortfolioView
+        dashboard={dashboard}
+        onWhatIf={() => Promise.reject(new Error("worker gone"))}
+      />
+    );
+    ask("DEV-402");
+    expect(
+      (await within(card("DEV-402")).findByRole("alert")).textContent
+    ).toBe("The what-if could not be run: worker gone");
+  });
+
+  it("says so when no study is enrolling", () => {
+    render(<PortfolioView dashboard={{ ...dashboard, forecasts: [] }} />);
+    expect(
+      screen.getByText("No study is enrolling at the data cut.")
+    ).toBeTruthy();
+  });
+});
+
 describe("PortfolioDashboard (#2911)", () => {
   it("shows a placeholder, then the dashboard computed off the page", async () => {
     render(<PortfolioDashboard />);
@@ -252,9 +529,10 @@ describe("PortfolioDashboard (#2911)", () => {
         { timeout: 20_000 }
       )
     ).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toBe(
-      "Showing the portfolio dashboard."
-    );
+    // Each what-if form has its own status line too (#2913).
+    expect(
+      screen.getAllByRole("status").map((status) => status.textContent)
+    ).toContain("Showing the portfolio dashboard.");
   });
 });
 
@@ -290,6 +568,33 @@ describe("createPortfolioClient (#2911)", () => {
     await expect(answer).resolves.toBe(dashboard);
     client.dispose();
     expect(worker.terminated).toBe(true);
+  });
+
+  it("sends a what-if to the worker as a forecast request (#2913)", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const client = createPortfolioClient();
+    const whatIf = { countryCode: "DE", sites: 5, activationDelayDays: 90 };
+    const answer = client.forecast("DEMO-302", whatIf);
+    const worker = FakeWorker.last!;
+    expect(worker.posted).toEqual([
+      { id: 1, type: "forecast", studyId: "DEMO-302", whatIf },
+    ]);
+    const result = portfolioForecast(warehouse, "DEMO-302", whatIf);
+    worker.onmessage!({
+      data: { id: 1, ok: true, result },
+    } as MessageEvent<PortfolioResponse>);
+    await expect(answer).resolves.toBe(result);
+    client.dispose();
+  });
+
+  it("answers a what-if on the main thread only where Workers are missing (#2913)", async () => {
+    vi.stubGlobal("Worker", undefined);
+    const client = createPortfolioClient();
+    const whatIf = { countryCode: "US", sites: 2, activationDelayDays: 0 };
+    await expect(client.forecast("DEV-402", whatIf)).resolves.toEqual(
+      portfolioForecast(warehouse, "DEV-402", whatIf)
+    );
+    client.dispose();
   });
 
   it("rejects what the worker could not answer", async () => {

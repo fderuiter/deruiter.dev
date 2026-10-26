@@ -29,6 +29,7 @@ const DIMENSIONS: Readonly<Record<Kind, DqDimension>> = {
   exception: "accuracy",
   duplicate: "uniqueness",
   unit: "consistency",
+  lineage: "consistency",
 };
 
 /** What each kind of rule asks of a dataset, and why. */
@@ -82,6 +83,11 @@ const TEXT: Readonly<
     name: (d) => `${d} holds no measurement entered twice`,
     rationale:
       "A measurement entered twice is counted twice unless one copy is queried and removed.",
+  },
+  lineage: {
+    name: (d) => `${d} records trace to their source records`,
+    rationale:
+      "A record that cannot be traced to its source cannot be verified or reproduced.",
   },
   unit: {
     name: (d, v) => `${d}.${v} is the test's standard unit`,

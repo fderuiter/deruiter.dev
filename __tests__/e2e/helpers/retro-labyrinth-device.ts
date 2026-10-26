@@ -133,16 +133,54 @@ async function playerCell(
   return { x, y };
 }
 
-/** The score and floor as the phone HUD shows them. */
+/**
+ * The score, from the accessible status subtree (the phone HUD leaves it out,
+ * #2918), and the floor as the HUD shows it.
+ */
 async function readHud(page: Page) {
   return {
     score: (
-      await page.getByTestId("labyrinth-phone-score").textContent()
+      await page.locator('output[for="retro-score"]').first().textContent()
     )?.trim(),
     floor: (
       await page.getByTestId("labyrinth-phone-floor").textContent()
     )?.trim(),
   };
+}
+
+/**
+ * The floor badge as either HUD shows it: the tablet's "ROOM 02", or the
+ * phone chip's "02" over its "Room" caption (#2918).
+ */
+function floorBadge(kind: "Room" | "Subnet", number: string): RegExp {
+  return new RegExp(`^(${kind} ${number}|${number}${kind})$`, "i");
+}
+
+/** Visible playfield text set below 12px, by its text (#2918). */
+async function smallText(page: Page): Promise<string[]> {
+  return page.evaluate((selector) => {
+    const root = document.querySelector(selector);
+    if (!root) return ["no playfield"];
+    const small: string[] = [];
+    root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+      const own = Array.from(el.childNodes)
+        .filter((node) => node.nodeType === Node.TEXT_NODE)
+        .map((node) => node.textContent ?? "")
+        .join("")
+        .trim();
+      if (!own) return;
+      const rect = el.getBoundingClientRect();
+      // Screen-reader-only text is clipped to a pixel and never seen.
+      if (rect.width <= 1 || rect.height <= 1) return;
+      if (el.closest("[aria-hidden='true'], [hidden], [inert]")) return;
+      const style = getComputedStyle(el);
+      if (style.visibility === "hidden" || style.display === "none") return;
+      if (parseFloat(style.fontSize) < 11.5) {
+        small.push(`${own} (${style.fontSize})`);
+      }
+    });
+    return small;
+  }, PLAYFIELD);
 }
 
 /** Where the netrunner stands, from the accessible status subtree. */
@@ -801,6 +839,54 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       await assertNoHorizontalOverflow(page);
     });
 
+    test("a phone plays on one HUD row with 12px text and the maze between the thumbs (#2918)", async ({
+      page,
+    }, testInfo) => {
+      await launchCabinet(page);
+      const viewport = page.viewportSize()!;
+      test.skip(viewport.height > 500, "phone stage only");
+
+      // One 44px HUD row: Room, HP, Crypto (or the boss) and RAM, then Options.
+      const hud = page.getByTestId("phone-hud");
+      await expect(hud).toBeVisible();
+      const hudBox = (await hud.boundingBox())!;
+      expect(hudBox.height).toBeLessThanOrEqual(45);
+      for (const id of ["floor", "hp", "ram"]) {
+        await expect(hud.getByTestId(`labyrinth-phone-${id}`)).toBeVisible();
+      }
+      await expect(
+        hud
+          .getByTestId("labyrinth-phone-crypto")
+          .or(hud.getByTestId("labyrinth-phone-boss"))
+      ).toBeVisible();
+      await expect(
+        hud.getByRole("button", { name: "Options", exact: true })
+      ).toBeVisible();
+
+      expect(await smallText(page)).toEqual([]);
+
+      // The maze sits between the d-pad and the tool columns, and is the
+      // largest thing on the screen.
+      const canvas = (await page
+        .locator(`${PLAYFIELD} canvas`)
+        .first()
+        .boundingBox())!;
+      const dpad = (await page
+        .getByRole("button", { name: "Move Right" })
+        .boundingBox())!;
+      const emp = (await page
+        .getByRole("button", { name: "EMP: fire an EMP burst" })
+        .boundingBox())!;
+      expect(dpad.x + dpad.width).toBeLessThanOrEqual(canvas.x + 1);
+      expect(emp.x).toBeGreaterThanOrEqual(canvas.x + canvas.width - 1);
+      const share =
+        (canvas.width * canvas.height) / (viewport.width * viewport.height);
+      // About 520x312 at 852x393; the smallest phone keeps a smaller share.
+      expect(share).toBeGreaterThanOrEqual(viewport.width >= 800 ? 0.4 : 0.25);
+      await assertNoHorizontalOverflow(page);
+      await shoot(page, testInfo, `phone-stage-${projectSize(page)}`);
+    });
+
     test("has no blocking axe violations over the cabinet", async ({
       page,
     }) => {
@@ -943,7 +1029,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
         await expect(market).toBeEnabled({ timeout: 2000 });
       }).toPass({ timeout: 15000 });
       await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
-        "SUBNET 01"
+        floorBadge("Subnet", "01")
       );
 
       const dialog = page.getByRole("dialog", {
@@ -1052,7 +1138,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       await page.getByRole("button", { name: /^Next Room$/ }).tap();
       await runGameClock(page, 500);
       await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
-        "ROOM 02"
+        floorBadge("Room", "02")
       );
       await page.getByRole("button", { name: "EMP: fire an EMP burst" }).tap();
       await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(

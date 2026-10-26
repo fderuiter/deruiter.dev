@@ -1,0 +1,172 @@
+# ODCS v3.2.0 data contract for silver.edc_adverse_event. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.edc_adverse_event"
+name: "EDC adverse events"
+version: "1.0.0"
+status: active
+domain: EDC
+tags:
+  - silver
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "EDC adverse events, each on the visit it was reported at (#2956)."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: edc_adverse_event
+    name: edc_adverse_event
+    physicalName: silver.edc_adverse_event
+    physicalType: table
+    logicalType: object
+    description: "EDC adverse events, each on the visit it was reported at (#2956)."
+    dataGranularityDescription: "One row per adverse event."
+    properties:
+      - name: ae_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Adverse event id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: confidential
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id the event was reported at."
+        required: true
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id."
+        required: true
+        classification: confidential
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id."
+        required: true
+        classification: internal
+      - name: ae_term
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Reported term, from a short fictional list."
+        required: true
+        classification: confidential
+      - name: onset_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the event began."
+        required: true
+        classification: confidential
+      - name: reported_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the site reported the event, the day it entered the visit's data."
+        required: true
+        classification: confidential
+      - name: is_serious
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the event is serious (ICH E2A)."
+        required: true
+        classification: confidential
+      - name: severity
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 16
+        physicalType: "VARCHAR(16)"
+        description: "Severity: mild, moderate or severe."
+        required: true
+        classification: confidential
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: edc_adverse_event_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - ae_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (ae_id) identifies one row."
+team:
+  name: EDC
+  members:
+    - username: medical-safety-lead
+      name: "Medical Safety Lead"
+      role: owner
+    - username: safety-data-steward
+      name: "Safety Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.edc.adverseEvents
+  - property: consumers
+    value:
+      - "product:gold.fct_adverse_event"

@@ -4,7 +4,7 @@ import { ProtocolDriftClient } from "@/components/arcade/ProtocolDriftClient";
 import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
-import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.protocolDrift
@@ -28,11 +28,9 @@ export default function ProtocolDriftPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            ...getNavBreadcrumbSchemaParents("/protocol-drift"),
-            { name: "Protocol Drift", url: "/protocol-drift" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/protocol-drift")
+          ),
         }}
       />
       <div className="mx-auto mb-4 w-full max-w-[1600px]">

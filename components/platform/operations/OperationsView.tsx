@@ -130,7 +130,7 @@ function Freshness({ dashboard }: { dashboard: OperationsDashboard }) {
   );
 }
 
-function Breadcrumbs({
+function LevelTrail({
   dashboard,
   view,
 }: {
@@ -138,7 +138,7 @@ function Breadcrumbs({
   view: OperationsSectionId | null;
 }) {
   return (
-    <nav aria-label="Breadcrumb" className="min-w-0">
+    <nav aria-label="Dashboard level" className="min-w-0">
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-slate-400">
         {dashboard.crumbs.map((crumb, index) => {
           const last = index === dashboard.crumbs.length - 1;
@@ -478,7 +478,7 @@ export function OperationsView({
   return (
     <div className="space-y-8" aria-busy={busy}>
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.08] pb-4">
-        <Breadcrumbs dashboard={dashboard} view={view} />
+        <LevelTrail dashboard={dashboard} view={view} />
         <Freshness dashboard={dashboard} />
       </div>
 

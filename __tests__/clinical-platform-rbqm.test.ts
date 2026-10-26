@@ -242,7 +242,8 @@ describe("the RBQM library (#2631)", () => {
       (f) => f.id === "ctq-safety-reporting"
     )!;
     expect(safety.name).toContain("device deficiency");
-    expect(safety.gap?.issue).toBe(2776);
+    expect(safety.gap?.issue).toBe(2980);
+    expect(safety.gap?.reason).toContain("device deficiency");
   });
 
   it("makes no compliance or validation claim", () => {
@@ -278,6 +279,8 @@ describe("central statistical monitoring (#2631)", () => {
     expect(tests).toContain("csm-exact-day-visits");
     // It enters every visit at 17:00 UTC; its peers spread over the day.
     expect(tests).toContain("csm-entry-hour");
+    // It reports a tenth of its peers' adverse events (#2956).
+    expect(tests).toContain("csm-ae-under-reporting");
     expect(tests.length).toBeGreaterThanOrEqual(2);
     const hour = runs
       .get("DEMO-302")!
@@ -285,6 +288,22 @@ describe("central statistical monitoring (#2631)", () => {
         (r) => r.siteId === integritySite && r.testId === "csm-entry-hour"
       )!;
     expect(hour.detail).toMatch(/^(\d+) of \1 entries in the 17:00 UTC hour/);
+  });
+
+  it("does not test adverse events where the study's events stay in the Study Data Pipeline (#2956)", () => {
+    const run = centralMonitoring(warehouse, "DEMO-301");
+    expect(
+      run.results.filter((r) => r.testId === "csm-ae-under-reporting")
+    ).toEqual([]);
+    const excluded = run.excluded.filter(
+      (e) => e.testId === "csm-ae-under-reporting"
+    );
+    expect(excluded.length).toBeGreaterThan(0);
+    expect(new Set(excluded.map((e) => e.reason))).toEqual(
+      new Set([
+        "The site's peers report no adverse events, so there is no rate to compare against.",
+      ])
+    );
   });
 
   it("flags no site without a planted signal at the configured false discovery rate", () => {
@@ -307,6 +326,7 @@ describe("central statistical monitoring (#2631)", () => {
       expect(tests, `seed ${seed}`).toEqual(
         expect.arrayContaining([
           "csm-query-under-reporting",
+          "csm-ae-under-reporting",
           "csm-exact-day-visits",
           "csm-entry-hour",
         ])

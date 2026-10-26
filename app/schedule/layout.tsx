@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.schedule
@@ -29,11 +30,7 @@ export default function ScheduleLayout({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Connect", url: "/#contact" },
-            { name: "Say Hi & Book a Chat", url: "/schedule" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/schedule")),
         }}
       />
       {children}

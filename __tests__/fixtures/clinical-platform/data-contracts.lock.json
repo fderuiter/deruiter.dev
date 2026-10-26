@@ -1161,6 +1161,177 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.fct_adverse_event",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Adverse event id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "ae_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit record id the event was reported at (degenerate dimension).",
+              "maxLength": 64,
+              "name": "visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force when the site reported the event.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the event began.",
+              "maxLength": null,
+              "name": "onset_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the site reported the event.",
+              "maxLength": null,
+              "name": "reported_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days from onset to the site's report.",
+              "maxLength": null,
+              "name": "days_to_report",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported term.",
+              "maxLength": 80,
+              "name": "ae_term",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Whether the event is serious (ICH E2A).",
+              "maxLength": null,
+              "name": "is_serious",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            },
+            {
+              "classification": "internal",
+              "description": "Severity: mild, moderate or severe.",
+              "maxLength": 16,
+              "name": "severity",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956).",
+          "grain": "One row per adverse event.",
+          "name": "fct_adverse_event",
+          "physicalName": "gold.fct_adverse_event",
+          "primaryKey": [
+            "ae_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_adverse_event",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
       "id": "clinical-platform/gold.fct_cec_adjudication",
       "objects": [
         {
@@ -4319,6 +4490,166 @@
         }
       ],
       "productId": "silver.ctms_site_staff",
+      "retention": {
+        "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
+        "regulatory": true,
+        "years": 25
+      },
+      "sla": {
+        "availability": 0.99,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
+      "id": "clinical-platform/silver.edc_adverse_event",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "confidential",
+              "description": "Adverse event id.",
+              "maxLength": 64,
+              "name": "ae_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit record id the event was reported at.",
+              "maxLength": 64,
+              "name": "visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject id.",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Site id.",
+              "maxLength": 64,
+              "name": "site_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported term, from a short fictional list.",
+              "maxLength": 80,
+              "name": "ae_term",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date the event began.",
+              "maxLength": null,
+              "name": "onset_on",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date the site reported the event, the day it entered the visit's data.",
+              "maxLength": null,
+              "name": "reported_on",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Whether the event is serious (ICH E2A).",
+              "maxLength": null,
+              "name": "is_serious",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            },
+            {
+              "classification": "confidential",
+              "description": "Severity: mild, moderate or severe.",
+              "maxLength": 16,
+              "name": "severity",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Source system the record came from.",
+              "maxLength": 64,
+              "name": "source_system",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "EDC adverse events, each on the visit it was reported at (#2956).",
+          "grain": "One row per adverse event.",
+          "name": "edc_adverse_event",
+          "physicalName": "silver.edc_adverse_event",
+          "primaryKey": [
+            "ae_id"
+          ]
+        }
+      ],
+      "productId": "silver.edc_adverse_event",
       "retention": {
         "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
         "regulatory": true,

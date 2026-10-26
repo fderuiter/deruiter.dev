@@ -64,9 +64,7 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
-          <Breadcrumbs
-            items={[{ label: "Logical Proof Workspace", href: "/proof" }]}
-          />
+          <Breadcrumbs path="/proof" />
           <h1 className="type-title text-white flex items-center gap-2 mt-1">
             <IconCpu className="w-8 h-8 text-brand-cyan animate-pulse" />
             Logical Proof Canvas

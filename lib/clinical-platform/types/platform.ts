@@ -254,6 +254,37 @@ export interface EdcQuery extends BronzeRecord {
   readonly status: "open" | "answered" | "closed";
 }
 
+/** Severity of an adverse event, as the SDTM AESEV codelist words it (#2956). */
+export type AdverseEventSeverity = "mild" | "moderate" | "severe";
+
+/**
+ * An adverse event as the site records it in EDC, on the visit at which it
+ * was reported (#2956). Portfolio studies carry these; DEMO-301's adverse
+ * events stay in its Study Data Pipeline run.
+ */
+export interface EdcAdverseEvent extends BronzeRecord {
+  /** Adverse event id. */
+  readonly aeId: string;
+  /** Visit record id the event was reported at. */
+  readonly visitId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Reported term, from a short fictional list such as `Headache`. */
+  readonly term: string;
+  /** ISO 8601 date the event began. */
+  readonly onsetOn: string;
+  /** ISO 8601 date the site reported it: the day it entered the visit's data. */
+  readonly reportedOn: string;
+  /** Whether the event is serious, as ICH E2A defines it. */
+  readonly serious: boolean;
+  /** Severity. */
+  readonly severity: AdverseEventSeverity;
+}
+
 /** Study milestone kind, covering drug and ISO 14155 device milestones. */
 export type MilestoneKind =
   | "protocol-final"
@@ -487,7 +518,7 @@ export interface CecAdjudication extends BronzeRecord {
   readonly cecDeviceRelated: boolean | null;
 }
 
-/** The EDC feed: subjects, visits and queries. */
+/** The EDC feed: subjects, visits, queries and adverse events. */
 export interface EdcFeed {
   /** Subject records. */
   readonly subjects: readonly EdcSubject[];
@@ -495,6 +526,8 @@ export interface EdcFeed {
   readonly visits: readonly EdcVisit[];
   /** Query records. */
   readonly queries: readonly EdcQuery[];
+  /** Adverse event records (#2956). */
+  readonly adverseEvents: readonly EdcAdverseEvent[];
 }
 
 /** The CTMS feed: milestones, monitoring visits and protocol deviations. */

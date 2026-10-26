@@ -30,6 +30,7 @@
 - [DsqlLoadOptions](interfaces/DsqlLoadOptions.md)
 - [DsqlLoadPlan](interfaces/DsqlLoadPlan.md)
 - [DsqlTableParity](interfaces/DsqlTableParity.md)
+- [EdcAdverseEvent](interfaces/EdcAdverseEvent.md)
 - [EdcFeed](interfaces/EdcFeed.md)
 - [EdcQuery](interfaces/EdcQuery.md)
 - [EdcSubject](interfaces/EdcSubject.md)
@@ -79,6 +80,7 @@
 
 ## Type Aliases
 
+- [AdverseEventSeverity](type-aliases/AdverseEventSeverity.md)
 - [ContractColumnType](type-aliases/ContractColumnType.md)
 - [DataClassification](type-aliases/DataClassification.md)
 - [DeviationImportance](type-aliases/DeviationImportance.md)

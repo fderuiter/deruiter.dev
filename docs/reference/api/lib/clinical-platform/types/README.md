@@ -8,6 +8,12 @@
 
 ## References
 
+### AdverseEventSeverity
+
+Re-exports [AdverseEventSeverity](platform/type-aliases/AdverseEventSeverity.md)
+
+***
+
 ### BronzeFeeds
 
 Re-exports [BronzeFeeds](platform/interfaces/BronzeFeeds.md)
@@ -329,6 +335,12 @@ Re-exports [DsqlLoadPlan](platform/interfaces/DsqlLoadPlan.md)
 ### DsqlTableParity
 
 Re-exports [DsqlTableParity](platform/interfaces/DsqlTableParity.md)
+
+***
+
+### EdcAdverseEvent
+
+Re-exports [EdcAdverseEvent](platform/interfaces/EdcAdverseEvent.md)
 
 ***
 

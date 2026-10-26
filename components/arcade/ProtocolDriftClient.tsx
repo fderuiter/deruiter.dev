@@ -4,7 +4,6 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { IconShieldCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { getNavBreadcrumbParents } from "@/lib/navigation";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestProtocolDriftAutoPause } from "@/components/protocol-drift/auto-pause";
 
@@ -28,13 +27,7 @@ export const ProtocolDriftClient: React.FC = () => (
   <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
     <div className="mx-auto max-w-[1600px]">
       <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-4 sm:gap-4">
-        <Breadcrumbs
-          items={[
-            // The menu group that lists it, so there is a way back (#2170).
-            ...getNavBreadcrumbParents("/protocol-drift"),
-            { label: "Protocol Drift" },
-          ]}
-        />
+        <Breadcrumbs path="/protocol-drift" />
       </div>
 
       <div className="mb-8 min-w-0">

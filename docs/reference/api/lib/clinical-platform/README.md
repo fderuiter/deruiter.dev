@@ -8,6 +8,12 @@
 
 ## References
 
+### AdverseEventSeverity
+
+Re-exports [AdverseEventSeverity](types/platform/type-aliases/AdverseEventSeverity.md)
+
+***
+
 ### appendDqIssueEvent
 
 Re-exports [appendDqIssueEvent](internal/quality/issues/functions/appendDqIssueEvent.md)
@@ -665,6 +671,12 @@ Re-exports [DsqlLoadPlan](types/platform/interfaces/DsqlLoadPlan.md)
 ### DsqlTableParity
 
 Re-exports [DsqlTableParity](types/platform/interfaces/DsqlTableParity.md)
+
+***
+
+### EdcAdverseEvent
+
+Re-exports [EdcAdverseEvent](types/platform/interfaces/EdcAdverseEvent.md)
 
 ***
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ROUTE_METADATA_CONFIGS, buildRouteMetadata } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema } from "@/lib/seo";
 import { MerchView } from "@/components/merch/MerchView";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.merch
@@ -13,10 +14,9 @@ export default function MerchPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Laser Loon Merch", url: "/merch" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/merch", "Laser Loon Merch")
+          ),
         }}
       />
       <MerchView />

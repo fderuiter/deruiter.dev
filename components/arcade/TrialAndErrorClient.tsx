@@ -52,12 +52,7 @@ export const TrialAndErrorClient: React.FC = () => {
             <IconArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Back to Arcade Hub</span>
           </Link>
-          <Breadcrumbs
-            items={[
-              { label: "Arcade Hub", href: "/arcade" },
-              { label: "Trial & Error: Biostat Ops" },
-            ]}
-          />
+          <Breadcrumbs path="/arcade/trial-and-error" />
         </div>
 
         <div className="mb-8 min-w-0">

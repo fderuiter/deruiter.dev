@@ -50,6 +50,7 @@ components/                                # React UI Component Ecosystem
 
 docs/                                      # Diátaxis docs: tutorials/, how-to/, reference/api/ (TypeDoc), explanation/
 hooks/                                     # Custom React hooks (pretext, telemetry, sound, theme)
+infra/                                     # AWS: GitHub Actions OIDC role for the always-free data stores (ADR 0070)
 lib/                                       # Core TypeScript utilities, DX engine, & domain logic
 prisma/                                    # Database schemas, migrations, & seed scripts
 public/                                    # Static public assets, fonts, icons, & manifests

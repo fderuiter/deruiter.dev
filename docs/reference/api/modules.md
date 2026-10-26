@@ -117,6 +117,7 @@
 - [lib/clinical-platform/internal/lineage/impact](lib/clinical-platform/internal/lineage/impact/README.md)
 - [lib/clinical-platform/internal/lineage/openlineage](lib/clinical-platform/internal/lineage/openlineage/README.md)
 - [lib/clinical-platform/internal/policy](lib/clinical-platform/internal/policy/README.md)
+- [lib/clinical-platform/internal/portfolio/adverse-events](lib/clinical-platform/internal/portfolio/adverse-events/README.md)
 - [lib/clinical-platform/internal/portfolio/blueprint](lib/clinical-platform/internal/portfolio/blueprint/README.md)
 - [lib/clinical-platform/internal/portfolio/calendar](lib/clinical-platform/internal/portfolio/calendar/README.md)
 - [lib/clinical-platform/internal/portfolio/generate](lib/clinical-platform/internal/portfolio/generate/README.md)

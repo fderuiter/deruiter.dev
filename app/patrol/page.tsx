@@ -7,7 +7,6 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { EngineeringBridge } from "@/components/EngineeringBridge";
 import { PatrolShiftSkeleton } from "@/components/patrol/Skeletons";
-import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const PatrolShiftContainer = dynamic(
   () =>
@@ -30,12 +29,7 @@ export default function PatrolShiftPage() {
         {/* See app/neuro/page.tsx: studio routes render no visible page title,
             leaving assistive technology without a top-level heading. */}
         <h1 className="sr-only">Patrol Shift Studio</h1>
-        <Breadcrumbs
-          items={[
-            ...getNavBreadcrumbParents("/patrol"),
-            { label: "Patrol Shift", href: "/patrol" },
-          ]}
-        />
+        <Breadcrumbs path="/patrol" />
       </div>
 
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 w-full">

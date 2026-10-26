@@ -11,7 +11,7 @@ import {
   RELATED_GAME_LABEL,
   journeyIssueUrl,
 } from "@/lib/clinical-journey";
-import { getNavGroup } from "@/lib/navigation";
+import { getBreadcrumbTrailSchema, getNavGroup } from "@/lib/navigation";
 import { getBreadcrumbSchema } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 
@@ -36,14 +36,11 @@ export default function ClinicalPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Clinical", url: "/clinical" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/clinical")),
         }}
       />
       <header className="border-b border-white/[0.08] pb-10 sm:pb-14">
-        <Breadcrumbs items={[{ label: "Clinical" }]} />
+        <Breadcrumbs path="/clinical" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical
         </p>

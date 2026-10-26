@@ -6,7 +6,7 @@ import {
   toDefinitionCounts,
   toScheduleDesign,
 } from "@/components/study-data/schedule-design";
-import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import {
@@ -20,6 +20,7 @@ import {
   SYNTHETIC_DATA_NOTICE,
   type StandardId,
 } from "@/lib/study-data";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.studyData
@@ -61,14 +62,11 @@ export default function StudyDataPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            ...getNavBreadcrumbSchemaParents("/study-data"),
-            { name: "Study Data Pipeline", url: "/study-data" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/study-data")),
         }}
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
+        <Breadcrumbs path="/study-data" className="mb-6" />
         <ClinicalJourneyNav path="/study-data" variant="compact" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical systems / Study data

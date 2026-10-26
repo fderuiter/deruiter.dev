@@ -10,7 +10,6 @@ import { GROUP_ORDER } from "@/lib/oss-credits/presets";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ExternalLink } from "./ExternalLink";
 import { PackageSearch, type PackageTuple } from "./PackageSearch";
-import { getNavBreadcrumbParents } from "@/lib/navigation";
 import { USDM_V4_VERSION } from "@/lib/crf";
 import { STANDARD_VERSIONS } from "@/lib/study-data";
 
@@ -198,12 +197,7 @@ export function AcknowledgmentsView() {
     <div className="bg-zinc-950 px-4 pb-24 text-foreground sm:px-6 md:px-12 lg:px-24">
       <div className="mx-auto w-full min-w-0 max-w-5xl space-y-14">
         <header className="space-y-5">
-          <Breadcrumbs
-            items={[
-              ...getNavBreadcrumbParents("/acknowledgments"),
-              { label: "Open Source Credits" },
-            ]}
-          />
+          <Breadcrumbs path="/acknowledgments" />
           <h1 className="type-display break-words text-zinc-50">
             Open source acknowledgments
           </h1>

@@ -614,6 +614,26 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     };
   });
 
+  // Adverse events, keyed by the site version in force when the site
+  // reported them (#2956).
+  const fctAdverseEvent = silver.edc_adverse_event.map((e) => {
+    const onset = str(e, "onset_on");
+    const reported = str(e, "reported_on");
+    return {
+      ae_id: e.ae_id,
+      visit_id: e.visit_id,
+      subject_id: e.subject_id,
+      ...dims(e, reported),
+      onset_date_key: dk(onset),
+      reported_date_key: dk(reported),
+      days_to_report: daysBetween(onset, reported),
+      ae_term: e.ae_term,
+      is_serious: e.is_serious,
+      severity: e.severity,
+      is_synthetic: e.is_synthetic,
+    };
+  });
+
   const dimMonitoringPlan = silver.ctms_monitoring_plan.map((p, index) => ({
     monitoring_plan_key: index + 1,
     monitoring_plan_id: p.monitoring_plan_id,
@@ -829,6 +849,7 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     fct_query: fctQuery,
     fct_deviation: fctDeviation,
     fct_cec_adjudication: fctCecAdjudication,
+    fct_adverse_event: fctAdverseEvent,
     fct_monitoring_visit: fctMonitoringVisit,
     fct_planned_monitoring_visit: fctPlannedMonitoringVisit,
     fct_milestone: fctMilestone,

@@ -56,9 +56,13 @@ import {
  *
  * #2955: `gold.fct_visit` gained `entry_hour`. With that column left out the
  * hash is the previous golden, 9c976355, so no other value moved.
+ *
+ * #2956: `silver.edc_adverse_event` and `gold.fct_adverse_event` are new.
+ * With those two tables left out the hash is the previous golden, 5258dfe3,
+ * so no other value moved.
  */
 const GOLDEN_SHA256 =
-  "5258dfe3ff43c8bb4c7843d2963f106cf1218546dbf9546d650c07f8cb0e679f";
+  "140be786185f57907beb7450766c32f0c1006f69f18c9b04c4bd14bdacc03e16";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -69,6 +73,7 @@ const GOLDEN_ROW_COUNTS = {
   "silver.edc_subject": 1808,
   "silver.edc_visit": 7727,
   "silver.edc_query": 3559,
+  "silver.edc_adverse_event": 2084,
   "silver.ctms_milestone": 72,
   "silver.ctms_monitoring_plan": 8,
   "silver.ctms_monitoring_visit": 1123,
@@ -92,6 +97,7 @@ const GOLDEN_ROW_COUNTS = {
   "gold.fct_query": 3559,
   "gold.fct_deviation": 329,
   "gold.fct_cec_adjudication": 39,
+  "gold.fct_adverse_event": 2084,
   "gold.fct_monitoring_visit": 1123,
   "gold.fct_planned_monitoring_visit": 1077,
   "gold.fct_milestone": 72,
@@ -284,6 +290,51 @@ describe("buildWarehouse: integrity", () => {
         table: "silver.cec_adjudication",
         message: expect.stringMatching(
           /^adjudicated_on = "2000-01-01" without reported_on on or before it \("\d{4}-\d{2}-\d{2}"\)\.$/
+        ),
+      },
+    ]);
+  });
+
+  it("keeps one adverse event fact per event, keyed by the site version that reported it (#2956)", () => {
+    const events = rows("silver.edc_adverse_event");
+    const facts = new Map(
+      rows("gold.fct_adverse_event").map((f) => [f.ae_id, f])
+    );
+    expect(facts.size).toBe(events.length);
+    const key = (day: unknown) => Number(String(day).replaceAll("-", ""));
+    const siteKeys = new Map(
+      rows("gold.dim_site").map((s) => [s.site_key, s])
+    );
+    for (const event of events) {
+      const fact = facts.get(event.ae_id)!;
+      const id = String(event.ae_id);
+      const reported = String(event.reported_on);
+      expect(siteKeys.get(fact.site_key), id).toBe(
+        siteVersionOn(warehouse, String(event.site_id), reported)
+      );
+      expect(fact.onset_date_key, id).toBe(key(event.onset_on));
+      expect(fact.reported_date_key, id).toBe(key(reported));
+      expect(fact.days_to_report, id).toBe(
+        (Date.parse(reported) - Date.parse(String(event.onset_on))) / 86_400_000
+      );
+      expect(fact.is_serious, id).toBe(event.is_serious);
+    }
+  });
+
+  it("reports an adverse event reported before it began (#2956)", () => {
+    const early = rows("silver.edc_adverse_event").map((event, index) =>
+      index === 0 ? { ...event, reported_on: "2000-01-01" } : event
+    );
+    const findings = checkWarehouse(WAREHOUSE_SCHEMA, {
+      ...warehouse,
+      tables: { ...warehouse.tables, "silver.edc_adverse_event": early },
+    });
+    expect(findings).toEqual([
+      {
+        rule: "sequence",
+        table: "silver.edc_adverse_event",
+        message: expect.stringMatching(
+          /^reported_on = "2000-01-01" without onset_on on or before it \("\d{4}-\d{2}-\d{2}"\)\.$/
         ),
       },
     ]);
@@ -884,6 +935,7 @@ describe("lineage", () => {
     "bronze.edc.subjects": portfolio.feeds.edc.subjects[0],
     "bronze.edc.visits": portfolio.feeds.edc.visits[0],
     "bronze.edc.queries": portfolio.feeds.edc.queries[0],
+    "bronze.edc.adverseEvents": portfolio.feeds.edc.adverseEvents[0],
     "bronze.ctms.milestones": portfolio.feeds.ctms.milestones[0],
     "bronze.ctms.monitoringPlans": portfolio.feeds.ctms.monitoringPlans[0],
     "bronze.ctms.monitoringVisits": portfolio.feeds.ctms.monitoringVisits[0],

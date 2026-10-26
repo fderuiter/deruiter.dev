@@ -591,42 +591,73 @@ export function getNavGroupForHref(href: string): NavGroup | undefined {
   return PRIMARY_NAV.find((group) => isNavGroupActive(group, path));
 }
 
-/** One parent crumb for a page's breadcrumb trail. */
-export interface NavBreadcrumbParent {
+/** One crumb in a page's trail. The page's own crumb, last, has no href. */
+export interface NavBreadcrumb {
   label: string;
-  href: string;
+  href?: string;
 }
 
 /**
- * The parent crumb a page shows between Home and its own name: the label and
- * overview href of the menu group that lists it (Clinical, Labs, Arcade, About).
- * Empty for pages outside a menu group, for a group with no overview page of its
- * own (Writing), and for the group's own overview page, so a trail
- * never links to the page it is on.
+ * A page's breadcrumb trail after Home, built from the navigation so every
+ * page names its parents the same way. The trail is the menu group's overview
+ * (Clinical, Labs, Arcade, About), then the index page the path extends
+ * (Clinical Data Platform for `/platform/sql`, Blog for a post), then the page.
+ *
+ * The page is named by `pageLabel`, else by its menu entry, else by its group.
+ * The group crumb is left out for a group with no overview page (Writing) and
+ * on the overview page itself, so a trail never links to the page it is on.
  */
-export function getNavBreadcrumbParents(
-  pathname: string
-): NavBreadcrumbParent[] {
-  const group = getNavGroupForHref(pathname);
-  if (
-    !group ||
-    !isNavMenu(group) ||
-    group.noBreadcrumb ||
-    pathname === group.href
-  ) {
-    return [];
+export function getBreadcrumbTrail(
+  pathname: string,
+  pageLabel?: string
+): NavBreadcrumb[] {
+  const path = (pathname.split("#")[0] ?? "").replace(/\/+$/, "") || "/";
+  if (path === "/") return [];
+  const group = getNavGroupForHref(path);
+  const items = getAllNavItems().filter((item) => !item.external);
+  const trail: NavBreadcrumb[] = [];
+
+  const groupCrumb =
+    group && isNavMenu(group) && !group.noBreadcrumb ? group : undefined;
+  if (groupCrumb && path === groupCrumb.href) {
+    return [{ label: pageLabel ?? groupCrumb.label }];
   }
-  return [{ label: group.label, href: group.href }];
+  if (groupCrumb) {
+    trail.push({ label: groupCrumb.label, href: groupCrumb.href });
+  }
+
+  // The group crumb already links the hub a menu shares an href with (Arcade).
+  const parent = items
+    .filter(
+      (item) =>
+        item.href !== groupCrumb?.href && path.startsWith(`${item.href}/`)
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  if (parent) trail.push({ label: parent.title, href: parent.href });
+
+  const own = items.find(
+    (item) => item.href === path || item.mobileHref === path
+  );
+  trail.push({ label: pageLabel ?? own?.title ?? group?.label ?? path });
+  return trail;
 }
 
-/** The same parent crumb in the `{ name, url }` shape the JSON-LD helper takes. */
-export function getNavBreadcrumbSchemaParents(
-  pathname: string
+/**
+ * The same trail, Home first, in the `{ name, url }` shape the JSON-LD helper
+ * takes, so the visible crumbs and the structured data cannot disagree.
+ */
+export function getBreadcrumbTrailSchema(
+  pathname: string,
+  pageLabel?: string
 ): { name: string; url: string }[] {
-  return getNavBreadcrumbParents(pathname).map(({ label, href }) => ({
-    name: label,
-    url: href,
-  }));
+  const path = pathname.split("#")[0] || "/";
+  return [
+    { name: "Home", url: "/" },
+    ...getBreadcrumbTrail(pathname, pageLabel).map(({ label, href }) => ({
+      name: label,
+      url: href ?? path,
+    })),
+  ];
 }
 
 /** The href to use on a phone-sized surface. */

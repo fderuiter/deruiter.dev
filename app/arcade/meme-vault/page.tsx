@@ -3,6 +3,7 @@ import { MemeVaultClient } from "@/components/arcade/MemeVaultClient";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 import { PageLayout } from "@/components/PageLayout";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.memeVault
@@ -26,11 +27,9 @@ export default function MemeVaultPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "Meme Vault", url: "/arcade/meme-vault" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/meme-vault")
+          ),
         }}
       />
       <MemeVaultClient />

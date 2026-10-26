@@ -151,7 +151,7 @@
     {
       "packageName": "json-bignum",
       "license": "UNKNOWN",
-      "expiresAt": "2027-01-23",
+      "expiresAt": "2026-12-30",
       "riskOwner": "devsecops@deruiter.dev",
       "ticket": "#2633",
       "rationale": "Transitive dependency of apache-arrow (the SQL workbench) whose package.json declares MIT in the legacy licenses array, so the lockfile records no license field; its LICENSE file is MIT."

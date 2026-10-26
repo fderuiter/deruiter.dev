@@ -52,7 +52,7 @@ export const PUBLIC_ROUTE_REGISTRY = [
   },
   {
     path: "/platform/sql",
-    name: "In-Browser SQL Workbench for Clinical Data",
+    name: "In-Browser Clinical SQL Workbench",
     category: "tool",
   },
   { path: "/m/crf", name: "Mobile CRF Builder & AST", category: "tool" },

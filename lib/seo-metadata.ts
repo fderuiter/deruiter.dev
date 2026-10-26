@@ -65,7 +65,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   platformSql: {
-    title: "In-Browser SQL Workbench for Clinical Data",
+    title: "In-Browser Clinical SQL Workbench",
     description:
       "Run read-only SQL on a synthetic clinical warehouse in your browser with DuckDB-WASM: saved queries, governed metric SQL in three dialects and a schema browser.",
     path: "/platform/sql",

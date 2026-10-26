@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
+import { downloadFile } from "@/lib/download";
 import {
   EXPLORER_MAX_DIMENSIONS,
   METRIC_DIMENSIONS,
@@ -224,15 +225,6 @@ function Promotion({ steps }: { steps: readonly PromotionStep[] }) {
       ))}
     </section>
   );
-}
-
-function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 /**
@@ -654,7 +646,11 @@ export function ExplorerView({
               type="button"
               className={`${button} min-h-12`}
               onClick={() =>
-                download(`${result.spec.id}.csv`, explorationCsv(result.report))
+                downloadFile(
+                  explorationCsv(result.report),
+                  `${result.spec.id}.csv`,
+                  { mimeType: "text/csv;charset=utf-8" }
+                )
               }
             >
               Download the data as CSV

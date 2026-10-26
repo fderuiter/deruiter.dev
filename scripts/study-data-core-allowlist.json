@@ -10,6 +10,13 @@
     },
     {
       "target": "sdtm",
+      "coreId": "CORE-000701",
+      "dataset": "CM",
+      "category": "by-design",
+      "reason": "Medications started before informed consent have no EPOCH, since they began before the study's first epoch; most are remembered to the month only. Medications for an AE with a month-only start date have none either."
+    },
+    {
+      "target": "sdtm",
       "coreId": "CORE-000761",
       "dataset": "TS",
       "category": "ct-cache",
@@ -19,6 +26,13 @@
       "target": "sdtm",
       "coreId": "CORE-000767",
       "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000767",
+      "dataset": "CM",
       "category": "core-limitation",
       "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
     },

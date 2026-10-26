@@ -172,7 +172,7 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     expect(res!.headers.get("x-nonce")).toBeNull();
   });
 
-  it("renders the root layout without reading request headers, keeping SRI on telemetry scripts", async () => {
+  it("renders the root layout without reading request headers or hand-written telemetry tags", async () => {
     const layoutJsx = await RootLayout({ children: "Test Child" });
     expect(headersSpy).not.toHaveBeenCalled();
     expect(layoutJsx.type).toBe("html");
@@ -182,24 +182,17 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     );
     const headChildren = head.props.children.flat(Infinity);
 
-    const analyticsScript = headChildren.find(
-      (c: { props?: { src?: string } }) =>
-        c?.props?.src === "https://va.vercel-scripts.com/v1/script.js"
+    // Analytics and Speed Insights load through <Analytics /> and
+    // <SpeedInsights />, which serve their scripts from /_vercel on the site's
+    // own origin. A hand-written tag for the unversioned va.vercel-scripts.com
+    // URL with a pinned integrity hash broke when Vercel updated the file in
+    // place (#2969), so none may come back.
+    const vercelScriptTags = headChildren.filter(
+      (c: { props?: { src?: unknown } }) =>
+        typeof c?.props?.src === "string" &&
+        c.props.src.startsWith("https://va.vercel-scripts.com")
     );
-    const speedInsightsScript = headChildren.find(
-      (c: { props?: { src?: string } }) =>
-        c?.props?.src ===
-        "https://va.vercel-scripts.com/v1/speed-insights/script.js"
-    );
-
-    expect(analyticsScript.props.integrity).toBe(
-      "sha384-BZkUlnHxIcBvxJPoeKYfzzACTHqHtpUJ0qHirqeslo4I3k8wEaoSnJyPGyguandz"
-    );
-    expect(analyticsScript.props.crossOrigin).toBe("anonymous");
-    expect(speedInsightsScript.props.integrity).toBe(
-      "sha384-+0Qu2ywcjV4AEzNpfUDkt+pgMgvC6r5/Dv3PULLimAa3Jk5UCiQ0plSg53uQkjBn"
-    );
-    expect(speedInsightsScript.props.crossOrigin).toBe("anonymous");
+    expect(vercelScriptTags).toEqual([]);
     for (const child of headChildren) {
       expect(child?.props?.nonce).toBeUndefined();
     }

@@ -87,6 +87,44 @@ describe("production deploy configuration", () => {
     }
   });
 
+  // ADR 0063 (Proposed): the one workflow allowed to start a release, and
+  // only by POSTing the Deploy Hook behind the operator's switch and holds.
+  it("keeps the weekly train behind its switch, holds and gates", () => {
+    const train = read(".github/workflows/weekly-train.yml");
+
+    expect(train).toContain('- cron: "0 1 * * 1"');
+    expect(train.match(/- cron:/g)).toHaveLength(1);
+    expect(train).toMatch(/workflow_dispatch:/);
+    expect(train).toMatch(
+      /permissions:\s*\n\s*contents: write\s*\n\s*checks: read\s*\n\s*issues: write\s*\n/
+    );
+    expect(train).toMatch(/timeout-minutes: \d+/);
+
+    expect(train).toContain('"$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]');
+    expect(train).toContain("SWITCH: ${{ vars.WEEKLY_TRAIN }}");
+    expect(train).toContain('--label "release:hold"');
+    expect(train).toContain("Merge Gate (Required Checks Summary)");
+    expect(train).toContain("scripts/check-migration-safety.ts");
+    expect(train).toContain("${{ secrets.VERCEL_DEPLOY_HOOK_MAIN }}");
+    expect(train).toContain("gh release create");
+    expect(train).toContain("--draft");
+
+    // Vercel builds and migrates; the train only asks it to.
+    expect(train).not.toMatch(/npm run build|prisma migrate|npx vercel/);
+    const secrets = [...train.matchAll(/secrets\.(\w+)/g)].map((m) => m[1]);
+    expect(new Set(secrets)).toEqual(new Set(["VERCEL_DEPLOY_HOOK_MAIN"]));
+
+    // The release is published only after the live site reports its commit.
+    const fire = train.indexOf('-X POST "$HOOK"');
+    const publish = train.indexOf("gh release edit");
+    expect(fire).toBeGreaterThan(-1);
+    expect(publish).toBeGreaterThan(fire);
+    expect(train.slice(fire, publish)).toContain("/api/version");
+
+    const adr = read("adr/0063-weekly-release-train.md");
+    expect(adr).toMatch(/## Status\s+Proposed/);
+  });
+
   it("still sends the protection bypass header when a probe targets a protected URL", () => {
     expect(read("playwright.config.ts")).toContain(
       "x-vercel-protection-bypass"

@@ -20,6 +20,7 @@ import {
   METRIC_STATUS_LABEL,
   SLA_LABEL,
   catalogAnchor,
+  dqProductAnchor,
   glossaryAnchor,
   percent,
 } from "./labels";
@@ -174,7 +175,15 @@ function ProductCard({
             {SLA_LABEL[entry.slaStatus]}
           </span>
         </Fact>
-        <Fact term="Data quality">{quality}</Fact>
+        <Fact term="Data quality">
+          {entry.dqScore === null ? (
+            quality
+          ) : (
+            <a href={`#${dqProductAnchor(entry.id)}`} className={linkClass}>
+              {quality}
+            </a>
+          )}
+        </Fact>
         <Fact term="Source">{entry.sourceDomain}</Fact>
       </dl>
       {entry.slaFindings.length > 0 && (

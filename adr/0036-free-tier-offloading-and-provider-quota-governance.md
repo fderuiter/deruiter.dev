@@ -27,7 +27,7 @@ We adopt the **Free-Tier Offloading Architecture & Quota Governance Strategy**:
 
 To ensure Neon's serverless compute remains suspended in zero-compute sleep states across public visitor traffic:
 
-- **Tier 1 (Static Edge Prerendering)**: Full-page editorial routes (case studies, dossier specs) use Next.js Incremental Static Regeneration (ISR) with `revalidate = 3600`. Static requests cost 0 database queries and 0 Redis commands at runtime.
+- **Tier 1 (Static Edge Prerendering)**: Full-page editorial routes (case studies, dossier specs) use Next.js Incremental Static Regeneration (ISR) with `revalidate = 86400`, and content writes revalidate their paths on demand (each regeneration bills Vercel active CPU, #2971). Static requests cost 0 database queries and 0 Redis commands at runtime.
 - **Tier 2 (Upstash Redis Read-Through Cache)**: Dynamic data queries in `CaseStudyService` and reaction counters query Upstash Redis first with a 1-hour TTL. Only cache misses wake Neon Postgres.
 - **Write Buffering**: Visitor reactions and telemetry events are buffered in Upstash Redis (`HINCRBY`, `RPUSH`) rather than issuing immediate mutative SQL queries per request.
 
@@ -89,3 +89,14 @@ All child issues governing this architecture are delivered using the dual-tracke
 
 - Cache Invalidation Complexity: Mutation of case studies or author data requires explicit cache bust (`revalidateTag` or Redis key eviction).
 - 24-Hour Email Retry Backoff on Hobby Base: Transient email failures processed by daily cron may wait up to 24 hours unless Upstash QStash event-driven scheduler is active.
+
+## Amendment 2026-10-26: AWS (Aurora DSQL, DynamoDB)
+
+[ADR 0070](0070-always-free-aws-data-stores.md) adds AWS as a provider,
+limited to its permanent monthly free quotas: Aurora DSQL at 100,000 DPUs
+and 1 GB, and DynamoDB at 25 GB with 25 read and 25 write capacity units in
+provisioned mode. Writes come only from GitHub Actions and reads only from
+production builds, so AWS adds no Vercel Fluid Compute and no visitor
+request depends on it. The account is on AWS's Free plan, which closes
+after six months unless upgraded; the deadline is tracked on
+[#2974](https://github.com/fderuiter/deruiter.dev/issues/2974).

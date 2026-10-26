@@ -3,10 +3,11 @@ import { expect, test, type Page } from "@playwright/test";
 import { settleFooterTicker } from "./helpers/footer-ticker";
 
 /**
- * Real-browser checks for /platform/governance (#2638): the page at the
- * four widths of the layout matrix, with zero critical, serious or moderate
- * axe violations and no horizontal overflow, the catalog's search and
- * filters, and a link to an entry the filters hide.
+ * Real-browser checks for /platform/governance (#2638, #2636): the page at
+ * the four widths of the layout matrix, with zero critical, serious or
+ * moderate axe violations and no horizontal overflow, the catalog's search
+ * and filters, a link to an entry the filters hide, and a link from the
+ * data quality issue log to a rule in a closed group.
  */
 
 const WIDTHS = [320, 375, 768, 1440] as const;
@@ -109,4 +110,27 @@ test("the catalog searches, filters and still lands a link the filters hide", as
   await expect(
     page.locator('[id="glossary-enrollment-term"]')
   ).toBeInViewport();
+});
+
+test("an issue's rule link opens the closed group the rule is in", async ({
+  page,
+}) => {
+  test.slow();
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto("/platform/governance");
+  const rule = page.locator('[id="dq-rule-DQ-K04"]');
+  const group = page.locator("details", { has: rule });
+  await expect(group).not.toHaveAttribute("open");
+  // DQI-004's rule passes today, so its Consistency group starts closed.
+  const link = page
+    .locator('[id="dq-issue-DQI-004"]')
+    .locator('a[href="#dq-rule-DQ-K04"]');
+  // A click before hydration lands without the listener, so retry.
+  await expect(async () => {
+    await page.evaluate(() => history.replaceState(null, "", "#quality"));
+    await link.click();
+    await expect(rule).toBeInViewport({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+  await expect(group).toHaveAttribute("open", "");
+  await expect(rule).toContainText("Passed");
 });

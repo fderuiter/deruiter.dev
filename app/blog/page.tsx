@@ -6,7 +6,9 @@ import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema } from "@/lib/seo";
 
-export const revalidate = 3600;
+// Daily: each regeneration bills Vercel active CPU, and content writes
+// revalidate these paths on demand, so the timer is only a backstop (#2971).
+export const revalidate = 86400;
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.blog

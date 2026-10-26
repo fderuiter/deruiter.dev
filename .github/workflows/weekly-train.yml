@@ -1,0 +1,287 @@
+name: Weekly Train
+
+# ADR 0063 (Proposed): merges to `main` never deploy. Once a week this
+# workflow cuts a versioned GitHub Release from green `main` and ships exactly
+# that commit to Production through the Vercel Deploy Hook. Vercel builds,
+# migrates and serves; this workflow never builds, migrates or holds a Vercel
+# token. The hook URL is the only production-adjacent value GitHub holds, and
+# it can only build `main`.
+#
+# Inert until the operator turns it on (#2889):
+#   - scheduled runs exit unless the repository variable WEEKLY_TRAIN is "on";
+#   - any run exits while an open issue carries the `release:hold` label;
+#   - firing fails clearly while the secret VERCEL_DEPLOY_HOOK_MAIN is unset.
+#
+# Stages:
+#   1. Select: live SHA from /api/version; candidate = `main` HEAD.
+#   2. Gate: Merge Gate on the candidate must pass (wait while it runs), and
+#      no destructive migration may sit between live and candidate.
+#   3. Version: next semantic version from the Conventional Commits since the
+#      last `v*` tag; draft a GitHub Release with grouped notes.
+#   4. Fire: re-check that HEAD is still the candidate, POST the hook.
+#   5. Confirm: wait for /api/version to report the candidate, then publish
+#      the Release (which creates the tag). A failure after firing leaves the
+#      Release as a draft and opens a `release:hold` issue, which pauses the
+#      next run until a person closes it.
+
+on:
+  schedule:
+    # Sunday 7 PM Central Standard Time (8 PM during daylight saving time).
+    # GitHub cron is UTC: 01:00 UTC Monday.
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Ship even if the live site already runs main HEAD"
+        type: boolean
+        default: false
+      version:
+        description: "Override the computed version, e.g. 1.0.0 (blank = automatic)"
+        type: string
+        default: ""
+
+concurrency:
+  group: weekly-train
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  checks: read
+  issues: write
+
+jobs:
+  train:
+    name: Weekly Train
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SITE: "https://deruiter.dev"
+      MERGE_GATE: "Merge Gate (Required Checks Summary)"
+
+    steps:
+      - name: Select and gate
+        id: select
+        env:
+          EVENT: ${{ github.event_name }}
+          SWITCH: ${{ vars.WEEKLY_TRAIN }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          skip() {
+            echo "Skipped: $1" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "ship=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          if [ "$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]; then
+            skip "the repository variable WEEKLY_TRAIN is not \"on\"."
+          fi
+
+          holds=$(gh issue list --state open --label "release:hold" --json number --jq '[.[].number] | map("#" + tostring) | join(", ")')
+          if [ -n "$holds" ]; then
+            skip "open release:hold issue(s) $holds."
+          fi
+
+          live=$(curl -fsS --retry 3 "$SITE/api/version" | jq -r '.sha')
+          echo "live=$live" >> "$GITHUB_OUTPUT"
+
+          # Wait up to 45 minutes for Merge Gate on main HEAD. If a merge lands
+          # meanwhile, follow the new HEAD: its run is the one that will finish.
+          deadline=$(( $(date +%s) + 45 * 60 ))
+          while :; do
+            candidate=$(gh api "repos/$GH_REPO/commits/main" --jq '.sha')
+            if [ "$candidate" = "$live" ] && [ "$FORCE" != "true" ]; then
+              skip "the live site already runs main HEAD ${candidate:0:7}."
+            fi
+            run=$(gh api -X GET "repos/$GH_REPO/commits/$candidate/check-runs" \
+              -f check_name="$MERGE_GATE" -f filter=latest \
+              --jq '.check_runs | sort_by(.started_at) | last | "\(.status) \(.conclusion)"')
+            case "$run" in
+              "completed success") break ;;
+              # A newer merge cancels this run; the next pass reads the new HEAD.
+              "completed cancelled") ;;
+              "completed "*)
+                echo "::error::Merge Gate on main HEAD ${candidate:0:7} finished as '${run#completed }'; nothing shipped this week."
+                exit 1
+                ;;
+            esac
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::Merge Gate on main HEAD ${candidate:0:7} did not finish within 45 minutes; nothing shipped this week."
+              exit 1
+            fi
+            sleep 60
+          done
+
+          echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
+          echo "ship=true" >> "$GITHUB_OUTPUT"
+          echo "Candidate: \`$candidate\` (live: \`$live\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout Code
+        if: steps.select.outputs.ship == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.select.outputs.candidate }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        if: steps.select.outputs.ship == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # ADR 0049 applies migrations during the Production build, before the
+      # site switches over, so a destructive statement would reach the live
+      # database ahead of any check. Hold the train and ship it by hand (#2537).
+      - name: Hold on destructive migrations
+        if: steps.select.outputs.ship == 'true'
+        env:
+          LIVE: ${{ steps.select.outputs.live }}
+          CANDIDATE: ${{ steps.select.outputs.candidate }}
+          OWNER: ${{ github.repository_owner }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          report=$(node --no-warnings scripts/check-migration-safety.ts "$LIVE" "$CANDIDATE")
+          status=$?
+          echo "$report"
+          if [ "$status" -eq 1 ]; then
+            body=$(printf 'The weekly train found destructive migrations between the live commit and `%s`, so nothing shipped.\n\n```\n%s\n```\n\nRun: %s\n\nReview them, release by hand from the Vercel Dashboard, then close this issue so the train resumes.\n' "$CANDIDATE" "$report" "$RUN_URL")
+            gh issue create --title "ops(release): destructive migrations hold the weekly train" \
+              --label "release:hold" --assignee "$OWNER" --body "$body"
+            exit 1
+          fi
+          exit "$status"
+
+      - name: Draft the versioned GitHub Release
+        id: version
+        if: steps.select.outputs.ship == 'true'
+        env:
+          CANDIDATE: ${{ steps.select.outputs.candidate }}
+          OVERRIDE: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          last=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
+          last=${last:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${last#v}"
+
+          range="$CANDIDATE"
+          if git rev-parse -q --verify "refs/tags/$last" > /dev/null; then
+            range="$last..$CANDIDATE"
+          fi
+          subjects=$(git log --no-merges --format='%s' "$range")
+
+          # Semantic Versioning from Conventional Commits. Before 1.0.0 a
+          # breaking change bumps the minor version (SemVer item 4).
+          if [ -n "$OVERRIDE" ]; then
+            if ! [[ "$OVERRIDE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Version override '$OVERRIDE' is not MAJOR.MINOR.PATCH."
+              exit 1
+            fi
+            next="$OVERRIDE"
+          elif grep -qE '^[a-z]+(\([^)]*\))?!:' <<< "$subjects" \
+            || git log --format='%b' "$range" | grep -q '^BREAKING CHANGE:'; then
+            if [ "$major" -eq 0 ]; then next="0.$((minor + 1)).0"; else next="$((major + 1)).0.0"; fi
+          elif grep -qE '^feat(\([^)]*\))?:' <<< "$subjects"; then
+            next="$major.$((minor + 1)).0"
+          else
+            next="$major.$minor.$((patch + 1))"
+          fi
+          tag="v$next"
+          if [ "$(printf '%s\n%s\n' "$last" "$tag" | sort -V | tail -n 1)" != "$tag" ] || [ "$tag" = "$last" ]; then
+            echo "::error::$tag is not newer than $last."
+            exit 1
+          fi
+
+          section() {
+            local lines
+            lines=$(grep ${3:-} -E "$2" <<< "$subjects" | sed 's/^/- /' || true)
+            if [ -n "$lines" ]; then printf '## %s\n\n%s\n\n' "$1" "$lines"; fi
+          }
+          {
+            section "Features" '^feat(\([^)]*\))?!?:'
+            section "Fixes" '^fix(\([^)]*\))?!?:'
+            section "Performance" '^perf(\([^)]*\))?!?:'
+            section "Other changes" '^(feat|fix|perf)(\([^)]*\))?!?:' -v
+            echo "Commit: \`$CANDIDATE\`"
+            if [ "$last" != "v0.0.0" ]; then
+              echo ""
+              echo "Full changelog: https://github.com/$GH_REPO/compare/$last...$tag"
+            fi
+          } > "$RUNNER_TEMP/notes.md"
+
+          # A failed week leaves its draft behind; replace it.
+          if [ "$(gh release view "$tag" --json isDraft --jq '.isDraft' 2>/dev/null || echo none)" = "true" ]; then
+            gh release delete "$tag" --yes
+          fi
+          gh release create "$tag" --draft --target "$CANDIDATE" \
+            --title "$tag ($(date -u +%Y-%m-%d))" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Drafted $tag (previous: $last)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fire the Vercel Deploy Hook
+        id: fire
+        if: steps.select.outputs.ship == 'true'
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_MAIN }}
+          CANDIDATE: ${{ steps.select.outputs.candidate }}
+        run: |
+          set -euo pipefail
+          if [ -z "$HOOK" ]; then
+            echo "::error::The secret VERCEL_DEPLOY_HOOK_MAIN is not set; see issue #2889."
+            exit 1
+          fi
+          # The hook builds main HEAD at the moment it fires. Re-check that
+          # HEAD is still the commit the Release was drafted for.
+          head=$(gh api "repos/$GH_REPO/commits/main" --jq '.sha')
+          if [ "$head" != "$CANDIDATE" ]; then
+            echo "::error::main moved to ${head:0:7} after its gate passed for ${CANDIDATE:0:7}; run the workflow again."
+            exit 1
+          fi
+          curl -fsS --retry 3 -X POST "$HOOK" -o /dev/null
+          echo "fired=true" >> "$GITHUB_OUTPUT"
+          echo "Deploy Hook fired for \`$CANDIDATE\`." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Confirm the release is live, then publish it
+        if: steps.fire.outputs.fired == 'true'
+        env:
+          CANDIDATE: ${{ steps.select.outputs.candidate }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + 40 * 60 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            sha=$(curl -fsS "$SITE/api/version" | jq -r '.sha' || true)
+            if [ "$sha" = "$CANDIDATE" ]; then
+              gh release edit "$TAG" --draft=false --latest
+              echo "Live: $TAG (\`$sha\`) on $SITE." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "::error::$SITE did not report ${CANDIDATE:0:7} within 40 minutes of firing the hook."
+          exit 1
+
+      - name: Hold the train after a failed release
+        if: failure() && steps.fire.outputs.fired == 'true'
+        env:
+          CANDIDATE: ${{ steps.select.outputs.candidate }}
+          LIVE: ${{ steps.select.outputs.live }}
+          TAG: ${{ steps.version.outputs.tag }}
+          OWNER: ${{ github.repository_owner }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          body=$(cat <<EOF
+          The weekly train fired the Deploy Hook for $TAG (\`$CANDIDATE\`), but $SITE did not report that commit within 40 minutes. The GitHub Release stays a draft.
+
+          - Run: $RUN_URL
+          - Live before the run: \`$LIVE\`
+
+          Check the newest Production deployment in Vercel. If the site is broken, use **Instant Rollback** to the previous Production deployment. This issue carries \`release:hold\`, so the next weekly run skips until it is closed.
+          EOF
+          )
+          gh issue create --title "ops(release): weekly train failed for $TAG" \
+            --label "release:hold" --assignee "$OWNER" --body "$body"

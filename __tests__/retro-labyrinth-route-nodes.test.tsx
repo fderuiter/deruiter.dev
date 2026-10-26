@@ -9,7 +9,8 @@ import {
   fireEvent,
   act,
 } from "@testing-library/react";
-import { RetroLabyrinth } from "@/components/RetroLabyrinth";
+import { RetroLabyrinthSessionProvider } from "@/components/retro-labyrinth/RetroLabyrinthSession";
+import { PhoneView } from "@/components/retro-labyrinth/views/PhoneView";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
@@ -74,7 +75,9 @@ function stubCanvas() {
 function renderPhoneRoom() {
   const view = render(
     <CabinetTouchContext.Provider value={true}>
-      <RetroLabyrinth isMounted />
+      <RetroLabyrinthSessionProvider active>
+        <PhoneView isMounted />
+      </RetroLabyrinthSessionProvider>
     </CabinetTouchContext.Provider>
   );
   const canvas = view.container.querySelector("canvas") as HTMLCanvasElement;

@@ -16,7 +16,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### ACTUAL\_ELEMENT\_FROM\_TA\_TE
 
-> `readonly` **ACTUAL\_ELEMENT\_FROM\_TA\_TE**: `"The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch."` = `"The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch."`
+> `readonly` **ACTUAL\_ELEMENT\_FROM\_TA\_TE**: `"The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch, and so does a medication started before informed consent."` = `"The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch, and so does a medication started before informed consent."`
 
 ### AE\_DICTIONARY\_CODING
 
@@ -25,6 +25,14 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 ### ARM\_NULL\_REASON
 
 > `readonly` **ARM\_NULL\_REASON**: `"SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject."` = `"SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject."`
+
+### CM\_DICTIONARY\_CODING
+
+> `readonly` **CM\_DICTIONARY\_CODING**: `"Looked up from the reported name (CMTRT) in the study's fictional drug dictionary, which has WHODrug's shape but is not WHODrug: standardized names are generic drug names, class names are plain descriptions and class codes are synthetic, starting with Z, a letter the ATC classification does not use. Missing when the reported name is not in the dictionary."` = `"Looked up from the reported name (CMTRT) in the study's fictional drug dictionary, which has WHODrug's shape but is not WHODrug: standardized names are generic drug names, class names are plain descriptions and class codes are synthetic, starting with Z, a letter the ATC classification does not use. Missing when the reported name is not in the dictionary."`
+
+### CM\_ONGOING
+
+> `readonly` **CM\_ONGOING**: `"When the medication was marked ongoing at the end of the subject's participation, CMENRTPT is ONGOING (Relation to Reference Period, C66728) and CMENTPT is END OF STUDY; both are missing otherwise."` = `"When the medication was marked ongoing at the end of the subject's participation, CMENRTPT is ONGOING (Relation to Reference Period, C66728) and CMENTPT is END OF STUDY; both are missing otherwise."`
 
 ### CT\_RELATIONSHIP\_MAPPING
 
@@ -64,7 +72,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### LAST\_PARTICIPATION
 
-> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, adverse events, vital signs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, adverse events, vital signs, laboratory tests and disposition events. Partial dates are ignored."`
+> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."`
 
 ### LAST\_PRE\_DOSE
 

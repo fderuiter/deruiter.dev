@@ -963,6 +963,7 @@ export class BlogPostService {
     }
 
     await safeRevalidatePath(`/blog/${trimmedSlug}`);
+    await safeRevalidatePath(`/blog/${trimmedSlug}/opengraph-image`);
     await safeRevalidatePath("/blog");
     await safeRevalidatePath("/sitemap.xml");
     await safeRevalidateTag(`blog-post-${trimmedSlug}`);

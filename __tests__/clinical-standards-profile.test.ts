@@ -178,6 +178,10 @@ describe("DEMO-301 collection against CRF Studio's CDASH catalog", () => {
       "AESLIFE",
       "AESMIE",
     ],
+    // CDASHIG CM fields that CRF Studio's catalog does not list yet: the
+    // category that tells rescue medication apart, the dosing frequency and
+    // the number of the adverse event a medication treats (#2961).
+    "medication details": ["CMCAT", "CMDOSFRQ", "CMAENO"],
     // Coded from the verbatim term with MedDRA, not entered.
     "dictionary coded": ["AEBODSYS", "AEDECOD"],
     // From randomization (IxRS) and screening outcome, not a CRF page.

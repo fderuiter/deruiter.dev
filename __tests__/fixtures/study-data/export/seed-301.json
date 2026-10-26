@@ -1,9 +1,9 @@
 {
-  "manifestSha256": "45b09664ddfa3e9613191987351161a093fb5f178cfcb1c14d39c51c289ef093",
+  "manifestSha256": "bcbb58ec610cae725e30aeed0fc3239a09c2befc3aff93eb194435af99d54553",
   "files": {
     "README.txt": {
       "bytes": 1910,
-      "sha256": "cc6ecf0a057b03becac6cf7a6e17eeacabd76f61f0d1edaf600445e211aa1ffb"
+      "sha256": "e3789e2c15875353317d4c8e4b06b54adfba659920159f7371e4bf37a5ac1141"
     },
     "m5/datasets/analysis/adam/adae.csv": {
       "bytes": 8741,
@@ -43,7 +43,7 @@
     },
     "m5/datasets/analysis/adam/adrg.html": {
       "bytes": 7935,
-      "sha256": "37f30932bf7f5047f916a6146e830f1cd581148901dc900918510fe2204485c2"
+      "sha256": "8d498486d7a19e0fe05bc56999e3841cd7d19db3821f1b151c9e1ae62696cdb9"
     },
     "m5/datasets/analysis/adam/adsl.csv": {
       "bytes": 12421,
@@ -82,8 +82,8 @@
       "sha256": "e67038301b690a1d09c06a69e64c6db408e333fc02c301801df7b7af2971588d"
     },
     "m5/datasets/analysis/adam/define.xml": {
-      "bytes": 121291,
-      "sha256": "8c4bcd8fdb0c5bdb9f1feb760ba14d32a053381bddbc88f21ec1d5214e12fc75"
+      "bytes": 121432,
+      "sha256": "96c44b913f3f7940e101b24940c0cfd8c00fda57cf4616fc73ae1e98e2663809"
     },
     "m5/datasets/tabulations/sdtm/ae.csv": {
       "bytes": 12891,
@@ -97,13 +97,25 @@
       "bytes": 18480,
       "sha256": "a94ae341d400cfad57cbef42aa1505a19d988cdc62c6ad8151616a82a0bb1b7c"
     },
+    "m5/datasets/tabulations/sdtm/cm.csv": {
+      "bytes": 16922,
+      "sha256": "2edf2f5632449fd60ba86ef94b3e6071238e14c405562b1698dafa42d4803fb0"
+    },
+    "m5/datasets/tabulations/sdtm/cm.json": {
+      "bytes": 23942,
+      "sha256": "88bbfe1222c905781340ebf609d6017fb640f2b22274def25012e8dc56156df0"
+    },
+    "m5/datasets/tabulations/sdtm/cm.xpt": {
+      "bytes": 28160,
+      "sha256": "9d71c86197c3b4ef9d9f5306104fe9d90d9a523eb711c591f83b86812e8bcbf0"
+    },
     "m5/datasets/tabulations/sdtm/csdrg.html": {
-      "bytes": 13748,
-      "sha256": "bf9a11e9d9fca22ea3221707cdf5396c3a1dd80134e247f24a1bf42684c1d0b0"
+      "bytes": 14841,
+      "sha256": "07e420cc4ecc929fd1371ad03707e2db027322bb49dee7e832b44f6d153cc193"
     },
     "m5/datasets/tabulations/sdtm/define.xml": {
-      "bytes": 187233,
-      "sha256": "a4ab1dd724968b4ba8d50147f3be2b52d5d63db4d8f8291738339d9a97d2a9e1"
+      "bytes": 201025,
+      "sha256": "8901702206e02f9afd604091c52c618d48d7ca8973c86e68bf76e836357106f6"
     },
     "m5/datasets/tabulations/sdtm/dm.csv": {
       "bytes": 14764,

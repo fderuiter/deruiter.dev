@@ -86,3 +86,14 @@ A GitHub Merge Gate check would not help either. `ci.yml` cancels an older
 `main` run when a newer merge lands, so deploying that older commit would
 wait on a check that never passes. If a release gate is wanted later, it
 belongs to the replacement release policy (#1168), not to this hold.
+
+## Amendment 2026-10-26: Weekly Train Proposed
+
+The operator asked for weekly automatic releases with versioned GitHub
+Releases and chose Sunday 7 PM Central. [ADR 0063](0063-weekly-release-train.md)
+(Proposed) adds `.github/workflows/weekly-train.yml`. It stays inert while the
+Deploy Hook secret is unset, the `WEEKLY_TRAIN` variable is not `on`, or any
+open issue carries `release:hold`. The operator's own **Run workflow**, after
+creating the hook and lifting the hold, is the verification this ADR requires
+before the hold ends. Until ADR 0063 is accepted, this hold stands: only the
+operator fires a release, from the Dashboard or that manual run.

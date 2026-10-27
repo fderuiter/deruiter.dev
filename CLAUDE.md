@@ -20,4 +20,4 @@ Single-context repo using root `CONTEXT.md` and relevant ADRs in root `adr/`. Se
 
 ### Writing
 
-Edit prose with the `humanizer` skill (vendored, pinned in `.claude/skills/humanizer/UPSTREAM.md`) and then the `site-prose` skill for this site's voice and claim rules. See `docs/agents/writing.md`.
+Edit prose with the `humanizer` skill (`.claude/skills/humanizer/`), this site's version of blader/humanizer with its voice and claim rules built in. See `docs/agents/writing.md`.

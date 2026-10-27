@@ -1,3 +1,1 @@
 node_modules/**
-# Vendored verbatim from upstream; see each folder's UPSTREAM.md.
-.claude/skills/humanizer/SKILL.md

@@ -5164,6 +5164,15 @@
         "C142179": "UNPLANNED TREATMENT"
       }
     },
+    "C147145": {
+      "names": [
+        "stratified randomisation",
+        "stratified randomization"
+      ],
+      "memberOf": {
+        "C207416": "Stratified Randomisation"
+      }
+    },
     "C1505": {
       "names": [
         "dietary supplement"
@@ -5613,6 +5622,15 @@
       ],
       "memberOf": {
         "C213941": "3"
+      }
+    },
+    "C217005": {
+      "names": [
+        "multicenter study",
+        "multicentre"
+      ],
+      "memberOf": {
+        "C207416": "Multicentre"
       }
     },
     "C218507": {
@@ -6107,6 +6125,15 @@
       "memberOf": {
         "C209287": "INTERSEX",
         "C66731": "INTERSEX"
+      }
+    },
+    "C46079": {
+      "names": [
+        "randomized",
+        "randomized controlled clinical trial"
+      ],
+      "memberOf": {
+        "C207416": "Randomized"
       }
     },
     "C48152": {

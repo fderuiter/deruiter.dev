@@ -9,3 +9,4 @@
 ## Variables
 
 - [TAVR\_DEVICE\_USDM](variables/TAVR_DEVICE_USDM.md)
+- [TAVR\_SAVR\_USDM](variables/TAVR_SAVR_USDM.md)

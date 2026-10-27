@@ -787,7 +787,7 @@ describe("reproducibility and notices", () => {
       expect(html).toContain(SYNTHETIC_DATA_NOTICE);
       for (const output of [xml[layer], html]) {
         expect(output).not.toMatch(/compliant|validated|Part 11/i);
-        expect(output).toContain("not been verified");
+        expect(output).toContain("is checked against the NCI EVS");
       }
     }
   });

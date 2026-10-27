@@ -185,9 +185,9 @@ export default function StudyDataPage() {
               manifest.
             </p>
             <p>
-              The controlled terminology is a hand-curated subset aligned to the
-              NCI EVS CDISC package of the date shown. It has not been checked
-              against that package.
+              The controlled terminology is a hand-curated subset of the NCI EVS
+              CDISC package of the date shown. Every codelist and term it uses
+              is checked against that release in the test suite.
             </p>
             <p>
               The conformance stage models a subset of published SDTM and ADaM

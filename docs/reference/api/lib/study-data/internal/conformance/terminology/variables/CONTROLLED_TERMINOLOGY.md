@@ -9,4 +9,4 @@
 > `const` **CONTROLLED\_TERMINOLOGY**: readonly [`TerminologyCodelist`](../interfaces/TerminologyCodelist.md)[]
 
 The local controlled terminology subset, in the order Define-XML writes
-it. Not verified against the NCI EVS package; see the module comment.
+it. Checked against the NCI EVS release; see the module comment.

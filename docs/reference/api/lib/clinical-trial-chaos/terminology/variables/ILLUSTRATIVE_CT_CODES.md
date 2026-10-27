@@ -13,6 +13,7 @@ Controlled Terminology subset.
 
 Every `ctCode` in Clinical Trial Chaos either resolves in that subset (CRF
 Studio's standard codelists or the Study Data Pipeline's terminology) or is
-listed here. These codes are illustrative: they label the game's
-corrections and have not been checked against the NCI EVS package the
-subset is aligned to. A contract test holds the two lists together.
+listed here. These codes label the game's corrections. Like every NCI code
+in the repository, each one is checked to exist in the pinned NCI EVS
+release by `__tests__/cdisc-ct-release.test.ts`. A contract test holds the
+two lists together.

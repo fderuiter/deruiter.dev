@@ -109,7 +109,7 @@ const ALWAYS_MANDATORY = new Set(["STUDYID", "DOMAIN", "RDOMAIN", "USUBJID"]);
 const NO_ACRF_COMMENT =
   "No annotated CRF is generated for this study. A Collected origin names the field of the synthetic collection layer that holds the value.";
 
-const CT_COMMENT = `Codelists come from a local, hand-curated subset of CDISC Controlled Terminology aligned to the NCI EVS package dated ${STANDARD_VERSIONS["NCI-EVS-CT"]}. The subset has not been verified against that package.`;
+const CT_COMMENT = `Codelists come from a local, hand-curated subset of CDISC Controlled Terminology aligned to the NCI EVS package dated ${STANDARD_VERSIONS["NCI-EVS-CT"]}. Every codelist and term in the subset is checked against the NCI EVS SDTM and ADaM exports of that date.`;
 
 interface Facets {
   readonly dataType: DefineDataType;

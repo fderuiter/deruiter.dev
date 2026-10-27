@@ -24,8 +24,10 @@ export interface ControlledTerminologyClaim {
    */
   readonly scope: "local subset";
   /**
-   * The package file the subset was verified against, when it has been.
-   * Absent: the codes have not been verified against a downloaded package.
+   * The package files the subset is verified against, when it is:
+   * `__tests__/cdisc-ct-release.test.ts` checks every code against the subset
+   * `scripts/cdisc-ct-subset.ts` derives from them. Absent: the codes have
+   * not been verified against a downloaded package.
    */
   readonly verifiedAgainst?: string;
 }
@@ -82,6 +84,8 @@ export const CLINICAL_STANDARDS_PROFILE: ClinicalStandardsProfile =
       package: "SDTM CT",
       packageDate: "2026-09-25",
       scope: "local subset",
+      verifiedAgainst:
+        "NCI EVS CDISC SDTM, ADaM and DDF Terminology 2026-09-25",
     }),
   });
 

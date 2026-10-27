@@ -91,7 +91,7 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
   biomedicalConcepts: [
     {
       id: "bc_age",
-      name: "Subject Age",
+      name: "Age",
       conceptId: "C25150",
       code: "C25150",
       domain: "DM",

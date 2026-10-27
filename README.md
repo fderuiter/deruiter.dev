@@ -11,7 +11,7 @@ Fred de Ruiter's portfolio site. Most of the work on it runs in your browser, so
 
 [![Next.js](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/next?label=Next.js&logo=nextdotjs&color=18181b)](https://nextjs.org)
 [![React](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/react?label=React&logo=react&color=18181b)](https://react.dev)
-[![TypeScript](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/dev/typescript?label=TypeScript&logo=typescript&color=18181b)](https://www.typescriptlang.org)
+[![TypeScript](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffderuiter%2Fderuiter.dev%2Fmain%2Fpackage-lock.json&query=%24.packages%5B%22node_modules%2F%40typescript%2Fnative%22%5D.version&label=TypeScript&logo=typescript&color=18181b)](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0072-typescript-7-compiler.md)
 [![Node.js 22 to 24](https://img.shields.io/badge/Node.js-22_to_24-18181b?logo=nodedotjs)](https://nodejs.org)
 [![WCAG 2.1 AA](https://img.shields.io/badge/WCAG_2.1-AA_target-10b981)](#accessibility)
 
@@ -121,7 +121,8 @@ game.
 
 ![How the site fits together: React pages, canvas studios, the pipeline worker and DuckDB in the browser; static pages, API routes and a daily job on Vercel; Neon, Upstash, Clerk, Resend and Sentry behind them; and GitHub Actions shipping a release once a week](.github/assets/readme/architecture.svg)
 
-- App: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
+- App: Next.js 16 (App Router), React 19, TypeScript 7 (the Go compiler;
+  [ADR 0072](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0072-typescript-7-compiler.md)), Tailwind CSS v4
 - Rendering: Canvas 2D and Three.js for the studios and games, [`@chenglou/pretext`](https://github.com/chenglou/pretext) for DOM-free text layout, Framer Motion for transitions
 - Data: Prisma 7 on Neon serverless Postgres, Upstash Redis for caching and rate limits, DuckDB-WASM for in-browser SQL, and Zod contracts for every API route ([`openapi.json`](https://github.com/fderuiter/deruiter.dev/blob/main/openapi.json))
 - Services: Clerk (admin auth), Resend (email), Sentry (errors and tracing), Vercel (hosting)
@@ -174,6 +175,7 @@ Handy commands once you're in:
 | Command                   | What it does                                                              |
 | ------------------------- | ------------------------------------------------------------------------- |
 | `npm run dev`             | Dev server with a type checker running alongside                          |
+| `npm run typecheck`       | Type-checks the whole project with TypeScript 7 (about 25 seconds cold)   |
 | `npm test`                | The unit, component and property suites (Vitest)                          |
 | `npm run doctor`          | The architecture linter: every repository invariant, with a fix hint each |
 | `npm run quality`         | Everything CI's quality gate runs, locally                                |
@@ -191,6 +193,8 @@ Every pull request has to pass these before it merges:
 - DX Doctor (`npm run doctor`), which checks the repository's own rules:
   module boundaries, route registration, documentation drift, bundle budgets
   and more.
+- A cold TypeScript 7 type check of the whole program, which fails if the
+  compiler goes over its memory budget.
 - Secret, licence and dependency audits, and zero ESLint warnings.
 
 [`CONTRIBUTING.md`](CONTRIBUTING.md) maps each local command to the CI job

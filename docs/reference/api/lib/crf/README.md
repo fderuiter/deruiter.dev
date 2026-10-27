@@ -2036,6 +2036,12 @@ Re-exports [PrecisionDateValidationResult](precision-date/interfaces/PrecisionDa
 
 ***
 
+### PRESET\_ID\_STAMP
+
+Re-exports [PRESET_ID_STAMP](cdash-domain-templates/variables/PRESET_ID_STAMP.md)
+
+***
+
 ### PresetCatalogItem
 
 Re-exports [PresetCatalogItem](presets/interfaces/PresetCatalogItem.md)

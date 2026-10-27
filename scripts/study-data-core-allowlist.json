@@ -1,5 +1,5 @@
 {
-  "$comment": "CDISC CORE findings on the Study Data Pipeline that are explained (#2603). Read by scripts/study-data-core.ts reconcile: a CORE finding with no entry fails the workflow, and so does an entry no finding matches. category is defect (tracked by issue), by-design, ct-cache (the declared CT release is not in CORE's cache) or core-limitation (an engine false positive or execution error).",
+  "$comment": "CDISC CORE findings on the Study Data Pipeline that are explained (#2603). Read by scripts/study-data-core.ts reconcile: a CORE finding with no entry fails the workflow, and so does an entry no finding matches. category is defect (tracked by issue), by-design, ct-cache (the declared CT release is not in CORE's cache) or core-limitation (an engine false positive or execution error). Entries with target crf-usdm explain CORE's USDM 4.0 findings on CRF Studio's preset exports (#3051), matched per preset: an entry covers the presets it names, or every preset when it names none, and is stale for any preset it covers that no longer reports it.",
   "entries": [
     {
       "target": "sdtm",
@@ -168,6 +168,162 @@
       "dataset": "IE",
       "category": "by-design",
       "reason": "IE holds only screen failures, who were never dosed and have no RFSTDTC, so no study day can be derived from IEDTC and IEDY is left out."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000417",
+      "dataset": "Timing",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The Fixed Reference timing carries a zero window (P0D to P0D); a fixed reference takes no window."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000419",
+      "dataset": "Activity",
+      "category": "core-limitation",
+      "presets": [
+        "oncology_recist",
+        "device_cardiovascular_implant",
+        "clinical_instruments",
+        "cns_neuro",
+        "pk_escalation"
+      ],
+      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000419",
+      "dataset": "Encounter",
+      "category": "core-limitation",
+      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000419",
+      "dataset": "StudyEpoch",
+      "category": "core-limitation",
+      "presets": ["oncology_recist"],
+      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000815",
+      "dataset": "StudyDesignPopulation",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The population has no planned age; CRF Studio holds no age range to write."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000817",
+      "dataset": "StudyTitle",
+      "category": "core-limitation",
+      "reason": "Reports the export's only title, twice, as a duplicate of itself."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000870",
+      "dataset": "ScheduledActivityInstance",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "Main-timeline instances name no epoch: presets without epochs leave every instance without one, and the unscheduled visit has none in any preset."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000873",
+      "dataset": "StudyVersion",
+      "category": "core-limitation",
+      "reason": "Reports duplicate governance dates although the export has none."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000875",
+      "dataset": "StudyDesignPopulation",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The population has no planned sex; CRF Studio holds no sex criterion to write."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000938",
+      "dataset": "InterventionalStudyDesign",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "Required design lists are empty: every preset has no eligibility criteria, and every preset but oncology_recist has no arms, epochs or study cells."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000961",
+      "dataset": "InterventionalStudyDesign",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The encounter order from the next chain differs from the order the main timeline references, which lists only some encounters."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000973",
+      "dataset": "StudyVersion",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The study version has no sponsor study role (C70793)."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001006",
+      "dataset": "BiomedicalConcept",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "Biomedical concept synonyms repeat the concept's label."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001016",
+      "dataset": "ScheduleTimeline",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The main timeline has no planned duration."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001036",
+      "dataset": "InterventionalStudyDesign",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The design has no primary endpoint; CRF Studio holds no objectives or endpoints yet."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001048",
+      "dataset": "InterventionalStudyDesign",
+      "category": "defect",
+      "issue": 3051,
+      "presets": ["oncology_recist"],
+      "reason": "The epoch order from the next chain differs from the order the main timeline references."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001054",
+      "dataset": "StudyVersion",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The study version has no sponsor study identifier."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001065",
+      "dataset": "InterventionalStudyDesign",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The interventional design references no study intervention from a procedure."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-001077",
+      "dataset": "InterventionalStudyDesign",
+      "category": "defect",
+      "issue": 3051,
+      "reason": "The number of referenced study interventions does not fit the intervention model."
     }
   ]
 }

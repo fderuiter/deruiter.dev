@@ -778,7 +778,18 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
   };
 
 /**
+ * The id stamp the study presets pass to {@link scaffoldCdashDomain}, so a
+ * preset builds the same ids on the server, in the browser and in the CDISC
+ * CORE run over its USDM export (#3051).
+ */
+export const PRESET_ID_STAMP = 1;
+
+/**
  * 1-Click CDASH Domain Auto-Scaffolder Generator
+ *
+ * @param idStamp - Number appended to every generated id. The studio leaves
+ * it to the clock so a form added twice gets distinct ids; presets pass a
+ * fixed stamp so the same preset always builds the same study (#3051).
  */
 export function scaffoldCdashDomain(
   domainCode:
@@ -794,9 +805,10 @@ export function scaffoldCdashDomain(
     | "DA"
     | "EX"
     | "MH"
-    | "DS"
+    | "DS",
+  idStamp: number = Date.now()
 ): CRFForm {
-  const formId = `form_${domainCode.toLowerCase()}_${Date.now()}`;
+  const formId = `form_${domainCode.toLowerCase()}_${idStamp}`;
 
   switch (domainCode) {
     case "DM":
@@ -810,11 +822,11 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_ic_${Date.now()}`,
+            id: `sec_ic_${idStamp}`,
             title: "Informed Consent",
             fields: [
               {
-                id: `f_icdat_${Date.now()}`,
+                id: `f_icdat_${idStamp}`,
                 variableName: "ICDAT",
                 label: "Date Informed Consent Signed",
                 dataType: "date",
@@ -825,7 +837,7 @@ export function scaffoldCdashDomain(
                 ),
               },
               {
-                id: `f_icyn_${Date.now()}`,
+                id: `f_icyn_${idStamp}`,
                 variableName: "ICYN",
                 label:
                   "Did subject provide written consent prior to any protocol procedures?",
@@ -837,11 +849,11 @@ export function scaffoldCdashDomain(
             ],
           },
           {
-            id: `sec_dm_${Date.now() + 1}`,
+            id: `sec_dm_${idStamp + 1}`,
             title: "Baseline Demographics",
             fields: [
               {
-                id: `f_brthyr_${Date.now()}`,
+                id: `f_brthyr_${idStamp}`,
                 variableName: "BRTHYR",
                 label: "Year of Birth (YYYY)",
                 dataType: "integer",
@@ -855,7 +867,7 @@ export function scaffoldCdashDomain(
                 ),
               },
               {
-                id: `f_age_${Date.now() + 1}`,
+                id: `f_age_${idStamp + 1}`,
                 variableName: "AGE",
                 label: "Age at Screening",
                 dataType: "integer",
@@ -869,7 +881,7 @@ export function scaffoldCdashDomain(
                 ),
               },
               {
-                id: `f_sex_${Date.now() + 2}`,
+                id: `f_sex_${idStamp + 2}`,
                 variableName: "SEX",
                 label: "Sex assigned at birth",
                 dataType: "single_select",
@@ -881,7 +893,7 @@ export function scaffoldCdashDomain(
                 ),
               },
               {
-                id: `f_race_${Date.now() + 3}`,
+                id: `f_race_${idStamp + 3}`,
                 variableName: "RACE",
                 label: "Race (Select primary)",
                 dataType: "single_select",
@@ -893,7 +905,7 @@ export function scaffoldCdashDomain(
                 ),
               },
               {
-                id: `f_ethnic_${Date.now() + 4}`,
+                id: `f_ethnic_${idStamp + 4}`,
                 variableName: "ETHNIC",
                 label: "Ethnicity",
                 dataType: "single_select",
@@ -919,7 +931,7 @@ export function scaffoldCdashDomain(
         version: "1.0",
         rules: [
           {
-            id: `rule_bmi_${Date.now()}`,
+            id: `rule_bmi_${idStamp}`,
             name: "Automated BMI Derivation",
             description:
               "Calculate BMI automatically when height and weight are entered",
@@ -935,7 +947,7 @@ export function scaffoldCdashDomain(
               "round(weight / ((height / 100) * (height / 100)), 1)",
           },
           {
-            id: `rule_sysbp_check_${Date.now() + 1}`,
+            id: `rule_sysbp_check_${idStamp + 1}`,
             name: "Severe Hypertension Range Alert",
             description:
               "Raise query if Systolic BP > 180 mmHg or Diastolic > 110 mmHg",
@@ -951,7 +963,7 @@ export function scaffoldCdashDomain(
         ],
         sections: [
           {
-            id: `sec_vs_${Date.now()}`,
+            id: `sec_vs_${idStamp}`,
             title: "Vital Signs Measurements",
             fields: [
               {
@@ -1093,7 +1105,7 @@ export function scaffoldCdashDomain(
         isLogForm: true,
         rules: [
           {
-            id: `rule_ae_ongo_${Date.now()}`,
+            id: `rule_ae_ongo_${idStamp}`,
             name: "Hide End Date when AE is Ongoing",
             description: "If Ongoing is checked, hide AE End Date requirement",
             triggerFieldIds: ["f_ae_ongo"],
@@ -1105,7 +1117,7 @@ export function scaffoldCdashDomain(
         ],
         sections: [
           {
-            id: `sec_ae_${Date.now()}`,
+            id: `sec_ae_${idStamp}`,
             title: "Adverse Event Record",
             fields: [
               {
@@ -1246,7 +1258,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_cm_${Date.now()}`,
+            id: `sec_cm_${idStamp}`,
             title: "Medication Details",
             fields: [
               {
@@ -1346,7 +1358,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_lb_${Date.now()}`,
+            id: `sec_lb_${idStamp}`,
             title: "Blood Chemistry & Hematology",
             fields: [
               {
@@ -1465,7 +1477,7 @@ export function scaffoldCdashDomain(
         version: "1.0",
         rules: [
           {
-            id: `rule_recist_resp_${Date.now()}`,
+            id: `rule_recist_resp_${idStamp}`,
             name: "RECIST 1.1 Target Lesion Response Auto-Evaluation",
             description:
               "Derive response (PD >= +20% SLD increase, PR <= -30% SLD decrease, CR = 0mm)",
@@ -1484,7 +1496,7 @@ export function scaffoldCdashDomain(
         ],
         sections: [
           {
-            id: `sec_recist_meta_${Date.now()}`,
+            id: `sec_recist_meta_${idStamp}`,
             title: "Radiological Scan Assessment",
             fields: [
               {
@@ -1511,7 +1523,7 @@ export function scaffoldCdashDomain(
             ],
           },
           {
-            id: `sec_recist_target_${Date.now() + 1}`,
+            id: `sec_recist_target_${idStamp + 1}`,
             title: "Target Lesion Measurements (Longest Diameter in mm)",
             fields: [
               {
@@ -1597,7 +1609,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_di_${Date.now()}`,
+            id: `sec_di_${idStamp}`,
             title: "Medical Device Information & UDI",
             fields: [
               {
@@ -1723,7 +1735,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_du_${Date.now()}`,
+            id: `sec_du_${idStamp}`,
             title: "Procedural Deployment & In-Use Details",
             fields: [
               {
@@ -1814,7 +1826,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_de_${Date.now()}`,
+            id: `sec_de_${idStamp}`,
             title: "Device Deficiency / Incident Report",
             fields: [
               {
@@ -1929,7 +1941,7 @@ export function scaffoldCdashDomain(
         version: "1.0",
         rules: [
           {
-            id: `rule_da_compl_${Date.now()}`,
+            id: `rule_da_compl_${idStamp}`,
             name: "Calculate Dosing Compliance Percentage",
             description:
               "Calculate compliance = (Units Used / Expected Units) * 100",
@@ -1946,7 +1958,7 @@ export function scaffoldCdashDomain(
         ],
         sections: [
           {
-            id: `sec_da_${Date.now()}`,
+            id: `sec_da_${idStamp}`,
             title: "IP Dispensation & Reconciliation",
             fields: [
               {
@@ -2061,7 +2073,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_ex_${Date.now()}`,
+            id: `sec_ex_${idStamp}`,
             title: "Dosing & Exposure Administration Record",
             fields: [
               {
@@ -2175,7 +2187,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_mh_${Date.now()}`,
+            id: `sec_mh_${idStamp}`,
             title: "Medical Condition / Diagnosis",
             fields: [
               {
@@ -2252,7 +2264,7 @@ export function scaffoldCdashDomain(
         rules: [],
         sections: [
           {
-            id: `sec_ds_${Date.now()}`,
+            id: `sec_ds_${idStamp}`,
             title: "Study Completion & Disposition",
             fields: [
               {

@@ -5,6 +5,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import {
   ALLOWLIST_FILE,
   CORE_TARGETS,
+  CRF_PRESET_IDS,
+  CRF_USDM_FILE,
   CORE_VIEWS,
   RECORDED_EXAMPLES_PER_RULE,
   EXPORT_NOTES_FILE,
@@ -12,16 +14,20 @@ import {
   capLines,
   coreIssues,
   exportCoreInputs,
+  exportCrfInputs,
   findingLine,
   gateCounts,
   lineDifference,
   parseAllowlist,
   reconcile,
+  reconcileCrf,
+  reconcileCrfFolder,
   reconcileFolder,
   recordFindings,
   renderReconciliation,
   substituteCtVersion,
   type AllowlistEntry,
+  type CrfIssue,
 } from "../scripts/study-data-core";
 
 const root = process.cwd();
@@ -63,6 +69,14 @@ describe("CDISC CORE reconciliation (#2603)", () => {
     [{ entries: [entry({ category: "defect" })] }, /no tracking issue/],
     [{ entries: [entry({ reason: " " })] }, /gives no reason/],
     [{ entries: [entry(), entry()] }, /repeats sdtm CORE-000001 DM/],
+    [
+      { entries: [entry({ presets: ["oncology_recist"] })] },
+      /presets on a pipeline target/,
+    ],
+    [
+      { entries: [entry({ target: "crf-usdm", presets: ["no_such_preset"] })] },
+      /unknown CRF Studio preset/,
+    ],
   ])("rejects a malformed allowlist %#", (json, message) => {
     expect(() => parseAllowlist(json)).toThrow(message);
   });
@@ -347,7 +361,48 @@ describe("recording CORE findings for every view (#2992)", () => {
       path.join(reports, "default", "usdm.json"),
       JSON.stringify({ Issue_Details: [], Rules_Report: [] })
     );
-    const options = { tag: "v0.17.1", commit: "a".repeat(40) };
+    const crfInputs = path.join(scratch, "crf-in");
+    const crfReports = path.join(scratch, "crf-out");
+    for (const preset of CRF_PRESET_IDS) {
+      fs.mkdirSync(path.join(crfInputs, preset), { recursive: true });
+      fs.writeFileSync(
+        path.join(crfInputs, preset, EXPORT_NOTES_FILE),
+        JSON.stringify({
+          preset,
+          inputSha256: `sha-${preset}`,
+          declaredCt: "2026-09-25",
+          validatedCt: "2026-03-27",
+        })
+      );
+      fs.mkdirSync(path.join(crfReports, preset), { recursive: true });
+      fs.writeFileSync(
+        path.join(crfReports, preset, "usdm.json"),
+        JSON.stringify({
+          Conformance_Details: { CORE_Engine_Version: "0.17.1" },
+          Issue_Details:
+            preset === CRF_PRESET_IDS[0]
+              ? [
+                  {
+                    core_id: "CORE-000419",
+                    entity: "Encounter",
+                    instance_id: "enc_1",
+                    attributes: ["nextId"],
+                    values: ["enc_2"],
+                  },
+                ]
+              : [],
+          Rules_Report:
+            preset === CRF_PRESET_IDS[0]
+              ? [{ core_id: "CORE-000419", status: "ISSUE REPORTED" }]
+              : [],
+        })
+      );
+    }
+    const options = {
+      tag: "v0.17.1",
+      commit: "a".repeat(40),
+      crf: { inputsDir: crfInputs, reportsDir: crfReports },
+    };
     expect(() => recordFindings(inputs, reports, options)).toThrow(
       /No CORE report or skip note for the default adam/
     );
@@ -386,6 +441,31 @@ describe("recording CORE findings for every view (#2992)", () => {
       status: { "CORE-000529": "ISSUE REPORTED" },
     });
     expect(recorded.views["unit-change"]?.added.lines).toEqual([]);
+    expect(Object.keys(recorded.crf)).toEqual([...CRF_PRESET_IDS]);
+    expect(recorded.crf[CRF_PRESET_IDS[0]]).toEqual({
+      inputSha256: `sha-${CRF_PRESET_IDS[0]}`,
+      usdm: {
+        lines: ["CORE-000419 Encounter enc_1 nextId=enc_2"],
+        counts: { "CORE-000419 Encounter": 1 },
+      },
+      status: { "CORE-000419": "ISSUE REPORTED" },
+    });
+    expect(recorded.crf[CRF_PRESET_IDS[1]]?.usdm.lines).toEqual([]);
+
+    const notesFile = path.join(
+      crfInputs,
+      CRF_PRESET_IDS[1],
+      EXPORT_NOTES_FILE
+    );
+    const goodNotes = fs.readFileSync(notesFile, "utf8");
+    fs.writeFileSync(
+      notesFile,
+      JSON.stringify({ ...JSON.parse(goodNotes), validatedCt: "2025-12-19" })
+    );
+    expect(() => recordFindings(inputs, reports, options)).toThrow(
+      /validated against CT 2025-12-19, the pipeline against 2026-03-27/
+    );
+    fs.writeFileSync(notesFile, goodNotes);
 
     fs.writeFileSync(
       path.join(reports, "duplicate-record", "sdtm.json"),
@@ -397,6 +477,100 @@ describe("recording CORE findings for every view (#2992)", () => {
     expect(() => recordFindings(inputs, reports, options)).toThrow(
       /duplicate-record report is from CORE 0.16.0, not v0.17.1/
     );
+  });
+});
+
+describe("CORE on CRF Studio USDM exports (#3051)", () => {
+  const crfEntry = (overrides: Partial<AllowlistEntry> = {}): AllowlistEntry =>
+    entry({
+      target: "crf-usdm",
+      coreId: "CORE-000419",
+      dataset: "Encounter",
+      category: "core-limitation",
+      ...overrides,
+    });
+  const crfIssue = (preset: string, dataset = "Encounter"): CrfIssue => ({
+    target: "usdm",
+    coreId: "CORE-000419",
+    dataset,
+    issues: 2,
+    message: "next and previous ids do not chain.",
+    preset,
+  });
+
+  it("explains a finding on the presets an entry names, or on all of them", () => {
+    const presets = ["a", "b"];
+    const all = reconcileCrf(
+      [crfIssue("a"), crfIssue("b")],
+      [crfEntry()],
+      presets
+    );
+    expect(all.explained).toHaveLength(2);
+    expect(all.unexplained).toEqual([]);
+    expect(all.stale).toEqual([]);
+
+    const narrow = reconcileCrf(
+      [crfIssue("a"), crfIssue("b")],
+      [crfEntry({ presets: ["a"] })],
+      presets
+    );
+    expect(narrow.unexplained).toEqual([crfIssue("b")]);
+  });
+
+  it("calls an entry stale on each preset it covers that no longer reports it", () => {
+    const result = reconcileCrf(
+      [crfIssue("a")],
+      [crfEntry(), entry()],
+      ["a", "b"]
+    );
+    expect(result.stale).toEqual([{ entry: crfEntry(), presets: ["b"] }]);
+  });
+
+  it("ignores pipeline entries and findings on another entity", () => {
+    const result = reconcileCrf(
+      [crfIssue("a", "Activity")],
+      [entry({ target: "usdm", coreId: "CORE-000419", dataset: "Activity" })],
+      ["a"]
+    );
+    expect(result.unexplained).toHaveLength(1);
+    expect(result.stale).toEqual([]);
+  });
+
+  it("exports every preset with notes and reconciles a folder of reports", async () => {
+    const inputs = path.join(scratch, "crf-export");
+    await exportCrfInputs(inputs, { ctVersion: "2026-03-27" });
+    for (const preset of CRF_PRESET_IDS) {
+      const notes = JSON.parse(
+        fs.readFileSync(path.join(inputs, preset, EXPORT_NOTES_FILE), "utf8")
+      );
+      expect(notes.preset).toBe(preset);
+      expect(notes.validatedCt).toBe("2026-03-27");
+      expect(fs.existsSync(path.join(inputs, preset, CRF_USDM_FILE))).toBe(
+        true
+      );
+    }
+
+    const reports = path.join(scratch, "crf-reports");
+    for (const preset of CRF_PRESET_IDS) {
+      fs.mkdirSync(path.join(reports, preset), { recursive: true });
+      fs.writeFileSync(
+        path.join(reports, preset, "usdm.json"),
+        JSON.stringify(report([]))
+      );
+    }
+    const allowlist = path.join(scratch, "crf-allowlist.json");
+    fs.writeFileSync(allowlist, JSON.stringify({ entries: [crfEntry()] }));
+    const stale = reconcileCrfFolder(inputs, reports, allowlist, "CORE test");
+    expect(stale.failed).toBe(true);
+    expect(stale.markdown).toContain("## Stale allowlist entries");
+
+    fs.writeFileSync(allowlist, JSON.stringify({ entries: [] }));
+    const clean = reconcileCrfFolder(inputs, reports, allowlist, "CORE test");
+    expect(clean.failed).toBe(false);
+    expect(clean.markdown).toContain(
+      `Every CORE finding on the ${CRF_PRESET_IDS.length} preset exports is explained`
+    );
+    expect(clean.markdown).toContain("validated against 2026-03-27");
   });
 });
 
@@ -422,6 +596,9 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).toContain("study-data-core.ts export-views");
     expect(workflow).toContain("scripts/study-data-core-views.sh");
     expect(workflow).toContain("study-data-core.ts record");
+    expect(workflow).toContain("study-data-core.ts export-crf");
+    expect(workflow).toContain("study-data-core.ts reconcile-crf");
+    expect(workflow).toContain('- "lib/crf/**"');
     expect(workflow).toContain('git diff --quiet -- "$file"');
     expect(workflow).toContain("name: study-data-core-recorded-findings");
   });

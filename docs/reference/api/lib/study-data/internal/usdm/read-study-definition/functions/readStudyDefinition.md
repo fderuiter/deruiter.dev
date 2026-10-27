@@ -6,13 +6,13 @@
 
 # Function: readStudyDefinition()
 
-> **readStudyDefinition**(`usdm`): [`StudyDefinition`](../../../../types/interfaces/StudyDefinition.md)
+> **readStudyDefinition**(`usdm`, `selection?`): [`StudyDefinition`](../../../../types/interfaces/StudyDefinition.md)
 
 Reads a USDM v4.0 document (the API Wrapper shape) into a `StudyDefinition`:
 arms, epochs, elements and cells, visits with study days and windows, the
 schedule of activities, objectives with endpoints, estimands and analysis
-populations. Only the first study version and its first study design are
-read.
+populations. A document with one study version and one design is read as
+it is; one with more needs `selection`, and is never read from its first.
 
 ## Parameters
 
@@ -21,6 +21,12 @@ read.
 `unknown`
 
 The parsed USDM v4.0 document.
+
+### selection?
+
+[`UsdmStudySelection`](../../../../../clinical-standards/usdm-v4-selection/interfaces/UsdmStudySelection.md)
+
+The study version and design to read, by id.
 
 ## Returns
 

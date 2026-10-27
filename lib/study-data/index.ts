@@ -186,6 +186,12 @@ export {
   KM_CONFIDENCE_LEVEL,
   NORMAL_QUANTILE_975,
 } from "./internal/tlf/km";
+export {
+  compareOnComponent,
+  normalQuantile,
+  winStatistics,
+  WIN_RATIO_DEFAULT_ALPHA,
+} from "./internal/tlf/win-ratio";
 export { formatPValue } from "./internal/tlf/km-evaluate";
 export { writeKmFigureHtml, writeKmFigureSvg } from "./internal/tlf/km-svg";
 export {

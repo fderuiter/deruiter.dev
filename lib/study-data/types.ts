@@ -1200,6 +1200,198 @@ export interface LogRankTest {
   readonly pValue: number | null;
 }
 
+/** The kinds of outcome a component of a hierarchical composite can be. */
+export type WinRatioComponentKind = "time-to-event" | "continuous" | "binary";
+
+/**
+ * One component of a hierarchical composite endpoint, compared between
+ * the two members of a pair only when every component above it is a tie.
+ */
+export interface WinRatioComponent {
+  /** Identifier, unique within the hierarchy (for example a PARAMCD). */
+  readonly id: string;
+  /** Label for tables. */
+  readonly label: string;
+  /** How the outcome is recorded and compared. */
+  readonly kind: WinRatioComponentKind;
+  /**
+   * Which values are better. For a time to an event, `"higher"` means a
+   * later event is better (death, hospitalisation) and `"lower"` means an
+   * earlier event is better (time to recovery). For a binary outcome,
+   * `"higher"` means 1 is better than 0.
+   */
+  readonly better: "higher" | "lower";
+  /**
+   * The smallest difference that counts as a win, in the outcome's unit,
+   * finite and not negative. A difference equal to the margin is a tie.
+   * Ignored for binary outcomes. Defaults to 0.
+   */
+  readonly margin?: number;
+  /**
+   * For a time to an event: the end of the comparison window. Later times
+   * are censored at it. Defaults to no limit.
+   */
+  readonly horizon?: number;
+}
+
+/**
+ * One subject's outcome on one component. For a time to an event,
+ * `value` is the time to the event or to censoring and `event` says which.
+ * For a continuous outcome it is the value; for a binary outcome 0 or 1.
+ * `null` is a missing outcome, which ties with every other subject on that
+ * component.
+ */
+export interface WinRatioOutcome {
+  /** The value or time, or `null` when missing. */
+  readonly value: number | null;
+  /** For a time to an event: `true` for an event, `false` for censoring. */
+  readonly event?: boolean;
+}
+
+/** One subject entering a win-ratio analysis. */
+export interface WinRatioSubject {
+  /** Identifier, unique within the analysis (for example USUBJID). */
+  readonly id: string;
+  /** Which side of the comparison the subject is on. */
+  readonly group: "treatment" | "control";
+  /** Stratum label; subjects are paired only within a stratum. */
+  readonly stratum?: string;
+  /** Outcomes, one per component, in the hierarchy's order. */
+  readonly outcomes: readonly WinRatioOutcome[];
+}
+
+/**
+ * How strata are combined: `"unstratified"` pools every subject into one
+ * stratum, `"mantel-haenszel"` weights each stratum by the inverse of its
+ * size (Dong et al. 2018), `"equal"` weights strata equally.
+ */
+export type WinRatioStratumWeighting =
+  "unstratified" | "mantel-haenszel" | "equal";
+
+/** Options for `winStatistics`. */
+export interface WinRatioOptions {
+  /** The components, most important first. */
+  readonly components: readonly WinRatioComponent[];
+  /** How strata are combined. Defaults to `"unstratified"`. */
+  readonly weighting?: WinRatioStratumWeighting;
+  /** Two-sided significance level of the limits, in (0, 1). Defaults to 0.05. */
+  readonly alpha?: number;
+  /** Sidedness of the p-values. Defaults to `"two-sided"`. */
+  readonly sided?: "two-sided" | "one-sided";
+}
+
+/** A win statistic with its limits and test, `null` where not estimable. */
+export interface WinStatisticEstimate {
+  /** The point estimate. */
+  readonly estimate: number | null;
+  /** Lower confidence limit. */
+  readonly lower: number | null;
+  /** Upper confidence limit. */
+  readonly upper: number | null;
+  /** Standard error, of the logarithm for the win ratio and win odds. */
+  readonly standardError: number | null;
+  /** The z statistic against no difference. */
+  readonly zStatistic: number | null;
+  /** The p-value of the z statistic, with the requested sidedness. */
+  readonly pValue: number | null;
+}
+
+/** Wins and losses decided on one component. */
+export interface WinRatioComponentResult {
+  /** The component's identifier. */
+  readonly componentId: string;
+  /** Pairs the treatment member won on this component. */
+  readonly wins: number;
+  /** Pairs the control member won on this component. */
+  readonly losses: number;
+  /** Pairs still tied after this component. */
+  readonly tiesAfter: number;
+  /** Subjects with at least one pair decided on this component, in input order. */
+  readonly decidingSubjectIds: readonly string[];
+}
+
+/** Pair counts and point estimates within one stratum. */
+export interface WinRatioStratumResult {
+  /** The stratum label, `""` when unstratified. */
+  readonly stratum: string;
+  /** Treatment subjects in the stratum. */
+  readonly treatmentCount: number;
+  /** Control subjects in the stratum. */
+  readonly controlCount: number;
+  /** Treatment-control pairs. */
+  readonly pairs: number;
+  /** Pairs won by the treatment member. */
+  readonly wins: number;
+  /** Pairs won by the control member. */
+  readonly losses: number;
+  /** Pairs tied on every component. */
+  readonly ties: number;
+  /** The stratum's weight in the combined estimates. */
+  readonly weight: number;
+}
+
+/** The Finkelstein-Schoenfeld rank test on the pooled pairwise scores. */
+export interface FinkelsteinSchoenfeldTest {
+  /** Sum over treatment subjects of their pooled scores, over strata. */
+  readonly statistic: number;
+  /** Permutation variance of the statistic, over strata. */
+  readonly variance: number;
+  /** The standardised statistic, or `null` when the variance is 0. */
+  readonly zStatistic: number | null;
+  /** Its p-value, with the requested sidedness, or `null`. */
+  readonly pValue: number | null;
+}
+
+/** Wins, losses and ties per subject: the row or column sums of the pairs. */
+export interface WinRatioSubjectResult {
+  /** The subject's identifier. */
+  readonly id: string;
+  /** The subject's group. */
+  readonly group: "treatment" | "control";
+  /** Pairs in which this subject was the better member. */
+  readonly wins: number;
+  /** Pairs in which this subject was the worse member. */
+  readonly losses: number;
+  /** Pairs tied on every component. */
+  readonly ties: number;
+}
+
+/** The result of `winStatistics`. */
+export interface WinRatioResult {
+  /** Treatment subjects. */
+  readonly treatmentCount: number;
+  /** Control subjects. */
+  readonly controlCount: number;
+  /** Treatment-control pairs compared, within strata. */
+  readonly pairs: number;
+  /** Pairs won by the treatment member. */
+  readonly wins: number;
+  /** Pairs won by the control member. */
+  readonly losses: number;
+  /** Pairs tied on every component. */
+  readonly ties: number;
+  /** Per component, in the hierarchy's order. */
+  readonly components: readonly WinRatioComponentResult[];
+  /** Per stratum, in order of first appearance. */
+  readonly strata: readonly WinRatioStratumResult[];
+  /** Per subject, in input order. */
+  readonly subjects: readonly WinRatioSubjectResult[];
+  /** Wins over losses. */
+  readonly winRatio: WinStatisticEstimate;
+  /** Wins less losses, over pairs (the win difference). */
+  readonly netBenefit: WinStatisticEstimate;
+  /** Wins plus half the ties, over losses plus half the ties. */
+  readonly winOdds: WinStatisticEstimate;
+  /** The Finkelstein-Schoenfeld test. */
+  readonly finkelsteinSchoenfeld: FinkelsteinSchoenfeldTest;
+  /** The settings the result was computed with. */
+  readonly settings: {
+    readonly weighting: WinRatioStratumWeighting;
+    readonly alpha: number;
+    readonly sided: "two-sided" | "one-sided";
+  };
+}
+
 /** One plotted time of a Kaplan-Meier curve and the results it shows. */
 export interface TlfKmPoint {
   /** The time, in days; 0 is the start of the curve. */

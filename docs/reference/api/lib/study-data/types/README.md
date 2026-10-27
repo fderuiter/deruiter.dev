@@ -55,6 +55,7 @@
 - [EpochDefinition](interfaces/EpochDefinition.md)
 - [EstimandDefinition](interfaces/EstimandDefinition.md)
 - [Finding](interfaces/Finding.md)
+- [FinkelsteinSchoenfeldTest](interfaces/FinkelsteinSchoenfeldTest.md)
 - [IntercurrentEventDefinition](interfaces/IntercurrentEventDefinition.md)
 - [KaplanMeierEstimate](interfaces/KaplanMeierEstimate.md)
 - [KaplanMeierStep](interfaces/KaplanMeierStep.md)
@@ -86,6 +87,15 @@
 - [TlfTable](interfaces/TlfTable.md)
 - [VariableMeta](interfaces/VariableMeta.md)
 - [VisitDefinition](interfaces/VisitDefinition.md)
+- [WinRatioComponent](interfaces/WinRatioComponent.md)
+- [WinRatioComponentResult](interfaces/WinRatioComponentResult.md)
+- [WinRatioOptions](interfaces/WinRatioOptions.md)
+- [WinRatioOutcome](interfaces/WinRatioOutcome.md)
+- [WinRatioResult](interfaces/WinRatioResult.md)
+- [WinRatioStratumResult](interfaces/WinRatioStratumResult.md)
+- [WinRatioSubject](interfaces/WinRatioSubject.md)
+- [WinRatioSubjectResult](interfaces/WinRatioSubjectResult.md)
+- [WinStatisticEstimate](interfaces/WinStatisticEstimate.md)
 
 ## Type Aliases
 
@@ -108,3 +118,5 @@
 - [VariableDataType](type-aliases/VariableDataType.md)
 - [VariableOrigin](type-aliases/VariableOrigin.md)
 - [VariableRole](type-aliases/VariableRole.md)
+- [WinRatioComponentKind](type-aliases/WinRatioComponentKind.md)
+- [WinRatioStratumWeighting](type-aliases/WinRatioStratumWeighting.md)

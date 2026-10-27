@@ -1,0 +1,623 @@
+{
+  "name": "recovery-earlier-better",
+  "generator": "scripts/r/win-ratio-reference.R",
+  "reference": {
+    "r": "R version 4.3.3 (2024-02-29)",
+    "wins": "1.5.1",
+    "method": "WINS::win.stat, method = 'unadjusted'; Finkelstein-Schoenfeld in this script"
+  },
+  "settings": {
+    "weighting": "unstratified",
+    "alpha": 0.050000000000000003,
+    "sided": "two-sided"
+  },
+  "components": [
+    {
+      "kind": "tte",
+      "better": "smaller",
+      "margin": 2,
+      "horizon": 60
+    }
+  ],
+  "subjects": [
+    {
+      "id": 1,
+      "arm": 1,
+      "stratum": 1,
+      "values": [11],
+      "events": [1]
+    },
+    {
+      "id": 2,
+      "arm": 1,
+      "stratum": 1,
+      "values": [30],
+      "events": [1]
+    },
+    {
+      "id": 3,
+      "arm": 1,
+      "stratum": 1,
+      "values": [41],
+      "events": [0]
+    },
+    {
+      "id": 4,
+      "arm": 1,
+      "stratum": 1,
+      "values": [13],
+      "events": [1]
+    },
+    {
+      "id": 5,
+      "arm": 1,
+      "stratum": 1,
+      "values": [24],
+      "events": [1]
+    },
+    {
+      "id": 6,
+      "arm": 1,
+      "stratum": 1,
+      "values": [33],
+      "events": [0]
+    },
+    {
+      "id": 7,
+      "arm": 1,
+      "stratum": 1,
+      "values": [79],
+      "events": [0]
+    },
+    {
+      "id": 8,
+      "arm": 1,
+      "stratum": 1,
+      "values": [28],
+      "events": [1]
+    },
+    {
+      "id": 9,
+      "arm": 1,
+      "stratum": 1,
+      "values": [10],
+      "events": [1]
+    },
+    {
+      "id": 10,
+      "arm": 1,
+      "stratum": 1,
+      "values": [26],
+      "events": [1]
+    },
+    {
+      "id": 11,
+      "arm": 1,
+      "stratum": 1,
+      "values": [66],
+      "events": [0]
+    },
+    {
+      "id": 12,
+      "arm": 1,
+      "stratum": 1,
+      "values": [19],
+      "events": [1]
+    },
+    {
+      "id": 13,
+      "arm": 1,
+      "stratum": 1,
+      "values": [13],
+      "events": [1]
+    },
+    {
+      "id": 14,
+      "arm": 1,
+      "stratum": 1,
+      "values": [44],
+      "events": [1]
+    },
+    {
+      "id": 15,
+      "arm": 1,
+      "stratum": 1,
+      "values": [22],
+      "events": [1]
+    },
+    {
+      "id": 16,
+      "arm": 1,
+      "stratum": 1,
+      "values": [43],
+      "events": [1]
+    },
+    {
+      "id": 17,
+      "arm": 1,
+      "stratum": 1,
+      "values": [9],
+      "events": [1]
+    },
+    {
+      "id": 18,
+      "arm": 1,
+      "stratum": 1,
+      "values": [15],
+      "events": [1]
+    },
+    {
+      "id": 19,
+      "arm": 1,
+      "stratum": 1,
+      "values": [33],
+      "events": [1]
+    },
+    {
+      "id": 20,
+      "arm": 1,
+      "stratum": 1,
+      "values": [6],
+      "events": [1]
+    },
+    {
+      "id": 21,
+      "arm": 1,
+      "stratum": 1,
+      "values": [30],
+      "events": [1]
+    },
+    {
+      "id": 22,
+      "arm": 1,
+      "stratum": 1,
+      "values": [10],
+      "events": [1]
+    },
+    {
+      "id": 23,
+      "arm": 1,
+      "stratum": 1,
+      "values": [59],
+      "events": [0]
+    },
+    {
+      "id": 24,
+      "arm": 1,
+      "stratum": 1,
+      "values": [41],
+      "events": [1]
+    },
+    {
+      "id": 25,
+      "arm": 1,
+      "stratum": 1,
+      "values": [14],
+      "events": [1]
+    },
+    {
+      "id": 26,
+      "arm": 1,
+      "stratum": 1,
+      "values": [1],
+      "events": [1]
+    },
+    {
+      "id": 27,
+      "arm": 1,
+      "stratum": 1,
+      "values": [5],
+      "events": [1]
+    },
+    {
+      "id": 28,
+      "arm": 1,
+      "stratum": 1,
+      "values": [53],
+      "events": [1]
+    },
+    {
+      "id": 29,
+      "arm": 1,
+      "stratum": 1,
+      "values": [25],
+      "events": [1]
+    },
+    {
+      "id": 30,
+      "arm": 1,
+      "stratum": 1,
+      "values": [15],
+      "events": [1]
+    },
+    {
+      "id": 31,
+      "arm": 1,
+      "stratum": 1,
+      "values": [38],
+      "events": [1]
+    },
+    {
+      "id": 32,
+      "arm": 1,
+      "stratum": 1,
+      "values": [21],
+      "events": [1]
+    },
+    {
+      "id": 33,
+      "arm": 1,
+      "stratum": 1,
+      "values": [60],
+      "events": [1]
+    },
+    {
+      "id": 34,
+      "arm": 1,
+      "stratum": 1,
+      "values": [45],
+      "events": [0]
+    },
+    {
+      "id": 35,
+      "arm": 1,
+      "stratum": 1,
+      "values": [25],
+      "events": [1]
+    },
+    {
+      "id": 36,
+      "arm": 1,
+      "stratum": 1,
+      "values": [2],
+      "events": [1]
+    },
+    {
+      "id": 37,
+      "arm": 1,
+      "stratum": 1,
+      "values": [47],
+      "events": [1]
+    },
+    {
+      "id": 38,
+      "arm": 1,
+      "stratum": 1,
+      "values": [17],
+      "events": [1]
+    },
+    {
+      "id": 39,
+      "arm": 1,
+      "stratum": 1,
+      "values": [60],
+      "events": [0]
+    },
+    {
+      "id": 40,
+      "arm": 1,
+      "stratum": 1,
+      "values": [40],
+      "events": [0]
+    },
+    {
+      "id": 41,
+      "arm": 2,
+      "stratum": 1,
+      "values": [33],
+      "events": [1]
+    },
+    {
+      "id": 42,
+      "arm": 2,
+      "stratum": 1,
+      "values": [1],
+      "events": [1]
+    },
+    {
+      "id": 43,
+      "arm": 2,
+      "stratum": 1,
+      "values": [71],
+      "events": [0]
+    },
+    {
+      "id": 44,
+      "arm": 2,
+      "stratum": 1,
+      "values": [3],
+      "events": [1]
+    },
+    {
+      "id": 45,
+      "arm": 2,
+      "stratum": 1,
+      "values": [1],
+      "events": [1]
+    },
+    {
+      "id": 46,
+      "arm": 2,
+      "stratum": 1,
+      "values": [33],
+      "events": [0]
+    },
+    {
+      "id": 47,
+      "arm": 2,
+      "stratum": 1,
+      "values": [45],
+      "events": [1]
+    },
+    {
+      "id": 48,
+      "arm": 2,
+      "stratum": 1,
+      "values": [1],
+      "events": [1]
+    },
+    {
+      "id": 49,
+      "arm": 2,
+      "stratum": 1,
+      "values": [2],
+      "events": [1]
+    },
+    {
+      "id": 50,
+      "arm": 2,
+      "stratum": 1,
+      "values": [1],
+      "events": [1]
+    },
+    {
+      "id": 51,
+      "arm": 2,
+      "stratum": 1,
+      "values": [15],
+      "events": [1]
+    },
+    {
+      "id": 52,
+      "arm": 2,
+      "stratum": 1,
+      "values": [39],
+      "events": [0]
+    },
+    {
+      "id": 53,
+      "arm": 2,
+      "stratum": 1,
+      "values": [17],
+      "events": [1]
+    },
+    {
+      "id": 54,
+      "arm": 2,
+      "stratum": 1,
+      "values": [11],
+      "events": [1]
+    },
+    {
+      "id": 55,
+      "arm": 2,
+      "stratum": 1,
+      "values": [3],
+      "events": [1]
+    },
+    {
+      "id": 56,
+      "arm": 2,
+      "stratum": 1,
+      "values": [8],
+      "events": [1]
+    },
+    {
+      "id": 57,
+      "arm": 2,
+      "stratum": 1,
+      "values": [21],
+      "events": [1]
+    },
+    {
+      "id": 58,
+      "arm": 2,
+      "stratum": 1,
+      "values": [5],
+      "events": [1]
+    },
+    {
+      "id": 59,
+      "arm": 2,
+      "stratum": 1,
+      "values": [39],
+      "events": [1]
+    },
+    {
+      "id": 60,
+      "arm": 2,
+      "stratum": 1,
+      "values": [31],
+      "events": [1]
+    },
+    {
+      "id": 61,
+      "arm": 2,
+      "stratum": 1,
+      "values": [30],
+      "events": [1]
+    },
+    {
+      "id": 62,
+      "arm": 2,
+      "stratum": 1,
+      "values": [10],
+      "events": [1]
+    },
+    {
+      "id": 63,
+      "arm": 2,
+      "stratum": 1,
+      "values": [26],
+      "events": [1]
+    },
+    {
+      "id": 64,
+      "arm": 2,
+      "stratum": 1,
+      "values": [5],
+      "events": [1]
+    },
+    {
+      "id": 65,
+      "arm": 2,
+      "stratum": 1,
+      "values": [8],
+      "events": [1]
+    },
+    {
+      "id": 66,
+      "arm": 2,
+      "stratum": 1,
+      "values": [31],
+      "events": [1]
+    },
+    {
+      "id": 67,
+      "arm": 2,
+      "stratum": 1,
+      "values": [19],
+      "events": [1]
+    },
+    {
+      "id": 68,
+      "arm": 2,
+      "stratum": 1,
+      "values": [3],
+      "events": [1]
+    },
+    {
+      "id": 69,
+      "arm": 2,
+      "stratum": 1,
+      "values": [25],
+      "events": [1]
+    },
+    {
+      "id": 70,
+      "arm": 2,
+      "stratum": 1,
+      "values": [5],
+      "events": [1]
+    },
+    {
+      "id": 71,
+      "arm": 2,
+      "stratum": 1,
+      "values": [2],
+      "events": [1]
+    },
+    {
+      "id": 72,
+      "arm": 2,
+      "stratum": 1,
+      "values": [6],
+      "events": [1]
+    },
+    {
+      "id": 73,
+      "arm": 2,
+      "stratum": 1,
+      "values": [27],
+      "events": [1]
+    },
+    {
+      "id": 74,
+      "arm": 2,
+      "stratum": 1,
+      "values": [15],
+      "events": [1]
+    },
+    {
+      "id": 75,
+      "arm": 2,
+      "stratum": 1,
+      "values": [22],
+      "events": [1]
+    },
+    {
+      "id": 76,
+      "arm": 2,
+      "stratum": 1,
+      "values": [3],
+      "events": [1]
+    },
+    {
+      "id": 77,
+      "arm": 2,
+      "stratum": 1,
+      "values": [11],
+      "events": [1]
+    },
+    {
+      "id": 78,
+      "arm": 2,
+      "stratum": 1,
+      "values": [39],
+      "events": [1]
+    },
+    {
+      "id": 79,
+      "arm": 2,
+      "stratum": 1,
+      "values": [19],
+      "events": [1]
+    },
+    {
+      "id": 80,
+      "arm": 2,
+      "stratum": 1,
+      "values": [1],
+      "events": [1]
+    }
+  ],
+  "expected": {
+    "per_endpoint": [
+      {
+        "wins": 406,
+        "losses": 1025
+      }
+    ],
+    "win_ratio": {
+      "WR": 0.39609756097560972,
+      "WR_L": 0.21298489272471693,
+      "WR_U": 0.73664040582263979
+    },
+    "net_benefit": {
+      "NB": -0.38687500000000002,
+      "NB_L": -0.66432770393720575,
+      "NB_U": -0.10942229606279424
+    },
+    "win_odds": {
+      "WO": 0.44209103199639477,
+      "WO_L": 0.25381620627180024,
+      "WO_U": 0.77002364601708972
+    },
+    "z": {
+      "zstat_WR": -2.9255275926300732,
+      "zstat_NB": -2.7329381035354623,
+      "zstat_WO": -2.8830138042593121
+    },
+    "p": {
+      "pvalue_WR": 0.0034387267953646106,
+      "pvalue_NB": 0.006277212756453876,
+      "pvalue_WO": 0.0039389017911233282
+    },
+    "finkelstein_schoenfeld": {
+      "statistic": -619,
+      "variance": 42006.075949367092,
+      "z": -3.0201922749219348,
+      "p_two_sided": 0.0025261426242820183
+    }
+  }
+}

@@ -416,6 +416,12 @@ Re-exports [commentOid](internal/export/oids/functions/commentOid.md)
 
 ***
 
+### compareOnComponent
+
+Re-exports [compareOnComponent](internal/tlf/win-ratio/functions/compareOnComponent.md)
+
+***
+
 ### CONFORMANCE\_RULES
 
 Re-exports [CONFORMANCE_RULES](internal/conformance/rules/variables/CONFORMANCE_RULES.md)
@@ -812,6 +818,12 @@ Re-exports [FindingSeverity](types/type-aliases/FindingSeverity.md)
 
 ***
 
+### FinkelsteinSchoenfeldTest
+
+Re-exports [FinkelsteinSchoenfeldTest](types/interfaces/FinkelsteinSchoenfeldTest.md)
+
+***
+
 ### formatDecimal
 
 Re-exports [formatDecimal](internal/tlf/stats/functions/formatDecimal.md)
@@ -1061,6 +1073,12 @@ Re-exports [methodOid](internal/export/oids/functions/methodOid.md)
 ### NORMAL\_QUANTILE\_975
 
 Re-exports [NORMAL_QUANTILE_975](internal/tlf/km/variables/NORMAL_QUANTILE_975.md)
+
+***
+
+### normalQuantile
+
+Re-exports [normalQuantile](internal/tlf/win-ratio/functions/normalQuantile.md)
 
 ***
 
@@ -1661,6 +1679,84 @@ Re-exports [VisitDefinition](types/interfaces/VisitDefinition.md)
 ### whereClauseOid
 
 Re-exports [whereClauseOid](internal/export/oids/functions/whereClauseOid.md)
+
+***
+
+### WIN\_RATIO\_DEFAULT\_ALPHA
+
+Re-exports [WIN_RATIO_DEFAULT_ALPHA](internal/tlf/win-ratio/variables/WIN_RATIO_DEFAULT_ALPHA.md)
+
+***
+
+### WinRatioComponent
+
+Re-exports [WinRatioComponent](types/interfaces/WinRatioComponent.md)
+
+***
+
+### WinRatioComponentKind
+
+Re-exports [WinRatioComponentKind](types/type-aliases/WinRatioComponentKind.md)
+
+***
+
+### WinRatioComponentResult
+
+Re-exports [WinRatioComponentResult](types/interfaces/WinRatioComponentResult.md)
+
+***
+
+### WinRatioOptions
+
+Re-exports [WinRatioOptions](types/interfaces/WinRatioOptions.md)
+
+***
+
+### WinRatioOutcome
+
+Re-exports [WinRatioOutcome](types/interfaces/WinRatioOutcome.md)
+
+***
+
+### WinRatioResult
+
+Re-exports [WinRatioResult](types/interfaces/WinRatioResult.md)
+
+***
+
+### WinRatioStratumResult
+
+Re-exports [WinRatioStratumResult](types/interfaces/WinRatioStratumResult.md)
+
+***
+
+### WinRatioStratumWeighting
+
+Re-exports [WinRatioStratumWeighting](types/type-aliases/WinRatioStratumWeighting.md)
+
+***
+
+### WinRatioSubject
+
+Re-exports [WinRatioSubject](types/interfaces/WinRatioSubject.md)
+
+***
+
+### WinRatioSubjectResult
+
+Re-exports [WinRatioSubjectResult](types/interfaces/WinRatioSubjectResult.md)
+
+***
+
+### WinStatisticEstimate
+
+Re-exports [WinStatisticEstimate](types/interfaces/WinStatisticEstimate.md)
+
+***
+
+### winStatistics
+
+Re-exports [winStatistics](internal/tlf/win-ratio/functions/winStatistics.md)
 
 ***
 

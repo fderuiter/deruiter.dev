@@ -23,17 +23,6 @@ const VENDORED = [
         "4ac4810254ab36d45419141aeb8e69bf50652cfafe5b2dab947d06d44e5cbf96",
     },
   },
-  {
-    skill: "i-have-adhd",
-    source: "https://github.com/ayghri/i-have-adhd",
-    commit: "1ecea1993b7fce257ffbd686c070948b5e07eda6",
-    files: {
-      "SKILL.md":
-        "88955c019bbb1419ff4b49dbb1f80a867467de6233d7865af2e06a7d7b76c7d3",
-      LICENSE:
-        "8acbb618089b738404f76ac60fca1aaa995d9a87995eddf95f0b777acd7f7d2c",
-    },
-  },
 ] as const;
 
 function read(skill: string, file: string): Buffer {

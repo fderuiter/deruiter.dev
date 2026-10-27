@@ -21,5 +21,3 @@ lib/study-data/internal/core/recorded-findings.json
 # Vendored agent skills, copied verbatim from upstream; __tests__/agent-skills-vendored.test.ts checks their hashes.
 .claude/skills/humanizer/SKILL.md
 .claude/skills/humanizer/LICENSE
-.claude/skills/i-have-adhd/SKILL.md
-.claude/skills/i-have-adhd/LICENSE

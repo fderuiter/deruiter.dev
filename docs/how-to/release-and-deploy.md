@@ -169,18 +169,19 @@ until a fix lands. Use it for changes whose risk is low, and confirm the
 
 ## Environments
 
-Three environments, kept apart. This is the intended contract; #1024 tracks
-the owner's audit of the live Vercel settings against it.
+Three environments, kept apart. [ADR 0071](../../adr/0071-on-demand-isolated-previews.md)
+decides the Preview column, and `scripts/vercel-preview-preflight.js`
+enforces it on every Preview build.
 
 | | Production | Preview | Development |
 | --- | --- | --- | --- |
 | **Purpose** | The public site | Checking one PR on real infrastructure before merge | Local work |
 | **Created by** | The weekly train's Deploy Hook; an operator's **Create Deployment** as break-glass | An operator, deliberately, for one PR (below) | `npm run dev` or a local `npm run build` |
 | **Domain** | `deruiter.dev`; `www` redirects to the apex (AGENTS.md section 18) | Its own `*.vercel.app` URL only, never a production alias | `localhost` |
-| **Access** | Public | Vercel Deployment Protection where the plan provides it; otherwise the URL is unlisted, not private | Local machine |
-| **Database** | Production Neon branch; migrations run during the build | A non-production Neon branch (#622); Preview builds never migrate | A local or personal Neon branch |
-| **Other services** | Production Upstash, Clerk, Resend and Sentry | Upstash under the `preview:` key prefix; Clerk, Resend and Sentry unset unless a separate non-production value exists | Simulated or unset |
-| **Variable scope** | Vercel **Production** scope | Vercel **Preview** scope, with no production credential in it | `.env.local`, never production credentials |
+| **Access** | Public | Vercel Authentication (sign-in required) | Local machine |
+| **Database** | Production Neon branch; migrations run during the build | None by default (fallback content); optionally the schema-only Neon branch `preview`. Preview builds never migrate | A local or personal Neon branch |
+| **Other services** | Production Upstash, Clerk, Resend, QStash, Sentry and AWS | Clerk development instance only; Upstash, Resend, QStash, Sentry, cron and AWS are off | Simulated or unset |
+| **Variable scope** | Vercel **Production** scope | Vercel **Preview** scope, with no production credential in it; **Separate Production Secret Values** stays on | `.env.local`, never production credentials |
 
 Nothing in this table may be read from production credentials outside the
 Production column. The variable-by-variable scopes are in
@@ -190,21 +191,12 @@ rendering runs.
 
 ### Using a Preview
 
-Git deployments are off for every branch (`vercel.json`),
-so a Preview exists only when someone asks for one.
-
-1. **Request:** in the Vercel Dashboard, create a deployment of the PR's
-   branch. It builds on Vercel with the Preview variables. The Vercel CLI may
-   still create ordinary Preview builds, but never use it for Production.
-2. **Verify** before trusting what it shows:
-   - Its URL is a `*.vercel.app` deployment URL, and the Domains page shows
-     no production alias on it.
-   - The Neon endpoint in its `DATABASE_URL` differs from Production's.
-     Compare the endpoint names in the dashboard; never copy values out.
-   - Its build log shows no migration step. `scripts/build.js` migrates only
-     when `VERCEL=1` and `VERCEL_ENV=production`.
-3. **Remove** it from the dashboard once the PR is merged or closed, so it
-   stops counting against storage.
+Git deployments are off for every branch (`vercel.json`), so a Preview exists
+only when someone asks for one, for one PR. `scripts/vercel-ignore-build.js`
+(the project's Ignored Build Step) builds it; the preview preflight checks
+its variables first. The steps to create, check and delete one, and what it
+can and can't show, are in
+[Use a Preview Deployment](use-a-preview-deployment.md).
 
 ### Checking a Production Release
 
@@ -245,7 +237,8 @@ variable.
 
 **What the scope means:** the Vercel environments the variable should be set
 in. Preview must never hold a production credential: set a separate,
-non-production value there or leave it unset (see #1024). **None** means the
+non-production value there or leave it unset (ADR 0071; the preview
+preflight fails a Preview build that holds one). **None** means the
 variable is not set in Vercel at all.
 
 **Build versus runtime:** only `DATABASE_URL_UNPOOLED` is needed for the
@@ -256,30 +249,30 @@ content rather than fail. Everything else is read by the running site.
 
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Required | Production, Preview | Pooled endpoint for the running app and prerendering. Provisioned by the Neon integration. |
+| `DATABASE_URL` | Required | Production | Pooled endpoint for the running app and prerendering. Provisioned by the Neon integration. Preview holds one only for the schema-only `preview` branch (ADR 0071). |
 | `APP_DATABASE_URL` | Optional | Production | Pooled endpoint as the least-privilege `app_runtime` role; the running app and prerendering prefer it over `DATABASE_URL` ([least-privilege roles](use-least-privilege-database-roles.md)). |
-| `DATABASE_URL_UNPOOLED` | Required | Production, Preview | Direct endpoint. `scripts/build.js` migrates through it on production builds and stops the build if it is missing. |
+| `DATABASE_URL_UNPOOLED` | Required | Production | Preview holds one only for the `preview` branch (ADR 0071). Direct endpoint. `scripts/build.js` migrates through it on production builds and stops the build if it is missing. |
 | `DIRECT_URL` | Platform | None | `scripts/build.js` derives it from `DATABASE_URL_UNPOOLED`. Set it locally only. |
-| `PGHOST` | Integration | Production, Preview | Neon alias; unused. |
-| `PGHOST_UNPOOLED` | Integration | Production, Preview | Neon alias; unused. |
-| `PGUSER` | Integration | Production, Preview | Neon alias; unused. |
-| `PGDATABASE` | Integration | Production, Preview | Neon alias; unused. |
-| `PGPASSWORD` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_URL` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_URL_NON_POOLING` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_USER` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_HOST` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_PASSWORD` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_DATABASE` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_URL_NO_SSL` | Integration | Production, Preview | Neon alias; unused. |
-| `POSTGRES_PRISMA_URL` | Integration | Production, Preview | Neon alias; unused. |
+| `PGHOST` | Integration | Production | Neon alias; unused. |
+| `PGHOST_UNPOOLED` | Integration | Production | Neon alias; unused. |
+| `PGUSER` | Integration | Production | Neon alias; unused. |
+| `PGDATABASE` | Integration | Production | Neon alias; unused. |
+| `PGPASSWORD` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_URL` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_URL_NON_POOLING` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_USER` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_HOST` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_PASSWORD` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_DATABASE` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_URL_NO_SSL` | Integration | Production | Neon alias; unused. |
+| `POSTGRES_PRISMA_URL` | Integration | Production | Neon alias; unused. |
 
 ### Upstash Redis
 
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
-| `UPSTASH_REDIS_REST_URL` | Required | Production, Preview | Without it rate limits are per-instance and in memory, and telemetry is not buffered. |
-| `UPSTASH_REDIS_REST_TOKEN` | Required | Production, Preview | Pairs with the URL. |
+| `UPSTASH_REDIS_REST_URL` | Required | Production | Without it rate limits are per-instance and in memory, and telemetry is not buffered. |
+| `UPSTASH_REDIS_REST_TOKEN` | Required | Production | Pairs with the URL. |
 | `UPSTASH_REDIS_KEY_PREFIX` | Optional | Production | Key namespace. Unset means unprefixed in Production and `preview:` in Preview. Changing it strands any undrained telemetry under the old prefix. |
 
 The Upstash integration also provisions `KV_*` and `REDIS_URL`. No code reads
@@ -289,8 +282,8 @@ them.
 
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional | Production | Needed only for `/admin`. The rest of the site never loads Clerk. |
-| `CLERK_SECRET_KEY` | Optional | Production | Needed only for `/admin`. Read by the Clerk SDK. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional | Production, Preview | Needed only for `/admin`. The rest of the site never loads Clerk. |
+| `CLERK_SECRET_KEY` | Optional | Production, Preview | Needed only for `/admin`. Read by the Clerk SDK. Preview uses the development instance's keys; the preview preflight rejects `_live_` keys. |
 | `ADMIN_USER_IDS` | Optional | Production | Admin allowlist. With this and `ADMIN_EMAILS` both empty, admin access is closed. |
 | `ADMIN_EMAILS` | Optional | Production | Admin allowlist, by email. |
 
@@ -330,7 +323,7 @@ them.
 
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
-| `NODE_OPTIONS` | Required | Production | Must contain `--experimental-require-module`, which lets the server load the ESM-only dependency under `isomorphic-dompurify`. Without it server-rendered routes return 500 (#995). |
+| `NODE_OPTIONS` | Required | Production, Preview | Must contain `--experimental-require-module`, which lets the server load the ESM-only dependency under `isomorphic-dompurify`. Without it server-rendered routes return 500 (#995). |
 | `NODE_ENV` | Platform | None | Set by Next.js. |
 | `VERCEL` | Platform | None | Set by Vercel on its builds. |
 | `VERCEL_ENV` | Platform | None | Set by Vercel. Gates migrations and production-only behaviour. |
@@ -364,8 +357,8 @@ A retryable send failure enqueues the email and publishes one delayed message
 verifies the signature, retries that one queue row and reschedules while it is
 still retrying. This adds at most a few messages per failed email, inside the
 500 messages per day free tier ([ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md)).
-Preview deployments neither publish nor act on deliveries while the QStash
-variables stay shared with Production (#622).
+Preview deployments hold no QStash variables (ADR 0071), and the code also
+publishes only when `VERCEL_ENV=production`.
 
 ### Keeping secrets in Vercel
 
@@ -389,7 +382,10 @@ variables stay shared with Production (#622).
   PR. Restore from a Neon backup only for confirmed data loss.
 - **Git-triggered deployments stay off.** `vercel.json` disables Git
   deployments for every branch. Preview builds
-  never migrate even if an operator starts one by hand.
+  never migrate even if an operator starts one by hand, and
+  `scripts/vercel-preview-preflight.js` stops a Preview build whose
+  variables name the production Neon endpoint or hold a production-only
+  credential.
 
 ## Building Production Output Locally
 

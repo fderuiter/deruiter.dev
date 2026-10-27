@@ -95,13 +95,25 @@ describe("CRF Studio USDM v4.0 export", () => {
     )!;
     expect(c1d1?.targetDay).toBe(source.targetDay);
     expect(c1d1?.epochId).toBe("e_trt");
+    // The anchor is the Fixed Reference timing, which USDM forbids a window
+    // (CORE-000417); its window survives in the CRF Studio extension.
+    const anchor = design.scheduleTimelines![0].timings!.find(
+      (timing) => timing.type.code === "C201358"
+    );
+    expect(anchor?.windowLower).toBeNull();
     for (const visit of ONCOLOGY_RECIST_PRESET.visits.filter(
       (v) => v.visitType !== "Unscheduled"
     )) {
       const entry = schedule.find((s) => s.encounterId === visit.id);
+      const anchored =
+        entry?.scheduledInstanceId === anchor?.relativeFromScheduledInstanceId;
       expect(entry?.targetDay).toBe(visit.targetDay);
-      expect(entry?.windowBefore).toBe(Math.abs(visit.windowBefore || 0));
-      expect(entry?.windowAfter).toBe(Math.abs(visit.windowAfter || 0));
+      expect(entry?.windowBefore).toBe(
+        anchored ? 0 : Math.abs(visit.windowBefore || 0)
+      );
+      expect(entry?.windowAfter).toBe(
+        anchored ? 0 : Math.abs(visit.windowAfter || 0)
+      );
     }
   });
 

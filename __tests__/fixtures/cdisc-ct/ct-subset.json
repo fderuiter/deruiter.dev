@@ -5657,6 +5657,17 @@
         "C67153": "Diastolic Blood Pressure"
       }
     },
+    "C25301": {
+      "names": [
+        "day",
+        "days"
+      ],
+      "memberOf": {
+        "C66781": "DAYS",
+        "C71620": "DAYS",
+        "C85494": "day"
+      }
+    },
     "C25347": {
       "names": [
         "height"
@@ -6842,6 +6853,15 @@
       ],
       "memberOf": {
         "C99076": "PARALLEL"
+      }
+    },
+    "C82640": {
+      "names": [
+        "single group",
+        "single group study"
+      ],
+      "memberOf": {
+        "C99076": "SINGLE GROUP"
       }
     },
     "C85826": {

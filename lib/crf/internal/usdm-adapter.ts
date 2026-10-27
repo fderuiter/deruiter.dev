@@ -1423,8 +1423,12 @@ function liftBiomedicalConcept(
     id: bc.id,
     name: bc.name,
     label: bc.label ?? null,
+    // A synonym that repeats the label adds nothing (CORE-001006), so it is
+    // dropped here; the legacy list survives in the extension.
     synonyms: (bc.synonyms || []).filter(
-      (s): s is string => typeof s === "string"
+      (s): s is string =>
+        typeof s === "string" &&
+        s.toLowerCase() !== (bc.label ?? "").toLowerCase()
     ),
     reference: nci
       ? `https://evsexplore.semantics.cancer.gov/evsexplore/concept/ncit/${codeValue}`
@@ -1498,15 +1502,30 @@ function buildMainTimeline(
       ),
       relativeFromScheduledInstanceId: instanceId(enc),
       relativeToScheduledInstanceId: isAnchor ? null : instanceId(anchor),
-      windowLower: formatIsoDurationDays(windowBefore),
-      windowUpper: formatIsoDurationDays(windowAfter),
-      windowLabel: `-${windowBefore}/+${windowAfter} days`,
+      // The anchor is the fixed reference every other visit is timed from,
+      // so it takes no window (CORE-000417).
+      windowLower: isAnchor ? null : formatIsoDurationDays(windowBefore),
+      windowUpper: isAnchor ? null : formatIsoDurationDays(windowAfter),
+      windowLabel: isAnchor ? null : `-${windowBefore}/+${windowAfter} days`,
       instanceType: "Timing",
     };
   };
   const timings: UsdmV4Timing[] = anchor
     ? planned.map((enc) => timingFor(enc, anchor))
     : [];
+  // Every instance in the main timeline names an epoch (CORE-000870). An
+  // encounter without one, such as an unscheduled visit, falls in the epoch
+  // of the visit before it, or of the first visit when it comes first.
+  const epochOf = (enc: UsdmEncounter) =>
+    enc.epochId && epochIds.has(enc.epochId) ? enc.epochId : null;
+  const firstEpoch = encounters.map(epochOf).find((id) => id !== null) ?? null;
+  let carried = firstEpoch;
+  const instanceEpochs = encounters.map((enc) => {
+    carried = epochOf(enc) ?? carried;
+    return carried;
+  });
+  const days = planned.map(dayOf);
+  const span = days.length > 0 ? Math.max(...days) - Math.min(...days) : 0;
   return [
     {
       id: `${design.id}__timeline`,
@@ -1518,12 +1537,35 @@ function buildMainTimeline(
       entryId: instanceId(encounters[0]),
       exits: [{ id: exitId, instanceType: "ScheduleTimelineExit" }],
       timings,
+      // The planned span from the first to the last scheduled visit
+      // (CORE-001016).
+      plannedDuration: {
+        id: `${design.id}__timeline_duration`,
+        text: `${span} days`,
+        quantity: {
+          id: `${design.id}__timeline_duration_quantity`,
+          value: span,
+          unit: v4AliasCode(
+            `${design.id}__timeline_duration_unit`,
+            v4Code(`${design.id}__timeline_duration_unit_std`, "C25301", "Day")
+          ),
+          instanceType: "Quantity",
+        },
+        durationWillVary: false,
+        reasonDurationWillVary: null,
+        instanceType: "Duration",
+      },
+      // Each instance leads to the next by its default condition, so the
+      // timeline orders the encounters as their next chain does
+      // (CORE-000961, CORE-001048).
       instances: encounters.map((enc, idx) => ({
         id: instanceId(enc),
         name: enc.name || enc.id,
         label: null,
         description: null,
-        epochId: enc.epochId && epochIds.has(enc.epochId) ? enc.epochId : null,
+        defaultConditionId:
+          idx < encounters.length - 1 ? instanceId(encounters[idx + 1]) : null,
+        epochId: instanceEpochs[idx],
         timelineId: null,
         timelineExitId: idx === encounters.length - 1 ? exitId : null,
         activityIds: [...(enc.assignedFormIds || [])],
@@ -1754,7 +1796,12 @@ function liftDesign(design: UsdmStudyDesign, phaseLabel: string | undefined) {
     scheduleTimelines: buildMainTimeline(design, epochIds),
     eligibilityCriteria: [],
     analysisPopulations: [],
-    model: v4Code(`${design.id}__model`, "C82639", "Parallel Study"),
+    // One arm is a single group; more are parallel groups (CORE-001077
+    // expects a parallel design to reference more than one intervention).
+    model:
+      design.arms.length > 1
+        ? v4Code(`${design.id}__model`, "C82639", "Parallel Study")
+        : v4Code(`${design.id}__model`, "C82640", "Single Group Study"),
     instanceType: "InterventionalStudyDesign",
   };
   return v4Design;
@@ -1858,6 +1905,25 @@ function liftLegacyToUsdmV4(legacy: UsdmDocument): UsdmV4Document {
               identifierScheme: "Sponsor",
               identifier: protocolNumber,
               instanceType: "Organization",
+            },
+          ],
+          // The sponsor role names the organization the sponsor identifier
+          // is scoped to (CORE-000973, CORE-001054).
+          roles: [
+            {
+              id: "study_role_sponsor",
+              name: "Sponsor",
+              label: null,
+              description: null,
+              code: v4Code(
+                "study_role_sponsor__code",
+                "C70793",
+                "Clinical Study Sponsor"
+              ),
+              appliesToIds: ["study_version_1"],
+              organizationIds: [sponsorOrgId],
+              masking: null,
+              instanceType: "StudyRole",
             },
           ],
           biomedicalConcepts: (design.biomedicalConcepts || []).map(

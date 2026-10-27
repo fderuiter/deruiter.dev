@@ -5008,6 +5008,15 @@
     }
   },
   "concepts": {
+    "C100022": {
+      "names": [
+        "transcatheter aortic valve implant",
+        "transcatheter aortic valve implantation"
+      ],
+      "memberOf": {
+        "C101858": "TRANSCATHETER AORTIC VALVE IMPLANT"
+      }
+    },
     "C101526": {
       "names": [
         "treatment",
@@ -5283,6 +5292,19 @@
         "C128689": "BLACK OR AFRICAN AMERICAN"
       }
     },
+    "C163559": {
+      "names": [
+        "exploratory objective",
+        "objexp",
+        "study exploratory objective",
+        "trial exploratory objective"
+      ],
+      "memberOf": {
+        "C188725": "Exploratory Objective",
+        "C66738": "OBJEXP",
+        "C67152": "Trial Exploratory Objective"
+      }
+    },
     "C16576": {
       "names": [
         "f",
@@ -5312,6 +5334,14 @@
       "memberOf": {
         "C188698": "Medical Device",
         "C99078": "DEVICE"
+      }
+    },
+    "C170559": {
+      "names": [
+        "exploratory endpoint"
+      ],
+      "memberOf": {
+        "C188726": "Exploratory Endpoint"
       }
     },
     "C174266": {
@@ -6741,6 +6771,15 @@
       "memberOf": {
         "C71620": "U/L",
         "C85494": "U/L"
+      }
+    },
+    "C68609": {
+      "names": [
+        "active comparator",
+        "active control"
+      ],
+      "memberOf": {
+        "C207417": "Active Comparator"
       }
     },
     "C70793": {

@@ -30,6 +30,136 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
     showTableOfContents: true,
   },
   codelists: [...STANDARD_CODELISTS],
+  arms: [
+    {
+      id: "arm_dev_tavr",
+      name: "TAVR System",
+      type: "Experimental",
+      description:
+        "Transfemoral implantation of the investigational transcatheter aortic valve",
+      epochIds: ["ep_dev_scrn", "ep_dev_proc", "ep_dev_fup"],
+    },
+  ],
+  epochs: [
+    {
+      id: "ep_dev_scrn",
+      name: "Screening Epoch",
+      sequenceNumber: 1,
+      type: "Screening",
+      description: "Heart team evaluation, imaging and eligibility",
+    },
+    {
+      id: "ep_dev_proc",
+      name: "Index Procedure Epoch",
+      sequenceNumber: 2,
+      type: "Treatment",
+      description: "Transcatheter implantation of the study valve",
+    },
+    {
+      id: "ep_dev_fup",
+      name: "Follow-Up Epoch",
+      sequenceNumber: 3,
+      type: "Follow-up",
+      description: "Discharge, 30-day, 6-month and 1-year assessments",
+    },
+  ],
+  population: {
+    description:
+      "Adults aged 65 or older with symptomatic severe aortic stenosis whose heart team considers them suitable for transfemoral TAVR.",
+    plannedSex: ["Female", "Male"],
+    plannedAgeYears: { min: 65, max: 95 },
+  },
+  eligibilityCriteria: [
+    {
+      id: "ec_dev_age",
+      category: "Inclusion",
+      name: "Age",
+      text: "Aged 65 to 95 years at consent.",
+    },
+    {
+      id: "ec_dev_stenosis",
+      category: "Inclusion",
+      name: "Severe aortic stenosis",
+      text: "Severe aortic stenosis: aortic valve area of 1.0 cm2 or less, or a mean gradient of 40 mmHg or more, on echocardiography.",
+    },
+    {
+      id: "ec_dev_symptoms",
+      category: "Inclusion",
+      name: "Symptoms",
+      text: "NYHA functional class II or higher.",
+    },
+    {
+      id: "ec_dev_access",
+      category: "Inclusion",
+      name: "Transfemoral access",
+      text: "Iliofemoral anatomy suitable for transfemoral delivery, confirmed by CT angiography.",
+    },
+    {
+      id: "ec_dev_bicuspid",
+      category: "Exclusion",
+      name: "Bicuspid valve",
+      text: "Congenital bicuspid or unicuspid aortic valve.",
+    },
+    {
+      id: "ec_dev_lvef",
+      category: "Exclusion",
+      name: "Left ventricular function",
+      text: "Left ventricular ejection fraction below 20%.",
+    },
+    {
+      id: "ec_dev_stroke",
+      category: "Exclusion",
+      name: "Recent stroke",
+      text: "Stroke or transient ischaemic attack within 6 months before the index procedure.",
+    },
+  ],
+  objectives: [
+    {
+      id: "obj_dev_safety",
+      level: "Primary",
+      name: "Primary safety objective",
+      text: "To evaluate the early safety of the TAVR System.",
+      endpoints: [
+        {
+          id: "ep_dev_varc",
+          level: "Primary",
+          name: "VARC-3 early safety composite",
+          text: "Composite of all-cause death, stroke, major bleeding, major vascular complication and acute kidney injury stage 3 or 4 at 30 days.",
+          purpose: "Safety",
+        },
+      ],
+    },
+    {
+      id: "obj_dev_performance",
+      level: "Secondary",
+      name: "Valve performance objective",
+      text: "To evaluate the haemodynamic performance of the study valve over one year.",
+      endpoints: [
+        {
+          id: "ep_dev_gradient",
+          level: "Secondary",
+          name: "Mean gradient and valve area at 1 year",
+          text: "Mean transvalvular gradient and effective orifice area on echocardiography at 1 year.",
+          purpose: "Efficacy",
+        },
+      ],
+    },
+  ],
+  interventions: [
+    {
+      id: "int_dev_tavr",
+      name: "Vascular Dynamics TAVR System",
+      description:
+        "Self-expanding bioprosthetic aortic valve with a transfemoral delivery catheter.",
+      role: "Experimental Intervention",
+      type: "Device",
+      administrationFormIds: ["form_du_dev"],
+      procedure: {
+        name: "Transcatheter Aortic Valve Implantation",
+        code: "C100022",
+      },
+    },
+  ],
   visits: [
     {
       id: "v_dev_screen",
@@ -39,6 +169,7 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
       targetDay: -1,
       windowBefore: 29,
       windowAfter: 0,
+      epochId: "ep_dev_scrn",
       assignedFormIds: ["form_dm_dev", "form_vs_dev", "form_cm_dev"],
     },
     {
@@ -49,6 +180,7 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
       targetDay: 0,
       windowBefore: 0,
       windowAfter: 0,
+      epochId: "ep_dev_proc",
       assignedFormIds: ["form_di_dev", "form_du_dev", "form_vs_dev"],
     },
     {
@@ -59,6 +191,7 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
       targetDay: 3,
       windowBefore: 2,
       windowAfter: 1,
+      epochId: "ep_dev_fup",
       assignedFormIds: ["form_vs_dev", "form_cm_dev"],
     },
     {
@@ -69,6 +202,7 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
       targetDay: 30,
       windowBefore: 7,
       windowAfter: 7,
+      epochId: "ep_dev_fup",
       assignedFormIds: ["form_vs_dev", "form_cm_dev"],
     },
     {
@@ -79,6 +213,7 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
       targetDay: 180,
       windowBefore: 14,
       windowAfter: 14,
+      epochId: "ep_dev_fup",
       assignedFormIds: ["form_vs_dev", "form_cm_dev"],
     },
     {
@@ -89,6 +224,7 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
       targetDay: 365,
       windowBefore: 30,
       windowAfter: 30,
+      epochId: "ep_dev_fup",
       assignedFormIds: ["form_vs_dev", "form_cm_dev"],
     },
     {

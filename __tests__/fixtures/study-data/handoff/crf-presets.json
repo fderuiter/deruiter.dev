@@ -148,9 +148,17 @@
             "testCode": "NEUT"
           }
         ]
+      },
+      {
+        "id": "form_ex_onc",
+        "name": "Study Treatment Administration & Exposure",
+        "domain": "EX",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
       }
     ],
-    "tabulatedDomains": ["DM", "VS", "LB", "AE"],
+    "tabulatedDomains": ["DM", "EX", "VS", "LB", "AE"],
     "notTabulatedDomains": ["CM", "TR"],
     "assumptions": [],
     "unplannedEncounters": [
@@ -278,11 +286,7 @@
     ],
     "tabulatedDomains": ["DM", "VS", "AE"],
     "notTabulatedDomains": ["CM", "DE", "DI", "DU"],
-    "assumptions": [
-      "epochs-from-study-day",
-      "single-arm",
-      "elements-per-epoch"
-    ],
+    "assumptions": [],
     "unplannedEncounters": [
       {
         "id": "v_dev_unsched",
@@ -354,11 +358,7 @@
     ],
     "tabulatedDomains": ["AE"],
     "notTabulatedDomains": ["EG", "QS"],
-    "assumptions": [
-      "epochs-from-study-day",
-      "single-arm",
-      "elements-per-epoch"
-    ],
+    "assumptions": [],
     "unplannedEncounters": []
   },
   "cns_neuro": {
@@ -457,15 +457,19 @@
         "reason": "domain-not-generated",
         "tests": [],
         "skippedConcepts": []
+      },
+      {
+        "id": "form_ex_cns",
+        "name": "Study Treatment Administration & Exposure",
+        "domain": "EX",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
       }
     ],
-    "tabulatedDomains": ["DM", "VS", "AE"],
+    "tabulatedDomains": ["DM", "EX", "VS", "AE"],
     "notTabulatedDomains": ["CM", "QS"],
-    "assumptions": [
-      "epochs-from-study-day",
-      "single-arm",
-      "elements-per-epoch"
-    ],
+    "assumptions": [],
     "unplannedEncounters": []
   },
   "pk_escalation": {
@@ -559,11 +563,7 @@
     ],
     "tabulatedDomains": ["DM", "VS", "AE"],
     "notTabulatedDomains": ["PC"],
-    "assumptions": [
-      "epochs-from-study-day",
-      "single-arm",
-      "elements-per-epoch"
-    ],
+    "assumptions": [],
     "unplannedEncounters": []
   },
   "custom_blank": {

@@ -38,6 +38,12 @@
 
 ***
 
+### eligibilityCriteria?
+
+> `optional` **eligibilityCriteria?**: [`StudyEligibilityCriterion`](../../../types/interfaces/StudyEligibilityCriterion.md)[]
+
+***
+
 ### encounters
 
 > **encounters**: [`UsdmEncounter`](UsdmEncounter.md)[]
@@ -56,9 +62,27 @@
 
 ***
 
+### interventions?
+
+> `optional` **interventions?**: [`StudyInterventionPlan`](../../../types/interfaces/StudyInterventionPlan.md)[]
+
+***
+
 ### name
 
 > **name**: `string`
+
+***
+
+### objectives?
+
+> `optional` **objectives?**: [`StudyObjective`](../../../types/interfaces/StudyObjective.md)[]
+
+***
+
+### population?
+
+> `optional` **population?**: [`StudyPopulationPlan`](../../../types/interfaces/StudyPopulationPlan.md)
 
 ***
 

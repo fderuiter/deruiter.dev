@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   STUDY_PRESETS,
   ONCOLOGY_RECIST_PRESET,
+  DEVICE_CARDIOVASCULAR_IMPLANT_PRESET,
   diffUniversalCrfStudies,
   exportStudyToUsdm,
   exportStudyToUsdmObject,
@@ -84,7 +85,7 @@ describe("CRF Studio USDM v4.0 export", () => {
     expect(design.epochs).toHaveLength(3);
     expect(design.studyCells.length).toBeGreaterThan(0);
     expect(design.encounters).toHaveLength(6);
-    expect(design.activities).toHaveLength(6);
+    expect(design.activities).toHaveLength(7);
     expect(version.biomedicalConcepts!.length).toBeGreaterThanOrEqual(3);
     expect(design.scheduleTimelines).toHaveLength(1);
 
@@ -145,13 +146,12 @@ describe("version-aware USDM reader", () => {
 
   it("imports a USDM 3.0.0 export from before the upgrade to the same study as the v4 export", () => {
     // The fixture is `exportStudyToUsdm(ONCOLOGY_RECIST_PRESET)` as written by
-    // the 3.0.0 adapter on main before the v4 upgrade (#2584).
+    // the 3.0.0 adapter on main before the v4 upgrade (#2584). The preset has
+    // grown since (#3051), so the v4 side exports the study the fixture holds.
     const v3 = readFileSync(V3_FIXTURE, "utf8");
     expect(JSON.parse(v3).schemaVersion).toBe("3.0.0");
     const fromV3 = importStudyFromUsdm(v3);
-    const fromV4 = importStudyFromUsdm(
-      exportStudyToUsdm(ONCOLOGY_RECIST_PRESET)
-    );
+    const fromV4 = importStudyFromUsdm(exportStudyToUsdm(fromV3));
     expect(diffUniversalCrfStudies(fromV3, fromV4).hasChanges).toBe(false);
   });
 
@@ -178,6 +178,148 @@ describe("version-aware USDM reader", () => {
     expect(study.forms.map((f) => f.domain)).toEqual(
       ONCOLOGY_RECIST_PRESET.forms.map((f) => f.domain)
     );
+  });
+});
+
+describe("protocol content in the USDM v4 export (#3051)", () => {
+  const CONTENT_KEYS = [
+    "population",
+    "eligibilityCriteria",
+    "objectives",
+    "interventions",
+  ] as const;
+
+  /** The export with every CRF Studio extension removed. */
+  function foreign(study: Parameters<typeof exportStudyToUsdmObject>[0]) {
+    return JSON.parse(
+      JSON.stringify(exportStudyToUsdmObject(study), (key, value) =>
+        key === "extensionAttributes"
+          ? (value as { url: string }[]).filter((e) =>
+              e.url.endsWith("/sdtm-domain")
+            )
+          : value
+      )
+    );
+  }
+
+  it.each(STUDY_PRESETS.map((p) => [p.id, p.study] as const))(
+    "round-trips the %s population, criteria, objectives and interventions",
+    (_id, study) => {
+      const back = importStudyFromUsdm(exportStudyToUsdm(study));
+      for (const key of CONTENT_KEYS) expect(back[key]).toEqual(study[key]);
+    }
+  );
+
+  it("writes them as USDM classes with CDISC CT codes", () => {
+    const doc = exportStudyToUsdmObject(ONCOLOGY_RECIST_PRESET);
+    const version = doc.study.versions![0];
+    const design = version.studyDesigns![0];
+
+    const population = design.population;
+    expect(population.plannedSex?.map((c) => c.code)).toEqual([
+      "C16576",
+      "C20197",
+    ]);
+    expect(population.plannedAge?.minValue.value).toBe(18);
+    expect(population.plannedAge?.maxValue.value).toBe(85);
+    expect(population.plannedAge?.minValue.unit?.standardCode.code).toBe(
+      "C29848"
+    );
+    expect(population.criterionIds).toEqual(
+      design.eligibilityCriteria.map((c) => c.id)
+    );
+
+    expect(design.eligibilityCriteria.map((c) => c.name)).toEqual([
+      "INC01",
+      "INC02",
+      "INC03",
+      "INC04",
+      "EXC01",
+      "EXC02",
+      "EXC03",
+    ]);
+    const itemIds = new Set(
+      version.eligibilityCriterionItems!.map((i) => i.id)
+    );
+    expect(
+      design.eligibilityCriteria.every((c) => itemIds.has(c.criterionItemId))
+    ).toBe(true);
+
+    const objectives = design.objectives ?? [];
+    expect(objectives.filter((o) => o.level.code === "C85826")).toHaveLength(1);
+    expect(
+      objectives
+        .flatMap((o) => o.endpoints ?? [])
+        .filter((e) => e.level.code === "C94496")
+        .map((e) => e.id)
+    ).toEqual(["ep_onc_pfs"]);
+
+    expect(design.studyInterventionIds).toEqual(
+      version.studyInterventions!.map((i) => i.id)
+    );
+    const exposure = design.activities!.find((a) => a.id === "form_ex_onc");
+    expect(
+      exposure?.definedProcedures?.map((p) => [
+        p.studyInterventionId,
+        p.code.code,
+      ])
+    ).toEqual([
+      ["int_onc_pembrolizumab", "C128534"],
+      ["int_onc_aur117", "C128534"],
+      ["int_onc_chemo", "C128534"],
+    ]);
+    const element = (armId: string, epochId: string) =>
+      design.elements!.find((e) => e.id === `${armId}__${epochId}__element`)
+        ?.studyInterventionIds;
+    expect(element("arm_exp", "e_trt")).toEqual([
+      "int_onc_pembrolizumab",
+      "int_onc_aur117",
+    ]);
+    expect(element("arm_ctrl", "e_trt")).toEqual(["int_onc_chemo"]);
+    expect(element("arm_exp", "ep_scrn")).toEqual([]);
+  });
+
+  it("reads them from native properties when a document has no CRF Studio extensions", () => {
+    for (const preset of [
+      ONCOLOGY_RECIST_PRESET,
+      DEVICE_CARDIOVASCULAR_IMPLANT_PRESET,
+    ]) {
+      const doc = foreign(preset);
+      expect(validateUsdmV4(doc)).toEqual([]);
+      const back = importStudyFromUsdm(doc);
+      expect(back.population).toEqual(preset.population);
+      expect(back.eligibilityCriteria).toEqual(preset.eligibilityCriteria);
+      expect(back.objectives).toEqual(preset.objectives);
+      expect(
+        back.interventions?.map((i) => [
+          i.id,
+          i.role,
+          i.type,
+          i.administrationFormIds,
+          i.procedure,
+        ])
+      ).toEqual(
+        preset.interventions?.map((i) => [
+          i.id,
+          i.role,
+          i.type,
+          i.administrationFormIds,
+          i.procedure,
+        ])
+      );
+    }
+  });
+
+  it("names a concept two forms share after the form's domain", () => {
+    const doc = exportStudyToUsdmObject(ONCOLOGY_RECIST_PRESET);
+    const concepts = doc.study.versions![0].biomedicalConcepts!;
+    const routes = concepts.filter((c) => c.id.endsWith("route"));
+    expect(routes.map((c) => [c.id, c.name])).toEqual([
+      ["bc_cm_cmroute", "Route of Administration"],
+      ["bc_ex_exroute", "Route of Administration (EX)"],
+    ]);
+    const names = concepts.map((c) => c.name);
+    expect(new Set(names).size).toBe(names.length);
   });
 });
 

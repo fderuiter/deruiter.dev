@@ -58,6 +58,12 @@ Protocol-level audit trail history across authoring and review lifecycle.
 
 ***
 
+### eligibilityCriteria?
+
+> `optional` **eligibilityCriteria?**: [`StudyEligibilityCriterion`](StudyEligibilityCriterion.md)[]
+
+***
+
 ### epochs?
 
 > `optional` **epochs?**: [`StudyEpoch`](StudyEpoch.md)[]
@@ -73,6 +79,12 @@ Protocol-level audit trail history across authoring and review lifecycle.
 ### id
 
 > **id**: `string`
+
+***
+
+### interventions?
+
+> `optional` **interventions?**: [`StudyInterventionPlan`](StudyInterventionPlan.md)[]
 
 ***
 
@@ -92,12 +104,26 @@ after native export and reopen.
 
 ***
 
+### objectives?
+
+> `optional` **objectives?**: [`StudyObjective`](StudyObjective.md)[]
+
+***
+
 ### phase
 
 > **phase**: `string` & `object` \| [`StudyPhase`](../type-aliases/StudyPhase.md)
 
 One of the studio's phases, or the phase an imported study arrived with
 (a USDM decode such as "Phase II/III Trial" is kept as written).
+
+***
+
+### population?
+
+> `optional` **population?**: [`StudyPopulationPlan`](StudyPopulationPlan.md)
+
+Planned population, eligibility, objectives and interventions (#3051).
 
 ***
 

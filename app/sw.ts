@@ -1,11 +1,16 @@
 import { defaultCache } from "@serwist/next/worker";
-import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
 import type { PrecacheEntry } from "serwist";
 import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist } from "serwist";
 
 declare global {
   interface ServiceWorkerGlobalScope {
     __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+    // The project compiles against the DOM lib, not webworker, so the one
+    // worker event used directly here is declared by hand.
+    addEventListener(
+      type: "install",
+      listener: (event: { waitUntil(promise: Promise<unknown>): void }) => void
+    ): void;
   }
 }
 
@@ -27,9 +32,6 @@ const injectedManifest = self.__SW_MANIFEST || [];
  * the next deployment, which is what broke the arcade in production while a
  * freshly installed origin worked fine.
  *
- * Precaching every entry in PUBLIC_ROUTE_PATHS makes that matter more, not
- * less: it is the whole public surface rather than ten shells.
- *
  * The injected manifest changes whenever any precached asset changes, so
  * hashing it gives a per-build revision with no extra build plumbing. The
  * cache key then changes every deployment: the new one is fetched on install,
@@ -46,12 +48,69 @@ const buildRevision = (() => {
   return (hash >>> 0).toString(36);
 })();
 
-const precacheManifest = injectedManifest.concat(
-  PUBLIC_ROUTE_PATHS.map((url) => ({
-    url,
-    revision: buildRevision,
-  }))
-);
+/**
+ * The offline fallback itself, which `fallbacks` below serves but does not
+ * precache, and the pages it lists as available offline. Keep the list in
+ * step with `precachedRoutes` in `app/offline/page.tsx`; a test checks both.
+ */
+const OFFLINE_SHELL_ROUTES = ["/offline", "/", "/stack", "/arcade"];
+
+/**
+ * Stylesheets and fonts, the only build assets the offline shell needs.
+ *
+ * The injected manifest lists every JS chunk and every file in `public/`.
+ * Precaching all of it made a first visit fetch about 600 files and 23 MB in
+ * the background, including design source files no page uses (#3064), and
+ * each of those is a CDN request against the Hobby plan's monthly allowance.
+ * Scripts, images and pages a visitor actually opens are cached at runtime
+ * by `defaultCache` instead. The full manifest still feeds `buildRevision`,
+ * so a JS-only change still refreshes the precached shells.
+ */
+const OFFLINE_SHELL_ASSET =
+  /^\/_next\/static\/(?:css\/[^/]+\.css|media\/[^/]+\.woff2)$/;
+
+/** Build scripts, which the precached shells need to hydrate offline. */
+const OFFLINE_SHELL_SCRIPT = /^\/_next\/static\/.+\.js$/;
+
+const OFFLINE_SHELL_SCRIPTS_CACHE = "offline-shell-scripts";
+
+/**
+ * Saves the scripts the precached shells load, so they hydrate when the
+ * visitor has no connection. Chunk names are content-hashed and only a
+ * rendered page says which ones it needs, so they are read from each shell's
+ * HTML at install rather than precached from the manifest. A failure here
+ * leaves a shell as server-rendered HTML, which still reads correctly for
+ * the fallback page.
+ */
+async function cacheOfflineShellScripts(): Promise<void> {
+  try {
+    const pages = await Promise.all(
+      OFFLINE_SHELL_ROUTES.map(async (route) => (await fetch(route)).text())
+    );
+    const scripts = new Set(
+      pages
+        .flatMap((html) => [...html.matchAll(/src="([^"]+)"/g)])
+        .map((match) => match[1])
+        .filter((src) => OFFLINE_SHELL_SCRIPT.test(src))
+    );
+    await caches.delete(OFFLINE_SHELL_SCRIPTS_CACHE);
+    const cache = await caches.open(OFFLINE_SHELL_SCRIPTS_CACHE);
+    await cache.addAll([...scripts]);
+  } catch {
+    // Tolerated: see above.
+  }
+}
+
+const precacheManifest = injectedManifest
+  .filter((entry) =>
+    OFFLINE_SHELL_ASSET.test(typeof entry === "string" ? entry : entry.url)
+  )
+  .concat(
+    OFFLINE_SHELL_ROUTES.map((url) => ({
+      url,
+      revision: buildRevision,
+    }))
+  );
 
 const serwist = new Serwist({
   precacheEntries: precacheManifest,
@@ -99,6 +158,15 @@ const serwist = new Serwist({
         url.pathname.endsWith(".wasm"),
       handler: new NetworkOnly(),
     },
+    // Offline, a script is served from whichever cache holds it, including
+    // the offline shell's scripts saved at install (below). Online, scripts
+    // fall through to `defaultCache`.
+    {
+      matcher: ({ url }) =>
+        navigator.onLine === false && OFFLINE_SHELL_SCRIPT.test(url.pathname),
+      handler: async ({ request }) =>
+        (await caches.match(request)) ?? fetch(request),
+    },
     ...defaultCache,
   ],
   fallbacks: {
@@ -116,6 +184,10 @@ const serwist = new Serwist({
       },
     ],
   },
+});
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(cacheOfflineShellScripts());
 });
 
 serwist.addEventListeners();

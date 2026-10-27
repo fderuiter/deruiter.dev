@@ -1,0 +1,26 @@
+{
+  "$comment": "Written by scripts/standards-watch.ts refresh: the newest version each source publishes. Do not edit by hand; pins live in profile.ts and bom.ts.",
+  "standards": {
+    "USDM": "4.0.0",
+    "CDASHIG": "2.3",
+    "SDTM": "2.1",
+    "SDTMIG": "3.4",
+    "ADaM": "2.1",
+    "ADaMIG": "1.3",
+    "SDTM-CR": "2.0",
+    "OCCDS": "1.1",
+    "ADaM-CR": "5.0",
+    "Define-XML": "2.1.11",
+    "Dataset-JSON": "1.1",
+    "ARS": "1.0.0",
+    "ODM": "2.0"
+  },
+  "terminology": {
+    "SDTM": "2026-09-25",
+    "ADaM": "2026-09-25",
+    "DDF": "2026-09-25"
+  },
+  "tools": {
+    "cdisc-core": "v1.0.0"
+  }
+}

@@ -823,6 +823,58 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>An override button is useful. It should feel unusual every time you press it. When pressing it has become routine, the thing it overrides is what needs attention.</p>
 `.trim(),
   },
+  {
+    id: "fallback-blog-16",
+    slug: "the-engine-checks-the-standard-not-the-study",
+    title: "A Conformance Engine Checks the Standard, Not the Study",
+    dek: "I ran CDISC's own rules engine over sixteen deliberately messy versions of a study. Its output was unchanged for twelve of them, and that is the right answer to a different question.",
+    pillar: "clinical-data-engineering",
+    tags: "cdisc, sdtm, data-quality, conformance, traceability, ci",
+    published: true,
+    reading_time_minutes: 6,
+    hero_image_url: null,
+    created_at: new Date("2026-10-27T12:00:00.000Z"),
+    updated_at: new Date("2026-10-27T12:00:00.000Z"),
+    body: `
+<h2>Sixteen ways to break a study</h2>
+<p>The <a href="/study-data">study data pipeline</a> on this site has an "Inject an issue" menu. Each of its sixteen scenarios changes the synthetic study in one way real study data gets messy: an adverse event that started on 30 February, a screen failure screened again under the same subject number, a vital sign entered twice, sex recorded as FEMALE instead of F, a lab unit that changes mid-study, a missing baseline, a death on treatment. Each scenario also declares which of the site's own checks should fire and what the derivations should do with the bad value.</p>
+<p>The site's own checks flag or handle all sixteen as declared. That proves little, because they were written alongside the scenarios. So on 26 October I ran CDISC CORE, the open-source engine CDISC publishes for its conformance rules, over the clean run and every scenario, and committed what it found.</p>
+
+<h2>What CORE saw</h2>
+<p>On the clean run, CORE evaluated 430 SDTM rules. 282 passed, 136 did not apply to this study, 9 reported issues, and 3 hit engine errors. Every reported issue was already explained in the pipeline's list of known, justified findings.</p>
+<p>Then the scenarios. For twelve of the sixteen, CORE's output was identical to the clean run. For the other four:</p>
+<ul>
+  <li><strong>Impossible date.</strong> CORE did not say the date was impossible. It said the adverse event had no epoch, which is empty because no epoch can be derived from a day that does not exist. Right row, indirect reason.</li>
+  <li><strong>Rescreened subject.</strong> Caught directly: the subject identifier is no longer unique in demographics, and the supplemental qualifiers are no longer unique per subject.</li>
+  <li><strong>Death during treatment</strong> and <strong>withdrawal before Week 12.</strong> A finding that already existed on the disposition record changed its value. Nothing new was reported.</li>
+</ul>
+<p>The duplicated vital sign, FEMALE on a codelist that admits only F and M, the unit change and the missing baseline produced nothing at all.</p>
+
+<h2>That is not a flaw in CORE</h2>
+<p>CORE answers one question: does this dataset have the shape the standard requires? Are the required variables present, are the keys unique, do references resolve, do values sit where the implementation guide says they go? That question matters, and reviewers ask it first.</p>
+<p>Whether a measurement was entered twice, whether a subject has a baseline, whether a date exists on the calendar: those are questions about this study's data, and a published standard cannot answer them. A dataset can pass every structural rule and still say something false about a patient.</p>
+<p>So a clinical warehouse needs two layers, and neither replaces the other:</p>
+<ul>
+  <li><strong>Conformance to the published standard.</strong> Run the engine the standard's authors publish, pinned to a recorded version, rather than a home-grown copy of their rules. When it and your copy disagree, it is your copy that has to explain itself.</li>
+  <li><strong>Study-specific data quality.</strong> Rules written against the protocol and the data: duplicates, missing baselines, impossible dates, units that drift. This layer is yours to write, and nobody else can.</li>
+</ul>
+<p>The twelve silent scenarios also say which of the site's own rules are worth keeping. A local rule that duplicates a CORE rule is a second implementation to maintain. A local rule that catches what CORE cannot is the whole point of having local rules. The next step of this work retires only the first kind.</p>
+
+<h2>The file that went stale in four minutes</h2>
+<p>CORE needs Python and several minutes per run, so it runs in a CI workflow, and its findings are committed to the repository as a JSON file the site can read with no server compute. Every view in that file carries a SHA-256 fingerprint of the pipeline output CORE ran on. A unit test recomputes the fingerprints and fails when any of them differ, so a stale file fails <code>npm test</code> in seconds, without Python.</p>
+<p>That test paid for itself within the hour. A pull request that added the inclusion and exclusion domain for screen failures merged at 23:51 UTC. The CORE pull request merged at 23:55. Each had passed CI against a main that did not contain the other. Together, the pipeline now produced a domain the recorded findings had never seen, and the test failed for all seventeen views. The fix reran CORE and recorded again: two new findings, both already explained, and five rules that had skipped for want of that domain now passed.</p>
+<p>Without the fingerprint, nothing would have failed. The file would have gone on describing a dataset that no longer existed, and the site would have shown CDISC's verdict on data CDISC never saw.</p>
+
+<h2>What I would take to any warehouse</h2>
+<ul>
+  <li><strong>Plant defects, then see which layer catches each one.</strong> The gaps tell you what your own rules are for.</li>
+  <li><strong>Do not read silence from a conformance engine as clean data.</strong> It means the structure is sound, and nothing more.</li>
+  <li><strong>Record the engine's version with its results.</strong> A finding without the rule set that produced it cannot be reproduced.</li>
+  <li><strong>Treat every committed derived file as a cache.</strong> Store the fingerprint of its inputs beside it and test that the two still match. Two green pull requests are not a green merge when one generates a file from the other's inputs.</li>
+</ul>
+<p>CDISC CORE is CDISC's open-source engine. Running it here does not imply CDISC endorsement.</p>
+`.trim(),
+  },
 ];
 
 /**

@@ -13,6 +13,7 @@ export const serverEnvSchema = z.object({
     .optional()
     .or(z.literal("")),
   DATABASE_URL: z.string().optional(),
+  APP_DATABASE_URL: z.string().optional(),
   DATABASE_URL_UNPOOLED: z.string().optional(),
   DIRECT_URL: z.string().optional(),
   PGHOST: z.string().optional(),

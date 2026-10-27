@@ -13,9 +13,28 @@ export {
 // Configure Neon to use native 'ws' package inside Node.js environments (like Next.js build server)
 neonConfig.webSocketConstructor = ws;
 
+/**
+ * Chooses the connection string the running site uses.
+ *
+ * APP_DATABASE_URL connects as the least-privilege `app_runtime` role, which
+ * may read and write rows but cannot change the schema (#3036). Migrations keep
+ * the owner role through DATABASE_URL_UNPOOLED in prisma.config.ts, and
+ * DATABASE_URL stays the fallback so an environment without the runtime role
+ * keeps working.
+ *
+ * @param source - Validated environment values.
+ * @returns The connection string, or undefined when neither is set.
+ */
+export function resolveRuntimeDatabaseUrl(source: {
+  APP_DATABASE_URL?: string;
+  DATABASE_URL?: string;
+}): string | undefined {
+  return source.APP_DATABASE_URL || source.DATABASE_URL;
+}
+
 // Parse connection string via validated schema
 const env = getEnv();
-const connectionString = env.DATABASE_URL;
+const connectionString = resolveRuntimeDatabaseUrl(env);
 
 let isHealthy = false;
 let healthCheckPromise: Promise<void> | null = null;

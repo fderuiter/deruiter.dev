@@ -18,6 +18,7 @@ export const ENV_KEY_CLASSIFICATION: Readonly<
   Record<string, EnvKeyClassification>
 > = {
   DATABASE_URL: { kind: "secret", secret: true },
+  APP_DATABASE_URL: { kind: "optional", secret: true },
   DATABASE_URL_UNPOOLED: { kind: "derived", secret: true },
   DIRECT_URL: { kind: "derived", secret: true },
   PGHOST: { kind: "derived", secret: false },

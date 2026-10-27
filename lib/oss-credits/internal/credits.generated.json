@@ -9444,7 +9444,7 @@
     },
     {
       "name": "qs",
-      "version": "6.16.0",
+      "version": "6.16.1",
       "license": "BSD-3-Clause",
       "scope": "tooling",
       "direct": false,

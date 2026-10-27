@@ -8,8 +8,6 @@ import {
   IconRefresh,
   IconArrowLeft,
   IconTerminal,
-  IconBrain,
-  IconFileSpreadsheet,
   IconCpu,
   IconDirections,
 } from "@tabler/icons-react";
@@ -47,31 +45,13 @@ export default function OfflineFallbackPage() {
     window.location.reload();
   };
 
+  // The studios load most of their code on demand, so they can't open
+  // offline unless the visitor already used them online (#3064).
   const precachedRoutes = [
     {
       title: "Home Overview",
       path: "/",
       icon: <IconDirections className="w-4 h-4 text-accent" />,
-    },
-    {
-      title: "Formal Proof Studio",
-      path: "/proof",
-      icon: <IconTerminal className="w-4 h-4 text-accent" />,
-    },
-    {
-      title: "Systems Simulator",
-      path: "/simulator",
-      icon: <IconDirections className="w-4 h-4 text-accent" />,
-    },
-    {
-      title: "Neuro 3D CAD",
-      path: "/neuro",
-      icon: <IconBrain className="w-4 h-4 text-accent" />,
-    },
-    {
-      title: "CRF Studio",
-      path: "/crf",
-      icon: <IconFileSpreadsheet className="w-4 h-4 text-accent" />,
     },
     {
       title: "Architecture & Stack",

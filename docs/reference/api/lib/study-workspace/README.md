@@ -137,3 +137,9 @@ Re-exports [StudyWorkspaceSelection](types/interfaces/StudyWorkspaceSelection.md
 ### StudyWorkspaceSource
 
 Re-exports [StudyWorkspaceSource](types/interfaces/StudyWorkspaceSource.md)
+
+***
+
+### TAVR\_DEVICE\_USDM
+
+Re-exports [TAVR_DEVICE_USDM](reference/variables/TAVR_DEVICE_USDM.md)

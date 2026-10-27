@@ -23,3 +23,4 @@ export {
   openStudyWorkspace,
   serializeStudyWorkspace,
 } from "./internal/revision";
+export { TAVR_DEVICE_USDM } from "./reference";

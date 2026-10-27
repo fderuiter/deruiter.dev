@@ -1,0 +1,2839 @@
+{
+  "usdmVersion": "4.0.0",
+  "systemName": "deruiter.dev reference studies",
+  "systemVersion": "1",
+  "study": {
+    "id": null,
+    "name": "DEV-2026-VALVE",
+    "label": "Pivotal IDE Clinical Investigation of the Transcatheter Aortic Valve Replacement (TAVR) System in Symptomatic Severe Aortic Stenosis (ISO 14155 / FDA 21 CFR 812)",
+    "description": null,
+    "extensionAttributes": [],
+    "versions": [
+      {
+        "id": "study_version_1",
+        "versionIdentifier": "2.1",
+        "rationale": "Exported from CRF Studio",
+        "studyIdentifiers": [
+          {
+            "id": "study_identifier_sponsor",
+            "text": "DEV-2026-VALVE",
+            "scopeId": "org_sponsor",
+            "instanceType": "StudyIdentifier"
+          }
+        ],
+        "titles": [
+          {
+            "id": "study_title_official",
+            "text": "Pivotal IDE Clinical Investigation of the Transcatheter Aortic Valve Replacement (TAVR) System in Symptomatic Severe Aortic Stenosis (ISO 14155 / FDA 21 CFR 812)",
+            "type": {
+              "id": "study_title_official__type",
+              "code": "C207616",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Official Study Title",
+              "instanceType": "Code"
+            },
+            "instanceType": "StudyTitle"
+          }
+        ],
+        "organizations": [
+          {
+            "id": "org_sponsor",
+            "name": "Vascular Dynamics MedTech, Inc.",
+            "label": null,
+            "type": {
+              "id": "org_sponsor__type",
+              "code": "C70793",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Clinical Study Sponsor",
+              "instanceType": "Code"
+            },
+            "identifierScheme": "Sponsor",
+            "identifier": "DEV-2026-VALVE",
+            "instanceType": "Organization"
+          }
+        ],
+        "roles": [
+          {
+            "id": "study_role_sponsor",
+            "name": "Sponsor",
+            "label": null,
+            "description": null,
+            "code": {
+              "id": "study_role_sponsor__code",
+              "code": "C70793",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Clinical Study Sponsor",
+              "instanceType": "Code"
+            },
+            "appliesToIds": ["study_version_1"],
+            "organizationIds": ["org_sponsor"],
+            "masking": null,
+            "instanceType": "StudyRole"
+          }
+        ],
+        "studyInterventions": [
+          {
+            "id": "int_dev_tavr",
+            "name": "Vascular Dynamics TAVR System",
+            "label": null,
+            "description": "Self-expanding bioprosthetic aortic valve with a transfemoral delivery catheter.",
+            "role": {
+              "id": "int_dev_tavr__role",
+              "code": "C41161",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Experimental Intervention",
+              "instanceType": "Code"
+            },
+            "type": {
+              "id": "int_dev_tavr__type",
+              "code": "C16830",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Medical Device",
+              "instanceType": "Code"
+            },
+            "codes": [],
+            "extensionAttributes": [],
+            "instanceType": "StudyIntervention"
+          }
+        ],
+        "eligibilityCriterionItems": [
+          {
+            "id": "ec_dev_age__item",
+            "name": "Age",
+            "label": null,
+            "description": null,
+            "text": "Aged 65 to 95 years at consent.",
+            "instanceType": "EligibilityCriterionItem"
+          },
+          {
+            "id": "ec_dev_stenosis__item",
+            "name": "Severe aortic stenosis",
+            "label": null,
+            "description": null,
+            "text": "Severe aortic stenosis: aortic valve area of 1.0 cm2 or less, or a mean gradient of 40 mmHg or more, on echocardiography.",
+            "instanceType": "EligibilityCriterionItem"
+          },
+          {
+            "id": "ec_dev_symptoms__item",
+            "name": "Symptoms",
+            "label": null,
+            "description": null,
+            "text": "NYHA functional class II or higher.",
+            "instanceType": "EligibilityCriterionItem"
+          },
+          {
+            "id": "ec_dev_access__item",
+            "name": "Transfemoral access",
+            "label": null,
+            "description": null,
+            "text": "Iliofemoral anatomy suitable for transfemoral delivery, confirmed by CT angiography.",
+            "instanceType": "EligibilityCriterionItem"
+          },
+          {
+            "id": "ec_dev_bicuspid__item",
+            "name": "Bicuspid valve",
+            "label": null,
+            "description": null,
+            "text": "Congenital bicuspid or unicuspid aortic valve.",
+            "instanceType": "EligibilityCriterionItem"
+          },
+          {
+            "id": "ec_dev_lvef__item",
+            "name": "Left ventricular function",
+            "label": null,
+            "description": null,
+            "text": "Left ventricular ejection fraction below 20%.",
+            "instanceType": "EligibilityCriterionItem"
+          },
+          {
+            "id": "ec_dev_stroke__item",
+            "name": "Recent stroke",
+            "label": null,
+            "description": null,
+            "text": "Stroke or transient ischaemic attack within 6 months before the index procedure.",
+            "instanceType": "EligibilityCriterionItem"
+          }
+        ],
+        "biomedicalConcepts": [
+          {
+            "id": "bc_dm_icdat",
+            "name": "Date Informed Consent Signed",
+            "label": "Date Informed Consent Signed",
+            "synonyms": ["ICDAT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_icdat",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_icdat__code",
+              "standardCode": {
+                "id": "bc_dm_icdat__code_std",
+                "code": "bc_dm_icdat",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Date Informed Consent Signed",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_dm_icyn",
+            "name": "Did subject provide written consent prior to any protocol procedures?",
+            "label": "Did subject provide written consent prior to any protocol procedures?",
+            "synonyms": ["ICYN"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_icyn",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_icyn__code",
+              "standardCode": {
+                "id": "bc_dm_icyn__code_std",
+                "code": "bc_dm_icyn",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Did subject provide written consent prior to any protocol procedures?",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_dm_brthyr",
+            "name": "Year of Birth (YYYY)",
+            "label": "Year of Birth (YYYY)",
+            "synonyms": ["BRTHYR"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_brthyr",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_brthyr__code",
+              "standardCode": {
+                "id": "bc_dm_brthyr__code_std",
+                "code": "bc_dm_brthyr",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Year of Birth (YYYY)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_dm_age",
+            "name": "Age at Screening",
+            "label": "Age at Screening",
+            "synonyms": ["AGE"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_age",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_age__code",
+              "standardCode": {
+                "id": "bc_dm_age__code_std",
+                "code": "bc_dm_age",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Age at Screening",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_dm_sex",
+            "name": "Sex assigned at birth",
+            "label": "Sex assigned at birth",
+            "synonyms": ["SEX"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_sex",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_sex__code",
+              "standardCode": {
+                "id": "bc_dm_sex__code_std",
+                "code": "bc_dm_sex",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Sex assigned at birth",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_dm_race",
+            "name": "Race (Select primary)",
+            "label": "Race (Select primary)",
+            "synonyms": ["RACE"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_race",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_race__code",
+              "standardCode": {
+                "id": "bc_dm_race__code_std",
+                "code": "bc_dm_race",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Race (Select primary)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_dm_ethnic",
+            "name": "Ethnicity",
+            "label": "Ethnicity",
+            "synonyms": ["ETHNIC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_dm_ethnic",
+            "properties": [],
+            "code": {
+              "id": "bc_dm_ethnic__code",
+              "standardCode": {
+                "id": "bc_dm_ethnic__code_std",
+                "code": "bc_dm_ethnic",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Ethnicity",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_diterm",
+            "name": "Device Generic / Investigational Name",
+            "label": "Device Generic / Investigational Name",
+            "synonyms": ["DITERM"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_diterm",
+            "properties": [],
+            "code": {
+              "id": "bc_di_diterm__code",
+              "standardCode": {
+                "id": "bc_di_diterm__code_std",
+                "code": "bc_di_diterm",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Device Generic / Investigational Name",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_dibrn",
+            "name": "Device Trade / Brand Name",
+            "label": "Device Trade / Brand Name",
+            "synonyms": ["DIBRN"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_dibrn",
+            "properties": [],
+            "code": {
+              "id": "bc_di_dibrn__code",
+              "standardCode": {
+                "id": "bc_di_dibrn__code_std",
+                "code": "bc_di_dibrn",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Device Trade / Brand Name",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_dimodn",
+            "name": "Model / Catalog Number",
+            "label": "Model / Catalog Number",
+            "synonyms": ["DIMODN"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_dimodn",
+            "properties": [],
+            "code": {
+              "id": "bc_di_dimodn__code",
+              "standardCode": {
+                "id": "bc_di_dimodn__code_std",
+                "code": "bc_di_dimodn",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Model / Catalog Number",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_dilotn",
+            "name": "Lot / Batch Number",
+            "label": "Lot / Batch Number",
+            "synonyms": ["DILOTN"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_dilotn",
+            "properties": [],
+            "code": {
+              "id": "bc_di_dilotn__code",
+              "standardCode": {
+                "id": "bc_di_dilotn__code_std",
+                "code": "bc_di_dilotn",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Lot / Batch Number",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_disern",
+            "name": "Serial Number (if serialized)",
+            "label": "Serial Number (if serialized)",
+            "synonyms": ["DISERN"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_disern",
+            "properties": [],
+            "code": {
+              "id": "bc_di_disern__code",
+              "standardCode": {
+                "id": "bc_di_disern__code_std",
+                "code": "bc_di_disern",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Serial Number (if serialized)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_diudi",
+            "name": "Unique Device Identifier (UDI / GS1 Barcode)",
+            "label": "Unique Device Identifier (UDI / GS1 Barcode)",
+            "synonyms": ["DIUDI"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_diudi",
+            "properties": [],
+            "code": {
+              "id": "bc_di_diudi__code",
+              "standardCode": {
+                "id": "bc_di_diudi__code_std",
+                "code": "bc_di_diudi",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Unique Device Identifier (UDI / GS1 Barcode)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_disftv",
+            "name": "Firmware / Software Version",
+            "label": "Firmware / Software Version",
+            "synonyms": ["DISFTV"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_disftv",
+            "properties": [],
+            "code": {
+              "id": "bc_di_disftv__code",
+              "standardCode": {
+                "id": "bc_di_disftv__code_std",
+                "code": "bc_di_disftv",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Firmware / Software Version",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_diexpdtc",
+            "name": "Sterilization Expiration Date",
+            "label": "Sterilization Expiration Date",
+            "synonyms": ["DIEXPDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_diexpdtc",
+            "properties": [],
+            "code": {
+              "id": "bc_di_diexpdtc__code",
+              "standardCode": {
+                "id": "bc_di_diexpdtc__code_std",
+                "code": "bc_di_diexpdtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Sterilization Expiration Date",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_di_distat",
+            "name": "Device Lifecycle / Tracking Status",
+            "label": "Device Lifecycle / Tracking Status",
+            "synonyms": ["DISTAT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_di_distat",
+            "properties": [],
+            "code": {
+              "id": "bc_di_distat__code",
+              "standardCode": {
+                "id": "bc_di_distat__code_std",
+                "code": "bc_di_distat",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Device Lifecycle / Tracking Status",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_du_dutest",
+            "name": "Intervention / Surgical Procedure Name",
+            "label": "Intervention / Surgical Procedure Name",
+            "synonyms": ["DUTEST"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_du_dutest",
+            "properties": [],
+            "code": {
+              "id": "bc_du_dutest__code",
+              "standardCode": {
+                "id": "bc_du_dutest__code_std",
+                "code": "bc_du_dutest",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Intervention / Surgical Procedure Name",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_du_duloc",
+            "name": "Anatomical Implantation Site",
+            "label": "Anatomical Implantation Site",
+            "synonyms": ["DULOC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_du_duloc",
+            "properties": [],
+            "code": {
+              "id": "bc_du_duloc__code",
+              "standardCode": {
+                "id": "bc_du_duloc__code_std",
+                "code": "bc_du_duloc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Anatomical Implantation Site",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_du_dustdtc",
+            "name": "Procedure Start Date & Time",
+            "label": "Procedure Start Date & Time",
+            "synonyms": ["DUSTDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_du_dustdtc",
+            "properties": [],
+            "code": {
+              "id": "bc_du_dustdtc__code",
+              "standardCode": {
+                "id": "bc_du_dustdtc__code_std",
+                "code": "bc_du_dustdtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Procedure Start Date & Time",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_du_duendtc",
+            "name": "Procedure End Date & Time",
+            "label": "Procedure End Date & Time",
+            "synonyms": ["DUENDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_du_duendtc",
+            "properties": [],
+            "code": {
+              "id": "bc_du_duendtc__code",
+              "standardCode": {
+                "id": "bc_du_duendtc__code_std",
+                "code": "bc_du_duendtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Procedure End Date & Time",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_du_dudur",
+            "name": "Fluoroscopy / Procedure Time (Minutes)",
+            "label": "Fluoroscopy / Procedure Time (Minutes)",
+            "synonyms": ["DUDUR"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_du_dudur",
+            "properties": [],
+            "code": {
+              "id": "bc_du_dudur__code",
+              "standardCode": {
+                "id": "bc_du_dudur__code_std",
+                "code": "bc_du_dudur",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Fluoroscopy / Procedure Time (Minutes)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_du_duorres",
+            "name": "Overall Acute Procedural & Deployment Outcome",
+            "label": "Overall Acute Procedural & Deployment Outcome",
+            "synonyms": ["DUORRES"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_du_duorres",
+            "properties": [],
+            "code": {
+              "id": "bc_du_duorres__code",
+              "standardCode": {
+                "id": "bc_du_duorres__code_std",
+                "code": "bc_du_duorres",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Overall Acute Procedural & Deployment Outcome",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_determ",
+            "name": "Reported Description of Device Incident / Deficiency",
+            "label": "Reported Description of Device Incident / Deficiency",
+            "synonyms": ["DETERM"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_determ",
+            "properties": [],
+            "code": {
+              "id": "bc_de_determ__code",
+              "standardCode": {
+                "id": "bc_de_determ__code_std",
+                "code": "bc_de_determ",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Reported Description of Device Incident / Deficiency",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_destdtc",
+            "name": "Date & Time Incident Occurred",
+            "label": "Date & Time Incident Occurred",
+            "synonyms": ["DESTDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_destdtc",
+            "properties": [],
+            "code": {
+              "id": "bc_de_destdtc__code",
+              "standardCode": {
+                "id": "bc_de_destdtc__code_std",
+                "code": "bc_de_destdtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Date & Time Incident Occurred",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_dedefic",
+            "name": "Deficiency Classification",
+            "label": "Deficiency Classification",
+            "synonyms": ["DEDEFIC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_dedefic",
+            "properties": [],
+            "code": {
+              "id": "bc_de_dedefic__code",
+              "standardCode": {
+                "id": "bc_de_dedefic__code_std",
+                "code": "bc_de_dedefic",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Deficiency Classification",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_desev",
+            "name": "Clinical Severity of Incident",
+            "label": "Clinical Severity of Incident",
+            "synonyms": ["DESEV"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_desev",
+            "properties": [],
+            "code": {
+              "id": "bc_de_desev__code",
+              "standardCode": {
+                "id": "bc_de_desev__code_std",
+                "code": "bc_de_desev",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Clinical Severity of Incident",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_deser",
+            "name": "Did this lead to Serious Deterioration in Health (SAE)?",
+            "label": "Did this lead to Serious Deterioration in Health (SAE)?",
+            "synonyms": ["DESER"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_deser",
+            "properties": [],
+            "code": {
+              "id": "bc_de_deser__code",
+              "standardCode": {
+                "id": "bc_de_deser__code_std",
+                "code": "bc_de_deser",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Did this lead to Serious Deterioration in Health (SAE)?",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_derel",
+            "name": "Relationship to Medical Device",
+            "label": "Relationship to Medical Device",
+            "synonyms": ["DEREL"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_derel",
+            "properties": [],
+            "code": {
+              "id": "bc_de_derel__code",
+              "standardCode": {
+                "id": "bc_de_derel__code_std",
+                "code": "bc_de_derel",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Relationship to Medical Device",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_deact",
+            "name": "Action Taken with Medical Device",
+            "label": "Action Taken with Medical Device",
+            "synonyms": ["DEACT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_deact",
+            "properties": [],
+            "code": {
+              "id": "bc_de_deact__code",
+              "standardCode": {
+                "id": "bc_de_deact__code_std",
+                "code": "bc_de_deact",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Action Taken with Medical Device",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_de_deout",
+            "name": "Final Outcome of Subject / Device",
+            "label": "Final Outcome of Subject / Device",
+            "synonyms": ["DEOUT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_de_deout",
+            "properties": [],
+            "code": {
+              "id": "bc_de_deout__code",
+              "standardCode": {
+                "id": "bc_de_deout__code_std",
+                "code": "bc_de_deout",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Final Outcome of Subject / Device",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_vsdat",
+            "name": "Assessment Date & Time",
+            "label": "Assessment Date & Time",
+            "synonyms": ["VSDAT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_vsdat",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_vsdat__code",
+              "standardCode": {
+                "id": "bc_vs_vsdat__code_std",
+                "code": "bc_vs_vsdat",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Assessment Date & Time",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_height",
+            "name": "Height",
+            "label": "Height",
+            "synonyms": [],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_height",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_height__code",
+              "standardCode": {
+                "id": "bc_vs_height__code_std",
+                "code": "bc_vs_height",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Height",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_height__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "HEIGHT",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_height__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "cm",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_weight",
+            "name": "Weight",
+            "label": "Weight",
+            "synonyms": [],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_weight",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_weight__code",
+              "standardCode": {
+                "id": "bc_vs_weight__code_std",
+                "code": "bc_vs_weight",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Weight",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_weight__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "WEIGHT",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_weight__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "kg",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_bmi",
+            "name": "Calculated Body Mass Index (BMI)",
+            "label": "Calculated Body Mass Index (BMI)",
+            "synonyms": ["BMI"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_bmi",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_bmi__code",
+              "standardCode": {
+                "id": "bc_vs_bmi__code_std",
+                "code": "bc_vs_bmi",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Calculated Body Mass Index (BMI)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_bmi__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "BMI",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_bmi__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "kg/m²",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_sysbp",
+            "name": "Systolic Blood Pressure",
+            "label": "Systolic Blood Pressure",
+            "synonyms": ["SYSBP"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_sysbp",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_sysbp__code",
+              "standardCode": {
+                "id": "bc_vs_sysbp__code_std",
+                "code": "bc_vs_sysbp",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Systolic Blood Pressure",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_sysbp__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "SYSBP",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_sysbp__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "mmHg",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_diabp",
+            "name": "Diastolic Blood Pressure",
+            "label": "Diastolic Blood Pressure",
+            "synonyms": ["DIABP"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_diabp",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_diabp__code",
+              "standardCode": {
+                "id": "bc_vs_diabp__code_std",
+                "code": "bc_vs_diabp",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Diastolic Blood Pressure",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_diabp__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "DIABP",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_diabp__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "mmHg",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_pulse",
+            "name": "Heart / Pulse Rate",
+            "label": "Heart / Pulse Rate",
+            "synonyms": ["PULSE"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_pulse",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_pulse__code",
+              "standardCode": {
+                "id": "bc_vs_pulse__code_std",
+                "code": "bc_vs_pulse",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Heart / Pulse Rate",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_pulse__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "PULSE",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_pulse__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "beats/min",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_temp",
+            "name": "Body Temperature",
+            "label": "Body Temperature",
+            "synonyms": ["TEMP"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_temp",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_temp__code",
+              "standardCode": {
+                "id": "bc_vs_temp__code_std",
+                "code": "bc_vs_temp",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Body Temperature",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_temp__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "TEMP",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_temp__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "°C",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_vs_resp",
+            "name": "Respiratory Rate",
+            "label": "Respiratory Rate",
+            "synonyms": ["RESP"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_vs_resp",
+            "properties": [],
+            "code": {
+              "id": "bc_vs_resp__code",
+              "standardCode": {
+                "id": "bc_vs_resp__code_std",
+                "code": "bc_vs_resp",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Respiratory Rate",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_vs_resp__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "RESP",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_vs_resp__ext_sdtm_stresu",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-stresu",
+                "valueString": "breaths/min",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmtrt",
+            "name": "Medication / Treatment Name (Trade or Generic)",
+            "label": "Medication / Treatment Name (Trade or Generic)",
+            "synonyms": ["CMTRT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmtrt",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmtrt__code",
+              "standardCode": {
+                "id": "bc_cm_cmtrt__code_std",
+                "code": "bc_cm_cmtrt",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Medication / Treatment Name (Trade or Generic)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmindc",
+            "name": "Indication / Reason for Treatment",
+            "label": "Indication / Reason for Treatment",
+            "synonyms": ["CMINDC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmindc",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmindc__code",
+              "standardCode": {
+                "id": "bc_cm_cmindc__code_std",
+                "code": "bc_cm_cmindc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Indication / Reason for Treatment",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmdose",
+            "name": "Dose per Administration",
+            "label": "Dose per Administration",
+            "synonyms": ["CMDOSE"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmdose",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmdose__code",
+              "standardCode": {
+                "id": "bc_cm_cmdose__code_std",
+                "code": "bc_cm_cmdose",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Dose per Administration",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmdosu",
+            "name": "Dose Unit",
+            "label": "Dose Unit",
+            "synonyms": ["CMDOSU"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmdosu",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmdosu__code",
+              "standardCode": {
+                "id": "bc_cm_cmdosu__code_std",
+                "code": "bc_cm_cmdosu",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Dose Unit",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmroute",
+            "name": "Route of Administration",
+            "label": "Route of Administration",
+            "synonyms": ["CMROUTE"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmroute",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmroute__code",
+              "standardCode": {
+                "id": "bc_cm_cmroute__code_std",
+                "code": "bc_cm_cmroute",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Route of Administration",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmstdtc",
+            "name": "Start Date",
+            "label": "Start Date",
+            "synonyms": ["CMSTDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmstdtc",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmstdtc__code",
+              "standardCode": {
+                "id": "bc_cm_cmstdtc__code_std",
+                "code": "bc_cm_cmstdtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Start Date",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_cm_cmendtc",
+            "name": "Stop Date",
+            "label": "Stop Date",
+            "synonyms": ["CMENDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_cm_cmendtc",
+            "properties": [],
+            "code": {
+              "id": "bc_cm_cmendtc__code",
+              "standardCode": {
+                "id": "bc_cm_cmendtc__code_std",
+                "code": "bc_cm_cmendtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Stop Date",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aeterm",
+            "name": "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
+            "label": "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
+            "synonyms": ["AETERM"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aeterm",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aeterm__code",
+              "standardCode": {
+                "id": "bc_ae_aeterm__code_std",
+                "code": "bc_ae_aeterm",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aestdtc",
+            "name": "Start Date / Time",
+            "label": "Start Date / Time",
+            "synonyms": ["AESTDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aestdtc",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aestdtc__code",
+              "standardCode": {
+                "id": "bc_ae_aestdtc__code_std",
+                "code": "bc_ae_aestdtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Start Date / Time",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aeendtc",
+            "name": "Resolution / End Date",
+            "label": "Resolution / End Date",
+            "synonyms": ["AEENDTC"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aeendtc",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aeendtc__code",
+              "standardCode": {
+                "id": "bc_ae_aeendtc__code_std",
+                "code": "bc_ae_aeendtc",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Resolution / End Date",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aeongo",
+            "name": "Event is Ongoing at time of report",
+            "label": "Event is Ongoing at time of report",
+            "synonyms": ["AEONGO"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aeongo",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aeongo__code",
+              "standardCode": {
+                "id": "bc_ae_aeongo__code_std",
+                "code": "bc_ae_aeongo",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Event is Ongoing at time of report",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aesev",
+            "name": "Severity / CTCAE v5.0 Grade",
+            "label": "Severity / CTCAE v5.0 Grade",
+            "synonyms": ["AESEV"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aesev",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aesev__code",
+              "standardCode": {
+                "id": "bc_ae_aesev__code_std",
+                "code": "bc_ae_aesev",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Severity / CTCAE v5.0 Grade",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aeser",
+            "name": "Is this a Serious Adverse Event (SAE)?",
+            "label": "Is this a Serious Adverse Event (SAE)?",
+            "synonyms": ["AESER"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aeser",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aeser__code",
+              "standardCode": {
+                "id": "bc_ae_aeser__code_std",
+                "code": "bc_ae_aeser",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Is this a Serious Adverse Event (SAE)?",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aerel",
+            "name": "Relationship to Investigational Product",
+            "label": "Relationship to Investigational Product",
+            "synonyms": ["AEREL"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aerel",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aerel__code",
+              "standardCode": {
+                "id": "bc_ae_aerel__code_std",
+                "code": "bc_ae_aerel",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Relationship to Investigational Product",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aeacn",
+            "name": "Action Taken with Study Treatment",
+            "label": "Action Taken with Study Treatment",
+            "synonyms": ["AEACN"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aeacn",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aeacn__code",
+              "standardCode": {
+                "id": "bc_ae_aeacn__code_std",
+                "code": "bc_ae_aeacn",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Action Taken with Study Treatment",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_ae_aeout",
+            "name": "Outcome of Adverse Event",
+            "label": "Outcome of Adverse Event",
+            "synonyms": ["AEOUT"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_ae_aeout",
+            "properties": [],
+            "code": {
+              "id": "bc_ae_aeout__code",
+              "standardCode": {
+                "id": "bc_ae_aeout__code_std",
+                "code": "bc_ae_aeout",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "Outcome of Adverse Event",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [],
+            "instanceType": "BiomedicalConcept"
+          }
+        ],
+        "studyDesigns": [
+          {
+            "id": "design_main",
+            "name": "Pivotal IDE Clinical Investigation of the Transcatheter Aortic Valve Replacement (TAVR) System in Symptomatic Severe Aortic Stenosis (ISO 14155 / FDA 21 CFR 812)",
+            "label": null,
+            "description": null,
+            "studyType": {
+              "id": "design_main__study_type",
+              "code": "C98388",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Interventional Study",
+              "instanceType": "Code"
+            },
+            "studyPhase": {
+              "id": "design_main__phase",
+              "standardCode": {
+                "id": "design_main__phase_std",
+                "code": "C15602",
+                "codeSystem": "http://www.cdisc.org",
+                "codeSystemVersion": "2026-09-25",
+                "decode": "Phase III Trial",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "therapeuticAreas": [],
+            "characteristics": [],
+            "encounters": [
+              {
+                "id": "v_dev_screen",
+                "name": "Screening & Baseline Evaluation (Day -30 to -1)",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_screen__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": null,
+                "nextId": "v_dev_implant"
+              },
+              {
+                "id": "v_dev_implant",
+                "name": "Index Procedure / Implantation (Day 0)",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_implant__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": "v_dev_screen",
+                "nextId": "v_dev_disch"
+              },
+              {
+                "id": "v_dev_disch",
+                "name": "Pre-Discharge Assessment (Day 1 - 3)",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_disch__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": "v_dev_implant",
+                "nextId": "v_dev_30d"
+              },
+              {
+                "id": "v_dev_30d",
+                "name": "30-Day Primary Safety Endpoint Visit",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_30d__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": "v_dev_disch",
+                "nextId": "v_dev_6m"
+              },
+              {
+                "id": "v_dev_6m",
+                "name": "6-Month Hemodynamic Follow-up",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_6m__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": "v_dev_30d",
+                "nextId": "v_dev_1y"
+              },
+              {
+                "id": "v_dev_1y",
+                "name": "1-Year Long-Term Follow-up",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_1y__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": "v_dev_6m",
+                "nextId": "v_dev_unsched"
+              },
+              {
+                "id": "v_dev_unsched",
+                "name": "Unscheduled Event / Repeat Visit",
+                "label": null,
+                "description": null,
+                "type": {
+                  "id": "v_dev_unsched__type",
+                  "code": "C25716",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Visit",
+                  "instanceType": "Code"
+                },
+                "scheduledAtId": null,
+                "environmentalSettings": [],
+                "contactModes": [],
+                "extensionAttributes": [],
+                "instanceType": "Encounter",
+                "previousId": "v_dev_1y",
+                "nextId": null
+              }
+            ],
+            "activities": [
+              {
+                "id": "form_dm_dev",
+                "name": "Subject Demographics & IDE Consent",
+                "label": null,
+                "description": "Subject baseline characteristics, demographics, and consent tracking",
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [
+                  "bc_dm_icdat",
+                  "bc_dm_icyn",
+                  "bc_dm_brthyr",
+                  "bc_dm_age",
+                  "bc_dm_sex",
+                  "bc_dm_race",
+                  "bc_dm_ethnic"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_dm_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "DM",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": null,
+                "nextId": "form_di_dev"
+              },
+              {
+                "id": "form_di_dev",
+                "name": "Medical Device Identification & UDI Traceability",
+                "label": null,
+                "description": "ISO 14155 / FDA 21 CFR 812 medical device identification, model, lot, and Unique Device Identifier (UDI) tracking",
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [
+                  "bc_di_diterm",
+                  "bc_di_dibrn",
+                  "bc_di_dimodn",
+                  "bc_di_dilotn",
+                  "bc_di_disern",
+                  "bc_di_diudi",
+                  "bc_di_disftv",
+                  "bc_di_diexpdtc",
+                  "bc_di_distat"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_di_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "DI",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": "form_dm_dev",
+                "nextId": "form_du_dev"
+              },
+              {
+                "id": "form_du_dev",
+                "name": "Procedural Implantation & Device In-Use",
+                "label": null,
+                "description": "Intra-procedural delivery, anatomical site access, deployment outcome, and fluoroscopy duration",
+                "childIds": [],
+                "definedProcedures": [
+                  {
+                    "id": "form_du_dev__admin_int_dev_tavr",
+                    "name": "Administer Vascular Dynamics TAVR System",
+                    "label": null,
+                    "description": null,
+                    "procedureType": "Transcatheter Aortic Valve Implantation",
+                    "code": {
+                      "id": "form_du_dev__admin_int_dev_tavr__code",
+                      "code": "C100022",
+                      "codeSystem": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+                      "codeSystemVersion": "26.09d",
+                      "decode": "Transcatheter Aortic Valve Implantation",
+                      "instanceType": "Code"
+                    },
+                    "studyInterventionId": "int_dev_tavr",
+                    "instanceType": "Procedure"
+                  }
+                ],
+                "biomedicalConceptIds": [
+                  "bc_du_dutest",
+                  "bc_du_duloc",
+                  "bc_du_dustdtc",
+                  "bc_du_duendtc",
+                  "bc_du_dudur",
+                  "bc_du_duorres"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_du_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "DU",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": "form_di_dev",
+                "nextId": "form_de_dev"
+              },
+              {
+                "id": "form_de_dev",
+                "name": "Device Deficiencies & Adverse Incidents Log",
+                "label": null,
+                "description": "Continuous log for ISO 14155 / FDA 21 CFR 812 device malfunctions, use errors, and serious adverse incidents",
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [
+                  "bc_de_determ",
+                  "bc_de_destdtc",
+                  "bc_de_dedefic",
+                  "bc_de_desev",
+                  "bc_de_deser",
+                  "bc_de_derel",
+                  "bc_de_deact",
+                  "bc_de_deout"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_de_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "DE",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": "form_du_dev",
+                "nextId": "form_vs_dev"
+              },
+              {
+                "id": "form_vs_dev",
+                "name": "Hemodynamics & Vital Signs Assessment",
+                "label": null,
+                "description": "Sitting blood pressure, pulse, temperature, height, weight, and automated BMI",
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [
+                  "bc_vs_vsdat",
+                  "bc_vs_height",
+                  "bc_vs_weight",
+                  "bc_vs_bmi",
+                  "bc_vs_sysbp",
+                  "bc_vs_diabp",
+                  "bc_vs_pulse",
+                  "bc_vs_temp",
+                  "bc_vs_resp"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_vs_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "VS",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": "form_de_dev",
+                "nextId": "form_cm_dev"
+              },
+              {
+                "id": "form_cm_dev",
+                "name": "Concomitant Antiplatelet / Anticoagulant Therapy",
+                "label": null,
+                "description": "Log of prescription drugs, over-the-counter medications, and supplements",
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [
+                  "bc_cm_cmtrt",
+                  "bc_cm_cmindc",
+                  "bc_cm_cmdose",
+                  "bc_cm_cmdosu",
+                  "bc_cm_cmroute",
+                  "bc_cm_cmstdtc",
+                  "bc_cm_cmendtc"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_cm_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "CM",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": "form_vs_dev",
+                "nextId": "form_ae_dev"
+              },
+              {
+                "id": "form_ae_dev",
+                "name": "Adverse Events & Serious Complications Log",
+                "label": null,
+                "description": "Continuous log form for capturing adverse events, CTCAE grading, seriousness, and attribution",
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [
+                  "bc_ae_aeterm",
+                  "bc_ae_aestdtc",
+                  "bc_ae_aeendtc",
+                  "bc_ae_aeongo",
+                  "bc_ae_aesev",
+                  "bc_ae_aeser",
+                  "bc_ae_aerel",
+                  "bc_ae_aeacn",
+                  "bc_ae_aeout"
+                ],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "form_ae_dev__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "AE",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity",
+                "previousId": "form_cm_dev",
+                "nextId": null
+              },
+              {
+                "id": "act_dev_cec",
+                "name": "Clinical events committee adjudication",
+                "label": null,
+                "description": "Independent adjudication of each suspected VARC-3 composite event against source documents.",
+                "previousId": null,
+                "nextId": null,
+                "childIds": [],
+                "definedProcedures": [],
+                "biomedicalConceptIds": [],
+                "bcCategoryIds": [],
+                "bcSurrogateIds": [],
+                "timelineId": null,
+                "extensionAttributes": [
+                  {
+                    "id": "act_dev_cec__ext_sdtm_domain",
+                    "url": "https://deruiter.dev/usdm/extensions/sdtm-domain",
+                    "valueString": "CE",
+                    "instanceType": "ExtensionAttribute"
+                  }
+                ],
+                "instanceType": "Activity"
+              }
+            ],
+            "arms": [
+              {
+                "id": "arm_dev_tavr",
+                "name": "TAVR System",
+                "label": null,
+                "description": "Transfemoral implantation of the investigational transcatheter aortic valve",
+                "type": {
+                  "id": "arm_dev_tavr__type",
+                  "code": "C174266",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Experimental Arm",
+                  "instanceType": "Code"
+                },
+                "dataOriginDescription": "Data collected in this study",
+                "dataOriginType": {
+                  "id": "arm_dev_tavr__origin",
+                  "code": "C188866",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Data Generated Within Study",
+                  "instanceType": "Code"
+                },
+                "populationIds": [],
+                "extensionAttributes": [],
+                "instanceType": "StudyArm"
+              }
+            ],
+            "studyCells": [
+              {
+                "id": "arm_dev_tavr__ep_dev_scrn__cell",
+                "armId": "arm_dev_tavr",
+                "epochId": "ep_dev_scrn",
+                "elementIds": ["arm_dev_tavr__ep_dev_scrn__element"],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "arm_dev_tavr__ep_dev_proc__cell",
+                "armId": "arm_dev_tavr",
+                "epochId": "ep_dev_proc",
+                "elementIds": ["arm_dev_tavr__ep_dev_proc__element"],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "arm_dev_tavr__ep_dev_fup__cell",
+                "armId": "arm_dev_tavr",
+                "epochId": "ep_dev_fup",
+                "elementIds": ["arm_dev_tavr__ep_dev_fup__element"],
+                "instanceType": "StudyCell"
+              }
+            ],
+            "rationale": "Study design exported from CRF Studio",
+            "epochs": [
+              {
+                "id": "ep_dev_scrn",
+                "name": "Screening Epoch",
+                "label": null,
+                "description": "Heart team evaluation, imaging and eligibility",
+                "type": {
+                  "id": "ep_dev_scrn__type",
+                  "code": "C202487",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Screening",
+                  "instanceType": "Code"
+                },
+                "extensionAttributes": [],
+                "instanceType": "StudyEpoch",
+                "previousId": null,
+                "nextId": "ep_dev_proc"
+              },
+              {
+                "id": "ep_dev_proc",
+                "name": "Index Procedure Epoch",
+                "label": null,
+                "description": "Transcatheter implantation of the study valve",
+                "type": {
+                  "id": "ep_dev_proc__type",
+                  "code": "C101526",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Treatment",
+                  "instanceType": "Code"
+                },
+                "extensionAttributes": [],
+                "instanceType": "StudyEpoch",
+                "previousId": "ep_dev_scrn",
+                "nextId": "ep_dev_fup"
+              },
+              {
+                "id": "ep_dev_fup",
+                "name": "Follow-Up Epoch",
+                "label": null,
+                "description": "Discharge, 30-day, 6-month and 1-year assessments",
+                "type": {
+                  "id": "ep_dev_fup__type",
+                  "code": "C202578",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Follow-Up",
+                  "instanceType": "Code"
+                },
+                "extensionAttributes": [],
+                "instanceType": "StudyEpoch",
+                "previousId": "ep_dev_proc",
+                "nextId": null
+              }
+            ],
+            "elements": [
+              {
+                "id": "arm_dev_tavr__ep_dev_scrn__element",
+                "name": "TAVR System - Screening Epoch",
+                "label": null,
+                "description": null,
+                "studyInterventionIds": [],
+                "instanceType": "StudyElement"
+              },
+              {
+                "id": "arm_dev_tavr__ep_dev_proc__element",
+                "name": "TAVR System - Index Procedure Epoch",
+                "label": null,
+                "description": null,
+                "studyInterventionIds": ["int_dev_tavr"],
+                "instanceType": "StudyElement"
+              },
+              {
+                "id": "arm_dev_tavr__ep_dev_fup__element",
+                "name": "TAVR System - Follow-Up Epoch",
+                "label": null,
+                "description": null,
+                "studyInterventionIds": [],
+                "instanceType": "StudyElement"
+              }
+            ],
+            "estimands": [
+              {
+                "id": "estimand_primary",
+                "name": "Primary estimand",
+                "label": null,
+                "description": "Rate of the VARC-3 early safety composite within 30 days of the index procedure in participants in whom implantation was attempted.",
+                "populationSummary": "Proportion of participants with a composite event within 30 days, with a two-sided 95% exact (Clopper-Pearson) confidence interval; the performance goal is met when the upper limit is below the fictional performance goal of 20%.",
+                "analysisPopulationId": "pop_attempted",
+                "interventionIds": ["int_dev_tavr"],
+                "variableOfInterestId": "ep_dev_varc",
+                "intercurrentEvents": [
+                  {
+                    "id": "ice_death",
+                    "name": "Death before day 30",
+                    "label": null,
+                    "description": null,
+                    "text": "Death from any cause within 30 days of the index procedure.",
+                    "strategy": "Composite variable",
+                    "instanceType": "IntercurrentEvent"
+                  },
+                  {
+                    "id": "ice_not_implanted",
+                    "name": "Valve not implanted",
+                    "label": null,
+                    "description": null,
+                    "text": "The procedure is attempted but no study valve remains in place at its end, including conversion to surgery.",
+                    "strategy": "Treatment policy",
+                    "instanceType": "IntercurrentEvent"
+                  },
+                  {
+                    "id": "ice_missed_visit",
+                    "name": "No 30-day assessment",
+                    "label": null,
+                    "description": null,
+                    "text": "The participant has no 30-day visit and no composite event before withdrawal or loss to follow-up.",
+                    "strategy": "Hypothetical",
+                    "instanceType": "IntercurrentEvent"
+                  }
+                ],
+                "instanceType": "Estimand"
+              }
+            ],
+            "studyInterventionIds": ["int_dev_tavr"],
+            "objectives": [
+              {
+                "id": "obj_dev_safety",
+                "name": "Primary safety objective",
+                "label": null,
+                "description": null,
+                "text": "To evaluate the early safety of the TAVR System.",
+                "level": {
+                  "id": "obj_dev_safety__level",
+                  "code": "C85826",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Primary Objective",
+                  "instanceType": "Code"
+                },
+                "endpoints": [
+                  {
+                    "id": "ep_dev_varc",
+                    "name": "VARC-3 early safety composite",
+                    "label": null,
+                    "description": null,
+                    "text": "VARC-3 early safety composite at 30 days: all-cause death, any stroke, VARC type 2 to 4 bleeding, major vascular, access-related or cardiac structural complication, acute kidney injury stage 3 or 4, moderate or severe aortic regurgitation, new permanent pacemaker due to procedure-related conduction disturbance, or surgery or intervention related to the device. Events are adjudicated by the clinical events committee.",
+                    "purpose": "Safety",
+                    "level": {
+                      "id": "ep_dev_varc__level",
+                      "code": "C94496",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Primary Endpoint",
+                      "instanceType": "Code"
+                    },
+                    "instanceType": "Endpoint"
+                  }
+                ],
+                "instanceType": "Objective"
+              },
+              {
+                "id": "obj_dev_performance",
+                "name": "Valve performance objective",
+                "label": null,
+                "description": null,
+                "text": "To evaluate the haemodynamic performance of the study valve over one year.",
+                "level": {
+                  "id": "obj_dev_performance__level",
+                  "code": "C85827",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Secondary Objective",
+                  "instanceType": "Code"
+                },
+                "endpoints": [
+                  {
+                    "id": "ep_dev_gradient",
+                    "name": "Mean gradient and valve area at 1 year",
+                    "label": null,
+                    "description": null,
+                    "text": "Mean transvalvular gradient and effective orifice area on echocardiography at 1 year.",
+                    "purpose": "Efficacy",
+                    "level": {
+                      "id": "ep_dev_gradient__level",
+                      "code": "C139173",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Secondary Endpoint",
+                      "instanceType": "Code"
+                    },
+                    "instanceType": "Endpoint"
+                  }
+                ],
+                "instanceType": "Objective"
+              }
+            ],
+            "population": {
+              "id": "design_main__population",
+              "name": "Study population",
+              "label": null,
+              "description": "Adults aged 65 or older with symptomatic severe aortic stenosis whose heart team considers them suitable for transfemoral TAVR.",
+              "includesHealthySubjects": false,
+              "plannedSex": [
+                {
+                  "id": "design_main__population__sex_female",
+                  "code": "C16576",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Female",
+                  "instanceType": "Code"
+                },
+                {
+                  "id": "design_main__population__sex_male",
+                  "code": "C20197",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Male",
+                  "instanceType": "Code"
+                }
+              ],
+              "plannedAge": {
+                "id": "design_main__population__age",
+                "minValue": {
+                  "id": "design_main__population__age_min",
+                  "value": 65,
+                  "unit": {
+                    "id": "design_main__population__age_min_unit",
+                    "standardCode": {
+                      "id": "design_main__population__age_min_unit_std",
+                      "code": "C29848",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Year",
+                      "instanceType": "Code"
+                    },
+                    "standardCodeAliases": [],
+                    "instanceType": "AliasCode"
+                  },
+                  "instanceType": "Quantity"
+                },
+                "maxValue": {
+                  "id": "design_main__population__age_max",
+                  "value": 95,
+                  "unit": {
+                    "id": "design_main__population__age_max_unit",
+                    "standardCode": {
+                      "id": "design_main__population__age_max_unit_std",
+                      "code": "C29848",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Year",
+                      "instanceType": "Code"
+                    },
+                    "standardCodeAliases": [],
+                    "instanceType": "AliasCode"
+                  },
+                  "instanceType": "Quantity"
+                },
+                "isApproximate": false,
+                "instanceType": "Range"
+              },
+              "criterionIds": [
+                "ec_dev_age",
+                "ec_dev_stenosis",
+                "ec_dev_symptoms",
+                "ec_dev_access",
+                "ec_dev_bicuspid",
+                "ec_dev_lvef",
+                "ec_dev_stroke"
+              ],
+              "cohorts": [],
+              "extensionAttributes": [],
+              "instanceType": "StudyDesignPopulation"
+            },
+            "scheduleTimelines": [
+              {
+                "id": "design_main__timeline",
+                "name": "Main timeline",
+                "label": null,
+                "description": "Schedule of activities exported from CRF Studio",
+                "mainTimeline": true,
+                "entryCondition": "Subject has given informed consent",
+                "entryId": "v_dev_screen__sai",
+                "exits": [
+                  {
+                    "id": "design_main__timeline_exit",
+                    "instanceType": "ScheduleTimelineExit"
+                  }
+                ],
+                "timings": [
+                  {
+                    "id": "v_dev_screen__timing",
+                    "name": "Timing for Screening & Baseline Evaluation (Day -30 to -1)",
+                    "label": null,
+                    "description": null,
+                    "type": {
+                      "id": "v_dev_screen__timing_type",
+                      "code": "C201357",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Before",
+                      "instanceType": "Code"
+                    },
+                    "value": "P1D",
+                    "valueLabel": "Day -1",
+                    "relativeToFrom": {
+                      "id": "v_dev_screen__timing_rel",
+                      "code": "C201355",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Start to Start",
+                      "instanceType": "Code"
+                    },
+                    "relativeFromScheduledInstanceId": "v_dev_screen__sai",
+                    "relativeToScheduledInstanceId": "v_dev_implant__sai",
+                    "windowLower": "P29D",
+                    "windowUpper": "P0D",
+                    "windowLabel": "-29/+0 days",
+                    "instanceType": "Timing"
+                  },
+                  {
+                    "id": "v_dev_implant__timing",
+                    "name": "Timing for Index Procedure / Implantation (Day 0)",
+                    "label": null,
+                    "description": null,
+                    "type": {
+                      "id": "v_dev_implant__timing_type",
+                      "code": "C201358",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Fixed Reference",
+                      "instanceType": "Code"
+                    },
+                    "value": "P0D",
+                    "valueLabel": "Day 0",
+                    "relativeToFrom": {
+                      "id": "v_dev_implant__timing_rel",
+                      "code": "C201355",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Start to Start",
+                      "instanceType": "Code"
+                    },
+                    "relativeFromScheduledInstanceId": "v_dev_implant__sai",
+                    "relativeToScheduledInstanceId": null,
+                    "windowLower": null,
+                    "windowUpper": null,
+                    "windowLabel": null,
+                    "instanceType": "Timing"
+                  },
+                  {
+                    "id": "v_dev_disch__timing",
+                    "name": "Timing for Pre-Discharge Assessment (Day 1 - 3)",
+                    "label": null,
+                    "description": null,
+                    "type": {
+                      "id": "v_dev_disch__timing_type",
+                      "code": "C201356",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "After",
+                      "instanceType": "Code"
+                    },
+                    "value": "P2D",
+                    "valueLabel": "Day 3",
+                    "relativeToFrom": {
+                      "id": "v_dev_disch__timing_rel",
+                      "code": "C201355",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Start to Start",
+                      "instanceType": "Code"
+                    },
+                    "relativeFromScheduledInstanceId": "v_dev_disch__sai",
+                    "relativeToScheduledInstanceId": "v_dev_implant__sai",
+                    "windowLower": "P2D",
+                    "windowUpper": "P1D",
+                    "windowLabel": "-2/+1 days",
+                    "instanceType": "Timing"
+                  },
+                  {
+                    "id": "v_dev_30d__timing",
+                    "name": "Timing for 30-Day Primary Safety Endpoint Visit",
+                    "label": null,
+                    "description": null,
+                    "type": {
+                      "id": "v_dev_30d__timing_type",
+                      "code": "C201356",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "After",
+                      "instanceType": "Code"
+                    },
+                    "value": "P29D",
+                    "valueLabel": "Day 30",
+                    "relativeToFrom": {
+                      "id": "v_dev_30d__timing_rel",
+                      "code": "C201355",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Start to Start",
+                      "instanceType": "Code"
+                    },
+                    "relativeFromScheduledInstanceId": "v_dev_30d__sai",
+                    "relativeToScheduledInstanceId": "v_dev_implant__sai",
+                    "windowLower": "P7D",
+                    "windowUpper": "P7D",
+                    "windowLabel": "-7/+7 days",
+                    "instanceType": "Timing"
+                  },
+                  {
+                    "id": "v_dev_6m__timing",
+                    "name": "Timing for 6-Month Hemodynamic Follow-up",
+                    "label": null,
+                    "description": null,
+                    "type": {
+                      "id": "v_dev_6m__timing_type",
+                      "code": "C201356",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "After",
+                      "instanceType": "Code"
+                    },
+                    "value": "P179D",
+                    "valueLabel": "Day 180",
+                    "relativeToFrom": {
+                      "id": "v_dev_6m__timing_rel",
+                      "code": "C201355",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Start to Start",
+                      "instanceType": "Code"
+                    },
+                    "relativeFromScheduledInstanceId": "v_dev_6m__sai",
+                    "relativeToScheduledInstanceId": "v_dev_implant__sai",
+                    "windowLower": "P14D",
+                    "windowUpper": "P14D",
+                    "windowLabel": "-14/+14 days",
+                    "instanceType": "Timing"
+                  },
+                  {
+                    "id": "v_dev_1y__timing",
+                    "name": "Timing for 1-Year Long-Term Follow-up",
+                    "label": null,
+                    "description": null,
+                    "type": {
+                      "id": "v_dev_1y__timing_type",
+                      "code": "C201356",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "After",
+                      "instanceType": "Code"
+                    },
+                    "value": "P364D",
+                    "valueLabel": "Day 365",
+                    "relativeToFrom": {
+                      "id": "v_dev_1y__timing_rel",
+                      "code": "C201355",
+                      "codeSystem": "http://www.cdisc.org",
+                      "codeSystemVersion": "2026-09-25",
+                      "decode": "Start to Start",
+                      "instanceType": "Code"
+                    },
+                    "relativeFromScheduledInstanceId": "v_dev_1y__sai",
+                    "relativeToScheduledInstanceId": "v_dev_implant__sai",
+                    "windowLower": "P30D",
+                    "windowUpper": "P30D",
+                    "windowLabel": "-30/+30 days",
+                    "instanceType": "Timing"
+                  }
+                ],
+                "plannedDuration": {
+                  "id": "design_main__timeline_duration",
+                  "text": "366 days",
+                  "quantity": {
+                    "id": "design_main__timeline_duration_quantity",
+                    "value": 366,
+                    "unit": {
+                      "id": "design_main__timeline_duration_unit",
+                      "standardCode": {
+                        "id": "design_main__timeline_duration_unit_std",
+                        "code": "C25301",
+                        "codeSystem": "http://www.cdisc.org",
+                        "codeSystemVersion": "2026-09-25",
+                        "decode": "Day",
+                        "instanceType": "Code"
+                      },
+                      "standardCodeAliases": [],
+                      "instanceType": "AliasCode"
+                    },
+                    "instanceType": "Quantity"
+                  },
+                  "durationWillVary": false,
+                  "reasonDurationWillVary": null,
+                  "instanceType": "Duration"
+                },
+                "instances": [
+                  {
+                    "id": "v_dev_screen__sai",
+                    "name": "Screening & Baseline Evaluation (Day -30 to -1)",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": "v_dev_implant__sai",
+                    "epochId": "ep_dev_scrn",
+                    "timelineId": null,
+                    "timelineExitId": null,
+                    "activityIds": [
+                      "form_dm_dev",
+                      "form_vs_dev",
+                      "form_cm_dev"
+                    ],
+                    "encounterId": "v_dev_screen",
+                    "instanceType": "ScheduledActivityInstance"
+                  },
+                  {
+                    "id": "v_dev_implant__sai",
+                    "name": "Index Procedure / Implantation (Day 0)",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": "v_dev_disch__sai",
+                    "epochId": "ep_dev_proc",
+                    "timelineId": null,
+                    "timelineExitId": null,
+                    "activityIds": [
+                      "form_di_dev",
+                      "form_du_dev",
+                      "form_vs_dev",
+                      "form_de_dev",
+                      "form_ae_dev"
+                    ],
+                    "encounterId": "v_dev_implant",
+                    "instanceType": "ScheduledActivityInstance"
+                  },
+                  {
+                    "id": "v_dev_disch__sai",
+                    "name": "Pre-Discharge Assessment (Day 1 - 3)",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": "v_dev_30d__sai",
+                    "epochId": "ep_dev_fup",
+                    "timelineId": null,
+                    "timelineExitId": null,
+                    "activityIds": [
+                      "form_vs_dev",
+                      "form_cm_dev",
+                      "form_de_dev",
+                      "form_ae_dev"
+                    ],
+                    "encounterId": "v_dev_disch",
+                    "instanceType": "ScheduledActivityInstance"
+                  },
+                  {
+                    "id": "v_dev_30d__sai",
+                    "name": "30-Day Primary Safety Endpoint Visit",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": "v_dev_6m__sai",
+                    "epochId": "ep_dev_fup",
+                    "timelineId": null,
+                    "timelineExitId": null,
+                    "activityIds": [
+                      "form_vs_dev",
+                      "form_cm_dev",
+                      "form_de_dev",
+                      "form_ae_dev",
+                      "act_dev_cec"
+                    ],
+                    "encounterId": "v_dev_30d",
+                    "instanceType": "ScheduledActivityInstance"
+                  },
+                  {
+                    "id": "v_dev_6m__sai",
+                    "name": "6-Month Hemodynamic Follow-up",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": "v_dev_1y__sai",
+                    "epochId": "ep_dev_fup",
+                    "timelineId": null,
+                    "timelineExitId": null,
+                    "activityIds": ["form_vs_dev", "form_cm_dev"],
+                    "encounterId": "v_dev_6m",
+                    "instanceType": "ScheduledActivityInstance"
+                  },
+                  {
+                    "id": "v_dev_1y__sai",
+                    "name": "1-Year Long-Term Follow-up",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": "v_dev_unsched__sai",
+                    "epochId": "ep_dev_fup",
+                    "timelineId": null,
+                    "timelineExitId": null,
+                    "activityIds": ["form_vs_dev", "form_cm_dev"],
+                    "encounterId": "v_dev_1y",
+                    "instanceType": "ScheduledActivityInstance"
+                  },
+                  {
+                    "id": "v_dev_unsched__sai",
+                    "name": "Unscheduled Event / Repeat Visit",
+                    "label": null,
+                    "description": null,
+                    "defaultConditionId": null,
+                    "epochId": "ep_dev_fup",
+                    "timelineId": null,
+                    "timelineExitId": "design_main__timeline_exit",
+                    "activityIds": ["form_vs_dev", "form_cm_dev"],
+                    "encounterId": "v_dev_unsched",
+                    "instanceType": "ScheduledActivityInstance"
+                  }
+                ],
+                "instanceType": "ScheduleTimeline"
+              }
+            ],
+            "eligibilityCriteria": [
+              {
+                "id": "ec_dev_age",
+                "name": "INC01",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_age__category",
+                  "code": "C25532",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Inclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "01",
+                "criterionItemId": "ec_dev_age__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": null,
+                "nextId": "ec_dev_stenosis"
+              },
+              {
+                "id": "ec_dev_stenosis",
+                "name": "INC02",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_stenosis__category",
+                  "code": "C25532",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Inclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "02",
+                "criterionItemId": "ec_dev_stenosis__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": "ec_dev_age",
+                "nextId": "ec_dev_symptoms"
+              },
+              {
+                "id": "ec_dev_symptoms",
+                "name": "INC03",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_symptoms__category",
+                  "code": "C25532",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Inclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "03",
+                "criterionItemId": "ec_dev_symptoms__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": "ec_dev_stenosis",
+                "nextId": "ec_dev_access"
+              },
+              {
+                "id": "ec_dev_access",
+                "name": "INC04",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_access__category",
+                  "code": "C25532",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Inclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "04",
+                "criterionItemId": "ec_dev_access__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": "ec_dev_symptoms",
+                "nextId": "ec_dev_bicuspid"
+              },
+              {
+                "id": "ec_dev_bicuspid",
+                "name": "EXC01",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_bicuspid__category",
+                  "code": "C25370",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Exclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "01",
+                "criterionItemId": "ec_dev_bicuspid__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": "ec_dev_access",
+                "nextId": "ec_dev_lvef"
+              },
+              {
+                "id": "ec_dev_lvef",
+                "name": "EXC02",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_lvef__category",
+                  "code": "C25370",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Exclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "02",
+                "criterionItemId": "ec_dev_lvef__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": "ec_dev_bicuspid",
+                "nextId": "ec_dev_stroke"
+              },
+              {
+                "id": "ec_dev_stroke",
+                "name": "EXC03",
+                "label": null,
+                "description": null,
+                "category": {
+                  "id": "ec_dev_stroke__category",
+                  "code": "C25370",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2026-09-25",
+                  "decode": "Exclusion Criteria",
+                  "instanceType": "Code"
+                },
+                "identifier": "03",
+                "criterionItemId": "ec_dev_stroke__item",
+                "instanceType": "EligibilityCriterion",
+                "previousId": "ec_dev_lvef",
+                "nextId": null
+              }
+            ],
+            "analysisPopulations": [
+              {
+                "id": "pop_attempted",
+                "name": "Attempted implant population",
+                "label": "AIP",
+                "description": null,
+                "text": "All enrolled participants who entered the procedure room and in whom vascular access for the study procedure was attempted.",
+                "subsetOfIds": [],
+                "instanceType": "AnalysisPopulation"
+              },
+              {
+                "id": "pop_implanted",
+                "name": "Implanted population",
+                "label": "IMP",
+                "description": null,
+                "text": "Attempted implant participants in whom a study valve was deployed and remained in place at the end of the index procedure.",
+                "subsetOfIds": ["pop_attempted"],
+                "instanceType": "AnalysisPopulation"
+              },
+              {
+                "id": "pop_30d_evaluable",
+                "name": "30-day evaluable population",
+                "label": "EVAL30",
+                "description": null,
+                "text": "Attempted implant participants who completed the 30-day visit or had a primary composite event before day 30.",
+                "subsetOfIds": ["pop_attempted"],
+                "instanceType": "AnalysisPopulation"
+              }
+            ],
+            "model": {
+              "id": "design_main__model",
+              "code": "C82640",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2026-09-25",
+              "decode": "Single Group Study",
+              "instanceType": "Code"
+            },
+            "instanceType": "InterventionalStudyDesign"
+          }
+        ],
+        "instanceType": "StudyVersion",
+        "medicalDevices": [
+          {
+            "id": "device_tavr",
+            "name": "Vascular Dynamics TAVR System",
+            "label": "VD-TAVR",
+            "description": "Fictional self-expanding bioprosthetic aortic valve (26 mm and 29 mm) with a transfemoral delivery catheter. Individual units and their UDIs are tracked in the device specification, not here.",
+            "hardwareVersion": "Model VD-26 / VD-29, delivery catheter DC-18F",
+            "softwareVersion": null,
+            "embeddedProductId": null,
+            "sourcing": null,
+            "identifiers": [],
+            "notes": [],
+            "extensionAttributes": [],
+            "instanceType": "MedicalDevice"
+          }
+        ]
+      }
+    ],
+    "instanceType": "Study"
+  }
+}

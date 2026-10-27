@@ -661,6 +661,7 @@
 - [lib/study-workspace](lib/study-workspace/README.md)
 - [lib/study-workspace/internal/import](lib/study-workspace/internal/import/README.md)
 - [lib/study-workspace/internal/revision](lib/study-workspace/internal/revision/README.md)
+- [lib/study-workspace/reference](lib/study-workspace/reference/README.md)
 - [lib/study-workspace/types](lib/study-workspace/types/README.md)
 - [lib/telemetry](lib/telemetry/README.md)
 - [lib/telemetry/outbox](lib/telemetry/outbox/README.md)

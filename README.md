@@ -1,11 +1,19 @@
-# deruiter.dev
+[![deruiter.dev: clinical data tools, logic studios and twelve arcade cabinets. Most of it runs in your browser.](.github/assets/readme/banner.svg)](https://deruiter.dev)
 
 Fred de Ruiter's portfolio site. Most of the work on it runs in your browser, so you can try it instead of reading about it.
 
 [![CI](https://github.com/fderuiter/deruiter.dev/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fderuiter/deruiter.dev/actions/workflows/ci.yml?query=branch%3Amain)
 [![CDISC CORE](https://github.com/fderuiter/deruiter.dev/actions/workflows/study-data-core.yml/badge.svg?branch=main)](https://github.com/fderuiter/deruiter.dev/actions/workflows/study-data-core.yml?query=branch%3Amain)
-[![Latest release](https://img.shields.io/github/v/release/fderuiter/deruiter.dev?label=release)](https://github.com/fderuiter/deruiter.dev/releases/latest)
+[![Synthetic probes](https://github.com/fderuiter/deruiter.dev/actions/workflows/synthetic-probes.yml/badge.svg?branch=main)](https://github.com/fderuiter/deruiter.dev/actions/workflows/synthetic-probes.yml?query=branch%3Amain)
+[![Weekly Train](https://github.com/fderuiter/deruiter.dev/actions/workflows/weekly-train.yml/badge.svg)](https://github.com/fderuiter/deruiter.dev/actions/workflows/weekly-train.yml)
+[![Latest release](https://img.shields.io/github/v/release/fderuiter/deruiter.dev?label=release&color=f59e0b)](https://github.com/fderuiter/deruiter.dev/releases/latest)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+[![Next.js](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/next?label=Next.js&logo=nextdotjs&color=18181b)](https://nextjs.org)
+[![React](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/react?label=React&logo=react&color=18181b)](https://react.dev)
+[![TypeScript](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/dev/typescript?label=TypeScript&logo=typescript&color=18181b)](https://www.typescriptlang.org)
+[![Node.js](https://img.shields.io/github/package-json/engines/node/fderuiter/deruiter.dev?label=Node.js&logo=nodedotjs&color=18181b)](https://nodejs.org)
+[![WCAG 2.1 AA](https://img.shields.io/badge/WCAG_2.1-AA_target-10b981)](#accessibility)
 
 **[deruiter.dev](https://deruiter.dev)** · [Architecture](ARCHITECTURE.md) · [Decision records](https://github.com/fderuiter/deruiter.dev/tree/main/adr) · [Docs](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Releases](https://github.com/fderuiter/deruiter.dev/releases)
 
@@ -15,12 +23,13 @@ from. Build a logic proof one step at a time. Rotate a brain. Then, when
 you've earned it, play twelve games, several of which are about clinical
 data and one of which is about setting up a wedding mostly bought at Costco.
 
-![The deruiter.dev home page: "Hi, I'm Fred. I make complicated things usable." beside an interactive logic-proof demo](.github/assets/readme-hero.png)
+[![The deruiter.dev home page: "Hi, I'm Fred. I make complicated things usable." beside a photo carousel of Duck, a golden retriever puppy, lying on Fred's head](.github/assets/readme/home.webp)](https://deruiter.dev)
 
 ## Contents
 
 - [What's inside](#whats-inside)
 - [The clinical data journey](#the-clinical-data-journey)
+- [The arcade](#the-arcade)
 - [Built with](#built-with)
 - [Run it locally](#run-it-locally)
 - [How it's checked](#how-its-checked)
@@ -43,6 +52,10 @@ and About ([ADR 0058](https://github.com/fderuiter/deruiter.dev/blob/main/adr/00
 | Writing  | A blog on what's being built and what it taught, and case studies on the decisions behind each project and where it stops.                                                                                                                                       | [/blog](https://deruiter.dev/blog) · [/case-studies](https://deruiter.dev/case-studies)         |
 | About    | Background, office hours, how the site itself works, and credits for the open-source projects it stands on.                                                                                                                                                      | [/stack](https://deruiter.dev/stack) · [/acknowledgments](https://deruiter.dev/acknowledgments) |
 
+| [![The Proof Workspace: pick a proof, connect premises on a canvas, and watch the deduction ledger fill in](.github/assets/readme/labs-proof.webp)](https://deruiter.dev/proof) | [![NeuroRecon Studio: a cortical-surface repair case with topology, defect and QA telemetry](.github/assets/readme/labs-neuro.webp)](https://deruiter.dev/neuro) |
+| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                                  [Proof Workspace](https://deruiter.dev/proof)                                                                  |                                                         [NeuroRecon Studio](https://deruiter.dev/neuro)                                                          |
+
 ## The clinical data journey
 
 The Clinical section is one path through one fictional study, DEMO-301, from
@@ -56,6 +69,10 @@ flowchart LR
   B --> C["Study Data Pipeline<br/>tabulate and analyse"]
   C --> D["Clinical Data Platform<br/>govern the portfolio"]
   D --> E["Case study<br/>read the decisions"]
+  classDef step fill:#13151a,stroke:#f59e0b,stroke-width:1.5px,color:#f4f4f6
+  classDef last fill:#13151a,stroke:#10b981,stroke-width:1.5px,color:#f4f4f6
+  class A,B,C,D step
+  class E last
 ```
 
 - **[CRF Studio](https://deruiter.dev/crf)** designs case report forms with
@@ -72,6 +89,10 @@ flowchart LR
   a read-only SQL workbench running DuckDB in the browser, data contracts,
   lineage and a data quality scorecard.
 
+| [![CRF Studio: a Phase III oncology study's visit timeline beside a demographics and informed consent form with its CDASH conformance panel](.github/assets/readme/clinical-crf-studio.webp)](https://deruiter.dev/crf) | [![The Study Data Pipeline's seven stages, from 33 USDM activities to 629 analysis results](.github/assets/readme/clinical-study-data.webp)](https://deruiter.dev/study-data) | [![The portfolio dashboard: schedule, budget and quality ratings for each fictional study](.github/assets/readme/clinical-portfolio.webp)](https://deruiter.dev/platform/portfolio) |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                                                         [CRF Studio](https://deruiter.dev/crf)                                                                                          |                                                            [Study Data Pipeline](https://deruiter.dev/study-data)                                                             |                                                           [Portfolio dashboard](https://deruiter.dev/platform/portfolio)                                                            |
+
 A separate workflow also runs
 CDISC's open-source [CORE rules engine](https://github.com/cdisc-org/cdisc-rules-engine)
 over the SDTM, Define-XML and USDM outputs of the default study and of every
@@ -81,7 +102,24 @@ Using CORE implies no endorsement by CDISC. The design is in
 [ADR 0065](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0065-study-data-pipeline-architecture.md)
 and [ADR 0066](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0066-clinical-data-platform-architecture.md).
 
+## The arcade
+
+Twelve cabinets, all captured from the current build. Each picture opens its
+game.
+
+|          [![Study Director: the CRO floor on the first Monday of a study](.github/assets/readme/arcade-study-director.webp)](https://deruiter.dev/arcade/study-director)          | [![Trial & Error: Biostat Ops: a hand of TLF shell cards at the QC desk](.github/assets/readme/arcade-trial-and-error.webp)](https://deruiter.dev/arcade/trial-and-error) | [![Clinical Trial Chaos: CRFs riding the conveyor toward the SDTM bins](.github/assets/readme/arcade-clinical-chaos.webp)](https://deruiter.dev/arcade/clinical-chaos) |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                           [Study Director](https://deruiter.dev/arcade/study-director)                                                            |                                                 [Trial & Error: Biostat Ops](https://deruiter.dev/arcade/trial-and-error)                                                 |                                                   [Clinical Trial Chaos](https://deruiter.dev/arcade/clinical-chaos)                                                   |
+|          [![Protocol Drift: an empty pipeline board above the conservation wall](.github/assets/readme/arcade-protocol-drift.webp)](https://deruiter.dev/protocol-drift)          |           [![Laser Loon: a loon over a night lake, aiming at mosquitoes](.github/assets/readme/arcade-laser-loon.webp)](https://deruiter.dev/arcade/laser-loon)           |     [![Patty's Drive-Thru: a diary page and a choice of shift](.github/assets/readme/arcade-patty-drive-thru.webp)](https://deruiter.dev/arcade/patty-drive-thru)      |
+|                                                               [Protocol Drift](https://deruiter.dev/protocol-drift)                                                               |                                                           [Laser Loon](https://deruiter.dev/arcade/laser-loon)                                                            |                                                   [Patty's Drive-Thru](https://deruiter.dev/arcade/patty-drive-thru)                                                   |
+| [![For Better or Bulk: the wedding budget sheet: roses, food and lanterns](.github/assets/readme/arcade-for-better-or-bulk.webp)](https://deruiter.dev/arcade/for-better-or-bulk) |       [![Working With Duck: a puppy on a rug in a home office](.github/assets/readme/arcade-working-with-duck.webp)](https://deruiter.dev/arcade/working-with-duck)       |          [![Monkey C Mayhem: a platformer running on a watch face](.github/assets/readme/arcade-garmin-watch.webp)](https://deruiter.dev/arcade/garmin-watch)          |
+|                                                       [For Better or Bulk](https://deruiter.dev/arcade/for-better-or-bulk)                                                        |                                                    [Working With Duck](https://deruiter.dev/arcade/working-with-duck)                                                     |                                                      [Monkey C Mayhem](https://deruiter.dev/arcade/garmin-watch)                                                       |
+|         [![Retro Labyrinth: the first room of a green-on-black dungeon](.github/assets/readme/arcade-retro-labyrinth.webp)](https://deruiter.dev/arcade/retro-labyrinth)          |     [![Quasi-Perfect Puzzler: proving x = x with a hand of tactic cards](.github/assets/readme/arcade-quasi-puzzler.webp)](https://deruiter.dev/arcade/quasi-puzzler)     |                   [![Meme Vault: an eight-pad retro sampler](.github/assets/readme/arcade-meme-vault.webp)](https://deruiter.dev/arcade/meme-vault)                    |
+|                                                          [Retro Labyrinth](https://deruiter.dev/arcade/retro-labyrinth)                                                           |                                                    [Quasi-Perfect Puzzler](https://deruiter.dev/arcade/quasi-puzzler)                                                     |                                                          [Meme Vault](https://deruiter.dev/arcade/meme-vault)                                                          |
+
 ## Built with
+
+![How the site fits together: React pages, canvas studios, the pipeline worker and DuckDB in the browser; static pages, API routes and a daily job on Vercel; Neon, Upstash, Clerk, Resend and Sentry behind them; and GitHub Actions shipping a release once a week](.github/assets/readme/architecture.svg)
 
 - App: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
 - Rendering: Canvas 2D and Three.js for the studios and games, [`@chenglou/pretext`](https://github.com/chenglou/pretext) for DOM-free text layout, Framer Motion for transitions
@@ -165,9 +203,29 @@ weekly train checks that `main` is green and has no destructive migration,
 browser-tests the exact release candidate, cuts a versioned
 [GitHub Release](https://github.com/fderuiter/deruiter.dev/releases) with
 notes written from the commit messages, and asks Vercel to build that commit
-([ADR 0063](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0063-weekly-release-train.md),
-proposed). v1.0.0, the first release it cut, shipped on 2026-10-27. Anything that
+([ADR 0063](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0063-weekly-release-train.md)).
+v1.0.0, the first release it cut, shipped on 2026-10-27. Anything that
 misses a Sunday goes out the next one.
+
+```mermaid
+flowchart LR
+  PR["Pull request<br/>CI and Merge Gate"] --> M["main<br/>no deploy"]
+  M --> T{"Sunday 7 PM<br/>main green?"}
+  T -- yes --> B["Browser-test<br/>the candidate"]
+  B --> R["Draft release<br/>and fire the deploy hook"]
+  R --> S{"Live site<br/>smoke test"}
+  S -- passes --> P["Publish<br/>the release"]
+  S -- fails --> H["release:hold<br/>issue"]
+  T -- no --> W["Wait for<br/>next Sunday"]
+  classDef step fill:#13151a,stroke:#3f3f46,color:#f4f4f6
+  classDef gate fill:#13151a,stroke:#f59e0b,stroke-width:1.5px,color:#f4f4f6
+  classDef good fill:#13151a,stroke:#10b981,stroke-width:1.5px,color:#f4f4f6
+  classDef bad fill:#13151a,stroke:#ef4444,stroke-width:1.5px,color:#f4f4f6
+  class PR,M,B,R,W step
+  class T,S gate
+  class P good
+  class H bad
+```
 
 Rollback is Vercel's Instant Rollback. The runbook is
 [`DEPLOYMENT.md`](DEPLOYMENT.md), and schema changes follow

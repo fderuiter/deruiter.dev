@@ -53,11 +53,91 @@ export interface StandardCheck {
   readonly path: string;
 }
 
+/**
+ * Where a standard sits. The names are the standards registry's
+ * (plans/2026-10-27-clinical-study-studio/08-standards-coverage.md), so
+ * later entries outside the profile fit the same field.
+ */
+export type StandardFamily =
+  | "design"
+  | "collection"
+  | "tabulation"
+  | "nonclinical"
+  | "analysis"
+  | "exchange"
+  | "semantic"
+  | "terminology"
+  | "conformance"
+  | "documentation"
+  | "submission"
+  | "adjacent"
+  | "tool";
+
+/** What kind of artifact a standard is. */
+export type StandardArtifactType =
+  | "model"
+  | "implementation-guide"
+  | "terminology"
+  | "schema"
+  | "rule-catalog"
+  | "portal"
+  | "example"
+  | "tool"
+  | "guidance";
+
+/** Where a standard is in its publisher's lifecycle. */
+export type StandardLifecycle =
+  "published" | "public-review" | "development" | "deprecated" | "superseded";
+
+/**
+ * What the site can do with a standard. `browse`: show its content.
+ * `author`: a person builds content in it. `import` and `export`: files in
+ * it are read or written. `generate`: the site derives content in it from
+ * other data. `validate`: content in it is checked by at least one of the
+ * entry's checks. `execute`: its rules or methods run.
+ */
+export type StandardCapability =
+  | "browse"
+  | "import"
+  | "author"
+  | "validate"
+  | "execute"
+  | "generate"
+  | "export";
+
+/**
+ * How far a capability goes. `yes`: for everything the site produces in
+ * that standard. `subset`: for part of it, which `note` or the entry's
+ * `coverage` names. The other
+ * values are for capabilities the site does not have yet.
+ */
+export type CapabilityStatus =
+  "yes" | "subset" | "planned" | "later" | "no" | "not-evaluated";
+
+/** One capability's status. */
+export interface CapabilitySupport {
+  readonly status: CapabilityStatus;
+  readonly note?: string;
+}
+
 /** A standard's entry, before the pinned and published versions are added. */
 export interface StandardBomSpec {
   readonly standard: ProfileStandard;
   /** The standard's full name. */
   readonly name: string;
+  /** Every standard in the profile is published by CDISC. */
+  readonly publisher: "CDISC";
+  readonly family: StandardFamily;
+  readonly artifactType: StandardArtifactType;
+  readonly lifecycle: StandardLifecycle;
+  /** Other pinned standards this one is built on or applies to. */
+  readonly dependsOn: readonly ProfileStandard[];
+  /** What the site does with it; a capability left out is `no`. */
+  readonly capabilities: Readonly<
+    Partial<Record<StandardCapability, CapabilitySupport>>
+  >;
+  /** What part of the standard the site covers, and what it does not. */
+  readonly coverage: string;
   /** The official page a reader can check. */
   readonly source: string;
   readonly feed: StandardFeed;
@@ -132,6 +212,19 @@ const site = (page: string, ...labels: string[]): StandardFeed => ({
 export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   {
     standard: "USDM",
+    publisher: "CDISC",
+    artifactType: "model",
+    lifecycle: "published",
+    family: "design",
+    dependsOn: [],
+    capabilities: {
+      author: { status: "yes" },
+      import: { status: "yes" },
+      export: { status: "yes" },
+      validate: { status: "yes" },
+    },
+    coverage:
+      "CRF Studio authors, imports and exports one study design per study: population, eligibility, objectives and endpoints, interventions, arms, epochs, encounters and activities. The Study Data Pipeline reads the DEMO-301 design.",
     name: "Unified Study Definitions Model",
     source: `${GITHUB}/DDF-RA`,
     feed: { kind: "git-tags", repository: `${GITHUB}/DDF-RA` },
@@ -152,6 +245,14 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "CDASHIG",
+    publisher: "CDISC",
+    artifactType: "implementation-guide",
+    lifecycle: "published",
+    family: "collection",
+    dependsOn: [],
+    capabilities: { author: { status: "subset" }, export: { status: "yes" } },
+    coverage:
+      "CRF Studio's 13 CDASH domain templates: variable names, core designations and data types. No CDASH conformance rules are run.",
     name: "CDASH Implementation Guide",
     source: `${SITE}/foundational/cdash`,
     feed: site("foundational/cdash", "CDASHIG"),
@@ -166,6 +267,13 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "SDTM",
+    publisher: "CDISC",
+    artifactType: "model",
+    lifecycle: "published",
+    family: "tabulation",
+    dependsOn: [],
+    capabilities: { generate: { status: "yes" } },
+    coverage: "The model variables the generated SDTMIG domains use.",
     name: "Study Data Tabulation Model",
     source: `${SITE}/foundational/sdtm`,
     feed: site("foundational/sdtm", "SDTM"),
@@ -181,6 +289,18 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "SDTMIG",
+    publisher: "CDISC",
+    artifactType: "implementation-guide",
+    lifecycle: "published",
+    family: "tabulation",
+    dependsOn: ["SDTM"],
+    capabilities: {
+      generate: { status: "subset" },
+      validate: { status: "subset" },
+      export: { status: "yes" },
+    },
+    coverage:
+      "Domains DM, AE, CM, DS, EG, EX, IE, LB, MH, SV, VS and SUPPDM, and trial design TA, TE, TI, TS and TV. SEND, SDTMIG-MD and SDTMIG-AP are not covered.",
     name: "SDTM Implementation Guide",
     source: `${SITE}/foundational/sdtmig`,
     feed: site("foundational/sdtmig", "SDTMIG"),
@@ -201,6 +321,13 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "ADaM",
+    publisher: "CDISC",
+    artifactType: "model",
+    lifecycle: "published",
+    family: "analysis",
+    dependsOn: [],
+    capabilities: { generate: { status: "yes" } },
+    coverage: "The model principles the generated ADaMIG datasets follow.",
     name: "Analysis Data Model",
     source: `${SITE}/foundational/adam`,
     feed: site("foundational/adam", "ADaM"),
@@ -215,6 +342,17 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "ADaMIG",
+    publisher: "CDISC",
+    artifactType: "implementation-guide",
+    lifecycle: "published",
+    family: "analysis",
+    dependsOn: ["ADaM"],
+    capabilities: {
+      generate: { status: "subset" },
+      validate: { status: "subset" },
+    },
+    coverage:
+      "ADSL; BDS datasets ADVS, ADLB and ADEG; ADTTE. Checked by the site's own AD rules only, because CORE publishes no ADaMIG rules.",
     name: "ADaM Implementation Guide",
     source: `${SITE}/foundational/adam`,
     feed: site("foundational/adam", "ADaMIG"),
@@ -229,6 +367,14 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "SDTM-CR",
+    publisher: "CDISC",
+    artifactType: "rule-catalog",
+    lifecycle: "published",
+    family: "conformance",
+    dependsOn: ["SDTMIG"],
+    capabilities: { validate: { status: "subset" } },
+    coverage:
+      "Run through CDISC CORE's executable rules and the site's own SD rules. A published rule CORE does not implement is not run.",
     name: "SDTM and SDTMIG Conformance Rules",
     source: `${SITE}/foundational/sdtmig`,
     feed: site("foundational/sdtmig", "SDTM and SDTMIG Conformance Rules"),
@@ -243,6 +389,16 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "OCCDS",
+    publisher: "CDISC",
+    artifactType: "implementation-guide",
+    lifecycle: "published",
+    family: "analysis",
+    dependsOn: ["ADaMIG"],
+    capabilities: {
+      generate: { status: "yes" },
+      validate: { status: "subset" },
+    },
+    coverage: "ADAE and ADCM, checked by the site's own AD rules.",
     name: "ADaM Structure for Occurrence Data",
     source: `${SITE}/foundational/adam`,
     feed: site(
@@ -260,6 +416,14 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "ADaM-CR",
+    publisher: "CDISC",
+    artifactType: "rule-catalog",
+    lifecycle: "published",
+    family: "conformance",
+    dependsOn: ["ADaMIG"],
+    capabilities: { validate: { status: "subset" } },
+    coverage:
+      "Partly, through the site's own AD rules. The published catalog is not implemented.",
     name: "ADaM Conformance Rules",
     source: `${SITE}/foundational/adam`,
     feed: site("foundational/adam", "ADaM Conformance Rules"),
@@ -274,6 +438,14 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "Define-XML",
+    publisher: "CDISC",
+    artifactType: "schema",
+    lifecycle: "published",
+    family: "exchange",
+    dependsOn: ["ODM"],
+    capabilities: { generate: { status: "yes" }, validate: { status: "yes" } },
+    coverage:
+      "One Define-XML per run, validated against the schema and checked for parity with the datasets. The published Define-XML conformance rules are not run.",
     name: "Define-XML",
     source: `${SITE}/data-exchange/define-xml`,
     feed: site("data-exchange/define-xml", "Define-XML"),
@@ -288,6 +460,14 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "Dataset-JSON",
+    publisher: "CDISC",
+    artifactType: "schema",
+    lifecycle: "published",
+    family: "exchange",
+    dependsOn: [],
+    capabilities: { export: { status: "yes" }, validate: { status: "yes" } },
+    coverage:
+      "Every SDTM and ADaM dataset. XPT and CSV downloads are file formats, not a conformance claim.",
     name: "Dataset-JSON",
     source: `${SITE}/data-exchange/dataset-json`,
     feed: site("data-exchange/dataset-json", "Dataset-JSON"),
@@ -302,6 +482,14 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "ARS",
+    publisher: "CDISC",
+    artifactType: "model",
+    lifecycle: "published",
+    family: "analysis",
+    dependsOn: ["ADaMIG"],
+    capabilities: { generate: { status: "yes" }, validate: { status: "yes" } },
+    coverage:
+      "One reporting event per run. Result lineage is written to a separate file, not into ARS.",
     name: "Analysis Results Standard",
     source: `${GITHUB}/analysis-results-standard`,
     feed: {
@@ -319,6 +507,18 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
   },
   {
     standard: "ODM",
+    publisher: "CDISC",
+    artifactType: "schema",
+    lifecycle: "published",
+    family: "exchange",
+    dependsOn: [],
+    capabilities: {
+      import: { status: "subset" },
+      export: { status: "subset" },
+      validate: { status: "yes" },
+    },
+    coverage:
+      "CRF Studio forms, items, codelists and study events as ODM metadata at the pinned version. No clinical data.",
     name: "Operational Data Model",
     source: `${SITE}/data-exchange/odm`,
     feed: site("data-exchange/odm", "ODM"),

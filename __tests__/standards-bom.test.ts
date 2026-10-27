@@ -105,6 +105,37 @@ describe("standards bill of materials (#2992 step 5)", () => {
     }
   });
 
+  it("builds each standard only on pinned standards, with no cycle", () => {
+    const deps = new Map(
+      STANDARDS_BOM_SPECS.map((s) => [s.standard, s.dependsOn] as const)
+    );
+    const visit = (id: string, path: string[]): void => {
+      expect(path, `cycle through ${id}`).not.toContain(id);
+      for (const dep of deps.get(id as never) ?? []) {
+        expect(deps.has(dep), `${id} depends on ${dep}`).toBe(true);
+        visit(dep, [...path, id]);
+      }
+    };
+    for (const id of deps.keys()) visit(id, []);
+  });
+
+  it("claims validation only where an official engine or schema, or local rules, check it", () => {
+    for (const spec of STANDARDS_BOM_SPECS) {
+      expect(spec.coverage.length, spec.standard).toBeGreaterThan(20);
+      expect(
+        Object.keys(spec.capabilities).length,
+        spec.standard
+      ).toBeGreaterThan(0);
+      if (spec.capabilities.validate) {
+        expect(
+          spec.checks.some((c) => c.kind !== "local-rules") ||
+            spec.coverage.includes("own"),
+          spec.standard
+        ).toBe(true);
+      }
+    }
+  });
+
   it("calls a pin held only when it says why", () => {
     for (const entry of standardsBillOfMaterials().standards) {
       if (entry.status === "held") expect(entry.hold).toBeTruthy();
@@ -254,6 +285,7 @@ describe("standards watch workflow", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toMatch(/^\s{2}(pull_request|push):/m);
     expect(workflow).toMatch(/timeout-minutes: \d+/);
+    expect(workflow).toContain("if: github.ref == 'refs/heads/main'");
   });
 
   it("uses no secret but its own token, so no CDISC Library key", () => {
@@ -263,8 +295,16 @@ describe("standards watch workflow", () => {
 
   it("refreshes, records on a pull request, and dispatches CI there", () => {
     expect(workflow).toContain("scripts/standards-watch.ts refresh");
-    expect(workflow).toContain('branch="chore/standards-watch-$hash"');
-    expect(workflow).toContain("gh pr create --base main");
-    expect(workflow).toContain('gh workflow run ci.yml --ref "$branch"');
+    expect(workflow).toMatch(
+      /scripts\/open-bot-pr\.sh chore\/standards-watch- [^]*lib\/clinical-standards\/standards-latest\.json/
+    );
+  });
+
+  it("opens the pull request and dispatches CI through the shared script", () => {
+    const script = read("scripts/open-bot-pr.sh");
+    expect(script).toContain('branch="$prefix$hash"');
+    expect(script).toContain("gh pr create --base main");
+    expect(script).toContain('gh workflow run ci.yml --ref "$branch"');
+    expect(script).toContain("gh issue create");
   });
 });

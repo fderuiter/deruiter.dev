@@ -6,7 +6,7 @@
 
 # Function: instantiateCatalogForm()
 
-> **instantiateCatalogForm**(`entryId`, `study`, `savedTemplates?`): \{ `codelists`: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]; `form`: [`CRFForm`](../../types/interfaces/CRFForm.md); \} \| `null`
+> **instantiateCatalogForm**(`entryId`, `study`, `savedTemplates?`): \{ `codelists`: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]; `form`: [`CRFForm`](../../types/interfaces/CRFForm.md); \} \| `null`
 
 An independent copy of a form entry, ready to add to `study`: fresh ids,
 colliding CDASH variable names renamed, and only the codelists the study
@@ -28,4 +28,4 @@ readonly [`FormTemplate`](../../form-templates/interfaces/FormTemplate.md)[] = `
 
 ## Returns
 
-\{ `codelists`: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]; `form`: [`CRFForm`](../../types/interfaces/CRFForm.md); \} \| `null`
+\{ `codelists`: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]; `form`: [`CRFForm`](../../types/interfaces/CRFForm.md); \} \| `null`

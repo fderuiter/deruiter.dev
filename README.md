@@ -12,7 +12,7 @@ Fred de Ruiter's portfolio site. Most of the work on it runs in your browser, so
 [![Next.js](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/next?label=Next.js&logo=nextdotjs&color=18181b)](https://nextjs.org)
 [![React](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/react?label=React&logo=react&color=18181b)](https://react.dev)
 [![TypeScript](https://img.shields.io/github/package-json/dependency-version/fderuiter/deruiter.dev/dev/typescript?label=TypeScript&logo=typescript&color=18181b)](https://www.typescriptlang.org)
-[![Node.js](https://img.shields.io/github/package-json/engines/node/fderuiter/deruiter.dev?label=Node.js&logo=nodedotjs&color=18181b)](https://nodejs.org)
+[![Node.js 22 to 24](https://img.shields.io/badge/Node.js-22_to_24-18181b?logo=nodedotjs)](https://nodejs.org)
 [![WCAG 2.1 AA](https://img.shields.io/badge/WCAG_2.1-AA_target-10b981)](#accessibility)
 
 **[deruiter.dev](https://deruiter.dev)** · [Architecture](ARCHITECTURE.md) · [Decision records](https://github.com/fderuiter/deruiter.dev/tree/main/adr) · [Docs](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Releases](https://github.com/fderuiter/deruiter.dev/releases)
@@ -209,10 +209,9 @@ misses a Sunday goes out the next one.
 
 ```mermaid
 flowchart LR
-  PR["Pull request<br/>CI and Merge Gate"] --> M["main<br/>no deploy"]
-  M --> T{"Sunday 7 PM<br/>main green?"}
+  M["Merged to main<br/>no deploy"] --> T{"Sunday 7 PM<br/>main green?"}
   T -- yes --> B["Browser-test<br/>the candidate"]
-  B --> R["Draft release<br/>and fire the deploy hook"]
+  B --> R["Draft release,<br/>fire deploy hook"]
   R --> S{"Live site<br/>smoke test"}
   S -- passes --> P["Publish<br/>the release"]
   S -- fails --> H["release:hold<br/>issue"]
@@ -221,7 +220,7 @@ flowchart LR
   classDef gate fill:#13151a,stroke:#f59e0b,stroke-width:1.5px,color:#f4f4f6
   classDef good fill:#13151a,stroke:#10b981,stroke-width:1.5px,color:#f4f4f6
   classDef bad fill:#13151a,stroke:#ef4444,stroke-width:1.5px,color:#f4f4f6
-  class PR,M,B,R,W step
+  class M,B,R,W step
   class T,S gate
   class P good
   class H bad

@@ -7,7 +7,7 @@ import {
   readUsdmHandoff,
   usdmContentHash,
 } from "@/lib/clinical-standards";
-import { DEMO_301_STUDY } from "@/lib/study-data/presets";
+import { DEMO_301_USDM } from "@/lib/study-data/presets";
 
 function nodeSha256(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex");
@@ -34,7 +34,7 @@ describe("usdmContentHash", () => {
     ["an empty document", {}],
     ["non-ASCII text", { study: { name: "Étude — 试验 🫀" } }],
     ["a document spanning several SHA-256 blocks", { text: "x".repeat(200) }],
-    ["DEMO-301", DEMO_301_STUDY],
+    ["DEMO-301", DEMO_301_USDM],
   ])("matches Node's SHA-256 of the canonical JSON for %s", (_label, usdm) => {
     expect(usdmContentHash(usdm)).toBe(nodeSha256(canonicalUsdmJson(usdm)));
   });
@@ -90,7 +90,7 @@ describe("createUsdmHandoff", () => {
 
 describe("readUsdmHandoff", () => {
   it("round-trips DEMO-301 through JSON text", () => {
-    const envelope = createUsdmHandoff(DEMO_301_STUDY, route);
+    const envelope = createUsdmHandoff(DEMO_301_USDM, route);
     const read = readUsdmHandoff(
       JSON.parse(JSON.stringify(envelope)),
       "study-data"

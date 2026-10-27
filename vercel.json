@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "ignoreCommand": null,
+  "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "git": {
     "deploymentEnabled": false
   },

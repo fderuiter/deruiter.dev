@@ -17,3 +17,4 @@ export * from "./terminology";
 export * from "./usdm-v4-types";
 export * from "./usdm-v4-schedule";
 export * from "./usdm-v4-schema";
+export * from "./bom";

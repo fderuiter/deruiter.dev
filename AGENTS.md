@@ -221,3 +221,7 @@ Five canonical triage roles matching standard label names (`needs-triage`, `need
 ### Domain docs
 
 Single-context repository using `CONTEXT.md` and `adr/` at root. See `docs/agents/domain.md`.
+
+### Writing
+
+Edit prose with the `humanizer` skill (`.claude/skills/humanizer/`), this site's version of blader/humanizer with its voice and claim rules built in. See `docs/agents/writing.md`.

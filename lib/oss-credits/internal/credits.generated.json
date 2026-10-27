@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1226,
-    "runtime": 565,
-    "tooling": 661,
-    "direct": 79
+    "total": 1248,
+    "runtime": 566,
+    "tooling": 682,
+    "direct": 80
   },
   "packages": [
     {
@@ -3964,6 +3964,197 @@
       "direct": false,
       "homepage": "https://typescript-eslint.io",
       "repository": "https://github.com/typescript-eslint/typescript-eslint"
+    },
+    {
+      "name": "@typescript/typescript-aix-ppc64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-darwin-arm64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-darwin-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-freebsd-arm64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-freebsd-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-arm",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-arm64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-loong64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-mips64el",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-ppc64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-riscv64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-s390x",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-linux-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-netbsd-arm64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-netbsd-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-openbsd-arm64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-openbsd-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-sunos-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-win32-arm64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript-win32-x64",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "@typescript/typescript6",
+      "version": "6.0.2",
+      "license": "Apache-2.0",
+      "scope": "runtime",
+      "direct": true,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript",
+      "group": "Build and types",
+      "reason": "TypeScript 6, kept as the library that ESLint, TypeDoc and Next.js load until TypeScript 7.1 ships an API (ADR 0072)."
     },
     {
       "name": "@unrs/resolver-binding-android-arm-eabi",
@@ -10680,11 +10871,20 @@
       "version": "6.0.3",
       "license": "Apache-2.0",
       "scope": "runtime",
+      "direct": false,
+      "homepage": "https://www.typescriptlang.org",
+      "repository": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "name": "typescript",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "scope": "tooling",
       "direct": true,
       "homepage": "https://www.typescriptlang.org",
       "repository": "https://github.com/microsoft/TypeScript",
       "group": "Build and types",
-      "reason": "Type checking for the whole codebase."
+      "reason": "TypeScript 7, the compiler that type-checks the whole codebase (ADR 0072)."
     },
     {
       "name": "typescript-eslint",

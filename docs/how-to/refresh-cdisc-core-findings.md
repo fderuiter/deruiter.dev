@@ -27,7 +27,8 @@ Two checks tell you the file no longer matches the code:
 - The `Study Data CDISC CORE` workflow (`.github/workflows/study-data-core.yml`)
   runs CORE over every view and every preset export, regenerates the file
   and fails when it differs from the committed one. It runs on pull
-  requests that touch `lib/study-data/**`, `lib/crf/**` or its own scripts,
+  requests that touch `lib/study-data/**`, `lib/crf/**`,
+  `lib/clinical-standards/**` or its own scripts,
   on `main`, and weekly.
 
 Any change to the generator, a scenario, a domain or the Define-XML moves

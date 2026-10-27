@@ -2,11 +2,12 @@
 
 ## Status
 
-Accepted on 2026-09-24. Temporarily superseded for the manual-release period
-by [ADR 0051](0051-manual-production-releases.md) until a replacement release
-policy is approved and verified. The nightly-train proposal is tracked in
-[issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168); its scheduled
-implementation date does not restore this ADR's trigger. Supersedes
+Accepted on 2026-09-24. Its deploy-on-merge trigger was suspended by
+[ADR 0051](0051-manual-production-releases.md) and is replaced by the weekly
+Deploy Hook trigger in [ADR 0063](0063-weekly-release-train.md) (accepted
+2026-10-27, [issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168)).
+Vercel remains the only builder, and the migration placement below still
+holds. Supersedes
 [ADR 0038](0038-protected-build-once-production-releases.md) and, for
 production builds only, the migration placement in
 [ADR 0001](0001-pre-build-database-migrations.md).
@@ -41,9 +42,11 @@ integration provisions as `DATABASE_URL_UNPOOLED`, already lives in Vercel.
 Vercel is the only deploy path. GitHub Actions runs CI and nothing that
 deploys.
 
-- Outside the temporary manual-release period in ADR 0051, `vercel.json`
-  enables Vercel's Git integration for `main` only (`"*": false,
-"main": true`). Every other branch still builds nothing.
+- As first decided, `vercel.json` enabled Vercel's Git integration for
+  `main` only (`"*": false,
+"main": true`). Every other branch still builds nothing. Under ADR 0063 Git
+  deployments stay off for every branch and the train's Deploy Hook builds
+  `main`.
 - `scripts/build.js` runs `prisma migrate deploy` before `next build` when,
   and only when, the build runs on Vercel for the production environment
   (`VERCEL=1` and `VERCEL_ENV=production`). It migrates through
@@ -64,8 +67,8 @@ deploys.
 
 - One place holds production configuration and secrets. A rotation happens
   once, in Vercel.
-- Once ADR 0051 expires, Production tracks `main` within one build of a merge,
-  and nobody has to remember to release.
+- Under ADR 0063 Production tracks `main` once a week rather than within one
+  build of a merge, and nobody has to remember to release.
 - Migrations run before the build that depends on them. A failed migration
   or build publishes nothing, and a build that cannot reach its data sources
   still fails rather than baking fallback content.

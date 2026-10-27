@@ -608,6 +608,12 @@ Re-exports [createScenario](test-scenarios/functions/createScenario.md)
 
 ***
 
+### CRF\_STUDIO\_ODM\_NAMESPACE
+
+Re-exports [CRF_STUDIO_ODM_NAMESPACE](odm-xml-serializer/variables/CRF_STUDIO_ODM_NAMESPACE.md)
+
+***
+
 ### CRF\_STUDIO\_USDM\_EXTENSION\_BASE
 
 Re-exports [CRF_STUDIO_USDM_EXTENSION_BASE](usdm-adapter/variables/CRF_STUDIO_USDM_EXTENSION_BASE.md)
@@ -1883,6 +1889,12 @@ Re-exports [MAX_FORM_TEMPLATES](form-templates/variables/MAX_FORM_TEMPLATES.md)
 ### MAX\_TEMPLATE\_PACKAGE\_CHARS
 
 Re-exports [MAX_TEMPLATE_PACKAGE_CHARS](form-templates/variables/MAX_TEMPLATE_PACKAGE_CHARS.md)
+
+***
+
+### NCI\_ALIAS\_CONTEXT
+
+Re-exports [NCI_ALIAS_CONTEXT](odm-xml-serializer/variables/NCI_ALIAS_CONTEXT.md)
 
 ***
 

@@ -1,14 +1,14 @@
 # Release and Deployment Workflow
 
-Last reconciled: 2026-10-25. Manual Production releases remain required under
-[ADR 0051](../../adr/0051-manual-production-releases.md) until a replacement
-release policy is approved and verified. The nightly-train proposal in
-[issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168) is scheduled
-for implementation on 2026-10-25 (moved from 2026-10-05); that date does not activate a release workflow.
+Last reconciled: 2026-10-27. Production ships once a week through the weekly
+release train in [ADR 0063](../../adr/0063-weekly-release-train.md), accepted on
+2026-10-27 after v1.0.0 went live through it. It supersedes the manual
+Dashboard releases of [ADR 0051](../../adr/0051-manual-production-releases.md)
+(tracked in [issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168)).
 
-**During the manual hold:** open a PR, let CI go green, squash-merge
-it, then have an operator create a Production deployment from the current
-`main` commit in the Vercel Dashboard.
+**Day to day:** open a PR, let CI go green and squash-merge it. Merging never
+deploys. The next Sunday train releases everything merged since the last
+release as one versioned GitHub Release.
 
 ## The Flow
 
@@ -19,10 +19,12 @@ it, then have an operator create a Production deployment from the current
 2. CI (`.github/workflows/ci.yml`) runs on the PR. Merge only when
    **Merge Gate (Required Checks Summary)** is green.
 3. Merge after **Merge Gate** is green. Git pushes the merge commit to `main`;
-   Vercel does not automatically build it during this temporary hold.
-4. In the Vercel Dashboard, open the `portfolio` project and choose
-   **Deployments → Create Deployment**. Select the current `main` commit SHA,
-   confirm the target is **Production**, and press **Create Deployment**.
+   Vercel does not build it, because `vercel.json` disables Git deployments.
+4. On Sunday at 7 PM Central the [weekly train](#weekly-train) gates `main`
+   HEAD, tests that exact commit, and fires the Vercel Deploy Hook. To ship
+   between trains, use **Actions → Weekly Train → Run workflow**, or, as
+   break-glass, Vercel **Deployments → Create Deployment** with the current
+   `main` commit SHA and target **Production**.
 5. The Vercel build authenticates Upstash, type-checks, applies pending
    migrations through the unpooled Neon endpoint, then compiles the site. A
    failed build leaves the current deployment serving traffic. A READY build
@@ -31,11 +33,11 @@ it, then have an operator create a Production deployment from the current
 6. Confirm the new deployment's commit SHA and successful build before
    verifying that `deruiter.dev` points to it.
 
-Everything about production lives in Vercel. GitHub holds no deploy secrets.
-Keep Git deployment triggers disabled until the approved replacement is
-implemented and verified. The manual hold has no automatic calendar expiry.
-[ADR 0049](../../adr/0049-deploy-main-on-green-ci.md) records the superseded
-automatic trigger.
+Production credentials live only in Vercel. GitHub holds one
+production-adjacent value, the Deploy Hook URL, which can only rebuild `main`.
+Git deployment triggers stay disabled: the train is the only automatic path.
+[ADR 0049](../../adr/0049-deploy-main-on-green-ci.md) records the earlier
+deploy-on-merge trigger.
 
 ## Buttons
 
@@ -45,15 +47,15 @@ automatic trigger.
 | A Production build failed for a transient reason | Fix the cause, then use **Create Deployment** with the current green `main` SHA. |
 | A deployment is READY but not live | A Deployment Check was added back in Vercel and is holding the domains. Remove it (see [One-Time Setup](#one-time-setup)); use **Force Promote** only for this one deployment. |
 
-**Redeploy** rebuilds the commit it is pressed on. During this hold, use
-**Create Deployment** and select the current `main` SHA to release a merge.
-Production deploy commands in the Vercel CLI are blocked by the repository
-guardrail during the hold.
+**Redeploy** rebuilds the commit it is pressed on. To release a merge outside
+the train, use **Create Deployment** and select the current `main` SHA.
+Production deploy commands in the Vercel CLI stay blocked by the repository
+guardrail.
 
-## Weekly Train (Proposed)
+## Weekly Train
 
-[ADR 0063](../../adr/0063-weekly-release-train.md) proposes replacing the
-manual hold with `.github/workflows/weekly-train.yml`. Every Sunday at 7 PM
+[ADR 0063](../../adr/0063-weekly-release-train.md) (Accepted) ships Production
+through `.github/workflows/weekly-train.yml`. Every Sunday at 7 PM
 Central (01:00 UTC Monday), it checks that **Merge Gate (Required Checks
 Summary)** passed on `main` HEAD and that no migration since the live commit
 is destructive, builds that exact commit and runs the full chromium
@@ -62,17 +64,18 @@ version, POSTs the Vercel Deploy Hook, waits for `/api/version` to report the
 commit, runs the synthetic probes against the live site, and only then
 publishes the Release. **Run workflow** with `rc_only` runs just the release
 candidate suite on `main` HEAD, and with `dry_run` probes the live site;
-neither drafts or deploys anything. It is inert until the operator finishes the steps
-in [#2889](https://github.com/fderuiter/deruiter.dev/issues/2889):
+neither drafts or deploys anything. The operator set it up in
+[#2889](https://github.com/fderuiter/deruiter.dev/issues/2889), and v1.0.0 was
+its first release (2026-10-27). The setup, for reference:
 
-1. Vercel, `portfolio`, Settings, Git, **Deploy Hooks**: create `weekly-train`
-   for `main`.
-2. GitHub, Settings, Secrets and variables, Actions: add the secret
-   `VERCEL_DEPLOY_HOOK_MAIN` with that URL.
-3. Remove `release:hold` from every open issue once the release is wanted.
-4. Actions, **Weekly Train**, **Run workflow** (optionally with a version such
-   as `1.0.0`), and watch it go live.
-5. Set the repository variable `WEEKLY_TRAIN` to `on`.
+1. Vercel, `portfolio`, Settings, Git, **Deploy Hooks**: a hook for `main`.
+   It builds Production even with `git.deploymentEnabled` set to `false`
+   (#2539).
+2. GitHub, Settings, Secrets and variables, Actions: the secret
+   `VERCEL_DEPLOY_HOOK_MAIN` holds that URL.
+3. No open issue carries `release:hold`.
+4. The repository variable `WEEKLY_TRAIN` is `on`; scheduled runs exit
+   without it. **Run workflow** works either way.
 
 To pause it, set `WEEKLY_TRAIN` to `off` or open any issue labelled
 `release:hold`. A failed release candidate suite ships nothing and opens an
@@ -84,9 +87,9 @@ it. **Create Deployment** and **Instant Rollback** work as before.
 
 In the Vercel dashboard for the `portfolio` project:
 
-1. **Settings, Git:** confirm automatic Git deployments are disabled during
-   this hold. `vercel.json` sets `git.deploymentEnabled` to `false` for all
-   branches.
+1. **Settings, Git:** confirm automatic Git deployments are disabled.
+   `vercel.json` sets `git.deploymentEnabled` to `false` for all branches, so
+   only the weekly train's Deploy Hook and the Dashboard start a build.
 2. **Settings, Build and Deployment, Deployment Checks:** keep this list
    empty. CI already gates `main`: the ruleset requires
    **Merge Gate (Required Checks Summary)**, and `static-gate` runs lint and
@@ -172,7 +175,7 @@ the owner's audit of the live Vercel settings against it.
 | | Production | Preview | Development |
 | --- | --- | --- | --- |
 | **Purpose** | The public site | Checking one PR on real infrastructure before merge | Local work |
-| **Created by** | An operator in the Vercel Dashboard after a green `main` merge, during the manual hold | An operator, deliberately, for one PR (below) | `npm run dev` or a local `npm run build` |
+| **Created by** | The weekly train's Deploy Hook; an operator's **Create Deployment** as break-glass | An operator, deliberately, for one PR (below) | `npm run dev` or a local `npm run build` |
 | **Domain** | `deruiter.dev`; `www` redirects to the apex (AGENTS.md section 18) | Its own `*.vercel.app` URL only, never a production alias | `localhost` |
 | **Access** | Public | Vercel Deployment Protection where the plan provides it; otherwise the URL is unlisted, not private | Local machine |
 | **Database** | Production Neon branch; migrations run during the build | A non-production Neon branch (#622); Preview builds never migrate | A local or personal Neon branch |
@@ -187,7 +190,7 @@ rendering runs.
 
 ### Using a Preview
 
-Git deployments are off for every branch throughout the manual hold (`vercel.json`),
+Git deployments are off for every branch (`vercel.json`),
 so a Preview exists only when someone asks for one.
 
 1. **Request:** in the Vercel Dashboard, create a deployment of the PR's
@@ -207,17 +210,19 @@ so a Preview exists only when someone asks for one.
 
 A fresh Production deployment of `main` is correct when:
 
-- it was started with **Create Deployment** from the current merged `main`
-  commit SHA in the Dashboard, not by Redeploying an older deployment;
+- it was started by the weekly train's Deploy Hook, or by **Create
+  Deployment** from the current merged `main` commit SHA, not by Redeploying
+  an older deployment;
+- `/api/version` reports that commit, and the train published its GitHub
+  Release after the smoke test;
 - its build log shows "Production configuration preflight passed." and the
   "Upstash REST authentication passed." check before the migration step;
 - it took the domains when it became READY, without **Force Promote**.
 
-End the hold only after a replacement ADR is approved, its implementation
-passes required CI, and an operator verifies its release trigger. Update the
-runbooks, agent instructions and guardrail together. Keep
-`git.deploymentEnabled: false` until those conditions are met; see ADR 0051
-and issue #1168. Vercel does not automatically expire this setting.
+Keep `git.deploymentEnabled: false`: merges never deploy, and the train is
+the only automatic path to Production (ADR 0063). Change the release trigger
+only through a new ADR, and update the runbooks, agent instructions and
+guardrail together.
 
 ## Environment Variables
 
@@ -372,24 +377,24 @@ variables stay shared with Production (#622).
 
 ## Rules That Keep This Safe
 
-- **During the manual hold, migrations start only after the operator creates a
-  Production deployment from the current green `main` SHA.** A replacement
-  release policy requires approval and verification before it takes effect.
-  Every migration must be expand/contract: the live app
+- **Migrations run in the Production build the train (or a break-glass
+  Create Deployment) starts from a green `main` SHA.** The train holds itself
+  when `scripts/check-migration-safety.ts` finds a destructive migration
+  since the live commit; that release is then made by hand. Every migration must be expand/contract: the live app
   and the new app must both work against the migrated schema. Never drop or
   rename a column in the same PR that stops using it.
 - **Hold work back with a flag, not by leaving it unmerged for days.**
 - **Database recovery is roll-forward.** Add a new migration through a normal
   PR. Restore from a Neon backup only for confirmed data loss.
-- **Git-triggered deployments are paused.** Throughout the manual hold,
-  `vercel.json` disables Git deployments for every branch. Preview builds
+- **Git-triggered deployments stay off.** `vercel.json` disables Git
+  deployments for every branch. Preview builds
   never migrate even if an operator starts one by hand.
 
 ## Building Production Output Locally
 
-Releasing never needs a local build: during the manual hold, Vercel builds the
-selected `main` SHA with the production secrets it holds after an operator
-starts **Create Deployment** in the Dashboard (ADR 0051). Build locally only
+Releasing never needs a local build: Vercel builds `main` with the production
+secrets it holds when the weekly train fires the Deploy Hook (ADR 0063), or
+when an operator starts **Create Deployment** in the Dashboard. Build locally only
 to inspect what a production build generates, for example to confirm that
 database-backed pages render real content (#859).
 

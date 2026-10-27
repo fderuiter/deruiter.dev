@@ -35,7 +35,20 @@ function mapDataTypeToOdm(type: string): string {
 }
 
 /**
- * Serializes a StudyProtocol into standard CDISC ODM-XML v1.3.2 format
+ * Namespace of CRF Studio's ODM vendor extension. ODM 1.3.2 has no place for
+ * a design-change audit trail, so it is written under this namespace in the
+ * `MetaDataVersionElementExtension` slot, the way Define-XML extends ODM.
+ * Without an audit trail the file is plain ODM 1.3.2.
+ */
+export const CRF_STUDIO_ODM_NAMESPACE = "https://deruiter.dev/ns/crf-studio/v1";
+
+/** The Alias context Define-XML 2.1 uses for an NCI EVS C-code. */
+export const NCI_ALIAS_CONTEXT = "nci:ExtCodeID";
+
+/**
+ * Serializes a StudyProtocol into CDISC ODM-XML v1.3.2. The output validates
+ * against the ODM 1.3.2 schema; with an audit trail, against that schema
+ * extended by the CRF Studio namespace.
  */
 export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   const safeStudy =
@@ -51,7 +64,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
 <ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"
      xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xmlns:def="http://www.cdisc.org/ns/def/v2.1"
+     xmlns:crfs="${CRF_STUDIO_ODM_NAMESPACE}"
      FileType="Snapshot"
      FileOID="ODM.${escapeXml(protoNum)}.${Date.now()}"
      CreationDateTime="${timestamp}"
@@ -171,17 +184,16 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         }
 
         const odmType = mapDataTypeToOdm(field.dataType);
-        const codelistAttr = effectiveCodelistId
-          ? ` CodeListOID="${escapeXml(effectiveCodelistId)}"`
-          : "";
-
-        xml += `      <ItemDef OID="${escapeXml(itemOid)}" Name="${escapeXml(field.variableName)}" DataType="${escapeXml(odmType)}"${codelistAttr}>\n`;
+        // ODM 1.3.2 ItemDef content order: Description, Question,
+        // CodeListRef, Alias.
+        xml += `      <ItemDef OID="${escapeXml(itemOid)}" Name="${escapeXml(field.variableName)}" DataType="${escapeXml(odmType)}">\n`;
         xml += `        <Description><TranslatedText xml:lang="en">${escapeXml(field.label)}</TranslatedText></Description>\n`;
-        if (field.cdashMetadata) {
-          xml += `        <def:AnnotatedCRF>
-          <def:DocumentRef leafID="aCRF"/>
-          <def:PDFPageRef PageRefs="1" FirstPage="1" LastPage="1" Type="Physical"/>
-        </def:AnnotatedCRF>\n`;
+        xml += `        <Question><TranslatedText xml:lang="en">${escapeXml(field.label)}</TranslatedText></Question>\n`;
+        if (effectiveCodelistId) {
+          xml += `        <CodeListRef CodeListOID="${escapeXml(effectiveCodelistId)}"/>\n`;
+        }
+        if (field.cdashMetadata?.acrfAnnotation) {
+          xml += `        <Alias Context="SDTM" Name="${escapeXml(field.cdashMetadata.acrfAnnotation)}"/>\n`;
         }
         xml += `      </ItemDef>\n`;
       });
@@ -200,44 +212,44 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
 
   allCodelists.forEach((cl) => {
     if (!cl || typeof cl !== "object") return;
-    const nciAttr = cl.nciCodelistCode
-      ? ` def:NCICode="${escapeXml(cl.nciCodelistCode)}"`
-      : "";
-    xml += `      <CodeList OID="${escapeXml(cl.id)}" Name="${escapeXml(cl.name)}" DataType="text"${nciAttr}>\n`;
+    const nciAlias = (code: string | undefined, indent: string) =>
+      code
+        ? `${indent}<Alias Context="${NCI_ALIAS_CONTEXT}" Name="${escapeXml(code)}"/>\n`
+        : "";
+    xml += `      <CodeList OID="${escapeXml(cl.id)}" Name="${escapeXml(cl.name)}" DataType="text">\n`;
     const options = Array.isArray(cl.options) ? cl.options : [];
     options.forEach((opt) => {
       if (!opt || typeof opt !== "object") return;
-      const optNci = opt.nciCode
-        ? ` def:NCICode="${escapeXml(opt.nciCode)}"`
-        : "";
-      xml += `        <CodeListItem CodedValue="${escapeXml(opt.code)}"${optNci}>\n`;
+      xml += `        <CodeListItem CodedValue="${escapeXml(opt.code)}">\n`;
       xml += `          <Decode><TranslatedText xml:lang="en">${escapeXml(opt.label)}</TranslatedText></Decode>\n`;
+      xml += nciAlias(opt.nciCode, "          ");
       xml += `        </CodeListItem>\n`;
     });
+    xml += nciAlias(cl.nciCodelistCode, "        ");
     xml += `      </CodeList>\n`;
   });
 
   if (auditTrail.length > 0) {
-    xml += `\n      <AuditTrail>\n`;
+    xml += `\n      <crfs:AuditTrail>\n`;
     auditTrail.forEach((entry) => {
       if (!entry || typeof entry !== "object") return;
-      xml += `        <AuditRecord ID="${escapeXml(entry.id)}">\n`;
-      xml += `          <UserRef UserOID="${escapeXml(entry.changedBy)}"/>\n`;
+      xml += `        <crfs:AuditRecord ID="${escapeXml(entry.id)}">\n`;
+      xml += `          <crfs:UserRef UserOID="${escapeXml(entry.changedBy)}"/>\n`;
       if (entry.userRole) {
-        xml += `          <UserRole>${escapeXml(entry.userRole)}</UserRole>\n`;
+        xml += `          <crfs:UserRole>${escapeXml(entry.userRole)}</crfs:UserRole>\n`;
       }
-      xml += `          <DateTimeStamp>${escapeXml(entry.timestamp)}</DateTimeStamp>\n`;
+      xml += `          <crfs:DateTimeStamp>${escapeXml(entry.timestamp)}</crfs:DateTimeStamp>\n`;
       if (entry.actionType) {
-        xml += `          <ActionType>${escapeXml(entry.actionType)}</ActionType>\n`;
+        xml += `          <crfs:ActionType>${escapeXml(entry.actionType)}</crfs:ActionType>\n`;
       }
       if (entry.targetId) {
-        xml += `          <TargetID>${escapeXml(entry.targetId)}</TargetID>\n`;
+        xml += `          <crfs:TargetID>${escapeXml(entry.targetId)}</crfs:TargetID>\n`;
       }
       if (entry.formId) {
-        xml += `          <FormOID>${escapeXml(entry.formId)}</FormOID>\n`;
+        xml += `          <crfs:FormOID>${escapeXml(entry.formId)}</crfs:FormOID>\n`;
       }
       if (entry.fieldId) {
-        xml += `          <ItemOID>${escapeXml(entry.fieldId)}</ItemOID>\n`;
+        xml += `          <crfs:ItemOID>${escapeXml(entry.fieldId)}</crfs:ItemOID>\n`;
       }
       if (entry.previousValue !== undefined && entry.previousValue !== null) {
         let prevStr: string;
@@ -249,7 +261,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         } catch {
           prevStr = String(entry.previousValue);
         }
-        xml += `          <PreviousValue>${escapeXml(prevStr)}</PreviousValue>\n`;
+        xml += `          <crfs:PreviousValue>${escapeXml(prevStr)}</crfs:PreviousValue>\n`;
       }
       if (entry.newValue !== undefined && entry.newValue !== null) {
         let newStr: string;
@@ -261,13 +273,13 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         } catch {
           newStr = String(entry.newValue);
         }
-        xml += `          <NewValue>${escapeXml(newStr)}</NewValue>\n`;
+        xml += `          <crfs:NewValue>${escapeXml(newStr)}</crfs:NewValue>\n`;
       }
       if (entry.reasonForChange) {
-        xml += `          <ReasonForChange>${escapeXml(entry.reasonForChange)}</ReasonForChange>\n`;
+        xml += `          <crfs:ReasonForChange>${escapeXml(entry.reasonForChange)}</crfs:ReasonForChange>\n`;
       }
       if (entry.diagnosticId) {
-        xml += `          <DiagnosticID>${escapeXml(entry.diagnosticId)}</DiagnosticID>\n`;
+        xml += `          <crfs:DiagnosticID>${escapeXml(entry.diagnosticId)}</crfs:DiagnosticID>\n`;
       }
       if (entry.details !== undefined && entry.details !== null) {
         let detailsStr: string;
@@ -279,11 +291,11 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         } catch {
           detailsStr = String(entry.details);
         }
-        xml += `          <Details>${escapeXml(detailsStr)}</Details>\n`;
+        xml += `          <crfs:Details>${escapeXml(detailsStr)}</crfs:Details>\n`;
       }
-      xml += `        </AuditRecord>\n`;
+      xml += `        </crfs:AuditRecord>\n`;
     });
-    xml += `      </AuditTrail>\n`;
+    xml += `      </crfs:AuditTrail>\n`;
   }
 
   xml += `    </MetaDataVersion>

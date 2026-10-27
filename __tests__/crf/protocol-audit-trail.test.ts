@@ -238,12 +238,12 @@ describe("Functional Audit Middleware and Protocol Audit Log Integration", () =>
 
     // 3. ODM-XML Export
     const xmlOutput = exportStudyToCdiscOdmXml(study);
-    expect(xmlOutput).toContain("<AuditTrail>");
-    expect(xmlOutput).toContain("<AuditRecord");
+    expect(xmlOutput).toContain("<crfs:AuditTrail>");
+    expect(xmlOutput).toContain("<crfs:AuditRecord");
     expect(xmlOutput).toContain("FORM_CREATE");
     expect(xmlOutput).toContain("User A");
-    expect(xmlOutput).toContain("<PreviousValue>");
-    expect(xmlOutput).toContain("<NewValue>");
+    expect(xmlOutput).toContain("<crfs:PreviousValue>");
+    expect(xmlOutput).toContain("<crfs:NewValue>");
   });
 
   it("Regression: prevents reference retention and historical entry mutation when caller objects or live fields are mutated later", () => {
@@ -318,15 +318,17 @@ describe("Functional Audit Middleware and Protocol Audit Log Integration", () =>
     });
 
     const xmlOutput = exportStudyToCdiscOdmXml(study);
-    expect(xmlOutput).toContain("<DiagnosticID>DIAG-1001</DiagnosticID>");
     expect(xmlOutput).toContain(
-      "<PreviousValue>{&quot;state&quot;:&quot;old_val&quot;}</PreviousValue>"
+      "<crfs:DiagnosticID>DIAG-1001</crfs:DiagnosticID>"
     );
     expect(xmlOutput).toContain(
-      "<NewValue>{&quot;state&quot;:&quot;new_val&quot;}</NewValue>"
+      "<crfs:PreviousValue>{&quot;state&quot;:&quot;old_val&quot;}</crfs:PreviousValue>"
     );
     expect(xmlOutput).toContain(
-      "<Details>{&quot;resolution&quot;:&quot;Assigned to Screening visit&quot;}</Details>"
+      "<crfs:NewValue>{&quot;state&quot;:&quot;new_val&quot;}</crfs:NewValue>"
+    );
+    expect(xmlOutput).toContain(
+      "<crfs:Details>{&quot;resolution&quot;:&quot;Assigned to Screening visit&quot;}</crfs:Details>"
     );
   });
 

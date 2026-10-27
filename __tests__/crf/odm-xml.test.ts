@@ -31,7 +31,8 @@ describe("CRF Studio - CDISC ODM-XML v1.3.2 Serializer", () => {
     const xml = exportStudyToCdiscOdmXml(ONCOLOGY_RECIST_PRESET);
 
     expect(xml).toContain('<CodeList OID="CL_SEX"');
-    expect(xml).toContain('def:NCICode="C66742"');
+    expect(xml).toContain('<Alias Context="nci:ExtCodeID" Name="C66742"/>');
+    expect(xml).not.toContain("def:NCICode");
     expect(xml).toContain('<CodeListItem CodedValue="M"');
     expect(xml).toContain('<CodeListItem CodedValue="F"');
   });

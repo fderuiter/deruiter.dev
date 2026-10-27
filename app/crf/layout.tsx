@@ -1,7 +1,7 @@
 import {
   CLINICAL_STANDARDS_PROFILE,
   standardCitation,
-} from "@/lib/study-data/standards";
+} from "@/lib/clinical-standards";
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";

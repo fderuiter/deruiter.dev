@@ -140,7 +140,7 @@ export function FormCatalogList({
                 onDragStart={
                   canDrag ? (e) => handleDragStart(e, entry) : undefined
                 }
-                className={`group rounded-xl border border-zinc-850 bg-zinc-900/40 transition-colors hover:border-zinc-700 hover:bg-zinc-900/80 ${
+                className={`group rounded-xl border border-zinc-800 bg-zinc-900/40 transition-colors hover:border-zinc-700 hover:bg-zinc-900/80 ${
                   compact ? "p-2" : "p-3"
                 } ${canDrag ? "cursor-grab active:cursor-grabbing" : ""}`}
               >

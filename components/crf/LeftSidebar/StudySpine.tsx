@@ -738,7 +738,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             )}
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-zinc-850">
+          <div className="space-y-2 pt-2 border-t border-zinc-800">
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">
                 Form catalog

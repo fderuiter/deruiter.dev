@@ -530,6 +530,24 @@
       "reason": "A planted ECG review warning on ADEG; CORE v0.17.1 publishes no ADaMIG rules."
     },
     {
+      "ruleId": "AD-016",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADCM prior-medication flag against the analysis and treatment dates; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-017",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADCM on-treatment flag against the analysis and treatment dates; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-018",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
       "ruleId": "SD-040",
       "core": [],
       "coverage": "none",

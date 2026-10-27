@@ -222,7 +222,7 @@
     ],
     "conformance": {
       "status": "warning",
-      "rulesVersion": "1.6.0",
+      "rulesVersion": "1.7.0",
       "terminologyVersion": "2026-09-25",
       "scopeNotice": "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.",
       "coreUrl": "https://www.cdisc.org/core",
@@ -603,6 +603,15 @@
         "file": "adae.xpt"
       },
       {
+        "name": "ADCM",
+        "label": "Concomitant Meds Analysis",
+        "class": "OCCDS",
+        "structure": "One record per medication per subject",
+        "keys": ["STUDYID", "USUBJID", "ASEQ"],
+        "records": 99,
+        "file": "adcm.xpt"
+      },
+      {
         "name": "ADTTE",
         "label": "Time-to-Event Analysis",
         "class": "BDS (TIME-TO-EVENT)",
@@ -614,11 +623,11 @@
     ],
     "conformance": {
       "status": "warning",
-      "rulesVersion": "1.6.0",
+      "rulesVersion": "1.7.0",
       "terminologyVersion": "2026-09-25",
       "scopeNotice": "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.",
       "coreUrl": "https://www.cdisc.org/core",
-      "rulesChecked": 15,
+      "rulesChecked": 18,
       "issues": []
     },
     "derivations": [
@@ -737,6 +746,26 @@
         "id": "ADAE_OCC",
         "text": "Flag the first treatment-emergent occurrence overall, by body system and by preferred term, ordered by analysis start date and AE sequence.",
         "variables": ["ADAE.AOCCFL", "ADAE.AOCCSFL", "ADAE.AOCCPFL"]
+      },
+      {
+        "id": "ADCM_IMPUTE",
+        "text": "Impute month-only medication starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days. A medication marked ongoing has no analysis end date.",
+        "variables": ["ADCM.ASTDT", "ADCM.ASTDTF", "ADCM.AENDT", "ADCM.AENDTF"]
+      },
+      {
+        "id": "ADCM_DAY",
+        "text": "ASTDY and AENDY count from first dose (ADSL.TRTSDT) as day 1, with no day 0: the analysis date minus TRTSDT, plus 1 on or after first dose. Missing when either date is missing.",
+        "variables": ["ADCM.ASTDY", "ADCM.AENDY"]
+      },
+      {
+        "id": "ADCM_TIMING",
+        "text": "For a dosed subject, PREFL is Y when the medication started before first dose, or has no analysis start date. ONTRTFL is Y when it started on or before the end of the on-treatment period (14 days after last dose, capped at last known contact) and ended on or after first dose, or has no analysis end date. A medication started before and continued after first dose has both flags. Both are blank for a subject never dosed.",
+        "variables": ["ADCM.PREFL", "ADCM.ONTRTFL", "ADCM.LSTALVDT"]
+      },
+      {
+        "id": "ADCM_RESCUE",
+        "text": "RESCUEFL is Y when the medication was recorded as rescue medication (CM.CMCAT is RESCUE MEDICATION), and blank otherwise.",
+        "variables": ["ADCM.RESCUEFL"]
       },
       {
         "id": "ADTTE_EVENT",

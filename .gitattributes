@@ -10,3 +10,5 @@ __tests__/fixtures/schemas/odcs-3.2.0/odcs-json-schema-v3.2.0.json -text
 __tests__/fixtures/schemas/odcs-3.2.0/LICENSE -text
 __tests__/fixtures/schemas/openlineage-1.54.0/*.json -text
 __tests__/fixtures/schemas/openlineage-1.54.0/LICENSE -text
+__tests__/fixtures/schemas/ars-1.0/ars_ldm.schema.json -text
+__tests__/fixtures/schemas/ars-1.0/LICENSE -text

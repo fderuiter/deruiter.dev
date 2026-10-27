@@ -12,9 +12,10 @@ A file an output is rendered to.
 
 ### fileType
 
-> `readonly` **fileType**: [`ArsTerm`](ArsTerm.md)
+> `readonly` **fileType**: [`ArsExtensibleTerm`](../type-aliases/ArsExtensibleTerm.md)
 
-File type, for example `html` or `rtf`.
+File type: the controlled term `rtf`, or a sponsor term for `html` and
+`svg`, which ARS 1.0 does not list.
 
 ***
 

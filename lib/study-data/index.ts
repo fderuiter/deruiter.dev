@@ -173,8 +173,10 @@ export { escapeRtf, writeTableRtf } from "./internal/tlf/rtf";
 export {
   buildTlfOutputs,
   writeArsJson,
+  writeArsLineageJson,
   writeTlfFiles,
   ARS_REPORTING_EVENT_PATH,
+  ARS_RESULT_LINEAGE_PATH,
   TLF_OUTPUT_DIR,
 } from "./internal/tlf/outputs";
 export {

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { buildFormCatalog } from "@/lib/crf/form-catalog";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 (
@@ -47,11 +48,12 @@ describe("WAI-ARIA Tab Navigation Standards Across Components", () => {
       onAddForm: vi.fn(),
       onDuplicateForm: vi.fn(),
       onDeleteForm: vi.fn(),
-      onOpenCdashScaffolder: vi.fn(),
+      onOpenFormCatalog: vi.fn(),
       onAddField: vi.fn(),
       onAssignFormToVisit: vi.fn(),
       onUnassignFormFromVisit: vi.fn(),
-      onInjectCdashForm: vi.fn(),
+      catalogEntries: buildFormCatalog(),
+      onAddCatalogEntry: vi.fn(),
     };
 
     it("has parent container with role='tablist' and aria-label='Study Spine Navigation'", async () => {

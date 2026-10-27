@@ -72,7 +72,7 @@ interface StudioHeaderProps {
   onChangeMode: (mode: StudioMode) => void;
   onSelectPreset: (presetId: string) => void;
   onOpenDiagnostics: () => void;
-  onOpenCdashScaffolder: () => void;
+  onOpenFormCatalog: () => void;
   onOpenBranding: () => void;
   onOpenExportDocument: () => void;
   onOpenBaselines?: () => void;
@@ -105,7 +105,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onChangeMode,
   onSelectPreset,
   onOpenDiagnostics,
-  onOpenCdashScaffolder,
+  onOpenFormCatalog,
   onOpenBranding,
   onOpenExportDocument,
   onOpenBaselines,
@@ -405,15 +405,15 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             <span>Run Pipeline</span>
           </button>
 
-          {/* Primary 1-Click CDASH Quick Scaffolder Button */}
+          {/* Form catalog: every ready-made form and block (#2927 item 11) */}
           <button
-            onClick={onOpenCdashScaffolder}
+            onClick={onOpenFormCatalog}
             className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shrink-0 whitespace-nowrap shadow-xs"
-            title="Add a standard CDASH form (Demographics, Vital Signs, Adverse Events and more)"
+            title="Add a ready-made form or block: CDASH domains, forms from the example studies, your templates and smart blocks"
           >
             <IconSparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden sm:inline">+ CDASH Form</span>
-            <span className="sm:hidden">+ CDASH</span>
+            <span className="hidden sm:inline">+ Add form</span>
+            <span className="sm:hidden">+ Form</span>
           </button>
 
           {/* Simulation Button (Shown on 2xl or via More menu) */}
@@ -546,11 +546,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     <button
                       onClick={() => {
                         setIsMoreMenuOpen(false);
-                        onOpenCdashScaffolder();
+                        onOpenFormCatalog();
                       }}
                       className="col-span-2 rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
                     >
-                      Add CDASH form
+                      Add form
                     </button>
                   </div>
 
@@ -566,11 +566,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                   <button
                     onClick={() => {
                       setIsMoreMenuOpen(false);
-                      onOpenCdashScaffolder();
+                      onOpenFormCatalog();
                     }}
                     className="hidden sm:block xl:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
                   >
-                    Add CDASH form
+                    Add form
                   </button>
 
                   <button

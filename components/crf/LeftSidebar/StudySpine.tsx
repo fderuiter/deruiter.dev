@@ -6,7 +6,6 @@ import {
   IconPlus,
   IconTrash,
   IconCopy,
-  IconSparkles,
   IconChevronDown,
   IconChevronRight,
   IconGripVertical,
@@ -17,13 +16,11 @@ import {
   IconX,
   IconGitFork,
 } from "@tabler/icons-react";
-import { StudyProtocol, CRFForm, CodelistDefinition } from "@/lib/crf/types";
+import { StudyProtocol, CRFForm } from "@/lib/crf/types";
 import { formatVisitWindow } from "@/lib/crf/visit-window";
-import {
-  CDASH_DOMAIN_CATALOG,
-  StudyProtocolEngine,
-} from "@/lib/crf/study-engine";
-import { scaffoldCdashDomain } from "@/lib/crf/cdash-domain-templates";
+import { StudyProtocolEngine } from "@/lib/crf/study-engine";
+import type { FormCatalogEntry } from "@/lib/crf/form-catalog";
+import { CATALOG_DRAG_TYPE, FormCatalogList } from "../FormCatalogList";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
@@ -47,16 +44,14 @@ interface StudySpineProps {
   onAddForm: () => void;
   onDuplicateForm: (formId: string) => void;
   onDeleteForm: (formId: string) => void;
-  onOpenCdashScaffolder: () => void;
+  onOpenFormCatalog: () => void;
   onAddField: (field: import("@/lib/crf/types").CRFField) => void;
   onAssignFormToVisit: (visitId: string, formId: string) => void;
   onUnassignFormFromVisit: (visitId: string, formId: string) => void;
-  onInjectCdashForm: (
-    form: CRFForm,
-    targetVisitId?: string,
-    /** Codelists the form needs that the study does not have yet. */
-    codelists?: CodelistDefinition[]
-  ) => void;
+  /** Every ready-made form and block the studio offers (#2927 item 11). */
+  catalogEntries: readonly FormCatalogEntry[];
+  /** Adds a catalog entry: a form to the given visit, a block to the open form. */
+  onAddCatalogEntry: (entryId: string, targetVisitId?: string) => void;
   /** Commits a form variant transaction (#675) as one undoable change. */
   onCommitFormVariant?: (study: StudyProtocol, variantFormId: string) => void;
 }
@@ -74,11 +69,12 @@ export const StudySpine: React.FC<StudySpineProps> = ({
   onAddForm,
   onDuplicateForm,
   onDeleteForm,
-  onOpenCdashScaffolder,
+  onOpenFormCatalog,
   onAddField,
   onAssignFormToVisit,
   onUnassignFormFromVisit,
-  onInjectCdashForm,
+  catalogEntries,
+  onAddCatalogEntry,
   onCommitFormVariant,
 }) => {
   const [collapsedEpochs, setCollapsedEpochs] = useState<
@@ -88,7 +84,6 @@ export const StudySpine: React.FC<StudySpineProps> = ({
     Record<string, boolean>
   >({});
   const [dragOverVisitId, setDragOverVisitId] = useState<string | null>(null);
-  const [libraryFilter, setLibraryFilter] = useState<string>("");
   const [formPendingDeletion, setFormPendingDeletion] =
     useState<CRFForm | null>(null);
   const deleteFormDialogRef = useFocusTrap<HTMLDivElement>(
@@ -222,13 +217,6 @@ export const StudySpine: React.FC<StudySpineProps> = ({
     );
   };
 
-  const handleDragStartTemplate = (e: React.DragEvent, domainCode: string) => {
-    e.dataTransfer.setData(
-      "application/json",
-      JSON.stringify({ type: "template", domainCode })
-    );
-  };
-
   const handleDragOverVisit = (e: React.DragEvent, visitId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -253,14 +241,9 @@ export const StudySpine: React.FC<StudySpineProps> = ({
         onAssignFormToVisit(visitId, data.formId);
         onSelectVisit(visitId);
         onSelectForm(data.formId);
-      } else if (data.type === "template" && data.domainCode) {
-        const scaffolded = scaffoldCdashDomain(
-          data.domainCode as Parameters<typeof scaffoldCdashDomain>[0]
-        );
-        onInjectCdashForm(scaffolded, visitId);
-        onAssignFormToVisit(visitId, scaffolded.id);
+      } else if (data.type === CATALOG_DRAG_TYPE && data.entryId) {
+        onAddCatalogEntry(data.entryId, visitId);
         onSelectVisit(visitId);
-        onSelectForm(scaffolded.id);
       }
     } catch {
       // Fallback gracefully
@@ -755,91 +738,32 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             )}
           </div>
 
-          <FormTemplatesPanel
-            study={study}
-            activeVisitId={activeVisitId}
-            onInsert={(form, visitId, codelists) =>
-              onInjectCdashForm(form, visitId, codelists)
-            }
-          />
-
-          {/* Global CDASH Library Section */}
-          <div className="space-y-2 pt-2 border-t border-zinc-850">
+          <div className="space-y-2 pt-2 border-t border-zinc-800">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-brand-cyan font-semibold flex items-center gap-1">
-                <IconSparkles className="w-3.5 h-3.5" />
-                Global CDASH Library
+              <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">
+                Form catalog
               </span>
               <button
-                onClick={onOpenCdashScaffolder}
-                className="text-[10px] text-zinc-400 hover:text-brand-cyan font-mono transition-colors"
+                type="button"
+                onClick={onOpenFormCatalog}
+                className="text-[10px] text-zinc-400 hover:text-amber-300 font-mono transition-colors"
               >
-                Modal View
+                Open larger view
               </button>
             </div>
-
-            {/* Quick Filter */}
-            <input
-              type="text"
-              placeholder="Search templates (e.g. Vitals, RECIST)..."
-              value={libraryFilter}
-              onChange={(e) => setLibraryFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-brand-cyan"
+            <p className="px-1 text-[10px] text-zinc-400">
+              Forms go to the selected visit. Blocks go into the open form.
+            </p>
+            <FormCatalogList
+              entries={catalogEntries}
+              canInsertBlocks={!!activeFormId}
+              draggable
+              compact
+              onAdd={(entry) => onAddCatalogEntry(entry.id, activeVisitId)}
             />
-
-            {/* Template Items */}
-            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5">
-              {CDASH_DOMAIN_CATALOG.filter((cat) =>
-                libraryFilter
-                  ? cat.label
-                      .toLowerCase()
-                      .includes(libraryFilter.toLowerCase()) ||
-                    cat.code.toLowerCase().includes(libraryFilter.toLowerCase())
-                  : true
-              ).map((cat) => {
-                return (
-                  <div
-                    key={cat.code}
-                    draggable
-                    onDragStart={(e) => handleDragStartTemplate(e, cat.code)}
-                    className="p-2 rounded-xl border border-zinc-850 bg-zinc-900/40 hover:border-brand-cyan/40 hover:bg-zinc-900/80 transition-all cursor-grab active:cursor-grabbing group"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <IconGripVertical className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/30">
-                          {cat.code}
-                        </span>
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-zinc-200 truncate group-hover:text-white">
-                            {cat.label}
-                          </h4>
-                          <p className="text-[10px] text-zinc-400 truncate">
-                            {cat.variableCount} standardized variables
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          const scaffolded = scaffoldCdashDomain(
-                            cat.code as Parameters<
-                              typeof scaffoldCdashDomain
-                            >[0]
-                          );
-                          onInjectCdashForm(scaffolded, activeVisitId);
-                        }}
-                        className="px-2 py-1 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30 text-[10px] font-mono font-bold transition-colors shrink-0"
-                        title="Add this template to the study"
-                      >
-                        + Add
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
+
+          <FormTemplatesPanel />
         </div>
 
         {/* TAB 3: WIDGET PALETTE */}

@@ -38,7 +38,7 @@ const TOUR_STEPS: TourStep[] = [
     details:
       "Spine lists the study's visits and the forms collected at each one. Forms lists every form in the study. Palette holds the field types: click one to add it to the open form.",
     actionHint:
-      "Tip: the '+ CDASH Form' button in the header adds a standard form such as Demographics or Adverse Events in one click.",
+      "Tip: the '+ Add form' button in the header opens the form catalog: CDASH domains, forms from the example studies, your saved templates and smart blocks.",
   },
   {
     id: "step_canvas",

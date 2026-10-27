@@ -126,7 +126,7 @@ async function fetchRawGitHubStats(
   }
 
   const signal = AbortSignal.timeout(GITHUB_REQUEST_BUDGET_MS);
-  const requestInit = { headers, signal, next: { revalidate: 3600 } };
+  const requestInit = { headers, signal, next: { revalidate: 86400 } };
 
   try {
     // 1. Fetch main repository statistics
@@ -259,7 +259,7 @@ const cachedGetGitHubStats = (owner: string, repo: string) =>
   unstable_cache(
     async () => fetchRawGitHubStats(owner, repo),
     ["github-repo-metrics-cache", owner, repo],
-    { revalidate: 3600, tags: ["github"] }
+    { revalidate: 86400, tags: ["github"] }
   )();
 
 /**

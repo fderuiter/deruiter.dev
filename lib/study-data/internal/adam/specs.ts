@@ -28,6 +28,14 @@ export const ADAM_METHODS = {
     "A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact.",
   ADAE_OCC:
     "Flag the first treatment-emergent occurrence overall, by body system and by preferred term, ordered by analysis start date and AE sequence.",
+  ADCM_IMPUTE:
+    "Impute month-only medication starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days. A medication marked ongoing has no analysis end date.",
+  ADCM_DAY:
+    "ASTDY and AENDY count from first dose (ADSL.TRTSDT) as day 1, with no day 0: the analysis date minus TRTSDT, plus 1 on or after first dose. Missing when either date is missing.",
+  ADCM_TIMING:
+    "For a dosed subject, PREFL is Y when the medication started before first dose, or has no analysis start date. ONTRTFL is Y when it started on or before the end of the on-treatment period (14 days after last dose, capped at last known contact) and ended on or after first dose, or has no analysis end date. A medication started before and continued after first dose has both flags. Both are blank for a subject never dosed.",
+  ADCM_RESCUE:
+    "RESCUEFL is Y when the medication was recorded as rescue medication (CM.CMCAT is RESCUE MEDICATION), and blank otherwise.",
   ADTTE_EVENT:
     "An event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition; event date is AE start date.",
   ADTTE_CENSOR:

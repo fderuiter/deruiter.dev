@@ -77,7 +77,7 @@ would carry.
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | Spend forecast facts | `gold.fct_spend_forecast` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.9.0 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.10.0 |
 
 ## Retention
 
@@ -158,4 +158,5 @@ would carry.
 | ADLB | Laboratory Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
 | ADEG | ECG Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 32 |
 | ADAE | Adverse Events Analysis | One record per adverse event per subject | STUDYID, USUBJID, ASEQ | 27 |
+| ADCM | Concomitant Meds Analysis | One record per medication per subject | STUDYID, USUBJID, ASEQ | 29 |
 | ADTTE | Time-to-Event Analysis | One record per subject per parameter | STUDYID, USUBJID, ASEQ | 22 |

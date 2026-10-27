@@ -88,6 +88,7 @@ describe("runPipeline", () => {
       "ADLB",
       "ADEG",
       "ADAE",
+      "ADCM",
       "ADTTE",
     ]);
     expect(
@@ -98,7 +99,7 @@ describe("runPipeline", () => {
     ).toHaveLength(17);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "adam")
-    ).toHaveLength(6);
+    ).toHaveLength(7);
     expect(run.conformance?.status).toBe("warning");
     expect(run.findings.length).toBeGreaterThan(0);
     expect(

@@ -9,4 +9,5 @@
 ## Functions
 
 - [deriveAdae](functions/deriveAdae.md)
+- [deriveAdcm](functions/deriveAdcm.md)
 - [deriveAdtte](functions/deriveAdtte.md)

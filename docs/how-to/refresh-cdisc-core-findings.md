@@ -10,6 +10,11 @@ reads that file. Nothing runs CORE at request time.
 
 The file is generated. Never edit it by hand.
 
+The Study Data page shows these findings on its conformance stage, but only
+for a run CORE actually saw: the default study at the default seed and
+subject count, with or without one injected issue. Any other run says that
+only the local rules checked it.
+
 ## When it goes stale
 
 Two checks tell you the file no longer matches the code:
@@ -83,6 +88,19 @@ npx tsx scripts/study-data-core.ts record "$work/in" "$work/reports" \
 the allowlist, and `reconcile-crf` does the same for the preset exports.
 `record` rewrites the committed file.
 
+## After editing the allowlist or the crosswalk
+
+The file also carries the allowlist's reason for each accepted finding and
+the crosswalk's CORE twins for each local rule, because the page shows both.
+After changing `scripts/study-data-core-allowlist.json` or
+`scripts/study-data-core-crosswalk.json`, copy them in without running CORE:
+
+```bash
+npx tsx scripts/study-data-core.ts annotate
+```
+
+`__tests__/study-data-core-recorded.test.ts` fails until you do.
+
 ## What the file holds
 
 - `lock`: the CORE tag and commit, the standards each target ran against,
@@ -92,6 +110,11 @@ the allowlist, and `reconcile-crf` does the same for the preset exports.
   with its outcome (`SUCCESS`, `ISSUE REPORTED`, `SKIPPED` when it does not
   apply, or `EXECUTION ERROR`), the CDISC and FDA rule ids it cites and its
   message.
+- `explained`: the allowlist's category, reason and tracking issue for each
+  accepted SDTM and USDM finding on the default view, by `CORE-id dataset`.
+- `twins`: each local SD- rule the crosswalk measured CORE to catch, with
+  the CORE rules and whether they report the defect itself or a
+  consequence of it.
 - `views.default`: every finding, one line each: CORE rule, dataset, record
   (`USUBJID#SEQ`) and the variables with the values CORE saw.
 - `views.<scenario>`: the findings the scenario adds and removes against the

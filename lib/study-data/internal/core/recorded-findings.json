@@ -3842,6 +3842,324 @@
       }
     }
   },
+  "explained": {
+    "sdtm": {
+      "CORE-000701 AE": {
+        "category": "by-design",
+        "reason": "AEs with a month-only start date have no EPOCH: an epoch cannot be assigned from a partial date."
+      },
+      "CORE-000701 CM": {
+        "category": "by-design",
+        "reason": "Medications started before informed consent have no EPOCH, since they began before the study's first epoch; most are remembered to the month only. Medications for an AE with a month-only start date have none either."
+      },
+      "CORE-000761 TS": {
+        "category": "ct-cache",
+        "reason": "TSVCDVER is the declared CT release, which CORE's rule cache does not hold yet."
+      },
+      "CORE-000767 AE": {
+        "category": "core-limitation",
+        "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+      },
+      "CORE-000767 CM": {
+        "category": "core-limitation",
+        "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+      },
+      "CORE-000767 DS": {
+        "category": "core-limitation",
+        "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+      },
+      "CORE-000929 SUPPDM": {
+        "category": "core-limitation",
+        "reason": "Engine execution error: the evaluation dataset fails to build for SUPPDM."
+      },
+      "CORE-001081 SUPPDM": {
+        "category": "core-limitation",
+        "reason": "Engine execution error: the evaluation dataset fails to build for SUPPDM."
+      },
+      "CORE-001080 TS": {
+        "category": "core-limitation",
+        "reason": "Engine execution error (unknown exception) on TS."
+      },
+      "CORE-000741 TS": {
+        "category": "core-limitation",
+        "reason": "The rule looks for TSPARMCD PCLASS, but the CDISC CT code for Pharmacologic Class is PCLAS (C98768), which TS carries with INTMODEL and INTTYPE."
+      },
+      "CORE-000264 MH": {
+        "category": "by-design",
+        "reason": "SDTMIG 3.4 MH has no MHSOC variable; MHBODSYS carries the primary system organ class from the study's dictionary, so the rule compares it with a variable the domain does not define."
+      },
+      "CORE-000328 MH": {
+        "category": "by-design",
+        "reason": "SDTMIG 3.4 MH has no MHSTDY. History starts years before first dose and is mostly year or year-month only, so MHDY on the collection date is the study day the domain carries."
+      },
+      "CORE-000767 MH": {
+        "category": "core-limitation",
+        "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+      },
+      "CORE-000776 MH": {
+        "category": "by-design",
+        "reason": "SDTMIG 3.4 MH has no MHENDY. Resolved conditions ended before screening and are dated to the year or month, so no study day can be derived from them."
+      },
+      "CORE-000321 IE": {
+        "category": "by-design",
+        "reason": "IE holds only screen failures, who were never dosed and have no RFSTDTC, so no study day can be derived from IEDTC and IEDY is left out."
+      },
+      "CORE-000793 IE": {
+        "category": "by-design",
+        "reason": "IE holds only screen failures, who were never dosed and have no RFSTDTC, so no study day can be derived from IEDTC and IEDY is left out."
+      }
+    },
+    "usdm": {
+      "CORE-000939 Objective": {
+        "category": "ct-cache",
+        "reason": "The fixture uses the 2026-09-25 Objective Level decodes (Primary Objective, Secondary Objective). CORE validates against its newest cached CT, 2026-03-27, whose submission values were Study Primary Objective and Study Secondary Objective."
+      },
+      "CORE-000419 Activity": {
+        "category": "core-limitation",
+        "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
+      },
+      "CORE-000419 EligibilityCriterion": {
+        "category": "core-limitation",
+        "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
+      },
+      "CORE-000419 Encounter": {
+        "category": "core-limitation",
+        "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
+      },
+      "CORE-000419 StudyEpoch": {
+        "category": "core-limitation",
+        "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
+      },
+      "CORE-000817 StudyTitle": {
+        "category": "core-limitation",
+        "reason": "Reports both titles although their type codes differ (C207616, C207615)."
+      },
+      "CORE-000871 InterventionalStudyDesign": {
+        "category": "core-limitation",
+        "reason": "Counts two primary objectives while listing the one the fixture has."
+      },
+      "CORE-000873 StudyVersion": {
+        "category": "core-limitation",
+        "reason": "Reports duplicate governance dates although the fixture has none."
+      }
+    }
+  },
+  "twins": {
+    "SD-001": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-003": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-004": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-005": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-006": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-007": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-008": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-009": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-010": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-011": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-012": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-013": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-035": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000351"
+      ]
+    },
+    "SD-016": {
+      "coverage": "related",
+      "core": [
+        "CORE-000138",
+        "CORE-000238",
+        "CORE-000239"
+      ]
+    },
+    "SD-017": {
+      "coverage": "related",
+      "core": [
+        "CORE-000138"
+      ]
+    },
+    "SD-020": {
+      "coverage": "related",
+      "core": [
+        "CORE-000363",
+        "CORE-000370"
+      ]
+    },
+    "SD-022": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000087"
+      ]
+    },
+    "SD-025": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000552"
+      ]
+    },
+    "SD-026": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-027": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-028": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000036",
+        "CORE-000269"
+      ]
+    },
+    "SD-029": {
+      "coverage": "related",
+      "core": [
+        "CORE-000271"
+      ]
+    },
+    "SD-030": {
+      "coverage": "related",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-048": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-049": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-051": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-055": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-056": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-059": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000552"
+      ]
+    },
+    "SD-060": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000553"
+      ]
+    },
+    "SD-064": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-065": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-069": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-071": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-072": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    }
+  },
   "views": {
     "default": {
       "inputSha256": "955c8c05973e2b6100c1fc8a81dd8066495a69f2a16caeae1bf1e825868ebb92",

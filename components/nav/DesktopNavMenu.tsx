@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { AnimatePresence, motion } from "framer-motion";
 import { IconChevronDown } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
@@ -76,7 +76,7 @@ function MenuLink({
     );
   }
   return (
-    <Link
+    <IntentLink
       href={item.href}
       data-nav-menu-item=""
       aria-current={isActive ? "page" : undefined}
@@ -85,7 +85,7 @@ function MenuLink({
       className={className}
     >
       {body}
-    </Link>
+    </IntentLink>
   );
 }
 
@@ -221,7 +221,7 @@ export const DesktopNavMenu: React.FC<DesktopNavMenuProps> = ({
               );
             })}
             {group.overviewLabel ? (
-              <Link
+              <IntentLink
                 href={group.href}
                 data-nav-menu-item=""
                 aria-current={pathname === group.href ? "page" : undefined}
@@ -231,7 +231,7 @@ export const DesktopNavMenu: React.FC<DesktopNavMenuProps> = ({
               >
                 <span className="truncate">{group.overviewLabel}</span>
                 <span aria-hidden="true">→</span>
-              </Link>
+              </IntentLink>
             ) : null}
           </motion.div>
         )}

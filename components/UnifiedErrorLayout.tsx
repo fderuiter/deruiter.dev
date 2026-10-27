@@ -8,7 +8,7 @@ import React, {
   useMemo,
   useSyncExternalStore,
 } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { clamp } from "@/lib/game-utils";
 import { formatNumber } from "@/lib/utils";
@@ -370,7 +370,7 @@ export function UnifiedErrorLayout({
                         : [];
 
                   return (
-                    <Link
+                    <IntentLink
                       key={study.id}
                       href={`/case-studies/${study.slug}`}
                       onClick={() => handleSuggestionClick(study.slug)}
@@ -398,7 +398,7 @@ export function UnifiedErrorLayout({
                             ))}
                         </div>
                       )}
-                    </Link>
+                    </IntentLink>
                   );
                 })}
               </div>
@@ -416,12 +416,12 @@ export function UnifiedErrorLayout({
               Search Site
             </button>
 
-            <Link
+            <IntentLink
               href={secondaryActionHref}
               className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-semibold bg-transparent border border-neutral-900 hover:border-neutral-800 text-neutral-400 rounded-2xl transition-all duration-300 cursor-pointer"
             >
               {secondaryActionText}
-            </Link>
+            </IntentLink>
           </div>
         </div>
       </div>

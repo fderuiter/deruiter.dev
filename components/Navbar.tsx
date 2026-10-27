@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -238,7 +238,7 @@ export const Navbar: React.FC = () => {
           className="@container max-w-6xl 2xl:max-w-[85rem] mx-auto px-4 sm:px-6 md:px-10 flex flex-wrap justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
         >
           {/* Logo / Wordmark */}
-          <Link
+          <IntentLink
             href="/"
             onClick={(e) => handleNavClick(e, "/#hero")}
             onMouseEnter={handleLinkHover}
@@ -250,7 +250,7 @@ export const Navbar: React.FC = () => {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
             </span>
             <span className="tracking-wider">FDERUITER</span>
-          </Link>
+          </IntentLink>
 
           {/* Desktop Navigation Links. Media queries ignore the page's root
               font size, so at 200% text a 1440px viewport still matches xl
@@ -307,7 +307,7 @@ export const Navbar: React.FC = () => {
                     activeSection === "contact");
                 const onHome = group.id === "contact" && pathname === "/";
                 return (
-                  <Link
+                  <IntentLink
                     key={group.id}
                     href={onHome ? "/#contact" : group.href}
                     aria-current={isCurrent ? "page" : undefined}
@@ -325,7 +325,7 @@ export const Navbar: React.FC = () => {
                     )}
                   >
                     {group.label}
-                  </Link>
+                  </IntentLink>
                 );
               })}
             </nav>

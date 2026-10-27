@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { IconLock } from "@tabler/icons-react";
 import type { EasterEggAchievement } from "@/lib/meme-data";
 import { renderTrophyGlyph } from "./pictograms";
@@ -128,12 +128,12 @@ export function TrophyShelf({
                   {ach.hintLink && (
                     <>
                       {" "}
-                      <Link
+                      <IntentLink
                         href={ach.hintLink.href}
                         className="underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
                       >
                         {ach.hintLink.label}
-                      </Link>
+                      </IntentLink>
                     </>
                   )}
                 </p>

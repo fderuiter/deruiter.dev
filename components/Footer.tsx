@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { usePathname } from "next/navigation";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useScrollToAnchor } from "@/hooks/useScrollToAnchor";
@@ -51,7 +51,7 @@ const FooterNavLink: React.FC<{
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }> = ({ item, onHover, onClick }) => (
   <li>
-    <Link
+    <IntentLink
       href={item.href}
       onClick={onClick}
       onMouseEnter={onHover}
@@ -59,7 +59,7 @@ const FooterNavLink: React.FC<{
     >
       <NavIcon name={item.icon} tone={item.tone} className="h-3 w-3" />
       {item.title}
-    </Link>
+    </IntentLink>
   </li>
 );
 
@@ -124,7 +124,7 @@ export const Footer: React.FC = () => {
           {/* Col 1: Brand & Bio */}
           <div className="sm:col-span-2 lg:col-span-5 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="space-y-3">
-              <Link
+              <IntentLink
                 href="/"
                 onMouseEnter={handleHover}
                 className="inline-flex items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground group pointer-coarse:min-h-11"
@@ -136,7 +136,7 @@ export const Footer: React.FC = () => {
                 <span className="group-hover:text-accent transition-colors">
                   FDERUITER
                 </span>
-              </Link>
+              </IntentLink>
               <p className="text-xs font-mono text-zinc-400 max-w-sm leading-relaxed">
                 Clinical data, useful software, and the occasional laser loon.
                 Made by Fred, with plenty of curiosity.
@@ -144,7 +144,7 @@ export const Footer: React.FC = () => {
             </div>
 
             {/* Live Operational Status Badge */}
-            <Link
+            <IntentLink
               href="/stack"
               onMouseEnter={handleHover}
               className="inline-flex items-center gap-2 px-3 py-1.5 pointer-coarse:min-h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-accent/40 text-[11px] font-mono text-zinc-300 hover:text-white transition-all w-fit group"
@@ -155,7 +155,7 @@ export const Footer: React.FC = () => {
               <span className="text-zinc-400 group-hover:text-accent transition-colors">
                 Inspect Stack ↗
               </span>
-            </Link>
+            </IntentLink>
           </div>
 
           {/* One column per top-bar menu, from the shared navigation data */}
@@ -170,13 +170,13 @@ export const Footer: React.FC = () => {
                 <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
                   {group.overviewLabel ? (
                     <li>
-                      <Link
+                      <IntentLink
                         href={group.href}
                         onMouseEnter={handleHover}
                         className="text-zinc-300 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
                       >
                         Overview
-                      </Link>
+                      </IntentLink>
                     </li>
                   ) : null}
                   {group.sections.map((section) => {
@@ -207,14 +207,14 @@ export const Footer: React.FC = () => {
                   {id === "about" ? (
                     <>
                       <li>
-                        <Link
+                        <IntentLink
                           href="/contact"
                           onMouseEnter={handleHover}
                           className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
                         >
                           <IconMessageCode className="w-3 h-3 text-accent" />
                           Contact
-                        </Link>
+                        </IntentLink>
                       </li>
                       <li>
                         <a
@@ -316,13 +316,13 @@ export const Footer: React.FC = () => {
               <span>{isDyslexic ? "Dyslexia: ON" : "Dyslexia Mode"}</span>
             </button>
             <span className="text-zinc-700">&bull;</span>
-            <Link
+            <IntentLink
               href="/proof"
               onMouseEnter={handleHover}
               className="hover:text-accent transition-colors pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
             >
               Logic &amp; Proofs
-            </Link>
+            </IntentLink>
             <span className="text-zinc-700">&bull;</span>
             <button
               type="button"

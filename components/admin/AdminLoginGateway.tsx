@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SignIn } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import {
   IconShieldLock,
   IconTerminal2,
@@ -192,13 +192,13 @@ export function AdminLoginGateway() {
 
           {/* Navigation & Helper Actions */}
           <div className="flex items-center justify-between pt-1">
-            <Link
+            <IntentLink
               href="/case-studies"
               className="inline-flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-colors"
             >
               <IconArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Return to Case Studies Index</span>
-            </Link>
+            </IntentLink>
 
             <button
               type="button"

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
@@ -81,12 +81,12 @@ export default function StudyDataPage() {
           figures of a study report. Select any number to see the records it
           came from and the protocol activity that scheduled them. To run a
           study of your own, design it in{" "}
-          <Link
+          <IntentLink
             href="/crf"
             className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             CRF Studio
-          </Link>{" "}
+          </IntentLink>{" "}
           and press Run Pipeline.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 font-mono text-xs">

@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed on 2026-10-27 under
+Accepted on 2026-10-27 under
 [#1169](https://github.com/fderuiter/deruiter.dev/issues/1169). The owner
-chooses the tier on the decision card in the "Design and document a preview
-environment" thread; this record is accepted with that choice. It amends the
-Preview column of the Environments contract in
+chose **on demand, no database** (Tier 0) on the decision card that day.
+Tier 1 below is recorded but not set up; turning it on needs the owner's go.
+It amends the Preview column of the Environments contract in
 [`docs/how-to/release-and-deploy.md`](../docs/how-to/release-and-deploy.md)
 and sits beside [ADR 0063](0063-weekly-release-train.md), which it does not
 change. It folds in #1024 and #622, both closed into #1169 on 2026-10-20, and
@@ -81,7 +81,7 @@ Two tiers. The owner picks which exists.
   Platform and CRF Studio all render. The contact and newsletter forms cannot
   save or send anything, reactions do not persist, and the admin area works only
   against the Clerk development instance.
-- **Tier 1, a schema-only preview database (optional).** One Neon branch
+- **Tier 1, a schema-only preview database (not set up).** One Neon branch
   named `preview`, created as a **schema-only** branch from production. It has
   production's schema and none of its rows, so subscriber and contact data
   cannot leak into it by construction, which a full copy plus a scrub cannot

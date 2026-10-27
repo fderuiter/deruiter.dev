@@ -97,9 +97,10 @@ The log names each variable and why:
 Never work around the preflight. If a Preview genuinely needs a service, it
 needs its own free account and an amendment to ADR 0071 first.
 
-## Tier 1: the preview database (only if chosen)
+## Tier 1: the preview database (not set up)
 
-The owner decides whether this tier exists. It uses one of the three root
+The owner chose Tier 0 on 2026-10-27, so this tier does not exist yet. Set it
+up only after the owner says to. It uses one of the three root
 branches Neon's free plan allows.
 
 **Set up:**

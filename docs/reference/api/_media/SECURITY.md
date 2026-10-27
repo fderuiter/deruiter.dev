@@ -104,7 +104,7 @@ The `overrides` block in `package.json` pins transitive dependencies that an ups
 | `browserslist`               | `^4.28.8`                | `@serwist` build tooling                                | 4.28.6                      | 2 new high advisories                                 |
 | `mysql2`                     | `^3.24.3`                | `prisma`                                                | 3.15.3                      | 1 new high and 1 new moderate advisory                |
 | `lodash-es`                  | `^4.18.1`                | `mermaid` through `chevrotain`                          | 4.17.23                     | 5 new high advisories                                 |
-| `qs`                         | `6.16.0`                 | Stryker through `typed-rest-client`                     | 6.15.1                      | 2 new moderate advisories                             |
+| `qs`                         | `6.16.1`                 | Stryker through `typed-rest-client`                     | 6.15.1                      | 3 new moderate advisories                             |
 | `jsdom`                      | `26.1.0`                 | `isomorphic-dompurify`                                  | a second copy at 30.1.1     | no new advisories; kept for runtime compatibility     |
 | `source-map-js`              | `^1.2.2`                 | `postcss` through Next.js                               | below 1.2.2                 | 1 new high advisory (GHSA-68fv-2mgg-jv7q)             |
 | `katex`                      | `^0.18.11`               | `markdownlint-cli`                                      | below 0.18.11               | 1 new moderate advisory (GHSA-238p-pmpm-9mq7)         |

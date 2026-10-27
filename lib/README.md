@@ -23,7 +23,7 @@ lib/
 
 `lib/clinical-standards/` holds what CRF Studio and the study-data pipeline share: the standards profile, the USDM v4 types, schema and schedule, and both controlled-terminology subsets. `lib/crf/` and `lib/study-data/` each import it and never import each other (#2927).
 
-`lib/study-workspace/` holds a USDM study open for work: the original document, the study version and design chosen for work, and immutable revisions (epic #3071). It also holds the TAVR device reference study (`TAVR_DEVICE_USDM`), which complements DEMO-301. It depends on `lib/clinical-standards` only.
+`lib/study-workspace/` holds a USDM study open for work: the original document, the study version and design chosen for work, and immutable revisions (epic #3071). It also holds the two device reference studies that complement DEMO-301: the single-arm TAVR study (`TAVR_DEVICE_USDM`) and the randomised TAVR versus SAVR trial analysed by win ratio (`TAVR_SAVR_USDM`). It depends on `lib/clinical-standards` only.
 
 A module with several pipeline stages keeps one private folder per stage under `internal/`. `lib/study-data/` ([ADR 0065](../adr/0065-study-data-pipeline-architecture.md)) is the reference: `internal/usdm`, `internal/synth`, `internal/sdtm`, `internal/conformance`, `internal/adam`, `internal/define`, `internal/export`, `internal/tlf` and `internal/lineage`, all reached only through `runPipeline` and the types and presets at the package root.
 

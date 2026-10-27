@@ -106,10 +106,9 @@ deployments, aliases, projects, integrations, or provider resources.
 
 ## Prevention Policy
 
-- During the manual hold, all Git-triggered Vercel deployments are disabled
-  and an operator starts Production from the Dashboard after CI passes (ADR 0051).
-- Keep the hold until a replacement release policy is approved and verified;
-  the nightly-train proposal is tracked in issue #1168.
+- All Git-triggered Vercel deployments are disabled. Production ships through
+  the weekly release train's Deploy Hook (ADR 0063), with Dashboard → Create
+  Deployment for the current green `main` SHA as the break-glass path.
 - Retention remains one day for production and canceled deployments and seven
   days for preview and error deployments, subject to Vercel exceptions.
 - One operator-created preview may be used for a high-risk review, then its

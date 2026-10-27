@@ -1,10 +1,10 @@
 # Production Deployment, Rollback & Synthetic Monitoring
 
-During the manual hold, a person starts each Production deployment from the
-Vercel Dashboard after CI passes ([ADR 0051](adr/0051-manual-production-releases.md)).
-Keep the hold until a replacement release policy is approved and verified.
-The nightly-train proposal is tracked in
-[issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168). The canonical, step-by-step release procedure is
+Production ships once a week through the weekly release train
+([ADR 0063](adr/0063-weekly-release-train.md), accepted 2026-10-27, which
+superseded the manual Dashboard releases of
+[ADR 0051](adr/0051-manual-production-releases.md); issue
+[#1168](https://github.com/fderuiter/deruiter.dev/issues/1168)). The canonical, step-by-step release procedure is
 [`docs/how-to/release-and-deploy.md`](docs/how-to/release-and-deploy.md). This
 guide describes the controls around that flow, the manual canary-analysis
 tooling, and the triage runbooks for the scheduled synthetic probes.
@@ -16,10 +16,10 @@ tooling, and the triage runbooks for the scheduled synthetic probes.
 | Stage                     | Control                                                                                                                                          | Where it lives                           |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
 | Before merge              | **Merge Gate (Required Checks Summary)** must be green on the PR                                                                                 | `.github/workflows/ci.yml`               |
-| After green merge         | An operator uses Dashboard → Deployments → Create Deployment with the current `main` SHA; GitHub Actions never deploys                           | Vercel project, `vercel.json`, ADR 0051  |
+| After green merge         | Nothing deploys. The Sunday weekly train re-checks Merge Gate on `main` HEAD, browser-tests that commit, then fires the Vercel Deploy Hook       | `.github/workflows/weekly-train.yml`     |
 | During the build          | The type check runs, then pending migrations are applied through the unpooled Neon endpoint on Vercel production builds only, before compilation | `scripts/build.js`                       |
 | Before promotion          | None: the project keeps no Vercel Deployment Checks, so a READY build takes the domains (#2899)                                                  | Vercel project settings                  |
-| After promotion           | The daily synthetic probes exercise the critical journeys against production (section 3)                                                         | `.github/workflows/synthetic-probes.yml` |
+| After promotion           | The train smoke-tests the live site before it publishes the GitHub Release; the daily synthetic probes follow (section 3)                        | `.github/workflows/synthetic-probes.yml` |
 | When production is broken | A person uses Vercel's **Instant Rollback** to the previous production deployment, then fixes forward with a PR                                  | Vercel dashboard                         |
 
 Nothing in this repository promotes or rolls back a deployment automatically.

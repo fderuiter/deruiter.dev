@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted on 2026-09-24; amended on 2026-09-28 and 2026-10-25. This temporarily supersedes
+Superseded by [ADR 0063](0063-weekly-release-train.md) on 2026-10-27, when the
+weekly release train shipped v1.0.0 and was switched on. Production now ships
+through the train; **Create Deployment** remains the break-glass path.
+
+Accepted on 2026-09-24; amended on 2026-09-28 and 2026-10-25. This temporarily superseded
 the automatic Production trigger in [ADR 0049](0049-deploy-main-on-green-ci.md)
 until a replacement release policy is approved and verified. The hold has
 no automatic calendar expiry.

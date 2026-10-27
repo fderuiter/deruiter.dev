@@ -161,7 +161,8 @@ async function runBuildPipeline() {
   // `next build` the checker started while the build still held ~5.7 GB of
   // webpack state, which with tsc's ~2.7 GB overran Vercel's 8 GB machine
   // (#2100). next.config.ts skips Next's own check, so this phase is the
-  // build's type gate.
+  // build's type gate. Since ADR 0072 it runs the TypeScript 7 compiler,
+  // which peaked at about 3.0 GB resident here against 3.3 GB for 6.0.
   console.log("\n--- Phase 1.4: Type Checking (Standalone Process) ---");
   runStep("npm", ["run", "typecheck"]);
 

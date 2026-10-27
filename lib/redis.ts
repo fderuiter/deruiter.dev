@@ -26,6 +26,13 @@ const createRedisClient = () => {
   return new Redis({
     url: currentEnv.UPSTASH_REDIS_REST_URL || "http://localhost:8079",
     token: currentEnv.UPSTASH_REDIS_REST_TOKEN || "example_token",
+    // Without this, @upstash/redis sends every command with fetch cache
+    // "no-store", and a no-store fetch during render makes Next render the
+    // page per request: every ISR page that reads Redis (home, blog, case
+    // studies) lost its cache in production (#3031). "default" is what Next
+    // treats as no cache option: the POST is still never stored in the data
+    // cache, but the route stays static and regenerates on its revalidate.
+    cache: "default",
   });
 };
 

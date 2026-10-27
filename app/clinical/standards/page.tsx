@@ -3,6 +3,8 @@ import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
   standardsBillOfMaterials,
+  type StandardBomEntry,
+  type StandardCapability,
   type StandardCheckKind,
   type StandardStatus,
 } from "@/lib/clinical-standards";
@@ -75,6 +77,29 @@ const STATUS_TONE: Record<StandardStatus, string> = {
 };
 
 const repoLink = (path: string) => `${REPO}/${path}`;
+
+const CAPABILITY_ORDER: readonly StandardCapability[] = [
+  "browse",
+  "author",
+  "import",
+  "generate",
+  "export",
+  "validate",
+  "execute",
+];
+
+/** "Generate, export, validate (subset)": what the site does with it. */
+function capabilityList(
+  capabilities: StandardBomEntry["capabilities"]
+): string {
+  return CAPABILITY_ORDER.flatMap((name) => {
+    const support = capabilities[name];
+    if (!support || (support.status !== "yes" && support.status !== "subset")) {
+      return [];
+    }
+    return [support.status === "subset" ? `${name} (subset)` : name];
+  }).join(", ");
+}
 
 function LayerOutcomes({ layer }: { layer: RuleLayer }) {
   const states = RULE_STATES.filter((state) => layer.outcomes[state]);
@@ -262,6 +287,14 @@ export default async function StandardsConformancePage() {
                   {STATUS_LABEL[entry.status]}
                 </dd>
               </dl>
+              <p className="mt-3 break-words text-sm text-slate-300">
+                {entry.coverage}
+              </p>
+              {capabilityList(entry.capabilities) ? (
+                <p className="mt-2 break-words font-mono text-xs text-slate-400">
+                  {capabilityList(entry.capabilities)}
+                </p>
+              ) : null}
               {entry.hold && entry.status === "held" ? (
                 <p className="mt-3 break-words text-sm text-slate-300">
                   {entry.hold}

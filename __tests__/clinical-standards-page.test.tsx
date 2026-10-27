@@ -52,6 +52,7 @@ describe("standards conformance page (#2992 step 6)", () => {
         .closest("li") as HTMLElement;
       expect(card.textContent).toContain(entry.pinned);
       expect(card.textContent).toContain(entry.published);
+      expect(card.textContent).toContain(entry.coverage);
       expect(within(card).getAllByRole("link")).toHaveLength(
         1 + entry.checks.length
       );

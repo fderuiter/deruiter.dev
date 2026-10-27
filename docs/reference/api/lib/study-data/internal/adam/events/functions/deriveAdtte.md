@@ -6,9 +6,11 @@
 
 # Function: deriveAdtte()
 
-> **deriveAdtte**(`definition`, `sdtm`, `adsl`, `adae`): `object`
+> **deriveAdtte**(`definition`, `sdtm`, `adsl`, `adae`, `adcm`): `object`
 
-Derive one event or censoring row for each dosed subject.
+Derive the time-to-event parameters for each dosed subject: TTADISC for
+the Kaplan-Meier figure, and TTDTH, TTSAE and TTRESC for the
+hierarchical composite.
 
 ## Parameters
 
@@ -25,6 +27,10 @@ readonly [`Dataset`](../../../../types/interfaces/Dataset.md)[]
 [`Dataset`](../../../../types/interfaces/Dataset.md)
 
 ### adae
+
+[`Dataset`](../../../../types/interfaces/Dataset.md)
+
+### adcm
 
 [`Dataset`](../../../../types/interfaces/Dataset.md)
 

@@ -6,7 +6,7 @@ import type { StudioMode } from "@/lib/crf";
  * them against visits, then verify the build and ship it. The mode bar, the
  * phone mode picker and the number-key shortcuts all read this order.
  */
-export type StudioStageId = "design" | "schedule" | "verify";
+type StudioStageId = "design" | "schedule" | "verify";
 
 interface StudioStage {
   id: StudioStageId;
@@ -43,7 +43,7 @@ export function stageOfMode(mode: StudioMode): StudioStage {
  * the next stage, or, from the last stage, running the study through the
  * pipeline.
  */
-export type StudioNextStep =
+type StudioNextStep =
   | { kind: "mode"; mode: StudioMode; label: string }
   | { kind: "pipeline"; label: string };
 

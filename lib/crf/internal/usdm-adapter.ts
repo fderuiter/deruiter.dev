@@ -35,7 +35,9 @@ import {
   USDM_TIMING_FIXED_REFERENCE,
   formatIsoDurationDays,
   getUsdmV4EncounterSchedule,
+  resolveUsdmStudyDesign,
   studyDayDistance,
+  type UsdmStudySelection,
 } from "@/lib/clinical-standards";
 import {
   StudyProtocol,
@@ -737,17 +739,23 @@ function normalizeImportedRules(raw: unknown): EditCheckRule[] {
 
 /**
  * Imports a CDISC USDM JSON document or object into an internal CRF Studio StudyProtocol.
+ * A USDM v4 document with more than one study version or design needs `options.selection`;
+ * without it the import throws and names the choices rather than reading the first.
  * Reassembles linear encounter schedules into visit sequences, extracts valueSets and codeList references into study codelists,
  * maps windowBefore and windowAfter visit tolerances to constrain study schedule rules, and resolves decoupled BiomedicalConcept definitions.
  */
 export function importStudyFromUsdm(
-  usdmInput: string | UsdmDocument | UsdmV4Document | Record<string, unknown>
+  usdmInput: string | UsdmDocument | UsdmV4Document | Record<string, unknown>,
+  options: { selection?: UsdmStudySelection } = {}
 ): StudyProtocol {
   const parsed: unknown =
     typeof usdmInput === "string" ? JSON.parse(usdmInput) : usdmInput;
   const doc = (
     getUsdmDocumentVersion(parsed) === "4"
-      ? lowerUsdmV4ToLegacy(parsed as Record<string, unknown>)
+      ? lowerUsdmV4ToLegacy(
+          parsed as Record<string, unknown>,
+          options.selection
+        )
       : parsed
   ) as Record<string, unknown> & UsdmDocument;
 
@@ -767,8 +775,24 @@ export function importStudyFromUsdm(
   }
 
   const studyObj = (doc.study || doc) as UsdmStudy & Record<string, unknown>;
-  const primaryDesign = ((studyObj.studyDesigns && studyObj.studyDesigns[0]) ||
-    {}) as UsdmStudyDesign & Record<string, unknown>;
+  // A lowered v4 document carries only the selected design; a legacy v3
+  // document with several designs needs one named, as v4 does.
+  const legacyDesigns = studyObj.studyDesigns || [];
+  const wantedDesignId = options.selection?.studyDesignId;
+  if (legacyDesigns.length > 1 && !wantedDesignId) {
+    throw new Error(
+      `USDM import: study has ${legacyDesigns.length} designs; choose one of ${legacyDesigns.map((d) => d.id).join(", ")}`
+    );
+  }
+  const chosenDesign =
+    legacyDesigns.length > 1
+      ? legacyDesigns.find((d) => d.id === wantedDesignId)
+      : legacyDesigns[0];
+  if (legacyDesigns.length > 1 && !chosenDesign) {
+    throw new Error(`USDM import: no study design ${wantedDesignId}`);
+  }
+  const primaryDesign = (chosenDesign || {}) as UsdmStudyDesign &
+    Record<string, unknown>;
 
   const arms: StudyArm[] = primaryDesign.arms || studyObj.arms || [];
   const epochs: StudyEpoch[] = primaryDesign.epochs || studyObj.epochs || [];
@@ -2436,13 +2460,32 @@ function lowerProtocolContent(
  * from other tools are read from native USDM v4 properties, with visit days
  * and windows resolved from the main schedule timeline.
  */
-function lowerUsdmV4ToLegacy(doc: Record<string, unknown>): UsdmDocument {
+function lowerUsdmV4ToLegacy(
+  doc: Record<string, unknown>,
+  selection?: UsdmStudySelection
+): UsdmDocument {
   const study = asRecord(doc.study) ?? {};
   const crfStudyExt = readCrfExtension(study, "study");
   const fromCrf = crfStudyExt !== undefined;
   const studyExt = crfStudyExt ?? {};
-  const version = asRecord(asArray(study.versions)[0]) ?? {};
-  const design = asRecord(asArray(version.studyDesigns)[0]) ?? {};
+  const resolved = resolveUsdmStudyDesign(study, selection);
+  if (
+    !resolved.ok &&
+    resolved.code !== "no-study-version" &&
+    resolved.code !== "no-study-design"
+  ) {
+    const choices = resolved.options
+      .map(
+        (option) =>
+          `${option.studyVersionId} (${option.designs.map((d) => d.id).join(", ") || "no designs"})`
+      )
+      .join("; ");
+    throw new Error(
+      `USDM import: ${resolved.message}. Study versions: ${choices}`
+    );
+  }
+  const version = (resolved.ok ? asRecord(resolved.version) : undefined) ?? {};
+  const design = (resolved.ok ? asRecord(resolved.design) : undefined) ?? {};
   const designExt = asRecord(studyExt.design) ?? {};
   const designId = asString(design.id) ?? "design_main";
 

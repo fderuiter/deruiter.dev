@@ -18,7 +18,7 @@ Add / Remove / Assign Visits
 
 ### action
 
-`"add"` \| `"rm"` \| `"assign"`
+`"add"` \| `"rm"` \| `"assign"` \| `"unassign"`
 
 ### args
 

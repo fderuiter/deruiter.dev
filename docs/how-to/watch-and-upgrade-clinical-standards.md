@@ -64,6 +64,22 @@ npx tsx scripts/standards-watch.ts check     # offline: validates the file
 
 Never edit `standards-latest.json` by hand.
 
+## ADaM metadata from the CDISC Library
+
+ADaMIG variable metadata is not public, so it comes from the CDISC Library
+API with the `CDISC_LIBRARY_API_KEY` GitHub Actions secret.
+`.github/workflows/cdisc-library-sync.yml` runs every Monday and on demand,
+never on a pull request. It runs `scripts/cdisc-library-adam.ts sync`, which
+reads the pinned ADaMIG and ADaM OCCDS and writes
+`lib/study-data/internal/conformance/adam-library-metadata.json`: each data
+structure's variable names, core designations, data types and codelist
+codes, and no IG text. When that file changes, the workflow records it on a
+`chore/cdisc-library-sync-<hash>` pull request the same way the standards
+watch does (`scripts/open-bot-pr.sh`).
+
+The key is passed only to the step that reads the Library. The site, its
+build and its tests read the committed file, so none of them need the key.
+
 ## Recording is not upgrading
 
 Merging a standards-watch pull request only records that a newer version

@@ -30,6 +30,9 @@ permissions:
 jobs:
   sync:
     name: CDISC Library Sync
+    # The job reads and records main. Dispatched from another branch it would
+    # run that branch's workflow against main's scripts, so it does nothing.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

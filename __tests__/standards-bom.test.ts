@@ -254,6 +254,7 @@ describe("standards watch workflow", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).not.toMatch(/^\s{2}(pull_request|push):/m);
     expect(workflow).toMatch(/timeout-minutes: \d+/);
+    expect(workflow).toContain("if: github.ref == 'refs/heads/main'");
   });
 
   it("uses no secret but its own token, so no CDISC Library key", () => {

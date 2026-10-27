@@ -208,6 +208,7 @@ describe("CDISC Library sync workflow", () => {
       /^\s{2}(pull_request|pull_request_target|push):/m
     );
     expect(workflow).toMatch(/timeout-minutes: \d+/);
+    expect(workflow).toContain("if: github.ref == 'refs/heads/main'");
   });
 
   it("gives the key to the one step that reads the Library, and to nothing else", () => {

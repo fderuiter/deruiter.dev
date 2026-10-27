@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { CLINICAL_JOURNEY } from "@/lib/clinical-journey";
 
 interface ClinicalJourneyHighlightProps {
@@ -38,7 +38,7 @@ export function ClinicalJourneyHighlight({
       <ol className="mt-4 grid min-w-0 gap-2 @lg:grid-cols-5">
         {CLINICAL_JOURNEY.map((step, index) => (
           <li key={step.id} className="min-w-0">
-            <Link
+            <IntentLink
               href={step.href}
               className="flex h-full min-h-11 flex-col border border-white/[0.08] bg-[#0d0e11] px-3 py-2 text-xs text-slate-300 hover:border-amber-500/40 hover:text-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
             >
@@ -48,16 +48,16 @@ export function ClinicalJourneyHighlight({
               <span className="mt-1 break-words font-semibold text-slate-100">
                 {step.title}
               </span>
-            </Link>
+            </IntentLink>
           </li>
         ))}
       </ol>
-      <Link
+      <IntentLink
         href={first.href}
         className="mt-4 inline-flex min-h-[44px] items-center justify-center px-5 py-2.5 bg-amber-400 text-black font-mono text-xs font-bold rounded-xl hover:bg-amber-300 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a]"
       >
         Start the journey at {first.title}
-      </Link>
+      </IntentLink>
     </section>
   );
 }

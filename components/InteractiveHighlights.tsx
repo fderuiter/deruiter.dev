@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { IconDeviceGamepad2, IconArrowRight } from "@tabler/icons-react";
 
 export const InteractiveHighlights: React.FC = () => {
@@ -24,13 +24,13 @@ export const InteractiveHighlights: React.FC = () => {
             fights.
           </p>
         </div>
-        <Link
+        <IntentLink
           href="/arcade"
           className="w-full sm:w-auto self-start sm:self-center shrink-0 min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-amber-400 text-black font-mono text-xs font-bold rounded-xl hover:bg-amber-300 transition-all duration-200 shadow-md cursor-pointer active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a]"
         >
           <span>Visit the Arcade</span>
           <IconArrowRight className="w-3.5 h-3.5 shrink-0" />
-        </Link>
+        </IntentLink>
       </div>
     </div>
   );

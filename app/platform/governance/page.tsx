@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { BusinessGlossary } from "@/components/platform/governance/BusinessGlossary";
 import { DataCatalog } from "@/components/platform/governance/DataCatalog";
@@ -174,13 +174,13 @@ export default function PlatformGovernancePage() {
           policies set the rules, each one saying whether code or a person
           applies it. All of it is derived from the same definitions that build
           the{" "}
-          <Link href="/platform/operations" className={linkClass}>
+          <IntentLink href="/platform/operations" className={linkClass}>
             dashboards
-          </Link>{" "}
+          </IntentLink>{" "}
           and the{" "}
-          <Link href="/platform/explore" className={linkClass}>
+          <IntentLink href="/platform/explore" className={linkClass}>
             explorer
-          </Link>
+          </IntentLink>
           , so the catalog cannot drift from them.
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">

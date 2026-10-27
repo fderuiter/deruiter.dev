@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import {
   IconBrandGithub,
   IconPlayerPlay,
@@ -126,7 +126,7 @@ export function CaseStudyHeroActions({
 
       {/* Interactive In-App Studio / Simulator Link */}
       {interactiveUrl && (
-        <Link
+        <IntentLink
           href={interactiveUrl}
           aria-label={interactiveLabel || "Launch Interactive Studio"}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/40 hover:border-accent text-accent text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-accent/60 active:scale-[0.98]"
@@ -135,7 +135,7 @@ export function CaseStudyHeroActions({
           <span className="text-xs md:text-sm">
             {interactiveLabel || "Launch Interactive Studio"}
           </span>
-        </Link>
+        </IntentLink>
       )}
     </div>
   );

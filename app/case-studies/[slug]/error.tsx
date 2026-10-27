@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { reportClientError } from "@/lib/client-sentry";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
@@ -54,12 +54,12 @@ export default function CaseStudyError({
               Try Again
             </button>
 
-            <Link
+            <IntentLink
               href="/case-studies"
               className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-bold bg-transparent border border-neutral-900 hover:border-neutral-800 text-neutral-400 rounded-2xl transition-all duration-300 cursor-pointer"
             >
               Back to Case Studies
-            </Link>
+            </IntentLink>
           </div>
         </div>
       </div>

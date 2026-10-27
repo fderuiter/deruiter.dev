@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { downloadFile } from "@/lib/download";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
@@ -877,12 +877,12 @@ export function DebriefModal({
           through SDTM and ADaM to tables and figures, with every result traced
           back to the records it came from.
         </p>
-        <Link
+        <IntentLink
           href="/study-data"
           className={`${SECONDARY} mt-2 inline-flex min-h-12 items-center`}
         >
           Open the Study Data Pipeline
-        </Link>
+        </IntentLink>
       </section>
       <div className="flex flex-wrap gap-2">
         <button

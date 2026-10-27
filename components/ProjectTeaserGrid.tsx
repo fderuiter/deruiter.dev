@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { BaseCaseStudy } from "@/types/domain";
 import {
   IconChevronRight,
@@ -280,7 +280,7 @@ export const ProjectTeaserGrid: React.FC<ProjectTeaserGridProps> = ({
 
                 {/* Card Footer Link */}
                 <div className="mt-auto flex min-w-0 items-center justify-between gap-2 border-t border-white/10 pt-3">
-                  <Link
+                  <IntentLink
                     href={`/case-studies/${study.slug}`}
                     className="inline-flex min-w-0 items-center gap-1 text-left min-h-[44px] text-xs font-mono font-bold text-amber-400 hover:text-amber-200 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a]"
                     aria-label={`Read the ${study.title} case study`}
@@ -289,7 +289,7 @@ export const ProjectTeaserGrid: React.FC<ProjectTeaserGridProps> = ({
                       Read the {study.title} case study
                     </span>
                     <IconChevronRight className="w-3.5 h-3.5 shrink-0 transform group-hover:translate-x-1 transition-transform duration-200" />
-                  </Link>
+                  </IntentLink>
 
                   <span className="shrink-0 text-[10px] font-mono text-zinc-400 uppercase">
                     PROJECT WRITEUPS
@@ -303,14 +303,14 @@ export const ProjectTeaserGrid: React.FC<ProjectTeaserGridProps> = ({
 
       {/* Primary CTA leading to full /case-studies showcase */}
       <div className="w-full flex justify-center">
-        <Link
+        <IntentLink
           href="/case-studies"
           className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 bg-[#14161d] hover:bg-amber-400 border border-white/10 hover:border-amber-400 text-zinc-200 hover:text-black font-mono text-xs font-bold rounded-xl transition-all duration-200 shadow-md active:scale-[0.98] group"
         >
           <IconLayersIntersect className="w-4 h-4 text-amber-400 group-hover:text-black transition-colors" />
           <span>View All Case Studies ({caseStudies.length})</span>
           <IconArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" />
-        </Link>
+        </IntentLink>
       </div>
     </div>
   );

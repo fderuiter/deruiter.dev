@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { SqlWorkbench } from "@/components/platform/sql/SqlWorkbench";
 import {
@@ -73,12 +73,12 @@ export default function PlatformSqlPage() {
           or from the SQL behind any governed metric, in DuckDB, PostgreSQL and
           T-SQL, and read each table&apos;s contract in the schema browser
           before you use a column. To explore without SQL, use the{" "}
-          <Link
+          <IntentLink
             href="/platform/explore"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"
           >
             metric explorer
-          </Link>
+          </IntentLink>
           .
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import Image from "next/image";
 import {
   IconMessageCode,
@@ -83,13 +83,13 @@ export default function ContactPage() {
                 Pick a time for a project chat, an introduction, or a second
                 opinion on something tricky.
               </p>
-              <Link
+              <IntentLink
                 href="/schedule"
                 className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-mono font-bold text-xs rounded-xl transition-all shadow-md active:scale-[0.98]"
               >
                 <span>Book a Chat</span>
                 <IconExternalLink className="w-3.5 h-3.5" />
-              </Link>
+              </IntentLink>
             </div>
 
             {/* Newsletter Dispatch Card */}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { Explorer } from "@/components/platform/explore/Explorer";
 import {
@@ -41,19 +41,19 @@ export default function PlatformExplorePage() {
           that fit, so no exploration joins the wrong tables. Every result shows
           the metric&apos;s definition, version and SQL, and comes from the same
           registry as the{" "}
-          <Link
+          <IntentLink
             href="/platform/operations"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"
           >
             operations
-          </Link>{" "}
+          </IntentLink>{" "}
           and{" "}
-          <Link
+          <IntentLink
             href="/platform/portfolio"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"
           >
             portfolio
-          </Link>{" "}
+          </IntentLink>{" "}
           dashboards. An exploration is saved in the link, never on a server.
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">

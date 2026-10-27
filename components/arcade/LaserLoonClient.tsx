@@ -7,7 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { LASER_LOON_TUTORIAL } from "@/lib/laser-loon";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import {
   IconCrosshair,
   IconSnowflake,
@@ -36,24 +36,24 @@ export const LaserLoonClient: React.FC = () => {
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-            <Link
+            <IntentLink
               href="/arcade"
               className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-xs font-mono text-zinc-400 hover:text-brand-cyan transition-colors"
             >
               <IconArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Arcade Hub</span>
-            </Link>
+            </IntentLink>
             <span className="text-zinc-700 hidden sm:inline">|</span>
             <Breadcrumbs path="/arcade/laser-loon" />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
+            <IntentLink
               href="/merch"
               className="inline-flex min-h-[48px] items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:border-amber-400/60 transition-colors"
             >
               <IconShoppingBag className="w-3 h-3" aria-hidden="true" />
               <span>Laser Loon Merch (soon)</span>
-            </Link>
+            </IntentLink>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/30">
               Civic Arcade / 4-Act Campaign
             </span>

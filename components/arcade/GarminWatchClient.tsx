@@ -7,7 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestGarminAutoPause } from "@/components/garmin-watch/auto-pause";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import Image from "next/image";
 import {
   IconCpu,
@@ -41,13 +41,13 @@ export const GarminWatchClient: React.FC = () => {
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-            <Link
+            <IntentLink
               href="/arcade"
               className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-xs font-mono text-zinc-400 hover:text-amber-400 transition-colors"
             >
               <IconArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Arcade Hub</span>
-            </Link>
+            </IntentLink>
             <span className="text-zinc-700 hidden sm:inline">|</span>
             <Breadcrumbs path="/arcade/garmin-watch" />
           </div>

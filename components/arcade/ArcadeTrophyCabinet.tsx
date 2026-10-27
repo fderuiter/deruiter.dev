@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useId } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   IconTrophy,
@@ -192,13 +192,13 @@ export const ArcadeTrophyCabinet: React.FC = () => {
                   <span className="font-mono text-xs font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
                     {score > 0 ? score.toLocaleString() : "—"}
                   </span>
-                  <Link
+                  <IntentLink
                     href={game.route}
                     title={`Play ${game.title}`}
                     className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
                   >
                     <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
-                  </Link>
+                  </IntentLink>
                 </div>
               </div>
             );

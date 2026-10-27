@@ -14,7 +14,7 @@ import {
   IconCheck,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { apiClient, type ApiClientResponse } from "@/lib/api-client";
 import {
   BlogDraftCreateSchema,
@@ -292,13 +292,13 @@ export function BlogAuthoringForm({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <Link
+          <IntentLink
             href="/admin/blog"
             className="p-2 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors border border-white/5"
             aria-label="Back to Blog Management"
           >
             <IconArrowLeft className="w-5 h-5" aria-hidden="true" />
-          </Link>
+          </IntentLink>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-100 font-mono">
               {isNew ? "Create BlogPost" : `Edit: ${initialData?.title}`}

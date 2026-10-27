@@ -1,4 +1,6 @@
 // @vitest-environment node
+import fs from "fs";
+import path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CANONICAL_ROUTES } from "@/lib/dx/page-bench";
 import { PUBLIC_ROUTE_REGISTRY } from "@/lib/public-routes";
@@ -33,28 +35,87 @@ describe("service worker route registry", () => {
     workerCapture.config = undefined;
   });
 
-  it("precaches every canonical public route", async () => {
-    vi.stubGlobal("self", { __SW_MANIFEST: [] });
+  const precachedUrls = () =>
+    new Set(
+      (
+        workerCapture.config?.precacheEntries as
+          Array<string | { url: string }> | undefined
+      )?.map((entry) => (typeof entry === "string" ? entry : entry.url)) ?? []
+    );
+
+  it("precaches only the offline shell, not every public route (#3064)", async () => {
+    vi.stubGlobal("self", {
+      addEventListener: vi.fn(),
+      __SW_MANIFEST: [
+        { url: "/_next/static/chunks/abc123.js", revision: null },
+        { url: "/_next/static/css/2b798d7c13c02046.css", revision: null },
+        { url: "/_next/static/media/013b72fa676f92e0-s.woff2", revision: "a" },
+        { url: "/files/laser-loon-assets.zip", revision: "b" },
+        { url: "/models/brain-surface.glb", revision: "c" },
+        { url: "/images/wedding/07-rings.jpg", revision: "d" },
+      ],
+    });
 
     await import("@/app/sw");
 
-    const entries = workerCapture.config?.precacheEntries as
-      Array<string | { url: string }> | undefined;
-    const precachedPaths = new Set(
-      entries?.map((entry) =>
-        typeof entry === "string" ? entry : entry.url
-      ) ?? []
-    );
+    const precached = precachedUrls();
+    expect(precached).toContain("/_next/static/css/2b798d7c13c02046.css");
+    expect(precached).toContain("/_next/static/media/013b72fa676f92e0-s.woff2");
+    expect(precached).not.toContain("/_next/static/chunks/abc123.js");
+    expect(precached).not.toContain("/files/laser-loon-assets.zip");
+    expect(precached).not.toContain("/models/brain-surface.glb");
+    expect(precached).not.toContain("/images/wedding/07-rings.jpg");
+    expect(precached).not.toContain("/case-studies");
+    expect(precached.size).toBeLessThanOrEqual(10);
+  });
 
-    for (const route of CANONICAL_ROUTES) {
-      expect(precachedPaths, `${route.path} must be precached`).toContain(
-        route.path
-      );
+  it("precaches every page the offline fallback offers", async () => {
+    vi.stubGlobal("self", { addEventListener: vi.fn(), __SW_MANIFEST: [] });
+
+    await import("@/app/sw");
+
+    const offlinePage = fs.readFileSync(
+      path.resolve(process.cwd(), "app/offline/page.tsx"),
+      "utf-8"
+    );
+    const offered = [...offlinePage.matchAll(/path: "([^"]+)"/g)].map(
+      (match) => match[1]
+    );
+    expect(offered.length).toBeGreaterThan(0);
+    const precached = precachedUrls();
+    // The fallback page is served from the precache, so it must be in it.
+    expect(precached).toContain("/offline");
+    for (const route of offered) {
+      expect(precached, `${route} must be precached`).toContain(route);
     }
   });
 
+  it("saves the offline page's scripts at install and serves them only offline", async () => {
+    const addEventListener = vi.fn();
+    vi.stubGlobal("self", { addEventListener, __SW_MANIFEST: [] });
+    vi.stubGlobal("navigator", { onLine: false });
+
+    await import("@/app/sw");
+
+    expect(addEventListener).toHaveBeenCalledWith(
+      "install",
+      expect.any(Function)
+    );
+    const rules = workerCapture.config?.runtimeCaching as Array<{
+      matcher: (args: { url: URL }) => boolean;
+    }>;
+    const matches = (pathname: string) =>
+      rules.some((rule) =>
+        rule.matcher({ url: new URL(pathname, "https://deruiter.dev") })
+      );
+    expect(matches("/_next/static/chunks/0bg0id7uv1dqc.js")).toBe(true);
+
+    vi.stubGlobal("navigator", { onLine: true });
+    expect(matches("/_next/static/chunks/0bg0id7uv1dqc.js")).toBe(false);
+  });
+
   it("leaves the SQL engine's binary to the HTTP cache (#2633)", async () => {
-    vi.stubGlobal("self", { __SW_MANIFEST: [] });
+    vi.stubGlobal("self", { addEventListener: vi.fn(), __SW_MANIFEST: [] });
 
     await import("@/app/sw");
 

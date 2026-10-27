@@ -23,7 +23,7 @@ export interface ValueLevelSpec {
   >;
 }
 
-/** Value-level metadata for the VS, LB, EG, ADVS, ADLB and ADEG parameters. */
+/** Value-level metadata for the VS, LB, EG, ADVS, ADLB, ADEG and ADHCE parameters. */
 export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
   Object.freeze({
     VS: {
@@ -44,5 +44,15 @@ export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
       by: "PARAMCD",
       variables: ["AVAL", "AVALU"],
       derived: { QTCFAG: { variables: ["AVAL"], method: "ADEG_QTCF" } },
+    },
+    ADHCE: {
+      by: "PARAMCD",
+      variables: ["AVAL", "AVALU"],
+      derived: {
+        HCEDTH: { variables: ["AVAL"], method: "ADHCE_TTE" },
+        HCESAE: { variables: ["AVAL"], method: "ADHCE_TTE" },
+        HCERESC: { variables: ["AVAL"], method: "ADHCE_TTE" },
+        HCESBP: { variables: ["AVAL"], method: "ADHCE_SBP" },
+      },
     },
   });

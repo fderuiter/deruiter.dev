@@ -37,9 +37,17 @@ export const ADAM_METHODS = {
   ADCM_RESCUE:
     "RESCUEFL is Y when the medication was recorded as rescue medication (CM.CMCAT is RESCUE MEDICATION), and blank otherwise.",
   ADTTE_EVENT:
-    "An event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition; event date is AE start date.",
+    "TTADISC: an event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition, dated at the AE start date. TTDTH: death, dated at ADSL.DTHDT. TTSAE: the first serious treatment-emergent AE, dated at its analysis start date. TTRESC: the first rescue medication (ADCM.RESCUEFL = Y) started on or after first dose, dated at its analysis start date. TTSAE and TTRESC count only events up to the end of the on-treatment period.",
   ADTTE_CENSOR:
-    "For a dosed subject without an event, censor at the earlier of last known contact and discontinuation for another reason; count first-dose day as day 1.",
+    "AVAL counts first-dose day as day 1. TTADISC: a dosed subject without an event is censored at the earlier of last known contact and discontinuation for another reason. TTDTH: censored at last known contact. TTSAE and TTRESC: censored at the end of the on-treatment period, 14 days after last dose, or at last known contact when that is earlier.",
+  ADHCE_COMPONENT:
+    "One record per ITT subject per component of the hierarchical composite, in priority order (PARAMN): 1 death (ADTTE TTDTH), 2 first serious TEAE (ADTTE TTSAE), 3 first rescue medication (ADTTE TTRESC), 4 change from baseline in systolic blood pressure at Week 12 (ADVS PARAMCD = SYSBP, AVISIT = WEEK 12, ANL01FL = Y). ADT and CNSR are copied from the source record; AVAL is derived as the value-level metadata of each parameter describes.",
+  ADHCE_TTE:
+    "AVAL and CNSR are the ADTTE values for the same subject and parameter: days from first dose, with CNSR = 1 when the subject was censored.",
+  ADHCE_SBP:
+    "AVAL is ADVS.CHG of the Week 12 primary analysis record, rounded to 0.1 mmHg, the precision of the collected result, so that floating-point residue cannot decide a comparison against the 5 mmHg margin.",
+  ADHCE_ANL:
+    "ANL01FL is Y when AVAL is not missing. A component with a missing AVAL is a tie for every pair that reaches it.",
 } as const;
 
 export type AdamMethodId = keyof typeof ADAM_METHODS;

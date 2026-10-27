@@ -669,17 +669,169 @@ export function deriveAdcm(
   };
 }
 
-/** Derive one event or censoring row for each dosed subject. */
+/** One parameter's event or censoring outcome for a subject. */
+interface TimeToEvent {
+  readonly date: string | null;
+  readonly censor: 0 | 1;
+  readonly description: string;
+  readonly censorDescription: string | null;
+  readonly sourceDomain: string;
+  readonly sourceVariable: string;
+  readonly sourceSequence: number | null;
+  readonly sourceValue: number | null;
+  readonly lineage: readonly string[];
+}
+
+/** A censored outcome at a subject's last known study contact. */
+function censoredAtContact(
+  contact: Contact | null,
+  censorDate: string | null = contact?.date ?? null,
+  censorDescription = "Last known study contact"
+): TimeToEvent {
+  return {
+    date: censorDate,
+    censor: 1,
+    description: "Censored",
+    censorDescription,
+    sourceDomain: contact?.domain ?? "DS",
+    sourceVariable: contact?.variable ?? "DSSTDTC",
+    sourceSequence: contact?.domain === "DS" ? contact.sourceValue : null,
+    sourceValue: contact?.sourceValue ?? null,
+    lineage: contact?.lineage ?? [],
+  };
+}
+
+/**
+ * The first record on or after first dose and on or before the window end,
+ * as an event; otherwise censored at the window end, which is never later
+ * than last known contact.
+ */
+function firstInWindow(
+  candidates: readonly SourceRecord[],
+  firstDose: string,
+  windowEnd: string | null,
+  contact: Contact | null,
+  event: { description: string; domain: string; variable: string }
+): TimeToEvent {
+  const first = candidates
+    .filter(({ row }) => {
+      const start = date(row.ASTDT);
+      return Boolean(
+        start && start >= firstDose && (!windowEnd || start <= windowEnd)
+      );
+    })
+    .sort(
+      (a, b) =>
+        date(a.row.ASTDT)!.localeCompare(date(b.row.ASTDT)!) ||
+        number(a.row.SRCSEQ)! - number(b.row.SRCSEQ)!
+    )[0];
+  if (first)
+    return {
+      date: date(first.row.ASTDT),
+      censor: 0,
+      description: event.description,
+      censorDescription: null,
+      sourceDomain: event.domain,
+      sourceVariable: event.variable,
+      sourceSequence: number(first.row.SRCSEQ),
+      sourceValue: number(first.row.SRCSEQ),
+      lineage: first.lineage,
+    };
+  return windowEnd && contact && windowEnd < contact.date
+    ? censoredAtContact(contact, windowEnd, "End of on-treatment period")
+    : censoredAtContact(contact);
+}
+
+/**
+ * Time to death, to the first serious TEAE and to the first rescue
+ * medication: the event components of the DEMO-301 hierarchical composite.
+ */
+function hierarchyParameters(
+  subjectRow: AnalysisRow,
+  firstDose: string,
+  contact: Contact | null,
+  dm: SourceRecord | undefined,
+  adae: readonly SourceRecord[],
+  adcm: readonly SourceRecord[]
+): readonly {
+  readonly paramcd: string;
+  readonly param: string;
+  readonly outcome: TimeToEvent;
+}[] {
+  const death = date(subjectRow.DTHDT);
+  const windowEnd = onTreatmentEnd(
+    date(subjectRow.TRTEDT) ?? contact?.date ?? null,
+    contact?.date ?? null
+  );
+  return [
+    {
+      paramcd: "TTDTH",
+      param: "Time to Death from Any Cause",
+      outcome: death
+        ? {
+            date: death,
+            censor: 0,
+            description: "Death",
+            censorDescription: null,
+            sourceDomain: "DM",
+            sourceVariable: "DTHDTC",
+            sourceSequence: null,
+            sourceValue: null,
+            lineage: dm?.lineage ?? contact?.lineage ?? [],
+          }
+        : censoredAtContact(contact),
+    },
+    {
+      paramcd: "TTSAE",
+      param: "Time to First Serious TEAE",
+      outcome: firstInWindow(
+        adae.filter(({ row }) => row.TRTEMFL === "Y" && row.AESER === "Y"),
+        firstDose,
+        windowEnd,
+        contact,
+        {
+          description: "First serious treatment-emergent adverse event",
+          domain: "AE",
+          variable: "AESTDTC",
+        }
+      ),
+    },
+    {
+      paramcd: "TTRESC",
+      param: "Time to First Rescue Medication",
+      outcome: firstInWindow(
+        adcm.filter(({ row }) => row.RESCUEFL === "Y"),
+        firstDose,
+        windowEnd,
+        contact,
+        {
+          description: "First rescue medication on treatment",
+          domain: "CM",
+          variable: "CMSTDTC",
+        }
+      ),
+    },
+  ];
+}
+
+/**
+ * Derive the time-to-event parameters for each dosed subject: TTADISC for
+ * the Kaplan-Meier figure, and TTDTH, TTSAE and TTRESC for the
+ * hierarchical composite.
+ */
 export function deriveAdtte(
   definition: StudyDefinition,
   sdtm: readonly Dataset[],
   adsl: Dataset,
-  adae: Dataset
+  adae: Dataset,
+  adcm: Dataset
 ): { readonly dataset: Dataset; readonly findings: readonly Finding[] } {
   const get = (name: string) => sdtm.find((dataset) => dataset.name === name);
   const sv = bySubject(get("SV"));
   const ds = bySubject(get("DS"));
+  const dm = bySubject(get("DM"));
   const adaeRows = bySubject(adae);
+  const adcmRows = bySubject(adcm);
   const output: AnalysisRow[] = [];
   const lineage: (readonly string[])[] = [];
   const findings: Finding[] = [];
@@ -812,6 +964,42 @@ export function deriveAdtte(
       SRCVAL: sourceValue,
     });
     lineage.push(sourceLinks);
+    hierarchyParameters(
+      subjectRow,
+      start,
+      contact,
+      dm.get(subject)?.[0],
+      adaeRows.get(subject) ?? [],
+      adcmRows.get(subject) ?? []
+    ).forEach(({ paramcd, param, outcome }, index) => {
+      const outcomeDate =
+        outcome.date && outcome.date < start ? start : outcome.date;
+      output.push({
+        STUDYID: definition.studyId,
+        USUBJID: subject,
+        ASEQ: index + 2,
+        PARAMCD: paramcd,
+        PARAM: param,
+        STARTDT: start,
+        ADT: outcomeDate,
+        AVAL: outcomeDate ? daysBetween(start, outcomeDate) + 1 : null,
+        CNSR: outcome.censor,
+        EVNTDESC: outcome.description,
+        CNSDTDSC: outcome.censorDescription,
+        DSSEQ: null,
+        TRT01P: subjectRow.TRT01P,
+        TRT01A: subjectRow.TRT01A,
+        TRTSDT: subjectRow.TRTSDT,
+        TRTEDT: subjectRow.TRTEDT,
+        SAFFL: subjectRow.SAFFL,
+        ITTFL: subjectRow.ITTFL,
+        SRCDOM: outcome.sourceDomain,
+        SRCVAR: outcome.sourceVariable,
+        SRCSEQ: outcome.sourceSequence,
+        SRCVAL: outcome.sourceValue,
+      });
+      lineage.push(outcome.lineage);
+    });
   }
   return {
     dataset: table(

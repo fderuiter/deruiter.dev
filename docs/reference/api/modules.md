@@ -565,6 +565,7 @@
 - [lib/study-data/internal/adam/core](lib/study-data/internal/adam/core/README.md)
 - [lib/study-data/internal/adam/derive-adam](lib/study-data/internal/adam/derive-adam/README.md)
 - [lib/study-data/internal/adam/events](lib/study-data/internal/adam/events/README.md)
+- [lib/study-data/internal/adam/hce](lib/study-data/internal/adam/hce/README.md)
 - [lib/study-data/internal/adam/shared](lib/study-data/internal/adam/shared/README.md)
 - [lib/study-data/internal/adam/specs](lib/study-data/internal/adam/specs/README.md)
 - [lib/study-data/internal/conformance/rules](lib/study-data/internal/conformance/rules/README.md)

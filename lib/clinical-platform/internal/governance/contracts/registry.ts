@@ -355,6 +355,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     // 2.8.0 (#2963): the SDTM MH dataset.
     // 2.9.0 (#2964): the SDTM IE dataset.
     // 2.10.0 (#2962): the ADaM ADCM dataset.
-    version: "2.10.0",
+    // 2.11.0 (#3101): the ADaM ADHCE dataset.
+    version: "2.11.0",
   },
 };

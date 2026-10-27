@@ -269,6 +269,7 @@
 - [lib/crf/internal/review-package](lib/crf/internal/review-package/README.md)
 - [lib/crf/internal/rule-wires](lib/crf/internal/rule-wires/README.md)
 - [lib/crf/internal/scenario-impact](lib/crf/internal/scenario-impact/README.md)
+- [lib/crf/internal/schedule-ops](lib/crf/internal/schedule-ops/README.md)
 - [lib/crf/internal/smart-blocks-engine](lib/crf/internal/smart-blocks-engine/README.md)
 - [lib/crf/internal/study-auditor](lib/crf/internal/study-auditor/README.md)
 - [lib/crf/internal/study-baseline-diff](lib/crf/internal/study-baseline-diff/README.md)

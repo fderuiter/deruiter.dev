@@ -1263,13 +1263,23 @@ describe("visits, arms, epochs, cohorts and concepts", () => {
     });
   });
 
-  it("assignVisitForms ignores unknown and duplicate form tokens", () => {
+  it("assignVisitForms collapses duplicate form tokens", () => {
     const res = StudyProtocolEngine.assignVisitForms(richStudy(), "screening", [
       "XX",
       "form_xx",
-      "ZZ",
     ]);
     expect(res.visit!.assignedFormIds).toEqual(["form_xx"]);
+  });
+
+  it("assignVisitForms refuses an unknown form instead of dropping it", () => {
+    const study = richStudy();
+    const res = StudyProtocolEngine.assignVisitForms(study, "screening", [
+      "XX",
+      "ZZ",
+    ]);
+    expect(res.error).toBe("Form 'ZZ' not found in protocol.");
+    expect(res.visit).toBeUndefined();
+    expect(res.study).toBe(study);
   });
 
   it("assignArmVisitForms validates visits and records arm assignments", () => {

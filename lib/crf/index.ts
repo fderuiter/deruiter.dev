@@ -48,6 +48,7 @@ export * from "@/lib/clinical-standards/usdm-v4-schedule";
 export * from "@/lib/clinical-standards/usdm-v4-schema";
 export * from "./internal/precision-date";
 export * from "./internal/visit-window";
+export * from "./internal/schedule-ops";
 export * from "./internal/form-variants";
 export {
   computeFormHealthMetrics,

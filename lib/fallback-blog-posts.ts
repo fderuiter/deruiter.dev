@@ -1031,6 +1031,71 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 </ul>
 `.trim(),
   },
+  {
+    id: "fallback-blog-20",
+    slug: "one-metric-one-definition-every-tool",
+    title: "One Metric, One Definition, Every Tool",
+    dek: "When a dashboard, a SQL query and a BI model each define enrollment their own way, they will disagree, and nobody can say which one is right. Define each metric once, as data, and compile it to every tool.",
+    pillar: "clinical-data-engineering",
+    tags: "semantic-layer, metrics, governance, sql, power-bi, clinical-operations",
+    published: true,
+    reading_time_minutes: 7,
+    hero_image_url: null,
+    created_at: new Date("2026-10-27T23:00:00.000Z"),
+    updated_at: new Date("2026-10-27T23:00:00.000Z"),
+    body: `
+<h2>Three numbers for one question</h2>
+<p>Ask a clinical operations team how long site activation takes and you can get three answers in one meeting. The dashboard counts from the site's selection. The analyst's SQL counts from the protocol's final version. The BI model counts calendar days where the others count business days, and drops sites that never activated where the others don't. Every number is defensible. None of them is the number, and the meeting spends its hour reconciling instead of deciding.</p>
+<p>The usual fix is a document: a metric dictionary that every tool is meant to follow. Documents don't execute. Each tool still holds its own copy of the logic, and each copy drifts on its own schedule.</p>
+<p>The <a href="/platform/governance">clinical data platform</a> on this site takes the other route. Each metric is defined once, as data, and every tool's version is compiled from that one definition.</p>
+
+<h2>A definition is data, not a query</h2>
+<p>The registry holds 53 governed metrics. Each one is a record, not a SQL string: the gold table it reads, the aggregation, the expression, the filters, the grain, the dimensions it may be grouped by, the unit and display format, a named owner and data steward, a link to the business glossary term it implements, a semantic version and a change log.</p>
+<p>Site activation cycle time, for example, is the median of days from a site's first version in the site dimension to its activation date, over sites that have activated. Its description names the governed source of the start date: the study's protocol finalisation date, which the warehouse build uses to open each site's first version.</p>
+<p>From that one record a compiler emits five targets:</p>
+<ul>
+  <li><strong>SQL for DuckDB, PostgreSQL and SQL Server.</strong> Three dialects, because a median, a date difference and a null comparison are spelled differently in each.</li>
+  <li><strong>dbt MetricFlow YAML,</strong> for a semantic layer that sits over the warehouse.</li>
+  <li><strong>Power BI TMDL measures,</strong> for a semantic model, with the metric's display folder and format carried over.</li>
+</ul>
+<p>The dashboards on the site use a TypeScript evaluator that reads the same records. Nobody hand-writes a metric in any of these places. Each generated file is checked in as a golden file, and a test fails when the generated output and the committed one drift apart, so any change to a definition shows up in review as a diff in every tool at once.</p>
+
+<h2>Prove the copies agree</h2>
+<p>Compiling from one definition removes hand-written drift. It does not prove the compiler is right. A wrong join compiled five times is wrong five times, consistently.</p>
+<p>So the platform computes every metric twice, by independent routes. A test loads the seeded gold tables into DuckDB, runs each metric's generated SQL, and compares the result with the TypeScript evaluator on the same data, for every metric, every allowed dimension and every filter. The two implementations write the joins, the filters, the null handling and the aggregation separately. When they agree, that is evidence both compute what the definition says. When they disagree, one of them has a bug, and the test names the metric.</p>
+<p>Only the DuckDB output runs against data here. The PostgreSQL, SQL Server, MetricFlow and TMDL outputs are pinned by their golden files and by the compile rules below, not executed. That is a known limit, and I would rather say it than imply otherwise.</p>
+
+<h2>Rules that run on every change</h2>
+<p>A registry is only as good as what it refuses. Before anything compiles, a check walks every definition and fails the build when a metric:</p>
+<ul>
+  <li><strong>reads a table or column that does not exist</strong> in the gold model, or a type its aggregation cannot take;</li>
+  <li><strong>reads a nullable column without a not-null guard.</strong> SQL and DAX treat a null operand differently, so an unguarded null is a place where two correct compilations give two different answers;</li>
+  <li><strong>allows a dimension it cannot reach</strong> from every table it reads;</li>
+  <li><strong>is certified without a glossary term,</strong> or has a version its change log does not end at;</li>
+  <li><strong>makes a compliance or validation claim</strong> in its description.</li>
+</ul>
+<p>Versions follow semantic versioning, and the check enforces it against a lock file that records each release. Changing a certified metric's formula, grain, unit or default filters, or removing a dimension, is a breaking change and needs a major version. Adding a dimension or changing status needs at least a minor one. A version cannot go backwards, and one version cannot describe two different calculations. A consumer pinned to version 1 of a metric knows that version 1 means one thing.</p>
+<p>Reports are held to the same rule from the other side: a certified report may only use certified metrics, never a draft or a deprecated one.</p>
+
+<h2>Certification has to mean the source exists</h2>
+<p>The most useful decision the registry forced was about a metric it refused to certify. Overdue monitoring visit reports started with a 20-day deadline written into its formula. The number looked fine. The deadline came from nowhere: no table in the warehouse held it. Governance does not certify an unsourced business rule, so the metric stayed a draft, and no certified report could use it.</p>
+<p>The fix was not in the metric. Each study got a monitoring plan in the warehouse, with its own visit interval, window and report deadline: 20 days where the sponsor's procedure applies, 15 where a CRO's plan does. Now "overdue" means overdue against the study's own terms, and the metric is certified because its rule has a source a reviewer can open.</p>
+
+<h2>List what you cannot compute</h2>
+<p>The registry also keeps a list of metrics it does not define, with the reason and what would be needed. There are six today. One is the query rate per 100 CRF pages, a common operational measure. The gold model counts visits but not the CRF pages a visit produces, so the registry defines a query rate per 100 visits, says why in its description, and lists the per-page rate as a gap naming the missing column.</p>
+<p>The tempting alternative is to estimate pages per visit and ship the familiar number. That metric would look certified and be a guess. A listed gap is honest, and it is also a backlog: each entry says exactly which data would close it.</p>
+
+<h2>What I would take to any warehouse</h2>
+<ul>
+  <li><strong>Define metrics as data, then compile.</strong> A dictionary nobody executes is a wish. A definition that generates the SQL and the BI measure is a contract.</li>
+  <li><strong>Compute each metric twice, independently.</strong> One definition removes drift between tools. Two implementations that must agree catch the bugs that one definition would copy everywhere.</li>
+  <li><strong>Version metrics like an API.</strong> A changed calculation under the same version is how two quarters' numbers stop being comparable without anyone noticing.</li>
+  <li><strong>Certify only what has a source.</strong> A threshold someone typed in is an assumption, and a certified metric should not rest on one.</li>
+  <li><strong>Publish your gaps.</strong> Saying what you cannot yet measure is part of being trusted on what you can.</li>
+</ul>
+<p>All data on the platform is synthetic. Every study, site and subject is fictional.</p>
+`.trim(),
+  },
 ];
 
 /**

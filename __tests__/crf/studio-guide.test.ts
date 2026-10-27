@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { GAME_MANUALS } from "@/lib/game-manuals";
+import { MODE_BY_KEY, STUDIO_MODE_ORDER } from "@/components/crf/studio-stages";
 
 const read = (file: string) =>
   readFileSync(path.join(process.cwd(), file), "utf8");
@@ -31,13 +32,15 @@ describe("CRF Studio guide and tour (#1208)", () => {
   });
 
   it("maps number keys to modes in the order the mode bar shows", () => {
-    const badges = [
-      ...header.matchAll(/mode: "([a-z]+)",[\s\S]*?shortcut: "(\d)"/g),
-    ].map(([, mode, key]) => [key, mode]);
-    expect(badges.length).toBe(7);
-    for (const [key, mode] of badges) {
-      expect(container).toContain(`"${key}": "${mode}"`);
-    }
+    // The header and the shortcut handler both read the stage order, so
+    // neither may keep a private digit table that could drift (#2927).
+    expect(container).toContain(
+      'import { MODE_BY_KEY } from "./studio-stages"'
+    );
+    expect(container).not.toMatch(/"\d": "[a-z]+"/);
+    expect(header).toContain("modeShortcut(mode)");
+    expect(header).not.toMatch(/shortcut: "\d"/);
+    expect(Object.values(MODE_BY_KEY)).toEqual([...STUDIO_MODE_ORDER]);
   });
 
   it("registers a Studio Guide manual that the page renders", () => {

@@ -731,7 +731,7 @@ describe("CRF Studio shortcuts", () => {
     expect(props("FormTestDock").isOpen).toBe(true);
     key({ key: "F1" });
     expect(props("WorkflowWizardModal").isOpen).toBe(true);
-    key({ key: "3" });
+    key({ key: "4" });
     expect(screen.getByTestId("stub-VisitMatrixEditor")).toBeTruthy();
   });
 

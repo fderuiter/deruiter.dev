@@ -4,12 +4,7 @@ import "./studio-theme.css";
 import React, { useState, useCallback, useMemo } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
-import {
-  StudioMode,
-  DeviceViewport,
-  SlashCommandItem,
-  getStudyBranding,
-} from "@/lib/crf";
+import { DeviceViewport, SlashCommandItem, getStudyBranding } from "@/lib/crf";
 import {
   loadInitialStudy,
   loadRecoveredDraftSavedAt,
@@ -23,6 +18,7 @@ import { useStudyAutosave } from "@/hooks/useStudyAutosave";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { StudioHeader } from "./StudioHeader";
+import { MODE_BY_KEY } from "./studio-stages";
 import { StudySpine } from "./LeftSidebar/StudySpine";
 import { WidgetPalette } from "./LeftSidebar/WidgetPalette";
 import { CdashScaffolderModal } from "./LeftSidebar/CdashScaffolderModal";
@@ -171,16 +167,6 @@ const CTRL_OR_META_PREFIXES: readonly string[] = [
 const ESCAPE_HOTKEYS: readonly string[] = ANY_MODIFIER_PREFIXES.map(
   (prefix) => `${prefix}Escape`
 );
-
-const MODE_BY_KEY: Readonly<Record<string, StudioMode>> = {
-  "1": "designer",
-  "2": "grid",
-  "3": "matrix",
-  "4": "rules",
-  "5": "edc",
-  "6": "acrf",
-  "7": "export",
-};
 
 const STUDIO_HOTKEYS: readonly string[] = [
   "/",

@@ -125,12 +125,12 @@ describe("CRF Studio shortcuts on useHotkeys (#1589)", () => {
   it("switches modes on plain digits but not with Ctrl, Meta or Alt held", () => {
     render(<CRFStudioContainer />);
 
-    press(window, "3", { altKey: true });
-    press(window, "3", { ctrlKey: true });
-    press(window, "3", { metaKey: true });
+    press(window, "4", { altKey: true });
+    press(window, "4", { ctrlKey: true });
+    press(window, "4", { metaKey: true });
     expect(modeTab("Form Designer").getAttribute("aria-selected")).toBe("true");
 
-    press(window, "3");
+    press(window, "4");
     expect(modeTab("Visit Matrix (SoA)").getAttribute("aria-selected")).toBe(
       "true"
     );

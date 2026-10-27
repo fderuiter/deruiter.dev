@@ -14,6 +14,8 @@ import {
   USDM_SDTM_STRESU_EXTENSION_URL,
   USDM_SDTM_TESTCD_EXTENSION_URL,
   getUsdmV4ExtensionString,
+  resolveUsdmStudyDesign,
+  type UsdmStudySelection,
   type UsdmV4Activity,
   type UsdmV4BiomedicalConcept,
   type UsdmV4Code,
@@ -469,24 +471,29 @@ function narrowDesign(
  * in the modelled unit, and the report names the source unit when it differs.
  *
  * @param usdm - A parsed USDM v4.0 document, for example a CRF Studio export.
+ * @param selection - The study version and design to run, by id; needed when
+ *   the document holds more than one of either.
  * @returns The runnable definition and the supported-domains report.
  * @throws StudyDefinitionError when the document is not a USDM v4 study or
  *   still fails to read after narrowing.
  */
-export function prepareStudyHandoff(usdm: unknown): StudyHandoff {
+export function prepareStudyHandoff(
+  usdm: unknown,
+  selection?: UsdmStudySelection
+): StudyHandoff {
   if (!usdm || typeof usdm !== "object") {
     throw new StudyDefinitionError("expected a JSON object");
   }
   const doc = usdm as {
     study?: { versions?: UsdmV4StudyVersion[] } & Record<string, unknown>;
   } & Record<string, unknown>;
-  const version = list(doc.study?.versions)[0];
-  const design = list(version?.studyDesigns)[0];
-  if (!version || !design) {
+  const resolved = resolveUsdmStudyDesign(doc.study, selection);
+  if (!resolved.ok) {
     // Let the reader produce its precise error for the malformed document.
-    readStudyDefinition(usdm);
-    throw new StudyDefinitionError("study has no study design");
+    readStudyDefinition(usdm, selection);
+    throw new StudyDefinitionError(resolved.message);
   }
+  const { version, design, versionIndex, designIndex } = resolved;
 
   const conceptsById = new Map(
     list(version.biomedicalConcepts).map((concept) => [concept.id, concept])
@@ -512,20 +519,26 @@ export function prepareStudyHandoff(usdm: unknown): StudyHandoff {
       withExtensions(concept, testsByConcept.get(concept.id) as HandoffTest)
     );
 
-  const definition = readStudyDefinition({
-    ...doc,
-    study: {
-      ...doc.study,
-      versions: [
-        {
-          ...version,
-          biomedicalConcepts,
-          studyDesigns: [narrowed, ...list(version.studyDesigns).slice(1)],
-        },
-        ...list(doc.study?.versions).slice(1),
-      ],
+  const definition = readStudyDefinition(
+    {
+      ...doc,
+      study: {
+        ...doc.study,
+        versions: list(doc.study?.versions).map((each, i) =>
+          i === versionIndex
+            ? {
+                ...version,
+                biomedicalConcepts,
+                studyDesigns: list(version.studyDesigns).map((d, j) =>
+                  j === designIndex ? narrowed : d
+                ),
+              }
+            : each
+        ),
+      },
     },
-  });
+    selection
+  );
 
   const tabulated = new Set(
     plans.filter((plan) => plan.tabulated).map((plan) => plan.domain as string)

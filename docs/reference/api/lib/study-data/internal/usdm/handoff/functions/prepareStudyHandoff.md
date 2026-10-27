@@ -6,7 +6,7 @@
 
 # Function: prepareStudyHandoff()
 
-> **prepareStudyHandoff**(`usdm`): [`StudyHandoff`](../interfaces/StudyHandoff.md)
+> **prepareStudyHandoff**(`usdm`, `selection?`): [`StudyHandoff`](../interfaces/StudyHandoff.md)
 
 Narrows a USDM v4 document to the activities and tests the pipeline can
 generate, supplies a single arm and Screening/Treatment epochs when the
@@ -24,6 +24,13 @@ in the modelled unit, and the report names the source unit when it differs.
 `unknown`
 
 A parsed USDM v4.0 document, for example a CRF Studio export.
+
+### selection?
+
+[`UsdmStudySelection`](../../../../../clinical-standards/usdm-v4-selection/interfaces/UsdmStudySelection.md)
+
+The study version and design to run, by id; needed when
+  the document holds more than one of either.
 
 ## Returns
 

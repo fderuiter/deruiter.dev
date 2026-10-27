@@ -208,6 +208,7 @@
 - [lib/clinical-standards/usdm-handoff](lib/clinical-standards/usdm-handoff/README.md)
 - [lib/clinical-standards/usdm-v4-schedule](lib/clinical-standards/usdm-v4-schedule/README.md)
 - [lib/clinical-standards/usdm-v4-schema](lib/clinical-standards/usdm-v4-schema/README.md)
+- [lib/clinical-standards/usdm-v4-selection](lib/clinical-standards/usdm-v4-selection/README.md)
 - [lib/clinical-standards/usdm-v4-types](lib/clinical-standards/usdm-v4-types/README.md)
 - [lib/clinical-trial-chaos](lib/clinical-trial-chaos/README.md)
 - [lib/clinical-trial-chaos](lib/clinical-trial-chaos/README-1.md)

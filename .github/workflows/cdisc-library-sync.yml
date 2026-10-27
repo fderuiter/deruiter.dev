@@ -1,0 +1,74 @@
+name: CDISC Library Sync
+
+# #2992 step 7: read the ADaMIG and ADaM OCCDS versions the clinical
+# standards profile pins from the CDISC Library API, and record each data
+# structure's variables (name, core designation, data type, codelist codes;
+# no IG text) in lib/study-data/internal/conformance/adam-library-metadata.json.
+# When the file changes, scripts/open-bot-pr.sh records it on a pull request
+# and dispatches CI there.
+#
+# The CDISC_LIBRARY_API_KEY secret is passed to the one step that reads the
+# Library, and this workflow runs only on a schedule or by hand, never on a
+# pull request or push, so no pull request's code can reach the key. The
+# site and its tests read the committed file and never need the key.
+
+on:
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: cdisc-library-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  sync:
+    name: CDISC Library Sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Read ADaM Metadata From the CDISC Library
+        env:
+          CDISC_LIBRARY_API_KEY: ${{ secrets.CDISC_LIBRARY_API_KEY }}
+        run: |
+          npx --no-install tsx scripts/cdisc-library-adam.ts sync \
+            | tee "$RUNNER_TEMP/sync.txt"
+
+      - name: Open a Pull Request When the Metadata Changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body="$RUNNER_TEMP/pr-body.md"
+          {
+            echo "ADaM variable metadata read from the CDISC Library for the pinned ADaMIG and ADaM OCCDS versions. Names, core designations, data types and codelist codes only."
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/sync.txt"
+            echo '```'
+          } > "$body"
+          cat "$body" >> "$GITHUB_STEP_SUMMARY"
+          scripts/open-bot-pr.sh chore/cdisc-library-sync- \
+            "chore(study-data): record ADaM metadata from the CDISC Library" \
+            "$body" "CDISC Library sync: ADaM metadata changed" \
+            lib/study-data/internal/conformance/adam-library-metadata.json

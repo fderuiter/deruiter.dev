@@ -1,4 +1,6 @@
 // @vitest-environment node
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   collectVariables,
@@ -190,5 +192,37 @@ describe("CDISC Library ADaM metadata (#2992 step 7)", () => {
     expect(Object.keys(parsed.structures)).toEqual(["ADSL", "BDS"]);
     expect(Object.keys(parsed.products)).toEqual(["adamig", "occds"]);
     expect(text).not.toMatch(/"(label|description|definition)"/);
+  });
+});
+
+describe("CDISC Library sync workflow", () => {
+  const workflow = fs.readFileSync(
+    path.resolve(process.cwd(), ".github/workflows/cdisc-library-sync.yml"),
+    "utf8"
+  );
+
+  it("runs weekly and on demand, never on a pull request or push", () => {
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toMatch(/schedule:\s*\n\s*- cron: "[^"]+"/);
+    expect(workflow).not.toMatch(
+      /^\s{2}(pull_request|pull_request_target|push):/m
+    );
+    expect(workflow).toMatch(/timeout-minutes: \d+/);
+  });
+
+  it("gives the key to the one step that reads the Library, and to nothing else", () => {
+    const uses = workflow.match(/secrets\.[A-Z_]+/g) ?? [];
+    expect(uses).toEqual(["secrets.CDISC_LIBRARY_API_KEY"]);
+    const keyStep = workflow
+      .split(/\n\s+- name: /)
+      .filter((step) => step.includes("secrets."));
+    expect(keyStep).toHaveLength(1);
+    expect(keyStep[0]).toContain("scripts/cdisc-library-adam.ts sync");
+  });
+
+  it("records the metadata through the shared bot pull request script", () => {
+    expect(workflow).toMatch(
+      /scripts\/open-bot-pr\.sh chore\/cdisc-library-sync- [^]*adam-library-metadata\.json/
+    );
   });
 });

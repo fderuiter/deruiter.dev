@@ -263,8 +263,16 @@ describe("standards watch workflow", () => {
 
   it("refreshes, records on a pull request, and dispatches CI there", () => {
     expect(workflow).toContain("scripts/standards-watch.ts refresh");
-    expect(workflow).toContain('branch="chore/standards-watch-$hash"');
-    expect(workflow).toContain("gh pr create --base main");
-    expect(workflow).toContain('gh workflow run ci.yml --ref "$branch"');
+    expect(workflow).toMatch(
+      /scripts\/open-bot-pr\.sh chore\/standards-watch- [^]*lib\/clinical-standards\/standards-latest\.json/
+    );
+  });
+
+  it("opens the pull request and dispatches CI through the shared script", () => {
+    const script = read("scripts/open-bot-pr.sh");
+    expect(script).toContain('branch="$prefix$hash"');
+    expect(script).toContain("gh pr create --base main");
+    expect(script).toContain('gh workflow run ci.yml --ref "$branch"');
+    expect(script).toContain("gh issue create");
   });
 });

@@ -500,7 +500,12 @@ describe("boundary defences", () => {
   });
 
   it("builds the figure for a single subject", () => {
-    const single = withAdtte(run, (row) => row === 7);
+    const parameters = run.datasets.find((dataset) => dataset.name === "ADTTE")!
+      .columns.PARAMCD;
+    const eighth = parameters
+      .map((value, row) => (value === "TTADISC" ? row : -1))
+      .filter((row) => row >= 0)[7];
+    const single = withAdtte(run, (row) => row === eighth);
     const built = buildTlfOutputs(DEMO_301_STUDY, single);
     const curves = built.figures[0].curves.filter(
       (curve) => curve.points.length > 0
@@ -707,7 +712,11 @@ describe("Figure 14.2.2 in the reporting event", () => {
     const test = logRankTest(
       arms.map((arm) =>
         Array.from({ length: n }, (_, row) => row)
-          .filter((row) => adtte.columns.TRT01A[row] === arm)
+          .filter(
+            (row) =>
+              adtte.columns.TRT01A[row] === arm &&
+              adtte.columns.PARAMCD[row] === "TTADISC"
+          )
           .map((row) => ({
             time: adtte.columns.AVAL[row] as number,
             event: adtte.columns.CNSR[row] === 0,

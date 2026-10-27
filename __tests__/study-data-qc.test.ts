@@ -467,7 +467,11 @@ function qcAdtte(run: PipelineRun, out: Mismatch[]) {
   const adae = groupBy(table(run, "adam", "ADAE"), (r) => String(r.USUBJID));
   const ds = groupBy(table(run, "sdtm", "DS"), (r) => String(r.USUBJID));
   const contact = lastContact(run);
-  const adtte = new Map(table(run, "adam", "ADTTE").map((r) => [r.USUBJID, r]));
+  const adtte = new Map(
+    table(run, "adam", "ADTTE")
+      .filter((r) => r.PARAMCD === "TTADISC")
+      .map((r) => [r.USUBJID, r])
+  );
 
   const dosed = adsl.filter((row) => row.SAFFL === "Y");
   if (adtte.size !== dosed.length) {
@@ -530,6 +534,128 @@ function qcAdtte(run: PipelineRun, out: Mismatch[]) {
         actual,
       });
     }
+  }
+}
+
+/**
+ * ADTTE TTDTH, TTSAE and TTRESC, the event components of the hierarchical
+ * composite: death censored at last contact; the first serious TEAE and the
+ * first rescue medication counted from first dose to the end of the
+ * on-treatment period (14 days after last dose, capped at last contact) and
+ * censored there.
+ */
+function qcHierarchyTte(run: PipelineRun, out: Mismatch[]) {
+  const adsl = table(run, "adam", "ADSL");
+  const adae = groupBy(table(run, "adam", "ADAE"), (r) => String(r.USUBJID));
+  const adcm = groupBy(table(run, "adam", "ADCM"), (r) => String(r.USUBJID));
+  const contact = lastContact(run);
+  const adtte = new Map(
+    table(run, "adam", "ADTTE").map((r) => [`${r.USUBJID}|${r.PARAMCD}`, r])
+  );
+  for (const subject of adsl.filter((row) => row.SAFFL === "Y")) {
+    const id = String(subject.USUBJID);
+    const start = dayNumber(subject.TRTSDT)!;
+    const last = contact.get(subject.USUBJID)!;
+    const lastDose = dayNumber(subject.TRTEDT) ?? last;
+    const windowEnd = Math.min(lastDose + 14, last);
+    const firstIn = (rows: Row[]) =>
+      rows
+        .map((r) => ({ day: dayNumber(r.ASTDT), seq: Number(r.SRCSEQ) }))
+        .filter(
+          (r): r is { day: number; seq: number } =>
+            r.day !== null && r.day >= start && r.day <= windowEnd
+        )
+        .sort((a, b) => a.day - b.day || a.seq - b.seq)[0];
+    const death = dayNumber(subject.DTHDT);
+    const sae = firstIn(
+      (adae.get(id) ?? []).filter((r) => r.TRTEMFL === "Y" && r.AESER === "Y")
+    );
+    const rescue = firstIn(
+      (adcm.get(id) ?? []).filter((r) => r.RESCUEFL === "Y")
+    );
+    const expected: Array<[string, number, number]> = [
+      ["TTDTH", death ?? last, death === null ? 1 : 0],
+      ["TTSAE", sae?.day ?? windowEnd, sae ? 0 : 1],
+      ["TTRESC", rescue?.day ?? windowEnd, rescue ? 0 : 1],
+    ];
+    for (const [paramcd, adt, cnsr] of expected) {
+      const row = adtte.get(`${id}|${paramcd}`);
+      const want = { ADT: isoDate(adt), AVAL: adt - start + 1, CNSR: cnsr };
+      const got = row && { ADT: row.ADT, AVAL: row.AVAL, CNSR: row.CNSR };
+      if (JSON.stringify(got) !== JSON.stringify(want)) {
+        out.push({
+          check: `ADTTE.${paramcd}`,
+          key: id,
+          expected: want,
+          actual: got,
+        });
+      }
+    }
+  }
+}
+
+/**
+ * ADHCE: four records per ITT subject in priority order, each value read
+ * from its source record, the blood pressure change rounded to 0.1 mmHg.
+ */
+function qcAdhce(run: PipelineRun, out: Mismatch[]) {
+  const adtte = new Map(
+    table(run, "adam", "ADTTE").map((r) => [`${r.USUBJID}|${r.PARAMCD}`, r])
+  );
+  const week12 = new Map(
+    table(run, "adam", "ADVS")
+      .filter(
+        (r) =>
+          r.PARAMCD === "SYSBP" &&
+          r.AVISIT === "WEEK 12" &&
+          r.ANL01FL === "Y" &&
+          r.DTYPE === null
+      )
+      .map((r) => [r.USUBJID, r])
+  );
+  const adhce = table(run, "adam", "ADHCE");
+  const expected = table(run, "adam", "ADSL")
+    .filter((subject) => subject.ITTFL === "Y")
+    .flatMap((subject) => {
+      const tte = (paramcd: string) =>
+        adtte.get(`${subject.USUBJID}|${paramcd}`);
+      const sbp = week12.get(subject.USUBJID);
+      const change =
+        typeof sbp?.CHG === "number" ? Math.round(sbp.CHG * 10) / 10 : null;
+      return [
+        ["HCEDTH", tte("TTDTH")?.AVAL ?? null, tte("TTDTH")?.CNSR ?? null],
+        ["HCESAE", tte("TTSAE")?.AVAL ?? null, tte("TTSAE")?.CNSR ?? null],
+        ["HCERESC", tte("TTRESC")?.AVAL ?? null, tte("TTRESC")?.CNSR ?? null],
+        ["HCESBP", change, null],
+      ].map(([paramcd, aval, cnsr], index) => ({
+        USUBJID: subject.USUBJID,
+        PARAMCD: paramcd,
+        PARAMN: index + 1,
+        AVAL: aval,
+        CNSR: cnsr,
+        ANL01FL: aval === null ? null : "Y",
+        TRT01P: subject.TRT01P,
+      }));
+    });
+  const actual = adhce.map((r) => ({
+    USUBJID: r.USUBJID,
+    PARAMCD: r.PARAMCD,
+    PARAMN: r.PARAMN,
+    AVAL: r.AVAL,
+    CNSR: r.CNSR,
+    ANL01FL: r.ANL01FL,
+    TRT01P: r.TRT01P,
+  }));
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    const at = expected.findIndex(
+      (row, index) => JSON.stringify(row) !== JSON.stringify(actual[index])
+    );
+    out.push({
+      check: "ADHCE",
+      key: String(at),
+      expected: expected[at] ?? null,
+      actual: actual[at] ?? null,
+    });
   }
 }
 
@@ -776,6 +902,8 @@ function qc(run: PipelineRun): Mismatch[] {
   qcBds(run, "ADLB", "LB", out);
   qcAdae(run, out);
   qcAdtte(run, out);
+  qcHierarchyTte(run, out);
+  qcAdhce(run, out);
   qcTables(run, out);
   return out;
 }
@@ -795,6 +923,8 @@ describe("independent QC of the study-data derivations (#2596)", () => {
     // scenarios, #2605).
     const reached = {
       events: 0,
+      seriousEvents: 0,
+      rescueEvents: 0,
       imputedStarts: 0,
       nonEmergent: 0,
       locf: 0,
@@ -809,7 +939,15 @@ describe("independent QC of the study-data derivations (#2596)", () => {
         const mismatches = qc(run);
         const adtte = table(run, "adam", "ADTTE");
         const adae = table(run, "adam", "ADAE");
-        reached.events += adtte.filter((r) => r.CNSR === 0).length;
+        reached.events += adtte.filter(
+          (r) => r.PARAMCD === "TTADISC" && r.CNSR === 0
+        ).length;
+        reached.seriousEvents += adtte.filter(
+          (r) => r.PARAMCD === "TTSAE" && r.CNSR === 0
+        ).length;
+        reached.rescueEvents += adtte.filter(
+          (r) => r.PARAMCD === "TTRESC" && r.CNSR === 0
+        ).length;
         reached.imputedStarts += adae.filter((r) => r.ASTDTF !== null).length;
         reached.nonEmergent += adae.filter((r) => r.TRTEMFL !== "Y").length;
         for (const name of ["ADVS", "ADLB"]) {

@@ -617,8 +617,17 @@
         "class": "BDS (TIME-TO-EVENT)",
         "structure": "One record per subject per parameter",
         "keys": ["STUDYID", "USUBJID", "ASEQ"],
-        "records": 81,
+        "records": 324,
         "file": "adtte.xpt"
+      },
+      {
+        "name": "ADHCE",
+        "label": "Hierarchical Composite",
+        "class": "BDS",
+        "structure": "One record per subject per hierarchy component",
+        "keys": ["STUDYID", "USUBJID", "ASEQ"],
+        "records": 324,
+        "file": "adhce.xpt"
       }
     ],
     "conformance": {
@@ -769,13 +778,28 @@
       },
       {
         "id": "ADTTE_EVENT",
-        "text": "An event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition; event date is AE start date.",
+        "text": "TTADISC: an event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition, dated at the AE start date. TTDTH: death, dated at ADSL.DTHDT. TTSAE: the first serious treatment-emergent AE, dated at its analysis start date. TTRESC: the first rescue medication (ADCM.RESCUEFL = Y) started on or after first dose, dated at its analysis start date. TTSAE and TTRESC count only events up to the end of the on-treatment period.",
         "variables": ["ADTTE.ADT", "ADTTE.EVNTDESC", "ADTTE.DSSEQ"]
       },
       {
         "id": "ADTTE_CENSOR",
-        "text": "For a dosed subject without an event, censor at the earlier of last known contact and discontinuation for another reason; count first-dose day as day 1.",
+        "text": "AVAL counts first-dose day as day 1. TTADISC: a dosed subject without an event is censored at the earlier of last known contact and discontinuation for another reason. TTDTH: censored at last known contact. TTSAE and TTRESC: censored at the end of the on-treatment period, 14 days after last dose, or at last known contact when that is earlier.",
         "variables": ["ADTTE.AVAL", "ADTTE.CNSR", "ADTTE.CNSDTDSC"]
+      },
+      {
+        "id": "ADHCE_COMPONENT",
+        "text": "One record per ITT subject per component of the hierarchical composite, in priority order (PARAMN): 1 death (ADTTE TTDTH), 2 first serious TEAE (ADTTE TTSAE), 3 first rescue medication (ADTTE TTRESC), 4 change from baseline in systolic blood pressure at Week 12 (ADVS PARAMCD = SYSBP, AVISIT = WEEK 12, ANL01FL = Y). ADT and CNSR are copied from the source record; AVAL is derived as the value-level metadata of each parameter describes.",
+        "variables": ["ADHCE.ADT", "ADHCE.AVAL"]
+      },
+      {
+        "id": "ADHCE_TTE",
+        "text": "AVAL and CNSR are the ADTTE values for the same subject and parameter: days from first dose, with CNSR = 1 when the subject was censored.",
+        "variables": ["ADHCE.CNSR"]
+      },
+      {
+        "id": "ADHCE_ANL",
+        "text": "ANL01FL is Y when AVAL is not missing. A component with a missing AVAL is a tie for every pair that reaches it.",
+        "variables": ["ADHCE.ANL01FL"]
       }
     ],
     "outputs": [

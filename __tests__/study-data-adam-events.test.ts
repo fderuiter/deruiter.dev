@@ -163,7 +163,7 @@ describe("ADAE and ADTTE", () => {
       )
     );
     const actual = Object.fromEntries(
-      ["ADAE", "ADTTE"].map((name) => {
+      ["ADAE", "ADTTE", "ADHCE"].map((name) => {
         const dataset = run.datasets.find(
           (value) => value.name === name && value.layer === "adam"
         )!;

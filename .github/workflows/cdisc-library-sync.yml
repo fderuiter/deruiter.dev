@@ -52,6 +52,9 @@ jobs:
         run: npm ci
 
       - name: Read ADaM Metadata From the CDISC Library
+        # `shell: bash` adds pipefail, so a failed sync fails the step
+        # instead of `tee` reporting success.
+        shell: bash
         env:
           CDISC_LIBRARY_API_KEY: ${{ secrets.CDISC_LIBRARY_API_KEY }}
         run: |

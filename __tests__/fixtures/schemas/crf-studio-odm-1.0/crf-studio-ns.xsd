@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CRF Studio ODM vendor extension, namespace elements (#3022).
+
+  ODM 1.3.2 has no element for a change log of the study design, so CRF
+  Studio writes its design audit trail in this namespace, in the
+  MetaDataVersionElementExtension slot that crf-studio-odm-extension.xsd
+  redefines. A file without an audit trail uses none of it and is plain
+  ODM 1.3.2.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:crfs="https://deruiter.dev/ns/crf-studio/v1"
+           targetNamespace="https://deruiter.dev/ns/crf-studio/v1"
+           elementFormDefault="qualified" attributeFormDefault="unqualified"
+           version="1.0">
+  <xs:element name="AuditTrail">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="crfs:AuditRecord" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+    <xs:unique name="UC-CRFS-AUDIT-ID">
+      <xs:selector xpath="crfs:AuditRecord"/>
+      <xs:field xpath="@ID"/>
+    </xs:unique>
+  </xs:element>
+  <xs:element name="AuditRecord">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="UserRef">
+          <xs:complexType>
+            <xs:attribute name="UserOID" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="UserRole" type="xs:string" minOccurs="0"/>
+        <xs:element name="DateTimeStamp" type="xs:string"/>
+        <xs:element name="ActionType" type="xs:string" minOccurs="0"/>
+        <xs:element name="TargetID" type="xs:string" minOccurs="0"/>
+        <xs:element name="FormOID" type="xs:string" minOccurs="0"/>
+        <xs:element name="ItemOID" type="xs:string" minOccurs="0"/>
+        <xs:element name="PreviousValue" type="xs:string" minOccurs="0"/>
+        <xs:element name="NewValue" type="xs:string" minOccurs="0"/>
+        <xs:element name="ReasonForChange" type="xs:string" minOccurs="0"/>
+        <xs:element name="DiagnosticID" type="xs:string" minOccurs="0"/>
+        <xs:element name="Details" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="ID" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

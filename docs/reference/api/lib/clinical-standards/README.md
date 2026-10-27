@@ -14,6 +14,18 @@ Re-exports [addCalendarDaysToStudyDay](usdm-v4-schedule/functions/addCalendarDay
 
 ***
 
+### CapabilityStatus
+
+Re-exports [CapabilityStatus](bom/type-aliases/CapabilityStatus.md)
+
+***
+
+### CapabilitySupport
+
+Re-exports [CapabilitySupport](bom/interfaces/CapabilitySupport.md)
+
+***
+
 ### CDISC\_CORE\_PIN
 
 Re-exports [CDISC_CORE_PIN](bom/variables/CDISC_CORE_PIN.md)
@@ -182,6 +194,12 @@ Re-exports [STANDARD_CODELISTS](codelists/variables/STANDARD_CODELISTS.md)
 
 ***
 
+### StandardArtifactType
+
+Re-exports [StandardArtifactType](bom/type-aliases/StandardArtifactType.md)
+
+***
+
 ### StandardBomEntry
 
 Re-exports [StandardBomEntry](bom/interfaces/StandardBomEntry.md)
@@ -191,6 +209,12 @@ Re-exports [StandardBomEntry](bom/interfaces/StandardBomEntry.md)
 ### StandardBomSpec
 
 Re-exports [StandardBomSpec](bom/interfaces/StandardBomSpec.md)
+
+***
+
+### StandardCapability
+
+Re-exports [StandardCapability](bom/type-aliases/StandardCapability.md)
 
 ***
 
@@ -212,9 +236,21 @@ Re-exports [standardCitation](profile/functions/standardCitation.md)
 
 ***
 
+### StandardFamily
+
+Re-exports [StandardFamily](bom/type-aliases/StandardFamily.md)
+
+***
+
 ### StandardFeed
 
 Re-exports [StandardFeed](bom/type-aliases/StandardFeed.md)
+
+***
+
+### StandardLifecycle
+
+Re-exports [StandardLifecycle](bom/type-aliases/StandardLifecycle.md)
 
 ***
 

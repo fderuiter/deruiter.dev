@@ -41,7 +41,8 @@ usable probe, reporting retains the dated snapshot and evaluates its age.
 This is optional manual tooling. Production builds do not call the capacity
 helper and do not require a new Vercel API credential. The helper fails on child
 errors, malformed reports, unverified provenance or stale samples. No tool
-starts or authorizes a deployment; the manual hold in ADR 0051 remains.
+starts or authorizes a deployment; Production ships through the weekly
+release train (ADR 0063).
 
 ## Thresholds and Captured Snapshot
 
@@ -73,9 +74,9 @@ recovery state reconcile.
 
 When the meter is critical:
 
-1. Keep automatic Git deployments disabled until a replacement release
-   policy is approved and verified per
-   [ADR 0051](../../adr/0051-manual-production-releases.md).
+1. Keep automatic Git deployments disabled per
+   [ADR 0063](../../adr/0063-weekly-release-train.md); if storage stays
+   critical, pause the train with `WEEKLY_TRAIN=off`.
 2. Open the Vercel usage dashboard, select All Projects and Last 30 Days, and
    record all three meter values with a UTC timestamp.
 3. Run a fresh paginated deployment and alias inventory.
@@ -92,14 +93,13 @@ When the meter is critical:
 
 ## Warning Build-Time Response
 
-1. During the temporary hold, confirm `vercel.json` sets
-   `git.deploymentEnabled` to `false`. Keep that setting until the approved
-   replacement release policy is verified.
-2. Confirm no GitHub Action, Deploy Hook, or second integration also deploys
-   the same commit.
-3. Keep one Production build per accepted pull request, started manually from
-   the current `main` SHA during the hold; use an on-demand preview only when
-   deployed review materially reduces risk.
+1. Confirm `vercel.json` sets `git.deploymentEnabled` to `false`, so merges
+   never build.
+2. Confirm only the weekly train's Deploy Hook fires, and no GitHub Action or
+   second integration also deploys the same commit.
+3. Keep to one Production build a week from the train, plus break-glass
+   releases; use an on-demand preview only when deployed review materially
+   reduces risk.
 4. Review failed and canceled build frequency before changing retention.
 
 ## Refresh the Audited Snapshot

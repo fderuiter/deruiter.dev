@@ -235,10 +235,9 @@ move touch overlapping but different lists.
 
 > [!WARNING]
 > **Vercel binds environment variables at deploy time.** Changing a variable has
-> no effect on the running deployment. During the manual hold, create a Production
-> deployment from the current green `main` SHA in Dashboard → Deployments →
-> Create Deployment after any change here; production remains a deliberate
-> human action.
+> no effect on the running deployment. After any change here, create a
+> Production deployment from the current green `main` SHA in Dashboard →
+> Deployments → Create Deployment rather than waiting for Sunday's train.
 
 ## Repository artifacts that name the branch id
 

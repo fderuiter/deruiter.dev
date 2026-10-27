@@ -175,12 +175,10 @@ branches must follow conventional prefixes:
 - `jules/*` - Reserved for branches opened by the Jules agent
 
 Open pull requests against `main` and squash-merge them using a Conventional
-Commit PR title. During the manual hold, an operator creates a Production
-deployment from the merged `main` SHA in the Vercel Dashboard. Keep this hold
-until a replacement release policy is approved and verified under
-[ADR 0051](./adr/0051-manual-production-releases.md); the nightly-train
-proposal is tracked in [#1168](https://github.com/fderuiter/deruiter.dev/issues/1168). Feature branches do not deploy
-automatically. See
+Commit PR title. Merging never deploys: the weekly release train ships
+`main` every Sunday at 7 PM Central as a versioned GitHub Release
+([ADR 0063](./adr/0063-weekly-release-train.md)). Feature branches do not
+deploy automatically. See
 [Release and deployment workflow](./docs/how-to/release-and-deploy.md).
 
 Generate conforming branch names interactively:

@@ -34,7 +34,7 @@ an audit if the two disagree.
 - [2026-09-12 GitHub to Vercel release workflow audit](audits/2026-09-12-github-vercel-release-governance.md)
 - [2026-09-22 release, public repository, and Vercel readiness audit](audits/2026-09-22-release-public-vercel-readiness.md),
   the latest release-readiness audit. The current release process is
-  [ADR 0051](../../adr/0051-manual-production-releases.md) and the
+  [ADR 0063](../../adr/0063-weekly-release-train.md) and the
   [release and deploy guide](../how-to/release-and-deploy.md).
 
 ## Planning

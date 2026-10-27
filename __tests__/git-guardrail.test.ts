@@ -196,9 +196,9 @@ describe("Git Safety Guardrail Interceptor (scripts/git-guardrail.sh)", () => {
     const blockedDeploys: Array<[string, string]> = [
       ["npx vercel deploy --prebuilt", "fallback content"],
       ["vercel deploy --prod --prebuilt", "fallback content"],
-      ["npx vercel deploy --prod", "Dashboard-only"],
-      ["vercel --prod", "Dashboard-only"],
-      ["npx vercel promote dpl_example", "Dashboard-only"],
+      ["npx vercel deploy --prod", "Never deploy Production from the CLI"],
+      ["vercel --prod", "Weekly Train"],
+      ["npx vercel promote dpl_example", "not done from the CLI"],
       ["vercel env rm DATABASE_URL production", "hard to undo"],
       ["vercel domains rm deruiter.dev", "detaches production traffic"],
       ["npx prisma migrate deploy", "disposable branch"],
@@ -215,8 +215,9 @@ describe("Git Safety Guardrail Interceptor (scripts/git-guardrail.sh)", () => {
       });
     });
 
-    it("names the manual Dashboard release path as the alternative to --prebuilt", () => {
+    it("names the train and the break-glass Dashboard path as the alternatives to --prebuilt", () => {
       const result = runGuardrail("npx vercel deploy --prebuilt", { CI: "" });
+      expect(result.stderr).toContain("weekly release train");
       expect(result.stderr).toContain("Create Deployment");
     });
 
@@ -225,7 +226,7 @@ describe("Git Safety Guardrail Interceptor (scripts/git-guardrail.sh)", () => {
         CI: "true",
       });
       expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Dashboard-only");
+      expect(result.stderr).toContain("Never deploy Production from the CLI");
     });
 
     it("allows an ordinary remote Preview build in CI", () => {

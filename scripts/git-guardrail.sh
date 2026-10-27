@@ -59,18 +59,18 @@ GIT_PATTERNS=(
   "^git[[:space:]]+restore[[:space:]]+(\.[[:space:]]*$|--staged[[:space:]]+\.[[:space:]]*$)"
 )
 
-# Until an approved replacement release policy is verified, Production must
-# start in the Vercel Dashboard. Keep the CLI guard active under CI too; no repository workflow
-# owns the manual Production button action (ADR 0051).
+# Production ships through the weekly release train's Deploy Hook, with the
+# Vercel Dashboard's Create Deployment as break-glass (ADR 0063). Keep the CLI
+# guard active under CI too; no repository workflow deploys from the CLI.
 DEPLOY_PATTERNS=(
   "^vercel[[:space:]]+.*deploy.*[[:space:]]--prebuilt([[:space:]]|$)"
   "^vercel([[:space:]]|$).*--prod([[:space:]]|$)"
   "^vercel[[:space:]]+promote([[:space:]]|$)"
 )
 DEPLOY_REASONS=(
-  "--prebuilt ships a locally built artifact without rebuilding. A build whose data source was unreachable still exits 0 and bakes fallback content into every page. For Preview, run an ordinary remote build with npx vercel deploy; during the manual-release hold, start Production in Vercel Dashboard → Deployments → Create Deployment from the current main SHA."
-  "Production deployments are Dashboard-only until an approved replacement release policy is verified (ADR 0051; issue #1168). After CI passes, use Vercel Dashboard → Deployments → Create Deployment and select the current main SHA."
-  "Production promotion is Dashboard-only until an approved replacement release policy is verified (ADR 0051; issue #1168). Use Vercel Dashboard → Deployments → Create Deployment and select the current main SHA."
+  "--prebuilt ships a locally built artifact without rebuilding. A build whose data source was unreachable still exits 0 and bakes fallback content into every page. For Preview, run an ordinary remote build with npx vercel deploy; Production ships through the weekly release train, or as break-glass from Vercel Dashboard → Deployments → Create Deployment with the current main SHA."
+  "Production ships through the weekly release train (ADR 0063): Actions → Weekly Train → Run workflow. As break-glass, use Vercel Dashboard → Deployments → Create Deployment and select the current green main SHA. Never deploy Production from the CLI."
+  "Production promotion is not done from the CLI (ADR 0063). Ship with Actions → Weekly Train → Run workflow, or as break-glass use Vercel Dashboard → Deployments → Create Deployment and select the current green main SHA."
 )
 
 # Other consequential provider operations are skipped under CI, where

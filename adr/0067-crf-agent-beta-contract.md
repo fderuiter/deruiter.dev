@@ -85,7 +85,7 @@ Set the beta kill switch default off. For the first enrollment, cap each request
 1. #2663 adds scoped identity and independent entitlement. #2664 adds consent and bounded context. #2665 adds a disabled-by-default, cost-bounded inference route. #2666 adds the typed, stale-safe proposal facade.
 2. #2667, #2668 and #2669 add authoring operations. #2676, #2677 and #2678 add clinical traceability, versioned terminology safeguards and amendment impact. #2670 and #2671 add read-only explanations. #2672 integrates accessible review and undo on desktop/mobile.
 3. #2673 evaluates adversarial output, anonymous/manual access, invalid references, synthetic journeys and privacy/cost boundaries. #2674 records operator settings, named reviewers and the beta go/no-go. Human-first UX gate #2687 also applies.
-4. Keep AI off if any gate fails. #2691 holds production until its **entire** scope is complete; no date or passing CRF subset overrides it. Follow ADR 0051 for a later operator-initiated production release.
+4. Keep AI off if any gate fails. #2691 holds production until its **entire** scope is complete; no date or passing CRF subset overrides it. Production releases follow the weekly release train in ADR 0063.
 
 This keeps the local Studio responsive and usable during auth/provider failure. The cost is a separate entitlement, a stricter proposal protocol and explicit review work, which are necessary because model output is untrusted and clinical design decisions require accountable human judgment.
 

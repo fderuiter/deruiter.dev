@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-// ADR 0051: all Git-triggered deployments are paused during the manual hold.
+// ADR 0063: Production ships only through the weekly release train's Deploy
+// Hook, so every Git-triggered deployment stays off.
 describe("production deploy configuration", () => {
   const root = process.cwd();
   const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
@@ -20,7 +21,7 @@ describe("production deploy configuration", () => {
     expect(vercelConfig.buildCommand).toBe("npm run build");
   });
 
-  it("disables all Git-triggered deployments during the manual hold", () => {
+  it("disables all Git-triggered deployments (the train fires a Deploy Hook)", () => {
     expect(vercelConfig.git.deploymentEnabled).toBe(false);
   });
 
@@ -163,7 +164,7 @@ describe("production deploy configuration", () => {
     );
 
     const adr = read("adr/0063-weekly-release-train.md");
-    expect(adr).toMatch(/## Status\s+Proposed/);
+    expect(adr).toMatch(/## Status\s+Accepted/);
   });
 
   it("still sends the protection bypass header when a probe targets a protected URL", () => {
@@ -212,7 +213,7 @@ describe("production deploy configuration", () => {
     expect(migrationGuide).toContain("DATABASE_URL_UNPOOLED");
   });
 
-  it("keeps the manual release hold until an approved and verified replacement", () => {
+  it("ships Production through the accepted weekly train, with ADR 0051 superseded", () => {
     const runbook = read("docs/how-to/release-and-deploy.md");
     for (const step of [
       "adr/0049-deploy-main-on-green-ci.md",
@@ -231,8 +232,12 @@ describe("production deploy configuration", () => {
     expect(adr).toMatch(/## Status\s+Accepted/);
     expect(adr).toMatch(/"\*": false,\s*"main": true/);
 
+    const train = read("adr/0063-weekly-release-train.md");
+    expect(train).toMatch(/## Status\s+Accepted/);
+    expect(runbook).toContain("adr/0063-weekly-release-train.md");
+
     const temporaryAdr = read("adr/0051-manual-production-releases.md");
-    expect(temporaryAdr).toContain("approved and verified");
+    expect(temporaryAdr).toMatch(/## Status\s+Superseded by \[ADR 0063\]/);
     expect(temporaryAdr).toContain("1168");
     expect(temporaryAdr).toMatch(/Deployments → Create\s+Deployment/);
 

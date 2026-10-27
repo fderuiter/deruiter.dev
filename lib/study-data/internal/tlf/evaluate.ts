@@ -1,8 +1,9 @@
 /**
  * The analysis engine: runs every analysis of a reporting plan against the
  * ADaM datasets of a run and records, for every result, the ADaM rows it was
- * computed from. Time-to-event methods are handed to `km-evaluate.ts` with
- * the same populations, records and row sets.
+ * computed from. Time-to-event methods are handed to `km-evaluate.ts`, and
+ * win-ratio methods to `win-evaluate.ts`, with the same populations,
+ * records and row sets.
  *
  * Populations come from ADSL through the analysis set and the subject-level
  * groupings, so every result links to the ADSL rows of its denominator
@@ -37,6 +38,7 @@ import {
   statisticDecimals,
 } from "./stats";
 import { matchesWhereClause, recordValue, type RecordContext } from "./where";
+import { evaluateWinRatio, isWinRatioMethod } from "./win-evaluate";
 
 /** Analyses with results, and the row sets they refer to. */
 export interface Evaluation {
@@ -179,6 +181,18 @@ function distinctSubjects(records: readonly RecordContext[]): number {
   ).size;
 }
 
+/** An analysis spec without the fields that extend the ARS class. */
+function arsShape(
+  spec: AnalysisSpec
+): Omit<AnalysisSpec, "precisionVariable" | "comparison"> {
+  const {
+    precisionVariable: _precisionVariable,
+    comparison: _comparison,
+    ...shape
+  } = spec;
+  return shape;
+}
+
 function numeric(value: CellValue): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -252,21 +266,23 @@ export function evaluateAnalyses(
       .filter((ordered) => ordered.resultsByGroup)
       .sort((a, b) => a.order - b.order)
       .map((ordered) => grouping(ordered.groupingId));
-    if (isTimeToEventMethod(spec.methodId)) {
-      const { precisionVariable: _unused, ...timeToEvent } = spec;
+    if (isTimeToEventMethod(spec.methodId) || isWinRatioMethod(spec.methodId)) {
+      const input = {
+        spec,
+        factors: [...spec.orderedGroupings]
+          .sort((a, b) => a.order - b.order)
+          .map((ordered) => grouping(ordered.groupingId)),
+        population,
+        records,
+        adsl,
+        data,
+        registry,
+      };
       done.set(spec.id, {
-        ...timeToEvent,
-        results: evaluateTimeToEvent({
-          spec,
-          factors: [...spec.orderedGroupings]
-            .sort((a, b) => a.order - b.order)
-            .map((ordered) => grouping(ordered.groupingId)),
-          population,
-          records,
-          adsl,
-          data,
-          registry,
-        }),
+        ...arsShape(spec),
+        results: isWinRatioMethod(spec.methodId)
+          ? evaluateWinRatio(input)
+          : evaluateTimeToEvent(input),
       });
       continue;
     }
@@ -411,9 +427,8 @@ export function evaluateAnalyses(
         );
       }
     }
-    const { precisionVariable: _precisionVariable, ...shape } = spec;
     const analysis: ArsAnalysis = {
-      ...shape,
+      ...arsShape(spec),
       ...(rawDecimals === undefined ? {} : { rawDecimals }),
       results,
     };

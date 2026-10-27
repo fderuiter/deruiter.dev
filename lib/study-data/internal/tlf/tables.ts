@@ -16,11 +16,14 @@ import type {
 import { ResultIndex } from "./evaluate";
 import {
   AGE_GROUPS,
+  HCE_HIERARCHY,
   IDS,
   SEX_GROUPS,
   SUMMARY_OPERATIONS,
+  comparisons,
   reportedVisits,
   visitLabel,
+  winRatioIds,
   type ReportingPlan,
 } from "./plan";
 
@@ -83,6 +86,30 @@ class TableBuilder {
           ? "0"
           : `${n.formattedValue} (${percent.formattedValue})`,
       resultIds: [n.id, percent.id],
+    };
+  }
+
+  /** One result as a cell. */
+  value(
+    analysisId: string,
+    operationId: string,
+    groups: readonly ArsResultGroup[] = []
+  ): TlfCell {
+    const result = this.index.get(analysisId, operationId, groups);
+    return { text: result.formattedValue, resultIds: [result.id] };
+  }
+
+  /** An estimate and its confidence limits, as `1.23 (0.98, 1.54)`. */
+  interval(
+    analysisId: string,
+    operationIds: readonly [string, string, string]
+  ): TlfCell {
+    const [estimate, lower, upper] = operationIds.map((operationId) =>
+      this.index.get(analysisId, operationId, [])
+    );
+    return {
+      text: `${estimate.formattedValue} (${lower.formattedValue}, ${upper.formattedValue})`,
+      resultIds: [estimate.id, lower.id, upper.id],
     };
   }
 
@@ -338,16 +365,137 @@ function adverseEvents(
   };
 }
 
-/** The three tables, in output order: 14.1.1, 14.2.1 and 14.3.1. */
+function winStatistics(
+  builder: TableBuilder,
+  definition: StudyDefinition
+): TlfTable | null {
+  const compared = comparisons(definition);
+  if (!compared) return null;
+  const arms = definition.design.arms;
+  const control = arms[compared.control];
+  const fas = builder.columns(IDS.cfbN, IDS.trt01p);
+  const columns = compared.treatments.map((treatment, position) => ({
+    ...fas[treatment],
+    id: `col${position + 1}`,
+    label: `${arms[treatment].name} vs ${control.name}`,
+  }));
+  const ids = compared.treatments.map((treatment) =>
+    winRatioIds(arms[treatment].armCode)
+  );
+  const row = (
+    id: string,
+    label: string,
+    cell: (analyses: ReturnType<typeof winRatioIds>) => TlfCell
+  ): TlfRow => ({ id, label, cells: ids.map(cell) });
+  const sections: TlfSection[] = HCE_HIERARCHY.map((component, position) => {
+    const id = `s${position + 1}`;
+    const groups = [
+      { groupingId: IDS.hceComponent, groupId: `Grp_HCE_${component.paramcd}` },
+    ];
+    return {
+      id,
+      label: `${position + 1}. ${component.label}`,
+      rows: [
+        row(`${id}r1`, "Wins", (analyses) =>
+          builder.value(analyses.components, IDS.winCompWins, groups)
+        ),
+        row(`${id}r2`, "Losses", (analyses) =>
+          builder.value(analyses.components, IDS.winCompLosses, groups)
+        ),
+        row(`${id}r3`, "Ties after this component", (analyses) =>
+          builder.value(analyses.components, IDS.winCompTies, groups)
+        ),
+      ],
+    };
+  });
+  const overall = `s${sections.length + 1}`;
+  sections.push({
+    id: overall,
+    label: "All components",
+    rows: [
+      row(`${overall}r1`, "Pairs compared", (analyses) =>
+        builder.value(analyses.overall, IDS.winPairs)
+      ),
+      row(`${overall}r2`, "Wins", (analyses) =>
+        builder.value(analyses.overall, IDS.winWins)
+      ),
+      row(`${overall}r3`, "Losses", (analyses) =>
+        builder.value(analyses.overall, IDS.winLosses)
+      ),
+      row(`${overall}r4`, "Ties", (analyses) =>
+        builder.value(analyses.overall, IDS.winTies)
+      ),
+      row(`${overall}r5`, "Win ratio (95% CI)", (analyses) =>
+        builder.interval(analyses.overall, [
+          IDS.winRatio,
+          IDS.winRatioLcl,
+          IDS.winRatioUcl,
+        ])
+      ),
+      row(`${overall}r6`, "Win ratio p-value", (analyses) =>
+        builder.value(analyses.overall, IDS.winRatioP)
+      ),
+      row(`${overall}r7`, "Net benefit (95% CI)", (analyses) =>
+        builder.interval(analyses.overall, [
+          IDS.netBenefit,
+          IDS.netBenefitLcl,
+          IDS.netBenefitUcl,
+        ])
+      ),
+      row(`${overall}r8`, "Win odds (95% CI)", (analyses) =>
+        builder.interval(analyses.overall, [
+          IDS.winOdds,
+          IDS.winOddsLcl,
+          IDS.winOddsUcl,
+        ])
+      ),
+      row(`${overall}r9`, "Finkelstein-Schoenfeld z", (analyses) =>
+        builder.value(analyses.overall, IDS.fsZ)
+      ),
+      row(`${overall}r10`, "Finkelstein-Schoenfeld p-value", (analyses) =>
+        builder.value(analyses.overall, IDS.fsP)
+      ),
+    ],
+  });
+  const controlN = builder.columns(IDS.cfbN, IDS.trt01p)[compared.control];
+  return {
+    outputId: "Out_14_2_3",
+    displayId: "Disp_14_2_3",
+    number: "14.2.3",
+    title:
+      "Hierarchical Composite Endpoint: Win Ratio, Net Benefit and Win Odds",
+    population: "Full Analysis Set",
+    stubHeader: "Component and statistic",
+    columns,
+    sections,
+    footnotes: [
+      `N is the number of subjects in the Full Analysis Set (ITTFL = Y) in the arm, by planned treatment (TRT01P). Each arm is compared with ${control.name} (N=${controlN.bigN}): every subject of the arm is paired with every subject of ${control.name}.`,
+      `A pair is decided on the first component, in the order shown, on which one subject is better: ${HCE_HIERARCHY.map((component) => `${component.label} (${component.rule})`).join("; ")}. Wins are pairs decided in favour of the subject of the arm, losses pairs decided in favour of the ${control.name} subject.`,
+      "Times to an event follow the Gehan rule: a pair is decided only when the earlier time is an event, so a censored time ties with any later time. A missing value ties with every value on that component.",
+      "Win ratio: wins over losses. Net benefit: wins less losses over pairs. Win odds: wins plus half the ties over losses plus half the ties. Confidence intervals use the U-statistic variances of Dong et al. (2016), on the log scale for the win ratio and win odds. Both p-values are two-sided.",
+      "NE: not estimable.",
+      "Source: ADSL, ADHCE.",
+    ],
+    notice: SYNTHETIC_DATA_NOTICE,
+    fileBase: "t-14-2-3",
+  };
+}
+
+/**
+ * The tables, in output order: 14.1.1, 14.2.1, 14.2.3 when the study has a
+ * comparator arm, and 14.3.1.
+ */
 export function buildTables(
   definition: StudyDefinition,
   plan: ReportingPlan,
   analyses: readonly ArsAnalysis[]
 ): readonly TlfTable[] {
   const builder = new TableBuilder(new ResultIndex(analyses), plan);
+  const winRatio = winStatistics(builder, definition);
   return [
     demographics(builder, definition),
     changeFromBaseline(builder, definition),
+    ...(winRatio ? [winRatio] : []),
     adverseEvents(builder, analyses),
   ];
 }

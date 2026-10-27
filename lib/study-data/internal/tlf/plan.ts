@@ -14,6 +14,7 @@ import type {
   ArsGroup,
   ArsGroupingFactor,
   ArsNestedWhereClause,
+  ArsOperation,
   ArsSponsorTermRef,
   ArsTerminologyExtension,
   ArsWhereClause,
@@ -30,6 +31,17 @@ export type AnalysisSpec = Omit<ArsAnalysis, "results" | "rawDecimals"> & {
    * noise of the subtraction.
    */
   readonly precisionVariable?: string;
+  /**
+   * For a two-group comparison, which group of the treatment grouping is
+   * the treatment and which the control. ARS 1.0 has no place for the
+   * direction of a comparison, so it is left out of the reporting event and
+   * written into the analysis name instead.
+   */
+  readonly comparison?: {
+    readonly groupingId: string;
+    readonly treatmentGroupId: string;
+    readonly controlGroupId: string;
+  };
 };
 
 /** Everything the engine needs to run the analyses. */
@@ -102,7 +114,104 @@ export const IDS = {
   kmAtRisk: "An_14_2_2_ATRISK",
   kmCurve: "An_14_2_2_KM",
   kmLogRank: "An_14_2_2_LOGRANK",
+  hceComponent: "AnlsGrouping_HCE_COMPONENT",
+  winComp: "Mth_WinComp",
+  winCompWins: "Mth_WinComp_WINS",
+  winCompLosses: "Mth_WinComp_LOSSES",
+  winCompTies: "Mth_WinComp_TIES",
+  winStat: "Mth_WinStat",
+  winPairs: "Mth_WinStat_PAIRS",
+  winWins: "Mth_WinStat_WINS",
+  winLosses: "Mth_WinStat_LOSSES",
+  winTies: "Mth_WinStat_TIES",
+  winRatio: "Mth_WinStat_WR",
+  winRatioNum: "Mth_WinStat_WR_NUM",
+  winRatioDen: "Mth_WinStat_WR_DEN",
+  winRatioLcl: "Mth_WinStat_WR_LCL",
+  winRatioUcl: "Mth_WinStat_WR_UCL",
+  winRatioP: "Mth_WinStat_WR_PVAL",
+  netBenefit: "Mth_WinStat_NB",
+  netBenefitLcl: "Mth_WinStat_NB_LCL",
+  netBenefitUcl: "Mth_WinStat_NB_UCL",
+  winOdds: "Mth_WinStat_WO",
+  winOddsLcl: "Mth_WinStat_WO_LCL",
+  winOddsUcl: "Mth_WinStat_WO_UCL",
+  fsZ: "Mth_WinStat_FS_Z",
+  fsP: "Mth_WinStat_FS_PVAL",
 } as const;
+
+/**
+ * The DEMO-301 hierarchical composite, most important component first, as
+ * the analysis compares it: the ADHCE parameter, which values are better,
+ * and the margin within which two values tie.
+ */
+export const HCE_HIERARCHY = [
+  {
+    paramcd: "HCEDTH",
+    label: "Death from any cause",
+    kind: "time-to-event",
+    better: "higher",
+    rule: "a later death, or no death, is better",
+  },
+  {
+    paramcd: "HCESAE",
+    label: "First serious TEAE",
+    kind: "time-to-event",
+    better: "higher",
+    rule: "a later first serious TEAE, or none, is better",
+  },
+  {
+    paramcd: "HCERESC",
+    label: "First rescue medication",
+    kind: "time-to-event",
+    better: "higher",
+    rule: "later first rescue medication, or none, is better",
+  },
+  {
+    paramcd: "HCESBP",
+    label: "SBP change from baseline at Week 12",
+    kind: "continuous",
+    better: "lower",
+    margin: 5,
+    rule: "a larger fall is better, and differences of 5 mmHg or less tie",
+  },
+] as const;
+
+/** Decimals the win ratio, win odds and their limits are shown with. */
+export const WIN_RATIO_DECIMALS = 2;
+/** Decimals the net benefit and its limits are shown with. */
+export const NET_BENEFIT_DECIMALS = 3;
+
+/**
+ * The comparator of a study, by its arm type (`Placebo Comparator Arm`,
+ * `Active Comparator Arm`), and the arms compared with it. `null` when the
+ * study has no comparator arm or nothing to compare with it.
+ */
+export function comparisons(definition: StudyDefinition): {
+  readonly control: number;
+  readonly treatments: readonly number[];
+} | null {
+  const arms = definition.design.arms;
+  const control = arms.findIndex((arm) => /comparator/i.test(arm.type.decode));
+  if (control === -1) return null;
+  const treatments = arms.flatMap((_, index) =>
+    index === control ? [] : [index]
+  );
+  return treatments.length === 0 ? null : { control, treatments };
+}
+
+/** Ids of the win-ratio analyses of one treatment arm against the comparator. */
+export function winRatioIds(armCode: string): {
+  readonly subset: string;
+  readonly components: string;
+  readonly overall: string;
+} {
+  return {
+    subset: `Dss_HCE_${armCode}`,
+    components: `An_14_2_3_COMP_${armCode}`,
+    overall: `An_14_2_3_WIN_${armCode}`,
+  };
+}
 
 /** Decimals the survival estimate, its SE and its limits are shown with. */
 export const KM_DECIMALS = 4;
@@ -384,6 +493,44 @@ function visitGrouping(
   };
 }
 
+/** An operation that counts, shown as an integer. */
+function count(
+  id: string,
+  name: string,
+  label: string,
+  order: number
+): ArsOperation {
+  return {
+    id,
+    name,
+    label: `${label}, an integer`,
+    order,
+    resultPattern: "XX",
+  };
+}
+
+const DECIMAL_WORDS: Readonly<Record<number, string>> = {
+  2: "two",
+  3: "three",
+};
+
+/** An operation shown to a fixed number of decimals. */
+function decimal(
+  id: string,
+  name: string,
+  label: string,
+  order: number,
+  decimals: number
+): ArsOperation {
+  return {
+    id,
+    name,
+    label: `${label}, ${DECIMAL_WORDS[decimals] ?? decimals} decimals`,
+    order,
+    resultPattern: `X.${"X".repeat(decimals)}`,
+  };
+}
+
 const METHODS: readonly ArsAnalysisMethod[] = [
   {
     id: IDS.count,
@@ -504,15 +651,157 @@ const METHODS: readonly ArsAnalysisMethod[] = [
       },
     ],
   },
+  {
+    id: IDS.winComp,
+    name: "Pairs decided on each component of a hierarchy",
+    label: "Wins, losses and ties after each component",
+    description:
+      "Every treatment subject is paired with every control subject. Each pair is compared on the components in priority order and decided on the first component on which one member is better; a pair tied on a component goes on to the next. For each component: the pairs the treatment member won on it, the pairs the control member won on it, and the pairs still tied after it. A missing value ties with every value on that component. Times to an event follow the Gehan rule: a pair is decided only when the earlier time is an event, so a censored time ties with any later time. Continuous values tie when they differ by the component's margin or less.",
+    operations: [
+      count(
+        IDS.winCompWins,
+        "Wins",
+        "Pairs the treatment member won on the component",
+        1
+      ),
+      count(
+        IDS.winCompLosses,
+        "Losses",
+        "Pairs the control member won on the component",
+        2
+      ),
+      count(
+        IDS.winCompTies,
+        "Ties after",
+        "Pairs still tied after the component",
+        3
+      ),
+    ],
+  },
+  {
+    id: IDS.winStat,
+    name: "Win statistics",
+    label:
+      "Win ratio, net benefit and win odds with 95% CIs, and the Finkelstein-Schoenfeld test",
+    description: `Pairs every treatment subject with every control subject and decides each pair on the components of the hierarchy in priority order, as the component method describes. Wins W and losses L are the pairs the treatment and the control member won; ties T are the pairs tied on every component, and P = W + L + T. The win ratio is W/L, the net benefit (W - L)/P and the win odds (W + T/2)/(L + T/2). Their variances are the U-statistic variances of Dong et al. (2016), as the WINS R package computes them. The win ratio and win odds limits are formed on the log scale and the net benefit limits on the natural scale, with the normal quantile for a two-sided 95% interval. The win ratio p-value is two-sided, from the z statistic of log(W/L). The Finkelstein-Schoenfeld test scores every pair of subjects in the pooled sample, sums the treatment subjects' scores and refers the sum to its permutation variance. The win ratio and win odds are shown to ${WIN_RATIO_DECIMALS} decimals and the net benefit to ${NET_BENEFIT_DECIMALS}; a statistic is not estimable (NE) when a count it divides by is 0.`,
+    operations: [
+      count(IDS.winPairs, "Pairs", "Treatment-control pairs compared", 1),
+      count(IDS.winWins, "Wins", "Pairs the treatment member won", 2),
+      count(IDS.winLosses, "Losses", "Pairs the control member won", 3),
+      count(IDS.winTies, "Ties", "Pairs tied on every component", 4),
+      {
+        id: IDS.winRatio,
+        name: "Win ratio",
+        label: `Wins over losses, ${WIN_RATIO_DECIMALS} decimals`,
+        order: 5,
+        resultPattern: "X.XX",
+        referencedOperationRelationships: [
+          {
+            id: IDS.winRatioNum,
+            referencedOperationRole: { controlledTerm: "NUMERATOR" },
+            operationId: IDS.winWins,
+            description: "Pairs the treatment member won.",
+          },
+          {
+            id: IDS.winRatioDen,
+            referencedOperationRole: { controlledTerm: "DENOMINATOR" },
+            operationId: IDS.winLosses,
+            description: "Pairs the control member won.",
+          },
+        ],
+      },
+      decimal(
+        IDS.winRatioLcl,
+        "Win ratio lower 95% CL",
+        "Lower 95% confidence limit, log scale",
+        6,
+        WIN_RATIO_DECIMALS
+      ),
+      decimal(
+        IDS.winRatioUcl,
+        "Win ratio upper 95% CL",
+        "Upper 95% confidence limit, log scale",
+        7,
+        WIN_RATIO_DECIMALS
+      ),
+      {
+        id: IDS.winRatioP,
+        name: "Win ratio p-value",
+        label:
+          "Two-sided p-value of log(win ratio), four decimals, <0.0001 below that",
+        order: 8,
+        resultPattern: "X.XXXX",
+      },
+      decimal(
+        IDS.netBenefit,
+        "Net benefit",
+        "Wins less losses over pairs",
+        9,
+        NET_BENEFIT_DECIMALS
+      ),
+      decimal(
+        IDS.netBenefitLcl,
+        "Net benefit lower 95% CL",
+        "Lower 95% confidence limit",
+        10,
+        NET_BENEFIT_DECIMALS
+      ),
+      decimal(
+        IDS.netBenefitUcl,
+        "Net benefit upper 95% CL",
+        "Upper 95% confidence limit",
+        11,
+        NET_BENEFIT_DECIMALS
+      ),
+      decimal(
+        IDS.winOdds,
+        "Win odds",
+        "Wins plus half the ties over losses plus half the ties",
+        12,
+        WIN_RATIO_DECIMALS
+      ),
+      decimal(
+        IDS.winOddsLcl,
+        "Win odds lower 95% CL",
+        "Lower 95% confidence limit, log scale",
+        13,
+        WIN_RATIO_DECIMALS
+      ),
+      decimal(
+        IDS.winOddsUcl,
+        "Win odds upper 95% CL",
+        "Upper 95% confidence limit, log scale",
+        14,
+        WIN_RATIO_DECIMALS
+      ),
+      decimal(
+        IDS.fsZ,
+        "Finkelstein-Schoenfeld z",
+        "Standardised Finkelstein-Schoenfeld statistic",
+        15,
+        2
+      ),
+      {
+        id: IDS.fsP,
+        name: "Finkelstein-Schoenfeld p-value",
+        label: "Two-sided p-value, four decimals, <0.0001 below that",
+        order: 16,
+        resultPattern: "X.XXXX",
+      },
+    ],
+  },
 ];
 
 /**
  * The reporting plan for a study: Table 14.1.1 (demographics, Safety Set),
  * Table 14.2.1 (systolic blood pressure change from baseline, Full Analysis
  * Set), Table 14.3.1 (TEAEs by system organ class and preferred term,
- * Safety Set) and Figure 14.2.2 (Kaplan-Meier estimate of time to first TEAE
- * leading to discontinuation, Safety Set). Treatment groups, visits and the
- * days of the number-at-risk table come from the study definition.
+ * Safety Set), Figure 14.2.2 (Kaplan-Meier estimate of time to first TEAE
+ * leading to discontinuation, Safety Set) and, when the study has a
+ * comparator arm, Table 14.2.3 (win statistics for the hierarchical
+ * composite, each other arm against the comparator, Full Analysis Set).
+ * Treatment groups, visits and the days of the number-at-risk table come
+ * from the study definition.
  */
 export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
   const { baseline, post } = reportedVisits(definition);
@@ -627,6 +916,113 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
     ],
   });
 
+  const exploratory = {
+    controlledTerm: "EXPLORATORY OUTCOME MEASURE",
+  } as const;
+  const compared = comparisons(definition);
+  const arms = definition.design.arms;
+  const trt01pGroup = (index: number) => `Grp_TRT01P_${index + 1}`;
+  const winRatio = compared
+    ? {
+        groupings: [
+          {
+            id: IDS.hceComponent,
+            name: "Hierarchy component",
+            label:
+              "Component of the hierarchical composite (PARAMCD), in priority order",
+            groupingDataset: "ADHCE",
+            groupingVariable: "PARAMCD",
+            dataDriven: false,
+            groups: HCE_HIERARCHY.map((component, index) =>
+              group(
+                "HCE",
+                component.paramcd,
+                component.paramcd,
+                `${component.label}: ${component.rule}`,
+                index + 1,
+                where("ADHCE", "PARAMCD", "EQ", component.paramcd)
+              )
+            ),
+          },
+        ] satisfies ArsGroupingFactor[],
+        subsets: compared.treatments.map((treatment, index): ArsDataSubset => ({
+          id: winRatioIds(arms[treatment].armCode).subset,
+          name: `${arms[treatment].name} and ${arms[compared.control].name}`,
+          label: `TRT01P IN (${arms[treatment].name}, ${arms[compared.control].name})`,
+          level: 1,
+          order: 5 + index,
+          ...where(
+            "ADHCE",
+            "TRT01P",
+            "IN",
+            arms[treatment].name,
+            arms[compared.control].name
+          ),
+        })),
+        analyses: [
+          ...compared.treatments.flatMap((treatment): AnalysisSpec[] => {
+            const ids = winRatioIds(arms[treatment].armCode);
+            const versus = `${arms[treatment].name} vs ${arms[compared.control].name}`;
+            const comparison = {
+              groupingId: IDS.trt01p,
+              treatmentGroupId: trt01pGroup(treatment),
+              controlGroupId: trt01pGroup(compared.control),
+            };
+            const common = {
+              version: 1,
+              reason: SPECIFIED_IN_SAP,
+              purpose: exploratory,
+              dataset: "ADHCE",
+              variable: "AVAL",
+              analysisSetId: IDS.fas,
+              dataSubsetId: ids.subset,
+              comparison,
+            };
+            return [
+              {
+                ...common,
+                id: ids.components,
+                name: `Hierarchical composite, pairs decided on each component: ${versus}`,
+                methodId: IDS.winComp,
+                orderedGroupings: [
+                  { order: 1, groupingId: IDS.trt01p, resultsByGroup: false },
+                  {
+                    order: 2,
+                    groupingId: IDS.hceComponent,
+                    resultsByGroup: true,
+                  },
+                ],
+              },
+              {
+                ...common,
+                id: ids.overall,
+                name: `Hierarchical composite, win statistics: ${versus}`,
+                methodId: IDS.winStat,
+                orderedGroupings: [
+                  { order: 1, groupingId: IDS.trt01p, resultsByGroup: false },
+                  {
+                    order: 2,
+                    groupingId: IDS.hceComponent,
+                    resultsByGroup: false,
+                  },
+                ],
+                referencedAnalysisOperations: [
+                  {
+                    referencedOperationRelationshipId: IDS.winRatioNum,
+                    analysisId: ids.overall,
+                  },
+                  {
+                    referencedOperationRelationshipId: IDS.winRatioDen,
+                    analysisId: ids.overall,
+                  },
+                ],
+              },
+            ];
+          }),
+        ],
+      }
+    : { groupings: [], subsets: [], analyses: [] };
+
   return {
     analysisSets: [
       {
@@ -734,6 +1130,7 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
           )
         ),
       },
+      ...winRatio.groupings,
     ],
     dataSubsets: [
       {
@@ -771,6 +1168,7 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         order: 4,
         ...where("ADTTE", "PARAMCD", "EQ", KM_PARAMCD),
       },
+      ...winRatio.subsets,
     ],
     methods: METHODS,
     analyses: [
@@ -919,6 +1317,7 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         IDS.logRank,
         false
       ),
+      ...winRatio.analyses,
     ],
   };
 }

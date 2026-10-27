@@ -406,12 +406,30 @@ describe("ARS reporting event", () => {
             .map((column) => column.groupId)
         )
       );
+      // A win-ratio analysis groups by treatment without results by group,
+      // so it has no rows when neither of the arms it compares has subjects.
+      const fas = records(adam(other, "ADSL")).filter(
+        (subject) => subject.ITTFL === "Y"
+      );
+      const emptyComparisons = new Set(
+        DEMO_301_STUDY.design.arms
+          .filter(
+            (arm) =>
+              !fas.some(
+                (subject) =>
+                  subject.TRT01P === arm.name || subject.TRT01P === "Placebo"
+              )
+          )
+          .map((arm) => arm.armCode)
+      );
       for (const analysis of built.reportingEvent.analyses) {
         for (const item of analysis.results) {
           const resolved = resolveResultRows(built.reportingEvent, index, item);
-          const inEmptyGroup = item.resultGroups.some(
-            (group) => group.groupId && emptyGroups.has(group.groupId)
-          );
+          const inEmptyGroup =
+            item.resultGroups.some(
+              (group) => group.groupId && emptyGroups.has(group.groupId)
+            ) ||
+            emptyComparisons.has(analysis.id.replace(/^An_14_2_3_\w+?_/, ""));
           expect(resolved.length > 0, `${seed}/${item.id}`).toBe(!inEmptyGroup);
         }
       }
@@ -485,6 +503,7 @@ describe("ARS reporting event", () => {
     expect(items.map((item) => item.outputId)).toEqual([
       "Out_14_1_1",
       "Out_14_2_1",
+      "Out_14_2_3",
       "Out_14_3_1",
       "Out_14_2_2",
     ]);
@@ -495,7 +514,9 @@ describe("ARS reporting event", () => {
       }
     }
     expect(
-      event.outputs.slice(0, 3).map((item) => item.fileSpecifications)
+      event.outputs
+        .slice(0, outputs.tables.length)
+        .map((item) => item.fileSpecifications)
     ).toEqual(
       outputs.tables.map((source) => [
         {
@@ -775,6 +796,8 @@ describe("HTML, RTF and ARS JSON files", () => {
       [`${TLF_OUTPUT_DIR}/t-14-1-1.rtf`, "application/rtf"],
       [`${TLF_OUTPUT_DIR}/t-14-2-1.html`, "text/html"],
       [`${TLF_OUTPUT_DIR}/t-14-2-1.rtf`, "application/rtf"],
+      [`${TLF_OUTPUT_DIR}/t-14-2-3.html`, "text/html"],
+      [`${TLF_OUTPUT_DIR}/t-14-2-3.rtf`, "application/rtf"],
       [`${TLF_OUTPUT_DIR}/t-14-3-1.html`, "text/html"],
       [`${TLF_OUTPUT_DIR}/t-14-3-1.rtf`, "application/rtf"],
     ]);

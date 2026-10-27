@@ -618,6 +618,7 @@
 - [lib/study-data/internal/tlf/stats](lib/study-data/internal/tlf/stats/README.md)
 - [lib/study-data/internal/tlf/tables](lib/study-data/internal/tlf/tables/README.md)
 - [lib/study-data/internal/tlf/where](lib/study-data/internal/tlf/where/README.md)
+- [lib/study-data/internal/tlf/win-evaluate](lib/study-data/internal/tlf/win-evaluate/README.md)
 - [lib/study-data/internal/tlf/win-ratio](lib/study-data/internal/tlf/win-ratio/README.md)
 - [lib/study-data/internal/usdm/handoff](lib/study-data/internal/usdm/handoff/README.md)
 - [lib/study-data/internal/usdm/read-study-definition](lib/study-data/internal/usdm/read-study-definition/README.md)

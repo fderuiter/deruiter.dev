@@ -82,7 +82,7 @@ function printHelp(): void {
     `  ${ansi.cyan}rm field <form> <var> [file]${ansi.reset}               Remove clinical variable and prune AST rules`
   );
   console.log(
-    `  ${ansi.cyan}visit <add|rm|assign> <args...> [file]${ansi.reset}     Configure Schedule of Activities (SoA) visits`
+    `  ${ansi.cyan}visit <add|rm|assign|unassign> <args...> [file]${ansi.reset} Configure Schedule of Activities (SoA) visits`
   );
   console.log(
     `  ${ansi.cyan}rule <add|list> [args...] [file]${ansi.reset}           Add or list dynamic AST edit checks and formulas`
@@ -117,6 +117,7 @@ function printHelp(): void {
   );
   console.log(`  $ npm run crf visit add "Cycle 1 Day 1" --day 28 --win 3`);
   console.log(`  $ npm run crf visit assign "Cycle 1 Day 1" VS AE`);
+  console.log(`  $ npm run crf visit unassign "Cycle 1 Day 1" AE`);
   console.log(`  $ npm run crf export --format odm --out study-metadata.xml\n`);
 }
 
@@ -574,7 +575,7 @@ async function main(): Promise<void> {
 
   // 10. Visit
   if (command === "visit") {
-    const sub = args[1] as "add" | "rm" | "assign";
+    const sub = args[1] as "add" | "rm" | "assign" | "unassign";
     const fileArg = args.find(
       (a, i) =>
         i > 1 &&

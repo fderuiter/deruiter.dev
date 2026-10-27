@@ -170,6 +170,12 @@ Re-exports [isBehind](bom/functions/isBehind.md)
 
 ***
 
+### listUsdmStudyVersions
+
+Re-exports [listUsdmStudyVersions](usdm-v4-selection/functions/listUsdmStudyVersions.md)
+
+***
+
 ### loadUsdmV4WrapperSchema
 
 Re-exports [loadUsdmV4WrapperSchema](usdm-v4-schema/functions/loadUsdmV4WrapperSchema.md)
@@ -215,6 +221,12 @@ Re-exports [readUsdmHandoff](usdm-handoff/functions/readUsdmHandoff.md)
 ### ReadUsdmHandoffResult
 
 Re-exports [ReadUsdmHandoffResult](usdm-handoff/type-aliases/ReadUsdmHandoffResult.md)
+
+***
+
+### resolveUsdmStudyDesign
+
+Re-exports [resolveUsdmStudyDesign](usdm-v4-selection/functions/resolveUsdmStudyDesign.md)
 
 ***
 
@@ -413,6 +425,30 @@ Re-exports [UsdmHandoffProblem](usdm-handoff/type-aliases/UsdmHandoffProblem.md)
 ### UsdmHandoffStudy
 
 Re-exports [UsdmHandoffStudy](usdm-handoff/interfaces/UsdmHandoffStudy.md)
+
+***
+
+### UsdmSelectionProblemCode
+
+Re-exports [UsdmSelectionProblemCode](usdm-v4-selection/type-aliases/UsdmSelectionProblemCode.md)
+
+***
+
+### UsdmSelectionResult
+
+Re-exports [UsdmSelectionResult](usdm-v4-selection/type-aliases/UsdmSelectionResult.md)
+
+***
+
+### UsdmStudySelection
+
+Re-exports [UsdmStudySelection](usdm-v4-selection/interfaces/UsdmStudySelection.md)
+
+***
+
+### UsdmStudyVersionOption
+
+Re-exports [UsdmStudyVersionOption](usdm-v4-selection/interfaces/UsdmStudyVersionOption.md)
 
 ***
 

@@ -257,6 +257,7 @@ content rather than fail. Everything else is read by the running site.
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | Required | Production, Preview | Pooled endpoint for the running app and prerendering. Provisioned by the Neon integration. |
+| `APP_DATABASE_URL` | Optional | Production | Pooled endpoint as the least-privilege `app_runtime` role; the running app and prerendering prefer it over `DATABASE_URL` ([least-privilege roles](use-least-privilege-database-roles.md)). |
 | `DATABASE_URL_UNPOOLED` | Required | Production, Preview | Direct endpoint. `scripts/build.js` migrates through it on production builds and stops the build if it is missing. |
 | `DIRECT_URL` | Platform | None | `scripts/build.js` derives it from `DATABASE_URL_UNPOOLED`. Set it locally only. |
 | `PGHOST` | Integration | Production, Preview | Neon alias; unused. |

@@ -239,9 +239,15 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Testing",
     reason: "Type-safe partial mocks in tests.",
   },
+  "@typescript/native": {
+    group: "Build and types",
+    reason:
+      "TypeScript 7, the compiler that type-checks the whole codebase (ADR 0072).",
+  },
   typescript: {
     group: "Build and types",
-    reason: "Type checking for the whole codebase.",
+    reason:
+      "TypeScript 6, kept as the library that ESLint, TypeDoc and Next.js load until TypeScript 7.1 ships an API (ADR 0072).",
   },
   tsx: {
     group: "Build and types",

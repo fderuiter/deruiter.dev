@@ -200,6 +200,7 @@
 - [lib/clinical-platform/types/warehouse](lib/clinical-platform/types/warehouse/README.md)
 - [lib/clinical-platform/types/workbench](lib/clinical-platform/types/workbench/README.md)
 - [lib/clinical-standards](lib/clinical-standards/README.md)
+- [lib/clinical-standards/bom](lib/clinical-standards/bom/README.md)
 - [lib/clinical-standards/codelists](lib/clinical-standards/codelists/README.md)
 - [lib/clinical-standards/internal/sha256](lib/clinical-standards/internal/sha256/README.md)
 - [lib/clinical-standards/profile](lib/clinical-standards/profile/README.md)

@@ -1,0 +1,123 @@
+name: Standards Watch
+
+# #2992 step 5: once a week, read the newest version of every standard,
+# NCI EVS terminology package and tool in the standards bill of materials
+# (lib/clinical-standards/bom.ts) from where CDISC and NCI EVS publish them.
+# When lib/clinical-standards/standards-latest.json changes, open a pull
+# request that records it. Recording a newer version changes no pin: moving
+# a pin is a controlled upgrade with an impact report (ADR 0065), made in
+# its own pull request.
+#
+# Every source is public, so no CDISC Library key is used. A workflow's
+# GITHUB_TOKEN cannot start other workflows from a pull request it opens, so
+# the job dispatches CI on the branch; Merge Gate then reports on its commit.
+# If the repository does not let Actions open pull requests, the job opens
+# an issue with the same summary instead.
+
+on:
+  schedule:
+    - cron: "41 7 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: standards-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  watch:
+    name: Standards Watch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Read Published Versions
+        id: refresh
+        continue-on-error: true
+        run: |
+          npx --no-install tsx scripts/standards-watch.ts refresh \
+            --summary "$RUNNER_TEMP/standards-watch.md"
+
+      - name: Publish Job Summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/standards-watch.md" ]; then
+            cat "$RUNNER_TEMP/standards-watch.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Open a Pull Request When a Version Moved
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          file=lib/clinical-standards/standards-latest.json
+          if git diff --quiet -- "$file"; then
+            echo "Nothing published has moved."
+            exit 0
+          fi
+          hash="$(sha256sum "$file" | cut -c1-10)"
+          branch="chore/standards-watch-$hash"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "$branch already records these versions."
+            exit 0
+          fi
+          title="chore(standards): record newly published CDISC versions"
+          body="$RUNNER_TEMP/pr-body.md"
+          {
+            cat "$RUNNER_TEMP/standards-watch.md"
+            echo
+            echo "Opened by the weekly Standards Watch workflow (#2992). CI was dispatched on this branch, because GitHub does not run pull_request workflows for a pull request a workflow opens."
+          } > "$body"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add "$file"
+          git commit -m "$title"
+          git push origin "$branch"
+
+          for old in $(gh pr list --state open --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("chore/standards-watch-")) | .number'); do
+            gh pr close "$old" --delete-branch \
+              --comment "Superseded by the newer standards watch on $branch."
+          done
+
+          if gh pr create --base main --head "$branch" --title "$title" --body-file "$body"; then
+            gh workflow run ci.yml --ref "$branch"
+          else
+            echo "::warning::Could not open a pull request; recording the change on an issue instead."
+            echo >> "$body"
+            echo "The change is committed on branch \`$branch\`; open a pull request from it to record it." >> "$body"
+            issue_title="Standards watch: newer CDISC versions published"
+            issue=$(gh issue list --state open --search "in:title \"$issue_title\"" \
+              --json number --jq '.[0].number // empty')
+            if [ -n "$issue" ]; then
+              gh issue comment "$issue" --body-file "$body"
+            else
+              gh issue create --title "$issue_title" --body-file "$body"
+            fi
+          fi
+
+      - name: Fail When a Source Could Not Be Read
+        if: steps.refresh.outcome == 'failure'
+        run: |
+          echo "::error::A standards source could not be read; see the job summary. Its committed value was kept."
+          exit 1

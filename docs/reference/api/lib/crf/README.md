@@ -242,6 +242,12 @@ Re-exports [BrandingPalettePreset](branding-defaults/interfaces/BrandingPaletteP
 
 ***
 
+### buildFormCatalog
+
+Re-exports [buildFormCatalog](form-catalog/functions/buildFormCatalog.md)
+
+***
+
 ### buildReviewPackage
 
 Re-exports [buildReviewPackage](review-package/functions/buildReviewPackage.md)
@@ -347,6 +353,12 @@ Re-exports [captureFormTemplate](form-templates/functions/captureFormTemplate.md
 ### captureLibraryEntry
 
 Re-exports [captureLibraryEntry](personal-library/functions/captureLibraryEntry.md)
+
+***
+
+### catalogBlockCommand
+
+Re-exports [catalogBlockCommand](form-catalog/functions/catalogBlockCommand.md)
 
 ***
 
@@ -1190,6 +1202,12 @@ Re-exports [flattenFormFields](form-test-harness/functions/flattenFormFields.md)
 
 ***
 
+### FORM\_CATALOG\_SOURCES
+
+Re-exports [FORM_CATALOG_SOURCES](form-catalog/variables/FORM_CATALOG_SOURCES.md)
+
+***
+
 ### FORM\_TEMPLATE\_FORMAT\_VERSION
 
 Re-exports [FORM_TEMPLATE_FORMAT_VERSION](form-templates/variables/FORM_TEMPLATE_FORMAT_VERSION.md)
@@ -1229,6 +1247,18 @@ Re-exports [formatVisitWindow](visit-window/functions/formatVisitWindow.md)
 ### FormAuditReport
 
 Re-exports [FormAuditReport](study-auditor/interfaces/FormAuditReport.md)
+
+***
+
+### FormCatalogEntry
+
+Re-exports [FormCatalogEntry](form-catalog/interfaces/FormCatalogEntry.md)
+
+***
+
+### FormCatalogSource
+
+Re-exports [FormCatalogSource](form-catalog/type-aliases/FormCatalogSource.md)
 
 ***
 
@@ -1649,6 +1679,12 @@ Re-exports [instantiateAtomicField](smart-blocks-engine/functions/instantiateAto
 ### InstantiateAtomicFieldOptions
 
 Re-exports [InstantiateAtomicFieldOptions](smart-blocks-engine/interfaces/InstantiateAtomicFieldOptions.md)
+
+***
+
+### instantiateCatalogForm
+
+Re-exports [instantiateCatalogForm](form-catalog/functions/instantiateCatalogForm.md)
 
 ***
 
@@ -2627,6 +2663,12 @@ Re-exports [SDTM_COL_WIDTH_6](export-docx/variables/SDTM_COL_WIDTH_6.md)
 ### SdtmMappingRow
 
 Re-exports [SdtmMappingRow](export-acrf/interfaces/SdtmMappingRow.md)
+
+***
+
+### searchFormCatalog
+
+Re-exports [searchFormCatalog](form-catalog/functions/searchFormCatalog.md)
 
 ***
 

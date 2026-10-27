@@ -247,6 +247,7 @@
 - [lib/crf/expression-evaluator](lib/crf/expression-evaluator/README.md)
 - [lib/crf/fhir-questionnaire](lib/crf/fhir-questionnaire/README.md)
 - [lib/crf/file-ingestion](lib/crf/file-ingestion/README.md)
+- [lib/crf/form-catalog](lib/crf/form-catalog/README.md)
 - [lib/crf/form-health](lib/crf/form-health/README.md)
 - [lib/crf/form-linter](lib/crf/form-linter/README.md)
 - [lib/crf/form-templates](lib/crf/form-templates/README.md)

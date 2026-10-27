@@ -23,6 +23,7 @@ export * from "./branding-defaults";
 export * from "./study-draft-storage";
 export * from "./personal-library";
 export * from "./form-templates";
+export * from "./form-catalog";
 export * from "./export-acrf";
 export * from "./export-docx";
 export * from "./export-pdf";

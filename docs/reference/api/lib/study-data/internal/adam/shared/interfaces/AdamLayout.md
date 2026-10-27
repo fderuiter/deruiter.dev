@@ -20,7 +20,7 @@ ADaM class, for example `BDS`.
 
 ### codelists?
 
-> `readonly` `optional` **codelists?**: `Readonly`\<`Record`\<`string`, [`CodelistId`](../../../conformance/terminology/type-aliases/CodelistId.md)\>\>
+> `readonly` `optional` **codelists?**: `Readonly`\<`Record`\<`string`, [`CodelistId`](../../../../../clinical-standards/terminology/type-aliases/CodelistId.md)\>\>
 
 Codelists of this dataset's own variables, over the shared ones.
 

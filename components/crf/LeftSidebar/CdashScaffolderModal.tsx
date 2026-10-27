@@ -1,6 +1,6 @@
 "use client";
 
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import React, { useState } from "react";
 import { IconDatabase, IconPlus, IconX, IconCheck } from "@tabler/icons-react";
 import { scaffoldCdashDomain } from "@/lib/crf/cdisc-cdash-library";

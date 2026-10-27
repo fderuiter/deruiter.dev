@@ -20,8 +20,8 @@ import {
   type UsdmV4ExtensionAttribute,
   type UsdmV4InterventionalStudyDesign,
   type UsdmV4StudyVersion,
-} from "@/lib/crf/usdm-v4-types";
-import { getUsdmV4EncounterSchedule } from "@/lib/crf/usdm-v4-schedule";
+} from "@/lib/clinical-standards";
+import { getUsdmV4EncounterSchedule } from "@/lib/clinical-standards";
 import { DEMO_301_STUDY, STANDARD_VERSIONS } from "../../presets";
 import type { AssessmentDefinition, StudyDefinition } from "../../types";
 import {

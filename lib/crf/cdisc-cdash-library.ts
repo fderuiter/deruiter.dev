@@ -3,5 +3,5 @@
  * and CDASH domain scaffolding templates for backwards compatibility.
  */
 
-export * from "./cdisc-controlled-terminology";
+export * from "@/lib/clinical-standards/codelists";
 export * from "./cdash-domain-templates";

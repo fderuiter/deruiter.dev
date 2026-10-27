@@ -48,7 +48,7 @@ Protocol-level audit trail history across authoring and review lifecycle.
 
 ### codelists
 
-> **codelists**: [`CodelistDefinition`](CodelistDefinition.md)[]
+> **codelists**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ***
 

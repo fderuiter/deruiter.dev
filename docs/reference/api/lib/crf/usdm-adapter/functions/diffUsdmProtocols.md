@@ -15,11 +15,11 @@ Identifies added, modified, or removed arms, epochs, cohorts, biomedical concept
 
 ### usdmAInput
 
-`string` \| `Record`\<`string`, `unknown`\> \| [`UsdmV4Document`](../../usdm-v4-types/interfaces/UsdmV4Document.md) \| [`UsdmDocument`](../interfaces/UsdmDocument.md)
+`string` \| `Record`\<`string`, `unknown`\> \| [`UsdmV4Document`](../../../clinical-standards/usdm-v4-types/interfaces/UsdmV4Document.md) \| [`UsdmDocument`](../interfaces/UsdmDocument.md)
 
 ### usdmBInput
 
-`string` \| `Record`\<`string`, `unknown`\> \| [`UsdmV4Document`](../../usdm-v4-types/interfaces/UsdmV4Document.md) \| [`UsdmDocument`](../interfaces/UsdmDocument.md)
+`string` \| `Record`\<`string`, `unknown`\> \| [`UsdmV4Document`](../../../clinical-standards/usdm-v4-types/interfaces/UsdmV4Document.md) \| [`UsdmDocument`](../interfaces/UsdmDocument.md)
 
 ## Returns
 

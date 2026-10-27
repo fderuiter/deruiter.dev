@@ -1,4 +1,4 @@
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import { CRFForm, StudyProtocol, StudyBranding } from "./types";
 import { getStudyBranding } from "./branding-defaults";
 import { consultationUrl, sdtmTargetFor } from "./export-annotations";

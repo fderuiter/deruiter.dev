@@ -7,7 +7,7 @@ import {
   readStudyDefinition,
   runPipeline,
 } from "@/lib/study-data";
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 
 const options = { seed: 301, nSubjects: 90 };
 const trial = (definition = DEMO_301_STUDY) =>

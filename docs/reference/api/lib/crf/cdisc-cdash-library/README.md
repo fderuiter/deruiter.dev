@@ -16,43 +16,55 @@ Re-exports [CDASH_STANDARD_VARIABLES](../cdash-domain-templates/variables/CDASH_
 
 ### CDISC\_CT\_PACKAGE\_VERSION
 
-Re-exports [CDISC_CT_PACKAGE_VERSION](../cdisc-controlled-terminology/variables/CDISC_CT_PACKAGE_VERSION.md)
+Re-exports [CDISC_CT_PACKAGE_VERSION](../../clinical-standards/codelists/variables/CDISC_CT_PACKAGE_VERSION.md)
+
+***
+
+### CodelistDefinition
+
+Re-exports [CodelistDefinition](../../clinical-standards/codelists/interfaces/CodelistDefinition.md)
+
+***
+
+### CodelistOption
+
+Re-exports [CodelistOption](../../clinical-standards/codelists/interfaces/CodelistOption.md)
 
 ***
 
 ### findCodelistById
 
-Re-exports [findCodelistById](../cdisc-controlled-terminology/functions/findCodelistById.md)
+Re-exports [findCodelistById](../../clinical-standards/codelists/functions/findCodelistById.md)
 
 ***
 
 ### findCodelistByNciCode
 
-Re-exports [findCodelistByNciCode](../cdisc-controlled-terminology/functions/findCodelistByNciCode.md)
+Re-exports [findCodelistByNciCode](../../clinical-standards/codelists/functions/findCodelistByNciCode.md)
 
 ***
 
 ### findOptionByCode
 
-Re-exports [findOptionByCode](../cdisc-controlled-terminology/functions/findOptionByCode.md)
+Re-exports [findOptionByCode](../../clinical-standards/codelists/functions/findOptionByCode.md)
 
 ***
 
 ### findOptionByNciCode
 
-Re-exports [findOptionByNciCode](../cdisc-controlled-terminology/functions/findOptionByNciCode.md)
+Re-exports [findOptionByNciCode](../../clinical-standards/codelists/functions/findOptionByNciCode.md)
 
 ***
 
 ### matchTermByLabel
 
-Re-exports [matchTermByLabel](../cdisc-controlled-terminology/functions/matchTermByLabel.md)
+Re-exports [matchTermByLabel](../../clinical-standards/codelists/functions/matchTermByLabel.md)
 
 ***
 
 ### NCI\_CODE\_REGEX
 
-Re-exports [NCI_CODE_REGEX](../cdisc-controlled-terminology/variables/NCI_CODE_REGEX.md)
+Re-exports [NCI_CODE_REGEX](../../clinical-standards/codelists/variables/NCI_CODE_REGEX.md)
 
 ***
 
@@ -64,10 +76,10 @@ Re-exports [scaffoldCdashDomain](../cdash-domain-templates/functions/scaffoldCda
 
 ### STANDARD\_CODELISTS
 
-Re-exports [STANDARD_CODELISTS](../cdisc-controlled-terminology/variables/STANDARD_CODELISTS.md)
+Re-exports [STANDARD_CODELISTS](../../clinical-standards/codelists/variables/STANDARD_CODELISTS.md)
 
 ***
 
 ### validateCodelists
 
-Re-exports [validateCodelists](../cdisc-controlled-terminology/functions/validateCodelists.md)
+Re-exports [validateCodelists](../../clinical-standards/codelists/functions/validateCodelists.md)

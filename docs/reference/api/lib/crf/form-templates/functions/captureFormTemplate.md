@@ -18,7 +18,7 @@ does not carry over.
 
 #### codelists
 
-readonly [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+readonly [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 #### description?
 

@@ -22,7 +22,7 @@ Re-exports [ActorContext](study-engine/type-aliases/ActorContext.md)
 
 ### addCalendarDaysToStudyDay
 
-Re-exports [addCalendarDaysToStudyDay](usdm-v4-schedule/functions/addCalendarDaysToStudyDay.md)
+Re-exports [addCalendarDaysToStudyDay](../clinical-standards/usdm-v4-schedule/functions/addCalendarDaysToStudyDay.md)
 
 ***
 
@@ -382,7 +382,7 @@ Re-exports [CdashVariableMetadataSchema](universal-schema/variables/CdashVariabl
 
 ### CDISC\_CT\_PACKAGE\_VERSION
 
-Re-exports [CDISC_CT_PACKAGE_VERSION](cdisc-controlled-terminology/variables/CDISC_CT_PACKAGE_VERSION.md)
+Re-exports [CDISC_CT_PACKAGE_VERSION](../clinical-standards/codelists/variables/CDISC_CT_PACKAGE_VERSION.md)
 
 ***
 
@@ -460,7 +460,7 @@ Re-exports [CNS_NEURO_PRESET](presets/cns-neuro/variables/CNS_NEURO_PRESET.md)
 
 ### CodelistDefinition
 
-Re-exports [CodelistDefinition](types/interfaces/CodelistDefinition.md)
+Re-exports [CodelistDefinition](../clinical-standards/codelists/interfaces/CodelistDefinition.md)
 
 ***
 
@@ -472,7 +472,7 @@ Re-exports [CodelistDefinitionSchema](universal-schema/variables/CodelistDefinit
 
 ### CodelistOption
 
-Re-exports [CodelistOption](types/interfaces/CodelistOption.md)
+Re-exports [CodelistOption](../clinical-standards/codelists/interfaces/CodelistOption.md)
 
 ***
 
@@ -1144,13 +1144,13 @@ Re-exports [fillSampleValues](form-test-harness/functions/fillSampleValues.md)
 
 ### findCodelistById
 
-Re-exports [findCodelistById](cdisc-controlled-terminology/functions/findCodelistById.md)
+Re-exports [findCodelistById](../clinical-standards/codelists/functions/findCodelistById.md)
 
 ***
 
 ### findCodelistByNciCode
 
-Re-exports [findCodelistByNciCode](cdisc-controlled-terminology/functions/findCodelistByNciCode.md)
+Re-exports [findCodelistByNciCode](../clinical-standards/codelists/functions/findCodelistByNciCode.md)
 
 ***
 
@@ -1162,13 +1162,13 @@ Re-exports [findFormReferenceIssues](form-variants/functions/findFormReferenceIs
 
 ### findOptionByCode
 
-Re-exports [findOptionByCode](cdisc-controlled-terminology/functions/findOptionByCode.md)
+Re-exports [findOptionByCode](../clinical-standards/codelists/functions/findOptionByCode.md)
 
 ***
 
 ### findOptionByNciCode
 
-Re-exports [findOptionByNciCode](cdisc-controlled-terminology/functions/findOptionByNciCode.md)
+Re-exports [findOptionByNciCode](../clinical-standards/codelists/functions/findOptionByNciCode.md)
 
 ***
 
@@ -1210,7 +1210,7 @@ Re-exports [FORM_TEMPLATES_STORAGE_KEY](form-templates/variables/FORM_TEMPLATES_
 
 ### formatIsoDurationDays
 
-Re-exports [formatIsoDurationDays](usdm-v4-schedule/functions/formatIsoDurationDays.md)
+Re-exports [formatIsoDurationDays](../clinical-standards/usdm-v4-schedule/functions/formatIsoDurationDays.md)
 
 ***
 
@@ -1570,19 +1570,19 @@ Re-exports [getUsdmV4ActivityDomain](usdm-adapter/functions/getUsdmV4ActivityDom
 
 ### getUsdmV4EncounterSchedule
 
-Re-exports [getUsdmV4EncounterSchedule](usdm-v4-schedule/functions/getUsdmV4EncounterSchedule.md)
+Re-exports [getUsdmV4EncounterSchedule](../clinical-standards/usdm-v4-schedule/functions/getUsdmV4EncounterSchedule.md)
 
 ***
 
 ### getUsdmV4ExtensionString
 
-Re-exports [getUsdmV4ExtensionString](usdm-v4-types/functions/getUsdmV4ExtensionString.md)
+Re-exports [getUsdmV4ExtensionString](../clinical-standards/usdm-v4-types/functions/getUsdmV4ExtensionString.md)
 
 ***
 
 ### getUsdmV4MainTimeline
 
-Re-exports [getUsdmV4MainTimeline](usdm-v4-schedule/functions/getUsdmV4MainTimeline.md)
+Re-exports [getUsdmV4MainTimeline](../clinical-standards/usdm-v4-schedule/functions/getUsdmV4MainTimeline.md)
 
 ***
 
@@ -1852,7 +1852,7 @@ Re-exports [LoadStudyDraftResult](study-draft-storage/type-aliases/LoadStudyDraf
 
 ### loadUsdmV4WrapperSchema
 
-Re-exports [loadUsdmV4WrapperSchema](usdm-v4-schema/functions/loadUsdmV4WrapperSchema.md)
+Re-exports [loadUsdmV4WrapperSchema](../clinical-standards/usdm-v4-schema/functions/loadUsdmV4WrapperSchema.md)
 
 ***
 
@@ -1870,7 +1870,7 @@ Re-exports [mapPresetToFormVariables](formula-presets/functions/mapPresetToFormV
 
 ### matchTermByLabel
 
-Re-exports [matchTermByLabel](cdisc-controlled-terminology/functions/matchTermByLabel.md)
+Re-exports [matchTermByLabel](../clinical-standards/codelists/functions/matchTermByLabel.md)
 
 ***
 
@@ -1900,7 +1900,7 @@ Re-exports [NCI_ALIAS_CONTEXT](odm-xml-serializer/variables/NCI_ALIAS_CONTEXT.md
 
 ### NCI\_CODE\_REGEX
 
-Re-exports [NCI_CODE_REGEX](cdisc-controlled-terminology/variables/NCI_CODE_REGEX.md)
+Re-exports [NCI_CODE_REGEX](../clinical-standards/codelists/variables/NCI_CODE_REGEX.md)
 
 ***
 
@@ -1954,7 +1954,7 @@ Re-exports [parseFormTemplatePackage](form-templates/functions/parseFormTemplate
 
 ### parseIsoDurationDays
 
-Re-exports [parseIsoDurationDays](usdm-v4-schedule/functions/parseIsoDurationDays.md)
+Re-exports [parseIsoDurationDays](../clinical-standards/usdm-v4-schedule/functions/parseIsoDurationDays.md)
 
 ***
 
@@ -2686,7 +2686,7 @@ Re-exports [snapshotExpectationsFromReport](scenario-impact/functions/snapshotEx
 
 ### STANDARD\_CODELISTS
 
-Re-exports [STANDARD_CODELISTS](cdisc-controlled-terminology/variables/STANDARD_CODELISTS.md)
+Re-exports [STANDARD_CODELISTS](../clinical-standards/codelists/variables/STANDARD_CODELISTS.md)
 
 ***
 
@@ -2824,7 +2824,7 @@ Re-exports [StudyCohortSchema](universal-schema/variables/StudyCohortSchema.md)
 
 ### studyDayDistance
 
-Re-exports [studyDayDistance](usdm-v4-schedule/functions/studyDayDistance.md)
+Re-exports [studyDayDistance](../clinical-standards/usdm-v4-schedule/functions/studyDayDistance.md)
 
 ***
 
@@ -3232,43 +3232,43 @@ Re-exports [upsertScenario](test-scenarios/functions/upsertScenario.md)
 
 ### USDM\_SDTM\_DOMAIN\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](../clinical-standards/usdm-v4-types/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
 
 ***
 
 ### USDM\_SDTM\_STRESU\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_STRESU_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_STRESU_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_STRESU_EXTENSION_URL](../clinical-standards/usdm-v4-types/variables/USDM_SDTM_STRESU_EXTENSION_URL.md)
 
 ***
 
 ### USDM\_SDTM\_TESTCD\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_TESTCD_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_TESTCD_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_TESTCD_EXTENSION_URL](../clinical-standards/usdm-v4-types/variables/USDM_SDTM_TESTCD_EXTENSION_URL.md)
 
 ***
 
 ### USDM\_TIMING\_AFTER
 
-Re-exports [USDM_TIMING_AFTER](usdm-v4-schedule/variables/USDM_TIMING_AFTER.md)
+Re-exports [USDM_TIMING_AFTER](../clinical-standards/usdm-v4-schedule/variables/USDM_TIMING_AFTER.md)
 
 ***
 
 ### USDM\_TIMING\_BEFORE
 
-Re-exports [USDM_TIMING_BEFORE](usdm-v4-schedule/variables/USDM_TIMING_BEFORE.md)
+Re-exports [USDM_TIMING_BEFORE](../clinical-standards/usdm-v4-schedule/variables/USDM_TIMING_BEFORE.md)
 
 ***
 
 ### USDM\_TIMING\_FIXED\_REFERENCE
 
-Re-exports [USDM_TIMING_FIXED_REFERENCE](usdm-v4-schedule/variables/USDM_TIMING_FIXED_REFERENCE.md)
+Re-exports [USDM_TIMING_FIXED_REFERENCE](../clinical-standards/usdm-v4-schedule/variables/USDM_TIMING_FIXED_REFERENCE.md)
 
 ***
 
 ### USDM\_V4\_VERSION
 
-Re-exports [USDM_V4_VERSION](usdm-v4-types/variables/USDM_V4_VERSION.md)
+Re-exports [USDM_V4_VERSION](../clinical-standards/usdm-v4-types/variables/USDM_V4_VERSION.md)
 
 ***
 
@@ -3340,265 +3340,265 @@ Re-exports [UsdmStudyDesign](usdm-adapter/interfaces/UsdmStudyDesign.md)
 
 ### UsdmV4Activity
 
-Re-exports [UsdmV4Activity](usdm-v4-types/interfaces/UsdmV4Activity.md)
+Re-exports [UsdmV4Activity](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Activity.md)
 
 ***
 
 ### UsdmV4AdministrableProduct
 
-Re-exports [UsdmV4AdministrableProduct](usdm-v4-types/interfaces/UsdmV4AdministrableProduct.md)
+Re-exports [UsdmV4AdministrableProduct](../clinical-standards/usdm-v4-types/interfaces/UsdmV4AdministrableProduct.md)
 
 ***
 
 ### UsdmV4AliasCode
 
-Re-exports [UsdmV4AliasCode](usdm-v4-types/interfaces/UsdmV4AliasCode.md)
+Re-exports [UsdmV4AliasCode](../clinical-standards/usdm-v4-types/interfaces/UsdmV4AliasCode.md)
 
 ***
 
 ### UsdmV4AnalysisPopulation
 
-Re-exports [UsdmV4AnalysisPopulation](usdm-v4-types/interfaces/UsdmV4AnalysisPopulation.md)
+Re-exports [UsdmV4AnalysisPopulation](../clinical-standards/usdm-v4-types/interfaces/UsdmV4AnalysisPopulation.md)
 
 ***
 
 ### UsdmV4Base
 
-Re-exports [UsdmV4Base](usdm-v4-types/interfaces/UsdmV4Base.md)
+Re-exports [UsdmV4Base](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Base.md)
 
 ***
 
 ### UsdmV4BiomedicalConcept
 
-Re-exports [UsdmV4BiomedicalConcept](usdm-v4-types/interfaces/UsdmV4BiomedicalConcept.md)
+Re-exports [UsdmV4BiomedicalConcept](../clinical-standards/usdm-v4-types/interfaces/UsdmV4BiomedicalConcept.md)
 
 ***
 
 ### UsdmV4BiomedicalConceptProperty
 
-Re-exports [UsdmV4BiomedicalConceptProperty](usdm-v4-types/interfaces/UsdmV4BiomedicalConceptProperty.md)
+Re-exports [UsdmV4BiomedicalConceptProperty](../clinical-standards/usdm-v4-types/interfaces/UsdmV4BiomedicalConceptProperty.md)
 
 ***
 
 ### UsdmV4BiomedicalConceptSurrogate
 
-Re-exports [UsdmV4BiomedicalConceptSurrogate](usdm-v4-types/interfaces/UsdmV4BiomedicalConceptSurrogate.md)
+Re-exports [UsdmV4BiomedicalConceptSurrogate](../clinical-standards/usdm-v4-types/interfaces/UsdmV4BiomedicalConceptSurrogate.md)
 
 ***
 
 ### UsdmV4Code
 
-Re-exports [UsdmV4Code](usdm-v4-types/interfaces/UsdmV4Code.md)
+Re-exports [UsdmV4Code](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Code.md)
 
 ***
 
 ### UsdmV4Document
 
-Re-exports [UsdmV4Document](usdm-v4-types/interfaces/UsdmV4Document.md)
+Re-exports [UsdmV4Document](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Document.md)
 
 ***
 
 ### UsdmV4Duration
 
-Re-exports [UsdmV4Duration](usdm-v4-types/interfaces/UsdmV4Duration.md)
+Re-exports [UsdmV4Duration](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Duration.md)
 
 ***
 
 ### UsdmV4EligibilityCriterion
 
-Re-exports [UsdmV4EligibilityCriterion](usdm-v4-types/interfaces/UsdmV4EligibilityCriterion.md)
+Re-exports [UsdmV4EligibilityCriterion](../clinical-standards/usdm-v4-types/interfaces/UsdmV4EligibilityCriterion.md)
 
 ***
 
 ### UsdmV4EligibilityCriterionItem
 
-Re-exports [UsdmV4EligibilityCriterionItem](usdm-v4-types/interfaces/UsdmV4EligibilityCriterionItem.md)
+Re-exports [UsdmV4EligibilityCriterionItem](../clinical-standards/usdm-v4-types/interfaces/UsdmV4EligibilityCriterionItem.md)
 
 ***
 
 ### UsdmV4Encounter
 
-Re-exports [UsdmV4Encounter](usdm-v4-types/interfaces/UsdmV4Encounter.md)
+Re-exports [UsdmV4Encounter](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Encounter.md)
 
 ***
 
 ### UsdmV4EncounterSchedule
 
-Re-exports [UsdmV4EncounterSchedule](usdm-v4-schedule/interfaces/UsdmV4EncounterSchedule.md)
+Re-exports [UsdmV4EncounterSchedule](../clinical-standards/usdm-v4-schedule/interfaces/UsdmV4EncounterSchedule.md)
 
 ***
 
 ### UsdmV4Endpoint
 
-Re-exports [UsdmV4Endpoint](usdm-v4-types/interfaces/UsdmV4Endpoint.md)
+Re-exports [UsdmV4Endpoint](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Endpoint.md)
 
 ***
 
 ### UsdmV4Estimand
 
-Re-exports [UsdmV4Estimand](usdm-v4-types/interfaces/UsdmV4Estimand.md)
+Re-exports [UsdmV4Estimand](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Estimand.md)
 
 ***
 
 ### UsdmV4ExtensionAttribute
 
-Re-exports [UsdmV4ExtensionAttribute](usdm-v4-types/interfaces/UsdmV4ExtensionAttribute.md)
+Re-exports [UsdmV4ExtensionAttribute](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ExtensionAttribute.md)
 
 ***
 
 ### UsdmV4IntercurrentEvent
 
-Re-exports [UsdmV4IntercurrentEvent](usdm-v4-types/interfaces/UsdmV4IntercurrentEvent.md)
+Re-exports [UsdmV4IntercurrentEvent](../clinical-standards/usdm-v4-types/interfaces/UsdmV4IntercurrentEvent.md)
 
 ***
 
 ### UsdmV4InterventionalStudyDesign
 
-Re-exports [UsdmV4InterventionalStudyDesign](usdm-v4-types/interfaces/UsdmV4InterventionalStudyDesign.md)
+Re-exports [UsdmV4InterventionalStudyDesign](../clinical-standards/usdm-v4-types/interfaces/UsdmV4InterventionalStudyDesign.md)
 
 ***
 
 ### UsdmV4Masking
 
-Re-exports [UsdmV4Masking](usdm-v4-types/interfaces/UsdmV4Masking.md)
+Re-exports [UsdmV4Masking](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Masking.md)
 
 ***
 
 ### UsdmV4Named
 
-Re-exports [UsdmV4Named](usdm-v4-types/interfaces/UsdmV4Named.md)
+Re-exports [UsdmV4Named](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Named.md)
 
 ***
 
 ### UsdmV4Objective
 
-Re-exports [UsdmV4Objective](usdm-v4-types/interfaces/UsdmV4Objective.md)
+Re-exports [UsdmV4Objective](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Objective.md)
 
 ***
 
 ### UsdmV4Organization
 
-Re-exports [UsdmV4Organization](usdm-v4-types/interfaces/UsdmV4Organization.md)
+Re-exports [UsdmV4Organization](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Organization.md)
 
 ***
 
 ### UsdmV4Procedure
 
-Re-exports [UsdmV4Procedure](usdm-v4-types/interfaces/UsdmV4Procedure.md)
+Re-exports [UsdmV4Procedure](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Procedure.md)
 
 ***
 
 ### UsdmV4Quantity
 
-Re-exports [UsdmV4Quantity](usdm-v4-types/interfaces/UsdmV4Quantity.md)
+Re-exports [UsdmV4Quantity](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Quantity.md)
 
 ***
 
 ### UsdmV4Range
 
-Re-exports [UsdmV4Range](usdm-v4-types/interfaces/UsdmV4Range.md)
+Re-exports [UsdmV4Range](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Range.md)
 
 ***
 
 ### UsdmV4ResponseCode
 
-Re-exports [UsdmV4ResponseCode](usdm-v4-types/interfaces/UsdmV4ResponseCode.md)
+Re-exports [UsdmV4ResponseCode](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ResponseCode.md)
 
 ***
 
 ### UsdmV4ScheduledActivityInstance
 
-Re-exports [UsdmV4ScheduledActivityInstance](usdm-v4-types/interfaces/UsdmV4ScheduledActivityInstance.md)
+Re-exports [UsdmV4ScheduledActivityInstance](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ScheduledActivityInstance.md)
 
 ***
 
 ### UsdmV4ScheduleTimeline
 
-Re-exports [UsdmV4ScheduleTimeline](usdm-v4-types/interfaces/UsdmV4ScheduleTimeline.md)
+Re-exports [UsdmV4ScheduleTimeline](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ScheduleTimeline.md)
 
 ***
 
 ### UsdmV4ScheduleTimelineExit
 
-Re-exports [UsdmV4ScheduleTimelineExit](usdm-v4-types/interfaces/UsdmV4ScheduleTimelineExit.md)
+Re-exports [UsdmV4ScheduleTimelineExit](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ScheduleTimelineExit.md)
 
 ***
 
 ### UsdmV4Study
 
-Re-exports [UsdmV4Study](usdm-v4-types/interfaces/UsdmV4Study.md)
+Re-exports [UsdmV4Study](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Study.md)
 
 ***
 
 ### UsdmV4StudyArm
 
-Re-exports [UsdmV4StudyArm](usdm-v4-types/interfaces/UsdmV4StudyArm.md)
+Re-exports [UsdmV4StudyArm](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyArm.md)
 
 ***
 
 ### UsdmV4StudyCell
 
-Re-exports [UsdmV4StudyCell](usdm-v4-types/interfaces/UsdmV4StudyCell.md)
+Re-exports [UsdmV4StudyCell](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyCell.md)
 
 ***
 
 ### UsdmV4StudyCohort
 
-Re-exports [UsdmV4StudyCohort](usdm-v4-types/interfaces/UsdmV4StudyCohort.md)
+Re-exports [UsdmV4StudyCohort](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyCohort.md)
 
 ***
 
 ### UsdmV4StudyDesignPopulation
 
-Re-exports [UsdmV4StudyDesignPopulation](usdm-v4-types/interfaces/UsdmV4StudyDesignPopulation.md)
+Re-exports [UsdmV4StudyDesignPopulation](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyDesignPopulation.md)
 
 ***
 
 ### UsdmV4StudyElement
 
-Re-exports [UsdmV4StudyElement](usdm-v4-types/interfaces/UsdmV4StudyElement.md)
+Re-exports [UsdmV4StudyElement](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyElement.md)
 
 ***
 
 ### UsdmV4StudyEpoch
 
-Re-exports [UsdmV4StudyEpoch](usdm-v4-types/interfaces/UsdmV4StudyEpoch.md)
+Re-exports [UsdmV4StudyEpoch](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyEpoch.md)
 
 ***
 
 ### UsdmV4StudyIdentifier
 
-Re-exports [UsdmV4StudyIdentifier](usdm-v4-types/interfaces/UsdmV4StudyIdentifier.md)
+Re-exports [UsdmV4StudyIdentifier](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyIdentifier.md)
 
 ***
 
 ### UsdmV4StudyIntervention
 
-Re-exports [UsdmV4StudyIntervention](usdm-v4-types/interfaces/UsdmV4StudyIntervention.md)
+Re-exports [UsdmV4StudyIntervention](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyIntervention.md)
 
 ***
 
 ### UsdmV4StudyRole
 
-Re-exports [UsdmV4StudyRole](usdm-v4-types/interfaces/UsdmV4StudyRole.md)
+Re-exports [UsdmV4StudyRole](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyRole.md)
 
 ***
 
 ### UsdmV4StudyTitle
 
-Re-exports [UsdmV4StudyTitle](usdm-v4-types/interfaces/UsdmV4StudyTitle.md)
+Re-exports [UsdmV4StudyTitle](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyTitle.md)
 
 ***
 
 ### UsdmV4StudyVersion
 
-Re-exports [UsdmV4StudyVersion](usdm-v4-types/interfaces/UsdmV4StudyVersion.md)
+Re-exports [UsdmV4StudyVersion](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyVersion.md)
 
 ***
 
 ### UsdmV4Timing
 
-Re-exports [UsdmV4Timing](usdm-v4-types/interfaces/UsdmV4Timing.md)
+Re-exports [UsdmV4Timing](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Timing.md)
 
 ***
 
@@ -3610,7 +3610,7 @@ Re-exports [validateCdashVariableName](precision-date/functions/validateCdashVar
 
 ### validateCodelists
 
-Re-exports [validateCodelists](cdisc-controlled-terminology/functions/validateCodelists.md)
+Re-exports [validateCodelists](../clinical-standards/codelists/functions/validateCodelists.md)
 
 ***
 
@@ -3634,7 +3634,7 @@ Re-exports [validateUniversalCrf](universal-schema/functions/validateUniversalCr
 
 ### validateUsdmV4Document
 
-Re-exports [validateUsdmV4Document](usdm-v4-schema/functions/validateUsdmV4Document.md)
+Re-exports [validateUsdmV4Document](../clinical-standards/usdm-v4-schema/functions/validateUsdmV4Document.md)
 
 ***
 

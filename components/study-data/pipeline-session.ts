@@ -7,9 +7,9 @@
  * Where Workers are unavailable (jsdom tests, very old browsers) the client
  * loads this same module on demand and runs it on the main thread.
  */
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import { clamp } from "@/lib/game-utils";
-import { validateUsdmV4Document } from "@/lib/crf/usdm-v4-schema";
+import { validateUsdmV4Document } from "@/lib/clinical-standards";
 import {
   DEMO_301_STUDY,
   MESSY_DATA_SCENARIOS,

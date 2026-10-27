@@ -14,7 +14,7 @@
  * schema. Classes this project never emits (amendments, narrative content,
  * products, devices, sites) are left out rather than typed loosely.
  */
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "./profile";
 
 /** The USDM release these types and the adapter's export target. */
 export const USDM_V4_VERSION = CLINICAL_STANDARDS_PROFILE.USDM;

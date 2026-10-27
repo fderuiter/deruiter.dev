@@ -1,6 +1,6 @@
 "use client";
 
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import React, { useState, useRef } from "react";
 import { StudyBranding } from "@/lib/crf/types";
 import {

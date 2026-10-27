@@ -30,7 +30,7 @@ cannot feed a calculation that expects a coded numeric score.
 
 ### codelists?
 
-[`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+[`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ## Returns
 

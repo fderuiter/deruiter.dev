@@ -3,7 +3,7 @@
  * Facilitates loss-free conversion between CRF Studio protocols and CDISC USDM graph JSON specifications.
  */
 
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import {
   StudyProtocol,
   CRFForm,
@@ -27,7 +27,7 @@ import {
   StudyProvenanceSchema,
 } from "./universal-schema";
 import { cloneDeep } from "../utils";
-import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
+import { STANDARD_CODELISTS } from "@/lib/clinical-standards";
 import {
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_V4_VERSION,
@@ -47,7 +47,7 @@ import {
   type UsdmV4StudyElement,
   type UsdmV4StudyEpoch,
   type UsdmV4Timing,
-} from "./usdm-v4-types";
+} from "@/lib/clinical-standards";
 import {
   USDM_TIMING_AFTER,
   USDM_TIMING_BEFORE,
@@ -55,7 +55,7 @@ import {
   formatIsoDurationDays,
   getUsdmV4EncounterSchedule,
   studyDayDistance,
-} from "./usdm-v4-schedule";
+} from "@/lib/clinical-standards";
 
 export interface UsdmBiomedicalConceptProperty {
   id: string;

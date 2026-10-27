@@ -1,5 +1,5 @@
 import type { CellValue, Dataset, VariableMeta } from "../../types";
-import type { CodelistId } from "../conformance/terminology";
+import type { CodelistId } from "@/lib/clinical-standards";
 import type { AdamMethodId } from "./specs";
 
 export type AnalysisRow = Record<string, CellValue>;

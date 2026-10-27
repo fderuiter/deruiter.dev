@@ -2,6 +2,10 @@
  * CRF Studio Domain Types
  * Clinical Data Acquisition, CDISC CDASH 2.2, ODM-XML v1.3.2, and 21 CFR Part 11 Types
  */
+import type {
+  CodelistDefinition,
+  CodelistOption,
+} from "@/lib/clinical-standards";
 
 export type ClinicalDataType =
   | "text"
@@ -23,20 +27,7 @@ export type ClinicalDataType =
   | "repeating_table" // ConMeds, Adverse Events, Lesions
   | "signature"; // 21 CFR Part 11 e-signature
 
-export interface CodelistOption {
-  code: string;
-  label: string;
-  nciCode?: string;
-  order: number;
-}
-
-export interface CodelistDefinition {
-  id: string;
-  name: string;
-  nciCodelistCode?: string; // e.g. C66742 for Sex
-  options: CodelistOption[];
-  isStandard?: boolean;
-}
+export type { CodelistDefinition, CodelistOption };
 
 export interface CdashVariableMetadata {
   domain: string; // e.g. DM, VS, AE, CM, LB

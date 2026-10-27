@@ -4,7 +4,7 @@ import { z } from "zod";
 
 /**
  * Validator for the official CDISC USDM v4.0.0 Wrapper schema, vendored at
- * `lib/crf/usdm-v4.0.0-wrapper.schema.json` (source, hash and
+ * `lib/clinical-standards/usdm-v4.0.0-wrapper.schema.json` (source, hash and
  * MIT licence are recorded inside the file). The JSON Schema is compiled with
  * zod's `fromJSONSchema`, so no extra validator dependency is needed.
  */
@@ -13,7 +13,7 @@ const SCHEMA_PATH = path.resolve(
   "..",
   "..",
   "lib",
-  "crf",
+  "clinical-standards",
   "usdm-v4.0.0-wrapper.schema.json"
 );
 

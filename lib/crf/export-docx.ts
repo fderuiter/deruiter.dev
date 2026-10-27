@@ -1,4 +1,4 @@
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import {
   Document,
   Paragraph,

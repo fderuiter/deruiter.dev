@@ -106,7 +106,8 @@ every output file, and holds no timestamps.
 The run declares them in TS (`SDTMIGVER` and similar parameters), in
 Define-XML and in the manifest. Since
 [#2706](https://github.com/fderuiter/deruiter.dev/issues/2706), every value
-comes from `CLINICAL_STANDARDS_PROFILE` in `lib/study-data/standards.ts`, the
+comes from `CLINICAL_STANDARDS_PROFILE` in `lib/clinical-standards/profile.ts` (moved
+from `lib/study-data/standards.ts` in #2927), the
 one profile that CRF Studio, the platform and the arcade also read.
 
 | Standard                      | Version    |

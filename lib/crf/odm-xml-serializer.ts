@@ -1,4 +1,4 @@
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import { StudyProtocol } from "./types";
 import { escapeXml } from "../utils";
 import { consultationUrl } from "./export-annotations";

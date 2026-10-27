@@ -12,7 +12,7 @@ Independent, re-identified copy of sections with the rules and codelists they ne
 
 ### codelists
 
-> **codelists**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+> **codelists**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 Codelists that must be merged into the target study.
 

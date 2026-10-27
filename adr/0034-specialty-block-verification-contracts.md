@@ -28,7 +28,7 @@ CRF Studio (ADR 0021, ADR 0022) already ships two **parallel, inconsistent** imp
 
 ### Terminology and type-contract baseline
 
-- `STANDARD_CODELISTS` (`lib/crf/cdisc-controlled-terminology.ts`) provides only NCI Thesaurus-coded lists: `CL_NY`, `CL_SEX`, `CL_RACE`, `CL_ETHNIC`, `CL_AESEV`, `CL_AEREL`, `CL_AEOUT`, `CL_RECIST_RESP`, `CL_ROUTE`, and a few device-specific lists. **No MedDRA, WHO Drug, LOINC, or UCUM reference exists anywhere in `lib/crf` or `adr/`** (verified by case-insensitive search of both directories).
+- `STANDARD_CODELISTS` (`lib/crf/cdisc-controlled-terminology.ts`, now `lib/clinical-standards/codelists.ts`) provides only NCI Thesaurus-coded lists: `CL_NY`, `CL_SEX`, `CL_RACE`, `CL_ETHNIC`, `CL_AESEV`, `CL_AEREL`, `CL_AEOUT`, `CL_RECIST_RESP`, `CL_ROUTE`, and a few device-specific lists. **No MedDRA, WHO Drug, LOINC, or UCUM reference exists anywhere in `lib/crf` or `adr/`** (verified by case-insensitive search of both directories).
 - `ClinicalDataType` (`lib/crf/types.ts`) already declares `"repeating_table" // ConMeds, Adverse Events, Lesions` as an intended pattern, and `CRFField.repeatingColumns` exists to support it — but **neither implementation above uses it**. Both use flat sections with `isLogForm: true` on the parent form instead, so per-item repeat semantics (one row per medication, one row per lesion) aren't actually modeled at the field level today.
 - ADR 0022 §7 (Clinical Omnibar) _proposes_ "master dictionary lookups (MedDRA, WHODrug)" as aspirational future scope. No corresponding code exists. This ADR is the first place those two proposals get a concrete contract.
 

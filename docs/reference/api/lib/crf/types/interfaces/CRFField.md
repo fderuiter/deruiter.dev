@@ -52,7 +52,7 @@
 
 ### customOptions?
 
-> `optional` **customOptions?**: [`CodelistOption`](CodelistOption.md)[]
+> `optional` **customOptions?**: [`CodelistOption`](../../../clinical-standards/codelists/interfaces/CodelistOption.md)[]
 
 ***
 

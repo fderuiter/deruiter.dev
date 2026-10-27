@@ -3,7 +3,7 @@
  * terminology subset. SDTM variable names carry their domain prefix, so one
  * name-keyed table serves every domain, trial design included.
  */
-import type { CodelistId } from "../conformance/terminology";
+import type { CodelistId } from "@/lib/clinical-standards";
 
 export const SDTM_CODELISTS: Readonly<Record<string, CodelistId>> =
   Object.freeze({

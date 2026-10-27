@@ -243,6 +243,11 @@ async function main(argv: readonly string[]): Promise<number> {
       headers: { "api-key": key, Accept: "application/json" },
       signal: AbortSignal.timeout(60_000),
     });
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `CDISC Library ${href} returned ${response.status}: it did not accept the key. Check that the CDISC_LIBRARY_API_KEY secret holds a current key from the CDISC Library API portal.`
+      );
+    }
     if (!response.ok) {
       throw new Error(`CDISC Library ${href} returned ${response.status}.`);
     }

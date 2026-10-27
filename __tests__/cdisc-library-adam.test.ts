@@ -219,6 +219,9 @@ describe("CDISC Library sync workflow", () => {
       .filter((step) => step.includes("secrets."));
     expect(keyStep).toHaveLength(1);
     expect(keyStep[0]).toContain("scripts/cdisc-library-adam.ts sync");
+    // GitHub's default run shell has no pipefail, so `sync | tee` would
+    // report success when the sync fails.
+    expect(keyStep[0]).toContain("shell: bash");
   });
 
   it("records the metadata through the shared bot pull request script", () => {

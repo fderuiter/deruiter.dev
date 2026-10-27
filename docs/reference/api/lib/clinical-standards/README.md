@@ -14,6 +14,12 @@ Re-exports [addCalendarDaysToStudyDay](usdm-v4-schedule/functions/addCalendarDay
 
 ***
 
+### canonicalUsdmJson
+
+Re-exports [canonicalUsdmJson](usdm-handoff/functions/canonicalUsdmJson.md)
+
+***
+
 ### CDISC\_CT\_PACKAGE\_VERSION
 
 Re-exports [CDISC_CT_PACKAGE_VERSION](codelists/variables/CDISC_CT_PACKAGE_VERSION.md)
@@ -29,6 +35,12 @@ Re-exports [CLINICAL_STANDARDS_PROFILE](profile/variables/CLINICAL_STANDARDS_PRO
 ### ClinicalStandardsProfile
 
 Re-exports [ClinicalStandardsProfile](profile/interfaces/ClinicalStandardsProfile.md)
+
+***
+
+### ClinicalTool
+
+Re-exports [ClinicalTool](usdm-handoff/type-aliases/ClinicalTool.md)
 
 ***
 
@@ -65,6 +77,12 @@ Re-exports [controlledTerminologyCitation](profile/functions/controlledTerminolo
 ### ControlledTerminologyClaim
 
 Re-exports [ControlledTerminologyClaim](profile/interfaces/ControlledTerminologyClaim.md)
+
+***
+
+### createUsdmHandoff
+
+Re-exports [createUsdmHandoff](usdm-handoff/functions/createUsdmHandoff.md)
 
 ***
 
@@ -152,6 +170,18 @@ Re-exports [ProfileStandard](profile/type-aliases/ProfileStandard.md)
 
 ***
 
+### readUsdmHandoff
+
+Re-exports [readUsdmHandoff](usdm-handoff/functions/readUsdmHandoff.md)
+
+***
+
+### ReadUsdmHandoffResult
+
+Re-exports [ReadUsdmHandoffResult](usdm-handoff/type-aliases/ReadUsdmHandoffResult.md)
+
+***
+
 ### STANDARD\_CODELISTS
 
 Re-exports [STANDARD_CODELISTS](codelists/variables/STANDARD_CODELISTS.md)
@@ -185,6 +215,12 @@ Re-exports [TerminologyCodelist](terminology/interfaces/TerminologyCodelist.md)
 ### TerminologyTerm
 
 Re-exports [TerminologyTerm](terminology/interfaces/TerminologyTerm.md)
+
+***
+
+### USDM\_HANDOFF\_ENVELOPE\_VERSION
+
+Re-exports [USDM_HANDOFF_ENVELOPE_VERSION](usdm-handoff/variables/USDM_HANDOFF_ENVELOPE_VERSION.md)
 
 ***
 
@@ -227,6 +263,30 @@ Re-exports [USDM_TIMING_FIXED_REFERENCE](usdm-v4-schedule/variables/USDM_TIMING_
 ### USDM\_V4\_VERSION
 
 Re-exports [USDM_V4_VERSION](usdm-v4-types/variables/USDM_V4_VERSION.md)
+
+***
+
+### usdmContentHash
+
+Re-exports [usdmContentHash](usdm-handoff/functions/usdmContentHash.md)
+
+***
+
+### UsdmHandoffEnvelope
+
+Re-exports [UsdmHandoffEnvelope](usdm-handoff/interfaces/UsdmHandoffEnvelope.md)
+
+***
+
+### UsdmHandoffProblem
+
+Re-exports [UsdmHandoffProblem](usdm-handoff/type-aliases/UsdmHandoffProblem.md)
+
+***
+
+### UsdmHandoffStudy
+
+Re-exports [UsdmHandoffStudy](usdm-handoff/interfaces/UsdmHandoffStudy.md)
 
 ***
 

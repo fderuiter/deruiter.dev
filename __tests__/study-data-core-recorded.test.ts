@@ -11,9 +11,11 @@ import { describe, expect, it } from "vitest";
 import { MESSY_DATA_SCENARIOS, STANDARD_VERSIONS } from "@/lib/study-data";
 import {
   CORE_VIEWS,
+  CRF_PRESET_IDS,
   RECORDED_EXAMPLES_PER_RULE,
   RECORDED_FINDINGS_FILE,
   buildView,
+  crfInputSha256,
   viewInputSha256,
   type RecordedFindings,
   type RecordedLines,
@@ -73,6 +75,31 @@ describe("recorded CDISC CORE findings (#2992)", () => {
       for (const id of Object.keys(change.status))
         expect(sdtm[id], `${view} ${id}`).toBeDefined();
     }
+    for (const preset of CRF_PRESET_IDS) {
+      const { usdm: lines, status } = recorded.crf[preset];
+      check(usdm, lines, `${preset} usdm`);
+      for (const id of Object.keys(status))
+        expect(usdm[id], `${preset} ${id}`).toBeDefined();
+    }
+  });
+
+  it("record every CRF Studio preset's USDM export, and nothing else (#3051)", () => {
+    expect(Object.keys(recorded.crf).sort()).toEqual(
+      [...CRF_PRESET_IDS].sort()
+    );
+    expect(workflow).toContain("export-crf");
+  });
+
+  it("were recorded from every CRF Studio preset's current USDM export (#3051)", async () => {
+    const stale: string[] = [];
+    for (const preset of CRF_PRESET_IDS) {
+      if ((await crfInputSha256(preset)) !== recorded.crf[preset].inputSha256)
+        stale.push(preset);
+    }
+    expect(
+      stale,
+      "Refresh lib/study-data/internal/core/recorded-findings.json: see docs/how-to/refresh-cdisc-core-findings.md"
+    ).toEqual([]);
   });
 
   it("were recorded from the pipeline's current output for every view", async () => {

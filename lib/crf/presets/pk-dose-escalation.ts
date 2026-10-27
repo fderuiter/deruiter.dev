@@ -1,11 +1,16 @@
 import { StudyProtocol, CRFForm } from "../types";
-import { STANDARD_CODELISTS, scaffoldCdashDomain } from "../cdisc-cdash-library";
+import {
+  PRESET_ID_STAMP,
+  STANDARD_CODELISTS,
+  scaffoldCdashDomain,
+} from "../cdisc-cdash-library";
 
 const PK_SAMPLING_FORM: CRFForm = {
   id: "form_pk_esc",
   name: "Pharmacokinetic (PK) Blood Sampling Log",
   domain: "PC",
-  description: "Serial plasma sampling timepoints for non-compartmental PK analysis (Cmax, Tmax, AUC0-inf)",
+  description:
+    "Serial plasma sampling timepoints for non-compartmental PK analysis (Cmax, Tmax, AUC0-inf)",
   version: "1.0",
   rules: [],
   sections: [
@@ -108,7 +113,8 @@ const PK_SAMPLING_FORM: CRFForm = {
         {
           id: "f_pk_dlt",
           variableName: "DLTYN",
-          label: "Did patient experience any Dose-Limiting Toxicity (DLT) in Cycle 1?",
+          label:
+            "Did patient experience any Dose-Limiting Toxicity (DLT) in Cycle 1?",
           dataType: "radio",
           columnSpan: 6,
           required: true,
@@ -122,7 +128,8 @@ const PK_SAMPLING_FORM: CRFForm = {
 export const PK_ESCALATION_PRESET: StudyProtocol = {
   id: "study_pk_001",
   protocolNumber: "PK-2026-101",
-  studyName: "Phase I First-in-Human Single Ascending Dose & Multiple Ascending Dose Study with Intensive PK/PD",
+  studyName:
+    "Phase I First-in-Human Single Ascending Dose & Multiple Ascending Dose Study with Intensive PK/PD",
   phase: "Phase I",
   sponsor: "Precision BioPharma",
   therapeuticArea: "Early Development",
@@ -163,16 +170,16 @@ export const PK_ESCALATION_PRESET: StudyProtocol = {
   ],
   forms: [
     {
-      ...scaffoldCdashDomain("DM"),
+      ...scaffoldCdashDomain("DM", PRESET_ID_STAMP),
       id: "form_dm_pk",
     },
     {
-      ...scaffoldCdashDomain("VS"),
+      ...scaffoldCdashDomain("VS", PRESET_ID_STAMP),
       id: "form_vs_pk",
     },
     PK_SAMPLING_FORM,
     {
-      ...scaffoldCdashDomain("AE"),
+      ...scaffoldCdashDomain("AE", PRESET_ID_STAMP),
       id: "form_ae_pk",
     },
   ],

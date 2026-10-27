@@ -2,6 +2,7 @@ import { StudyProtocol } from "../types";
 import {
   CDASH_STANDARD_VARIABLES,
   STANDARD_CODELISTS,
+  PRESET_ID_STAMP,
   scaffoldCdashDomain,
 } from "../cdisc-cdash-library";
 
@@ -211,27 +212,27 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
   ],
   forms: [
     {
-      ...scaffoldCdashDomain("DM"),
+      ...scaffoldCdashDomain("DM", PRESET_ID_STAMP),
       id: "form_dm_onc",
     },
     {
-      ...scaffoldCdashDomain("VS"),
+      ...scaffoldCdashDomain("VS", PRESET_ID_STAMP),
       id: "form_vs_onc",
     },
     {
-      ...scaffoldCdashDomain("RECIST"),
+      ...scaffoldCdashDomain("RECIST", PRESET_ID_STAMP),
       id: "form_recist_onc",
     },
     {
-      ...scaffoldCdashDomain("AE"),
+      ...scaffoldCdashDomain("AE", PRESET_ID_STAMP),
       id: "form_ae_onc",
     },
     {
-      ...scaffoldCdashDomain("CM"),
+      ...scaffoldCdashDomain("CM", PRESET_ID_STAMP),
       id: "form_cm_onc",
     },
     {
-      ...scaffoldCdashDomain("LB"),
+      ...scaffoldCdashDomain("LB", PRESET_ID_STAMP),
       id: "form_lb_onc",
     },
   ],

@@ -132,7 +132,7 @@ the terminal as you edit.
 Before committing, run the checks a pre-commit hook and CI will also run:
 
 ```bash
-npm run typecheck         # next typegen, then type checking
+npm run typecheck         # next typegen, then the TypeScript 7 type check
 npm run lint              # ESLint, zero warnings
 npm run lint:boundaries   # deep-module / circular-dependency boundaries
 npx vitest run            # unit, logic, and state-engine tests

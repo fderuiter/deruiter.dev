@@ -193,18 +193,30 @@
     {
       "target": "crf-usdm",
       "coreId": "CORE-000419",
-      "dataset": "StudyEpoch",
+      "dataset": "EligibilityCriterion",
       "category": "core-limitation",
-      "presets": ["oncology_recist"],
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export."
+      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export.",
+      "presets": [
+        "oncology_recist",
+        "device_cardiovascular_implant",
+        "clinical_instruments",
+        "cns_neuro",
+        "pk_escalation"
+      ]
     },
     {
       "target": "crf-usdm",
-      "coreId": "CORE-000815",
-      "dataset": "StudyDesignPopulation",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The population has no planned age; CRF Studio holds no age range to write."
+      "coreId": "CORE-000419",
+      "dataset": "StudyEpoch",
+      "category": "core-limitation",
+      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export.",
+      "presets": [
+        "oncology_recist",
+        "device_cardiovascular_implant",
+        "clinical_instruments",
+        "cns_neuro",
+        "pk_escalation"
+      ]
     },
     {
       "target": "crf-usdm",
@@ -215,18 +227,55 @@
     },
     {
       "target": "crf-usdm",
-      "coreId": "CORE-000870",
-      "dataset": "ScheduledActivityInstance",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "Main-timeline instances name no epoch because these presets define no epochs.",
+      "coreId": "CORE-000815",
+      "dataset": "StudyDesignPopulation",
+      "category": "by-design",
+      "presets": ["custom_blank"],
+      "reason": "The blank canvas plans no population, so it has no planned age until its author adds one."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000875",
+      "dataset": "StudyDesignPopulation",
+      "category": "by-design",
+      "presets": ["custom_blank"],
+      "reason": "The blank canvas plans no population, so it has no planned sex until its author adds one."
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000871",
+      "dataset": "InterventionalStudyDesign",
+      "category": "core-limitation",
+      "reason": "Counts two primary objectives while listing the one the export has.",
       "presets": [
+        "oncology_recist",
         "device_cardiovascular_implant",
         "clinical_instruments",
         "cns_neuro",
-        "pk_escalation",
-        "custom_blank"
+        "pk_escalation"
       ]
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000939",
+      "dataset": "Objective",
+      "category": "ct-cache",
+      "reason": "The export uses the 2026-09-25 Objective Level decodes (Primary Objective, Secondary Objective). CORE validates against its newest cached CT, 2026-03-27, whose submission values were Study Primary Objective and Study Secondary Objective.",
+      "presets": [
+        "oncology_recist",
+        "device_cardiovascular_implant",
+        "clinical_instruments",
+        "cns_neuro",
+        "pk_escalation"
+      ]
+    },
+    {
+      "target": "crf-usdm",
+      "coreId": "CORE-000870",
+      "dataset": "ScheduledActivityInstance",
+      "category": "by-design",
+      "reason": "The blank canvas defines no epochs, so its main-timeline instances name none.",
+      "presets": ["custom_blank"]
     },
     {
       "target": "crf-usdm",
@@ -237,44 +286,27 @@
     },
     {
       "target": "crf-usdm",
-      "coreId": "CORE-000875",
-      "dataset": "StudyDesignPopulation",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The population has no planned sex; CRF Studio holds no sex criterion to write."
-    },
-    {
-      "target": "crf-usdm",
       "coreId": "CORE-000938",
       "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "Required design lists are empty: every preset has no eligibility criteria, and every preset but oncology_recist has no arms, epochs or study cells."
+      "category": "by-design",
+      "reason": "The blank canvas has no arms, epochs, study cells or eligibility criteria until its author adds them.",
+      "presets": ["custom_blank"]
     },
     {
       "target": "crf-usdm",
       "coreId": "CORE-001036",
       "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The design has no primary endpoint; CRF Studio holds no objectives or endpoints yet."
+      "category": "by-design",
+      "reason": "The blank canvas has no objectives or endpoints until its author adds them.",
+      "presets": ["custom_blank"]
     },
     {
       "target": "crf-usdm",
       "coreId": "CORE-001065",
       "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The interventional design references no study intervention from a procedure."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-001077",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "A two-arm parallel design that references no study interventions; CRF Studio holds none yet.",
-      "presets": ["oncology_recist"]
+      "category": "by-design",
+      "reason": "No study intervention to reference: clinical_instruments validates measurement instruments and gives none, and the blank canvas has none until its author adds one.",
+      "presets": ["clinical_instruments", "custom_blank"]
     }
   ]
 }

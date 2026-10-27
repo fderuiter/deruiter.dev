@@ -25,8 +25,12 @@ import {
   ScenarioRunEvidenceSchema,
   StudyArmSchema,
   StudyCohortSchema,
+  StudyEligibilityCriterionSchema,
   StudyEpochSchema,
+  StudyInterventionPlanSchema,
   StudyLibraryUseSchema,
+  StudyObjectiveSchema,
+  StudyPopulationPlanSchema,
   StudyProvenanceSchema,
   TestScenarioSchema,
   UniversalCrfBrandingSchema,
@@ -64,8 +68,12 @@ import type {
   StudyArm,
   StudyBranding,
   StudyCohort,
+  StudyEligibilityCriterion,
   StudyEpoch,
+  StudyInterventionPlan,
   StudyLibraryUse,
+  StudyObjective,
+  StudyPopulationPlan,
   StudyProtocol,
   StudyProvenance,
   StudyVisit,
@@ -107,6 +115,18 @@ same<EditCheckRule, typeof EditCheckRuleSchema>([true, true, true]);
 same<StudyArm, typeof StudyArmSchema>([true, true, true]);
 same<StudyEpoch, typeof StudyEpochSchema>([true, true, true]);
 same<StudyCohort, typeof StudyCohortSchema>([true, true, true]);
+same<StudyPopulationPlan, typeof StudyPopulationPlanSchema>([true, true, true]);
+same<StudyEligibilityCriterion, typeof StudyEligibilityCriterionSchema>([
+  true,
+  true,
+  true,
+]);
+same<StudyObjective, typeof StudyObjectiveSchema>([true, true, true]);
+same<StudyInterventionPlan, typeof StudyInterventionPlanSchema>([
+  true,
+  true,
+  true,
+]);
 same<BiomedicalConceptProperty, typeof BiomedicalConceptPropertySchema>([
   true,
   true,

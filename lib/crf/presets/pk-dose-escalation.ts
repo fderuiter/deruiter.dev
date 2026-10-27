@@ -136,6 +136,113 @@ export const PK_ESCALATION_PRESET: StudyProtocol = {
   version: "1.3",
   lastModified: "2026-08-15",
   codelists: [...STANDARD_CODELISTS],
+  arms: [
+    {
+      id: "arm_pk_escalation",
+      name: "PB-101 ascending doses",
+      type: "Experimental",
+      description:
+        "Sequential cohorts of single, then multiple, ascending oral doses of PB-101",
+      epochIds: ["ep_pk_scrn", "ep_pk_trt", "ep_pk_fup"],
+    },
+  ],
+  epochs: [
+    {
+      id: "ep_pk_scrn",
+      name: "Screening Epoch",
+      sequenceNumber: 1,
+      type: "Screening",
+      description: "Health screening of volunteers",
+    },
+    {
+      id: "ep_pk_trt",
+      name: "Treatment Epoch",
+      sequenceNumber: 2,
+      type: "Treatment",
+      description: "Inpatient dosing with intensive PK sampling",
+    },
+    {
+      id: "ep_pk_fup",
+      name: "Follow-Up Epoch",
+      sequenceNumber: 3,
+      type: "Follow-up",
+      description: "Ambulatory safety follow-up",
+    },
+  ],
+  population: {
+    description: "Healthy adult volunteers.",
+    plannedSex: ["Female", "Male"],
+    plannedAgeYears: { min: 18, max: 55 },
+    includesHealthySubjects: true,
+  },
+  eligibilityCriteria: [
+    {
+      id: "ec_pk_age",
+      category: "Inclusion",
+      name: "Age",
+      text: "Healthy adults aged 18 to 55 years at screening.",
+    },
+    {
+      id: "ec_pk_bmi",
+      category: "Inclusion",
+      name: "Body mass index",
+      text: "Body mass index of 18.0 to 30.0 kg/m2.",
+    },
+    {
+      id: "ec_pk_ecg",
+      category: "Exclusion",
+      name: "ECG abnormality",
+      text: "QTcF above 450 ms, or any clinically significant ECG abnormality, at screening.",
+    },
+    {
+      id: "ec_pk_meds",
+      category: "Exclusion",
+      name: "Concomitant medication",
+      text: "Any prescription or over-the-counter medication within 14 days before the first dose.",
+    },
+  ],
+  objectives: [
+    {
+      id: "obj_pk_safety",
+      level: "Primary",
+      name: "Primary objective",
+      text: "To evaluate the safety and tolerability of single and multiple ascending oral doses of PB-101.",
+      endpoints: [
+        {
+          id: "ep_pk_dlt",
+          level: "Primary",
+          name: "Dose-limiting toxicities",
+          text: "Incidence of dose-limiting toxicities in each dose cohort.",
+          purpose: "Safety",
+        },
+      ],
+    },
+    {
+      id: "obj_pk_exposure",
+      level: "Secondary",
+      name: "Pharmacokinetic objective",
+      text: "To characterise the pharmacokinetics of PB-101.",
+      endpoints: [
+        {
+          id: "ep_pk_cmax_auc",
+          level: "Secondary",
+          name: "Cmax and AUC",
+          text: "Maximum plasma concentration and area under the concentration-time curve of PB-101 after a single dose.",
+          purpose: "Pharmacokinetic",
+        },
+      ],
+    },
+  ],
+  interventions: [
+    {
+      id: "int_pk_pb101",
+      name: "PB-101",
+      description: "Investigational oral small molecule, given fasted.",
+      role: "Experimental Intervention",
+      type: "Drug",
+      administrationFormIds: ["form_pk_esc"],
+    },
+  ],
   visits: [
     {
       id: "v_pk_scrn",
@@ -145,6 +252,7 @@ export const PK_ESCALATION_PRESET: StudyProtocol = {
       targetDay: -7,
       windowBefore: 7,
       windowAfter: 0,
+      epochId: "ep_pk_scrn",
       assignedFormIds: ["form_dm_pk", "form_vs_pk"],
     },
     {
@@ -155,6 +263,7 @@ export const PK_ESCALATION_PRESET: StudyProtocol = {
       targetDay: 1,
       windowBefore: 0,
       windowAfter: 0,
+      epochId: "ep_pk_trt",
       assignedFormIds: ["form_vs_pk", "form_pk_esc"],
     },
     {
@@ -165,6 +274,7 @@ export const PK_ESCALATION_PRESET: StudyProtocol = {
       targetDay: 8,
       windowBefore: 1,
       windowAfter: 1,
+      epochId: "ep_pk_fup",
       assignedFormIds: ["form_vs_pk"],
     },
   ],

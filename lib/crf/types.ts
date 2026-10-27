@@ -140,6 +140,74 @@ export interface StudyCohort {
   targetSize?: number;
 }
 
+/** A sex the protocol plans to enrol. */
+export type StudyPlannedSex = "Female" | "Male";
+
+/** Who the protocol plans to enrol: the USDM study design population. */
+export interface StudyPopulationPlan {
+  description?: string;
+  plannedSex?: StudyPlannedSex[];
+  /** Planned age range in years, both ends inclusive. */
+  plannedAgeYears?: { min: number; max: number };
+  includesHealthySubjects?: boolean;
+}
+
+/** One inclusion or exclusion criterion from the protocol. */
+export interface StudyEligibilityCriterion {
+  id: string;
+  category: "Inclusion" | "Exclusion";
+  /** A short name, such as "Age". */
+  name: string;
+  text: string;
+}
+
+/** The level of an objective or endpoint. */
+export type StudyObjectiveLevel = "Primary" | "Secondary" | "Exploratory";
+
+/** An endpoint that measures whether an objective was met. */
+export interface StudyEndpoint {
+  id: string;
+  level: StudyObjectiveLevel;
+  name: string;
+  text: string;
+  /** What the endpoint measures, such as "Efficacy" or "Safety". */
+  purpose: string;
+}
+
+/** A protocol objective and its endpoints. */
+export interface StudyObjective {
+  id: string;
+  level: StudyObjectiveLevel;
+  name: string;
+  text: string;
+  endpoints: StudyEndpoint[];
+}
+
+/** The part a study intervention plays in the design. */
+export type StudyInterventionRole =
+  "Experimental Intervention" | "Active Comparator" | "Placebo";
+
+/** What kind of product a study intervention is. */
+export type StudyInterventionType = "Drug" | "Biologic" | "Device";
+
+/** A drug, biologic or device the protocol gives to subjects. */
+export interface StudyInterventionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  role: StudyInterventionRole;
+  type: StudyInterventionType;
+  /** The arms that receive it; every arm when omitted. */
+  armIds?: string[];
+  /** The forms that record it being given. */
+  administrationFormIds?: string[];
+  /**
+   * The NCI-coded procedure that gives it. Defaults to Medication
+   * Administration (C128534).
+   */
+  procedure?: { name: string; code: string };
+}
+
 export interface BiomedicalConceptProperty {
   id: string;
   name: string;
@@ -322,6 +390,11 @@ export interface StudyProtocol {
   arms?: StudyArm[];
   epochs?: StudyEpoch[];
   cohorts?: StudyCohort[];
+  /** Planned population, eligibility, objectives and interventions (#3051). */
+  population?: StudyPopulationPlan;
+  eligibilityCriteria?: StudyEligibilityCriterion[];
+  objectives?: StudyObjective[];
+  interventions?: StudyInterventionPlan[];
   biomedicalConcepts?: BiomedicalConcept[];
   provenance?: StudyProvenance;
   /**

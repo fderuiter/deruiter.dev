@@ -165,6 +165,60 @@ export const StudyCohortSchema = z.object({
 });
 export type UniversalStudyCohort = z.infer<typeof StudyCohortSchema>;
 
+// Planned population, eligibility, objectives and interventions (#3051)
+export const StudyPopulationPlanSchema = z.object({
+  description: z.string().optional(),
+  plannedSex: z.array(z.enum(["Female", "Male"])).optional(),
+  plannedAgeYears: z
+    .object({ min: z.number().min(0), max: z.number().min(0) })
+    .optional(),
+  includesHealthySubjects: z.boolean().optional(),
+});
+
+export const StudyEligibilityCriterionSchema = z.object({
+  id: z.string().min(1),
+  category: z.enum(["Inclusion", "Exclusion"]),
+  name: z.string().min(1),
+  text: z.string().min(1),
+});
+
+const StudyObjectiveLevelSchema = z.enum([
+  "Primary",
+  "Secondary",
+  "Exploratory",
+]);
+
+export const StudyObjectiveSchema = z.object({
+  id: z.string().min(1),
+  level: StudyObjectiveLevelSchema,
+  name: z.string().min(1),
+  text: z.string().min(1),
+  endpoints: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        level: StudyObjectiveLevelSchema,
+        name: z.string().min(1),
+        text: z.string().min(1),
+        purpose: z.string().min(1),
+      })
+    )
+    .default([]),
+});
+
+export const StudyInterventionPlanSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  role: z.enum(["Experimental Intervention", "Active Comparator", "Placebo"]),
+  type: z.enum(["Drug", "Biologic", "Device"]),
+  armIds: z.array(z.string()).optional(),
+  administrationFormIds: z.array(z.string()).optional(),
+  procedure: z
+    .object({ name: z.string().min(1), code: z.string().min(1) })
+    .optional(),
+});
+
 export const BiomedicalConceptPropertySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -593,6 +647,10 @@ export const UniversalCrfProtocolSchema = z.object({
   arms: z.array(StudyArmSchema).default([]),
   epochs: z.array(StudyEpochSchema).default([]),
   cohorts: z.array(StudyCohortSchema).default([]),
+  population: StudyPopulationPlanSchema.optional(),
+  eligibilityCriteria: z.array(StudyEligibilityCriterionSchema).optional(),
+  objectives: z.array(StudyObjectiveSchema).optional(),
+  interventions: z.array(StudyInterventionPlanSchema).optional(),
   biomedicalConcepts: z.array(BiomedicalConceptSchema).default([]),
   testScenarios: z.array(TestScenarioSchema).default([]),
   reviewThreads: z.array(StudyReviewThreadSchema).optional(),

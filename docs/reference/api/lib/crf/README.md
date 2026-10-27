@@ -3158,6 +3158,24 @@ Re-exports [StudyDraftEnvelope](internal/study-draft-storage/interfaces/StudyDra
 
 ***
 
+### StudyEligibilityCriterion
+
+Re-exports [StudyEligibilityCriterion](types/interfaces/StudyEligibilityCriterion.md)
+
+***
+
+### StudyEligibilityCriterionSchema
+
+Re-exports [StudyEligibilityCriterionSchema](internal/universal-schema/variables/StudyEligibilityCriterionSchema.md)
+
+***
+
+### StudyEndpoint
+
+Re-exports [StudyEndpoint](types/interfaces/StudyEndpoint.md)
+
+***
+
 ### StudyEpoch
 
 Re-exports [StudyEpoch](types/interfaces/StudyEpoch.md)
@@ -3167,6 +3185,30 @@ Re-exports [StudyEpoch](types/interfaces/StudyEpoch.md)
 ### StudyEpochSchema
 
 Re-exports [StudyEpochSchema](internal/universal-schema/variables/StudyEpochSchema.md)
+
+***
+
+### StudyInterventionPlan
+
+Re-exports [StudyInterventionPlan](types/interfaces/StudyInterventionPlan.md)
+
+***
+
+### StudyInterventionPlanSchema
+
+Re-exports [StudyInterventionPlanSchema](internal/universal-schema/variables/StudyInterventionPlanSchema.md)
+
+***
+
+### StudyInterventionRole
+
+Re-exports [StudyInterventionRole](types/type-aliases/StudyInterventionRole.md)
+
+***
+
+### StudyInterventionType
+
+Re-exports [StudyInterventionType](types/type-aliases/StudyInterventionType.md)
 
 ***
 
@@ -3194,9 +3236,45 @@ Re-exports [StudyMilestoneForecast](internal/visit-window/interfaces/StudyMilest
 
 ***
 
+### StudyObjective
+
+Re-exports [StudyObjective](types/interfaces/StudyObjective.md)
+
+***
+
+### StudyObjectiveLevel
+
+Re-exports [StudyObjectiveLevel](types/type-aliases/StudyObjectiveLevel.md)
+
+***
+
+### StudyObjectiveSchema
+
+Re-exports [StudyObjectiveSchema](internal/universal-schema/variables/StudyObjectiveSchema.md)
+
+***
+
 ### StudyPhase
 
 Re-exports [StudyPhase](types/type-aliases/StudyPhase.md)
+
+***
+
+### StudyPlannedSex
+
+Re-exports [StudyPlannedSex](types/type-aliases/StudyPlannedSex.md)
+
+***
+
+### StudyPopulationPlan
+
+Re-exports [StudyPopulationPlan](types/interfaces/StudyPopulationPlan.md)
+
+***
+
+### StudyPopulationPlanSchema
+
+Re-exports [StudyPopulationPlanSchema](internal/universal-schema/variables/StudyPopulationPlanSchema.md)
 
 ***
 

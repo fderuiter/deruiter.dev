@@ -341,6 +341,96 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
       ],
     },
   ],
+  arms: [
+    {
+      id: "arm_inst_validation",
+      name: "Validation cohort",
+      type: "No Intervention",
+      description:
+        "Every subject completes the electronic instruments and ECGs; no study intervention is given",
+      epochIds: ["ep_inst_base", "ep_inst_fup"],
+    },
+  ],
+  epochs: [
+    {
+      id: "ep_inst_base",
+      name: "Screening Epoch",
+      sequenceNumber: 1,
+      type: "Screening",
+      description: "Consent and first completion of each instrument",
+    },
+    {
+      id: "ep_inst_fup",
+      name: "Follow-Up Epoch",
+      sequenceNumber: 2,
+      type: "Follow-up",
+      description: "Repeat completion at Week 4",
+    },
+  ],
+  population: {
+    description:
+      "Adults with depressive symptoms or heart failure who can complete questionnaires on a smartphone or tablet.",
+    plannedSex: ["Female", "Male"],
+    plannedAgeYears: { min: 18, max: 80 },
+  },
+  eligibilityCriteria: [
+    {
+      id: "ec_inst_age",
+      category: "Inclusion",
+      name: "Age",
+      text: "Aged 18 to 80 years at consent.",
+    },
+    {
+      id: "ec_inst_device",
+      category: "Inclusion",
+      name: "Device use",
+      text: "Able to read and complete questionnaires on a smartphone or tablet without help.",
+    },
+    {
+      id: "ec_inst_cognition",
+      category: "Exclusion",
+      name: "Cognitive impairment",
+      text: "Cognitive impairment that prevents completing a questionnaire unaided.",
+    },
+    {
+      id: "ec_inst_pacing",
+      category: "Exclusion",
+      name: "Ventricular pacing",
+      text: "Permanent ventricular pacing, which prevents QT interval measurement.",
+    },
+  ],
+  objectives: [
+    {
+      id: "obj_inst_reliability",
+      level: "Primary",
+      name: "Primary objective",
+      text: "To assess the test-retest reliability of the electronic PHQ-9.",
+      endpoints: [
+        {
+          id: "ep_inst_icc",
+          level: "Primary",
+          name: "PHQ-9 test-retest agreement",
+          text: "Intraclass correlation of the PHQ-9 total score between screening and Week 4 in subjects whose symptoms are stable.",
+          purpose: "Reliability",
+        },
+      ],
+    },
+    {
+      id: "obj_inst_cardiac",
+      level: "Secondary",
+      name: "Cardiac safety objective",
+      text: "To describe QT interval findings in the validation cohort.",
+      endpoints: [
+        {
+          id: "ep_inst_qtc",
+          level: "Secondary",
+          name: "QTc above 500 ms",
+          text: "Proportion of subjects with a QTcB above 500 ms at any visit.",
+          purpose: "Safety",
+        },
+      ],
+    },
+  ],
   visits: [
     {
       id: "v_screen_inst",
@@ -350,6 +440,7 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
       targetDay: 0,
       windowBefore: 0,
       windowAfter: 7,
+      epochId: "ep_inst_base",
       assignedFormIds: ["form_phq9", "form_ecg_cardio", "form_sae_expedited"],
     },
     {
@@ -360,6 +451,7 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
       targetDay: 28,
       windowBefore: 3,
       windowAfter: 3,
+      epochId: "ep_inst_fup",
       assignedFormIds: ["form_phq9", "form_ecg_cardio", "form_sae_expedited"],
     },
   ],

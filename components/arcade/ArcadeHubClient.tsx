@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   IconCrosshair,
@@ -349,12 +349,12 @@ function PhoneNote() {
       {ready.map((game, index) => (
         <React.Fragment key={game.slug}>
           {index > 0 && (index === ready.length - 1 ? " and " : ", ")}
-          <Link
+          <IntentLink
             href={game.route}
             className="text-emerald-300 underline underline-offset-4"
           >
             {game.name}
-          </Link>
+          </IntentLink>
         </React.Fragment>
       ))}
       .
@@ -393,7 +393,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
       <div className="relative z-10">
         {/* Gameplay thumbnail. The Play Game link below is the keyboard path,
             so this duplicate link is hidden from tab order and screen readers. */}
-        <Link
+        <IntentLink
           href={game.route}
           tabIndex={-1}
           aria-hidden="true"
@@ -409,7 +409,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
             unoptimized
             className="block aspect-[16/10] h-auto w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
-        </Link>
+        </IntentLink>
 
         {/* Top Badges & Icon */}
         <div className="flex items-center justify-between gap-4 mb-4">
@@ -486,14 +486,14 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
       <div className="relative z-10 mt-8 pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-3 flex-wrap">
         <FieldManualButton manualId={game.id} variant="card" />
 
-        <Link
+        <IntentLink
           href={game.route}
           className="inline-flex min-h-[44px] items-center justify-center gap-2 px-4 py-2 rounded-xl bg-cyan-400 max-sm:w-full text-zinc-950 font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
         >
           <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
           <span>Play Game</span>
           <IconArrowRight className="w-3.5 h-3.5" />
-        </Link>
+        </IntentLink>
       </div>
     </motion.div>
   );
@@ -598,7 +598,7 @@ export const ArcadeHubClient: React.FC = () => {
         >
           <div className="flex w-full min-w-0 flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-center">
             {/* 16:10 still at every width, like the game cards (#1516). */}
-            <Link
+            <IntentLink
               href="/arcade/meme-vault"
               tabIndex={-1}
               aria-hidden="true"
@@ -613,7 +613,7 @@ export const ArcadeHubClient: React.FC = () => {
                 unoptimized
                 className="block aspect-[16/10] h-auto w-full object-cover object-top"
               />
-            </Link>
+            </IntentLink>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
@@ -634,13 +634,13 @@ export const ArcadeHubClient: React.FC = () => {
             </div>
           </div>
 
-          <Link
+          <IntentLink
             href="/arcade/meme-vault"
             className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
           >
             <span>Enter Vault</span>
             <IconArrowRight className="w-4 h-4" />
-          </Link>
+          </IntentLink>
         </motion.div>
       </div>
     </div>

@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import {
   CHALLENGE_COPY,
@@ -274,12 +274,12 @@ export function ReceiptView({
             {line}
           </p>
         ))}
-        <Link
+        <IntentLink
           href={receipt.actual.href}
           className="min-h-11 self-start break-words py-3 font-bold text-[var(--fbb-accent)] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
         >
           {bankText("actual-link")}
-        </Link>
+        </IntentLink>
       </section>
 
       <div className="flex flex-wrap gap-2">

@@ -7,7 +7,7 @@ import React, {
   useSyncExternalStore,
   useCallback,
 } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { clamp, gameFont } from "@/lib/game-utils";
 import Image from "next/image";
 import { useAudio } from "@/components/providers/AudioProvider";
@@ -1139,9 +1139,9 @@ function DuckSprintResult({
             <span>Play Endless Mode</span>
           </button>
         )}
-        <Link href="/case-studies" className={RESULT_LINK}>
+        <IntentLink href="/case-studies" className={RESULT_LINK}>
           <span>Browse Case Studies</span>
-        </Link>
+        </IntentLink>
         <a
           href="https://github.com/fderuiter"
           target="_blank"

@@ -9,10 +9,15 @@
  */
 
 import fs from "fs";
-import path from "path";
 import readline from "readline";
 import { getOncologyPresetSync } from "../lib/crf/presets";
 import { StudyProtocol } from "../lib/crf/types";
+import {
+  CrfInputError,
+  DEFAULT_FILE,
+  loadProtocol,
+  saveProtocol,
+} from "./crf-input";
 import {
   executeInfoCommand,
   executeValidateCommand,
@@ -32,24 +37,6 @@ import {
   parseUniversalCrf,
   exportUniversalCrfJson,
 } from "../lib/crf";
-
-const DEFAULT_FILE = "study.crf.json";
-
-function loadProtocolFromFileOrDefault(filePath?: string): {
-  study: StudyProtocol;
-  path: string;
-} {
-  const targetPath = filePath || path.resolve(process.cwd(), DEFAULT_FILE);
-  if (fs.existsSync(targetPath)) {
-    try {
-      const raw = fs.readFileSync(targetPath, "utf-8");
-      return { study: parseUniversalCrf(raw), path: targetPath };
-    } catch {
-      // Fallback
-    }
-  }
-  return { study: getOncologyPresetSync(), path: targetPath };
-}
 
 function saveProtocolToFile(filePath: string, study: StudyProtocol): void {
   const serialized = exportUniversalCrfJson(study);
@@ -394,7 +381,7 @@ async function main(): Promise<void> {
     const category = (args[1] || "domains") as
       "domains" | "presets" | "forms" | "visits";
     const fileArg = args[2] && !args[2].startsWith("--") ? args[2] : undefined;
-    const { study } = loadProtocolFromFileOrDefault(fileArg);
+    const { study } = loadProtocol(fileArg);
     const result = executeListCommand(study, category, options);
     console.log(result.document);
     return;
@@ -404,14 +391,13 @@ async function main(): Promise<void> {
   if (command === "preset") {
     const sub = (args[1] || "list") as "list" | "load";
     const presetId = args[2] && !args[2].startsWith("--") ? args[2] : undefined;
-    const fileArg =
-      args[3] && !args[3].startsWith("--") ? args[3] : DEFAULT_FILE;
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const fileArg = args[3] && !args[3].startsWith("--") ? args[3] : undefined;
+    const loaded = loadProtocol(fileArg, { allowMissing: sub === "load" });
 
-    const result = executePresetCommand(study, sub, presetId, options);
+    const result = executePresetCommand(loaded.study, sub, presetId, options);
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy, { replaces: true });
     }
     return;
   }
@@ -438,7 +424,7 @@ async function main(): Promise<void> {
   // 5. Info
   if (command === "info") {
     const fileArg = args[1] && !args[1].startsWith("--") ? args[1] : undefined;
-    const { study } = loadProtocolFromFileOrDefault(fileArg);
+    const { study } = loadProtocol(fileArg);
     const result = executeInfoCommand(study, options);
     console.log(result.document);
     return;
@@ -447,7 +433,7 @@ async function main(): Promise<void> {
   // 6. Validate / Lint
   if (command === "validate" || command === "lint") {
     const fileArg = args[1] && !args[1].startsWith("--") ? args[1] : undefined;
-    const { study } = loadProtocolFromFileOrDefault(fileArg);
+    const { study } = loadProtocol(fileArg);
     const result = executeValidateCommand(study, options);
     console.log(result.document);
     if (!result.success) {
@@ -470,12 +456,13 @@ async function main(): Promise<void> {
     const fileArg = args.find(
       (a, i) => i > 2 && !a.startsWith("--") && args[i - 1] !== "--name"
     );
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const loaded = loadProtocol(fileArg);
+    const { study } = loaded;
 
     const result = executeAddFormCommand(study, domain, customName, options);
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy);
     }
     return;
   }
@@ -522,7 +509,8 @@ async function main(): Promise<void> {
         args[i - 1] !== "--label" &&
         args[i - 1] !== "--tier"
     );
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const loaded = loadProtocol(fileArg);
+    const { study } = loaded;
 
     const result = executeAddFieldCommand(
       study,
@@ -544,7 +532,7 @@ async function main(): Promise<void> {
     );
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy);
     }
     return;
   }
@@ -554,11 +542,12 @@ async function main(): Promise<void> {
     const domain = args[2];
     const fileArg =
       args[3] && !args[3].startsWith("--") ? args[3] : DEFAULT_FILE;
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const loaded = loadProtocol(fileArg);
+    const { study } = loaded;
     const result = executeRemoveFormCommand(study, domain, options);
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy);
     }
     return;
   }
@@ -568,7 +557,8 @@ async function main(): Promise<void> {
     const varName = args[3];
     const fileArg =
       args[4] && !args[4].startsWith("--") ? args[4] : DEFAULT_FILE;
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const loaded = loadProtocol(fileArg);
+    const { study } = loaded;
     const result = executeRemoveFieldCommand(
       study,
       formDomain,
@@ -577,7 +567,7 @@ async function main(): Promise<void> {
     );
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy);
     }
     return;
   }
@@ -593,12 +583,13 @@ async function main(): Promise<void> {
         args[i - 1] !== "--win" &&
         a.endsWith(".json")
     );
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const loaded = loadProtocol(fileArg);
+    const { study } = loaded;
     const visitArgs = args.slice(2).filter((a) => a !== fileArg);
     const result = executeVisitCommand(study, sub, visitArgs, options);
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy);
     }
     return;
   }
@@ -614,12 +605,13 @@ async function main(): Promise<void> {
         args[i - 1] !== "--msg" &&
         a.endsWith(".json")
     );
-    const { study, path: filePath } = loadProtocolFromFileOrDefault(fileArg);
+    const loaded = loadProtocol(fileArg);
+    const { study } = loaded;
     const ruleArgs = args.slice(2).filter((a) => a !== fileArg);
     const result = executeRuleCommand(study, sub, ruleArgs, options);
     console.log(result.document);
     if (result.updatedStudy && !options.dryRun) {
-      saveProtocolToFile(filePath, result.updatedStudy);
+      saveProtocol(loaded, result.updatedStudy);
     }
     return;
   }
@@ -640,7 +632,7 @@ async function main(): Promise<void> {
         args[i - 1] !== "--format" &&
         args[i - 1] !== "--out"
     );
-    const { study } = loadProtocolFromFileOrDefault(fileArg);
+    const { study } = loadProtocol(fileArg);
 
     const result = executeExportCommand(study, fmt, options);
     if (!result.success) {
@@ -682,6 +674,10 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(`${ansi.brightRed}Fatal error:${ansi.reset}`, err);
+  if (err instanceof CrfInputError) {
+    console.error(`${ansi.brightRed}${err.message}${ansi.reset}`);
+  } else {
+    console.error(`${ansi.brightRed}Fatal error:${ansi.reset}`, err);
+  }
   process.exit(1);
 });

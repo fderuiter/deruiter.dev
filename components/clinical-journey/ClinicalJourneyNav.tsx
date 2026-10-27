@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import {
   CLINICAL_JOURNEY,
   JOURNEY_EVIDENCE_LABELS,
@@ -95,20 +95,20 @@ export function ClinicalJourneyNav({
         {(previous || next) && (
           <div className="flex w-full min-w-0 flex-wrap items-center gap-x-4 sm:ml-auto sm:w-auto">
             {previous && (
-              <Link
+              <IntentLink
                 href={previous.href}
                 className={`hidden min-h-11 items-center break-words sm:inline-flex ${LINK}`}
               >
                 ← Previous step: {previous.title}
-              </Link>
+              </IntentLink>
             )}
             {next && (
-              <Link
+              <IntentLink
                 href={next.href}
                 className={`inline-flex min-h-11 items-center break-words text-amber-300 hover:text-amber-200 ${LINK}`}
               >
                 Next step: {next.title} →
-              </Link>
+              </IntentLink>
             )}
           </div>
         )}
@@ -130,13 +130,13 @@ export function ClinicalJourneyNav({
                 {item.title}
               </span>
             ) : (
-              <Link href={item.href} className={`break-words ${LINK}`}>
+              <IntentLink href={item.href} className={`break-words ${LINK}`}>
                 {position + 1}.{" "}
                 <span className={compact ? "sr-only" : undefined}>
                   {item.stage}:{" "}
                 </span>
                 {item.title}
-              </Link>
+              </IntentLink>
             )}
           </li>
         ))}
@@ -158,9 +158,9 @@ export function ClinicalJourneyNav({
             <>
               This case study describes one of Fred&apos;s own projects: real
               code, not the synthetic demo. The demo for the same step is{" "}
-              <Link href={step.href} className={`text-slate-100 ${LINK}`}>
+              <IntentLink href={step.href} className={`text-slate-100 ${LINK}`}>
                 {step.title}
-              </Link>
+              </IntentLink>
               .
             </>
           )}
@@ -169,12 +169,12 @@ export function ClinicalJourneyNav({
           <ul className="mt-3 space-y-1 break-words">
             {related.map((study) => (
               <li key={study.slug}>
-                <Link
+                <IntentLink
                   href={`/case-studies/${study.slug}`}
                   className={`text-slate-100 ${LINK}`}
                 >
                   {study.title} case study
-                </Link>{" "}
+                </IntentLink>{" "}
                 <span className="text-slate-400">
                   ({JOURNEY_EVIDENCE_LABELS["own-project"]}): {study.relation}
                 </span>
@@ -182,9 +182,12 @@ export function ClinicalJourneyNav({
             ))}
             {games.map((game) => (
               <li key={game.href}>
-                <Link href={game.href} className={`text-slate-100 ${LINK}`}>
+                <IntentLink
+                  href={game.href}
+                  className={`text-slate-100 ${LINK}`}
+                >
                   {game.title}
-                </Link>{" "}
+                </IntentLink>{" "}
                 <span className="text-slate-400">
                   ({RELATED_GAME_LABEL}): {game.relation}
                 </span>

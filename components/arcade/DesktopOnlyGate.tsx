@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import Image from "next/image";
 import {
   IconArrowRight,
@@ -160,7 +160,7 @@ export function DesktopOnlyGate({ gameId, children }: DesktopOnlyGateProps) {
               <ul className="mt-2 flex flex-col gap-2">
                 {phonePicks(gameId).map((game) => (
                   <li key={game.href}>
-                    <Link
+                    <IntentLink
                       href={game.href}
                       className="flex min-h-[48px] items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-[#0d0e11] px-3 py-2 active:scale-[0.98]"
                     >
@@ -176,7 +176,7 @@ export function DesktopOnlyGate({ gameId, children }: DesktopOnlyGateProps) {
                         className="h-4 w-4 shrink-0 text-zinc-400"
                         aria-hidden="true"
                       />
-                    </Link>
+                    </IntentLink>
                   </li>
                 ))}
               </ul>

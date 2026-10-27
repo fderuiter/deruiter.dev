@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
   MEME_QUOTES,
@@ -314,13 +314,13 @@ export const MemeVaultClient: React.FC = () => {
     >
       {/* Navigation Breadcrumb & Chaos Trigger */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <Link
+        <IntentLink
           href="/arcade"
           className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-100 transition-colors pointer-coarse:min-h-11"
         >
           <IconArrowLeft className="w-4 h-4" />
           <span>Back to Arcade Hub</span>
-        </Link>
+        </IntentLink>
         <Breadcrumbs path="/arcade/meme-vault" className="mr-auto" />
 
         <div className="flex flex-wrap items-center gap-2">
@@ -602,12 +602,12 @@ export const MemeVaultClient: React.FC = () => {
         <p className="mb-4 text-xs text-zinc-400 font-sans">
           A gallery of the terminal&apos;s ASCII art. It does not award
           trophies. Type the commands in the{" "}
-          <Link
+          <IntentLink
             href={SANDBOX_TERMINAL_HREF}
             className="underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
           >
             sample commands terminal
-          </Link>{" "}
+          </IntentLink>{" "}
           to earn them.
         </p>
 

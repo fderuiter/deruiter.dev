@@ -1,7 +1,10 @@
+import { createUsdmHandoff, readUsdmHandoff } from "@/lib/clinical-standards";
+
 /**
  * Carries a study from CRF Studio to /study-data within one browser tab.
  *
- * A USDM v4 export is too large for a URL, so CRF Studio writes it to
+ * A USDM v4 export is too large for a URL, so CRF Studio wraps it in the
+ * shared USDM hand-off envelope (`createUsdmHandoff`, #3083), writes that to
  * `sessionStorage` under one versioned key and navigates to
  * `/study-data?source=crf`; the page takes it once and removes it. Nothing
  * leaves the browser and nothing outlives the tab. Storage access is guarded
@@ -10,19 +13,13 @@
  */
 
 /** The sessionStorage key. Bump the version if the payload shape changes. */
-export const STUDY_DATA_HANDOFF_KEY = "study-data:handoff:v1";
+export const STUDY_DATA_HANDOFF_KEY = "study-data:handoff:v2";
 
 /** Where CRF Studio sends the visitor after storing the study. */
 export const STUDY_DATA_HANDOFF_PATH = "/study-data?source=crf";
 
 /** The `source` query value that tells /study-data to look for a study. */
 export const STUDY_DATA_HANDOFF_SOURCE = "crf";
-
-interface StoredHandoff {
-  readonly version: 1;
-  readonly source: "crf-studio";
-  readonly usdm: unknown;
-}
 
 function storage(): Storage | null {
   try {
@@ -51,7 +48,10 @@ type StoreHandoffFailure = "unavailable" | "too-large";
 export function storeStudyHandoff(usdm: unknown): StoreHandoffFailure | null {
   const store = storage();
   if (!store) return "unavailable";
-  const payload: StoredHandoff = { version: 1, source: "crf-studio", usdm };
+  const payload = createUsdmHandoff(usdm, {
+    source: "crf-studio",
+    target: "study-data",
+  });
   try {
     store.setItem(STUDY_DATA_HANDOFF_KEY, JSON.stringify(payload));
     return null;
@@ -81,11 +81,11 @@ export function takeStudyHandoff(): TakenHandoff {
   }
   if (raw === null) return { status: "missing" };
   try {
-    const parsed = JSON.parse(raw) as Partial<StoredHandoff> | null;
-    if (parsed?.version !== 1 || parsed.source !== "crf-studio") {
+    const read = readUsdmHandoff(JSON.parse(raw), "study-data");
+    if (read.status !== "ok" || read.envelope.source !== "crf-studio") {
       return { status: "unreadable" };
     }
-    return { status: "found", usdm: parsed.usdm };
+    return { status: "found", usdm: read.envelope.usdm };
   } catch {
     return { status: "unreadable" };
   }

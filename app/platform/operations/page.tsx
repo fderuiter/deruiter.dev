@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { OperationsDashboard } from "@/components/platform/operations/OperationsDashboard";
 import {
@@ -44,17 +44,17 @@ export default function PlatformOperationsPage() {
           metric registry, and every chart has its data table. A study&apos;s
           Risk tab shows its key risk indicators, quality tolerance limits and
           central statistical monitoring. Every study side by side is on the{" "}
-          <Link href="/platform/portfolio" className={LINK}>
+          <IntentLink href="/platform/portfolio" className={LINK}>
             portfolio dashboard
-          </Link>
+          </IntentLink>
           , a question of your own goes to the{" "}
-          <Link href="/platform/explore" className={LINK}>
+          <IntentLink href="/platform/explore" className={LINK}>
             metrics explorer
-          </Link>
+          </IntentLink>
           , and each metric&apos;s definition and owner are in the{" "}
-          <Link href="/platform/governance" className={LINK}>
+          <IntentLink href="/platform/governance" className={LINK}>
             data catalog
-          </Link>
+          </IntentLink>
           .
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">

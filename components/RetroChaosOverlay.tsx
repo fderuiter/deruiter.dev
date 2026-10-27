@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useKonamiCode } from "@/hooks/useKonamiCode";
@@ -172,7 +172,7 @@ export const RetroChaosOverlay: React.FC = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               {!onVaultPage && (
-                <Link
+                <IntentLink
                   href={MEME_VAULT_PATH}
                   onClick={() => {
                     setIsOpen(false);
@@ -182,7 +182,7 @@ export const RetroChaosOverlay: React.FC = () => {
                 >
                   <IconDeviceGamepad2 className="w-4 h-4" />
                   Enter Secret Meme Vault
-                </Link>
+                </IntentLink>
               )}
               <button
                 onClick={() => {

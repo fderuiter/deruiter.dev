@@ -22,7 +22,8 @@ import {
  *
  * `cdisc-site`: the standard's public page on cdisc.org, whose version table
  * lists each release as text such as `SDTMIG v3.4`. `labels` are the exact
- * text before ` v`; the highest version under any of them is the newest.
+ * text before the version (`SDTMIG`); the highest version under any of them
+ * is the newest.
  *
  * `git-tags`: a CDISC repository on GitHub whose release tags are `vX.Y.Z`.
  */

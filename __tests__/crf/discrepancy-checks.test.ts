@@ -7,7 +7,7 @@ import {
   getRuleGroups,
   evaluateRuleResult,
   explainRule,
-} from "@/lib/crf/ast-evaluator";
+} from "@/lib/crf";
 import {
   CRFField,
   EditCheckRule,

@@ -21,11 +21,11 @@ import {
   IconAlertTriangle,
 } from "@tabler/icons-react";
 import { StudyProtocol, StudioMode, StudyVisit } from "@/lib/crf/types";
-import { formatVisitWindow } from "@/lib/crf/visit-window";
 import {
+  formatVisitWindow,
   StudyProtocolEngine,
   CDASH_DOMAIN_CATALOG,
-} from "@/lib/crf/study-engine";
+} from "@/lib/crf";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { cloneDeep } from "@/lib/utils";
 

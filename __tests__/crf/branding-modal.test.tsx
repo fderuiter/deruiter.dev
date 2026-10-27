@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { BrandingConfigModal } from "@/components/crf/Branding/BrandingConfigModal";
-import { DEFAULT_STUDY_BRANDING } from "@/lib/crf/branding-defaults";
+import { DEFAULT_STUDY_BRANDING } from "@/lib/crf";
 
 describe("BrandingConfigModal Component", () => {
   let container: HTMLDivElement;

@@ -18,25 +18,21 @@ import {
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol, StudyBaseline } from "@/lib/crf/types";
-import { listStudyBaselines } from "@/lib/crf/study-baselines";
 import {
+  listStudyBaselines,
   MAX_FILE_SIZE_BYTES,
   detectAndParseStudyFile,
-} from "@/lib/crf/file-ingestion";
-import {
   compareStudyToBaseline,
   describeBaselineDiffCategory,
   describeBaselineDiffChangeType,
   type BaselineDiffEntry,
   type BaselineDiffCategory,
   type BaselineComparisonResult,
-} from "@/lib/crf/study-baseline-diff";
-import {
   exportBaselineDiffCsv,
   exportBaselineDiffJson,
   exportBaselineDiffText,
   serializeBaselineDiffToText,
-} from "@/lib/crf/export-baseline-diff";
+} from "@/lib/crf";
 
 export interface BaselineCompareNavigationTarget {
   mode: "designer" | "rules" | "matrix";

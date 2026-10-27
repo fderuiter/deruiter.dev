@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StudyProtocol } from "@/lib/crf/types";
-import { saveStudyDraft } from "@/lib/crf/study-draft-storage";
+import { saveStudyDraft } from "@/lib/crf";
 import { downloadFile } from "@/lib/download";
 
 const AUTOSAVE_DEBOUNCE_MS = 800;
@@ -19,7 +19,7 @@ export interface UseStudyAutosaveResult {
 
 /**
  * Debounces writes of `study` to the acknowledged local draft (see
- * lib/crf/study-draft-storage.ts) and exposes a saving/saved/error status so
+ * lib/crf/internal/study-draft-storage.ts) and exposes a saving/saved/error status so
  * the studio can show whether the author's latest change is safely stored.
  */
 export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {

@@ -9,7 +9,7 @@ import {
   calculateBaselineDrift,
   calculateMilestoneForecasts,
   CohortForecastParameters,
-} from "@/lib/crf/visit-window";
+} from "@/lib/crf";
 import {
   IconCalendar,
   IconPlus,

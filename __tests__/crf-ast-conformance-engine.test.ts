@@ -15,7 +15,7 @@ import {
   RecordedRuleViolation,
 } from "../lib/clinical-trial-chaos/types";
 import { StudyProtocol, EditCheckRule } from "../lib/crf/types";
-import { StudyProtocolEngine } from "../lib/crf/study-engine";
+import { StudyProtocolEngine } from "../lib/crf";
 
 describe("Interactive AST Rule & Live Conformance Engine", () => {
   let mockProtocol: StudyProtocol;
@@ -85,13 +85,21 @@ describe("Interactive AST Rule & Live Conformance Engine", () => {
     };
 
     // Correct choice evaluation via AST
-    const validResult = validateObservationChoice(obsWithAstRule, "120 mmHg", mockProtocol);
+    const validResult = validateObservationChoice(
+      obsWithAstRule,
+      "120 mmHg",
+      mockProtocol
+    );
     expect(validResult.isAstEvaluated).toBe(true);
     expect(validResult.isValid).toBe(true);
     expect(validResult.explanation).toBeDefined();
 
     // Incorrect choice evaluation via AST
-    const invalidResult = validateObservationChoice(obsWithAstRule, "150 mmHg", mockProtocol);
+    const invalidResult = validateObservationChoice(
+      obsWithAstRule,
+      "150 mmHg",
+      mockProtocol
+    );
     expect(invalidResult.isAstEvaluated).toBe(true);
     expect(invalidResult.isValid).toBe(false);
     expect(invalidResult.explanation).toContain("FAILED");
@@ -106,7 +114,12 @@ describe("Interactive AST Rule & Live Conformance Engine", () => {
       expect(JSON.parse(loaded!).protocolNumber).toBe("AST-ONC-2026");
     }
 
-    const subjectFromProtocol = generateClinicalSubjectFromProtocol(mockProtocol, 0.5, false, 201);
+    const subjectFromProtocol = generateClinicalSubjectFromProtocol(
+      mockProtocol,
+      0.5,
+      false,
+      201
+    );
     expect(subjectFromProtocol.observations.length).toBeGreaterThan(0);
     expect(subjectFromProtocol.observations[0].astRule).toBeDefined();
   });
@@ -145,8 +158,13 @@ describe("Interactive AST Rule & Live Conformance Engine", () => {
     expect(invalidResult.isValid).toBe(false);
     expect(invalidResult.suspicionDelta).toBeGreaterThan(0);
 
-    const updatedSuspicion = Math.min(100, initialAuditor.suspicion + invalidResult.suspicionDelta);
-    expect(updatedSuspicion).toBe(initialAuditor.suspicion + invalidResult.suspicionDelta);
+    const updatedSuspicion = Math.min(
+      100,
+      initialAuditor.suspicion + invalidResult.suspicionDelta
+    );
+    expect(updatedSuspicion).toBe(
+      initialAuditor.suspicion + invalidResult.suspicionDelta
+    );
   });
 
   it("Criteria 4: CDISC conformance errors register in the post-game regulatory inspection report", () => {
@@ -171,13 +189,20 @@ describe("Interactive AST Rule & Live Conformance Engine", () => {
         subjectLabel: "SUBJ-1002",
         field: "Sex at Birth",
         selectedChoice: "Male",
-        message: "CDISC Controlled Terminology requires single-letter 'M' or 'F'",
+        message:
+          "CDISC Controlled Terminology requires single-letter 'M' or 'F'",
         domain: "DM",
         timestamp: new Date().toISOString(),
       },
     ];
 
-    const report = generateBIMOReport(scoreState, auditorState, [], recordedViolations, mockProtocol);
+    const report = generateBIMOReport(
+      scoreState,
+      auditorState,
+      [],
+      recordedViolations,
+      mockProtocol
+    );
     expect(report.findings.length).toBeGreaterThanOrEqual(2);
 
     const astFinding = report.findings.find((f) => f.id.startsWith("FND-AST"));
@@ -185,7 +210,9 @@ describe("Interactive AST Rule & Live Conformance Engine", () => {
     expect(astFinding?.category).toBe("Protocol Compliance");
     expect(astFinding?.description).toContain("SUBJ-1001");
 
-    const cdiscFinding = report.findings.find((f) => f.id.startsWith("FND-CDISC"));
+    const cdiscFinding = report.findings.find((f) =>
+      f.id.startsWith("FND-CDISC")
+    );
     expect(cdiscFinding).toBeDefined();
     expect(cdiscFinding?.category).toBe("Data Integrity");
     expect(cdiscFinding?.description).toContain("SUBJ-1002");
@@ -200,7 +227,10 @@ describe("Interactive AST Rule & Live Conformance Engine", () => {
     expect(fallbackSubject.observations[0].astRule).toBeDefined();
 
     // Choice validation still evaluates via AST condition engine
-    const choiceRes = validateObservationChoice(fallbackSubject.observations[0], fallbackSubject.observations[0].rawValue);
+    const choiceRes = validateObservationChoice(
+      fallbackSubject.observations[0],
+      fallbackSubject.observations[0].rawValue
+    );
     expect(choiceRes.isAstEvaluated).toBe(true);
   });
 });

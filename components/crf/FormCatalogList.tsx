@@ -7,7 +7,7 @@ import {
   searchFormCatalog,
   type FormCatalogEntry,
   type FormCatalogSource,
-} from "@/lib/crf/form-catalog";
+} from "@/lib/crf";
 
 /** Drag payload type for a catalog form dropped on a visit. */
 export const CATALOG_DRAG_TYPE = "catalog";

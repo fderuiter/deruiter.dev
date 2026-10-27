@@ -3,7 +3,7 @@ import {
   PRESET_ID_STAMP,
   STANDARD_CODELISTS,
   scaffoldCdashDomain,
-} from "../cdisc-cdash-library";
+} from "../internal/cdisc-cdash-library";
 
 export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
   id: "study_dev_valve_001",

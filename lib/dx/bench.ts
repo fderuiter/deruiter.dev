@@ -12,7 +12,7 @@ import {
   type RichInlineLineRange,
 } from "@chenglou/pretext/rich-inline";
 import { scanFile } from "../security-scan";
-import { evaluateFormula, lintFormula } from "../crf/ast-evaluator";
+import { evaluateFormula, lintFormula } from "../crf";
 import {
   parseFormula,
   extractVariables,

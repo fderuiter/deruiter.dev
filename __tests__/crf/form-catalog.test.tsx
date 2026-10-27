@@ -11,9 +11,9 @@ import {
   catalogBlockCommand,
   instantiateCatalogForm,
   searchFormCatalog,
-} from "@/lib/crf/form-catalog";
-import { CDASH_DOMAIN_CATALOG } from "@/lib/crf/study-engine";
-import { CLINICAL_SMART_BLOCKS } from "@/lib/crf/smart-blocks-engine";
+  CDASH_DOMAIN_CATALOG,
+  CLINICAL_SMART_BLOCKS,
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { FormCatalogList } from "@/components/crf/FormCatalogList";
 import { FormCatalogModal } from "@/components/crf/FormCatalogModal";

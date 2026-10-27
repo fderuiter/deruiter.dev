@@ -9,8 +9,10 @@ import {
   StudyReviewActor,
   StudyReviewThread,
   StudyProtocolEngine,
+  computeFormHealthMetrics,
+  generateCliCommandForField,
+  generateCliCommandForForm,
 } from "@/lib/crf";
-import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import { FieldPropertiesTab } from "./FieldPropertiesTab";
 import { LogicRulesTab } from "./LogicRulesTab";
 import { CdiscMetadataTab } from "./CdiscMetadataTab";
@@ -23,10 +25,6 @@ import {
   IconCheck,
   IconCopy,
 } from "@tabler/icons-react";
-import {
-  generateCliCommandForField,
-  generateCliCommandForForm,
-} from "@/lib/crf/universal-schema";
 import { useClipboard } from "@/hooks/useClipboard";
 
 interface InspectorPanelProps {

@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { LogicRulesTab } from "@/components/crf/RightInspector/LogicRulesTab";
 import { CRFForm, EditCheckRule } from "@/lib/crf/types";
-import { evaluateRuleResult, explainRule } from "@/lib/crf/ast-evaluator";
+import { evaluateRuleResult, explainRule } from "@/lib/crf";
 
 // #540: demonstrates the "edit -> test values -> explained result -> native
 // reopen with equivalent meaning" journey the acceptance criteria asks for,

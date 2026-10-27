@@ -9,7 +9,7 @@ import {
   generateRDataStepForForm,
   exportFormToR,
   exportStudyToR,
-} from "@/lib/crf/export-r";
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { StudyProtocol, CRFForm, CRFField } from "@/lib/crf/types";
 

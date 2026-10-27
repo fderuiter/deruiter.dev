@@ -3,15 +3,13 @@ import { describe, it, expect } from "vitest";
 import {
   StudyProtocolEngine,
   appendProtocolAuditEntry,
-} from "@/lib/crf/study-engine";
-import { StudyAuditor } from "@/lib/crf/study-auditor";
-import {
+  StudyAuditor,
   exportUniversalCrfJson,
   exportUniversalCrfYaml,
   validateUniversalCrf,
   parseUniversalCrf,
-} from "@/lib/crf/universal-schema";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
+  exportStudyToCdiscOdmXml,
+} from "@/lib/crf";
 import type { StudyProtocol } from "@/lib/crf/types";
 
 function createMockStudy(): StudyProtocol {

@@ -21,7 +21,7 @@ import {
   SDTM_COL_WIDTH_4,
   SDTM_COL_WIDTH_5,
   SDTM_COL_WIDTH_6,
-} from "@/lib/crf";
+} from "@/lib/crf/export-docx";
 import { ONCOLOGY_RECIST_PRESET, CNS_NEURO_PRESET } from "@/lib/crf/presets";
 import { StudyBranding } from "@/lib/crf/types";
 import {

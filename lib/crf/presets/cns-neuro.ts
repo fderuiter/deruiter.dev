@@ -3,7 +3,7 @@ import {
   STANDARD_CODELISTS,
   PRESET_ID_STAMP,
   scaffoldCdashDomain,
-} from "../cdisc-cdash-library";
+} from "../internal/cdisc-cdash-library";
 
 const MMSE_FORM: CRFForm = {
   id: "form_mmse_cns",

@@ -17,8 +17,8 @@ import {
   type CRFField,
   type PersonalLibraryEntry,
   type StudyProtocol,
+  insertLibraryEntryWithLineage,
 } from "@/lib/crf";
-import { insertLibraryEntryWithLineage } from "@/lib/crf/library-upgrade";
 
 /**
  * #681 UI journey: nonconflicting upgrade, conflicting customization, cancel,

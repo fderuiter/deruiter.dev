@@ -6,4 +6,4 @@
 
 # Type Alias: LintFormulaResult
 
-> **LintFormulaResult** = [`ServiceResult`](../../../../service-result/type-aliases/ServiceResult.md)\<[`FormulaLintResult`](../../../../../crf/formula-linter/interfaces/FormulaLintResult.md), [`LintFormulaErrorCode`](LintFormulaErrorCode.md)\>
+> **LintFormulaResult** = [`ServiceResult`](../../../../service-result/type-aliases/ServiceResult.md)\<[`FormulaLintResult`](../../../../../crf/internal/formula-linter/interfaces/FormulaLintResult.md), [`LintFormulaErrorCode`](LintFormulaErrorCode.md)\>

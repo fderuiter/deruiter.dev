@@ -6,19 +6,15 @@ import {
   validatePrecisionDate,
   validateCdashVariableName,
   isCdiscNullFlavor,
-} from "@/lib/crf/precision-date";
-import {
-  StudyProtocol,
-} from "@/lib/crf/types";
-import {
   UniversalStudyProtocolSchema,
   diffUniversalCrfStudies,
-} from "@/lib/crf/universal-schema";
-import { exportStudyToSas } from "@/lib/crf/export-sas";
-import { exportStudyToR } from "@/lib/crf/export-r";
-import { serializeStudyToOdmXml } from "@/lib/crf/odm-xml-serializer";
-import { exportStudyToFhirQuestionnaire } from "@/lib/crf/fhir-questionnaire";
-import { generateAcrfHtml } from "@/lib/crf/export-acrf";
+  exportStudyToSas,
+  exportStudyToR,
+  serializeStudyToOdmXml,
+  exportStudyToFhirQuestionnaire,
+  generateAcrfHtml,
+} from "@/lib/crf";
+import { StudyProtocol } from "@/lib/crf/types";
 
 describe("CRF Studio: Precision Dates & ISO 8601 Parsing", () => {
   it("parses full ISO 8601 date YYYY-MM-DD", () => {
@@ -142,7 +138,9 @@ describe("CRF Studio: CDASH / SAS Variable Naming Validation", () => {
     // Disallowed characters
     const hyphen = validateCdashVariableName("AE-TERM");
     expect(hyphen.isValid).toBe(false);
-    expect(hyphen.error).toContain("uppercase letters, digits, and underscores");
+    expect(hyphen.error).toContain(
+      "uppercase letters, digits, and underscores"
+    );
 
     // Empty
     const empty = validateCdashVariableName("");

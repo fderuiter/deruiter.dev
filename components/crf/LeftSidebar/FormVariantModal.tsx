@@ -8,7 +8,7 @@ import {
   getFormUses,
   previewFormVariant,
   type FormUse,
-} from "@/lib/crf/form-variants";
+} from "@/lib/crf";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface FormVariantModalProps {

@@ -10,10 +10,7 @@ import {
   IconLoader2,
   IconX,
 } from "@tabler/icons-react";
-import {
-  detectAndParseStudyFile,
-  ParsedStudyFileResult,
-} from "@/lib/crf/file-ingestion";
+import { detectAndParseStudyFile, ParsedStudyFileResult } from "@/lib/crf";
 import { NoPhiNotice } from "./NoPhiNotice";
 
 interface ImportDropzoneProps {

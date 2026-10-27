@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { buildFormCatalog } from "@/lib/crf/form-catalog";
+import { buildFormCatalog } from "@/lib/crf";
 import { fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 

@@ -1,5 +1,5 @@
 import { StudyProtocol } from "../types";
-import { STANDARD_CODELISTS } from "../cdisc-cdash-library";
+import { STANDARD_CODELISTS } from "../internal/cdisc-cdash-library";
 
 /**
  * Pre-Validated Clinical Instruments Study Preset

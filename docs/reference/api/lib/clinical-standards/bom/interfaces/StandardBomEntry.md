@@ -14,6 +14,28 @@ A standard's entry with its pinned and newest published version.
 
 ## Properties
 
+### artifactType
+
+> `readonly` **artifactType**: [`StandardArtifactType`](../type-aliases/StandardArtifactType.md)
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`artifactType`](StandardBomSpec.md#artifacttype)
+
+***
+
+### capabilities
+
+> `readonly` **capabilities**: `Readonly`\<`Partial`\<`Record`\<[`StandardCapability`](../type-aliases/StandardCapability.md), [`CapabilitySupport`](CapabilitySupport.md)\>\>\>
+
+What the site does with it; a capability left out is `no`.
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`capabilities`](StandardBomSpec.md#capabilities)
+
+***
+
 ### checks
 
 > `readonly` **checks**: readonly [`StandardCheck`](StandardCheck.md)[]
@@ -21,6 +43,40 @@ A standard's entry with its pinned and newest published version.
 #### Inherited from
 
 [`StandardBomSpec`](StandardBomSpec.md).[`checks`](StandardBomSpec.md#checks)
+
+***
+
+### coverage
+
+> `readonly` **coverage**: `string`
+
+What part of the standard the site covers, and what it does not.
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`coverage`](StandardBomSpec.md#coverage)
+
+***
+
+### dependsOn
+
+> `readonly` **dependsOn**: readonly [`ProfileStandard`](../../profile/type-aliases/ProfileStandard.md)[]
+
+Other pinned standards this one is built on or applies to.
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`dependsOn`](StandardBomSpec.md#dependson)
+
+***
+
+### family
+
+> `readonly` **family**: [`StandardFamily`](../type-aliases/StandardFamily.md)
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`family`](StandardBomSpec.md#family)
 
 ***
 
@@ -47,6 +103,16 @@ published. Absent: a newer published version is an upgrade to make.
 
 ***
 
+### lifecycle
+
+> `readonly` **lifecycle**: [`StandardLifecycle`](../type-aliases/StandardLifecycle.md)
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`lifecycle`](StandardBomSpec.md#lifecycle)
+
+***
+
 ### name
 
 > `readonly` **name**: `string`
@@ -68,6 +134,18 @@ The standard's full name.
 ### published
 
 > `readonly` **published**: `string`
+
+***
+
+### publisher
+
+> `readonly` **publisher**: `"CDISC"`
+
+Every standard in the profile is published by CDISC.
+
+#### Inherited from
+
+[`StandardBomSpec`](StandardBomSpec.md).[`publisher`](StandardBomSpec.md#publisher)
 
 ***
 

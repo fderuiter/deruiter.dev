@@ -1,10 +1,11 @@
 "use client";
 
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -12,11 +13,14 @@ import {
 } from "react";
 import {
   MESSY_DATA_SCENARIOS,
+  coreViewReport,
+  loadRecordedCoreFindings,
   type DataLayer,
   type LineageOrigin,
   type LineageRecord,
   type LineageResult,
   type LineageTrace,
+  type RecordedFindings,
   type ScenarioId,
 } from "@/lib/study-data";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
@@ -201,6 +205,38 @@ export function StudyDataWorkbench({
     busy: PackageKind | null;
     message: string;
   }>({ busy: null, message: "" });
+
+  const [recorded, setRecorded] = useState<{
+    findings: RecordedFindings | null;
+    failed: boolean;
+  }>({ findings: null, failed: false });
+
+  // CORE's recorded findings load as their own chunk, and only once the
+  // conformance tab is opened.
+  useEffect(() => {
+    if (tab !== "conformance" || recorded.findings || recorded.failed) return;
+    let live = true;
+    loadRecordedCoreFindings().then(
+      (findings) => {
+        if (live) setRecorded({ findings, failed: false });
+      },
+      () => {
+        if (live) setRecorded({ findings: null, failed: true });
+      }
+    );
+    return () => {
+      live = false;
+    };
+  }, [tab, recorded.findings, recorded.failed]);
+
+  const coreView = summary?.coreView ?? null;
+  const coreReport = useMemo(
+    () =>
+      recorded.findings && coreView
+        ? coreViewReport(recorded.findings, coreView)
+        : null,
+    [recorded.findings, coreView]
+  );
 
   const client = useCallback((): PipelineClient => {
     clientRef.current ??= createPipelineClient();
@@ -806,6 +842,13 @@ export function StudyDataWorkbench({
               onTrace={(layer, dataset, row) =>
                 traceFrom({ kind: "record", layer, dataset, row })
               }
+              core={{
+                report: coreReport,
+                loading: recorded.findings === null && !recorded.failed,
+                failed: recorded.failed,
+                defaults,
+                twins: recorded.findings?.twins ?? {},
+              }}
             />
           ) : tab === "define" ? (
             <DefineViewer define={summary.define} />

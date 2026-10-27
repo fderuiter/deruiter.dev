@@ -10,79 +10,73 @@
 
 ### AcrfHtmlOptions
 
-Re-exports [AcrfHtmlOptions](export-acrf/interfaces/AcrfHtmlOptions.md)
+Re-exports [AcrfHtmlOptions](internal/export-acrf/interfaces/AcrfHtmlOptions.md)
 
 ***
 
 ### ActorContext
 
-Re-exports [ActorContext](study-engine/type-aliases/ActorContext.md)
+Re-exports [ActorContext](internal/study-engine/type-aliases/ActorContext.md)
 
 ***
 
 ### addCalendarDaysToStudyDay
 
-Re-exports [addCalendarDaysToStudyDay](usdm-v4-schedule/functions/addCalendarDaysToStudyDay.md)
+Re-exports [addCalendarDaysToStudyDay](../clinical-standards/usdm-v4-schedule/functions/addCalendarDaysToStudyDay.md)
 
 ***
 
 ### addDaysToIsoDate
 
-Re-exports [addDaysToIsoDate](visit-window/functions/addDaysToIsoDate.md)
+Re-exports [addDaysToIsoDate](internal/visit-window/functions/addDaysToIsoDate.md)
 
 ***
 
 ### ALL\_SLASH\_COMMANDS
 
-Re-exports [ALL_SLASH_COMMANDS](smart-blocks-engine/variables/ALL_SLASH_COMMANDS.md)
+Re-exports [ALL_SLASH_COMMANDS](internal/smart-blocks-engine/variables/ALL_SLASH_COMMANDS.md)
 
 ***
 
 ### AmendedObjectImpact
 
-Re-exports [AmendedObjectImpact](scenario-impact/interfaces/AmendedObjectImpact.md)
+Re-exports [AmendedObjectImpact](internal/scenario-impact/interfaces/AmendedObjectImpact.md)
 
 ***
 
 ### analyzeScenarioImpact
 
-Re-exports [analyzeScenarioImpact](scenario-impact/functions/analyzeScenarioImpact.md)
-
-***
-
-### ANNOTATED\_COL\_WIDTH\_1
-
-Re-exports [ANNOTATED_COL_WIDTH_1](export-docx/variables/ANNOTATED_COL_WIDTH_1.md)
-
-***
-
-### ANNOTATED\_COL\_WIDTH\_2
-
-Re-exports [ANNOTATED_COL_WIDTH_2](export-docx/variables/ANNOTATED_COL_WIDTH_2.md)
-
-***
-
-### ANNOTATED\_COL\_WIDTH\_3
-
-Re-exports [ANNOTATED_COL_WIDTH_3](export-docx/variables/ANNOTATED_COL_WIDTH_3.md)
+Re-exports [analyzeScenarioImpact](internal/scenario-impact/functions/analyzeScenarioImpact.md)
 
 ***
 
 ### ansi
 
-Re-exports [ansi](cli-engine/variables/ansi.md)
+Re-exports [ansi](internal/cli-engine/variables/ansi.md)
 
 ***
 
 ### appendProtocolAuditEntry
 
-Re-exports [appendProtocolAuditEntry](study-engine/functions/appendProtocolAuditEntry.md)
+Re-exports [appendProtocolAuditEntry](internal/study-engine/functions/appendProtocolAuditEntry.md)
+
+***
+
+### applyLibraryUpgrade
+
+Re-exports [applyLibraryUpgrade](internal/library-upgrade/functions/applyLibraryUpgrade.md)
+
+***
+
+### ApplyLibraryUpgradeResult
+
+Re-exports [ApplyLibraryUpgradeResult](internal/library-upgrade/type-aliases/ApplyLibraryUpgradeResult.md)
 
 ***
 
 ### assessScenarioFreshness
 
-Re-exports [assessScenarioFreshness](scenario-impact/functions/assessScenarioFreshness.md)
+Re-exports [assessScenarioFreshness](internal/scenario-impact/functions/assessScenarioFreshness.md)
 
 ***
 
@@ -94,13 +88,13 @@ Re-exports [AstCondition](types/interfaces/AstCondition.md)
 
 ### AstConditionSchema
 
-Re-exports [AstConditionSchema](universal-schema/variables/AstConditionSchema.md)
+Re-exports [AstConditionSchema](internal/universal-schema/variables/AstConditionSchema.md)
 
 ***
 
 ### AstDebugStep
 
-Re-exports [AstDebugStep](ast-debugger/interfaces/AstDebugStep.md)
+Re-exports [AstDebugStep](internal/ast-debugger/interfaces/AstDebugStep.md)
 
 ***
 
@@ -112,19 +106,19 @@ Re-exports [AstOperator](types/type-aliases/AstOperator.md)
 
 ### AstRuleDebugTrace
 
-Re-exports [AstRuleDebugTrace](ast-debugger/interfaces/AstRuleDebugTrace.md)
+Re-exports [AstRuleDebugTrace](internal/ast-debugger/interfaces/AstRuleDebugTrace.md)
 
 ***
 
 ### ATOMIC\_SLASH\_COMMANDS
 
-Re-exports [ATOMIC_SLASH_COMMANDS](smart-blocks-engine/variables/ATOMIC_SLASH_COMMANDS.md)
+Re-exports [ATOMIC_SLASH_COMMANDS](internal/smart-blocks-engine/variables/ATOMIC_SLASH_COMMANDS.md)
 
 ***
 
 ### AuditDiagnostic
 
-Re-exports [AuditDiagnostic](study-auditor/interfaces/AuditDiagnostic.md)
+Re-exports [AuditDiagnostic](internal/study-auditor/interfaces/AuditDiagnostic.md)
 
 ***
 
@@ -136,73 +130,73 @@ Re-exports [AuditTrailEntry](types/interfaces/AuditTrailEntry.md)
 
 ### AuditTrailEntrySchema
 
-Re-exports [AuditTrailEntrySchema](universal-schema/variables/AuditTrailEntrySchema.md)
+Re-exports [AuditTrailEntrySchema](internal/universal-schema/variables/AuditTrailEntrySchema.md)
 
 ***
 
 ### autoFixAllViolations
 
-Re-exports [autoFixAllViolations](cdisc-conformance-linter/functions/autoFixAllViolations.md)
+Re-exports [autoFixAllViolations](internal/cdisc-conformance-linter/functions/autoFixAllViolations.md)
 
 ***
 
 ### autoFixViolation
 
-Re-exports [autoFixViolation](cdisc-conformance-linter/functions/autoFixViolation.md)
+Re-exports [autoFixViolation](internal/cdisc-conformance-linter/functions/autoFixViolation.md)
 
 ***
 
 ### BaseCRFFieldSchema
 
-Re-exports [BaseCRFFieldSchema](universal-schema/variables/BaseCRFFieldSchema.md)
+Re-exports [BaseCRFFieldSchema](internal/universal-schema/variables/BaseCRFFieldSchema.md)
 
 ***
 
 ### BaselineComparisonResult
 
-Re-exports [BaselineComparisonResult](study-baseline-diff/interfaces/BaselineComparisonResult.md)
+Re-exports [BaselineComparisonResult](internal/study-baseline-diff/interfaces/BaselineComparisonResult.md)
 
 ***
 
 ### BaselineComparisonSummary
 
-Re-exports [BaselineComparisonSummary](study-baseline-diff/interfaces/BaselineComparisonSummary.md)
+Re-exports [BaselineComparisonSummary](internal/study-baseline-diff/interfaces/BaselineComparisonSummary.md)
 
 ***
 
 ### BaselineDiffCategory
 
-Re-exports [BaselineDiffCategory](study-baseline-diff/type-aliases/BaselineDiffCategory.md)
+Re-exports [BaselineDiffCategory](internal/study-baseline-diff/type-aliases/BaselineDiffCategory.md)
 
 ***
 
 ### BaselineDiffCategorySummary
 
-Re-exports [BaselineDiffCategorySummary](study-baseline-diff/interfaces/BaselineDiffCategorySummary.md)
+Re-exports [BaselineDiffCategorySummary](internal/study-baseline-diff/interfaces/BaselineDiffCategorySummary.md)
 
 ***
 
 ### BaselineDiffChangeType
 
-Re-exports [BaselineDiffChangeType](study-baseline-diff/type-aliases/BaselineDiffChangeType.md)
+Re-exports [BaselineDiffChangeType](internal/study-baseline-diff/type-aliases/BaselineDiffChangeType.md)
 
 ***
 
 ### BaselineDiffEntry
 
-Re-exports [BaselineDiffEntry](study-baseline-diff/interfaces/BaselineDiffEntry.md)
+Re-exports [BaselineDiffEntry](internal/study-baseline-diff/interfaces/BaselineDiffEntry.md)
 
 ***
 
 ### BaselineDriftComparison
 
-Re-exports [BaselineDriftComparison](visit-window/interfaces/BaselineDriftComparison.md)
+Re-exports [BaselineDriftComparison](internal/visit-window/interfaces/BaselineDriftComparison.md)
 
 ***
 
 ### BaselinesExportBundle
 
-Re-exports [BaselinesExportBundle](study-baselines/interfaces/BaselinesExportBundle.md)
+Re-exports [BaselinesExportBundle](internal/study-baselines/interfaces/BaselinesExportBundle.md)
 
 ***
 
@@ -220,115 +214,139 @@ Re-exports [BiomedicalConceptProperty](types/interfaces/BiomedicalConceptPropert
 
 ### BiomedicalConceptPropertySchema
 
-Re-exports [BiomedicalConceptPropertySchema](universal-schema/variables/BiomedicalConceptPropertySchema.md)
+Re-exports [BiomedicalConceptPropertySchema](internal/universal-schema/variables/BiomedicalConceptPropertySchema.md)
 
 ***
 
 ### BiomedicalConceptSchema
 
-Re-exports [BiomedicalConceptSchema](universal-schema/variables/BiomedicalConceptSchema.md)
+Re-exports [BiomedicalConceptSchema](internal/universal-schema/variables/BiomedicalConceptSchema.md)
 
 ***
 
 ### BRANDING\_PRESETS
 
-Re-exports [BRANDING_PRESETS](branding-defaults/variables/BRANDING_PRESETS.md)
+Re-exports [BRANDING_PRESETS](internal/branding-defaults/variables/BRANDING_PRESETS.md)
 
 ***
 
 ### BrandingPalettePreset
 
-Re-exports [BrandingPalettePreset](branding-defaults/interfaces/BrandingPalettePreset.md)
+Re-exports [BrandingPalettePreset](internal/branding-defaults/interfaces/BrandingPalettePreset.md)
+
+***
+
+### buildFormCatalog
+
+Re-exports [buildFormCatalog](internal/form-catalog/functions/buildFormCatalog.md)
 
 ***
 
 ### buildReviewPackage
 
-Re-exports [buildReviewPackage](review-package/functions/buildReviewPackage.md)
+Re-exports [buildReviewPackage](internal/review-package/functions/buildReviewPackage.md)
 
 ***
 
 ### BuildReviewPackageOptions
 
-Re-exports [BuildReviewPackageOptions](review-package/interfaces/BuildReviewPackageOptions.md)
+Re-exports [BuildReviewPackageOptions](internal/review-package/interfaces/BuildReviewPackageOptions.md)
+
+***
+
+### buildRuleWireGraph
+
+Re-exports [buildRuleWireGraph](internal/rule-wires/functions/buildRuleWireGraph.md)
 
 ***
 
 ### buildSampleValue
 
-Re-exports [buildSampleValue](form-test-harness/functions/buildSampleValue.md)
+Re-exports [buildSampleValue](internal/form-test-harness/functions/buildSampleValue.md)
 
 ***
 
 ### buildScopedKey
 
-Re-exports [buildScopedKey](form-test-harness/functions/buildScopedKey.md)
+Re-exports [buildScopedKey](internal/form-test-harness/functions/buildScopedKey.md)
+
+***
+
+### buildStudyOmnibarIndex
+
+Re-exports [buildStudyOmnibarIndex](internal/study-omnibar/functions/buildStudyOmnibarIndex.md)
+
+***
+
+### BuildStudyOmnibarIndexOptions
+
+Re-exports [BuildStudyOmnibarIndexOptions](internal/study-omnibar/interfaces/BuildStudyOmnibarIndexOptions.md)
 
 ***
 
 ### calculateBaselineDrift
 
-Re-exports [calculateBaselineDrift](visit-window/functions/calculateBaselineDrift.md)
+Re-exports [calculateBaselineDrift](internal/visit-window/functions/calculateBaselineDrift.md)
 
 ***
 
 ### calculateBazettQTc
 
-Re-exports [calculateBazettQTc](expression-evaluator/functions/calculateBazettQTc.md)
+Re-exports [calculateBazettQTc](internal/expression-evaluator/functions/calculateBazettQTc.md)
 
 ***
 
 ### calculateBMI
 
-Re-exports [calculateBMI](expression-evaluator/functions/calculateBMI.md)
+Re-exports [calculateBMI](internal/expression-evaluator/functions/calculateBMI.md)
 
 ***
 
 ### calculateCockcroftGaultCrCl
 
-Re-exports [calculateCockcroftGaultCrCl](expression-evaluator/functions/calculateCockcroftGaultCrCl.md)
+Re-exports [calculateCockcroftGaultCrCl](internal/expression-evaluator/functions/calculateCockcroftGaultCrCl.md)
 
 ***
 
 ### calculateDuboisBSA
 
-Re-exports [calculateDuboisBSA](expression-evaluator/functions/calculateDuboisBSA.md)
+Re-exports [calculateDuboisBSA](internal/expression-evaluator/functions/calculateDuboisBSA.md)
 
 ***
 
 ### calculateFridericiaQTc
 
-Re-exports [calculateFridericiaQTc](expression-evaluator/functions/calculateFridericiaQTc.md)
+Re-exports [calculateFridericiaQTc](internal/expression-evaluator/functions/calculateFridericiaQTc.md)
 
 ***
 
 ### calculateMilestoneForecasts
 
-Re-exports [calculateMilestoneForecasts](visit-window/functions/calculateMilestoneForecasts.md)
+Re-exports [calculateMilestoneForecasts](internal/visit-window/functions/calculateMilestoneForecasts.md)
 
 ***
 
 ### calculateMostellerBSA
 
-Re-exports [calculateMostellerBSA](expression-evaluator/functions/calculateMostellerBSA.md)
+Re-exports [calculateMostellerBSA](internal/expression-evaluator/functions/calculateMostellerBSA.md)
 
 ***
 
 ### calculateRecistSldChange
 
-Re-exports [calculateRecistSldChange](expression-evaluator/functions/calculateRecistSldChange.md)
+Re-exports [calculateRecistSldChange](internal/expression-evaluator/functions/calculateRecistSldChange.md)
 
 ***
 
 ### calculateScheduleBounds
 
-Re-exports [calculateScheduleBounds](visit-window/functions/calculateScheduleBounds.md)
+Re-exports [calculateScheduleBounds](internal/visit-window/functions/calculateScheduleBounds.md)
 
 ***
 
 ### CalculationOutcome
 
-Re-exports [CalculationOutcome](form-test-harness/interfaces/CalculationOutcome.md)
+Re-exports [CalculationOutcome](internal/form-test-harness/interfaces/CalculationOutcome.md)
 
 ***
 
@@ -340,31 +358,37 @@ Re-exports [CalculationStatus](types/type-aliases/CalculationStatus.md)
 
 ### captureFormTemplate
 
-Re-exports [captureFormTemplate](form-templates/functions/captureFormTemplate.md)
+Re-exports [captureFormTemplate](internal/form-templates/functions/captureFormTemplate.md)
 
 ***
 
 ### captureLibraryEntry
 
-Re-exports [captureLibraryEntry](personal-library/functions/captureLibraryEntry.md)
+Re-exports [captureLibraryEntry](internal/personal-library/functions/captureLibraryEntry.md)
+
+***
+
+### catalogBlockCommand
+
+Re-exports [catalogBlockCommand](internal/form-catalog/functions/catalogBlockCommand.md)
 
 ***
 
 ### CDASH\_CORE\_DOMAIN\_VARIABLES
 
-Re-exports [CDASH_CORE_DOMAIN_VARIABLES](form-health/variables/CDASH_CORE_DOMAIN_VARIABLES.md)
+Re-exports [CDASH_CORE_DOMAIN_VARIABLES](internal/form-health/variables/CDASH_CORE_DOMAIN_VARIABLES.md)
 
 ***
 
 ### CDASH\_DOMAIN\_CATALOG
 
-Re-exports [CDASH_DOMAIN_CATALOG](study-engine/variables/CDASH_DOMAIN_CATALOG.md)
+Re-exports [CDASH_DOMAIN_CATALOG](internal/study-engine/variables/CDASH_DOMAIN_CATALOG.md)
 
 ***
 
 ### CDASH\_STANDARD\_VARIABLES
 
-Re-exports [CDASH_STANDARD_VARIABLES](cdash-domain-templates/variables/CDASH_STANDARD_VARIABLES.md)
+Re-exports [CDASH_STANDARD_VARIABLES](internal/cdash-domain-templates/variables/CDASH_STANDARD_VARIABLES.md)
 
 ***
 
@@ -376,49 +400,49 @@ Re-exports [CdashVariableMetadata](types/interfaces/CdashVariableMetadata.md)
 
 ### CdashVariableMetadataSchema
 
-Re-exports [CdashVariableMetadataSchema](universal-schema/variables/CdashVariableMetadataSchema.md)
+Re-exports [CdashVariableMetadataSchema](internal/universal-schema/variables/CdashVariableMetadataSchema.md)
 
 ***
 
 ### CDISC\_CT\_PACKAGE\_VERSION
 
-Re-exports [CDISC_CT_PACKAGE_VERSION](cdisc-controlled-terminology/variables/CDISC_CT_PACKAGE_VERSION.md)
+Re-exports [CDISC_CT_PACKAGE_VERSION](../clinical-standards/codelists/variables/CDISC_CT_PACKAGE_VERSION.md)
 
 ***
 
 ### CDISC\_NULL\_FLAVORS
 
-Re-exports [CDISC_NULL_FLAVORS](precision-date/variables/CDISC_NULL_FLAVORS.md)
+Re-exports [CDISC_NULL_FLAVORS](internal/precision-date/variables/CDISC_NULL_FLAVORS.md)
 
 ***
 
 ### CdiscNullFlavorCode
 
-Re-exports [CdiscNullFlavorCode](precision-date/type-aliases/CdiscNullFlavorCode.md)
+Re-exports [CdiscNullFlavorCode](internal/precision-date/type-aliases/CdiscNullFlavorCode.md)
 
 ***
 
 ### clearStudyBaselines
 
-Re-exports [clearStudyBaselines](study-baselines/functions/clearStudyBaselines.md)
+Re-exports [clearStudyBaselines](internal/study-baselines/functions/clearStudyBaselines.md)
 
 ***
 
 ### CliCommandResult
 
-Re-exports [CliCommandResult](cli-engine/interfaces/CliCommandResult.md)
+Re-exports [CliCommandResult](internal/cli-engine/interfaces/CliCommandResult.md)
 
 ***
 
 ### CliExecutionOptions
 
-Re-exports [CliExecutionOptions](cli-engine/interfaces/CliExecutionOptions.md)
+Re-exports [CliExecutionOptions](internal/cli-engine/interfaces/CliExecutionOptions.md)
 
 ***
 
 ### CLINICAL\_FORMULA\_PRESETS
 
-Re-exports [CLINICAL_FORMULA_PRESETS](formula-presets/variables/CLINICAL_FORMULA_PRESETS.md)
+Re-exports [CLINICAL_FORMULA_PRESETS](internal/formula-presets/variables/CLINICAL_FORMULA_PRESETS.md)
 
 ***
 
@@ -430,7 +454,7 @@ Re-exports [CLINICAL_INSTRUMENTS_PRESET](presets/clinical-instruments/variables/
 
 ### CLINICAL\_SMART\_BLOCKS
 
-Re-exports [CLINICAL_SMART_BLOCKS](smart-blocks-engine/variables/CLINICAL_SMART_BLOCKS.md)
+Re-exports [CLINICAL_SMART_BLOCKS](internal/smart-blocks-engine/variables/CLINICAL_SMART_BLOCKS.md)
 
 ***
 
@@ -442,13 +466,13 @@ Re-exports [ClinicalDataType](types/type-aliases/ClinicalDataType.md)
 
 ### ClinicalFormulaPreset
 
-Re-exports [ClinicalFormulaPreset](formula-presets/interfaces/ClinicalFormulaPreset.md)
+Re-exports [ClinicalFormulaPreset](internal/formula-presets/interfaces/ClinicalFormulaPreset.md)
 
 ***
 
 ### ClinicalSmartBlockDefinition
 
-Re-exports [ClinicalSmartBlockDefinition](smart-blocks-engine/interfaces/ClinicalSmartBlockDefinition.md)
+Re-exports [ClinicalSmartBlockDefinition](internal/smart-blocks-engine/interfaces/ClinicalSmartBlockDefinition.md)
 
 ***
 
@@ -460,61 +484,61 @@ Re-exports [CNS_NEURO_PRESET](presets/cns-neuro/variables/CNS_NEURO_PRESET.md)
 
 ### CodelistDefinition
 
-Re-exports [CodelistDefinition](types/interfaces/CodelistDefinition.md)
+Re-exports [CodelistDefinition](../clinical-standards/codelists/interfaces/CodelistDefinition.md)
 
 ***
 
 ### CodelistDefinitionSchema
 
-Re-exports [CodelistDefinitionSchema](universal-schema/variables/CodelistDefinitionSchema.md)
+Re-exports [CodelistDefinitionSchema](internal/universal-schema/variables/CodelistDefinitionSchema.md)
 
 ***
 
 ### CodelistOption
 
-Re-exports [CodelistOption](types/interfaces/CodelistOption.md)
+Re-exports [CodelistOption](../clinical-standards/codelists/interfaces/CodelistOption.md)
 
 ***
 
 ### CodelistOptionSchema
 
-Re-exports [CodelistOptionSchema](universal-schema/variables/CodelistOptionSchema.md)
+Re-exports [CodelistOptionSchema](internal/universal-schema/variables/CodelistOptionSchema.md)
 
 ***
 
 ### CohortForecastParameters
 
-Re-exports [CohortForecastParameters](visit-window/interfaces/CohortForecastParameters.md)
+Re-exports [CohortForecastParameters](internal/visit-window/interfaces/CohortForecastParameters.md)
 
 ***
 
 ### collectFormIdentities
 
-Re-exports [collectFormIdentities](form-variants/functions/collectFormIdentities.md)
+Re-exports [collectFormIdentities](internal/form-variants/functions/collectFormIdentities.md)
 
 ***
 
 ### collectReviewPackageFindings
 
-Re-exports [collectReviewPackageFindings](review-package/functions/collectReviewPackageFindings.md)
+Re-exports [collectReviewPackageFindings](internal/review-package/functions/collectReviewPackageFindings.md)
 
 ***
 
 ### collectScenarioDependencies
 
-Re-exports [collectScenarioDependencies](scenario-impact/functions/collectScenarioDependencies.md)
+Re-exports [collectScenarioDependencies](internal/scenario-impact/functions/collectScenarioDependencies.md)
 
 ***
 
 ### combineConditionResults
 
-Re-exports [combineConditionResults](expression-evaluator/functions/combineConditionResults.md)
+Re-exports [combineConditionResults](internal/expression-evaluator/functions/combineConditionResults.md)
 
 ***
 
 ### compareStudyToBaseline
 
-Re-exports [compareStudyToBaseline](study-baseline-diff/functions/compareStudyToBaseline.md)
+Re-exports [compareStudyToBaseline](internal/study-baseline-diff/functions/compareStudyToBaseline.md)
 
 ***
 
@@ -532,43 +556,49 @@ Re-exports [ComplianceViolation](types/interfaces/ComplianceViolation.md)
 
 ### computeFormHealthMetrics
 
-Re-exports [computeFormHealthMetrics](form-health/functions/computeFormHealthMetrics.md)
+Re-exports [computeFormHealthMetrics](internal/form-health/functions/computeFormHealthMetrics.md)
 
 ***
 
 ### computeStudyChecksum
 
-Re-exports [computeStudyChecksum](study-baselines/functions/computeStudyChecksum.md)
+Re-exports [computeStudyChecksum](internal/study-baselines/functions/computeStudyChecksum.md)
 
 ***
 
 ### CONDITIONAL\_PRECEDENCE\_NOTES
 
-Re-exports [CONDITIONAL_PRECEDENCE_NOTES](conditional-logic/variables/CONDITIONAL_PRECEDENCE_NOTES.md)
+Re-exports [CONDITIONAL_PRECEDENCE_NOTES](internal/conditional-logic/variables/CONDITIONAL_PRECEDENCE_NOTES.md)
 
 ***
 
 ### ConditionalActionType
 
-Re-exports [ConditionalActionType](conditional-logic/type-aliases/ConditionalActionType.md)
+Re-exports [ConditionalActionType](internal/conditional-logic/type-aliases/ConditionalActionType.md)
 
 ***
 
 ### ConditionalConflict
 
-Re-exports [ConditionalConflict](conditional-logic/interfaces/ConditionalConflict.md)
+Re-exports [ConditionalConflict](internal/conditional-logic/interfaces/ConditionalConflict.md)
 
 ***
 
 ### ConditionalFieldValues
 
-Re-exports [ConditionalFieldValues](conditional-logic/type-aliases/ConditionalFieldValues.md)
+Re-exports [ConditionalFieldValues](internal/conditional-logic/type-aliases/ConditionalFieldValues.md)
+
+***
+
+### ConditionalFormRule
+
+Re-exports [ConditionalFormRule](internal/cross-visit-rules/interfaces/ConditionalFormRule.md)
 
 ***
 
 ### ConditionExplanation
 
-Re-exports [ConditionExplanation](expression-evaluator/interfaces/ConditionExplanation.md)
+Re-exports [ConditionExplanation](internal/expression-evaluator/interfaces/ConditionExplanation.md)
 
 ***
 
@@ -580,7 +610,7 @@ Re-exports [ConditionGroup](types/interfaces/ConditionGroup.md)
 
 ### ConditionGroupSchema
 
-Re-exports [ConditionGroupSchema](universal-schema/variables/ConditionGroupSchema.md)
+Re-exports [ConditionGroupSchema](internal/universal-schema/variables/ConditionGroupSchema.md)
 
 ***
 
@@ -590,33 +620,63 @@ Re-exports [ConditionResult](types/type-aliases/ConditionResult.md)
 
 ***
 
+### configureWireRule
+
+Re-exports [configureWireRule](internal/rule-wires/functions/configureWireRule.md)
+
+***
+
+### connectWireSource
+
+Re-exports [connectWireSource](internal/rule-wires/functions/connectWireSource.md)
+
+***
+
+### consultationUrl
+
+Re-exports [consultationUrl](internal/export-annotations/functions/consultationUrl.md)
+
+***
+
 ### createFormVariant
 
-Re-exports [createFormVariant](form-variants/functions/createFormVariant.md)
+Re-exports [createFormVariant](internal/form-variants/functions/createFormVariant.md)
 
 ***
 
 ### createReviewPackageSnapshot
 
-Re-exports [createReviewPackageSnapshot](review-package/functions/createReviewPackageSnapshot.md)
+Re-exports [createReviewPackageSnapshot](internal/review-package/functions/createReviewPackageSnapshot.md)
 
 ***
 
 ### createScenario
 
-Re-exports [createScenario](test-scenarios/functions/createScenario.md)
+Re-exports [createScenario](internal/test-scenarios/functions/createScenario.md)
+
+***
+
+### createWireRule
+
+Re-exports [createWireRule](internal/rule-wires/functions/createWireRule.md)
+
+***
+
+### CreateWireRuleInput
+
+Re-exports [CreateWireRuleInput](internal/rule-wires/interfaces/CreateWireRuleInput.md)
 
 ***
 
 ### CRF\_STUDIO\_ODM\_NAMESPACE
 
-Re-exports [CRF_STUDIO_ODM_NAMESPACE](odm-xml-serializer/variables/CRF_STUDIO_ODM_NAMESPACE.md)
+Re-exports [CRF_STUDIO_ODM_NAMESPACE](internal/odm-xml-serializer/variables/CRF_STUDIO_ODM_NAMESPACE.md)
 
 ***
 
 ### CRF\_STUDIO\_USDM\_EXTENSION\_BASE
 
-Re-exports [CRF_STUDIO_USDM_EXTENSION_BASE](usdm-adapter/variables/CRF_STUDIO_USDM_EXTENSION_BASE.md)
+Re-exports [CRF_STUDIO_USDM_EXTENSION_BASE](internal/usdm-adapter/variables/CRF_STUDIO_USDM_EXTENSION_BASE.md)
 
 ***
 
@@ -640,97 +700,115 @@ Re-exports [CRFSection](types/interfaces/CRFSection.md)
 
 ### daysInMonth
 
-Re-exports [daysInMonth](precision-date/functions/daysInMonth.md)
+Re-exports [daysInMonth](internal/precision-date/functions/daysInMonth.md)
 
 ***
 
 ### DEFAULT\_STUDY\_BRANDING
 
-Re-exports [DEFAULT_STUDY_BRANDING](branding-defaults/variables/DEFAULT_STUDY_BRANDING.md)
+Re-exports [DEFAULT_STUDY_BRANDING](internal/branding-defaults/variables/DEFAULT_STUDY_BRANDING.md)
 
 ***
 
 ### DEFAULT\_TEST\_SCOPE
 
-Re-exports [DEFAULT_TEST_SCOPE](form-test-harness/variables/DEFAULT_TEST_SCOPE.md)
+Re-exports [DEFAULT_TEST_SCOPE](internal/form-test-harness/variables/DEFAULT_TEST_SCOPE.md)
 
 ***
 
 ### deleteFormTemplate
 
-Re-exports [deleteFormTemplate](form-templates/functions/deleteFormTemplate.md)
+Re-exports [deleteFormTemplate](internal/form-templates/functions/deleteFormTemplate.md)
 
 ***
 
 ### deleteLibraryEntry
 
-Re-exports [deleteLibraryEntry](personal-library/functions/deleteLibraryEntry.md)
+Re-exports [deleteLibraryEntry](internal/personal-library/functions/deleteLibraryEntry.md)
 
 ***
 
 ### deleteStudyBaseline
 
-Re-exports [deleteStudyBaseline](study-baselines/functions/deleteStudyBaseline.md)
+Re-exports [deleteStudyBaseline](internal/study-baselines/functions/deleteStudyBaseline.md)
 
 ***
 
 ### DerivationExplanation
 
-Re-exports [DerivationExplanation](expression-evaluator/interfaces/DerivationExplanation.md)
+Re-exports [DerivationExplanation](internal/expression-evaluator/interfaces/DerivationExplanation.md)
 
 ***
 
 ### DerivationInputDependency
 
-Re-exports [DerivationInputDependency](expression-evaluator/interfaces/DerivationInputDependency.md)
+Re-exports [DerivationInputDependency](internal/expression-evaluator/interfaces/DerivationInputDependency.md)
 
 ***
 
 ### DerivationStep
 
-Re-exports [DerivationStep](expression-evaluator/interfaces/DerivationStep.md)
+Re-exports [DerivationStep](internal/expression-evaluator/interfaces/DerivationStep.md)
 
 ***
 
 ### describeBaselineDiffCategory
 
-Re-exports [describeBaselineDiffCategory](study-baseline-diff/functions/describeBaselineDiffCategory.md)
+Re-exports [describeBaselineDiffCategory](internal/study-baseline-diff/functions/describeBaselineDiffCategory.md)
 
 ***
 
 ### describeBaselineDiffChangeType
 
-Re-exports [describeBaselineDiffChangeType](study-baseline-diff/functions/describeBaselineDiffChangeType.md)
+Re-exports [describeBaselineDiffChangeType](internal/study-baseline-diff/functions/describeBaselineDiffChangeType.md)
 
 ***
 
 ### describeCondition
 
-Re-exports [describeCondition](expression-evaluator/functions/describeCondition.md)
+Re-exports [describeCondition](internal/expression-evaluator/functions/describeCondition.md)
+
+***
+
+### describeConditionLogic
+
+Re-exports [describeConditionLogic](internal/rule-wires/functions/describeConditionLogic.md)
 
 ***
 
 ### describeExpectationResult
 
-Re-exports [describeExpectationResult](test-scenarios/functions/describeExpectationResult.md)
+Re-exports [describeExpectationResult](internal/test-scenarios/functions/describeExpectationResult.md)
 
 ***
 
 ### describeFieldConditionalState
 
-Re-exports [describeFieldConditionalState](conditional-logic/functions/describeFieldConditionalState.md)
+Re-exports [describeFieldConditionalState](internal/conditional-logic/functions/describeFieldConditionalState.md)
+
+***
+
+### describeRuleLogic
+
+Re-exports [describeRuleLogic](internal/rule-wires/functions/describeRuleLogic.md)
 
 ***
 
 ### detectAndParseStudyFile
 
-Re-exports [detectAndParseStudyFile](file-ingestion/functions/detectAndParseStudyFile.md)
+Re-exports [detectAndParseStudyFile](internal/file-ingestion/functions/detectAndParseStudyFile.md)
+
+***
+
+### detectLibraryUpgrades
+
+Re-exports [detectLibraryUpgrades](internal/library-upgrade/functions/detectLibraryUpgrades.md)
 
 ***
 
 ### deterministicStringify
 
-Re-exports [deterministicStringify](study-draft-storage/functions/deterministicStringify.md)
+Re-exports [deterministicStringify](internal/study-draft-storage/functions/deterministicStringify.md)
 
 ***
 
@@ -748,37 +826,37 @@ Re-exports [DeviceViewport](types/type-aliases/DeviceViewport.md)
 
 ### DiagnosticItem
 
-Re-exports [DiagnosticItem](form-linter/interfaces/DiagnosticItem.md)
+Re-exports [DiagnosticItem](internal/form-linter/interfaces/DiagnosticItem.md)
 
 ***
 
 ### DiagnosticSeverity
 
-Re-exports [DiagnosticSeverity](study-auditor/type-aliases/DiagnosticSeverity.md)
+Re-exports [DiagnosticSeverity](internal/study-auditor/type-aliases/DiagnosticSeverity.md)
 
 ***
 
 ### DiagnosticTier
 
-Re-exports [DiagnosticTier](study-auditor/type-aliases/DiagnosticTier.md)
+Re-exports [DiagnosticTier](internal/study-auditor/type-aliases/DiagnosticTier.md)
 
 ***
 
 ### diffUniversalCrfStudies
 
-Re-exports [diffUniversalCrfStudies](universal-schema/functions/diffUniversalCrfStudies.md)
+Re-exports [diffUniversalCrfStudies](internal/universal-schema/functions/diffUniversalCrfStudies.md)
 
 ***
 
 ### diffUsdmProtocols
 
-Re-exports [diffUsdmProtocols](usdm-adapter/functions/diffUsdmProtocols.md)
+Re-exports [diffUsdmProtocols](internal/usdm-adapter/functions/diffUsdmProtocols.md)
 
 ***
 
 ### DomainMetadata
 
-Re-exports [DomainMetadata](study-engine/interfaces/DomainMetadata.md)
+Re-exports [DomainMetadata](internal/study-engine/interfaces/DomainMetadata.md)
 
 ***
 
@@ -790,7 +868,7 @@ Re-exports [EDCQuery](types/interfaces/EDCQuery.md)
 
 ### EDCQuerySchema
 
-Re-exports [EDCQuerySchema](universal-schema/variables/EDCQuerySchema.md)
+Re-exports [EDCQuerySchema](internal/universal-schema/variables/EDCQuerySchema.md)
 
 ***
 
@@ -802,7 +880,7 @@ Re-exports [EdcSimulationState](types/interfaces/EdcSimulationState.md)
 
 ### EdcSimulationStateSchema
 
-Re-exports [EdcSimulationStateSchema](universal-schema/variables/EdcSimulationStateSchema.md)
+Re-exports [EdcSimulationStateSchema](internal/universal-schema/variables/EdcSimulationStateSchema.md)
 
 ***
 
@@ -814,7 +892,7 @@ Re-exports [EditCheckRule](types/interfaces/EditCheckRule.md)
 
 ### EditCheckRuleSchema
 
-Re-exports [EditCheckRuleSchema](universal-schema/variables/EditCheckRuleSchema.md)
+Re-exports [EditCheckRuleSchema](internal/universal-schema/variables/EditCheckRuleSchema.md)
 
 ***
 
@@ -826,7 +904,7 @@ Re-exports [ElectronicSignature](types/interfaces/ElectronicSignature.md)
 
 ### ElectronicSignatureSchema
 
-Re-exports [ElectronicSignatureSchema](universal-schema/variables/ElectronicSignatureSchema.md)
+Re-exports [ElectronicSignatureSchema](internal/universal-schema/variables/ElectronicSignatureSchema.md)
 
 ***
 
@@ -838,175 +916,181 @@ Re-exports [EMPTY_STUDY_PRESET](presets/empty-study/variables/EMPTY_STUDY_PRESET
 
 ### escapeRString
 
-Re-exports [escapeRString](export-r/functions/escapeRString.md)
+Re-exports [escapeRString](internal/export-r/functions/escapeRString.md)
 
 ***
 
 ### escapeSasString
 
-Re-exports [escapeSasString](export-sas/functions/escapeSasString.md)
+Re-exports [escapeSasString](internal/export-sas/functions/escapeSasString.md)
 
 ***
 
 ### evaluateCondition
 
-Re-exports [evaluateCondition](expression-evaluator/functions/evaluateCondition.md)
+Re-exports [evaluateCondition](internal/expression-evaluator/functions/evaluateCondition.md)
 
 ***
 
 ### evaluateConditionResult
 
-Re-exports [evaluateConditionResult](expression-evaluator/functions/evaluateConditionResult.md)
+Re-exports [evaluateConditionResult](internal/expression-evaluator/functions/evaluateConditionResult.md)
 
 ***
 
 ### evaluateFormula
 
-Re-exports [evaluateFormula](expression-evaluator/functions/evaluateFormula.md)
+Re-exports [evaluateFormula](internal/expression-evaluator/functions/evaluateFormula.md)
+
+***
+
+### evaluateMatrixFormObligations
+
+Re-exports [evaluateMatrixFormObligations](internal/cross-visit-rules/functions/evaluateMatrixFormObligations.md)
 
 ***
 
 ### evaluateRule
 
-Re-exports [evaluateRule](expression-evaluator/functions/evaluateRule.md)
+Re-exports [evaluateRule](internal/expression-evaluator/functions/evaluateRule.md)
 
 ***
 
 ### evaluateRuleResult
 
-Re-exports [evaluateRuleResult](expression-evaluator/functions/evaluateRuleResult.md)
+Re-exports [evaluateRuleResult](internal/expression-evaluator/functions/evaluateRuleResult.md)
 
 ***
 
 ### evaluateVisitWindowConflicts
 
-Re-exports [evaluateVisitWindowConflicts](visit-window/functions/evaluateVisitWindowConflicts.md)
+Re-exports [evaluateVisitWindowConflicts](internal/visit-window/functions/evaluateVisitWindowConflicts.md)
 
 ***
 
 ### executeAddFieldCommand
 
-Re-exports [executeAddFieldCommand](cli-engine/functions/executeAddFieldCommand.md)
+Re-exports [executeAddFieldCommand](internal/cli-engine/functions/executeAddFieldCommand.md)
 
 ***
 
 ### executeAddFormCommand
 
-Re-exports [executeAddFormCommand](cli-engine/functions/executeAddFormCommand.md)
+Re-exports [executeAddFormCommand](internal/cli-engine/functions/executeAddFormCommand.md)
 
 ***
 
 ### executeCliString
 
-Re-exports [executeCliString](cli-engine/functions/executeCliString.md)
+Re-exports [executeCliString](internal/cli-engine/functions/executeCliString.md)
 
 ***
 
 ### executeDiffCommand
 
-Re-exports [executeDiffCommand](cli-engine/functions/executeDiffCommand.md)
+Re-exports [executeDiffCommand](internal/cli-engine/functions/executeDiffCommand.md)
 
 ***
 
 ### executeExportCommand
 
-Re-exports [executeExportCommand](cli-engine/functions/executeExportCommand.md)
+Re-exports [executeExportCommand](internal/cli-engine/functions/executeExportCommand.md)
 
 ***
 
 ### executeInfoCommand
 
-Re-exports [executeInfoCommand](cli-engine/functions/executeInfoCommand.md)
+Re-exports [executeInfoCommand](internal/cli-engine/functions/executeInfoCommand.md)
 
 ***
 
 ### executeListCommand
 
-Re-exports [executeListCommand](cli-engine/functions/executeListCommand.md)
+Re-exports [executeListCommand](internal/cli-engine/functions/executeListCommand.md)
 
 ***
 
 ### executePresetCommand
 
-Re-exports [executePresetCommand](cli-engine/functions/executePresetCommand.md)
+Re-exports [executePresetCommand](internal/cli-engine/functions/executePresetCommand.md)
 
 ***
 
 ### executeRemoveFieldCommand
 
-Re-exports [executeRemoveFieldCommand](cli-engine/functions/executeRemoveFieldCommand.md)
+Re-exports [executeRemoveFieldCommand](internal/cli-engine/functions/executeRemoveFieldCommand.md)
 
 ***
 
 ### executeRemoveFormCommand
 
-Re-exports [executeRemoveFormCommand](cli-engine/functions/executeRemoveFormCommand.md)
+Re-exports [executeRemoveFormCommand](internal/cli-engine/functions/executeRemoveFormCommand.md)
 
 ***
 
 ### executeRuleCommand
 
-Re-exports [executeRuleCommand](cli-engine/functions/executeRuleCommand.md)
+Re-exports [executeRuleCommand](internal/cli-engine/functions/executeRuleCommand.md)
 
 ***
 
 ### executeValidateCommand
 
-Re-exports [executeValidateCommand](cli-engine/functions/executeValidateCommand.md)
+Re-exports [executeValidateCommand](internal/cli-engine/functions/executeValidateCommand.md)
 
 ***
 
 ### executeVisitCommand
 
-Re-exports [executeVisitCommand](cli-engine/functions/executeVisitCommand.md)
+Re-exports [executeVisitCommand](internal/cli-engine/functions/executeVisitCommand.md)
 
 ***
 
 ### ExpandedRField
 
-Re-exports [ExpandedRField](export-r/interfaces/ExpandedRField.md)
+Re-exports [ExpandedRField](internal/export-r/interfaces/ExpandedRField.md)
 
 ***
 
 ### ExpectationResult
 
-Re-exports [ExpectationResult](test-scenarios/type-aliases/ExpectationResult.md)
+Re-exports [ExpectationResult](internal/test-scenarios/type-aliases/ExpectationResult.md)
 
 ***
 
 ### explainCalculationDerivation
 
-Re-exports [explainCalculationDerivation](expression-evaluator/functions/explainCalculationDerivation.md)
+Re-exports [explainCalculationDerivation](internal/expression-evaluator/functions/explainCalculationDerivation.md)
 
 ***
 
 ### explainRule
 
-Re-exports [explainRule](expression-evaluator/functions/explainRule.md)
+Re-exports [explainRule](internal/expression-evaluator/functions/explainRule.md)
 
 ***
 
 ### exportBaselineDiffCsv
 
-Re-exports [exportBaselineDiffCsv](export-baseline-diff/functions/exportBaselineDiffCsv.md)
+Re-exports [exportBaselineDiffCsv](internal/export-baseline-diff/functions/exportBaselineDiffCsv.md)
 
 ***
 
 ### exportBaselineDiffJson
 
-Re-exports [exportBaselineDiffJson](export-baseline-diff/functions/exportBaselineDiffJson.md)
+Re-exports [exportBaselineDiffJson](internal/export-baseline-diff/functions/exportBaselineDiffJson.md)
 
 ***
 
 ### exportBaselineDiffText
 
-Re-exports [exportBaselineDiffText](export-baseline-diff/functions/exportBaselineDiffText.md)
+Re-exports [exportBaselineDiffText](internal/export-baseline-diff/functions/exportBaselineDiffText.md)
 
 ***
 
 ### exportBaselinesBundle
 
-Re-exports [exportBaselinesBundle](study-baselines/functions/exportBaselinesBundle.md)
+Re-exports [exportBaselinesBundle](internal/study-baselines/functions/exportBaselinesBundle.md)
 
 ***
 
@@ -1018,25 +1102,25 @@ Re-exports [ExportDocxOptions](types/interfaces/ExportDocxOptions.md)
 
 ### exportFormTemplates
 
-Re-exports [exportFormTemplates](form-templates/functions/exportFormTemplates.md)
+Re-exports [exportFormTemplates](internal/form-templates/functions/exportFormTemplates.md)
 
 ***
 
 ### exportFormToFhirQuestionnaire
 
-Re-exports [exportFormToFhirQuestionnaire](fhir-questionnaire/functions/exportFormToFhirQuestionnaire.md)
+Re-exports [exportFormToFhirQuestionnaire](internal/fhir-questionnaire/functions/exportFormToFhirQuestionnaire.md)
 
 ***
 
 ### exportFormToR
 
-Re-exports [exportFormToR](export-r/functions/exportFormToR.md)
+Re-exports [exportFormToR](internal/export-r/functions/exportFormToR.md)
 
 ***
 
 ### exportFormToSas
 
-Re-exports [exportFormToSas](export-sas/functions/exportFormToSas.md)
+Re-exports [exportFormToSas](internal/export-sas/functions/exportFormToSas.md)
 
 ***
 
@@ -1060,403 +1144,421 @@ Re-exports [ExportSasOptions](types/interfaces/ExportSasOptions.md)
 
 ### exportStudyToCdiscOdmXml
 
-Re-exports [exportStudyToCdiscOdmXml](odm-xml-serializer/functions/exportStudyToCdiscOdmXml.md)
+Re-exports [exportStudyToCdiscOdmXml](internal/odm-xml-serializer/functions/exportStudyToCdiscOdmXml.md)
 
 ***
 
 ### exportStudyToFhirQuestionnaire
 
-Re-exports [exportStudyToFhirQuestionnaire](fhir-questionnaire/functions/exportStudyToFhirQuestionnaire.md)
+Re-exports [exportStudyToFhirQuestionnaire](internal/fhir-questionnaire/functions/exportStudyToFhirQuestionnaire.md)
 
 ***
 
 ### exportStudyToR
 
-Re-exports [exportStudyToR](export-r/functions/exportStudyToR.md)
+Re-exports [exportStudyToR](internal/export-r/functions/exportStudyToR.md)
 
 ***
 
 ### exportStudyToSas
 
-Re-exports [exportStudyToSas](export-sas/functions/exportStudyToSas.md)
+Re-exports [exportStudyToSas](internal/export-sas/functions/exportStudyToSas.md)
 
 ***
 
 ### exportStudyToUsdm
 
-Re-exports [exportStudyToUsdm](usdm-adapter/functions/exportStudyToUsdm.md)
+Re-exports [exportStudyToUsdm](internal/usdm-adapter/functions/exportStudyToUsdm.md)
 
 ***
 
 ### exportStudyToUsdmObject
 
-Re-exports [exportStudyToUsdmObject](usdm-adapter/functions/exportStudyToUsdmObject.md)
+Re-exports [exportStudyToUsdmObject](internal/usdm-adapter/functions/exportStudyToUsdmObject.md)
 
 ***
 
 ### exportUniversalCrfJson
 
-Re-exports [exportUniversalCrfJson](universal-schema/functions/exportUniversalCrfJson.md)
+Re-exports [exportUniversalCrfJson](internal/universal-schema/functions/exportUniversalCrfJson.md)
 
 ***
 
 ### exportUniversalCrfYaml
 
-Re-exports [exportUniversalCrfYaml](universal-schema/functions/exportUniversalCrfYaml.md)
+Re-exports [exportUniversalCrfYaml](internal/universal-schema/functions/exportUniversalCrfYaml.md)
 
 ***
 
 ### ExpressionEvaluator
 
-Re-exports [ExpressionEvaluator](expression-evaluator/classes/ExpressionEvaluator.md)
+Re-exports [ExpressionEvaluator](internal/expression-evaluator/classes/ExpressionEvaluator.md)
 
 ***
 
 ### extractCodelistFromUsdmObject
 
-Re-exports [extractCodelistFromUsdmObject](usdm-adapter/functions/extractCodelistFromUsdmObject.md)
+Re-exports [extractCodelistFromUsdmObject](internal/usdm-adapter/functions/extractCodelistFromUsdmObject.md)
 
 ***
 
 ### FieldConditionalState
 
-Re-exports [FieldConditionalState](conditional-logic/interfaces/FieldConditionalState.md)
+Re-exports [FieldConditionalState](internal/conditional-logic/interfaces/FieldConditionalState.md)
 
 ***
 
 ### FieldImpactPreview
 
-Re-exports [FieldImpactPreview](study-engine/interfaces/FieldImpactPreview.md)
+Re-exports [FieldImpactPreview](internal/study-engine/interfaces/FieldImpactPreview.md)
 
 ***
 
 ### FieldReferenceLocation
 
-Re-exports [FieldReferenceLocation](study-engine/interfaces/FieldReferenceLocation.md)
+Re-exports [FieldReferenceLocation](internal/study-engine/interfaces/FieldReferenceLocation.md)
 
 ***
 
 ### fillSampleValues
 
-Re-exports [fillSampleValues](form-test-harness/functions/fillSampleValues.md)
+Re-exports [fillSampleValues](internal/form-test-harness/functions/fillSampleValues.md)
 
 ***
 
 ### findCodelistById
 
-Re-exports [findCodelistById](cdisc-controlled-terminology/functions/findCodelistById.md)
+Re-exports [findCodelistById](../clinical-standards/codelists/functions/findCodelistById.md)
 
 ***
 
 ### findCodelistByNciCode
 
-Re-exports [findCodelistByNciCode](cdisc-controlled-terminology/functions/findCodelistByNciCode.md)
+Re-exports [findCodelistByNciCode](../clinical-standards/codelists/functions/findCodelistByNciCode.md)
 
 ***
 
 ### findFormReferenceIssues
 
-Re-exports [findFormReferenceIssues](form-variants/functions/findFormReferenceIssues.md)
+Re-exports [findFormReferenceIssues](internal/form-variants/functions/findFormReferenceIssues.md)
 
 ***
 
 ### findOptionByCode
 
-Re-exports [findOptionByCode](cdisc-controlled-terminology/functions/findOptionByCode.md)
+Re-exports [findOptionByCode](../clinical-standards/codelists/functions/findOptionByCode.md)
 
 ***
 
 ### findOptionByNciCode
 
-Re-exports [findOptionByNciCode](cdisc-controlled-terminology/functions/findOptionByNciCode.md)
+Re-exports [findOptionByNciCode](../clinical-standards/codelists/functions/findOptionByNciCode.md)
 
 ***
 
 ### fingerprintForm
 
-Re-exports [fingerprintForm](test-scenarios/functions/fingerprintForm.md)
+Re-exports [fingerprintForm](internal/test-scenarios/functions/fingerprintForm.md)
 
 ***
 
 ### fingerprintScenarioDependencies
 
-Re-exports [fingerprintScenarioDependencies](scenario-impact/functions/fingerprintScenarioDependencies.md)
+Re-exports [fingerprintScenarioDependencies](internal/scenario-impact/functions/fingerprintScenarioDependencies.md)
 
 ***
 
 ### flattenFormFields
 
-Re-exports [flattenFormFields](form-test-harness/functions/flattenFormFields.md)
+Re-exports [flattenFormFields](internal/form-test-harness/functions/flattenFormFields.md)
+
+***
+
+### FORM\_CATALOG\_SOURCES
+
+Re-exports [FORM_CATALOG_SOURCES](internal/form-catalog/variables/FORM_CATALOG_SOURCES.md)
 
 ***
 
 ### FORM\_TEMPLATE\_FORMAT\_VERSION
 
-Re-exports [FORM_TEMPLATE_FORMAT_VERSION](form-templates/variables/FORM_TEMPLATE_FORMAT_VERSION.md)
+Re-exports [FORM_TEMPLATE_FORMAT_VERSION](internal/form-templates/variables/FORM_TEMPLATE_FORMAT_VERSION.md)
 
 ***
 
 ### FORM\_TEMPLATES\_CORRUPT\_BACKUP\_KEY
 
-Re-exports [FORM_TEMPLATES_CORRUPT_BACKUP_KEY](form-templates/variables/FORM_TEMPLATES_CORRUPT_BACKUP_KEY.md)
+Re-exports [FORM_TEMPLATES_CORRUPT_BACKUP_KEY](internal/form-templates/variables/FORM_TEMPLATES_CORRUPT_BACKUP_KEY.md)
 
 ***
 
 ### FORM\_TEMPLATES\_STORAGE\_KEY
 
-Re-exports [FORM_TEMPLATES_STORAGE_KEY](form-templates/variables/FORM_TEMPLATES_STORAGE_KEY.md)
+Re-exports [FORM_TEMPLATES_STORAGE_KEY](internal/form-templates/variables/FORM_TEMPLATES_STORAGE_KEY.md)
 
 ***
 
 ### formatIsoDurationDays
 
-Re-exports [formatIsoDurationDays](usdm-v4-schedule/functions/formatIsoDurationDays.md)
+Re-exports [formatIsoDurationDays](../clinical-standards/usdm-v4-schedule/functions/formatIsoDurationDays.md)
 
 ***
 
 ### formatPrecisionDate
 
-Re-exports [formatPrecisionDate](precision-date/functions/formatPrecisionDate.md)
+Re-exports [formatPrecisionDate](internal/precision-date/functions/formatPrecisionDate.md)
 
 ***
 
 ### formatVisitWindow
 
-Re-exports [formatVisitWindow](visit-window/functions/formatVisitWindow.md)
+Re-exports [formatVisitWindow](internal/visit-window/functions/formatVisitWindow.md)
 
 ***
 
 ### FormAuditReport
 
-Re-exports [FormAuditReport](study-auditor/interfaces/FormAuditReport.md)
+Re-exports [FormAuditReport](internal/study-auditor/interfaces/FormAuditReport.md)
+
+***
+
+### FormCatalogEntry
+
+Re-exports [FormCatalogEntry](internal/form-catalog/interfaces/FormCatalogEntry.md)
+
+***
+
+### FormCatalogSource
+
+Re-exports [FormCatalogSource](internal/form-catalog/type-aliases/FormCatalogSource.md)
 
 ***
 
 ### FormConditionalState
 
-Re-exports [FormConditionalState](conditional-logic/interfaces/FormConditionalState.md)
+Re-exports [FormConditionalState](internal/conditional-logic/interfaces/FormConditionalState.md)
 
 ***
 
 ### FormHealthMetrics
 
-Re-exports [FormHealthMetrics](study-auditor/interfaces/FormHealthMetrics.md)
+Re-exports [FormHealthMetrics](internal/study-auditor/interfaces/FormHealthMetrics.md)
 
 ***
 
 ### FormReferenceIssue
 
-Re-exports [FormReferenceIssue](form-variants/interfaces/FormReferenceIssue.md)
+Re-exports [FormReferenceIssue](internal/form-variants/interfaces/FormReferenceIssue.md)
 
 ***
 
 ### FormReferenceLocation
 
-Re-exports [FormReferenceLocation](form-variants/type-aliases/FormReferenceLocation.md)
+Re-exports [FormReferenceLocation](internal/form-variants/type-aliases/FormReferenceLocation.md)
 
 ***
 
 ### FormTemplate
 
-Re-exports [FormTemplate](form-templates/interfaces/FormTemplate.md)
+Re-exports [FormTemplate](internal/form-templates/interfaces/FormTemplate.md)
 
 ***
 
 ### FormTestReport
 
-Re-exports [FormTestReport](form-test-harness/interfaces/FormTestReport.md)
+Re-exports [FormTestReport](internal/form-test-harness/interfaces/FormTestReport.md)
 
 ***
 
 ### FormTestScope
 
-Re-exports [FormTestScope](form-test-harness/interfaces/FormTestScope.md)
+Re-exports [FormTestScope](internal/form-test-harness/interfaces/FormTestScope.md)
 
 ***
 
 ### FormulaDiagnostic
 
-Re-exports [FormulaDiagnostic](formula-linter/interfaces/FormulaDiagnostic.md)
+Re-exports [FormulaDiagnostic](internal/formula-linter/interfaces/FormulaDiagnostic.md)
 
 ***
 
 ### FormulaLintResult
 
-Re-exports [FormulaLintResult](formula-linter/interfaces/FormulaLintResult.md)
+Re-exports [FormulaLintResult](internal/formula-linter/interfaces/FormulaLintResult.md)
 
 ***
 
 ### FormulaTokenType
 
-Re-exports [FormulaTokenType](formula-linter/type-aliases/FormulaTokenType.md)
+Re-exports [FormulaTokenType](internal/formula-linter/type-aliases/FormulaTokenType.md)
 
 ***
 
 ### FormUse
 
-Re-exports [FormUse](form-variants/interfaces/FormUse.md)
+Re-exports [FormUse](internal/form-variants/interfaces/FormUse.md)
 
 ***
 
 ### formUseKey
 
-Re-exports [formUseKey](form-variants/functions/formUseKey.md)
+Re-exports [formUseKey](internal/form-variants/functions/formUseKey.md)
 
 ***
 
 ### FormUseKind
 
-Re-exports [FormUseKind](form-variants/type-aliases/FormUseKind.md)
+Re-exports [FormUseKind](internal/form-variants/type-aliases/FormUseKind.md)
 
 ***
 
 ### FormUseOutcome
 
-Re-exports [FormUseOutcome](form-variants/type-aliases/FormUseOutcome.md)
+Re-exports [FormUseOutcome](internal/form-variants/type-aliases/FormUseOutcome.md)
 
 ***
 
 ### FormVariantOptions
 
-Re-exports [FormVariantOptions](form-variants/interfaces/FormVariantOptions.md)
+Re-exports [FormVariantOptions](internal/form-variants/interfaces/FormVariantOptions.md)
 
 ***
 
 ### FormVariantPreview
 
-Re-exports [FormVariantPreview](form-variants/interfaces/FormVariantPreview.md)
+Re-exports [FormVariantPreview](internal/form-variants/interfaces/FormVariantPreview.md)
 
 ***
 
 ### FormVariantResult
 
-Re-exports [FormVariantResult](form-variants/interfaces/FormVariantResult.md)
+Re-exports [FormVariantResult](internal/form-variants/interfaces/FormVariantResult.md)
 
 ***
 
 ### FormVariantUseChange
 
-Re-exports [FormVariantUseChange](form-variants/interfaces/FormVariantUseChange.md)
+Re-exports [FormVariantUseChange](internal/form-variants/interfaces/FormVariantUseChange.md)
 
 ***
 
 ### generateAcrfHtml
 
-Re-exports [generateAcrfHtml](export-acrf/functions/generateAcrfHtml.md)
+Re-exports [generateAcrfHtml](internal/export-acrf/functions/generateAcrfHtml.md)
 
 ***
 
 ### generateCdashVariableName
 
-Re-exports [generateCdashVariableName](precision-date/functions/generateCdashVariableName.md)
+Re-exports [generateCdashVariableName](internal/precision-date/functions/generateCdashVariableName.md)
 
 ***
 
 ### generateCliCommandForField
 
-Re-exports [generateCliCommandForField](universal-schema/functions/generateCliCommandForField.md)
+Re-exports [generateCliCommandForField](internal/universal-schema/functions/generateCliCommandForField.md)
 
 ***
 
 ### generateCliCommandForForm
 
-Re-exports [generateCliCommandForForm](universal-schema/functions/generateCliCommandForForm.md)
+Re-exports [generateCliCommandForForm](internal/universal-schema/functions/generateCliCommandForForm.md)
 
 ***
 
 ### generateEngineId
 
-Re-exports [generateEngineId](precision-date/functions/generateEngineId.md)
+Re-exports [generateEngineId](internal/precision-date/functions/generateEngineId.md)
 
 ***
 
 ### generateExportFilename
 
-Re-exports [generateExportFilename](export-baseline-diff/functions/generateExportFilename.md)
-
-***
-
-### generateFormDocx
-
-Re-exports [generateFormDocx](export-docx/functions/generateFormDocx.md)
-
-***
-
-### generateFormPdf
-
-Re-exports [generateFormPdf](export-pdf/functions/generateFormPdf.md)
+Re-exports [generateExportFilename](internal/export-baseline-diff/functions/generateExportFilename.md)
 
 ***
 
 ### generateRCodelists
 
-Re-exports [generateRCodelists](export-r/functions/generateRCodelists.md)
+Re-exports [generateRCodelists](internal/export-r/functions/generateRCodelists.md)
 
 ***
 
 ### generateRDataStepForForm
 
-Re-exports [generateRDataStepForForm](export-r/functions/generateRDataStepForForm.md)
+Re-exports [generateRDataStepForForm](internal/export-r/functions/generateRDataStepForForm.md)
 
 ***
 
 ### generateRuleDebugTrace
 
-Re-exports [generateRuleDebugTrace](ast-debugger/functions/generateRuleDebugTrace.md)
+Re-exports [generateRuleDebugTrace](internal/ast-debugger/functions/generateRuleDebugTrace.md)
+
+***
+
+### generateSasDataStepForForm
+
+Re-exports [generateSasDataStepForForm](internal/export-sas/functions/generateSasDataStepForForm.md)
 
 ***
 
 ### generateSasProcFormat
 
-Re-exports [generateSasProcFormat](export-sas/functions/generateSasProcFormat.md)
+Re-exports [generateSasProcFormat](internal/export-sas/functions/generateSasProcFormat.md)
 
 ***
 
 ### generateSdtmMappingMatrix
 
-Re-exports [generateSdtmMappingMatrix](export-acrf/functions/generateSdtmMappingMatrix.md)
+Re-exports [generateSdtmMappingMatrix](internal/export-acrf/functions/generateSdtmMappingMatrix.md)
 
 ***
 
 ### generateStudyAcrfBookHtml
 
-Re-exports [generateStudyAcrfBookHtml](export-acrf/functions/generateStudyAcrfBookHtml.md)
+Re-exports [generateStudyAcrfBookHtml](internal/export-acrf/functions/generateStudyAcrfBookHtml.md)
 
 ***
 
-### generateStudyDocx
+### getConditionWireReadOnlyReason
 
-Re-exports [generateStudyDocx](export-docx/functions/generateStudyDocx.md)
-
-***
-
-### generateStudyPdf
-
-Re-exports [generateStudyPdf](export-pdf/functions/generateStudyPdf.md)
+Re-exports [getConditionWireReadOnlyReason](internal/rule-wires/functions/getConditionWireReadOnlyReason.md)
 
 ***
 
 ### getExpandedRFields
 
-Re-exports [getExpandedRFields](export-r/functions/getExpandedRFields.md)
+Re-exports [getExpandedRFields](internal/export-r/functions/getExpandedRFields.md)
+
+***
+
+### getExpandedSasAttributes
+
+Re-exports [getExpandedSasAttributes](internal/export-sas/functions/getExpandedSasAttributes.md)
 
 ***
 
 ### getFieldOptions
 
-Re-exports [getFieldOptions](export-r/functions/getFieldOptions.md)
+Re-exports [getFieldOptions](internal/export-r/functions/getFieldOptions.md)
+
+***
+
+### getFieldSasAttributes
+
+Re-exports [getFieldSasAttributes](internal/export-sas/functions/getFieldSasAttributes.md)
 
 ***
 
 ### getFormUses
 
-Re-exports [getFormUses](form-variants/functions/getFormUses.md)
+Re-exports [getFormUses](internal/form-variants/functions/getFormUses.md)
 
 ***
 
 ### getLibraryEntryRevision
 
-Re-exports [getLibraryEntryRevision](personal-library/functions/getLibraryEntryRevision.md)
+Re-exports [getLibraryEntryRevision](internal/personal-library/functions/getLibraryEntryRevision.md)
 
 ***
 
@@ -1486,49 +1588,55 @@ Re-exports [getPresetByIdSync](presets/loader/functions/getPresetByIdSync.md)
 
 ### getRetainedHiddenValues
 
-Re-exports [getRetainedHiddenValues](conditional-logic/functions/getRetainedHiddenValues.md)
+Re-exports [getRetainedHiddenValues](internal/conditional-logic/functions/getRetainedHiddenValues.md)
 
 ***
 
 ### getRuleGroups
 
-Re-exports [getRuleGroups](expression-evaluator/functions/getRuleGroups.md)
+Re-exports [getRuleGroups](internal/expression-evaluator/functions/getRuleGroups.md)
+
+***
+
+### getRuleWireReadOnlyReason
+
+Re-exports [getRuleWireReadOnlyReason](internal/rule-wires/functions/getRuleWireReadOnlyReason.md)
 
 ***
 
 ### getSasFormatName
 
-Re-exports [getSasFormatName](export-sas/functions/getSasFormatName.md)
+Re-exports [getSasFormatName](internal/export-sas/functions/getSasFormatName.md)
 
 ***
 
 ### getScenariosForForm
 
-Re-exports [getScenariosForForm](test-scenarios/functions/getScenariosForForm.md)
+Re-exports [getScenariosForForm](internal/test-scenarios/functions/getScenariosForForm.md)
 
 ***
 
 ### getScenarioStanding
 
-Re-exports [getScenarioStanding](test-scenarios/functions/getScenarioStanding.md)
+Re-exports [getScenarioStanding](internal/test-scenarios/functions/getScenarioStanding.md)
 
 ***
 
 ### getScopedValue
 
-Re-exports [getScopedValue](form-test-harness/functions/getScopedValue.md)
+Re-exports [getScopedValue](internal/form-test-harness/functions/getScopedValue.md)
 
 ***
 
 ### getStudyBaseline
 
-Re-exports [getStudyBaseline](study-baselines/functions/getStudyBaseline.md)
+Re-exports [getStudyBaseline](internal/study-baselines/functions/getStudyBaseline.md)
 
 ***
 
 ### getStudyBranding
 
-Re-exports [getStudyBranding](branding-defaults/functions/getStudyBranding.md)
+Re-exports [getStudyBranding](internal/branding-defaults/functions/getStudyBranding.md)
 
 ***
 
@@ -1546,373 +1654,523 @@ Re-exports [getStudyPresetsSync](presets/loader/functions/getStudyPresetsSync.md
 
 ### getUniversalCrfSchemaUrl
 
-Re-exports [getUniversalCrfSchemaUrl](universal-schema/functions/getUniversalCrfSchemaUrl.md)
+Re-exports [getUniversalCrfSchemaUrl](internal/universal-schema/functions/getUniversalCrfSchemaUrl.md)
 
 ***
 
 ### getUnsatisfiedRequiredFields
 
-Re-exports [getUnsatisfiedRequiredFields](conditional-logic/functions/getUnsatisfiedRequiredFields.md)
+Re-exports [getUnsatisfiedRequiredFields](internal/conditional-logic/functions/getUnsatisfiedRequiredFields.md)
 
 ***
 
 ### getUsdmDocumentVersion
 
-Re-exports [getUsdmDocumentVersion](usdm-adapter/functions/getUsdmDocumentVersion.md)
+Re-exports [getUsdmDocumentVersion](internal/usdm-adapter/functions/getUsdmDocumentVersion.md)
 
 ***
 
 ### getUsdmV4ActivityDomain
 
-Re-exports [getUsdmV4ActivityDomain](usdm-adapter/functions/getUsdmV4ActivityDomain.md)
+Re-exports [getUsdmV4ActivityDomain](internal/usdm-adapter/functions/getUsdmV4ActivityDomain.md)
 
 ***
 
 ### getUsdmV4EncounterSchedule
 
-Re-exports [getUsdmV4EncounterSchedule](usdm-v4-schedule/functions/getUsdmV4EncounterSchedule.md)
+Re-exports [getUsdmV4EncounterSchedule](../clinical-standards/usdm-v4-schedule/functions/getUsdmV4EncounterSchedule.md)
 
 ***
 
 ### getUsdmV4ExtensionString
 
-Re-exports [getUsdmV4ExtensionString](usdm-v4-types/functions/getUsdmV4ExtensionString.md)
+Re-exports [getUsdmV4ExtensionString](../clinical-standards/usdm-v4-types/functions/getUsdmV4ExtensionString.md)
 
 ***
 
 ### getUsdmV4MainTimeline
 
-Re-exports [getUsdmV4MainTimeline](usdm-v4-schedule/functions/getUsdmV4MainTimeline.md)
+Re-exports [getUsdmV4MainTimeline](../clinical-standards/usdm-v4-schedule/functions/getUsdmV4MainTimeline.md)
+
+***
+
+### getVisitNamesForForm
+
+Re-exports [getVisitNamesForForm](internal/study-omnibar/functions/getVisitNamesForForm.md)
 
 ***
 
 ### GroupExplanation
 
-Re-exports [GroupExplanation](expression-evaluator/interfaces/GroupExplanation.md)
+Re-exports [GroupExplanation](internal/expression-evaluator/interfaces/GroupExplanation.md)
+
+***
+
+### groupOmnibarResults
+
+Re-exports [groupOmnibarResults](internal/study-omnibar/functions/groupOmnibarResults.md)
 
 ***
 
 ### HighlightToken
 
-Re-exports [HighlightToken](formula-linter/interfaces/HighlightToken.md)
+Re-exports [HighlightToken](internal/formula-linter/interfaces/HighlightToken.md)
 
 ***
 
 ### importBaselinesBundle
 
-Re-exports [importBaselinesBundle](study-baselines/functions/importBaselinesBundle.md)
+Re-exports [importBaselinesBundle](internal/study-baselines/functions/importBaselinesBundle.md)
 
 ***
 
 ### importFormTemplates
 
-Re-exports [importFormTemplates](form-templates/functions/importFormTemplates.md)
+Re-exports [importFormTemplates](internal/form-templates/functions/importFormTemplates.md)
 
 ***
 
 ### importStudyFromCdiscOdmXml
 
-Re-exports [importStudyFromCdiscOdmXml](odm-xml-parser/functions/importStudyFromCdiscOdmXml.md)
+Re-exports [importStudyFromCdiscOdmXml](internal/odm-xml-parser/functions/importStudyFromCdiscOdmXml.md)
 
 ***
 
 ### importStudyFromCsvSpec
 
-Re-exports [importStudyFromCsvSpec](csv-spec-parser/functions/importStudyFromCsvSpec.md)
+Re-exports [importStudyFromCsvSpec](internal/csv-spec-parser/functions/importStudyFromCsvSpec.md)
 
 ***
 
 ### importStudyFromUsdm
 
-Re-exports [importStudyFromUsdm](usdm-adapter/functions/importStudyFromUsdm.md)
+Re-exports [importStudyFromUsdm](internal/usdm-adapter/functions/importStudyFromUsdm.md)
 
 ***
 
 ### incrementStudyVersion
 
-Re-exports [incrementStudyVersion](study-baselines/functions/incrementStudyVersion.md)
+Re-exports [incrementStudyVersion](internal/study-baselines/functions/incrementStudyVersion.md)
 
 ***
 
 ### insertLibraryEntryIntoStudy
 
-Re-exports [insertLibraryEntryIntoStudy](personal-library/functions/insertLibraryEntryIntoStudy.md)
+Re-exports [insertLibraryEntryIntoStudy](internal/personal-library/functions/insertLibraryEntryIntoStudy.md)
+
+***
+
+### insertLibraryEntryWithLineage
+
+Re-exports [insertLibraryEntryWithLineage](internal/library-upgrade/functions/insertLibraryEntryWithLineage.md)
 
 ***
 
 ### instantiateAtomicField
 
-Re-exports [instantiateAtomicField](smart-blocks-engine/functions/instantiateAtomicField.md)
+Re-exports [instantiateAtomicField](internal/smart-blocks-engine/functions/instantiateAtomicField.md)
 
 ***
 
 ### InstantiateAtomicFieldOptions
 
-Re-exports [InstantiateAtomicFieldOptions](smart-blocks-engine/interfaces/InstantiateAtomicFieldOptions.md)
+Re-exports [InstantiateAtomicFieldOptions](internal/smart-blocks-engine/interfaces/InstantiateAtomicFieldOptions.md)
+
+***
+
+### instantiateCatalogForm
+
+Re-exports [instantiateCatalogForm](internal/form-catalog/functions/instantiateCatalogForm.md)
 
 ***
 
 ### instantiateContent
 
-Re-exports [instantiateContent](personal-library/functions/instantiateContent.md)
+Re-exports [instantiateContent](internal/personal-library/functions/instantiateContent.md)
 
 ***
 
 ### InstantiatedContent
 
-Re-exports [InstantiatedContent](personal-library/interfaces/InstantiatedContent.md)
+Re-exports [InstantiatedContent](internal/personal-library/interfaces/InstantiatedContent.md)
 
 ***
 
 ### InstantiatedLibraryEntry
 
-Re-exports [InstantiatedLibraryEntry](personal-library/interfaces/InstantiatedLibraryEntry.md)
+Re-exports [InstantiatedLibraryEntry](internal/personal-library/interfaces/InstantiatedLibraryEntry.md)
 
 ***
 
 ### InstantiatedSmartBlock
 
-Re-exports [InstantiatedSmartBlock](smart-blocks-engine/interfaces/InstantiatedSmartBlock.md)
+Re-exports [InstantiatedSmartBlock](internal/smart-blocks-engine/interfaces/InstantiatedSmartBlock.md)
 
 ***
 
 ### instantiateFormTemplate
 
-Re-exports [instantiateFormTemplate](form-templates/functions/instantiateFormTemplate.md)
+Re-exports [instantiateFormTemplate](internal/form-templates/functions/instantiateFormTemplate.md)
 
 ***
 
 ### instantiateLibraryEntry
 
-Re-exports [instantiateLibraryEntry](personal-library/functions/instantiateLibraryEntry.md)
+Re-exports [instantiateLibraryEntry](internal/personal-library/functions/instantiateLibraryEntry.md)
 
 ***
 
 ### InstantiateLibraryEntryOptions
 
-Re-exports [InstantiateLibraryEntryOptions](personal-library/interfaces/InstantiateLibraryEntryOptions.md)
+Re-exports [InstantiateLibraryEntryOptions](internal/personal-library/interfaces/InstantiateLibraryEntryOptions.md)
 
 ***
 
 ### instantiateSmartBlock
 
-Re-exports [instantiateSmartBlock](smart-blocks-engine/functions/instantiateSmartBlock.md)
+Re-exports [instantiateSmartBlock](internal/smart-blocks-engine/functions/instantiateSmartBlock.md)
 
 ***
 
 ### InstantiateSmartBlockOptions
 
-Re-exports [InstantiateSmartBlockOptions](smart-blocks-engine/interfaces/InstantiateSmartBlockOptions.md)
+Re-exports [InstantiateSmartBlockOptions](internal/smart-blocks-engine/interfaces/InstantiateSmartBlockOptions.md)
 
 ***
 
 ### isCdiscNullFlavor
 
-Re-exports [isCdiscNullFlavor](precision-date/functions/isCdiscNullFlavor.md)
+Re-exports [isCdiscNullFlavor](internal/precision-date/functions/isCdiscNullFlavor.md)
 
 ***
 
 ### isDraftDirty
 
-Re-exports [isDraftDirty](study-draft-storage/functions/isDraftDirty.md)
+Re-exports [isDraftDirty](internal/study-draft-storage/functions/isDraftDirty.md)
 
 ***
 
 ### isEvidenceStale
 
-Re-exports [isEvidenceStale](test-scenarios/functions/isEvidenceStale.md)
+Re-exports [isEvidenceStale](internal/test-scenarios/functions/isEvidenceStale.md)
 
 ***
 
 ### isFormTemplateShape
 
-Re-exports [isFormTemplateShape](form-templates/functions/isFormTemplateShape.md)
+Re-exports [isFormTemplateShape](internal/form-templates/functions/isFormTemplateShape.md)
 
 ***
 
 ### isFutureDate
 
-Re-exports [isFutureDate](precision-date/functions/isFutureDate.md)
+Re-exports [isFutureDate](internal/precision-date/functions/isFutureDate.md)
 
 ***
 
 ### isMissingOrNullFlavor
 
-Re-exports [isMissingOrNullFlavor](expression-evaluator/functions/isMissingOrNullFlavor.md)
+Re-exports [isMissingOrNullFlavor](internal/expression-evaluator/functions/isMissingOrNullFlavor.md)
+
+***
+
+### isStudyBaselineShape
+
+Re-exports [isStudyBaselineShape](internal/study-baselines/functions/isStudyBaselineShape.md)
 
 ***
 
 ### isStudyProtocolShape
 
-Re-exports [isStudyProtocolShape](study-draft-storage/functions/isStudyProtocolShape.md)
+Re-exports [isStudyProtocolShape](internal/study-draft-storage/functions/isStudyProtocolShape.md)
 
 ***
 
 ### isUniversalCrfSchemaUrl
 
-Re-exports [isUniversalCrfSchemaUrl](universal-schema/functions/isUniversalCrfSchemaUrl.md)
+Re-exports [isUniversalCrfSchemaUrl](internal/universal-schema/functions/isUniversalCrfSchemaUrl.md)
+
+***
+
+### isUnsupportedDictionaryQuery
+
+Re-exports [isUnsupportedDictionaryQuery](internal/study-omnibar/functions/isUnsupportedDictionaryQuery.md)
 
 ***
 
 ### KNOWN\_MATH\_FUNCTIONS
 
-Re-exports [KNOWN_MATH_FUNCTIONS](formula-linter/variables/KNOWN_MATH_FUNCTIONS.md)
+Re-exports [KNOWN_MATH_FUNCTIONS](internal/formula-linter/variables/KNOWN_MATH_FUNCTIONS.md)
+
+***
+
+### LibraryAffectedReference
+
+Re-exports [LibraryAffectedReference](internal/library-upgrade/interfaces/LibraryAffectedReference.md)
+
+***
+
+### LibraryConflictChoice
+
+Re-exports [LibraryConflictChoice](internal/library-upgrade/type-aliases/LibraryConflictChoice.md)
 
 ***
 
 ### LibraryEntryProvenance
 
-Re-exports [LibraryEntryProvenance](personal-library/interfaces/LibraryEntryProvenance.md)
+Re-exports [LibraryEntryProvenance](internal/personal-library/interfaces/LibraryEntryProvenance.md)
 
 ***
 
 ### LibraryInsertionConflict
 
-Re-exports [LibraryInsertionConflict](personal-library/interfaces/LibraryInsertionConflict.md)
+Re-exports [LibraryInsertionConflict](internal/personal-library/interfaces/LibraryInsertionConflict.md)
 
 ***
 
 ### LibraryInsertionPreview
 
-Re-exports [LibraryInsertionPreview](personal-library/interfaces/LibraryInsertionPreview.md)
+Re-exports [LibraryInsertionPreview](internal/personal-library/interfaces/LibraryInsertionPreview.md)
 
 ***
 
 ### LibrarySourceRef
 
-Re-exports [LibrarySourceRef](personal-library/interfaces/LibrarySourceRef.md)
+Re-exports [LibrarySourceRef](internal/personal-library/interfaces/LibrarySourceRef.md)
+
+***
+
+### LibraryUpgradeAction
+
+Re-exports [LibraryUpgradeAction](internal/library-upgrade/type-aliases/LibraryUpgradeAction.md)
+
+***
+
+### LibraryUpgradeAvailability
+
+Re-exports [LibraryUpgradeAvailability](internal/library-upgrade/interfaces/LibraryUpgradeAvailability.md)
+
+***
+
+### LibraryUpgradeChange
+
+Re-exports [LibraryUpgradeChange](internal/library-upgrade/interfaces/LibraryUpgradeChange.md)
+
+***
+
+### LibraryUpgradeChangeKind
+
+Re-exports [LibraryUpgradeChangeKind](internal/library-upgrade/type-aliases/LibraryUpgradeChangeKind.md)
+
+***
+
+### LibraryUpgradeCounts
+
+Re-exports [LibraryUpgradeCounts](internal/library-upgrade/interfaces/LibraryUpgradeCounts.md)
+
+***
+
+### LibraryUpgradePreview
+
+Re-exports [LibraryUpgradePreview](internal/library-upgrade/interfaces/LibraryUpgradePreview.md)
+
+***
+
+### LibraryUpgradeScope
+
+Re-exports [LibraryUpgradeScope](internal/library-upgrade/type-aliases/LibraryUpgradeScope.md)
+
+***
+
+### LibraryUpgradeStatus
+
+Re-exports [LibraryUpgradeStatus](internal/library-upgrade/type-aliases/LibraryUpgradeStatus.md)
 
 ***
 
 ### lintForm
 
-Re-exports [lintForm](form-linter/functions/lintForm.md)
+Re-exports [lintForm](internal/form-linter/functions/lintForm.md)
 
 ***
 
 ### lintFormula
 
-Re-exports [lintFormula](formula-linter/functions/lintFormula.md)
+Re-exports [lintFormula](internal/formula-linter/functions/lintFormula.md)
 
 ***
 
 ### listFormTemplates
 
-Re-exports [listFormTemplates](form-templates/functions/listFormTemplates.md)
+Re-exports [listFormTemplates](internal/form-templates/functions/listFormTemplates.md)
 
 ***
 
 ### listLibraryEntries
 
-Re-exports [listLibraryEntries](personal-library/functions/listLibraryEntries.md)
+Re-exports [listLibraryEntries](internal/personal-library/functions/listLibraryEntries.md)
 
 ***
 
 ### listScenarios
 
-Re-exports [listScenarios](test-scenarios/functions/listScenarios.md)
+Re-exports [listScenarios](internal/test-scenarios/functions/listScenarios.md)
 
 ***
 
 ### listStudyBaselines
 
-Re-exports [listStudyBaselines](study-baselines/functions/listStudyBaselines.md)
+Re-exports [listStudyBaselines](internal/study-baselines/functions/listStudyBaselines.md)
+
+***
+
+### listStudyLibraryUses
+
+Re-exports [listStudyLibraryUses](internal/library-upgrade/functions/listStudyLibraryUses.md)
 
 ***
 
 ### listStudySnapshots
 
-Re-exports [listStudySnapshots](study-draft-storage/functions/listStudySnapshots.md)
+Re-exports [listStudySnapshots](internal/study-draft-storage/functions/listStudySnapshots.md)
 
 ***
 
 ### LoadLibraryResult
 
-Re-exports [LoadLibraryResult](personal-library/type-aliases/LoadLibraryResult.md)
+Re-exports [LoadLibraryResult](internal/personal-library/type-aliases/LoadLibraryResult.md)
 
 ***
 
 ### loadPersonalLibrary
 
-Re-exports [loadPersonalLibrary](personal-library/functions/loadPersonalLibrary.md)
+Re-exports [loadPersonalLibrary](internal/personal-library/functions/loadPersonalLibrary.md)
 
 ***
 
 ### loadStudyDraft
 
-Re-exports [loadStudyDraft](study-draft-storage/functions/loadStudyDraft.md)
+Re-exports [loadStudyDraft](internal/study-draft-storage/functions/loadStudyDraft.md)
 
 ***
 
 ### LoadStudyDraftResult
 
-Re-exports [LoadStudyDraftResult](study-draft-storage/type-aliases/LoadStudyDraftResult.md)
+Re-exports [LoadStudyDraftResult](internal/study-draft-storage/type-aliases/LoadStudyDraftResult.md)
 
 ***
 
 ### loadUsdmV4WrapperSchema
 
-Re-exports [loadUsdmV4WrapperSchema](usdm-v4-schema/functions/loadUsdmV4WrapperSchema.md)
+Re-exports [loadUsdmV4WrapperSchema](../clinical-standards/usdm-v4-schema/functions/loadUsdmV4WrapperSchema.md)
 
 ***
 
 ### mapOdmDataTypeToClinical
 
-Re-exports [mapOdmDataTypeToClinical](odm-xml-parser/functions/mapOdmDataTypeToClinical.md)
+Re-exports [mapOdmDataTypeToClinical](internal/odm-xml-parser/functions/mapOdmDataTypeToClinical.md)
 
 ***
 
 ### mapPresetToFormVariables
 
-Re-exports [mapPresetToFormVariables](formula-presets/functions/mapPresetToFormVariables.md)
+Re-exports [mapPresetToFormVariables](internal/formula-presets/functions/mapPresetToFormVariables.md)
 
 ***
 
 ### matchTermByLabel
 
-Re-exports [matchTermByLabel](cdisc-controlled-terminology/functions/matchTermByLabel.md)
+Re-exports [matchTermByLabel](../clinical-standards/codelists/functions/matchTermByLabel.md)
 
 ***
 
 ### MAX\_FILE\_SIZE\_BYTES
 
-Re-exports [MAX_FILE_SIZE_BYTES](file-ingestion/variables/MAX_FILE_SIZE_BYTES.md)
+Re-exports [MAX_FILE_SIZE_BYTES](internal/file-ingestion/variables/MAX_FILE_SIZE_BYTES.md)
 
 ***
 
 ### MAX\_FORM\_TEMPLATES
 
-Re-exports [MAX_FORM_TEMPLATES](form-templates/variables/MAX_FORM_TEMPLATES.md)
+Re-exports [MAX_FORM_TEMPLATES](internal/form-templates/variables/MAX_FORM_TEMPLATES.md)
 
 ***
 
 ### MAX\_TEMPLATE\_PACKAGE\_CHARS
 
-Re-exports [MAX_TEMPLATE_PACKAGE_CHARS](form-templates/variables/MAX_TEMPLATE_PACKAGE_CHARS.md)
+Re-exports [MAX_TEMPLATE_PACKAGE_CHARS](internal/form-templates/variables/MAX_TEMPLATE_PACKAGE_CHARS.md)
 
 ***
 
 ### NCI\_ALIAS\_CONTEXT
 
-Re-exports [NCI_ALIAS_CONTEXT](odm-xml-serializer/variables/NCI_ALIAS_CONTEXT.md)
+Re-exports [NCI_ALIAS_CONTEXT](internal/odm-xml-serializer/variables/NCI_ALIAS_CONTEXT.md)
 
 ***
 
 ### NCI\_CODE\_REGEX
 
-Re-exports [NCI_CODE_REGEX](cdisc-controlled-terminology/variables/NCI_CODE_REGEX.md)
+Re-exports [NCI_CODE_REGEX](../clinical-standards/codelists/variables/NCI_CODE_REGEX.md)
 
 ***
 
 ### normalizeStudyForComparison
 
-Re-exports [normalizeStudyForComparison](study-draft-storage/functions/normalizeStudyForComparison.md)
+Re-exports [normalizeStudyForComparison](internal/study-draft-storage/functions/normalizeStudyForComparison.md)
 
 ***
 
 ### NUMERIC\_DATA\_TYPES
 
-Re-exports [NUMERIC_DATA_TYPES](formula-linter/variables/NUMERIC_DATA_TYPES.md)
+Re-exports [NUMERIC_DATA_TYPES](internal/formula-linter/variables/NUMERIC_DATA_TYPES.md)
+
+***
+
+### OMNIBAR\_CATEGORY\_LABELS
+
+Re-exports [OMNIBAR_CATEGORY_LABELS](internal/study-omnibar/variables/OMNIBAR_CATEGORY_LABELS.md)
+
+***
+
+### OMNIBAR\_CATEGORY\_ORDER
+
+Re-exports [OMNIBAR_CATEGORY_ORDER](internal/study-omnibar/variables/OMNIBAR_CATEGORY_ORDER.md)
+
+***
+
+### OmnibarAction
+
+Re-exports [OmnibarAction](internal/study-omnibar/type-aliases/OmnibarAction.md)
+
+***
+
+### OmnibarCategory
+
+Re-exports [OmnibarCategory](internal/study-omnibar/type-aliases/OmnibarCategory.md)
+
+***
+
+### OmnibarEntry
+
+Re-exports [OmnibarEntry](internal/study-omnibar/interfaces/OmnibarEntry.md)
+
+***
+
+### OmnibarInsertionTarget
+
+Re-exports [OmnibarInsertionTarget](internal/study-omnibar/interfaces/OmnibarInsertionTarget.md)
+
+***
+
+### OmnibarResultGroup
+
+Re-exports [OmnibarResultGroup](internal/study-omnibar/interfaces/OmnibarResultGroup.md)
+
+***
+
+### OmnibarSearchResult
+
+Re-exports [OmnibarSearchResult](internal/study-omnibar/interfaces/OmnibarSearchResult.md)
 
 ***
 
@@ -1924,97 +2182,97 @@ Re-exports [ONCOLOGY_RECIST_PRESET](presets/oncology-recist/variables/ONCOLOGY_R
 
 ### OpenedReviewPackage
 
-Re-exports [OpenedReviewPackage](review-package/interfaces/OpenedReviewPackage.md)
+Re-exports [OpenedReviewPackage](internal/review-package/interfaces/OpenedReviewPackage.md)
 
 ***
 
 ### openReviewPackage
 
-Re-exports [openReviewPackage](review-package/functions/openReviewPackage.md)
+Re-exports [openReviewPackage](internal/review-package/functions/openReviewPackage.md)
 
 ***
 
 ### ParsedPrecisionDate
 
-Re-exports [ParsedPrecisionDate](precision-date/interfaces/ParsedPrecisionDate.md)
+Re-exports [ParsedPrecisionDate](internal/precision-date/interfaces/ParsedPrecisionDate.md)
 
 ***
 
 ### ParsedStudyFileResult
 
-Re-exports [ParsedStudyFileResult](file-ingestion/interfaces/ParsedStudyFileResult.md)
+Re-exports [ParsedStudyFileResult](internal/file-ingestion/interfaces/ParsedStudyFileResult.md)
 
 ***
 
 ### parseFormTemplatePackage
 
-Re-exports [parseFormTemplatePackage](form-templates/functions/parseFormTemplatePackage.md)
+Re-exports [parseFormTemplatePackage](internal/form-templates/functions/parseFormTemplatePackage.md)
 
 ***
 
 ### parseIsoDurationDays
 
-Re-exports [parseIsoDurationDays](usdm-v4-schedule/functions/parseIsoDurationDays.md)
+Re-exports [parseIsoDurationDays](../clinical-standards/usdm-v4-schedule/functions/parseIsoDurationDays.md)
 
 ***
 
 ### parseMultiSelectValue
 
-Re-exports [parseMultiSelectValue](export-r/functions/parseMultiSelectValue.md)
+Re-exports [parseMultiSelectValue](internal/export-r/functions/parseMultiSelectValue.md)
 
 ***
 
 ### parsePrecisionDate
 
-Re-exports [parsePrecisionDate](precision-date/functions/parsePrecisionDate.md)
+Re-exports [parsePrecisionDate](internal/precision-date/functions/parsePrecisionDate.md)
 
 ***
 
 ### parseStoredFormTemplates
 
-Re-exports [parseStoredFormTemplates](form-templates/functions/parseStoredFormTemplates.md)
+Re-exports [parseStoredFormTemplates](internal/form-templates/functions/parseStoredFormTemplates.md)
 
 ***
 
 ### parseUniversalCrf
 
-Re-exports [parseUniversalCrf](universal-schema/functions/parseUniversalCrf.md)
+Re-exports [parseUniversalCrf](internal/universal-schema/functions/parseUniversalCrf.md)
 
 ***
 
 ### PERSONAL\_LIBRARY\_CORRUPT\_BACKUP\_KEY
 
-Re-exports [PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY](personal-library/variables/PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY.md)
+Re-exports [PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY](internal/personal-library/variables/PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY.md)
 
 ***
 
 ### PERSONAL\_LIBRARY\_ENVELOPE\_VERSION
 
-Re-exports [PERSONAL_LIBRARY_ENVELOPE_VERSION](personal-library/variables/PERSONAL_LIBRARY_ENVELOPE_VERSION.md)
+Re-exports [PERSONAL_LIBRARY_ENVELOPE_VERSION](internal/personal-library/variables/PERSONAL_LIBRARY_ENVELOPE_VERSION.md)
 
 ***
 
 ### PERSONAL\_LIBRARY\_STORAGE\_KEY
 
-Re-exports [PERSONAL_LIBRARY_STORAGE_KEY](personal-library/variables/PERSONAL_LIBRARY_STORAGE_KEY.md)
+Re-exports [PERSONAL_LIBRARY_STORAGE_KEY](internal/personal-library/variables/PERSONAL_LIBRARY_STORAGE_KEY.md)
 
 ***
 
 ### PersonalLibraryEntry
 
-Re-exports [PersonalLibraryEntry](personal-library/interfaces/PersonalLibraryEntry.md)
+Re-exports [PersonalLibraryEntry](internal/personal-library/interfaces/PersonalLibraryEntry.md)
 
 ***
 
 ### PersonalLibraryEntryRevision
 
-Re-exports [PersonalLibraryEntryRevision](personal-library/interfaces/PersonalLibraryEntryRevision.md)
+Re-exports [PersonalLibraryEntryRevision](internal/personal-library/interfaces/PersonalLibraryEntryRevision.md)
 
 ***
 
 ### PersonalLibraryEnvelope
 
-Re-exports [PersonalLibraryEnvelope](personal-library/interfaces/PersonalLibraryEnvelope.md)
+Re-exports [PersonalLibraryEnvelope](internal/personal-library/interfaces/PersonalLibraryEnvelope.md)
 
 ***
 
@@ -2026,13 +2284,19 @@ Re-exports [PK_ESCALATION_PRESET](presets/pk-dose-escalation/variables/PK_ESCALA
 
 ### PrecisionDateValidationOptions
 
-Re-exports [PrecisionDateValidationOptions](precision-date/interfaces/PrecisionDateValidationOptions.md)
+Re-exports [PrecisionDateValidationOptions](internal/precision-date/interfaces/PrecisionDateValidationOptions.md)
 
 ***
 
 ### PrecisionDateValidationResult
 
-Re-exports [PrecisionDateValidationResult](precision-date/interfaces/PrecisionDateValidationResult.md)
+Re-exports [PrecisionDateValidationResult](internal/precision-date/interfaces/PrecisionDateValidationResult.md)
+
+***
+
+### PRESET\_ID\_STAMP
+
+Re-exports [PRESET_ID_STAMP](internal/cdash-domain-templates/variables/PRESET_ID_STAMP.md)
 
 ***
 
@@ -2044,445 +2308,517 @@ Re-exports [PresetCatalogItem](presets/interfaces/PresetCatalogItem.md)
 
 ### previewFormVariant
 
-Re-exports [previewFormVariant](form-variants/functions/previewFormVariant.md)
+Re-exports [previewFormVariant](internal/form-variants/functions/previewFormVariant.md)
 
 ***
 
 ### previewLibraryInsertion
 
-Re-exports [previewLibraryInsertion](personal-library/functions/previewLibraryInsertion.md)
+Re-exports [previewLibraryInsertion](internal/personal-library/functions/previewLibraryInsertion.md)
+
+***
+
+### previewLibraryUpgrade
+
+Re-exports [previewLibraryUpgrade](internal/library-upgrade/functions/previewLibraryUpgrade.md)
+
+***
+
+### PreviewLibraryUpgradeResult
+
+Re-exports [PreviewLibraryUpgradeResult](internal/library-upgrade/type-aliases/PreviewLibraryUpgradeResult.md)
 
 ***
 
 ### previewReviewPackage
 
-Re-exports [previewReviewPackage](review-package/functions/previewReviewPackage.md)
+Re-exports [previewReviewPackage](internal/review-package/functions/previewReviewPackage.md)
+
+***
+
+### projectRuleToWires
+
+Re-exports [projectRuleToWires](internal/rule-wires/functions/projectRuleToWires.md)
 
 ***
 
 ### projectScenarioInputs
 
-Re-exports [projectScenarioInputs](test-scenarios/functions/projectScenarioInputs.md)
+Re-exports [projectScenarioInputs](internal/test-scenarios/functions/projectScenarioInputs.md)
 
 ***
 
 ### projectScopedValues
 
-Re-exports [projectScopedValues](form-test-harness/functions/projectScopedValues.md)
+Re-exports [projectScopedValues](internal/form-test-harness/functions/projectScopedValues.md)
 
 ***
 
 ### ProtocolAuditEntryInput
 
-Re-exports [ProtocolAuditEntryInput](study-engine/interfaces/ProtocolAuditEntryInput.md)
+Re-exports [ProtocolAuditEntryInput](internal/study-engine/interfaces/ProtocolAuditEntryInput.md)
 
 ***
 
 ### ProtocolDiffSummary
 
-Re-exports [ProtocolDiffSummary](universal-schema/interfaces/ProtocolDiffSummary.md)
+Re-exports [ProtocolDiffSummary](internal/universal-schema/interfaces/ProtocolDiffSummary.md)
 
 ***
 
 ### ProtocolValidationResult
 
-Re-exports [ProtocolValidationResult](study-engine/interfaces/ProtocolValidationResult.md)
+Re-exports [ProtocolValidationResult](internal/study-engine/interfaces/ProtocolValidationResult.md)
 
 ***
 
 ### removeScenario
 
-Re-exports [removeScenario](test-scenarios/functions/removeScenario.md)
+Re-exports [removeScenario](internal/test-scenarios/functions/removeScenario.md)
+
+***
+
+### removeWireCondition
+
+Re-exports [removeWireCondition](internal/rule-wires/functions/removeWireCondition.md)
 
 ***
 
 ### rerunScenarios
 
-Re-exports [rerunScenarios](scenario-impact/functions/rerunScenarios.md)
+Re-exports [rerunScenarios](internal/scenario-impact/functions/rerunScenarios.md)
 
 ***
 
 ### resetScenarioEvidence
 
-Re-exports [resetScenarioEvidence](test-scenarios/functions/resetScenarioEvidence.md)
+Re-exports [resetScenarioEvidence](internal/test-scenarios/functions/resetScenarioEvidence.md)
 
 ***
 
 ### resetScopeValues
 
-Re-exports [resetScopeValues](form-test-harness/functions/resetScopeValues.md)
+Re-exports [resetScopeValues](internal/form-test-harness/functions/resetScopeValues.md)
 
 ***
 
 ### resolveFormConditionalState
 
-Re-exports [resolveFormConditionalState](conditional-logic/functions/resolveFormConditionalState.md)
+Re-exports [resolveFormConditionalState](internal/conditional-logic/functions/resolveFormConditionalState.md)
 
 ***
 
 ### resolveFormConditionalStateForForm
 
-Re-exports [resolveFormConditionalStateForForm](conditional-logic/functions/resolveFormConditionalStateForForm.md)
+Re-exports [resolveFormConditionalStateForForm](internal/conditional-logic/functions/resolveFormConditionalStateForForm.md)
 
 ***
 
 ### resolveLibraryStorage
 
-Re-exports [resolveLibraryStorage](personal-library/functions/resolveLibraryStorage.md)
+Re-exports [resolveLibraryStorage](internal/personal-library/functions/resolveLibraryStorage.md)
+
+***
+
+### resolveOmnibarInsertionTarget
+
+Re-exports [resolveOmnibarInsertionTarget](internal/study-omnibar/functions/resolveOmnibarInsertionTarget.md)
 
 ***
 
 ### resolveStorage
 
-Re-exports [resolveStorage](study-draft-storage/functions/resolveStorage.md)
+Re-exports [resolveStorage](internal/study-draft-storage/functions/resolveStorage.md)
 
 ***
 
 ### restoreBaselineAsDraft
 
-Re-exports [restoreBaselineAsDraft](study-baselines/functions/restoreBaselineAsDraft.md)
+Re-exports [restoreBaselineAsDraft](internal/study-baselines/functions/restoreBaselineAsDraft.md)
 
 ***
 
 ### RestoreStudyBaselineOptions
 
-Re-exports [RestoreStudyBaselineOptions](study-baselines/interfaces/RestoreStudyBaselineOptions.md)
+Re-exports [RestoreStudyBaselineOptions](internal/study-baselines/interfaces/RestoreStudyBaselineOptions.md)
 
 ***
 
 ### RestoreStudyBaselineResult
 
-Re-exports [RestoreStudyBaselineResult](study-baselines/type-aliases/RestoreStudyBaselineResult.md)
+Re-exports [RestoreStudyBaselineResult](internal/study-baselines/type-aliases/RestoreStudyBaselineResult.md)
 
 ***
 
 ### REVIEW\_PACKAGE\_FORMAT
 
-Re-exports [REVIEW_PACKAGE_FORMAT](review-package/variables/REVIEW_PACKAGE_FORMAT.md)
+Re-exports [REVIEW_PACKAGE_FORMAT](internal/review-package/variables/REVIEW_PACKAGE_FORMAT.md)
 
 ***
 
 ### REVIEW\_PACKAGE\_FORMAT\_VERSION
 
-Re-exports [REVIEW_PACKAGE_FORMAT_VERSION](review-package/variables/REVIEW_PACKAGE_FORMAT_VERSION.md)
+Re-exports [REVIEW_PACKAGE_FORMAT_VERSION](internal/review-package/variables/REVIEW_PACKAGE_FORMAT_VERSION.md)
 
 ***
 
 ### REVIEW\_PACKAGE\_GENERATOR
 
-Re-exports [REVIEW_PACKAGE_GENERATOR](review-package/variables/REVIEW_PACKAGE_GENERATOR.md)
+Re-exports [REVIEW_PACKAGE_GENERATOR](internal/review-package/variables/REVIEW_PACKAGE_GENERATOR.md)
 
 ***
 
 ### REVIEW\_PACKAGE\_MANIFEST\_PATH
 
-Re-exports [REVIEW_PACKAGE_MANIFEST_PATH](review-package/variables/REVIEW_PACKAGE_MANIFEST_PATH.md)
+Re-exports [REVIEW_PACKAGE_MANIFEST_PATH](internal/review-package/variables/REVIEW_PACKAGE_MANIFEST_PATH.md)
 
 ***
 
 ### REVIEW\_PACKAGE\_README\_PATH
 
-Re-exports [REVIEW_PACKAGE_README_PATH](review-package/variables/REVIEW_PACKAGE_README_PATH.md)
+Re-exports [REVIEW_PACKAGE_README_PATH](internal/review-package/variables/REVIEW_PACKAGE_README_PATH.md)
 
 ***
 
 ### ReviewPackageArtifact
 
-Re-exports [ReviewPackageArtifact](review-package/interfaces/ReviewPackageArtifact.md)
+Re-exports [ReviewPackageArtifact](internal/review-package/interfaces/ReviewPackageArtifact.md)
 
 ***
 
 ### ReviewPackageArtifactId
 
-Re-exports [ReviewPackageArtifactId](review-package/type-aliases/ReviewPackageArtifactId.md)
+Re-exports [ReviewPackageArtifactId](internal/review-package/type-aliases/ReviewPackageArtifactId.md)
 
 ***
 
 ### ReviewPackageBaseline
 
-Re-exports [ReviewPackageBaseline](review-package/interfaces/ReviewPackageBaseline.md)
+Re-exports [ReviewPackageBaseline](internal/review-package/interfaces/ReviewPackageBaseline.md)
 
 ***
 
 ### ReviewPackageBuildError
 
-Re-exports [ReviewPackageBuildError](review-package/classes/ReviewPackageBuildError.md)
+Re-exports [ReviewPackageBuildError](internal/review-package/classes/ReviewPackageBuildError.md)
 
 ***
 
 ### reviewPackageFilename
 
-Re-exports [reviewPackageFilename](review-package/functions/reviewPackageFilename.md)
+Re-exports [reviewPackageFilename](internal/review-package/functions/reviewPackageFilename.md)
 
 ***
 
 ### ReviewPackageFindings
 
-Re-exports [ReviewPackageFindings](review-package/interfaces/ReviewPackageFindings.md)
+Re-exports [ReviewPackageFindings](internal/review-package/interfaces/ReviewPackageFindings.md)
 
 ***
 
 ### ReviewPackageManifest
 
-Re-exports [ReviewPackageManifest](review-package/interfaces/ReviewPackageManifest.md)
+Re-exports [ReviewPackageManifest](internal/review-package/interfaces/ReviewPackageManifest.md)
 
 ***
 
 ### ReviewPackageNativeSourceCheck
 
-Re-exports [ReviewPackageNativeSourceCheck](review-package/interfaces/ReviewPackageNativeSourceCheck.md)
+Re-exports [ReviewPackageNativeSourceCheck](internal/review-package/interfaces/ReviewPackageNativeSourceCheck.md)
 
 ***
 
 ### ReviewPackageOpenThread
 
-Re-exports [ReviewPackageOpenThread](review-package/interfaces/ReviewPackageOpenThread.md)
+Re-exports [ReviewPackageOpenThread](internal/review-package/interfaces/ReviewPackageOpenThread.md)
 
 ***
 
 ### ReviewPackageOptionalArtifactId
 
-Re-exports [ReviewPackageOptionalArtifactId](review-package/type-aliases/ReviewPackageOptionalArtifactId.md)
+Re-exports [ReviewPackageOptionalArtifactId](internal/review-package/type-aliases/ReviewPackageOptionalArtifactId.md)
 
 ***
 
 ### ReviewPackageOptions
 
-Re-exports [ReviewPackageOptions](review-package/interfaces/ReviewPackageOptions.md)
+Re-exports [ReviewPackageOptions](internal/review-package/interfaces/ReviewPackageOptions.md)
 
 ***
 
 ### ReviewPackagePlanEntry
 
-Re-exports [ReviewPackagePlanEntry](review-package/interfaces/ReviewPackagePlanEntry.md)
+Re-exports [ReviewPackagePlanEntry](internal/review-package/interfaces/ReviewPackagePlanEntry.md)
 
 ***
 
 ### ReviewPackagePreview
 
-Re-exports [ReviewPackagePreview](review-package/interfaces/ReviewPackagePreview.md)
+Re-exports [ReviewPackagePreview](internal/review-package/interfaces/ReviewPackagePreview.md)
 
 ***
 
 ### ReviewPackageProgress
 
-Re-exports [ReviewPackageProgress](review-package/interfaces/ReviewPackageProgress.md)
+Re-exports [ReviewPackageProgress](internal/review-package/interfaces/ReviewPackageProgress.md)
 
 ***
 
 ### ReviewPackageReadinessFinding
 
-Re-exports [ReviewPackageReadinessFinding](review-package/interfaces/ReviewPackageReadinessFinding.md)
+Re-exports [ReviewPackageReadinessFinding](internal/review-package/interfaces/ReviewPackageReadinessFinding.md)
 
 ***
 
 ### ReviewPackageResult
 
-Re-exports [ReviewPackageResult](review-package/interfaces/ReviewPackageResult.md)
+Re-exports [ReviewPackageResult](internal/review-package/interfaces/ReviewPackageResult.md)
 
 ***
 
 ### ReviewPackageRevision
 
-Re-exports [ReviewPackageRevision](review-package/interfaces/ReviewPackageRevision.md)
+Re-exports [ReviewPackageRevision](internal/review-package/interfaces/ReviewPackageRevision.md)
 
 ***
 
 ### ReviewPackageScenarioFinding
 
-Re-exports [ReviewPackageScenarioFinding](review-package/interfaces/ReviewPackageScenarioFinding.md)
+Re-exports [ReviewPackageScenarioFinding](internal/review-package/interfaces/ReviewPackageScenarioFinding.md)
 
 ***
 
 ### ReviewPackageScope
 
-Re-exports [ReviewPackageScope](review-package/interfaces/ReviewPackageScope.md)
+Re-exports [ReviewPackageScope](internal/review-package/interfaces/ReviewPackageScope.md)
 
 ***
 
 ### ReviewPackageSnapshot
 
-Re-exports [ReviewPackageSnapshot](review-package/interfaces/ReviewPackageSnapshot.md)
+Re-exports [ReviewPackageSnapshot](internal/review-package/interfaces/ReviewPackageSnapshot.md)
 
 ***
 
 ### ReviewPackageStaleness
 
-Re-exports [ReviewPackageStaleness](review-package/type-aliases/ReviewPackageStaleness.md)
+Re-exports [ReviewPackageStaleness](internal/review-package/type-aliases/ReviewPackageStaleness.md)
 
 ***
 
 ### ReviewPackageStalenessResolver
 
-Re-exports [ReviewPackageStalenessResolver](review-package/type-aliases/ReviewPackageStalenessResolver.md)
+Re-exports [ReviewPackageStalenessResolver](internal/review-package/type-aliases/ReviewPackageStalenessResolver.md)
 
 ***
 
 ### RuleAttribution
 
-Re-exports [RuleAttribution](conditional-logic/interfaces/RuleAttribution.md)
+Re-exports [RuleAttribution](internal/conditional-logic/interfaces/RuleAttribution.md)
 
 ***
 
 ### RuleExplanation
 
-Re-exports [RuleExplanation](expression-evaluator/interfaces/RuleExplanation.md)
+Re-exports [RuleExplanation](internal/expression-evaluator/interfaces/RuleExplanation.md)
+
+***
+
+### ruleFromWireView
+
+Re-exports [ruleFromWireView](internal/rule-wires/functions/ruleFromWireView.md)
 
 ***
 
 ### RuleOutcome
 
-Re-exports [RuleOutcome](form-test-harness/interfaces/RuleOutcome.md)
+Re-exports [RuleOutcome](internal/form-test-harness/interfaces/RuleOutcome.md)
+
+***
+
+### rulesFromWireGraph
+
+Re-exports [rulesFromWireGraph](internal/rule-wires/functions/rulesFromWireGraph.md)
+
+***
+
+### RuleWire
+
+Re-exports [RuleWire](internal/rule-wires/interfaces/RuleWire.md)
+
+***
+
+### RuleWireGraph
+
+Re-exports [RuleWireGraph](internal/rule-wires/interfaces/RuleWireGraph.md)
+
+***
+
+### RuleWireGroup
+
+Re-exports [RuleWireGroup](internal/rule-wires/interfaces/RuleWireGroup.md)
+
+***
+
+### RuleWireRole
+
+Re-exports [RuleWireRole](internal/rule-wires/type-aliases/RuleWireRole.md)
+
+***
+
+### RuleWireRuleView
+
+Re-exports [RuleWireRuleView](internal/rule-wires/interfaces/RuleWireRuleView.md)
 
 ***
 
 ### runFormTest
 
-Re-exports [runFormTest](form-test-harness/functions/runFormTest.md)
+Re-exports [runFormTest](internal/form-test-harness/functions/runFormTest.md)
 
 ***
 
 ### runScenario
 
-Re-exports [runScenario](test-scenarios/functions/runScenario.md)
+Re-exports [runScenario](internal/test-scenarios/functions/runScenario.md)
 
 ***
 
 ### runScenariosForForm
 
-Re-exports [runScenariosForForm](test-scenarios/functions/runScenariosForForm.md)
+Re-exports [runScenariosForForm](internal/test-scenarios/functions/runScenariosForForm.md)
 
 ***
 
 ### runScenarioWithDependencies
 
-Re-exports [runScenarioWithDependencies](scenario-impact/functions/runScenarioWithDependencies.md)
+Re-exports [runScenarioWithDependencies](internal/scenario-impact/functions/runScenarioWithDependencies.md)
 
 ***
 
 ### SAMPLE\_SUBJECT\_PROFILES
 
-Re-exports [SAMPLE_SUBJECT_PROFILES](ast-debugger/variables/SAMPLE_SUBJECT_PROFILES.md)
+Re-exports [SAMPLE_SUBJECT_PROFILES](internal/ast-debugger/variables/SAMPLE_SUBJECT_PROFILES.md)
 
 ***
 
 ### SampleSubjectProfile
 
-Re-exports [SampleSubjectProfile](ast-debugger/interfaces/SampleSubjectProfile.md)
+Re-exports [SampleSubjectProfile](internal/ast-debugger/interfaces/SampleSubjectProfile.md)
 
 ***
 
 ### sanitizeRName
 
-Re-exports [sanitizeRName](export-r/functions/sanitizeRName.md)
+Re-exports [sanitizeRName](internal/export-r/functions/sanitizeRName.md)
 
 ***
 
 ### sanitizeSasName
 
-Re-exports [sanitizeSasName](export-sas/functions/sanitizeSasName.md)
+Re-exports [sanitizeSasName](internal/export-sas/functions/sanitizeSasName.md)
 
 ***
 
 ### saveFormTemplate
 
-Re-exports [saveFormTemplate](form-templates/functions/saveFormTemplate.md)
+Re-exports [saveFormTemplate](internal/form-templates/functions/saveFormTemplate.md)
 
 ***
 
 ### SaveFormTemplatesResult
 
-Re-exports [SaveFormTemplatesResult](form-templates/type-aliases/SaveFormTemplatesResult.md)
+Re-exports [SaveFormTemplatesResult](internal/form-templates/type-aliases/SaveFormTemplatesResult.md)
 
 ***
 
 ### SaveLibraryResult
 
-Re-exports [SaveLibraryResult](personal-library/type-aliases/SaveLibraryResult.md)
+Re-exports [SaveLibraryResult](internal/personal-library/type-aliases/SaveLibraryResult.md)
 
 ***
 
 ### savePersonalLibrary
 
-Re-exports [savePersonalLibrary](personal-library/functions/savePersonalLibrary.md)
+Re-exports [savePersonalLibrary](internal/personal-library/functions/savePersonalLibrary.md)
 
 ***
 
 ### saveScenarioFromReport
 
-Re-exports [saveScenarioFromReport](scenario-impact/functions/saveScenarioFromReport.md)
+Re-exports [saveScenarioFromReport](internal/scenario-impact/functions/saveScenarioFromReport.md)
 
 ***
 
 ### saveStudyBaseline
 
-Re-exports [saveStudyBaseline](study-baselines/functions/saveStudyBaseline.md)
+Re-exports [saveStudyBaseline](internal/study-baselines/functions/saveStudyBaseline.md)
 
 ***
 
 ### SaveStudyBaselineOptions
 
-Re-exports [SaveStudyBaselineOptions](study-baselines/interfaces/SaveStudyBaselineOptions.md)
+Re-exports [SaveStudyBaselineOptions](internal/study-baselines/interfaces/SaveStudyBaselineOptions.md)
 
 ***
 
 ### SaveStudyBaselineResult
 
-Re-exports [SaveStudyBaselineResult](study-baselines/type-aliases/SaveStudyBaselineResult.md)
+Re-exports [SaveStudyBaselineResult](internal/study-baselines/type-aliases/SaveStudyBaselineResult.md)
 
 ***
 
 ### saveStudyDraft
 
-Re-exports [saveStudyDraft](study-draft-storage/functions/saveStudyDraft.md)
+Re-exports [saveStudyDraft](internal/study-draft-storage/functions/saveStudyDraft.md)
 
 ***
 
 ### SaveStudyDraftResult
 
-Re-exports [SaveStudyDraftResult](study-draft-storage/type-aliases/SaveStudyDraftResult.md)
+Re-exports [SaveStudyDraftResult](internal/study-draft-storage/type-aliases/SaveStudyDraftResult.md)
 
 ***
 
 ### saveStudySnapshot
 
-Re-exports [saveStudySnapshot](study-draft-storage/functions/saveStudySnapshot.md)
+Re-exports [saveStudySnapshot](internal/study-draft-storage/functions/saveStudySnapshot.md)
 
 ***
 
 ### SaveStudySnapshotResult
 
-Re-exports [SaveStudySnapshotResult](study-draft-storage/type-aliases/SaveStudySnapshotResult.md)
+Re-exports [SaveStudySnapshotResult](internal/study-draft-storage/type-aliases/SaveStudySnapshotResult.md)
 
 ***
 
 ### scaffoldCdashDomain
 
-Re-exports [scaffoldCdashDomain](cdash-domain-templates/functions/scaffoldCdashDomain.md)
+Re-exports [scaffoldCdashDomain](internal/cdash-domain-templates/functions/scaffoldCdashDomain.md)
 
 ***
 
 ### SCENARIO\_DEPENDENCY\_VERSION
 
-Re-exports [SCENARIO_DEPENDENCY_VERSION](scenario-impact/variables/SCENARIO_DEPENDENCY_VERSION.md)
+Re-exports [SCENARIO_DEPENDENCY_VERSION](internal/scenario-impact/variables/SCENARIO_DEPENDENCY_VERSION.md)
 
 ***
 
 ### ScenarioDependencyChange
 
-Re-exports [ScenarioDependencyChange](scenario-impact/type-aliases/ScenarioDependencyChange.md)
+Re-exports [ScenarioDependencyChange](internal/scenario-impact/type-aliases/ScenarioDependencyChange.md)
 
 ***
 
 ### ScenarioDependencyKind
 
-Re-exports [ScenarioDependencyKind](scenario-impact/type-aliases/ScenarioDependencyKind.md)
+Re-exports [ScenarioDependencyKind](internal/scenario-impact/type-aliases/ScenarioDependencyKind.md)
 
 ***
 
 ### ScenarioDependencyRef
 
-Re-exports [ScenarioDependencyRef](scenario-impact/interfaces/ScenarioDependencyRef.md)
+Re-exports [ScenarioDependencyRef](internal/scenario-impact/interfaces/ScenarioDependencyRef.md)
 
 ***
 
@@ -2506,43 +2842,43 @@ Re-exports [ScenarioExpectationResult](types/interfaces/ScenarioExpectationResul
 
 ### ScenarioExpectationSchema
 
-Re-exports [ScenarioExpectationSchema](universal-schema/variables/ScenarioExpectationSchema.md)
+Re-exports [ScenarioExpectationSchema](internal/universal-schema/variables/ScenarioExpectationSchema.md)
 
 ***
 
 ### ScenarioFreshness
 
-Re-exports [ScenarioFreshness](scenario-impact/type-aliases/ScenarioFreshness.md)
+Re-exports [ScenarioFreshness](internal/scenario-impact/type-aliases/ScenarioFreshness.md)
 
 ***
 
 ### ScenarioFreshnessAssessment
 
-Re-exports [ScenarioFreshnessAssessment](scenario-impact/interfaces/ScenarioFreshnessAssessment.md)
+Re-exports [ScenarioFreshnessAssessment](internal/scenario-impact/interfaces/ScenarioFreshnessAssessment.md)
 
 ***
 
 ### ScenarioImpactNavigationTarget
 
-Re-exports [ScenarioImpactNavigationTarget](scenario-impact/interfaces/ScenarioImpactNavigationTarget.md)
+Re-exports [ScenarioImpactNavigationTarget](internal/scenario-impact/interfaces/ScenarioImpactNavigationTarget.md)
 
 ***
 
 ### ScenarioImpactReport
 
-Re-exports [ScenarioImpactReport](scenario-impact/interfaces/ScenarioImpactReport.md)
+Re-exports [ScenarioImpactReport](internal/scenario-impact/interfaces/ScenarioImpactReport.md)
 
 ***
 
 ### ScenarioImpactStanding
 
-Re-exports [ScenarioImpactStanding](scenario-impact/type-aliases/ScenarioImpactStanding.md)
+Re-exports [ScenarioImpactStanding](internal/scenario-impact/type-aliases/ScenarioImpactStanding.md)
 
 ***
 
 ### ScenarioRerunSummary
 
-Re-exports [ScenarioRerunSummary](scenario-impact/interfaces/ScenarioRerunSummary.md)
+Re-exports [ScenarioRerunSummary](internal/scenario-impact/interfaces/ScenarioRerunSummary.md)
 
 ***
 
@@ -2554,157 +2890,145 @@ Re-exports [ScenarioRunEvidence](types/interfaces/ScenarioRunEvidence.md)
 
 ### ScenarioRunEvidenceSchema
 
-Re-exports [ScenarioRunEvidenceSchema](universal-schema/variables/ScenarioRunEvidenceSchema.md)
+Re-exports [ScenarioRunEvidenceSchema](internal/universal-schema/variables/ScenarioRunEvidenceSchema.md)
 
 ***
 
 ### ScenarioStaleReason
 
-Re-exports [ScenarioStaleReason](scenario-impact/interfaces/ScenarioStaleReason.md)
+Re-exports [ScenarioStaleReason](internal/scenario-impact/interfaces/ScenarioStaleReason.md)
 
 ***
 
 ### ScenarioStanding
 
-Re-exports [ScenarioStanding](test-scenarios/type-aliases/ScenarioStanding.md)
+Re-exports [ScenarioStanding](internal/test-scenarios/type-aliases/ScenarioStanding.md)
 
 ***
 
 ### ScheduleBounds
 
-Re-exports [ScheduleBounds](visit-window/interfaces/ScheduleBounds.md)
+Re-exports [ScheduleBounds](internal/visit-window/interfaces/ScheduleBounds.md)
 
 ***
 
 ### ScheduleDriftAnalysis
 
-Re-exports [ScheduleDriftAnalysis](visit-window/interfaces/ScheduleDriftAnalysis.md)
+Re-exports [ScheduleDriftAnalysis](internal/visit-window/interfaces/ScheduleDriftAnalysis.md)
 
 ***
 
-### SDTM\_COL\_WIDTH\_1
+### scoreOmnibarEntry
 
-Re-exports [SDTM_COL_WIDTH_1](export-docx/variables/SDTM_COL_WIDTH_1.md)
-
-***
-
-### SDTM\_COL\_WIDTH\_2
-
-Re-exports [SDTM_COL_WIDTH_2](export-docx/variables/SDTM_COL_WIDTH_2.md)
-
-***
-
-### SDTM\_COL\_WIDTH\_3
-
-Re-exports [SDTM_COL_WIDTH_3](export-docx/variables/SDTM_COL_WIDTH_3.md)
-
-***
-
-### SDTM\_COL\_WIDTH\_4
-
-Re-exports [SDTM_COL_WIDTH_4](export-docx/variables/SDTM_COL_WIDTH_4.md)
-
-***
-
-### SDTM\_COL\_WIDTH\_5
-
-Re-exports [SDTM_COL_WIDTH_5](export-docx/variables/SDTM_COL_WIDTH_5.md)
-
-***
-
-### SDTM\_COL\_WIDTH\_6
-
-Re-exports [SDTM_COL_WIDTH_6](export-docx/variables/SDTM_COL_WIDTH_6.md)
+Re-exports [scoreOmnibarEntry](internal/study-omnibar/functions/scoreOmnibarEntry.md)
 
 ***
 
 ### SdtmMappingRow
 
-Re-exports [SdtmMappingRow](export-acrf/interfaces/SdtmMappingRow.md)
+Re-exports [SdtmMappingRow](internal/export-acrf/interfaces/SdtmMappingRow.md)
+
+***
+
+### sdtmTargetFor
+
+Re-exports [sdtmTargetFor](internal/export-annotations/functions/sdtmTargetFor.md)
+
+***
+
+### searchFormCatalog
+
+Re-exports [searchFormCatalog](internal/form-catalog/functions/searchFormCatalog.md)
 
 ***
 
 ### searchSlashCommands
 
-Re-exports [searchSlashCommands](smart-blocks-engine/functions/searchSlashCommands.md)
+Re-exports [searchSlashCommands](internal/smart-blocks-engine/functions/searchSlashCommands.md)
+
+***
+
+### searchStudyOmnibar
+
+Re-exports [searchStudyOmnibar](internal/study-omnibar/functions/searchStudyOmnibar.md)
 
 ***
 
 ### SectionImpactPreview
 
-Re-exports [SectionImpactPreview](study-engine/interfaces/SectionImpactPreview.md)
+Re-exports [SectionImpactPreview](internal/study-engine/interfaces/SectionImpactPreview.md)
 
 ***
 
 ### serializeBaselineDiffToCsv
 
-Re-exports [serializeBaselineDiffToCsv](export-baseline-diff/functions/serializeBaselineDiffToCsv.md)
+Re-exports [serializeBaselineDiffToCsv](internal/export-baseline-diff/functions/serializeBaselineDiffToCsv.md)
 
 ***
 
 ### serializeBaselineDiffToJson
 
-Re-exports [serializeBaselineDiffToJson](export-baseline-diff/functions/serializeBaselineDiffToJson.md)
+Re-exports [serializeBaselineDiffToJson](internal/export-baseline-diff/functions/serializeBaselineDiffToJson.md)
 
 ***
 
 ### serializeBaselineDiffToText
 
-Re-exports [serializeBaselineDiffToText](export-baseline-diff/functions/serializeBaselineDiffToText.md)
+Re-exports [serializeBaselineDiffToText](internal/export-baseline-diff/functions/serializeBaselineDiffToText.md)
 
 ***
 
 ### serializeStudyToOdmXml
 
-Re-exports [serializeStudyToOdmXml](odm-xml-serializer/variables/serializeStudyToOdmXml.md)
+Re-exports [serializeStudyToOdmXml](internal/odm-xml-serializer/variables/serializeStudyToOdmXml.md)
 
 ***
 
 ### setScopedValue
 
-Re-exports [setScopedValue](form-test-harness/functions/setScopedValue.md)
+Re-exports [setScopedValue](internal/form-test-harness/functions/setScopedValue.md)
+
+***
+
+### setWireGroupOperator
+
+Re-exports [setWireGroupOperator](internal/rule-wires/functions/setWireGroupOperator.md)
+
+***
+
+### setWireOuterOperator
+
+Re-exports [setWireOuterOperator](internal/rule-wires/functions/setWireOuterOperator.md)
 
 ***
 
 ### SlashCommandCategory
 
-Re-exports [SlashCommandCategory](smart-blocks-engine/type-aliases/SlashCommandCategory.md)
+Re-exports [SlashCommandCategory](internal/smart-blocks-engine/type-aliases/SlashCommandCategory.md)
 
 ***
 
 ### SlashCommandItem
 
-Re-exports [SlashCommandItem](smart-blocks-engine/interfaces/SlashCommandItem.md)
+Re-exports [SlashCommandItem](internal/smart-blocks-engine/interfaces/SlashCommandItem.md)
 
 ***
 
 ### snapshotExpectationsFromReport
 
-Re-exports [snapshotExpectationsFromReport](scenario-impact/functions/snapshotExpectationsFromReport.md)
+Re-exports [snapshotExpectationsFromReport](internal/scenario-impact/functions/snapshotExpectationsFromReport.md)
 
 ***
 
 ### STANDARD\_CODELISTS
 
-Re-exports [STANDARD_CODELISTS](cdisc-controlled-terminology/variables/STANDARD_CODELISTS.md)
-
-***
-
-### STANDARD\_COL\_WIDTH\_1
-
-Re-exports [STANDARD_COL_WIDTH_1](export-docx/variables/STANDARD_COL_WIDTH_1.md)
-
-***
-
-### STANDARD\_COL\_WIDTH\_2
-
-Re-exports [STANDARD_COL_WIDTH_2](export-docx/variables/STANDARD_COL_WIDTH_2.md)
+Re-exports [STANDARD_CODELISTS](../clinical-standards/codelists/variables/STANDARD_CODELISTS.md)
 
 ***
 
 ### stripAnsi
 
-Re-exports [stripAnsi](cli-engine/functions/stripAnsi.md)
+Re-exports [stripAnsi](internal/cli-engine/functions/stripAnsi.md)
 
 ***
 
@@ -2722,37 +3046,37 @@ Re-exports [StudioTheme](types/type-aliases/StudioTheme.md)
 
 ### STUDY\_BASELINES\_CORRUPT\_BACKUP\_KEY
 
-Re-exports [STUDY_BASELINES_CORRUPT_BACKUP_KEY](study-baselines/variables/STUDY_BASELINES_CORRUPT_BACKUP_KEY.md)
+Re-exports [STUDY_BASELINES_CORRUPT_BACKUP_KEY](internal/study-baselines/variables/STUDY_BASELINES_CORRUPT_BACKUP_KEY.md)
 
 ***
 
 ### STUDY\_BASELINES\_MAX\_COUNT
 
-Re-exports [STUDY_BASELINES_MAX_COUNT](study-baselines/variables/STUDY_BASELINES_MAX_COUNT.md)
+Re-exports [STUDY_BASELINES_MAX_COUNT](internal/study-baselines/variables/STUDY_BASELINES_MAX_COUNT.md)
 
 ***
 
 ### STUDY\_BASELINES\_STORAGE\_KEY
 
-Re-exports [STUDY_BASELINES_STORAGE_KEY](study-baselines/variables/STUDY_BASELINES_STORAGE_KEY.md)
+Re-exports [STUDY_BASELINES_STORAGE_KEY](internal/study-baselines/variables/STUDY_BASELINES_STORAGE_KEY.md)
 
 ***
 
 ### STUDY\_DRAFT\_CORRUPT\_BACKUP\_KEY
 
-Re-exports [STUDY_DRAFT_CORRUPT_BACKUP_KEY](study-draft-storage/variables/STUDY_DRAFT_CORRUPT_BACKUP_KEY.md)
+Re-exports [STUDY_DRAFT_CORRUPT_BACKUP_KEY](internal/study-draft-storage/variables/STUDY_DRAFT_CORRUPT_BACKUP_KEY.md)
 
 ***
 
 ### STUDY\_DRAFT\_ENVELOPE\_VERSION
 
-Re-exports [STUDY_DRAFT_ENVELOPE_VERSION](study-draft-storage/variables/STUDY_DRAFT_ENVELOPE_VERSION.md)
+Re-exports [STUDY_DRAFT_ENVELOPE_VERSION](internal/study-draft-storage/variables/STUDY_DRAFT_ENVELOPE_VERSION.md)
 
 ***
 
 ### STUDY\_DRAFT\_STORAGE\_KEY
 
-Re-exports [STUDY_DRAFT_STORAGE_KEY](study-draft-storage/variables/STUDY_DRAFT_STORAGE_KEY.md)
+Re-exports [STUDY_DRAFT_STORAGE_KEY](internal/study-draft-storage/variables/STUDY_DRAFT_STORAGE_KEY.md)
 
 ***
 
@@ -2764,7 +3088,7 @@ Re-exports [STUDY_PRESETS](presets/variables/STUDY_PRESETS.md)
 
 ### STUDY\_SNAPSHOTS\_STORAGE\_KEY
 
-Re-exports [STUDY_SNAPSHOTS_STORAGE_KEY](study-draft-storage/variables/STUDY_SNAPSHOTS_STORAGE_KEY.md)
+Re-exports [STUDY_SNAPSHOTS_STORAGE_KEY](internal/study-draft-storage/variables/STUDY_SNAPSHOTS_STORAGE_KEY.md)
 
 ***
 
@@ -2776,19 +3100,19 @@ Re-exports [StudyArm](types/interfaces/StudyArm.md)
 
 ### StudyArmSchema
 
-Re-exports [StudyArmSchema](universal-schema/variables/StudyArmSchema.md)
+Re-exports [StudyArmSchema](internal/universal-schema/variables/StudyArmSchema.md)
 
 ***
 
 ### StudyAuditor
 
-Re-exports [StudyAuditor](study-auditor/classes/StudyAuditor.md)
+Re-exports [StudyAuditor](internal/study-auditor/classes/StudyAuditor.md)
 
 ***
 
 ### StudyAuditReport
 
-Re-exports [StudyAuditReport](study-auditor/interfaces/StudyAuditReport.md)
+Re-exports [StudyAuditReport](internal/study-auditor/interfaces/StudyAuditReport.md)
 
 ***
 
@@ -2818,19 +3142,19 @@ Re-exports [StudyCohort](types/interfaces/StudyCohort.md)
 
 ### StudyCohortSchema
 
-Re-exports [StudyCohortSchema](universal-schema/variables/StudyCohortSchema.md)
+Re-exports [StudyCohortSchema](internal/universal-schema/variables/StudyCohortSchema.md)
 
 ***
 
 ### studyDayDistance
 
-Re-exports [studyDayDistance](usdm-v4-schedule/functions/studyDayDistance.md)
+Re-exports [studyDayDistance](../clinical-standards/usdm-v4-schedule/functions/studyDayDistance.md)
 
 ***
 
 ### StudyDraftEnvelope
 
-Re-exports [StudyDraftEnvelope](study-draft-storage/interfaces/StudyDraftEnvelope.md)
+Re-exports [StudyDraftEnvelope](internal/study-draft-storage/interfaces/StudyDraftEnvelope.md)
 
 ***
 
@@ -2842,7 +3166,7 @@ Re-exports [StudyEpoch](types/interfaces/StudyEpoch.md)
 
 ### StudyEpochSchema
 
-Re-exports [StudyEpochSchema](universal-schema/variables/StudyEpochSchema.md)
+Re-exports [StudyEpochSchema](internal/universal-schema/variables/StudyEpochSchema.md)
 
 ***
 
@@ -2860,13 +3184,13 @@ Re-exports [StudyLibraryUse](types/interfaces/StudyLibraryUse.md)
 
 ### StudyLibraryUseSchema
 
-Re-exports [StudyLibraryUseSchema](universal-schema/variables/StudyLibraryUseSchema.md)
+Re-exports [StudyLibraryUseSchema](internal/universal-schema/variables/StudyLibraryUseSchema.md)
 
 ***
 
 ### StudyMilestoneForecast
 
-Re-exports [StudyMilestoneForecast](visit-window/interfaces/StudyMilestoneForecast.md)
+Re-exports [StudyMilestoneForecast](internal/visit-window/interfaces/StudyMilestoneForecast.md)
 
 ***
 
@@ -2884,7 +3208,7 @@ Re-exports [StudyProtocol](types/interfaces/StudyProtocol.md)
 
 ### StudyProtocolEngine
 
-Re-exports [StudyProtocolEngine](study-engine/classes/StudyProtocolEngine.md)
+Re-exports [StudyProtocolEngine](internal/study-engine/classes/StudyProtocolEngine.md)
 
 ***
 
@@ -2896,7 +3220,7 @@ Re-exports [StudyProvenance](types/interfaces/StudyProvenance.md)
 
 ### StudyProvenanceSchema
 
-Re-exports [StudyProvenanceSchema](universal-schema/variables/StudyProvenanceSchema.md)
+Re-exports [StudyProvenanceSchema](internal/universal-schema/variables/StudyProvenanceSchema.md)
 
 ***
 
@@ -2938,7 +3262,7 @@ Re-exports [StudyReviewThread](types/interfaces/StudyReviewThread.md)
 
 ### StudySnapshot
 
-Re-exports [StudySnapshot](study-draft-storage/interfaces/StudySnapshot.md)
+Re-exports [StudySnapshot](internal/study-draft-storage/interfaces/StudySnapshot.md)
 
 ***
 
@@ -2954,12 +3278,6 @@ Re-exports [SubjectFormStatus](types/interfaces/SubjectFormStatus.md)
 
 ***
 
-### TABLE\_WIDTH\_DXA
-
-Re-exports [TABLE_WIDTH_DXA](export-docx/variables/TABLE_WIDTH_DXA.md)
-
-***
-
 ### TestScenario
 
 Re-exports [TestScenario](types/interfaces/TestScenario.md)
@@ -2968,700 +3286,712 @@ Re-exports [TestScenario](types/interfaces/TestScenario.md)
 
 ### TestScenarioSchema
 
-Re-exports [TestScenarioSchema](universal-schema/variables/TestScenarioSchema.md)
-
-***
-
-### TOC\_COL\_WIDTH\_1
-
-Re-exports [TOC_COL_WIDTH_1](export-docx/variables/TOC_COL_WIDTH_1.md)
-
-***
-
-### TOC\_COL\_WIDTH\_2
-
-Re-exports [TOC_COL_WIDTH_2](export-docx/variables/TOC_COL_WIDTH_2.md)
-
-***
-
-### TOC\_COL\_WIDTH\_3
-
-Re-exports [TOC_COL_WIDTH_3](export-docx/variables/TOC_COL_WIDTH_3.md)
-
-***
-
-### TOC\_COL\_WIDTH\_4
-
-Re-exports [TOC_COL_WIDTH_4](export-docx/variables/TOC_COL_WIDTH_4.md)
-
-***
-
-### TOC\_COL\_WIDTH\_5
-
-Re-exports [TOC_COL_WIDTH_5](export-docx/variables/TOC_COL_WIDTH_5.md)
+Re-exports [TestScenarioSchema](internal/universal-schema/variables/TestScenarioSchema.md)
 
 ***
 
 ### Token
 
-Re-exports [Token](expression-evaluator/interfaces/Token.md)
+Re-exports [Token](internal/expression-evaluator/interfaces/Token.md)
 
 ***
 
 ### tokenizeWithSpans
 
-Re-exports [tokenizeWithSpans](formula-linter/functions/tokenizeWithSpans.md)
+Re-exports [tokenizeWithSpans](internal/formula-linter/functions/tokenizeWithSpans.md)
 
 ***
 
 ### TokenType
 
-Re-exports [TokenType](expression-evaluator/type-aliases/TokenType.md)
+Re-exports [TokenType](internal/expression-evaluator/type-aliases/TokenType.md)
 
 ***
 
 ### UniversalAstCondition
 
-Re-exports [UniversalAstCondition](universal-schema/type-aliases/UniversalAstCondition.md)
+Re-exports [UniversalAstCondition](internal/universal-schema/type-aliases/UniversalAstCondition.md)
 
 ***
 
 ### UniversalAuditTrailEntry
 
-Re-exports [UniversalAuditTrailEntry](universal-schema/type-aliases/UniversalAuditTrailEntry.md)
+Re-exports [UniversalAuditTrailEntry](internal/universal-schema/type-aliases/UniversalAuditTrailEntry.md)
 
 ***
 
 ### UniversalBiomedicalConcept
 
-Re-exports [UniversalBiomedicalConcept](universal-schema/type-aliases/UniversalBiomedicalConcept.md)
+Re-exports [UniversalBiomedicalConcept](internal/universal-schema/type-aliases/UniversalBiomedicalConcept.md)
 
 ***
 
 ### UniversalBiomedicalConceptProperty
 
-Re-exports [UniversalBiomedicalConceptProperty](universal-schema/type-aliases/UniversalBiomedicalConceptProperty.md)
+Re-exports [UniversalBiomedicalConceptProperty](internal/universal-schema/type-aliases/UniversalBiomedicalConceptProperty.md)
 
 ***
 
 ### UniversalCdashMetadata
 
-Re-exports [UniversalCdashMetadata](universal-schema/type-aliases/UniversalCdashMetadata.md)
+Re-exports [UniversalCdashMetadata](internal/universal-schema/type-aliases/UniversalCdashMetadata.md)
 
 ***
 
 ### UniversalClinicalDataType
 
-Re-exports [UniversalClinicalDataType](universal-schema/type-aliases/UniversalClinicalDataType.md)
+Re-exports [UniversalClinicalDataType](internal/universal-schema/type-aliases/UniversalClinicalDataType.md)
 
 ***
 
 ### UniversalClinicalDataTypeSchema
 
-Re-exports [UniversalClinicalDataTypeSchema](universal-schema/variables/UniversalClinicalDataTypeSchema.md)
+Re-exports [UniversalClinicalDataTypeSchema](internal/universal-schema/variables/UniversalClinicalDataTypeSchema.md)
 
 ***
 
 ### UniversalCodelist
 
-Re-exports [UniversalCodelist](universal-schema/type-aliases/UniversalCodelist.md)
+Re-exports [UniversalCodelist](internal/universal-schema/type-aliases/UniversalCodelist.md)
 
 ***
 
 ### UniversalCodelistOption
 
-Re-exports [UniversalCodelistOption](universal-schema/type-aliases/UniversalCodelistOption.md)
+Re-exports [UniversalCodelistOption](internal/universal-schema/type-aliases/UniversalCodelistOption.md)
 
 ***
 
 ### UniversalCrfBranding
 
-Re-exports [UniversalCrfBranding](universal-schema/type-aliases/UniversalCrfBranding.md)
+Re-exports [UniversalCrfBranding](internal/universal-schema/type-aliases/UniversalCrfBranding.md)
 
 ***
 
 ### UniversalCrfBrandingSchema
 
-Re-exports [UniversalCrfBrandingSchema](universal-schema/variables/UniversalCrfBrandingSchema.md)
+Re-exports [UniversalCrfBrandingSchema](internal/universal-schema/variables/UniversalCrfBrandingSchema.md)
 
 ***
 
 ### UniversalCrfField
 
-Re-exports [UniversalCrfField](universal-schema/type-aliases/UniversalCrfField.md)
+Re-exports [UniversalCrfField](internal/universal-schema/type-aliases/UniversalCrfField.md)
 
 ***
 
 ### UniversalCrfFieldSchema
 
-Re-exports [UniversalCrfFieldSchema](universal-schema/variables/UniversalCrfFieldSchema.md)
+Re-exports [UniversalCrfFieldSchema](internal/universal-schema/variables/UniversalCrfFieldSchema.md)
 
 ***
 
 ### UniversalCrfForm
 
-Re-exports [UniversalCrfForm](universal-schema/type-aliases/UniversalCrfForm.md)
+Re-exports [UniversalCrfForm](internal/universal-schema/type-aliases/UniversalCrfForm.md)
 
 ***
 
 ### UniversalCrfFormSchema
 
-Re-exports [UniversalCrfFormSchema](universal-schema/variables/UniversalCrfFormSchema.md)
+Re-exports [UniversalCrfFormSchema](internal/universal-schema/variables/UniversalCrfFormSchema.md)
 
 ***
 
 ### UniversalCrfProtocol
 
-Re-exports [UniversalCrfProtocol](universal-schema/type-aliases/UniversalCrfProtocol.md)
+Re-exports [UniversalCrfProtocol](internal/universal-schema/type-aliases/UniversalCrfProtocol.md)
 
 ***
 
 ### UniversalCrfProtocolSchema
 
-Re-exports [UniversalCrfProtocolSchema](universal-schema/variables/UniversalCrfProtocolSchema.md)
+Re-exports [UniversalCrfProtocolSchema](internal/universal-schema/variables/UniversalCrfProtocolSchema.md)
 
 ***
 
 ### UniversalCrfSection
 
-Re-exports [UniversalCrfSection](universal-schema/type-aliases/UniversalCrfSection.md)
+Re-exports [UniversalCrfSection](internal/universal-schema/type-aliases/UniversalCrfSection.md)
 
 ***
 
 ### UniversalCrfSectionSchema
 
-Re-exports [UniversalCrfSectionSchema](universal-schema/variables/UniversalCrfSectionSchema.md)
+Re-exports [UniversalCrfSectionSchema](internal/universal-schema/variables/UniversalCrfSectionSchema.md)
 
 ***
 
 ### UniversalCrfValidationResult
 
-Re-exports [UniversalCrfValidationResult](universal-schema/interfaces/UniversalCrfValidationResult.md)
+Re-exports [UniversalCrfValidationResult](internal/universal-schema/interfaces/UniversalCrfValidationResult.md)
 
 ***
 
 ### UniversalCrfVisit
 
-Re-exports [UniversalCrfVisit](universal-schema/type-aliases/UniversalCrfVisit.md)
+Re-exports [UniversalCrfVisit](internal/universal-schema/type-aliases/UniversalCrfVisit.md)
 
 ***
 
 ### UniversalCrfVisitSchema
 
-Re-exports [UniversalCrfVisitSchema](universal-schema/variables/UniversalCrfVisitSchema.md)
+Re-exports [UniversalCrfVisitSchema](internal/universal-schema/variables/UniversalCrfVisitSchema.md)
 
 ***
 
 ### UniversalEdcSimulationState
 
-Re-exports [UniversalEdcSimulationState](universal-schema/type-aliases/UniversalEdcSimulationState.md)
+Re-exports [UniversalEdcSimulationState](internal/universal-schema/type-aliases/UniversalEdcSimulationState.md)
 
 ***
 
 ### UniversalEditCheckRule
 
-Re-exports [UniversalEditCheckRule](universal-schema/type-aliases/UniversalEditCheckRule.md)
+Re-exports [UniversalEditCheckRule](internal/universal-schema/type-aliases/UniversalEditCheckRule.md)
 
 ***
 
 ### UniversalStudyArm
 
-Re-exports [UniversalStudyArm](universal-schema/type-aliases/UniversalStudyArm.md)
+Re-exports [UniversalStudyArm](internal/universal-schema/type-aliases/UniversalStudyArm.md)
 
 ***
 
 ### UniversalStudyCohort
 
-Re-exports [UniversalStudyCohort](universal-schema/type-aliases/UniversalStudyCohort.md)
+Re-exports [UniversalStudyCohort](internal/universal-schema/type-aliases/UniversalStudyCohort.md)
 
 ***
 
 ### UniversalStudyEpoch
 
-Re-exports [UniversalStudyEpoch](universal-schema/type-aliases/UniversalStudyEpoch.md)
+Re-exports [UniversalStudyEpoch](internal/universal-schema/type-aliases/UniversalStudyEpoch.md)
 
 ***
 
 ### UniversalStudyProtocol
 
-Re-exports [UniversalStudyProtocol](universal-schema/type-aliases/UniversalStudyProtocol.md)
+Re-exports [UniversalStudyProtocol](internal/universal-schema/type-aliases/UniversalStudyProtocol.md)
 
 ***
 
 ### UniversalStudyProtocolSchema
 
-Re-exports [UniversalStudyProtocolSchema](universal-schema/variables/UniversalStudyProtocolSchema.md)
+Re-exports [UniversalStudyProtocolSchema](internal/universal-schema/variables/UniversalStudyProtocolSchema.md)
 
 ***
 
 ### UniversalStudyProvenance
 
-Re-exports [UniversalStudyProvenance](universal-schema/type-aliases/UniversalStudyProvenance.md)
+Re-exports [UniversalStudyProvenance](internal/universal-schema/type-aliases/UniversalStudyProvenance.md)
 
 ***
 
 ### UniversalTestScenario
 
-Re-exports [UniversalTestScenario](universal-schema/type-aliases/UniversalTestScenario.md)
+Re-exports [UniversalTestScenario](internal/universal-schema/type-aliases/UniversalTestScenario.md)
 
 ***
 
 ### updateLibraryEntry
 
-Re-exports [updateLibraryEntry](personal-library/functions/updateLibraryEntry.md)
+Re-exports [updateLibraryEntry](internal/personal-library/functions/updateLibraryEntry.md)
 
 ***
 
 ### updateScenario
 
-Re-exports [updateScenario](test-scenarios/functions/updateScenario.md)
+Re-exports [updateScenario](internal/test-scenarios/functions/updateScenario.md)
+
+***
+
+### updateWireCondition
+
+Re-exports [updateWireCondition](internal/rule-wires/functions/updateWireCondition.md)
 
 ***
 
 ### upsertLibraryEntry
 
-Re-exports [upsertLibraryEntry](personal-library/functions/upsertLibraryEntry.md)
+Re-exports [upsertLibraryEntry](internal/personal-library/functions/upsertLibraryEntry.md)
 
 ***
 
 ### upsertScenario
 
-Re-exports [upsertScenario](test-scenarios/functions/upsertScenario.md)
+Re-exports [upsertScenario](internal/test-scenarios/functions/upsertScenario.md)
 
 ***
 
 ### USDM\_SDTM\_DOMAIN\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](../clinical-standards/usdm-v4-types/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
 
 ***
 
 ### USDM\_SDTM\_STRESU\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_STRESU_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_STRESU_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_STRESU_EXTENSION_URL](../clinical-standards/usdm-v4-types/variables/USDM_SDTM_STRESU_EXTENSION_URL.md)
 
 ***
 
 ### USDM\_SDTM\_TESTCD\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_TESTCD_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_TESTCD_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_TESTCD_EXTENSION_URL](../clinical-standards/usdm-v4-types/variables/USDM_SDTM_TESTCD_EXTENSION_URL.md)
 
 ***
 
 ### USDM\_TIMING\_AFTER
 
-Re-exports [USDM_TIMING_AFTER](usdm-v4-schedule/variables/USDM_TIMING_AFTER.md)
+Re-exports [USDM_TIMING_AFTER](../clinical-standards/usdm-v4-schedule/variables/USDM_TIMING_AFTER.md)
 
 ***
 
 ### USDM\_TIMING\_BEFORE
 
-Re-exports [USDM_TIMING_BEFORE](usdm-v4-schedule/variables/USDM_TIMING_BEFORE.md)
+Re-exports [USDM_TIMING_BEFORE](../clinical-standards/usdm-v4-schedule/variables/USDM_TIMING_BEFORE.md)
 
 ***
 
 ### USDM\_TIMING\_FIXED\_REFERENCE
 
-Re-exports [USDM_TIMING_FIXED_REFERENCE](usdm-v4-schedule/variables/USDM_TIMING_FIXED_REFERENCE.md)
+Re-exports [USDM_TIMING_FIXED_REFERENCE](../clinical-standards/usdm-v4-schedule/variables/USDM_TIMING_FIXED_REFERENCE.md)
 
 ***
 
 ### USDM\_V4\_VERSION
 
-Re-exports [USDM_V4_VERSION](usdm-v4-types/variables/USDM_V4_VERSION.md)
+Re-exports [USDM_V4_VERSION](../clinical-standards/usdm-v4-types/variables/USDM_V4_VERSION.md)
 
 ***
 
 ### UsdmActivity
 
-Re-exports [UsdmActivity](usdm-adapter/interfaces/UsdmActivity.md)
+Re-exports [UsdmActivity](internal/usdm-adapter/interfaces/UsdmActivity.md)
 
 ***
 
 ### UsdmArm
 
-Re-exports [UsdmArm](usdm-adapter/interfaces/UsdmArm.md)
+Re-exports [UsdmArm](internal/usdm-adapter/interfaces/UsdmArm.md)
 
 ***
 
 ### UsdmBiomedicalConcept
 
-Re-exports [UsdmBiomedicalConcept](usdm-adapter/interfaces/UsdmBiomedicalConcept.md)
+Re-exports [UsdmBiomedicalConcept](internal/usdm-adapter/interfaces/UsdmBiomedicalConcept.md)
 
 ***
 
 ### UsdmBiomedicalConceptProperty
 
-Re-exports [UsdmBiomedicalConceptProperty](usdm-adapter/interfaces/UsdmBiomedicalConceptProperty.md)
+Re-exports [UsdmBiomedicalConceptProperty](internal/usdm-adapter/interfaces/UsdmBiomedicalConceptProperty.md)
 
 ***
 
 ### UsdmCohort
 
-Re-exports [UsdmCohort](usdm-adapter/interfaces/UsdmCohort.md)
+Re-exports [UsdmCohort](internal/usdm-adapter/interfaces/UsdmCohort.md)
 
 ***
 
 ### UsdmDiffSummary
 
-Re-exports [UsdmDiffSummary](usdm-adapter/interfaces/UsdmDiffSummary.md)
+Re-exports [UsdmDiffSummary](internal/usdm-adapter/interfaces/UsdmDiffSummary.md)
 
 ***
 
 ### UsdmDocument
 
-Re-exports [UsdmDocument](usdm-adapter/interfaces/UsdmDocument.md)
+Re-exports [UsdmDocument](internal/usdm-adapter/interfaces/UsdmDocument.md)
 
 ***
 
 ### UsdmEncounter
 
-Re-exports [UsdmEncounter](usdm-adapter/interfaces/UsdmEncounter.md)
+Re-exports [UsdmEncounter](internal/usdm-adapter/interfaces/UsdmEncounter.md)
 
 ***
 
 ### UsdmEpoch
 
-Re-exports [UsdmEpoch](usdm-adapter/interfaces/UsdmEpoch.md)
+Re-exports [UsdmEpoch](internal/usdm-adapter/interfaces/UsdmEpoch.md)
 
 ***
 
 ### UsdmStudy
 
-Re-exports [UsdmStudy](usdm-adapter/interfaces/UsdmStudy.md)
+Re-exports [UsdmStudy](internal/usdm-adapter/interfaces/UsdmStudy.md)
 
 ***
 
 ### UsdmStudyDesign
 
-Re-exports [UsdmStudyDesign](usdm-adapter/interfaces/UsdmStudyDesign.md)
+Re-exports [UsdmStudyDesign](internal/usdm-adapter/interfaces/UsdmStudyDesign.md)
 
 ***
 
 ### UsdmV4Activity
 
-Re-exports [UsdmV4Activity](usdm-v4-types/interfaces/UsdmV4Activity.md)
+Re-exports [UsdmV4Activity](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Activity.md)
 
 ***
 
 ### UsdmV4AdministrableProduct
 
-Re-exports [UsdmV4AdministrableProduct](usdm-v4-types/interfaces/UsdmV4AdministrableProduct.md)
+Re-exports [UsdmV4AdministrableProduct](../clinical-standards/usdm-v4-types/interfaces/UsdmV4AdministrableProduct.md)
 
 ***
 
 ### UsdmV4AliasCode
 
-Re-exports [UsdmV4AliasCode](usdm-v4-types/interfaces/UsdmV4AliasCode.md)
+Re-exports [UsdmV4AliasCode](../clinical-standards/usdm-v4-types/interfaces/UsdmV4AliasCode.md)
 
 ***
 
 ### UsdmV4AnalysisPopulation
 
-Re-exports [UsdmV4AnalysisPopulation](usdm-v4-types/interfaces/UsdmV4AnalysisPopulation.md)
+Re-exports [UsdmV4AnalysisPopulation](../clinical-standards/usdm-v4-types/interfaces/UsdmV4AnalysisPopulation.md)
 
 ***
 
 ### UsdmV4Base
 
-Re-exports [UsdmV4Base](usdm-v4-types/interfaces/UsdmV4Base.md)
+Re-exports [UsdmV4Base](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Base.md)
 
 ***
 
 ### UsdmV4BiomedicalConcept
 
-Re-exports [UsdmV4BiomedicalConcept](usdm-v4-types/interfaces/UsdmV4BiomedicalConcept.md)
+Re-exports [UsdmV4BiomedicalConcept](../clinical-standards/usdm-v4-types/interfaces/UsdmV4BiomedicalConcept.md)
 
 ***
 
 ### UsdmV4BiomedicalConceptProperty
 
-Re-exports [UsdmV4BiomedicalConceptProperty](usdm-v4-types/interfaces/UsdmV4BiomedicalConceptProperty.md)
+Re-exports [UsdmV4BiomedicalConceptProperty](../clinical-standards/usdm-v4-types/interfaces/UsdmV4BiomedicalConceptProperty.md)
 
 ***
 
 ### UsdmV4BiomedicalConceptSurrogate
 
-Re-exports [UsdmV4BiomedicalConceptSurrogate](usdm-v4-types/interfaces/UsdmV4BiomedicalConceptSurrogate.md)
+Re-exports [UsdmV4BiomedicalConceptSurrogate](../clinical-standards/usdm-v4-types/interfaces/UsdmV4BiomedicalConceptSurrogate.md)
 
 ***
 
 ### UsdmV4Code
 
-Re-exports [UsdmV4Code](usdm-v4-types/interfaces/UsdmV4Code.md)
+Re-exports [UsdmV4Code](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Code.md)
 
 ***
 
 ### UsdmV4Document
 
-Re-exports [UsdmV4Document](usdm-v4-types/interfaces/UsdmV4Document.md)
+Re-exports [UsdmV4Document](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Document.md)
 
 ***
 
 ### UsdmV4Duration
 
-Re-exports [UsdmV4Duration](usdm-v4-types/interfaces/UsdmV4Duration.md)
+Re-exports [UsdmV4Duration](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Duration.md)
 
 ***
 
 ### UsdmV4EligibilityCriterion
 
-Re-exports [UsdmV4EligibilityCriterion](usdm-v4-types/interfaces/UsdmV4EligibilityCriterion.md)
+Re-exports [UsdmV4EligibilityCriterion](../clinical-standards/usdm-v4-types/interfaces/UsdmV4EligibilityCriterion.md)
 
 ***
 
 ### UsdmV4EligibilityCriterionItem
 
-Re-exports [UsdmV4EligibilityCriterionItem](usdm-v4-types/interfaces/UsdmV4EligibilityCriterionItem.md)
+Re-exports [UsdmV4EligibilityCriterionItem](../clinical-standards/usdm-v4-types/interfaces/UsdmV4EligibilityCriterionItem.md)
 
 ***
 
 ### UsdmV4Encounter
 
-Re-exports [UsdmV4Encounter](usdm-v4-types/interfaces/UsdmV4Encounter.md)
+Re-exports [UsdmV4Encounter](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Encounter.md)
 
 ***
 
 ### UsdmV4EncounterSchedule
 
-Re-exports [UsdmV4EncounterSchedule](usdm-v4-schedule/interfaces/UsdmV4EncounterSchedule.md)
+Re-exports [UsdmV4EncounterSchedule](../clinical-standards/usdm-v4-schedule/interfaces/UsdmV4EncounterSchedule.md)
 
 ***
 
 ### UsdmV4Endpoint
 
-Re-exports [UsdmV4Endpoint](usdm-v4-types/interfaces/UsdmV4Endpoint.md)
+Re-exports [UsdmV4Endpoint](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Endpoint.md)
 
 ***
 
 ### UsdmV4Estimand
 
-Re-exports [UsdmV4Estimand](usdm-v4-types/interfaces/UsdmV4Estimand.md)
+Re-exports [UsdmV4Estimand](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Estimand.md)
 
 ***
 
 ### UsdmV4ExtensionAttribute
 
-Re-exports [UsdmV4ExtensionAttribute](usdm-v4-types/interfaces/UsdmV4ExtensionAttribute.md)
+Re-exports [UsdmV4ExtensionAttribute](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ExtensionAttribute.md)
 
 ***
 
 ### UsdmV4IntercurrentEvent
 
-Re-exports [UsdmV4IntercurrentEvent](usdm-v4-types/interfaces/UsdmV4IntercurrentEvent.md)
+Re-exports [UsdmV4IntercurrentEvent](../clinical-standards/usdm-v4-types/interfaces/UsdmV4IntercurrentEvent.md)
 
 ***
 
 ### UsdmV4InterventionalStudyDesign
 
-Re-exports [UsdmV4InterventionalStudyDesign](usdm-v4-types/interfaces/UsdmV4InterventionalStudyDesign.md)
+Re-exports [UsdmV4InterventionalStudyDesign](../clinical-standards/usdm-v4-types/interfaces/UsdmV4InterventionalStudyDesign.md)
 
 ***
 
 ### UsdmV4Masking
 
-Re-exports [UsdmV4Masking](usdm-v4-types/interfaces/UsdmV4Masking.md)
+Re-exports [UsdmV4Masking](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Masking.md)
 
 ***
 
 ### UsdmV4Named
 
-Re-exports [UsdmV4Named](usdm-v4-types/interfaces/UsdmV4Named.md)
+Re-exports [UsdmV4Named](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Named.md)
 
 ***
 
 ### UsdmV4Objective
 
-Re-exports [UsdmV4Objective](usdm-v4-types/interfaces/UsdmV4Objective.md)
+Re-exports [UsdmV4Objective](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Objective.md)
 
 ***
 
 ### UsdmV4Organization
 
-Re-exports [UsdmV4Organization](usdm-v4-types/interfaces/UsdmV4Organization.md)
+Re-exports [UsdmV4Organization](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Organization.md)
 
 ***
 
 ### UsdmV4Procedure
 
-Re-exports [UsdmV4Procedure](usdm-v4-types/interfaces/UsdmV4Procedure.md)
+Re-exports [UsdmV4Procedure](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Procedure.md)
 
 ***
 
 ### UsdmV4Quantity
 
-Re-exports [UsdmV4Quantity](usdm-v4-types/interfaces/UsdmV4Quantity.md)
+Re-exports [UsdmV4Quantity](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Quantity.md)
 
 ***
 
 ### UsdmV4Range
 
-Re-exports [UsdmV4Range](usdm-v4-types/interfaces/UsdmV4Range.md)
+Re-exports [UsdmV4Range](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Range.md)
 
 ***
 
 ### UsdmV4ResponseCode
 
-Re-exports [UsdmV4ResponseCode](usdm-v4-types/interfaces/UsdmV4ResponseCode.md)
+Re-exports [UsdmV4ResponseCode](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ResponseCode.md)
 
 ***
 
 ### UsdmV4ScheduledActivityInstance
 
-Re-exports [UsdmV4ScheduledActivityInstance](usdm-v4-types/interfaces/UsdmV4ScheduledActivityInstance.md)
+Re-exports [UsdmV4ScheduledActivityInstance](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ScheduledActivityInstance.md)
 
 ***
 
 ### UsdmV4ScheduleTimeline
 
-Re-exports [UsdmV4ScheduleTimeline](usdm-v4-types/interfaces/UsdmV4ScheduleTimeline.md)
+Re-exports [UsdmV4ScheduleTimeline](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ScheduleTimeline.md)
 
 ***
 
 ### UsdmV4ScheduleTimelineExit
 
-Re-exports [UsdmV4ScheduleTimelineExit](usdm-v4-types/interfaces/UsdmV4ScheduleTimelineExit.md)
+Re-exports [UsdmV4ScheduleTimelineExit](../clinical-standards/usdm-v4-types/interfaces/UsdmV4ScheduleTimelineExit.md)
 
 ***
 
 ### UsdmV4Study
 
-Re-exports [UsdmV4Study](usdm-v4-types/interfaces/UsdmV4Study.md)
+Re-exports [UsdmV4Study](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Study.md)
 
 ***
 
 ### UsdmV4StudyArm
 
-Re-exports [UsdmV4StudyArm](usdm-v4-types/interfaces/UsdmV4StudyArm.md)
+Re-exports [UsdmV4StudyArm](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyArm.md)
 
 ***
 
 ### UsdmV4StudyCell
 
-Re-exports [UsdmV4StudyCell](usdm-v4-types/interfaces/UsdmV4StudyCell.md)
+Re-exports [UsdmV4StudyCell](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyCell.md)
 
 ***
 
 ### UsdmV4StudyCohort
 
-Re-exports [UsdmV4StudyCohort](usdm-v4-types/interfaces/UsdmV4StudyCohort.md)
+Re-exports [UsdmV4StudyCohort](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyCohort.md)
 
 ***
 
 ### UsdmV4StudyDesignPopulation
 
-Re-exports [UsdmV4StudyDesignPopulation](usdm-v4-types/interfaces/UsdmV4StudyDesignPopulation.md)
+Re-exports [UsdmV4StudyDesignPopulation](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyDesignPopulation.md)
 
 ***
 
 ### UsdmV4StudyElement
 
-Re-exports [UsdmV4StudyElement](usdm-v4-types/interfaces/UsdmV4StudyElement.md)
+Re-exports [UsdmV4StudyElement](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyElement.md)
 
 ***
 
 ### UsdmV4StudyEpoch
 
-Re-exports [UsdmV4StudyEpoch](usdm-v4-types/interfaces/UsdmV4StudyEpoch.md)
+Re-exports [UsdmV4StudyEpoch](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyEpoch.md)
 
 ***
 
 ### UsdmV4StudyIdentifier
 
-Re-exports [UsdmV4StudyIdentifier](usdm-v4-types/interfaces/UsdmV4StudyIdentifier.md)
+Re-exports [UsdmV4StudyIdentifier](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyIdentifier.md)
 
 ***
 
 ### UsdmV4StudyIntervention
 
-Re-exports [UsdmV4StudyIntervention](usdm-v4-types/interfaces/UsdmV4StudyIntervention.md)
+Re-exports [UsdmV4StudyIntervention](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyIntervention.md)
 
 ***
 
 ### UsdmV4StudyRole
 
-Re-exports [UsdmV4StudyRole](usdm-v4-types/interfaces/UsdmV4StudyRole.md)
+Re-exports [UsdmV4StudyRole](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyRole.md)
 
 ***
 
 ### UsdmV4StudyTitle
 
-Re-exports [UsdmV4StudyTitle](usdm-v4-types/interfaces/UsdmV4StudyTitle.md)
+Re-exports [UsdmV4StudyTitle](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyTitle.md)
 
 ***
 
 ### UsdmV4StudyVersion
 
-Re-exports [UsdmV4StudyVersion](usdm-v4-types/interfaces/UsdmV4StudyVersion.md)
+Re-exports [UsdmV4StudyVersion](../clinical-standards/usdm-v4-types/interfaces/UsdmV4StudyVersion.md)
 
 ***
 
 ### UsdmV4Timing
 
-Re-exports [UsdmV4Timing](usdm-v4-types/interfaces/UsdmV4Timing.md)
+Re-exports [UsdmV4Timing](../clinical-standards/usdm-v4-types/interfaces/UsdmV4Timing.md)
 
 ***
 
 ### validateCdashVariableName
 
-Re-exports [validateCdashVariableName](precision-date/functions/validateCdashVariableName.md)
+Re-exports [validateCdashVariableName](internal/precision-date/functions/validateCdashVariableName.md)
 
 ***
 
 ### validateCodelists
 
-Re-exports [validateCodelists](cdisc-controlled-terminology/functions/validateCodelists.md)
+Re-exports [validateCodelists](../clinical-standards/codelists/functions/validateCodelists.md)
 
 ***
 
 ### validatePrecisionDate
 
-Re-exports [validatePrecisionDate](precision-date/functions/validatePrecisionDate.md)
+Re-exports [validatePrecisionDate](internal/precision-date/functions/validatePrecisionDate.md)
 
 ***
 
 ### validateStudyCompliance
 
-Re-exports [validateStudyCompliance](cdisc-conformance-linter/functions/validateStudyCompliance.md)
+Re-exports [validateStudyCompliance](internal/cdisc-conformance-linter/functions/validateStudyCompliance.md)
 
 ***
 
 ### validateUniversalCrf
 
-Re-exports [validateUniversalCrf](universal-schema/functions/validateUniversalCrf.md)
+Re-exports [validateUniversalCrf](internal/universal-schema/functions/validateUniversalCrf.md)
 
 ***
 
 ### validateUsdmV4Document
 
-Re-exports [validateUsdmV4Document](usdm-v4-schema/functions/validateUsdmV4Document.md)
+Re-exports [validateUsdmV4Document](../clinical-standards/usdm-v4-schema/functions/validateUsdmV4Document.md)
 
 ***
 
 ### ValidationIssue
 
-Re-exports [ValidationIssue](study-engine/interfaces/ValidationIssue.md)
+Re-exports [ValidationIssue](internal/study-engine/interfaces/ValidationIssue.md)
+
+***
+
+### verifyStarterInsertion
+
+Re-exports [verifyStarterInsertion](internal/study-omnibar/functions/verifyStarterInsertion.md)
 
 ***
 
 ### VisitConflictSummary
 
-Re-exports [VisitConflictSummary](visit-window/interfaces/VisitConflictSummary.md)
+Re-exports [VisitConflictSummary](internal/visit-window/interfaces/VisitConflictSummary.md)
 
 ***
 
 ### VisitMilestoneProjection
 
-Re-exports [VisitMilestoneProjection](visit-window/interfaces/VisitMilestoneProjection.md)
+Re-exports [VisitMilestoneProjection](internal/visit-window/interfaces/VisitMilestoneProjection.md)
 
 ***
 
 ### VisitWindowConflict
 
-Re-exports [VisitWindowConflict](visit-window/interfaces/VisitWindowConflict.md)
+Re-exports [VisitWindowConflict](internal/visit-window/interfaces/VisitWindowConflict.md)
+
+***
+
+### WIRE\_ACTION\_LABELS
+
+Re-exports [WIRE_ACTION_LABELS](internal/rule-wires/variables/WIRE_ACTION_LABELS.md)
+
+***
+
+### WIRE\_ACTION\_TYPES
+
+Re-exports [WIRE_ACTION_TYPES](internal/rule-wires/variables/WIRE_ACTION_TYPES.md)
+
+***
+
+### WIRE\_EDITABLE\_OPERATORS
+
+Re-exports [WIRE_EDITABLE_OPERATORS](internal/rule-wires/variables/WIRE_EDITABLE_OPERATORS.md)
+
+***
+
+### WireActionType
+
+Re-exports [WireActionType](internal/rule-wires/type-aliases/WireActionType.md)
+
+***
+
+### WireConditionLocation
+
+Re-exports [WireConditionLocation](internal/rule-wires/interfaces/WireConditionLocation.md)
 
 ***
 
 ### zipReviewPackage
 
-Re-exports [zipReviewPackage](review-package/functions/zipReviewPackage.md)
+Re-exports [zipReviewPackage](internal/review-package/functions/zipReviewPackage.md)

@@ -3,13 +3,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   StudyProtocolEngine,
   generateCdashVariableName,
-} from "@/lib/crf/study-engine";
-import {
   saveStudySnapshot,
   listStudySnapshots,
   isDraftDirty,
   normalizeStudyForComparison,
-} from "@/lib/crf/study-draft-storage";
+} from "@/lib/crf";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
 import type { StudyProtocol } from "@/lib/crf/types";
 

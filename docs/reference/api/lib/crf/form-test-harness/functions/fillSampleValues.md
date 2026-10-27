@@ -32,7 +32,7 @@ option codes, which is what allows those derivations to evaluate.
 
 ### codelists?
 
-[`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+[`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ## Returns
 

@@ -48,7 +48,7 @@ const NON_NPM_CREDITS: readonly {
     use: "Validates the USDM study definitions CRF Studio exports and the Study Data Pipeline reads.",
     license: "MIT",
     url: "https://github.com/cdisc-org/DDF-RA",
-    note: "Copyright (c) 2022 CDISC. License text ships inside the schema: lib/crf/usdm-v4.0.0-wrapper.schema.json (x-license)",
+    note: "Copyright (c) 2022 CDISC. License text ships inside the schema: lib/clinical-standards/usdm-v4.0.0-wrapper.schema.json (x-license)",
   },
   {
     name: "NCI EVS CDISC Controlled Terminology",

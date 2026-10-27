@@ -4,7 +4,7 @@
  * two-space indentation, LF line endings and a trailing newline. The same
  * model always gives the same bytes.
  */
-import { CLINICAL_STANDARDS_PROFILE } from "../../standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import type {
   DefineCodeList,
   DefineDocument,

@@ -16,13 +16,13 @@
 
 ### codelists?
 
-> `optional` **codelists?**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+> `optional` **codelists?**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ***
 
 ### codeLists?
 
-> `optional` **codeLists?**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[] \| `Record`\<`string`, `unknown`\>[]
+> `optional` **codeLists?**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[] \| `Record`\<`string`, `unknown`\>[]
 
 ***
 

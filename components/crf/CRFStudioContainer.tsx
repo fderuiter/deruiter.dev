@@ -5,10 +5,15 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
 import {
-  StudioMode,
   DeviceViewport,
   SlashCommandItem,
   getStudyBranding,
+  buildFormCatalog,
+  catalogBlockCommand,
+  instantiateCatalogForm,
+  DEFAULT_TEST_SCOPE,
+  type ConditionalFieldValues,
+  type OmnibarAction,
 } from "@/lib/crf";
 import {
   loadInitialStudy,
@@ -23,9 +28,11 @@ import { useStudyAutosave } from "@/hooks/useStudyAutosave";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { StudioHeader } from "./StudioHeader";
+import { MODE_BY_KEY } from "./studio-stages";
 import { StudySpine } from "./LeftSidebar/StudySpine";
 import { WidgetPalette } from "./LeftSidebar/WidgetPalette";
-import { CdashScaffolderModal } from "./LeftSidebar/CdashScaffolderModal";
+import { FormCatalogModal } from "./FormCatalogModal";
+import { useSavedFormTemplates } from "./useSavedFormTemplates";
 import { FormCanvas } from "./CenterCanvas/FormCanvas";
 import { InspectorPanel } from "./RightInspector/InspectorPanel";
 import dynamic from "next/dynamic";
@@ -81,10 +88,8 @@ const SpotlightTourOverlay = dynamic(
 import { StudioTerminal } from "./Terminal/StudioTerminal";
 import { FormTestDock } from "./Modes/FormTestDock";
 import { ScenarioImpactPanel } from "./Modes/ScenarioImpactPanel";
-import { DEFAULT_TEST_SCOPE, type ConditionalFieldValues } from "@/lib/crf";
 import { SlashPaletteModal } from "./SlashPaletteModal";
 import { StudyOmnibar } from "./StudyOmnibar";
-import type { OmnibarAction } from "@/lib/crf/study-omnibar";
 import { BaselineManagerModal } from "./BaselineManagerModal";
 import {
   BaselineCompareModal,
@@ -171,16 +176,6 @@ const CTRL_OR_META_PREFIXES: readonly string[] = [
 const ESCAPE_HOTKEYS: readonly string[] = ANY_MODIFIER_PREFIXES.map(
   (prefix) => `${prefix}Escape`
 );
-
-const MODE_BY_KEY: Readonly<Record<string, StudioMode>> = {
-  "1": "designer",
-  "2": "grid",
-  "3": "matrix",
-  "4": "rules",
-  "5": "edc",
-  "6": "acrf",
-  "7": "export",
-};
 
 const STUDIO_HOTKEYS: readonly string[] = [
   "/",
@@ -290,7 +285,7 @@ export const CRFStudioContainer: React.FC = () => {
   );
 
   // Modals & Panels State
-  const [isScaffolderOpen, setIsScaffolderOpen] = useState(false);
+  const [isFormCatalogOpen, setIsFormCatalogOpen] = useState(false);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const [isBrandingOpen, setIsBrandingOpen] = useState(false);
   const [isExportDocModalOpen, setIsExportDocModalOpen] = useState(false);
@@ -427,8 +422,8 @@ export const CRFStudioContainer: React.FC = () => {
         }
         return;
       // ⌘K / Ctrl+K stays with the site-wide search palette so the shortcut
-      // means the same thing on every page (#1208); the scaffolder has its
-      // own "+ CDASH Form" button in the studio header.
+      // means the same thing on every page (#1208); the form catalog has its
+      // own "+ Add form" button in the studio header.
       // Toggle Left Sidebar (⌘B / Ctrl+B)
       case "b":
         e.preventDefault();
@@ -498,6 +493,28 @@ export const CRFStudioContainer: React.FC = () => {
       index: slashTargetIndex,
     });
   };
+
+  // One form catalog (#2927 item 11): forms go to a visit as a new form,
+  // blocks go into the open form where the slash palette would put them.
+  const savedTemplates = useSavedFormTemplates();
+  const catalogEntries = useMemo(
+    () => buildFormCatalog(savedTemplates),
+    [savedTemplates]
+  );
+  const handleAddCatalogEntry = (entryId: string, targetVisitId?: string) => {
+    const command = catalogBlockCommand(entryId);
+    if (command) {
+      editor.insertSlashCommand(command);
+      return;
+    }
+    const added = instantiateCatalogForm(entryId, study, savedTemplates);
+    if (added) {
+      editor.injectCdashForm(added.form, targetVisitId, added.codelists);
+    }
+  };
+  const activeVisitName =
+    study.visits.find((visit) => visit.id === activeVisitId)?.name ??
+    "the study";
 
   // Study Omnibar (#544). Insertions clear any stale slash target so they
   // resolve exactly as the slash palette does (after the selected field, else
@@ -624,7 +641,7 @@ export const CRFStudioContainer: React.FC = () => {
         onChangeMode={setActiveMode}
         onSelectPreset={editor.selectPreset}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
-        onOpenCdashScaffolder={() => setIsScaffolderOpen(true)}
+        onOpenFormCatalog={() => setIsFormCatalogOpen(true)}
         onOpenBranding={() => setIsBrandingOpen(true)}
         onOpenExportDocument={() => setIsExportDocModalOpen(true)}
         onOpenBaselines={() => setIsBaselinesModalOpen(true)}
@@ -695,7 +712,7 @@ export const CRFStudioContainer: React.FC = () => {
                   onAddForm={editor.addForm}
                   onDuplicateForm={editor.duplicateForm}
                   onDeleteForm={editor.deleteForm}
-                  onOpenCdashScaffolder={() => setIsScaffolderOpen(true)}
+                  onOpenFormCatalog={() => setIsFormCatalogOpen(true)}
                   onAddField={(field) => {
                     editor.addField(field, {
                       sectionId: addFieldTargetSectionId ?? undefined,
@@ -704,7 +721,8 @@ export const CRFStudioContainer: React.FC = () => {
                   }}
                   onAssignFormToVisit={editor.assignFormToVisit}
                   onUnassignFormFromVisit={editor.unassignFormFromVisit}
-                  onInjectCdashForm={editor.injectCdashForm}
+                  catalogEntries={catalogEntries}
+                  onAddCatalogEntry={handleAddCatalogEntry}
                   onCommitFormVariant={editor.commitFormVariant}
                 />
               </aside>
@@ -731,7 +749,7 @@ export const CRFStudioContainer: React.FC = () => {
                     onAddForm={editor.addForm}
                     onDuplicateForm={editor.duplicateForm}
                     onDeleteForm={editor.deleteForm}
-                    onOpenCdashScaffolder={() => setIsScaffolderOpen(true)}
+                    onOpenFormCatalog={() => setIsFormCatalogOpen(true)}
                     onAddField={(field) => {
                       editor.addField(field, {
                         sectionId: addFieldTargetSectionId ?? undefined,
@@ -741,7 +759,8 @@ export const CRFStudioContainer: React.FC = () => {
                     }}
                     onAssignFormToVisit={editor.assignFormToVisit}
                     onUnassignFormFromVisit={editor.unassignFormFromVisit}
-                    onInjectCdashForm={editor.injectCdashForm}
+                    catalogEntries={catalogEntries}
+                    onAddCatalogEntry={handleAddCatalogEntry}
                     onCommitFormVariant={editor.commitFormVariant}
                   />
                 </div>
@@ -1093,10 +1112,13 @@ export const CRFStudioContainer: React.FC = () => {
       )}
 
       {/* Modals & Drawers */}
-      <CdashScaffolderModal
-        isOpen={isScaffolderOpen}
-        onClose={() => setIsScaffolderOpen(false)}
-        onInjectForm={editor.injectCdashForm}
+      <FormCatalogModal
+        isOpen={isFormCatalogOpen}
+        onClose={() => setIsFormCatalogOpen(false)}
+        entries={catalogEntries}
+        canInsertBlocks={!!activeForm}
+        targetLabel={activeVisitName}
+        onAdd={(entry) => handleAddCatalogEntry(entry.id, activeVisitId)}
       />
 
       <DiagnosticsDrawer

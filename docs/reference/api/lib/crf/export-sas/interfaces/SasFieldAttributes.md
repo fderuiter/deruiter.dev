@@ -12,7 +12,7 @@ Maps a ClinicalDataType to SAS Variable Attributes (Type, Length, Format, Inform
 
 ### codelistRef?
 
-> `optional` **codelistRef?**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)
+> `optional` **codelistRef?**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)
 
 ***
 

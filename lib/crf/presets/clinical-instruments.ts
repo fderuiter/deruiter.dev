@@ -1,5 +1,5 @@
 import { StudyProtocol } from "../types";
-import { STANDARD_CODELISTS } from "../cdisc-cdash-library";
+import { STANDARD_CODELISTS } from "../internal/cdisc-cdash-library";
 
 /**
  * Pre-Validated Clinical Instruments Study Preset
@@ -8,7 +8,8 @@ import { STANDARD_CODELISTS } from "../cdisc-cdash-library";
 export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
   id: "study_inst_2026",
   protocolNumber: "INST-VAL-007",
-  studyName: "Multicenter Validation of Digital Patient-Reported Outcomes & Cardiac Safety",
+  studyName:
+    "Multicenter Validation of Digital Patient-Reported Outcomes & Cardiac Safety",
   phase: "Phase II",
   sponsor: "BioMetrics Research Consortium",
   therapeuticArea: "Cross-Therapeutic / Digital Health",
@@ -18,14 +19,26 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
     ...STANDARD_CODELISTS,
     {
       id: "CL_PHQ9",
-      name: "PHQ-9 Frequency Codelist",
-      nciCodelistCode: "C120980",
+      // The standardized results of PHQ-9 items 1 to 9; the labels are the
+      // original responses (PHQ0101T09OR, C213939).
+      name: "PHQ-9 Items 1 to 9 Standardized Result (PHQ0101T09STR)",
+      nciCodelistCode: "C213941",
       isStandard: true,
       options: [
-        { code: "0", label: "Not at all (0)", order: 1 },
-        { code: "1", label: "Several days (1)", order: 2 },
-        { code: "2", label: "More than half the days (2)", order: 3 },
-        { code: "3", label: "Nearly every day (3)", order: 4 },
+        { code: "0", label: "Not at all (0)", nciCode: "C214831", order: 1 },
+        { code: "1", label: "Several days (1)", nciCode: "C214832", order: 2 },
+        {
+          code: "2",
+          label: "More than half the days (2)",
+          nciCode: "C214833",
+          order: 3,
+        },
+        {
+          code: "3",
+          label: "Nearly every day (3)",
+          nciCode: "C214834",
+          order: 4,
+        },
       ],
     },
     {
@@ -35,21 +48,45 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
       options: [
         { code: "1", label: "I have no problems walking about", order: 1 },
         { code: "2", label: "I have slight problems walking about", order: 2 },
-        { code: "3", label: "I have moderate problems walking about", order: 3 },
+        {
+          code: "3",
+          label: "I have moderate problems walking about",
+          order: 3,
+        },
         { code: "4", label: "I have severe problems walking about", order: 4 },
         { code: "5", label: "I am unable to walk about", order: 5 },
       ],
     },
     {
       id: "CL_NYHA",
-      name: "NYHA Heart Failure Classification",
-      nciCodelistCode: "C66743",
+      name: "New York Heart Association Classification (NYHAC)",
+      nciCodelistCode: "C101839",
       isStandard: true,
       options: [
-        { code: "CLASS_I", label: "Class I (No limitation of physical activity)", order: 1 },
-        { code: "CLASS_II", label: "Class II (Slight limitation of physical activity)", order: 2 },
-        { code: "CLASS_III", label: "Class III (Marked limitation of physical activity)", order: 3 },
-        { code: "CLASS_IV", label: "Class IV (Unable to carry on any physical activity)", order: 4 },
+        {
+          code: "NYHA CLASS I",
+          label: "Class I (No limitation of physical activity)",
+          nciCode: "C66904",
+          order: 1,
+        },
+        {
+          code: "NYHA CLASS II",
+          label: "Class II (Slight limitation of physical activity)",
+          nciCode: "C66905",
+          order: 2,
+        },
+        {
+          code: "NYHA CLASS III",
+          label: "Class III (Marked limitation of physical activity)",
+          nciCode: "C66907",
+          order: 3,
+        },
+        {
+          code: "NYHA CLASS IV",
+          label: "Class IV (Unable to carry on any physical activity)",
+          nciCode: "C66908",
+          order: 4,
+        },
       ],
     },
   ],
@@ -87,7 +124,8 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
             {
               id: "f_phq9_3",
               variableName: "QSEVAL3",
-              label: "3. Trouble falling or staying asleep, or sleeping too much",
+              label:
+                "3. Trouble falling or staying asleep, or sleeping too much",
               dataType: "radio",
               columnSpan: 12,
               required: true,
@@ -125,7 +163,8 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
           targetFieldId: "f_phq9_score",
           actionType: "raise_query",
           querySeverity: "warning",
-          queryMessage: "PHQ-9 Score is elevated (>= 8). Ensure clinician review and safety plan protocol.",
+          queryMessage:
+            "PHQ-9 Score is elevated (>= 8). Ensure clinician review and safety plan protocol.",
           conditions: [{ fieldId: "f_phq9_score", operator: "gte", value: 8 }],
           logicalOperator: "AND",
         },
@@ -137,7 +176,8 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
       id: "form_ecg_cardio",
       name: "12-Lead Electrocardiogram & QTc",
       domain: "EG",
-      description: "Cardiac electrophysiology and rate-corrected QT interval analysis",
+      description:
+        "Cardiac electrophysiology and rate-corrected QT interval analysis",
       version: "1.0",
       sections: [
         {
@@ -212,12 +252,14 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
         {
           id: "rule_qtc_prolongation",
           name: "QTc Prolongation Critical Alert",
-          description: "Fire error alert if Bazett QTc exceeds 480ms (ICH E14 safety boundary)",
+          description:
+            "Fire error alert if Bazett QTc exceeds 480ms (ICH E14 safety boundary)",
           triggerFieldIds: ["f_eg_qtcb"],
           targetFieldId: "f_eg_qtcb",
           actionType: "raise_query",
           querySeverity: "error",
-          queryMessage: "QTcB interval > 480ms (potential torsadogenic risk per ICH E14). Immediate PI notification required.",
+          queryMessage:
+            "QTcB interval > 480ms (potential torsadogenic risk per ICH E14). Immediate PI notification required.",
           conditions: [{ fieldId: "f_eg_qtcb", operator: "gt", value: 480 }],
           logicalOperator: "AND",
         },
@@ -291,7 +333,8 @@ export const CLINICAL_INSTRUMENTS_PRESET: StudyProtocol = {
           targetFieldId: "f_sae_sev",
           actionType: "raise_query",
           querySeverity: "error",
-          queryMessage: "Grade 5 (Fatal) event reported. Sponsor 24-hour expedited MedWatch 3500A required.",
+          queryMessage:
+            "Grade 5 (Fatal) event reported. Sponsor 24-hour expedited MedWatch 3500A required.",
           conditions: [{ fieldId: "f_sae_sev", operator: "eq", value: "5" }],
           logicalOperator: "AND",
         },

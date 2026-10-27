@@ -1,6 +1,6 @@
 "use client";
 
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import React, { useState, useMemo, startTransition } from "react";
 import {
   StudyProtocol,
@@ -11,7 +11,7 @@ import {
   validateStudyCompliance,
   autoFixViolation,
   autoFixAllViolations,
-} from "@/lib/crf/cdisc-conformance-linter";
+} from "@/lib/crf";
 import {
   IconCheck,
   IconX,

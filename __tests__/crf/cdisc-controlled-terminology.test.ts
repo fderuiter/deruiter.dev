@@ -10,10 +10,10 @@ import {
   matchTermByLabel,
   validateCodelists,
   CDISC_CT_PACKAGE_VERSION,
-} from "../../lib/crf/cdisc-controlled-terminology";
-import { CDASH_STANDARD_VARIABLES } from "../../lib/crf/cdash-domain-templates";
+} from "@/lib/clinical-standards";
+import { CDASH_STANDARD_VARIABLES } from "../../lib/crf";
 import { CodelistDefinition } from "../../lib/crf/types";
-import ctPackage from "../fixtures/cdisc-ct/sdtm-ct-2026-09-25-subset.json";
+import ctPackage from "../fixtures/cdisc-ct/ct-subset.json";
 
 interface CtCodelist {
   submissionValue: string;
@@ -380,9 +380,7 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
 
     it("keeps NCI codes off every sponsor-defined codelist", () => {
       for (const cl of STANDARD_CODELISTS.filter((c) => !c.nciCodelistCode)) {
-        expect(cl.options.every((opt) => opt.nciCode === undefined)).toBe(
-          true
-        );
+        expect(cl.options.every((opt) => opt.nciCode === undefined)).toBe(true);
       }
     });
 

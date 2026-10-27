@@ -20,7 +20,7 @@ import {
 import { fromAny } from "@total-typescript/shoehorn";
 import { LogicRulesTab } from "@/components/crf/RightInspector/LogicRulesTab";
 import type { CRFField, CRFForm, EditCheckRule } from "@/lib/crf/types";
-import { buildRuleWireGraph, describeRuleLogic } from "@/lib/crf/rule-wires";
+import { buildRuleWireGraph, describeRuleLogic } from "@/lib/crf";
 
 // #674: drives the real Logic tab, switching between the sentence view and
 // the optional visual-wire view over one shared set of synthetic rules.

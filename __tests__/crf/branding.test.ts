@@ -4,7 +4,7 @@ import {
   DEFAULT_STUDY_BRANDING,
   BRANDING_PRESETS,
   getStudyBranding,
-} from "@/lib/crf/branding-defaults";
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { StudyProtocol, StudyBranding } from "@/lib/crf/types";
 

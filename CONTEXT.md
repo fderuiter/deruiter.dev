@@ -274,7 +274,7 @@ Formal inference rules used to derive logical steps from valid premises:
 - **Censoring Record**: The subject contact or disposition record that supplies the end of observed time when the specified event has not occurred.
 - **Number at Risk**: The subjects whose time to event or censoring (ADTTE `AVAL`) is on or after a given day. A subject censored on a day is still at risk on that day; the Kaplan-Meier figure reports it on each scheduled visit day.
 - **LOCF Sensitivity Row**: A clearly flagged analysis row that carries an earlier postbaseline value into a missing planned visit for sensitivity analysis; it is not a primary observed assessment.
-- **Reporting Event**: Everything a run reports, in an ARS 1.0-shaped metadata model: analysis sets, groupings, data subsets, methods, analyses, outputs and their results. It is declared as data and holds no timestamps.
+- **Reporting Event**: Everything a run reports, as an ARS 1.0 reporting event: analysis sets, groupings, data subsets, methods, analyses, outputs and their results. It is declared as data and holds no timestamps. Its file validates against the official ARS 1.0 JSON schema; the lineage that links each result to its ADaM rows is written beside it as the result lineage file.
 - **Analysis Result**: The value of one operation of one analysis for one combination of groups, such as the mean age in the Placebo arm. It names the ADaM rows it was computed from: the ADSL rows of its population (the denominator) and the records it counted or summarised. A displayed table cell shows one or more analysis results.
 
 ## Synthetic Reliability, Telemetry & Watch Emulation

@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { buildFormCatalog } from "@/lib/crf";
+import { fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 (
@@ -41,11 +43,12 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
     onAddForm: vi.fn(),
     onDuplicateForm: vi.fn(),
     onDeleteForm: vi.fn(),
-    onOpenCdashScaffolder: vi.fn(),
+    onOpenFormCatalog: vi.fn(),
     onAddField: vi.fn(),
     onAssignFormToVisit: vi.fn(),
     onUnassignFormFromVisit: vi.fn(),
-    onInjectCdashForm: vi.fn(),
+    catalogEntries: buildFormCatalog(),
+    onAddCatalogEntry: vi.fn(),
   };
 
   beforeEach(() => {
@@ -203,41 +206,44 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("renders active forms and global CDASH library templates when in 'forms' tab", async () => {
+  it("lists the form catalog and saved templates in the 'forms' tab (#2927 item 11)", async () => {
     await act(async () => {
       root = createRoot(container);
       root.render(<StudySpine {...defaultProps} activeTab="forms" />);
     });
 
     expect(container.textContent).toContain("Study Forms");
-    expect(container.textContent).toContain("Global CDASH Library");
-    const input = container.querySelector(
-      'input[placeholder*="Search templates"]'
-    );
-    expect(input).not.toBeNull();
+    expect(container.textContent).toContain("Form catalog");
+    expect(container.textContent).toContain("My form templates");
+    expect(
+      container.querySelector('input[aria-label="Search the form catalog"]') ??
+        container.querySelector('input[type="search"]')
+    ).not.toBeNull();
+    expect(container.textContent).not.toContain("Global CDASH Library");
   });
 
-  it("filters global CDASH library templates based on search input", async () => {
+  it("narrows the catalog to entries matching the search", async () => {
     await act(async () => {
       root = createRoot(container);
       root.render(<StudySpine {...defaultProps} activeTab="forms" />);
     });
 
     const searchInput = container.querySelector(
-      'input[placeholder*="Search templates"]'
+      'input[type="search"]'
     ) as HTMLInputElement;
-    expect(searchInput).not.toBeNull();
-
     await act(async () => {
-      searchInput.value = "Vital Signs";
-      searchInput.dispatchEvent(new Event("change", { bubbles: true }));
+      fireEvent.change(searchInput, { target: { value: "QTc" } });
     });
 
-    expect(container.textContent).toContain("Vital Signs");
+    const titles = Array.from(
+      container.querySelectorAll('[data-testid="form-catalog"] h4')
+    ).map((h) => h.textContent);
+    expect(titles).toContain("12-Lead Electrocardiogram & QTc");
+    expect(titles).not.toContain("Demographics & Informed Consent");
   });
 
-  it("injects a CDASH template when clicking + Add in the Global Library", async () => {
-    const onInject = vi.fn();
+  it("adds a catalog form to the selected visit", async () => {
+    const onAddCatalogEntry = vi.fn();
 
     await act(async () => {
       root = createRoot(container);
@@ -245,21 +251,24 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
         <StudySpine
           {...defaultProps}
           activeTab="forms"
-          onInjectCdashForm={onInject}
+          onAddCatalogEntry={onAddCatalogEntry}
         />
       );
     });
 
-    const addTemplateBtn = container.querySelector(
-      'button[title*="Add this template to the study"]'
+    const addButton = container.querySelector(
+      'button[aria-label="Add Vital Signs & Anthropometrics to the study"]'
     ) as HTMLButtonElement;
-    expect(addTemplateBtn).not.toBeNull();
+    expect(addButton).not.toBeNull();
 
     await act(async () => {
-      addTemplateBtn.click();
+      addButton.click();
     });
 
-    expect(onInject).toHaveBeenCalledTimes(1);
+    expect(onAddCatalogEntry).toHaveBeenCalledWith(
+      "cdash:VS",
+      defaultProps.activeVisitId
+    );
   });
 
   it("switches to Palette tab and triggers onAddField when selecting a widget", async () => {

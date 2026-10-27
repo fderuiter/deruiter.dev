@@ -1,8 +1,9 @@
 import { StudyProtocol, CRFForm } from "../types";
 import {
   STANDARD_CODELISTS,
+  PRESET_ID_STAMP,
   scaffoldCdashDomain,
-} from "../cdisc-cdash-library";
+} from "../internal/cdisc-cdash-library";
 
 const MMSE_FORM: CRFForm = {
   id: "form_mmse_cns",
@@ -184,20 +185,20 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
   ],
   forms: [
     {
-      ...scaffoldCdashDomain("DM"),
+      ...scaffoldCdashDomain("DM", PRESET_ID_STAMP),
       id: "form_dm_cns",
     },
     {
-      ...scaffoldCdashDomain("VS"),
+      ...scaffoldCdashDomain("VS", PRESET_ID_STAMP),
       id: "form_vs_cns",
     },
     MMSE_FORM,
     {
-      ...scaffoldCdashDomain("AE"),
+      ...scaffoldCdashDomain("AE", PRESET_ID_STAMP),
       id: "form_ae_cns",
     },
     {
-      ...scaffoldCdashDomain("CM"),
+      ...scaffoldCdashDomain("CM", PRESET_ID_STAMP),
       id: "form_cm_cns",
     },
   ],

@@ -14,7 +14,7 @@
  * - every referenced `CodeList` exists and every `CodeList` is referenced;
  * - every value list and where clause referenced exists and is referenced.
  */
-import { standardCitation } from "../../standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import type { Dataset, Finding } from "../../types";
 import type { DefineDocument, DefineItemRef } from "./model";
 

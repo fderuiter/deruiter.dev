@@ -22,7 +22,7 @@ assumptions, units, populations it is valid for.
 
 ### codelists
 
-> **codelists**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+> **codelists**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ***
 

@@ -1,6 +1,6 @@
 # Neon Capacity & Branch Inventory
 
-Last verified: 2026-09-19 against the Neon API (Issue #621 audit, provider gap closed)
+Last verified: 2026-10-27 against the Neon API (Issue #3036 audit; first observed 2026-09-19 for Issue #621)
 
 Scope: `fderuiter/portfolio`, Neon Free Tier, Vercel Resource `neon-gray-drum`
 
@@ -15,12 +15,12 @@ This is the evidence-backed capacity, connection hygiene, and retention record f
 
 | Meter | Observed Usage | Governed Limit | Policy Headroom | Status |
 | --- | ---: | ---: | ---: | --- |
-| Storage (`neon-gray-drum`) | **30.8 MiB** (32,284,672 B) | 0.500 GiB (512 MiB) | 481 MiB (94%) | Healthy |
-| Storage (`neon-blue-plank`) | **29.9 MiB** (31,301,632 B) | 0.500 GiB (512 MiB) | — | Archived, see candidates |
+| Storage (`neon-gray-drum`) | **31.3 MiB** logical (32,849,920 B); `pg_database_size` 9 MB | 0.500 GiB (512 MiB) | 481 MiB (94%) | Healthy |
+| Storage (`neon-blue-plank`) | not re-observed 2026-10-27 (the MCP connection is scoped to `neon-gray-drum`) | 0.500 GiB (512 MiB) | — | Archived, see candidates |
 | Compute Auto-Suspend | **5 minutes** (300s) | 5 minutes | 0s delay | Optimal |
 | Compute Unit Limit | **0.25 CU** (min = max) | 0.25 CU | 0 CU | Bounded, no autoscale |
-| Project compute this cycle | **27,473 CPU-seconds** / 108,220s active | — | quota resets 2026-10-01 | Observed |
-| Point-in-time recovery | **6 hours** (21,600s) | — | — | **This is the effective RPO** |
+| Project compute this cycle | **105,776 compute-seconds** / 416,012s active | — | quota resets 2026-11-01 | Observed 2026-10-27 |
+| Point-in-time recovery | **6 hours** (21,600s) | — | — | Effective RPO inside Neon; a weekly encrypted backup ([#3036](https://github.com/fderuiter/deruiter.dev/issues/3036)) covers older incidents |
 
 History retention is six hours. Any restore target older than that does not exist, which bounds what [#700](https://github.com/fderuiter/deruiter.dev/issues/700) can rehearse.
 
@@ -30,9 +30,7 @@ Neon's free plan provides 0.5 GiB storage and auto-suspends compute after 5 minu
 
 | Project (id) | Branch | Endpoint | Environment | Protection | Storage | Role |
 | --- | --- | --- | --- | --- | ---: | --- |
-| `neon-gray-drum` (`withered-tooth-11857430`) | `main` (`br-snowy-butterfly-apmzw7bd`) | `ep-young-mouse-ap1zkh0m` | Production | **NOT protected** | 30.8 MiB | Canonical production database backing deruiter.dev |
-| `neon-gray-drum` | `pre-rehearsal-main-2026-09-19` (`br-shiny-dust-apixoyf1`) | `ep-sweet-grass-ap3tbi8x` | Ephemeral | Not protected | 30.8 MiB | Former production branch, demoted by the #700 rehearsal; identical data, retained as a rollback copy |
-| `neon-gray-drum` | `rehearsal/v0.3.0-migrations` (`br-royal-sky-apfvczyx`) | `ep-ancient-pine-appqk4cj` | Ephemeral | Not protected | 30.6 MiB | Release rehearsal branch, idle since 2026-09-13 |
+| `neon-gray-drum` (`withered-tooth-11857430`) | `main` (`br-snowy-butterfly-apmzw7bd`) | `ep-young-mouse-ap1zkh0m` | Production | Vercel integration blocks deletion; Neon `protected` false | 31.3 MiB | Canonical production database backing deruiter.dev; the only branch in the project on 2026-10-27 |
 | `neon-blue-plank` (`hidden-frog-92457060`) | `main` (`br-patient-heart-augr38sg`) | — | Abandoned | Not protected | 29.9 MiB | Neon Auth experiment; `neon_auth` schema only, no application tables |
 
 > [!WARNING]
@@ -50,13 +48,13 @@ rather than from reading provider state:
 >
 > **The compute endpoint is the thing production depends on, not the branch id.** `ep-young-mouse-ap1zkh0m` is named by nine environment variables (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `PGHOST`, `PGHOST_UNPOOLED`, `POSTGRES_HOST`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL_NO_SSL`). This is a *different* set from the eight password-bearing variables listed in [#865](https://github.com/fderuiter/deruiter.dev/issues/865). `set_default_branch` moves the default designation but **does not** move the endpoint, and Neon refuses both to delete the root branch's read-write endpoint and to add a second one to an occupied branch. The branch holding `ep-young-mouse-ap1zkh0m` was therefore renamed to `main` rather than relocating a live endpoint.
 >
-> `pre-rehearsal-main-2026-09-19` (`br-shiny-dust-apixoyf1`) is retained with identical data as a rollback copy and is safe to delete once this release is confirmed. Because history retention is six hours, its longer lineage confers no recovery advantage.
+> `pre-rehearsal-main-2026-09-19` (`br-shiny-dust-apixoyf1`) and `rehearsal/v0.3.0-migrations` (`br-royal-sky-apfvczyx`) no longer exist; on 2026-10-27 the project held only `main`.
 
 ## Resource Classification & Retention Policy
 
 ### Protected Resources (Excluded from Cleanup)
 
-1. **Production Branch (`main`)**: Canonical database powering live visitor endpoints. Retained permanently; never deleted, reset, or expired. **Branch protection is not currently enabled** and should be, per #622.
+1. **Production Branch (`main`)**: Canonical database powering live visitor endpoints. Retained permanently; never deleted, reset, or expired. Neon branch protection is a paid feature; the Vercel integration's `restricted_actions` (delete, delete or move the read-write endpoint) are the provider control.
 2. ~~**Integration Branch (`dev`)**~~: No such branch exists. ADR 0037 replaced the persistent dev environment with isolated production plus operator-requested previews.
 
 ### Ephemeral Resources (Subject to Retention & Expiry)
@@ -112,9 +110,9 @@ To guarantee Neon compute remains suspended in zero-compute sleep states across 
 No cloud mutations, drops, or deletions are executed by this inventory ticket. Zero deletion candidates are approved today:
 
 - **Approved Candidates**: 0 targets. Identification is not approval.
-- **Identified Candidates**: 2, totalling ~60.5 MiB.
-  1. `rehearsal/v0.3.0-migrations` (`br-royal-sky-apfvczyx`): 30.6 MiB. Branched from `main` on 2026-09-13 for the v0.3.0 migration rehearsal; compute idle since 2026-09-13T01:33. Nothing expires it, which is the missing lifecycle automation #622 asks for.
-  2. `neon-blue-plank` (`hidden-frog-92457060`): 29.9 MiB, branch archived. Contains only the `neon_auth` schema (`account`, `session`, `user`, `organization`, `jwks`, …) and no application tables. An abandoned Neon Auth experiment superseded by Clerk. Its `NEON_AUTH_BASE_URL` and `VITE_NEON_AUTH_URL` variables remain live in Vercel Production and Preview, are referenced nowhere in the codebase, and are declared in neither `lib/env.ts` nor `.env.example`, an AGENTS.md section 15 violation independent of the storage.
+- **Identified Candidates**: 1 still open on 2026-10-27 (the rehearsal branch was removed).
+  1. `neon-blue-plank` (`hidden-frog-92457060`): 29.9 MiB, branch archived. Contains only the `neon_auth` schema (`account`, `session`, `user`, `organization`, `jwks`, …) and no application tables. An abandoned Neon Auth experiment superseded by Clerk. Its `NEON_AUTH_BASE_URL` and `VITE_NEON_AUTH_URL` variables were no longer in the Vercel project on 2026-10-27.
+  2. The `neon_auth` schema inside production (`neon-gray-drum` `main`): nine tables from the same experiment (`account`, `invitation`, `jwks`, `member`, `organization`, `project_config`, `session`, `user`, `verification`), all with zero rows on 2026-10-27, referenced nowhere in the code. Dropping it is destructive and waits on operator approval ([#3036](https://github.com/fderuiter/deruiter.dev/issues/3036)).
 - **Protected Targets**: `main` (production) is excluded from candidates regardless of its current unprotected flag.
 
 ### Operating Constraints & Approval Workflow

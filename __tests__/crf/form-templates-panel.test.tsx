@@ -10,13 +10,15 @@ import {
 } from "@testing-library/react";
 import { fromPartial } from "@total-typescript/shoehorn";
 import { FormTemplatesPanel } from "@/components/crf/LeftSidebar/FormTemplatesPanel";
-import { FormCanvas } from "@/components/crf/CenterCanvas/FormCanvas";
 import {
+  buildFormCatalog,
+  instantiateCatalogForm,
   captureFormTemplate,
   exportFormTemplates,
   listFormTemplates,
   saveFormTemplate,
-} from "@/lib/crf/form-templates";
+} from "@/lib/crf";
+import { FormCanvas } from "@/components/crf/CenterCanvas/FormCanvas";
 import type { CRFForm, StudyProtocol } from "@/lib/crf/types";
 
 vi.mock("@/lib/download", () => ({
@@ -94,46 +96,40 @@ function saveOne(name = "Vitals template") {
 
 describe("FormTemplatesPanel", () => {
   it("shows an empty state", () => {
-    render(<FormTemplatesPanel study={study} onInsert={vi.fn()} />);
+    render(<FormTemplatesPanel />);
     expect(screen.getByText(/No saved form templates/)).toBeTruthy();
     expect(screen.getByText(/My form templates \(0\)/)).toBeTruthy();
   });
 
   it("lists a template saved after it mounted", () => {
-    render(<FormTemplatesPanel study={study} onInsert={vi.fn()} />);
+    render(<FormTemplatesPanel />);
     saveOne();
     expect(screen.getByText("Vitals template")).toBeTruthy();
     expect(screen.getByText(/1 sections · 1 fields/)).toBeTruthy();
     expect(screen.getByText(/My form templates \(1\)/)).toBeTruthy();
   });
 
-  it("adds an independent copy to the study at the active visit", () => {
-    const onInsert = vi.fn();
+  it("leaves adding to the form catalog (#2927 item 11)", () => {
+    saveOne();
+    render(<FormTemplatesPanel />);
+    expect(screen.getByText("Vitals template")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Add template/ })).toBeNull();
+  });
+
+  it("adds an independent copy through the form catalog", () => {
     const template = saveOne();
-    render(
-      <FormTemplatesPanel
-        study={study}
-        activeVisitId="v-1"
-        onInsert={onInsert}
-      />
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: /Add template Vitals template/ })
-    );
-    expect(onInsert).toHaveBeenCalledTimes(1);
-    const [form, visitId, codelists] = onInsert.mock.calls[0];
-    expect(visitId).toBe("v-1");
-    expect(codelists).toEqual([]);
-    expect(form.id).not.toBe(template.form.id);
-    expect(form.sections[0].fields[0].id).not.toBe("f1");
-    expect(screen.getByRole("status").textContent).toMatch(
-      /Added Vitals template/
-    );
+    const entries = buildFormCatalog([template]);
+    const entry = entries.find((e) => e.source === "saved");
+    expect(entry?.title).toBe("Vitals template");
+    const added = instantiateCatalogForm(entry!.id, study, [template]);
+    expect(added?.codelists).toEqual([]);
+    expect(added?.form.id).not.toBe(template.form.id);
+    expect(added?.form.sections[0].fields[0].id).not.toBe("f1");
   });
 
   it("asks before deleting, and keeps the template on Keep", () => {
     saveOne();
-    render(<FormTemplatesPanel study={study} onInsert={vi.fn()} />);
+    render(<FormTemplatesPanel />);
     fireEvent.click(
       screen.getByRole("button", { name: /Delete template Vitals template/ })
     );
@@ -152,7 +148,7 @@ describe("FormTemplatesPanel", () => {
 
   it("exports the saved templates", () => {
     saveOne();
-    render(<FormTemplatesPanel study={study} onInsert={vi.fn()} />);
+    render(<FormTemplatesPanel />);
     fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(downloadFile).toHaveBeenCalledTimes(1);
     const [text, name] = vi.mocked(downloadFile).mock.calls[0];
@@ -161,7 +157,7 @@ describe("FormTemplatesPanel", () => {
   });
 
   it("imports a package and lists it", async () => {
-    render(<FormTemplatesPanel study={study} onInsert={vi.fn()} />);
+    render(<FormTemplatesPanel />);
     const pkg = exportFormTemplates([
       captureFormTemplate({ form: sourceForm, codelists: [], name: "Shared" }),
     ]);
@@ -175,7 +171,7 @@ describe("FormTemplatesPanel", () => {
   });
 
   it("shows why a bad package was refused", async () => {
-    render(<FormTemplatesPanel study={study} onInsert={vi.fn()} />);
+    render(<FormTemplatesPanel />);
     fireEvent.change(screen.getByLabelText("Import form template package"), {
       target: { files: [new File(["nope"], "t.json")] },
     });

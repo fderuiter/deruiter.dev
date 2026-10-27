@@ -6,7 +6,7 @@
 
 # Function: extractCodelistFromUsdmObject()
 
-> **extractCodelistFromUsdmObject**(`raw`): [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md) \| `null`
+> **extractCodelistFromUsdmObject**(`raw`): [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md) \| `null`
 
 Normalizes USDM graph ValueSet or CodeList objects/references into a CRF Studio CodelistDefinition.
 
@@ -18,4 +18,4 @@ Normalizes USDM graph ValueSet or CodeList objects/references into a CRF Studio 
 
 ## Returns
 
-[`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md) \| `null`
+[`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md) \| `null`

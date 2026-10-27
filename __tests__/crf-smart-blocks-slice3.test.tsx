@@ -1,19 +1,17 @@
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { StudyProtocolEngine } from "@/lib/crf/study-engine";
-import type { StudyProtocol, CRFForm, CRFSection } from "@/lib/crf/types";
 import {
+  StudyProtocolEngine,
   searchSlashCommands,
   instantiateSmartBlock,
   instantiateAtomicField,
   CLINICAL_SMART_BLOCKS,
   ALL_SLASH_COMMANDS,
-} from "@/lib/crf/smart-blocks-engine";
-import {
   explainCalculationDerivation,
   evaluateRuleResult,
-} from "@/lib/crf/expression-evaluator";
+} from "@/lib/crf";
+import type { StudyProtocol, CRFForm, CRFSection } from "@/lib/crf/types";
 import { SlashPaletteModal } from "@/components/crf/SlashPaletteModal";
 
 interface DiscrepancyQuery {

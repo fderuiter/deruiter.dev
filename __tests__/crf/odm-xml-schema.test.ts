@@ -8,8 +8,8 @@ import { describe, expect, it } from "vitest";
 import {
   CRF_STUDIO_ODM_NAMESPACE,
   exportStudyToCdiscOdmXml,
-} from "@/lib/crf/odm-xml-serializer";
-import { importStudyFromCdiscOdmXml } from "@/lib/crf/odm-xml-parser";
+  importStudyFromCdiscOdmXml,
+} from "@/lib/crf";
 import * as presets from "@/lib/crf/presets";
 import type { StudyProtocol } from "@/lib/crf/types";
 import { validateOdmXml } from "../helpers/odm-xml-schema";

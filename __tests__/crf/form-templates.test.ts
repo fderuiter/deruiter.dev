@@ -14,7 +14,7 @@ import {
   listFormTemplates,
   parseFormTemplatePackage,
   saveFormTemplate,
-} from "@/lib/crf/form-templates";
+} from "@/lib/crf";
 import type {
   CRFField,
   CRFForm,

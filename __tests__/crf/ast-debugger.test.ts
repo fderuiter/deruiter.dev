@@ -1,9 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import {
-  generateRuleDebugTrace,
-  SAMPLE_SUBJECT_PROFILES,
-} from "@/lib/crf/ast-debugger";
+import { generateRuleDebugTrace, SAMPLE_SUBJECT_PROFILES } from "@/lib/crf";
 import { EditCheckRule, CRFField } from "@/lib/crf/types";
 
 function mockField(overrides: Partial<CRFField> & { id: string }): CRFField {

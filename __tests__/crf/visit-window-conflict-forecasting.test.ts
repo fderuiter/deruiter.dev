@@ -6,7 +6,7 @@ import {
   calculateBaselineDrift,
   calculateMilestoneForecasts,
   addDaysToIsoDate,
-} from "@/lib/crf/visit-window";
+} from "@/lib/crf";
 import type { StudyVisit } from "@/lib/crf/types";
 import { STUDY_PRESETS } from "@/lib/crf/presets";
 import { expectWithinTimingBudget } from "../helpers/timing-budget";

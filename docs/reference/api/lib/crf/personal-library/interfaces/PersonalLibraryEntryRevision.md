@@ -19,7 +19,7 @@ can compare what a study used with what the library holds now.
 
 ### codelists
 
-> **codelists**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+> **codelists**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ***
 

@@ -6,4 +6,4 @@
 
 # Variable: SDTM\_CODELISTS
 
-> `const` **SDTM\_CODELISTS**: `Readonly`\<`Record`\<`string`, [`CodelistId`](../../../conformance/terminology/type-aliases/CodelistId.md)\>\>
+> `const` **SDTM\_CODELISTS**: `Readonly`\<`Record`\<`string`, [`CodelistId`](../../../../../clinical-standards/terminology/type-aliases/CodelistId.md)\>\>

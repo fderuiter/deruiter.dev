@@ -10,7 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { useStudyAutosave } from "@/hooks/useStudyAutosave";
 import { DEFAULT_REVOKE_DELAY_MS } from "@/lib/download";
 import type { StudyProtocol } from "@/lib/crf/types";
-import * as draftStorage from "@/lib/crf/study-draft-storage";
+import * as draftStorage from "@/lib/crf";
 
 function createMockStudy(
   overrides: Partial<StudyProtocol> = {}

@@ -8,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { BaselineCompareModal } from "@/components/crf/BaselineCompareModal";
-import { saveStudyBaseline } from "@/lib/crf/study-baselines";
+import { saveStudyBaseline } from "@/lib/crf";
 import type { StudyProtocol, CRFForm } from "@/lib/crf/types";
 
 vi.mock("@/lib/download", () => ({

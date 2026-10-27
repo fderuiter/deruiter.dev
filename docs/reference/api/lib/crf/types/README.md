@@ -13,8 +13,6 @@
 - [BiomedicalConcept](interfaces/BiomedicalConcept.md)
 - [BiomedicalConceptProperty](interfaces/BiomedicalConceptProperty.md)
 - [CdashVariableMetadata](interfaces/CdashVariableMetadata.md)
-- [CodelistDefinition](interfaces/CodelistDefinition.md)
-- [CodelistOption](interfaces/CodelistOption.md)
 - [ComplianceViolation](interfaces/ComplianceViolation.md)
 - [ConditionGroup](interfaces/ConditionGroup.md)
 - [CRFField](interfaces/CRFField.md)
@@ -63,3 +61,15 @@
 - [StudyPhase](type-aliases/StudyPhase.md)
 - [StudyReviewEvent](type-aliases/StudyReviewEvent.md)
 - [StudyReviewRole](type-aliases/StudyReviewRole.md)
+
+## References
+
+### CodelistDefinition
+
+Re-exports [CodelistDefinition](../../clinical-standards/codelists/interfaces/CodelistDefinition.md)
+
+***
+
+### CodelistOption
+
+Re-exports [CodelistOption](../../clinical-standards/codelists/interfaces/CodelistOption.md)

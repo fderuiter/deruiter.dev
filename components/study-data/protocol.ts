@@ -10,6 +10,7 @@
 import type {
   CellValue,
   ConformanceReport,
+  CoreView,
   DataLayer,
   DefineDocument,
   Finding,
@@ -102,6 +103,11 @@ export interface RunSummary {
   readonly findings: FindingSample;
   /** The injected scenario, present only when the run asked for one. */
   readonly injected?: InjectedIssue;
+  /**
+   * The CDISC CORE view whose recorded findings describe this run's output,
+   * or null when CORE never saw it (another study, seed or subject count).
+   */
+  readonly coreView: CoreView | null;
   readonly define: {
     readonly sdtm: DefineDocument;
     readonly adam: DefineDocument;

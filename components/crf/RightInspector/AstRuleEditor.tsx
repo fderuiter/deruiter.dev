@@ -9,7 +9,7 @@ import {
   HighlightToken,
   FormulaDiagnostic,
   ClinicalFormulaPreset,
-} from "@/lib/crf/ast-evaluator";
+} from "@/lib/crf";
 import { useCrfService } from "@/hooks/useCrfService";
 import {
   IconMathFunction,

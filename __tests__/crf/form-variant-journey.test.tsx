@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { buildFormCatalog } from "@/lib/crf";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 (
@@ -54,11 +55,12 @@ function Harness({ initial }: { initial: StudyProtocol }) {
         onAddForm={vi.fn()}
         onDuplicateForm={vi.fn()}
         onDeleteForm={vi.fn()}
-        onOpenCdashScaffolder={vi.fn()}
+        onOpenFormCatalog={vi.fn()}
         onAddField={vi.fn()}
         onAssignFormToVisit={vi.fn()}
         onUnassignFormFromVisit={vi.fn()}
-        onInjectCdashForm={vi.fn()}
+        catalogEntries={buildFormCatalog()}
+        onAddCatalogEntry={vi.fn()}
         onCommitFormVariant={(next, variantId) => {
           commit(next);
           setActiveFormId(variantId);

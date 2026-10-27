@@ -7,10 +7,12 @@
  * Where Workers are unavailable (jsdom tests, very old browsers) the client
  * loads this same module on demand and runs it on the main thread.
  */
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import { clamp } from "@/lib/game-utils";
-import { validateUsdmV4Document } from "@/lib/crf/usdm-v4-schema";
+import { validateUsdmV4Document } from "@/lib/clinical-standards";
 import {
+  DEFAULT_SEED,
+  DEFAULT_SUBJECT_COUNT,
   DEMO_301_STUDY,
   MESSY_DATA_SCENARIOS,
   PACKAGE_FIXED_TIMESTAMP,
@@ -22,6 +24,7 @@ import {
   buildTlfOutputs,
   createLineageIndex,
   prepareStudyHandoff,
+  recordedCoreView,
   renderReviewerGuideHtml,
   runPipeline,
   sha256Hex,
@@ -311,6 +314,13 @@ export function createStudyDataSession() {
       ...(scenario === undefined
         ? {}
         : { injected: injectedIssue(result, scenario) }),
+      coreView: recordedCoreView({
+        defaultStudy: study === undefined,
+        seed,
+        nSubjects,
+        scenario,
+        defaults: { seed: DEFAULT_SEED, nSubjects: DEFAULT_SUBJECT_COUNT },
+      }),
       define,
       tables: outputs.tables,
       figures: outputs.figures,
@@ -371,7 +381,7 @@ export function createStudyDataSession() {
       `Seed ${seed}, ${nSubjects} subjects. The same study, seed and subject count give the same files, byte for byte.`,
       "",
       "Each table is written as accessible HTML and as RTF, and the Kaplan-Meier figure as SVG and as HTML with its data tables.",
-      `ars-reporting-event.json holds every analysis result in an ${standardCitation("ARS")}-shaped model, with the ADaM rows each result was computed from.`,
+      `ars-reporting-event.json holds every analysis result as an ${standardCitation("ARS")} reporting event, and ars-result-lineage.json the ADaM rows each result was computed from.`,
       "MANIFEST.json lists the SHA-256 of every other file.",
       "",
     ].join("\r\n");

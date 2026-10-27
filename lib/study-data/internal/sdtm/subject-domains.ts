@@ -7,7 +7,7 @@ import type {
   VariableOrigin,
   VariableRole,
 } from "../../types";
-import { terminologyCodelist } from "../conformance/terminology";
+import { terminologyCodelist } from "@/lib/clinical-standards";
 import { codeAeTerm, codeHistoryTerm } from "./ae-dictionary";
 import { codeMedication } from "./cm-dictionary";
 import { sdtmCodelist } from "./codelists";

@@ -11,9 +11,9 @@ import {
   validateCdashVariableName,
   generateEngineId,
   generateCdashVariableName,
-} from "@/lib/crf/precision-date";
+} from "@/lib/crf";
 
-describe("lib/crf/precision-date.ts", () => {
+describe("lib/crf/internal/precision-date.ts", () => {
   describe("CDISC_NULL_FLAVORS and isCdiscNullFlavor", () => {
     it("recognizes all standard CDISC null flavor codes", () => {
       const validCodes = Object.keys(CDISC_NULL_FLAVORS);

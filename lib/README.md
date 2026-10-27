@@ -19,6 +19,10 @@ lib/
     core/             ← Private package subfolder (hidden from outside).
 ```
 
+`lib/crf/` has the same shape as `lib/study-data/`: `index.ts`, `types.ts` and `presets.ts` are its public files, and the implementation lives in `lib/crf/internal/`. Two more root files, `export-pdf.ts` and `export-docx.ts`, are lazy entry points: the studio loads them with a dynamic `import()` so their document libraries stay out of the route's first bundle, and the index does not re-export them (#2927).
+
+`lib/clinical-standards/` holds what CRF Studio and the study-data pipeline share: the standards profile, the USDM v4 types, schema and schedule, and both controlled-terminology subsets. `lib/crf/` and `lib/study-data/` each import it and never import each other (#2927).
+
 A module with several pipeline stages keeps one private folder per stage under `internal/`. `lib/study-data/` ([ADR 0065](../adr/0065-study-data-pipeline-architecture.md)) is the reference: `internal/usdm`, `internal/synth`, `internal/sdtm`, `internal/conformance`, `internal/adam`, `internal/define`, `internal/export`, `internal/tlf` and `internal/lineage`, all reached only through `runPipeline` and the types and presets at the package root.
 
 ### The 6 Canonical Boundary Rules (`.dependency-cruiser.cjs`)

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { StudyProtocolEngine } from "@/lib/crf/study-engine";
+import { StudyProtocolEngine } from "@/lib/crf";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
 
 describe("StudyProtocolEngine - Pure Business Logic Engine", () => {

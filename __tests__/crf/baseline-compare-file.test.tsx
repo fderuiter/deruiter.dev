@@ -11,7 +11,7 @@ import {
 import { BaselineCompareModal } from "@/components/crf/BaselineCompareModal";
 import type { StudyProtocol } from "@/lib/crf/types";
 
-type Parse = typeof import("@/lib/crf/file-ingestion").detectAndParseStudyFile;
+type Parse = typeof import("@/lib/crf").detectAndParseStudyFile;
 
 // Stands in for the parser unless a test leaves `stub` empty, in which case
 // the real parser runs.
@@ -19,9 +19,8 @@ const parser = vi.hoisted(() => ({
   stub: null as null | ((...args: unknown[]) => unknown),
   calls: [] as unknown[][],
 }));
-vi.mock("@/lib/crf/file-ingestion", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("@/lib/crf/file-ingestion")>();
+vi.mock("@/lib/crf", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/crf")>();
   return {
     ...original,
     detectAndParseStudyFile: ((...args: Parameters<Parse>) => {

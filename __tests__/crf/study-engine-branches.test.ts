@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { fromAny } from "@total-typescript/shoehorn";
-import {
-  StudyProtocolEngine,
-  appendProtocolAuditEntry,
-} from "@/lib/crf/study-engine";
+import { StudyProtocolEngine, appendProtocolAuditEntry } from "@/lib/crf";
 import type {
   CRFField,
   CRFForm,

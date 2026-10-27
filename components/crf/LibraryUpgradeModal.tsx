@@ -10,15 +10,15 @@ import {
 } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { StudyProtocol } from "@/lib/crf/types";
-import { listLibraryEntries } from "@/lib/crf/personal-library";
 import {
+  listLibraryEntries,
   applyLibraryUpgrade,
   detectLibraryUpgrades,
   previewLibraryUpgrade,
   type LibraryConflictChoice,
   type LibraryUpgradeChange,
   type LibraryUpgradeStatus,
-} from "@/lib/crf/library-upgrade";
+} from "@/lib/crf";
 import type { RawStorage } from "@/lib/safe-storage";
 
 interface LibraryUpgradeModalProps {

@@ -1,10 +1,15 @@
 import { StudyProtocol } from "../types";
-import { STANDARD_CODELISTS, scaffoldCdashDomain } from "../cdisc-cdash-library";
+import {
+  PRESET_ID_STAMP,
+  STANDARD_CODELISTS,
+  scaffoldCdashDomain,
+} from "../internal/cdisc-cdash-library";
 
 export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
   id: "study_dev_valve_001",
   protocolNumber: "DEV-2026-VALVE",
-  studyName: "Pivotal IDE Clinical Investigation of the Transcatheter Aortic Valve Replacement (TAVR) System in Symptomatic Severe Aortic Stenosis (ISO 14155 / FDA 21 CFR 812)",
+  studyName:
+    "Pivotal IDE Clinical Investigation of the Transcatheter Aortic Valve Replacement (TAVR) System in Symptomatic Severe Aortic Stenosis (ISO 14155 / FDA 21 CFR 812)",
   phase: "Phase III",
   sponsor: "Vascular Dynamics MedTech, Inc.",
   therapeuticArea: "Medical Device / Interventional Cardiology",
@@ -15,8 +20,10 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
     primaryColor: "#06b6d4", // Cyan
     accentColor: "#3b82f6", // Blue
     tableHeaderColor: "#0f172a",
-    headerText: "ISO 14155 & FDA 21 CFR 812 INVESTIGATIONAL DEVICE EXEMPTION (IDE) PROTOCOL",
-    footerText: "Investigator & Clinical Research Associate Working Copy • Confidential",
+    headerText:
+      "ISO 14155 & FDA 21 CFR 812 INVESTIGATIONAL DEVICE EXEMPTION (IDE) PROTOCOL",
+    footerText:
+      "Investigator & Clinical Research Associate Working Copy • Confidential",
     confidentialityNotice:
       "This document contains proprietary and confidential information of Vascular Dynamics MedTech, Inc. Unauthorized distribution or copying is strictly prohibited.",
     showPageNumbers: true,
@@ -97,37 +104,37 @@ export const DEVICE_CARDIOVASCULAR_IMPLANT_PRESET: StudyProtocol = {
   ],
   forms: [
     {
-      ...scaffoldCdashDomain("DM"),
+      ...scaffoldCdashDomain("DM", PRESET_ID_STAMP),
       id: "form_dm_dev",
       name: "Subject Demographics & IDE Consent",
     },
     {
-      ...scaffoldCdashDomain("DI"),
+      ...scaffoldCdashDomain("DI", PRESET_ID_STAMP),
       id: "form_di_dev",
       name: "Medical Device Identification & UDI Traceability",
     },
     {
-      ...scaffoldCdashDomain("DU"),
+      ...scaffoldCdashDomain("DU", PRESET_ID_STAMP),
       id: "form_du_dev",
       name: "Procedural Implantation & Device In-Use",
     },
     {
-      ...scaffoldCdashDomain("DE"),
+      ...scaffoldCdashDomain("DE", PRESET_ID_STAMP),
       id: "form_de_dev",
       name: "Device Deficiencies & Adverse Incidents Log",
     },
     {
-      ...scaffoldCdashDomain("VS"),
+      ...scaffoldCdashDomain("VS", PRESET_ID_STAMP),
       id: "form_vs_dev",
       name: "Hemodynamics & Vital Signs Assessment",
     },
     {
-      ...scaffoldCdashDomain("CM"),
+      ...scaffoldCdashDomain("CM", PRESET_ID_STAMP),
       id: "form_cm_dev",
       name: "Concomitant Antiplatelet / Anticoagulant Therapy",
     },
     {
-      ...scaffoldCdashDomain("AE"),
+      ...scaffoldCdashDomain("AE", PRESET_ID_STAMP),
       id: "form_ae_dev",
       name: "Adverse Events & Serious Complications Log",
     },

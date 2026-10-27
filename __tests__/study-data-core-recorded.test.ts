@@ -8,16 +8,28 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { MESSY_DATA_SCENARIOS, STANDARD_VERSIONS } from "@/lib/study-data";
 import {
-  CORE_VIEWS,
-  RECORDED_EXAMPLES_PER_RULE,
-  RECORDED_FINDINGS_FILE,
-  buildView,
-  viewInputSha256,
+  CORE_EXAMPLES_SHOWN,
+  DEFAULT_SEED,
+  DEFAULT_SUBJECT_COUNT,
+  MESSY_DATA_SCENARIOS,
+  STANDARD_VERSIONS,
+  coreViewReport,
+  recordedCoreView,
   type RecordedFindings,
   type RecordedLines,
   type RecordedScenarioView,
+} from "@/lib/study-data";
+import {
+  CORE_VIEWS,
+  CRF_PRESET_IDS,
+  RECORDED_EXAMPLES_PER_RULE,
+  RECORDED_FINDINGS_FILE,
+  buildView,
+  crfInputSha256,
+  readAnnotationSources,
+  recordedAnnotations,
+  viewInputSha256,
 } from "../scripts/study-data-core";
 
 const root = process.cwd();
@@ -73,6 +85,31 @@ describe("recorded CDISC CORE findings (#2992)", () => {
       for (const id of Object.keys(change.status))
         expect(sdtm[id], `${view} ${id}`).toBeDefined();
     }
+    for (const preset of CRF_PRESET_IDS) {
+      const { usdm: lines, status } = recorded.crf[preset];
+      check(usdm, lines, `${preset} usdm`);
+      for (const id of Object.keys(status))
+        expect(usdm[id], `${preset} ${id}`).toBeDefined();
+    }
+  });
+
+  it("record every CRF Studio preset's USDM export, and nothing else (#3051)", () => {
+    expect(Object.keys(recorded.crf).sort()).toEqual(
+      [...CRF_PRESET_IDS].sort()
+    );
+    expect(workflow).toContain("export-crf");
+  });
+
+  it("were recorded from every CRF Studio preset's current USDM export (#3051)", async () => {
+    const stale: string[] = [];
+    for (const preset of CRF_PRESET_IDS) {
+      if ((await crfInputSha256(preset)) !== recorded.crf[preset].inputSha256)
+        stale.push(preset);
+    }
+    expect(
+      stale,
+      "Refresh lib/study-data/internal/core/recorded-findings.json: see docs/how-to/refresh-cdisc-core-findings.md"
+    ).toEqual([]);
   });
 
   it("were recorded from the pipeline's current output for every view", async () => {
@@ -90,4 +127,68 @@ describe("recorded CDISC CORE findings (#2992)", () => {
       "Refresh lib/study-data/internal/core/recorded-findings.json: see docs/how-to/refresh-cdisc-core-findings.md"
     ).toEqual([]);
   }, 300_000);
+});
+
+describe("what the Study Data page shows from the recorded findings (#2992)", () => {
+  it("carries the current allowlist reasons and rule twins", () => {
+    // After editing the allowlist or the crosswalk, run
+    // `npx tsx scripts/study-data-core.ts annotate`.
+    const { explained, twins } = recordedAnnotations(readAnnotationSources());
+    expect(recorded.explained).toEqual(explained);
+    expect(recorded.twins).toEqual(twins);
+  });
+
+  it("explains every default-view finding", () => {
+    const report = coreViewReport(recorded, "default");
+    expect(report.findings.length).toBeGreaterThan(0);
+    for (const finding of report.findings) {
+      expect(
+        finding.explanation,
+        `${finding.target} ${finding.coreId} ${finding.dataset}`
+      ).toBeDefined();
+      expect(finding.addedByScenario).toBe(0);
+      expect(finding.examples.length).toBeLessThanOrEqual(CORE_EXAMPLES_SHOWN);
+    }
+    expect(Object.values(report.outcomes).reduce((sum, n) => sum + n, 0)).toBe(
+      report.ruleCount
+    );
+  });
+
+  it.each(CORE_VIEWS.filter((view) => view !== "default"))(
+    "rebuilds the %s view from the default view and its change",
+    (view) => {
+      const change = scenarioView(view);
+      const report = coreViewReport(recorded, view);
+      const base = recorded.views.default.sdtm.counts;
+      const added = Object.values(change?.added.counts ?? {}).reduce(
+        (sum, n) => sum + n,
+        0
+      );
+      const removed = Object.values(change?.removed.counts ?? {}).reduce(
+        (sum, n) => sum + n,
+        0
+      );
+      const total = (findings: typeof report.findings) =>
+        findings
+          .filter((finding) => finding.target === "sdtm")
+          .reduce((sum, finding) => sum + finding.count, 0);
+      const baseTotal = Object.values(base).reduce((sum, n) => sum + n, 0);
+      expect(total(report.findings)).toBe(baseTotal + added - removed);
+      expect(report.findings.every((f) => f.target === "sdtm")).toBe(true);
+    }
+  );
+
+  it("matches only the default study, seed and subject count", () => {
+    const defaults = { seed: DEFAULT_SEED, nSubjects: DEFAULT_SUBJECT_COUNT };
+    const run = { defaultStudy: true, ...defaults, defaults };
+    expect(recordedCoreView(run)).toBe("default");
+    expect(recordedCoreView({ ...run, scenario: "impossible-date" })).toBe(
+      "impossible-date"
+    );
+    expect(recordedCoreView({ ...run, seed: DEFAULT_SEED + 1 })).toBeNull();
+    expect(
+      recordedCoreView({ ...run, nSubjects: DEFAULT_SUBJECT_COUNT + 1 })
+    ).toBeNull();
+    expect(recordedCoreView({ ...run, defaultStudy: false })).toBeNull();
+  });
 });

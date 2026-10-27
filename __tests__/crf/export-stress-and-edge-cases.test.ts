@@ -4,7 +4,7 @@ import { generateStudyDocx } from "@/lib/crf/export-docx";
 import { generateStudyPdf } from "@/lib/crf/export-pdf";
 import { STUDY_PRESETS } from "@/lib/crf/presets";
 import { StudyProtocol, CRFForm, StudyBranding } from "@/lib/crf/types";
-import { scaffoldCdashDomain } from "@/lib/crf/cdisc-cdash-library";
+import { scaffoldCdashDomain } from "@/lib/crf";
 import { expectWithinTimingBudget } from "../helpers/timing-budget";
 
 describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () => {

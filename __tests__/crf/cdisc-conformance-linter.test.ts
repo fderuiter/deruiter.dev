@@ -4,10 +4,11 @@ import {
   validateStudyCompliance,
   autoFixViolation,
   autoFixAllViolations,
-} from "@/lib/crf/cdisc-conformance-linter";
-import { lintForm } from "@/lib/crf/form-linter";
+  lintForm,
+  type StudyProtocol,
+  type CRFForm,
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
-import type { StudyProtocol, CRFForm } from "@/lib/crf";
 
 describe("CDISC Conformance & Regulatory Validation Linter & Auto-Fix Engine", () => {
   it("should detect clean schema on standard preset without major errors", () => {

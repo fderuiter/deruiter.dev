@@ -1,5 +1,9 @@
 import { StudyProtocol } from "../types";
-import { STANDARD_CODELISTS, scaffoldCdashDomain } from "../cdisc-cdash-library";
+import {
+  PRESET_ID_STAMP,
+  STANDARD_CODELISTS,
+  scaffoldCdashDomain,
+} from "../internal/cdisc-cdash-library";
 
 export const EMPTY_STUDY_PRESET: StudyProtocol = {
   id: "study_custom_blank",
@@ -35,7 +39,7 @@ export const EMPTY_STUDY_PRESET: StudyProtocol = {
   ],
   forms: [
     {
-      ...scaffoldCdashDomain("DM"),
+      ...scaffoldCdashDomain("DM", PRESET_ID_STAMP),
       id: "form_dm_blank",
       name: "Demographics Baseline",
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import type {
@@ -30,13 +30,12 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 
-import { exportUniversalCrfJson } from "@/lib/crf/universal-schema";
+import { exportUniversalCrfJson, type ParsedStudyFileResult } from "@/lib/crf";
 import {
   STUDY_DATA_HANDOFF_PATH,
   storeStudyHandoff,
 } from "@/components/study-data/handoff-storage";
 import { ImportDropzone } from "../ImportDropzone";
-import type { ParsedStudyFileResult } from "@/lib/crf/file-ingestion";
 
 interface ExportImportModalProps {
   study: StudyProtocol;
@@ -180,14 +179,13 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       if (activeTab === "universal") {
         content = exportUniversalCrfJson(study);
       } else if (activeTab === "usdm") {
-        const { exportStudyToUsdm } = await import("@/lib/crf/usdm-adapter");
+        const { exportStudyToUsdm } = await import("@/lib/crf");
         content = exportStudyToUsdm(study);
       } else if (activeTab === "odm") {
-        const { exportStudyToCdiscOdmXml } =
-          await import("@/lib/crf/odm-xml-serializer");
+        const { exportStudyToCdiscOdmXml } = await import("@/lib/crf");
         content = exportStudyToCdiscOdmXml(study);
       } else if (activeTab === "sas") {
-        const { exportStudyToSas } = await import("@/lib/crf/export-sas");
+        const { exportStudyToSas } = await import("@/lib/crf");
         content = exportStudyToSas(study, {
           selectedFormId: selectedForm?.id,
           includeSampleData: true,
@@ -195,7 +193,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           includeProcFreq: true,
         });
       } else if (activeTab === "r") {
-        const { exportStudyToR } = await import("@/lib/crf/export-r");
+        const { exportStudyToR } = await import("@/lib/crf");
         content = exportStudyToR(study, {
           selectedFormId: selectedForm?.id,
           includeSampleData: true,
@@ -206,7 +204,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         const {
           exportFormToFhirQuestionnaire,
           exportStudyToFhirQuestionnaire,
-        } = await import("@/lib/crf/fhir-questionnaire");
+        } = await import("@/lib/crf");
         // One Questionnaire for a single form, a Bundle of all of them for
         // the whole study (#1202).
         content = JSON.stringify(
@@ -338,8 +336,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     setImportJsonText(rawText);
 
     try {
-      const { validateStudyCompliance } =
-        await import("@/lib/crf/cdisc-conformance-linter");
+      const { validateStudyCompliance } = await import("@/lib/crf");
       const violations = validateStudyCompliance(parsedResult.study);
 
       if (violations.length > 0) {
@@ -365,16 +362,14 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     setPreflightViolations([]);
     setPendingStudy(null);
     try {
-      const { detectAndParseStudyFile } =
-        await import("@/lib/crf/file-ingestion");
+      const { detectAndParseStudyFile } = await import("@/lib/crf");
       const result = detectAndParseStudyFile(
         importJsonText,
         "pasted_protocol.json"
       );
       const imported = result.study;
 
-      const { validateStudyCompliance } =
-        await import("@/lib/crf/cdisc-conformance-linter");
+      const { validateStudyCompliance } = await import("@/lib/crf");
       const violations = validateStudyCompliance(imported);
 
       if (violations.length > 0) {
@@ -399,7 +394,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   const handleAutoFixAndImport = async () => {
     if (!pendingStudy) return;
     const { autoFixAllViolations, validateStudyCompliance } =
-      await import("@/lib/crf/cdisc-conformance-linter");
+      await import("@/lib/crf");
     const { updatedStudy } = autoFixAllViolations(pendingStudy);
 
     const remainingViolations = validateStudyCompliance(updatedStudy);

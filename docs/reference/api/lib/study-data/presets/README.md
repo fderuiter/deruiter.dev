@@ -32,43 +32,43 @@ Re-exports [AdamMethodId](../internal/adam/specs/type-aliases/AdamMethodId.md)
 
 ### CLINICAL\_STANDARDS\_PROFILE
 
-Re-exports [CLINICAL_STANDARDS_PROFILE](../standards/variables/CLINICAL_STANDARDS_PROFILE.md)
+Re-exports [CLINICAL_STANDARDS_PROFILE](../../clinical-standards/profile/variables/CLINICAL_STANDARDS_PROFILE.md)
 
 ***
 
 ### ClinicalStandardsProfile
 
-Re-exports [ClinicalStandardsProfile](../standards/interfaces/ClinicalStandardsProfile.md)
+Re-exports [ClinicalStandardsProfile](../../clinical-standards/profile/interfaces/ClinicalStandardsProfile.md)
 
 ***
 
 ### CodelistId
 
-Re-exports [CodelistId](../internal/conformance/terminology/type-aliases/CodelistId.md)
+Re-exports [CodelistId](../../clinical-standards/terminology/type-aliases/CodelistId.md)
 
 ***
 
 ### CONTROLLED\_TERMINOLOGY
 
-Re-exports [CONTROLLED_TERMINOLOGY](../internal/conformance/terminology/variables/CONTROLLED_TERMINOLOGY.md)
+Re-exports [CONTROLLED_TERMINOLOGY](../../clinical-standards/terminology/variables/CONTROLLED_TERMINOLOGY.md)
 
 ***
 
 ### controlledTerminologyCitation
 
-Re-exports [controlledTerminologyCitation](../standards/functions/controlledTerminologyCitation.md)
+Re-exports [controlledTerminologyCitation](../../clinical-standards/profile/functions/controlledTerminologyCitation.md)
 
 ***
 
 ### ControlledTerminologyClaim
 
-Re-exports [ControlledTerminologyClaim](../standards/interfaces/ControlledTerminologyClaim.md)
+Re-exports [ControlledTerminologyClaim](../../clinical-standards/profile/interfaces/ControlledTerminologyClaim.md)
 
 ***
 
 ### DECODE\_VARIABLES
 
-Re-exports [DECODE_VARIABLES](../internal/conformance/terminology/variables/DECODE_VARIABLES.md)
+Re-exports [DECODE_VARIABLES](../../clinical-standards/terminology/variables/DECODE_VARIABLES.md)
 
 ***
 
@@ -80,7 +80,7 @@ Re-exports [DEMO_301_USDM](demo-301/variables/DEMO_301_USDM.md)
 
 ### ProfileStandard
 
-Re-exports [ProfileStandard](../standards/type-aliases/ProfileStandard.md)
+Re-exports [ProfileStandard](../../clinical-standards/profile/type-aliases/ProfileStandard.md)
 
 ***
 
@@ -98,19 +98,19 @@ Re-exports [SdtmMethodId](../internal/sdtm/methods/type-aliases/SdtmMethodId.md)
 
 ### standardCitation
 
-Re-exports [standardCitation](../standards/functions/standardCitation.md)
+Re-exports [standardCitation](../../clinical-standards/profile/functions/standardCitation.md)
 
 ***
 
 ### TerminologyCodelist
 
-Re-exports [TerminologyCodelist](../internal/conformance/terminology/interfaces/TerminologyCodelist.md)
+Re-exports [TerminologyCodelist](../../clinical-standards/terminology/interfaces/TerminologyCodelist.md)
 
 ***
 
 ### TerminologyTerm
 
-Re-exports [TerminologyTerm](../internal/conformance/terminology/interfaces/TerminologyTerm.md)
+Re-exports [TerminologyTerm](../../clinical-standards/terminology/interfaces/TerminologyTerm.md)
 
 ***
 

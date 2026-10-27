@@ -2,8 +2,8 @@
 import { describe, it, expect } from "vitest";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import type { StudyProtocol } from "@/lib/crf/types";
-import { ALL_SLASH_COMMANDS } from "@/lib/crf/smart-blocks-engine";
 import {
+  ALL_SLASH_COMMANDS,
   buildStudyOmnibarIndex,
   getVisitNamesForForm,
   groupOmnibarResults,
@@ -13,7 +13,7 @@ import {
   searchStudyOmnibar,
   verifyStarterInsertion,
   OMNIBAR_CATEGORY_ORDER,
-} from "@/lib/crf/study-omnibar";
+} from "@/lib/crf";
 
 const study: StudyProtocol = ONCOLOGY_RECIST_PRESET;
 const vsForm = study.forms.find((f) => f.id === "form_vs_onc")!;

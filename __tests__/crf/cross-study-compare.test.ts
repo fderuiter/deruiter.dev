@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { fromPartial } from "@total-typescript/shoehorn";
-import { compareStudyToBaseline } from "@/lib/crf/study-baseline-diff";
+import { compareStudyToBaseline } from "@/lib/crf";
 import type {
   StudyProtocol,
   CRFForm,

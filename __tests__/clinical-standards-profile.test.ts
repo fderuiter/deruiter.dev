@@ -36,7 +36,9 @@ describe("clinical standards profile", () => {
     expect(Object.isFrozen(CLINICAL_STANDARDS_PROFILE)).toBe(true);
     expect(Object.isFrozen(CLINICAL_STANDARDS_PROFILE.CT)).toBe(true);
     expect(CLINICAL_STANDARDS_PROFILE.CT.scope).toBe("local subset");
-    expect(CLINICAL_STANDARDS_PROFILE.CT.verifiedAgainst).toBeUndefined();
+    expect(CLINICAL_STANDARDS_PROFILE.CT.verifiedAgainst).toBe(
+      `NCI EVS CDISC SDTM, ADaM and DDF Terminology ${CLINICAL_STANDARDS_PROFILE.CT.packageDate}`
+    );
   });
 
   it("is where every consumer's version comes from", () => {
@@ -65,7 +67,7 @@ describe("clinical standards profile", () => {
     // Prose about other projects and search aliases name versions as
     // facts about something else, not as this site's declarations.
     const exempt = new Set([
-      "lib/study-data/standards.ts",
+      "lib/clinical-standards/profile.ts",
       "lib/case-studies-data.ts",
       "lib/term-glossary.ts",
     ]);

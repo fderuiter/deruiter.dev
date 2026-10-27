@@ -29,7 +29,7 @@ not already have.
 
 ### codelists
 
-> **codelists**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+> **codelists**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ### form
 

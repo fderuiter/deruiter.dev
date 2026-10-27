@@ -22,7 +22,7 @@ import {
   SAMPLE_SUBJECT_PROFILES,
   SampleSubjectProfile,
   AstDebugStep,
-} from "@/lib/crf/ast-debugger";
+} from "@/lib/crf";
 
 interface AstStepDebuggerProps {
   rule: EditCheckRule;

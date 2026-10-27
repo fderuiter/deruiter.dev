@@ -86,6 +86,12 @@ Re-exports [ARS_REPORTING_EVENT_PATH](internal/tlf/outputs/variables/ARS_REPORTI
 
 ***
 
+### ARS\_RESULT\_LINEAGE\_PATH
+
+Re-exports [ARS_RESULT_LINEAGE_PATH](internal/tlf/outputs/variables/ARS_RESULT_LINEAGE_PATH.md)
+
+***
+
 ### ArsAnalysis
 
 Re-exports [ArsAnalysis](types/interfaces/ArsAnalysis.md)
@@ -158,6 +164,12 @@ Re-exports [ArsDisplaySubSection](types/interfaces/ArsDisplaySubSection.md)
 
 ***
 
+### ArsExtensibleTerm
+
+Re-exports [ArsExtensibleTerm](types/type-aliases/ArsExtensibleTerm.md)
+
+***
+
 ### ArsFileSpecification
 
 Re-exports [ArsFileSpecification](types/interfaces/ArsFileSpecification.md)
@@ -179,6 +191,12 @@ Re-exports [ArsGroupingFactor](types/interfaces/ArsGroupingFactor.md)
 ### ArsListItem
 
 Re-exports [ArsListItem](types/interfaces/ArsListItem.md)
+
+***
+
+### ArsNestedWhereClause
+
+Re-exports [ArsNestedWhereClause](types/type-aliases/ArsNestedWhereClause.md)
 
 ***
 
@@ -272,9 +290,27 @@ Re-exports [ArsRowSet](types/interfaces/ArsRowSet.md)
 
 ***
 
+### ArsSponsorTerm
+
+Re-exports [ArsSponsorTerm](types/interfaces/ArsSponsorTerm.md)
+
+***
+
+### ArsSponsorTermRef
+
+Re-exports [ArsSponsorTermRef](types/interfaces/ArsSponsorTermRef.md)
+
+***
+
 ### ArsTerm
 
 Re-exports [ArsTerm](types/interfaces/ArsTerm.md)
+
+***
+
+### ArsTerminologyExtension
+
+Re-exports [ArsTerminologyExtension](types/interfaces/ArsTerminologyExtension.md)
 
 ***
 
@@ -346,13 +382,13 @@ Re-exports [chiSquareSurvival](internal/tlf/km/functions/chiSquareSurvival.md)
 
 ### CLINICAL\_STANDARDS\_PROFILE
 
-Re-exports [CLINICAL_STANDARDS_PROFILE](standards/variables/CLINICAL_STANDARDS_PROFILE.md)
+Re-exports [CLINICAL_STANDARDS_PROFILE](../clinical-standards/profile/variables/CLINICAL_STANDARDS_PROFILE.md)
 
 ***
 
 ### ClinicalStandardsProfile
 
-Re-exports [ClinicalStandardsProfile](standards/interfaces/ClinicalStandardsProfile.md)
+Re-exports [ClinicalStandardsProfile](../clinical-standards/profile/interfaces/ClinicalStandardsProfile.md)
 
 ***
 
@@ -364,7 +400,7 @@ Re-exports [CodedValue](types/interfaces/CodedValue.md)
 
 ### CodelistId
 
-Re-exports [CodelistId](internal/conformance/terminology/type-aliases/CodelistId.md)
+Re-exports [CodelistId](../clinical-standards/terminology/type-aliases/CodelistId.md)
 
 ***
 
@@ -424,19 +460,55 @@ Re-exports [ConformanceRuleResult](types/interfaces/ConformanceRuleResult.md)
 
 ### CONTROLLED\_TERMINOLOGY
 
-Re-exports [CONTROLLED_TERMINOLOGY](internal/conformance/terminology/variables/CONTROLLED_TERMINOLOGY.md)
+Re-exports [CONTROLLED_TERMINOLOGY](../clinical-standards/terminology/variables/CONTROLLED_TERMINOLOGY.md)
 
 ***
 
 ### controlledTerminologyCitation
 
-Re-exports [controlledTerminologyCitation](standards/functions/controlledTerminologyCitation.md)
+Re-exports [controlledTerminologyCitation](../clinical-standards/profile/functions/controlledTerminologyCitation.md)
 
 ***
 
 ### ControlledTerminologyClaim
 
-Re-exports [ControlledTerminologyClaim](standards/interfaces/ControlledTerminologyClaim.md)
+Re-exports [ControlledTerminologyClaim](../clinical-standards/profile/interfaces/ControlledTerminologyClaim.md)
+
+***
+
+### CORE\_EXAMPLES\_SHOWN
+
+Re-exports [CORE_EXAMPLES_SHOWN](internal/core/recorded/variables/CORE_EXAMPLES_SHOWN.md)
+
+***
+
+### CoreFinding
+
+Re-exports [CoreFinding](internal/core/recorded/interfaces/CoreFinding.md)
+
+***
+
+### CoreFindingExample
+
+Re-exports [CoreFindingExample](internal/core/recorded/interfaces/CoreFindingExample.md)
+
+***
+
+### CoreView
+
+Re-exports [CoreView](internal/core/recorded/type-aliases/CoreView.md)
+
+***
+
+### coreViewReport
+
+Re-exports [coreViewReport](internal/core/recorded/functions/coreViewReport.md)
+
+***
+
+### CoreViewReport
+
+Re-exports [CoreViewReport](internal/core/recorded/interfaces/CoreViewReport.md)
 
 ***
 
@@ -496,7 +568,7 @@ Re-exports [DatasetJsonOptions](internal/export/dataset-json/interfaces/DatasetJ
 
 ### DECODE\_VARIABLES
 
-Re-exports [DECODE_VARIABLES](internal/conformance/terminology/variables/DECODE_VARIABLES.md)
+Re-exports [DECODE_VARIABLES](../clinical-standards/terminology/variables/DECODE_VARIABLES.md)
 
 ***
 
@@ -932,6 +1004,12 @@ Re-exports [LineageVisit](internal/lineage/model/interfaces/LineageVisit.md)
 
 ***
 
+### loadRecordedCoreFindings
+
+Re-exports [loadRecordedCoreFindings](internal/core/recorded/functions/loadRecordedCoreFindings.md)
+
+***
+
 ### logRankTest
 
 Re-exports [logRankTest](internal/tlf/km/functions/logRankTest.md)
@@ -1078,13 +1156,73 @@ Re-exports [prepareStudyHandoff](internal/usdm/handoff/functions/prepareStudyHan
 
 ### ProfileStandard
 
-Re-exports [ProfileStandard](standards/type-aliases/ProfileStandard.md)
+Re-exports [ProfileStandard](../clinical-standards/profile/type-aliases/ProfileStandard.md)
 
 ***
 
 ### readStudyDefinition
 
 Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/readStudyDefinition.md)
+
+***
+
+### recordedCoreView
+
+Re-exports [recordedCoreView](internal/core/recorded/functions/recordedCoreView.md)
+
+***
+
+### RecordedCrfPreset
+
+Re-exports [RecordedCrfPreset](internal/core/recorded/interfaces/RecordedCrfPreset.md)
+
+***
+
+### RecordedDefaultView
+
+Re-exports [RecordedDefaultView](internal/core/recorded/interfaces/RecordedDefaultView.md)
+
+***
+
+### RecordedExplanation
+
+Re-exports [RecordedExplanation](internal/core/recorded/interfaces/RecordedExplanation.md)
+
+***
+
+### RecordedFindings
+
+Re-exports [RecordedFindings](internal/core/recorded/interfaces/RecordedFindings.md)
+
+***
+
+### RecordedLines
+
+Re-exports [RecordedLines](internal/core/recorded/interfaces/RecordedLines.md)
+
+***
+
+### RecordedLock
+
+Re-exports [RecordedLock](internal/core/recorded/interfaces/RecordedLock.md)
+
+***
+
+### RecordedRule
+
+Re-exports [RecordedRule](internal/core/recorded/interfaces/RecordedRule.md)
+
+***
+
+### RecordedScenarioView
+
+Re-exports [RecordedScenarioView](internal/core/recorded/interfaces/RecordedScenarioView.md)
+
+***
+
+### RecordedTwin
+
+Re-exports [RecordedTwin](internal/core/recorded/interfaces/RecordedTwin.md)
 
 ***
 
@@ -1270,7 +1408,7 @@ Re-exports [STANDARD_VERSIONS](presets/variables/STANDARD_VERSIONS.md)
 
 ### standardCitation
 
-Re-exports [standardCitation](standards/functions/standardCitation.md)
+Re-exports [standardCitation](../clinical-standards/profile/functions/standardCitation.md)
 
 ***
 
@@ -1378,13 +1516,13 @@ Re-exports [SYNTHETIC_DATA_NOTICE](presets/variables/SYNTHETIC_DATA_NOTICE.md)
 
 ### TerminologyCodelist
 
-Re-exports [TerminologyCodelist](internal/conformance/terminology/interfaces/TerminologyCodelist.md)
+Re-exports [TerminologyCodelist](../clinical-standards/terminology/interfaces/TerminologyCodelist.md)
 
 ***
 
 ### TerminologyTerm
 
-Re-exports [TerminologyTerm](internal/conformance/terminology/interfaces/TerminologyTerm.md)
+Re-exports [TerminologyTerm](../clinical-standards/terminology/interfaces/TerminologyTerm.md)
 
 ***
 
@@ -1529,6 +1667,12 @@ Re-exports [whereClauseOid](internal/export/oids/functions/whereClauseOid.md)
 ### writeArsJson
 
 Re-exports [writeArsJson](internal/tlf/outputs/functions/writeArsJson.md)
+
+***
+
+### writeArsLineageJson
+
+Re-exports [writeArsLineageJson](internal/tlf/outputs/functions/writeArsLineageJson.md)
 
 ***
 

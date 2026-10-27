@@ -1,9 +1,9 @@
 "use client";
 
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import React from "react";
 import { CRFField, CRFForm, CdashVariableMetadata } from "@/lib/crf/types";
-import { CDASH_STANDARD_VARIABLES } from "@/lib/crf/cdisc-cdash-library";
+import { CDASH_STANDARD_VARIABLES } from "@/lib/crf";
 import { IconDatabase, IconSparkles } from "@tabler/icons-react";
 
 interface CdiscMetadataTabProps {

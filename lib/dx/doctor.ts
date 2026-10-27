@@ -2266,7 +2266,7 @@ export function checkDefectRemediationInvariants(
       label: "Duck engine coordinate boundary guard",
     },
     {
-      file: "lib/crf/ast-evaluator.ts",
+      file: "lib/crf/internal/ast-evaluator.ts",
       pattern: /ExpressionEvaluator/,
       label: "CRF AST Expression Evaluator",
     },

@@ -1,9 +1,9 @@
 "use client";
 
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import React, { useState, useEffect, useRef } from "react";
 import { StudyProtocol, StudyBranding } from "@/lib/crf/types";
-import { getStudyBranding } from "@/lib/crf/branding-defaults";
+import { getStudyBranding } from "@/lib/crf";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
@@ -165,7 +165,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
   const handlePrint = async () => {
     recordEvent("crf", "project_click");
     const { generateAcrfHtml, generateStudyAcrfBookHtml } =
-      await import("@/lib/crf/export-acrf");
+      await import("@/lib/crf");
     const htmlContent =
       scope === "single" && activeForm
         ? generateAcrfHtml(activeForm, study, { mode: exportMode, branding })

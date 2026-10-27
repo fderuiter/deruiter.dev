@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { GET } from "@/app/schemas/crf/v1/universal-crf.schema.json/route";
-import {
-  exportUniversalCrfJson,
-  getUniversalCrfSchemaUrl,
-} from "@/lib/crf/universal-schema";
+import { exportUniversalCrfJson, getUniversalCrfSchemaUrl } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 
 /**

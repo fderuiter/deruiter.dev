@@ -173,8 +173,10 @@ export { escapeRtf, writeTableRtf } from "./internal/tlf/rtf";
 export {
   buildTlfOutputs,
   writeArsJson,
+  writeArsLineageJson,
   writeTlfFiles,
   ARS_REPORTING_EVENT_PATH,
+  ARS_RESULT_LINEAGE_PATH,
   TLF_OUTPUT_DIR,
 } from "./internal/tlf/outputs";
 export {
@@ -204,3 +206,24 @@ export type {
   LineageTraceOptions,
   LineageVisit,
 } from "./internal/lineage/model";
+export {
+  CORE_EXAMPLES_SHOWN,
+  coreViewReport,
+  loadRecordedCoreFindings,
+  recordedCoreView,
+} from "./internal/core/recorded";
+export type {
+  CoreFinding,
+  CoreFindingExample,
+  CoreView,
+  CoreViewReport,
+  RecordedCrfPreset,
+  RecordedDefaultView,
+  RecordedExplanation,
+  RecordedFindings,
+  RecordedLines,
+  RecordedLock,
+  RecordedRule,
+  RecordedScenarioView,
+  RecordedTwin,
+} from "./internal/core/recorded";

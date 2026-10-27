@@ -29,7 +29,7 @@ readonly [`EditCheckRule`](../../types/interfaces/EditCheckRule.md)[]
 
 ### sourceCodelists
 
-readonly [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+readonly [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 ### options?
 

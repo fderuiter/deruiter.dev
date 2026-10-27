@@ -1,40 +1,21 @@
 "use client";
 
-import React, { useMemo, useState, useSyncExternalStore } from "react";
+import React, { useState } from "react";
 import {
   IconBookmark,
   IconDownload,
   IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
-import type {
-  CodelistDefinition,
-  CRFForm,
-  StudyProtocol,
-} from "@/lib/crf/types";
 import {
-  FORM_TEMPLATES_STORAGE_KEY,
   MAX_TEMPLATE_PACKAGE_CHARS,
   deleteFormTemplate,
   exportFormTemplates,
   importFormTemplates,
-  instantiateFormTemplate,
-  parseStoredFormTemplates,
   type FormTemplate,
-} from "@/lib/crf/form-templates";
+} from "@/lib/crf";
 import { downloadFile } from "@/lib/download";
-import { STORAGE_CHANGE_EVENT, safeGetRawItem } from "@/lib/safe-storage";
-
-function subscribe(onChange: () => void) {
-  window.addEventListener(STORAGE_CHANGE_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(STORAGE_CHANGE_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
-const getSnapshot = () => safeGetRawItem(FORM_TEMPLATES_STORAGE_KEY);
-const getServerSnapshot = () => null;
+import { useSavedFormTemplates } from "../useSavedFormTemplates";
 
 function countFields(template: FormTemplate): number {
   let total = 0;
@@ -51,36 +32,14 @@ function countFields(template: FormTemplate): number {
 const BUTTON =
   "inline-flex min-h-[28px] items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-mono text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 active:scale-[0.98]";
 
-interface FormTemplatesPanelProps {
-  study: StudyProtocol;
-  activeVisitId?: string;
-  /** Adds the copied form (and the codelists it needs) to the study. */
-  onInsert: (
-    form: CRFForm,
-    targetVisitId: string | undefined,
-    codelists: CodelistDefinition[]
-  ) => void;
-}
-
-/** Saved whole-form templates: insert, delete, export and import. */
-export function FormTemplatesPanel({
-  study,
-  activeVisitId,
-  onInsert,
-}: FormTemplatesPanelProps) {
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const templates = useMemo(
-    () => (raw ? parseStoredFormTemplates(raw) : []),
-    [raw]
-  );
+/**
+ * Saved whole-form templates: delete, export and import. Adding one to the
+ * study happens from the form catalog, alongside every other ready-made form.
+ */
+export function FormTemplatesPanel() {
+  const templates = useSavedFormTemplates();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-
-  const handleInsert = (template: FormTemplate) => {
-    const { form, codelists } = instantiateFormTemplate(template, study);
-    onInsert(form, activeVisitId, codelists);
-    setMessage(`Added ${template.name} to the study.`);
-  };
 
   const handleDelete = (template: FormTemplate) => {
     deleteFormTemplate(template.id);
@@ -166,7 +125,7 @@ export function FormTemplatesPanel({
       {templates.length === 0 ? (
         <p className="px-1 text-[11px] font-mono italic text-zinc-400">
           No saved form templates. Use the bookmark button on a form to save it
-          here.
+          here; saved templates appear in the form catalog.
         </p>
       ) : (
         <ul className="max-h-48 space-y-1.5 overflow-y-auto pr-0.5">
@@ -205,14 +164,6 @@ export function FormTemplatesPanel({
                   </div>
                 ) : (
                   <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleInsert(template)}
-                      className={`${BUTTON} border-amber-500/30 text-amber-300`}
-                      aria-label={`Add template ${template.name} to the study`}
-                    >
-                      + Add
-                    </button>
                     <button
                       type="button"
                       onClick={() => setPendingDeleteId(template.id)}

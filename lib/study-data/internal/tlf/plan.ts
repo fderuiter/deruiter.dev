@@ -13,6 +13,9 @@ import type {
   ArsDataSubset,
   ArsGroup,
   ArsGroupingFactor,
+  ArsNestedWhereClause,
+  ArsSponsorTermRef,
+  ArsTerminologyExtension,
   ArsWhereClause,
   StudyDefinition,
   VisitDefinition,
@@ -181,6 +184,47 @@ export const SEX_GROUPS = [
 
 const SPECIFIED_IN_SAP = { controlledTerm: "SPECIFIED IN SAP" } as const;
 
+/**
+ * Sponsor terms for values ARS 1.0 terminology does not list. ARS lists
+ * outcome measures as analysis purposes, and pdf, rtf and txt as output
+ * file types: demographics describe the population rather than measure an
+ * endpoint, and the figure and the tables are also written as HTML and SVG.
+ */
+export const TERMINOLOGY_EXTENSIONS: readonly ArsTerminologyExtension[] = [
+  {
+    id: "TermExt_AnalysisPurpose",
+    enumeration: "AnalysisPurposeEnum",
+    sponsorTerms: [
+      {
+        id: "SponsorTerm_Purpose_BASELINE",
+        submissionValue: "BASELINE CHARACTERISTICS",
+        description:
+          "Describes the analysis population at baseline. It measures no study endpoint.",
+      },
+    ],
+  },
+  {
+    id: "TermExt_OutputFileType",
+    enumeration: "OutputFileTypeEnum",
+    sponsorTerms: [
+      {
+        id: "SponsorTerm_FileType_HTML",
+        submissionValue: "html",
+        description: "An accessible HTML document.",
+      },
+      {
+        id: "SponsorTerm_FileType_SVG",
+        submissionValue: "svg",
+        description: "A Scalable Vector Graphics image.",
+      },
+    ],
+  },
+];
+
+const BASELINE_PURPOSE: ArsSponsorTermRef = {
+  sponsorTermId: "SponsorTerm_Purpose_BASELINE",
+};
+
 function where(
   dataset: string,
   variable: string,
@@ -190,8 +234,40 @@ function where(
   return { condition: { dataset, variable, comparator, value } };
 }
 
+/**
+ * A clause placed inside a compound expression at `level` and `order`. A
+ * compound clause moved down a level takes its own clauses down with it.
+ */
+function nested(
+  clause: ArsWhereClause,
+  level: number,
+  order: number
+): ArsNestedWhereClause {
+  if ("condition" in clause)
+    return { level, order, condition: clause.condition };
+  const { logicalOperator, whereClauses } = clause.compoundExpression;
+  return {
+    level,
+    order,
+    compoundExpression: {
+      logicalOperator,
+      whereClauses: whereClauses.map((inner, index) =>
+        nested(inner, level + 1, index + 1)
+      ),
+    },
+  };
+}
+
+/** Clauses joined by AND, for an analysis set, group or subset at level 1. */
 function and(...whereClauses: ArsWhereClause[]): ArsWhereClause {
-  return { compoundExpression: { logicalOperator: "AND", whereClauses } };
+  return {
+    compoundExpression: {
+      logicalOperator: "AND",
+      whereClauses: whereClauses.map((clause, index) =>
+        nested(clause, 2, index + 1)
+      ),
+    },
+  };
 }
 
 function group(
@@ -454,7 +530,7 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
     name,
     version: 1,
     reason: SPECIFIED_IN_SAP,
-    ...(extra.purpose ? { purpose: extra.purpose } : {}),
+    purpose: extra.purpose ?? BASELINE_PURPOSE,
     dataset,
     variable,
     analysisSetId,
@@ -477,12 +553,14 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
     id: string,
     name: string,
     analysisSetId: string,
-    grouping: string
+    grouping: string,
+    purpose: AnalysisSpec["purpose"]
   ): AnalysisSpec => ({
     id,
     name,
     version: 1,
     reason: SPECIFIED_IN_SAP,
+    purpose,
     dataset: "ADSL",
     variable: "USUBJID",
     analysisSetId,
@@ -504,7 +582,7 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
     name,
     version: 1,
     reason: SPECIFIED_IN_SAP,
-    ...(extra.purpose ? { purpose: extra.purpose } : {}),
+    purpose: extra.purpose ?? BASELINE_PURPOSE,
     dataset,
     variable,
     analysisSetId,
@@ -700,7 +778,8 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         IDS.demogN,
         "Subjects in the Safety Set by treatment received",
         IDS.saf,
-        IDS.trt01a
+        IDS.trt01a,
+        BASELINE_PURPOSE
       ),
       summary(IDS.demogAge, "Age (years)", "ADSL", "AGE", IDS.saf, [
         IDS.trt01a,
@@ -743,7 +822,8 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         IDS.cfbN,
         "Subjects in the Full Analysis Set by planned treatment",
         IDS.fas,
-        IDS.trt01p
+        IDS.trt01p,
+        primary
       ),
       summary(
         IDS.cfbAval,
@@ -771,7 +851,8 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         IDS.teaeN,
         "Subjects in the Safety Set by treatment received",
         IDS.saf,
-        IDS.trt01a
+        IDS.trt01a,
+        secondary
       ),
       countPct(
         IDS.teaeAny,
@@ -807,7 +888,8 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         IDS.kmN,
         "Subjects in the Safety Set by treatment received",
         IDS.saf,
-        IDS.trt01a
+        IDS.trt01a,
+        secondary
       ),
       {
         id: IDS.kmAtRisk,

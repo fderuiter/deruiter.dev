@@ -16,22 +16,28 @@ name: Study Data CDISC CORE
 # and uploads the fresh file so the PR can commit it
 # (docs/how-to/refresh-cdisc-core-findings.md).
 #
+# #3051: CORE's USDM 4.0 rules also run over every CRF Studio preset's USDM
+# export (`study-data-core.ts export-crf`), reconciled against the
+# allowlist's crf-usdm entries and recorded under `crf` in the same file.
+#
 # CORE v0.17.1 ships its rule and terminology cache in the repository, so no
 # CDISC Library API key is needed. It publishes no ADaMIG rules yet; the
 # ADaM layer is reported as not run until it does. This is a separate
-# workflow, not a gate in ci.yml: it reads only lib/study-data and its own
-# files.
+# workflow, not a gate in ci.yml: it reads only lib/study-data, lib/crf and
+# its own files.
 
 on:
   push:
     branches: [main]
     paths:
       - "lib/study-data/**"
+      - "lib/crf/**"
       - "scripts/study-data-core*"
       - ".github/workflows/study-data-core.yml"
   pull_request:
     paths:
       - "lib/study-data/**"
+      - "lib/crf/**"
       - "scripts/study-data-core*"
       - ".github/workflows/study-data-core.yml"
   schedule:
@@ -90,12 +96,14 @@ jobs:
           ct="$(ls "$RUNNER_TEMP/core/resources/cache" | sed -n 's/^sdtmct-\(.*\)\.pkl$/\1/p' | sort | tail -n 1)"
           echo "Newest cached SDTM CT release: $ct"
           npx --no-install tsx scripts/study-data-core.ts export-views "$RUNNER_TEMP/core-in" --ct-version "$ct"
+          npx --no-install tsx scripts/study-data-core.ts export-crf "$RUNNER_TEMP/crf-in" --ct-version "$ct"
 
       - name: Run CORE over Every View
         run: |
           scripts/study-data-core-views.sh "$RUNNER_TEMP/core" \
             "$RUNNER_TEMP/core-venv/bin/python" \
-            "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" 4
+            "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" 4 \
+            "$RUNNER_TEMP/crf-in" "$RUNNER_TEMP/crf-reports"
 
       - name: Reconcile with the In-Browser Gate
         id: reconcile
@@ -104,12 +112,21 @@ jobs:
             "$RUNNER_TEMP/core-in/default" "$RUNNER_TEMP/core-reports/default" \
             --engine "CDISC CORE $CORE_TAG"
 
+      - name: Reconcile CRF Studio USDM Exports
+        id: reconcile_crf
+        if: ${{ !cancelled() && steps.reconcile.conclusion != 'skipped' }}
+        run: |
+          npx --no-install tsx scripts/study-data-core.ts reconcile-crf \
+            "$RUNNER_TEMP/crf-in" "$RUNNER_TEMP/crf-reports" \
+            --engine "CDISC CORE $CORE_TAG"
+
       - name: Check the Recorded Findings Are Current
         if: ${{ !cancelled() && steps.reconcile.conclusion != 'skipped' }}
         run: |
           npx --no-install tsx scripts/study-data-core.ts record \
             "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" \
-            --core-tag "$CORE_TAG" --core-commit "$CORE_COMMIT"
+            --core-tag "$CORE_TAG" --core-commit "$CORE_COMMIT" \
+            --crf-inputs "$RUNNER_TEMP/crf-in" --crf-reports "$RUNNER_TEMP/crf-reports"
           file=lib/study-data/internal/core/recorded-findings.json
           if ! git diff --quiet -- "$file"; then
             git diff --stat -- "$file"
@@ -123,6 +140,9 @@ jobs:
         run: |
           if [ -f "$RUNNER_TEMP/core-reports/default/reconciliation.md" ]; then
             cat "$RUNNER_TEMP/core-reports/default/reconciliation.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$RUNNER_TEMP/crf-reports/reconciliation.md" ]; then
+            cat "$RUNNER_TEMP/crf-reports/reconciliation.md" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload Recorded Findings
@@ -143,5 +163,7 @@ jobs:
             ${{ runner.temp }}/core-reports/
             ${{ runner.temp }}/core-in/*/export-notes.json
             ${{ runner.temp }}/core-in/default/gate-findings.json
+            ${{ runner.temp }}/crf-reports/
+            ${{ runner.temp }}/crf-in/*/export-notes.json
           retention-days: 14
           if-no-files-found: warn

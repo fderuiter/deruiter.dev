@@ -13,6 +13,8 @@ import {
   USDM_SDTM_STRESU_EXTENSION_URL,
   USDM_SDTM_TESTCD_EXTENSION_URL,
   getUsdmV4ExtensionString,
+  resolveUsdmStudyDesign,
+  type UsdmStudySelection,
   type UsdmV4BiomedicalConcept,
   type UsdmV4Code,
   type UsdmV4InterventionalStudyDesign,
@@ -109,15 +111,19 @@ function readSchedule(
  * Reads a USDM v4.0 document (the API Wrapper shape) into a `StudyDefinition`:
  * arms, epochs, elements and cells, visits with study days and windows, the
  * schedule of activities, objectives with endpoints, estimands and analysis
- * populations. Only the first study version and its first study design are
- * read.
+ * populations. A document with one study version and one design is read as
+ * it is; one with more needs `selection`, and is never read from its first.
  *
  * @param usdm - The parsed USDM v4.0 document.
+ * @param selection - The study version and design to read, by id.
  * @returns The study definition the pipeline runs.
  * @throws StudyDefinitionError when the document is not a USDM v4 study, or
  *   when a reference inside it does not resolve.
  */
-export function readStudyDefinition(usdm: unknown): StudyDefinition {
+export function readStudyDefinition(
+  usdm: unknown,
+  selection?: UsdmStudySelection
+): StudyDefinition {
   if (!usdm || typeof usdm !== "object") fail("expected a JSON object");
   const doc = usdm as {
     usdmVersion?: unknown;
@@ -129,9 +135,9 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
   ) {
     fail(`expected usdmVersion 4.x, got ${String(doc.usdmVersion)}`);
   }
-  const version = list(doc.study?.versions)[0] ?? fail("study has no version");
-  const design =
-    list(version.studyDesigns)[0] ?? fail("study version has no study design");
+  const resolved = resolveUsdmStudyDesign(doc.study, selection);
+  if (!resolved.ok) fail(resolved.message);
+  const { version, design } = resolved;
 
   const studyId =
     list(version.studyIdentifiers)[0]?.text ?? doc.study?.name ?? "";

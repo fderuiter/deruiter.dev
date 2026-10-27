@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useSyncExternalStore } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import {
   IconWifiOff,
@@ -122,13 +122,13 @@ export default function OfflineFallbackPage() {
               <IconRefresh className="w-4 h-4 mr-2" />
               Retry Connection
             </button>
-            <Link
+            <IntentLink
               href="/"
               className="inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-medium text-zinc-300 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/50 transition-colors"
             >
               <IconArrowLeft className="w-4 h-4 mr-2" />
               Return to Homepage
-            </Link>
+            </IntentLink>
           </div>
 
           <div className="border-t border-zinc-800/80 pt-8">
@@ -137,7 +137,7 @@ export default function OfflineFallbackPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {precachedRoutes.map((route) => (
-                <Link
+                <IntentLink
                   key={route.path}
                   href={route.path}
                   className="flex items-center space-x-3 p-3 rounded-lg bg-zinc-950/60 border border-zinc-800/60 hover:border-accent/40 hover:bg-zinc-800/40 transition-all group"
@@ -148,7 +148,7 @@ export default function OfflineFallbackPage() {
                   <span className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">
                     {route.title}
                   </span>
-                </Link>
+                </IntentLink>
               ))}
             </div>
           </div>

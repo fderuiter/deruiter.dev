@@ -2,7 +2,7 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { IconArrowLeft, IconTable } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
@@ -45,13 +45,13 @@ export const TrialAndErrorClient: React.FC = () => {
     <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-4 sm:gap-4">
-          <Link
+          <IntentLink
             href="/arcade"
             className="inline-flex min-h-[48px] items-center gap-1.5 font-mono text-xs text-zinc-300 hover:text-amber-400"
           >
             <IconArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Back to Arcade Hub</span>
-          </Link>
+          </IntentLink>
           <Breadcrumbs path="/arcade/trial-and-error" />
         </div>
 

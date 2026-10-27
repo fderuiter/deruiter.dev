@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { UserButton } from "@clerk/nextjs";
 import { copyToClipboard } from "@/lib/clipboard";
 import { logger } from "@/lib/logger";
@@ -229,13 +229,13 @@ export function AdminAccessDenied({
 
         {/* Actions Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-white/10">
-          <Link
+          <IntentLink
             href="/case-studies"
             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 border border-white/10 text-xs font-mono transition-colors"
           >
             <IconArrowLeft className="w-4 h-4" aria-hidden="true" />
             <span>Return to Case Studies</span>
-          </Link>
+          </IntentLink>
 
           <button
             type="button"

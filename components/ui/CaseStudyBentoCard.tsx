@@ -19,7 +19,7 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 import { type RichInlineLine } from "@chenglou/pretext/rich-inline";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { CommitSparkline } from "@/components/CommitSparkline";
 import { useBentoLayout } from "@/components/providers/BentoLayoutContext";
 import { useTerminology } from "@/components/providers/TerminologyProvider";
@@ -645,13 +645,13 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
 
         {/* Footer analyze link with 44px+ tap target */}
         <div className="flex justify-between items-center border-t border-zinc-900/40 pt-1.5 mt-1">
-          <Link
+          <IntentLink
             href={`/case-studies/${study.slug}`}
             className="group inline-flex items-center min-h-[44px] py-2 text-xs font-bold text-accent/80 hover:text-accent transition-colors duration-300 cursor-pointer relative z-10"
           >
             <span>Analyze Architecture</span>
             <IconChevronRight className="ml-1 w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform duration-200" />
-          </Link>
+          </IntentLink>
         </div>
       </div>
     </Card>

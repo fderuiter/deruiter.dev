@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -42,20 +42,20 @@ export const NextPrevNav: React.FC<NextPrevNavProps> = ({
     <div className={`w-full mt-16 pt-10 border-t border-zinc-900 ${className}`}>
       {backToHub && (
         <div className="flex justify-center mb-6">
-          <Link
+          <IntentLink
             href={backToHub.href}
             onMouseEnter={handleHover}
             className="inline-flex items-center gap-2 px-4 py-2 pointer-coarse:min-h-11 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs font-mono text-zinc-400 hover:text-accent hover:border-accent/40 transition-all duration-200 group"
           >
             <IconGridDots className="w-4 h-4 text-accent group-hover:rotate-90 transition-transform duration-300" />
             <span>{backToHub.title}</span>
-          </Link>
+          </IntentLink>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {prev ? (
-          <Link
+          <IntentLink
             href={prev.href}
             onMouseEnter={handleHover}
             className="group flex flex-col p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/80 hover:border-accent/40 hover:bg-zinc-900/50 transition-all duration-200"
@@ -72,13 +72,13 @@ export const NextPrevNav: React.FC<NextPrevNavProps> = ({
                 {prev.tag}
               </span>
             )}
-          </Link>
+          </IntentLink>
         ) : (
           <div className="hidden sm:block" />
         )}
 
         {next ? (
-          <Link
+          <IntentLink
             href={next.href}
             onMouseEnter={handleHover}
             className="group flex flex-col items-end text-right p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/80 hover:border-accent/40 hover:bg-zinc-900/50 transition-all duration-200 sm:col-start-2"
@@ -95,7 +95,7 @@ export const NextPrevNav: React.FC<NextPrevNavProps> = ({
                 {next.tag}
               </span>
             )}
-          </Link>
+          </IntentLink>
         ) : null}
       </div>
     </div>

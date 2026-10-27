@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { usePretextLayout } from "@/hooks/usePretextLayout";
@@ -288,13 +288,13 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
 
             {/* Secondary Actions */}
             <div className="grid grid-cols-2 gap-2.5 w-full sm:w-auto sm:flex sm:flex-row sm:gap-3">
-              <Link
+              <IntentLink
                 href="/arcade"
                 className="min-h-[44px] inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-3 text-xs font-mono font-semibold text-zinc-200 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all duration-200 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
               >
                 <IconDeviceGamepad2 className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="truncate">Arcade &amp; Labs</span>
-              </Link>
+              </IntentLink>
               <a
                 href="https://github.com/fderuiter"
                 target="_blank"
@@ -313,13 +313,13 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>CLINICAL OPERATIONS EXPERIENCE</span>
             </span>
-            <Link
+            <IntentLink
               href="/case-studies/designing-for-my-brother"
               className="flex items-center gap-1.5 hover:text-amber-300 transition-colors"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>ACCESSIBILITY: FOR MY BROTHER ↗</span>
-            </Link>
+            </IntentLink>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>SOURCE ON GITHUB</span>

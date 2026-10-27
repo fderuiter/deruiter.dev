@@ -11,7 +11,7 @@ import {
   IconActivity,
   IconLockCheck,
 } from "@tabler/icons-react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 
 export const metadata: Metadata = {
   title: "Author & Admin Console",
@@ -105,12 +105,12 @@ export default async function AdminDashboardPage() {
             </div>
 
             <div className="pt-2">
-              <Link
+              <IntentLink
                 href="/admin/blog"
                 className="inline-flex items-center gap-2 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors"
               >
                 <span>Manage Blog Dispatches &rarr;</span>
-              </Link>
+              </IntentLink>
             </div>
           </div>
 
@@ -135,12 +135,12 @@ export default async function AdminDashboardPage() {
             </div>
 
             <div className="pt-2">
-              <Link
+              <IntentLink
                 href="/case-studies"
                 className="inline-flex items-center gap-2 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors"
               >
                 <span>Browse Published Index &rarr;</span>
-              </Link>
+              </IntentLink>
             </div>
           </div>
 

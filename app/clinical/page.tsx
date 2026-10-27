@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
@@ -80,9 +80,9 @@ export default function ClinicalPage() {
                   Step {index + 1} · {step.stage}
                 </p>
                 <h3 className="mt-2 text-xl font-semibold tracking-[-0.02em] sm:text-2xl">
-                  <Link href={step.href} className={LINK}>
+                  <IntentLink href={step.href} className={LINK}>
                     {step.title}
-                  </Link>
+                  </IntentLink>
                 </h3>
                 <p className="mt-3 max-w-3xl break-words text-slate-300">
                   {step.purpose}
@@ -97,9 +97,9 @@ export default function ClinicalPage() {
                   <ul className="mt-4 flex min-w-0 flex-wrap gap-x-5 gap-y-2 text-sm">
                     {platformTools.map((tool) => (
                       <li key={tool.id} className="min-w-0">
-                        <Link href={tool.href} className={LINK}>
+                        <IntentLink href={tool.href} className={LINK}>
                           {tool.title}
-                        </Link>
+                        </IntentLink>
                       </li>
                     ))}
                   </ul>
@@ -108,12 +108,12 @@ export default function ClinicalPage() {
                   <ul className="mt-4 grid min-w-0 gap-2 border-t border-white/[0.08] pt-4 text-sm text-slate-300">
                     {related.map((study) => (
                       <li key={study.slug} className="break-words">
-                        <Link
+                        <IntentLink
                           href={`/case-studies/${study.slug}`}
                           className={LINK}
                         >
                           {study.title} case study
-                        </Link>{" "}
+                        </IntentLink>{" "}
                         <span className="text-slate-400">
                           (Fred&apos;s own project): {study.relation}
                         </span>
@@ -121,9 +121,9 @@ export default function ClinicalPage() {
                     ))}
                     {games.map((game) => (
                       <li key={game.href} className="break-words">
-                        <Link href={game.href} className={LINK}>
+                        <IntentLink href={game.href} className={LINK}>
                           {game.title}
-                        </Link>{" "}
+                        </IntentLink>{" "}
                         <span className="text-slate-400">
                           ({RELATED_GAME_LABEL}): {game.relation}
                         </span>

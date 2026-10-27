@@ -109,7 +109,9 @@ describe("useStudyEditor: forms", () => {
     act(() => current().editor.addForm());
     const study = current().history.study;
     expect(study.forms).toHaveLength(initial.forms.length + 1);
-    expect(study.forms.at(-1)?.name).toBe("New Custom Form 7");
+    expect(study.forms.at(-1)?.name).toBe(
+      `New Custom Form ${initial.forms.length + 1}`
+    );
     expect(current().activeFormId).toBe(study.forms.at(-1)?.id);
     expect(current().selectedFieldId).toBeNull();
     expect(callbacks.showCanvas).toHaveBeenCalled();

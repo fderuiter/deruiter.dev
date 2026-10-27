@@ -88,12 +88,13 @@ describe("/study-data with a study handed over from CRF Studio", () => {
       RUN_TIMEOUT
     );
     expect(storage.getItem(STUDY_DATA_HANDOFF_KEY)).toBeNull();
-    expect(panel.textContent).toMatch(/Tabulated\s*DM, VS, AE/);
+    expect(panel.textContent).toMatch(/Tabulated\s*DM, EX, VS, AE/);
     expect(panel.textContent).toMatch(/Not tabulated\s*CM, QS/);
     expect(panel.textContent).toMatch(
       /Mini-Mental State Examination \(MMSE\) \(QS\) is not tabulated: the generator does not produce this domain/
     );
-    expect(panel.textContent).toMatch(/one arm, Study treatment \(TRT\)/);
+    // The preset names its arms, so nothing is assumed about them.
+    expect(panel.textContent).not.toMatch(/one arm, Study treatment/);
     // The way back to change the study, which CRF Studio keeps as a draft.
     expect(
       within(panel)

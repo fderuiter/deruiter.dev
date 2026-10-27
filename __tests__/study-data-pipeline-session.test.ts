@@ -247,10 +247,11 @@ describe("study data pipeline session with a CRF Studio study", () => {
     expect(prepared.report.notTabulatedDomains).toEqual(["CM", "QS"]);
     expect(prepared.design.studyId).toBe("NEURO-2026-401");
     expect(prepared.design.arms.map((arm) => arm.name)).toEqual([
-      "Study treatment",
+      "CBX-210 10 mg/kg",
+      "Placebo",
     ]);
     expect(prepared.counts).toEqual({
-      arms: 1,
+      arms: 2,
       visits: prepared.design.visits.length,
       activities: prepared.design.activities.length,
       scheduled: prepared.design.schedule.length,

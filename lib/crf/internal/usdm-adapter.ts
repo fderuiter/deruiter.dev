@@ -14,15 +14,21 @@ import {
   type UsdmV4BiomedicalConcept,
   type UsdmV4Code,
   type UsdmV4Document,
+  type UsdmV4EligibilityCriterion,
+  type UsdmV4EligibilityCriterionItem,
   type UsdmV4Encounter,
   type UsdmV4ExtensionAttribute,
   type UsdmV4InterventionalStudyDesign,
+  type UsdmV4Objective,
+  type UsdmV4Procedure,
   type UsdmV4ScheduleTimeline,
   type UsdmV4StudyArm,
   type UsdmV4StudyCell,
   type UsdmV4StudyCohort,
+  type UsdmV4StudyDesignPopulation,
   type UsdmV4StudyElement,
   type UsdmV4StudyEpoch,
+  type UsdmV4StudyIntervention,
   type UsdmV4Timing,
   USDM_TIMING_AFTER,
   USDM_TIMING_BEFORE,
@@ -40,6 +46,14 @@ import {
   StudyArm,
   StudyEpoch,
   StudyCohort,
+  StudyPopulationPlan,
+  StudyPlannedSex,
+  StudyEligibilityCriterion,
+  StudyObjective,
+  StudyObjectiveLevel,
+  StudyInterventionPlan,
+  StudyInterventionRole,
+  StudyInterventionType,
   BiomedicalConcept,
   CodelistDefinition,
   CodelistOption,
@@ -134,6 +148,10 @@ export interface UsdmStudyDesign {
   arms: UsdmArm[];
   epochs: UsdmEpoch[];
   cohorts: UsdmCohort[];
+  population?: StudyPopulationPlan;
+  eligibilityCriteria?: StudyEligibilityCriterion[];
+  objectives?: StudyObjective[];
+  interventions?: StudyInterventionPlan[];
   encounters: UsdmEncounter[];
   activities: UsdmActivity[];
   biomedicalConcepts: UsdmBiomedicalConcept[];
@@ -351,6 +369,7 @@ function buildLegacyUsdmDocument(study: StudyProtocol): UsdmDocument {
     unit: bc.unit,
   }));
   const conceptIdSet = new Set(biomedicalConcepts.map((bc) => bc.id));
+  const conceptNames = new Set(biomedicalConcepts.map((bc) => bc.name));
   const conceptMap = new Map<string, UsdmBiomedicalConcept>();
   biomedicalConcepts.forEach((bc) => conceptMap.set(bc.id, bc));
 
@@ -385,9 +404,15 @@ function buildLegacyUsdmDocument(study: StudyProtocol): UsdmDocument {
 
         if (!conceptIdSet.has(conceptId)) {
           conceptIdSet.add(conceptId);
+          // Two forms can ask the same question, such as the route on CM
+          // and EX: the domain tells their concepts apart (CORE-001013).
+          const name = conceptNames.has(field.label)
+            ? `${field.label} (${form.domain})`
+            : field.label;
+          conceptNames.add(name);
           const newConcept: UsdmBiomedicalConcept = {
             id: conceptId,
-            name: field.label,
+            name,
             // A field's cdashMetadata.nciConceptId is the NCI code of its
             // codelist, not of a biomedical concept, so a derived concept
             // carries no NCI code: it is a CRF Studio concept.
@@ -540,6 +565,12 @@ function buildLegacyUsdmDocument(study: StudyProtocol): UsdmDocument {
       armIds: c.armIds,
       targetSize: c.targetSize,
     })),
+    ...withoutUndefined({
+      population: study.population,
+      eligibilityCriteria: study.eligibilityCriteria,
+      objectives: study.objectives,
+      interventions: study.interventions,
+    }),
     encounters,
     activities,
     biomedicalConcepts,
@@ -1069,6 +1100,12 @@ export function importStudyFromUsdm(
     arms,
     epochs,
     cohorts,
+    ...withoutUndefined({
+      population: primaryDesign.population,
+      eligibilityCriteria: primaryDesign.eligibilityCriteria,
+      objectives: primaryDesign.objectives,
+      interventions: primaryDesign.interventions,
+    }),
     biomedicalConcepts,
     simulationState: validatedSimulationState,
     provenance: validatedProvenance,
@@ -1439,9 +1476,10 @@ function liftBiomedicalConcept(
       v4Code(
         `${bc.id}__code_std`,
         codeValue,
-        // An NCI code is decoded by the concept's name; the label is how a
-        // form asks for it, such as "Age at Informed Consent" for Age.
-        nci ? bc.name || codeValue : bc.label || bc.name || codeValue,
+        // A code is decoded by the concept's name, which is unique among
+        // the study's concepts (CORE-000427); the label is how a form asks
+        // for it, such as "Age at Informed Consent" for Age.
+        bc.name || bc.label || codeValue,
         nci ? CDISC_CT_SYSTEM : CRF_STUDIO_CODE_SYSTEM
       )
     ),
@@ -1587,14 +1625,20 @@ function buildStudyCells(design: UsdmStudyDesign, epochIds: Set<string>) {
         : design.epochs.map((e) => e.id);
     for (const epochId of armEpochs) {
       const elementId = `${arm.id}__${epochId}__element`;
-      const epochName =
-        design.epochs.find((e) => e.id === epochId)?.name || epochId;
+      const epoch = design.epochs.find((e) => e.id === epochId);
+      const epochName = epoch?.name || epochId;
+      // An arm's treatment element names the interventions the arm receives.
+      const isTreatment = /treat/i.test(epoch?.type ?? epochName);
       elements.push({
         id: elementId,
         name: `${arm.name || arm.id} - ${epochName}`,
         label: null,
         description: null,
-        studyInterventionIds: [],
+        studyInterventionIds: isTreatment
+          ? (design.interventions ?? [])
+              .filter((i) => !i.armIds || i.armIds.includes(arm.id))
+              .map((i) => i.id)
+          : [],
         instanceType: "StudyElement",
       });
       studyCells.push({
@@ -1607,6 +1651,249 @@ function buildStudyCells(design: UsdmStudyDesign, epochIds: Set<string>) {
     }
   }
   return { elements, studyCells };
+}
+
+const PLANNED_SEX_CT: Record<StudyPlannedSex, [string, string]> = {
+  Female: ["C16576", "Female"],
+  Male: ["C20197", "Male"],
+};
+
+const CRITERION_CATEGORY_CT: Record<
+  StudyEligibilityCriterion["category"],
+  [string, string]
+> = {
+  Inclusion: ["C25532", "Inclusion Criteria"],
+  Exclusion: ["C25370", "Exclusion Criteria"],
+};
+
+const OBJECTIVE_LEVEL_CT: Record<StudyObjectiveLevel, [string, string]> = {
+  Primary: ["C85826", "Primary Objective"],
+  Secondary: ["C85827", "Secondary Objective"],
+  Exploratory: ["C163559", "Exploratory Objective"],
+};
+
+const ENDPOINT_LEVEL_CT: Record<StudyObjectiveLevel, [string, string]> = {
+  Primary: ["C94496", "Primary Endpoint"],
+  Secondary: ["C139173", "Secondary Endpoint"],
+  Exploratory: ["C170559", "Exploratory Endpoint"],
+};
+
+const INTERVENTION_ROLE_CT: Record<StudyInterventionRole, [string, string]> = {
+  "Experimental Intervention": ["C41161", "Experimental Intervention"],
+  "Active Comparator": ["C68609", "Active Comparator"],
+  Placebo: ["C753", "Placebo"],
+};
+
+const INTERVENTION_TYPE_CT: Record<StudyInterventionType, [string, string]> = {
+  Drug: ["C1909", "Pharmacologic Substance"],
+  Biologic: ["C307", "Biological Agent"],
+  Device: ["C16830", "Medical Device"],
+};
+
+const AGE_UNIT_YEAR: [string, string] = ["C29848", "Year"];
+
+/** The NCI Thesaurus, for procedure concepts. */
+const NCIT_SYSTEM = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl";
+const NCIT_VERSION = "26.09d";
+
+const MEDICATION_ADMINISTRATION = {
+  name: "Medication Administration",
+  code: "C128534",
+};
+
+/** The key of the table entry whose CT code a USDM code carries. */
+function ctKey<K extends string>(
+  table: Record<K, [string, string]>,
+  code: unknown
+): K | undefined {
+  const value = asString(asRecord(code)?.code);
+  return (Object.keys(table) as K[]).find((key) => table[key][0] === value);
+}
+
+function liftPopulation(
+  design: UsdmStudyDesign,
+  cohorts: UsdmV4StudyCohort[]
+): UsdmV4StudyDesignPopulation {
+  const id = `${design.id}__population`;
+  const plan = design.population;
+  const age = plan?.plannedAgeYears;
+  const criterionIds = (design.eligibilityCriteria ?? []).map((c) => c.id);
+  const yearsQuantity = (suffix: string, value: number) => ({
+    id: `${id}__age_${suffix}`,
+    value,
+    unit: v4AliasCode(
+      `${id}__age_${suffix}_unit`,
+      v4Code(`${id}__age_${suffix}_unit_std`, ...AGE_UNIT_YEAR)
+    ),
+    instanceType: "Quantity" as const,
+  });
+  return {
+    id,
+    name: "Study population",
+    label: null,
+    description: plan?.description ?? null,
+    includesHealthySubjects: plan?.includesHealthySubjects ?? false,
+    ...(plan?.plannedSex?.length
+      ? {
+          plannedSex: plan.plannedSex.map((sex) =>
+            v4Code(`${id}__sex_${sex.toLowerCase()}`, ...PLANNED_SEX_CT[sex])
+          ),
+        }
+      : {}),
+    ...(age
+      ? {
+          plannedAge: {
+            id: `${id}__age`,
+            minValue: yearsQuantity("min", age.min),
+            maxValue: yearsQuantity("max", age.max),
+            isApproximate: false,
+            instanceType: "Range" as const,
+          },
+        }
+      : {}),
+    ...(criterionIds.length > 0 ? { criterionIds } : {}),
+    cohorts,
+    ...(plan
+      ? {
+          extensionAttributes: [
+            crfExtension(id, "population", withoutUndefined({ ...plan })),
+          ],
+        }
+      : {}),
+    instanceType: "StudyDesignPopulation",
+  };
+}
+
+/**
+ * The design's eligibility criteria and the study version's criterion
+ * items. Each category numbers its criteria from 01, as a protocol does.
+ */
+function liftEligibility(design: UsdmStudyDesign): {
+  criteria: UsdmV4EligibilityCriterion[];
+  items: UsdmV4EligibilityCriterionItem[];
+} {
+  const list = design.eligibilityCriteria ?? [];
+  const counts = { Inclusion: 0, Exclusion: 0 };
+  const criteria = linkSequence(
+    list.map((criterion) => {
+      counts[criterion.category] += 1;
+      const identifier = String(counts[criterion.category]).padStart(2, "0");
+      const prefix = criterion.category === "Inclusion" ? "INC" : "EXC";
+      return {
+        id: criterion.id,
+        name: `${prefix}${identifier}`,
+        label: null,
+        description: null,
+        category: v4Code(
+          `${criterion.id}__category`,
+          ...CRITERION_CATEGORY_CT[criterion.category]
+        ),
+        identifier,
+        criterionItemId: `${criterion.id}__item`,
+        instanceType: "EligibilityCriterion" as const,
+      };
+    })
+  );
+  const items = list.map((criterion) => ({
+    id: `${criterion.id}__item`,
+    name: criterion.name,
+    label: null,
+    description: null,
+    text: criterion.text,
+    instanceType: "EligibilityCriterionItem" as const,
+  }));
+  return { criteria, items };
+}
+
+function liftObjectives(design: UsdmStudyDesign): UsdmV4Objective[] {
+  return (design.objectives ?? []).map((objective) => ({
+    id: objective.id,
+    name: objective.name,
+    label: null,
+    description: null,
+    text: objective.text,
+    level: v4Code(
+      `${objective.id}__level`,
+      ...OBJECTIVE_LEVEL_CT[objective.level]
+    ),
+    endpoints: objective.endpoints.map((endpoint) => ({
+      id: endpoint.id,
+      name: endpoint.name,
+      label: null,
+      description: null,
+      text: endpoint.text,
+      purpose: endpoint.purpose,
+      level: v4Code(
+        `${endpoint.id}__level`,
+        ...ENDPOINT_LEVEL_CT[endpoint.level]
+      ),
+      instanceType: "Endpoint" as const,
+    })),
+    instanceType: "Objective",
+  }));
+}
+
+function liftInterventions(design: UsdmStudyDesign): UsdmV4StudyIntervention[] {
+  return (design.interventions ?? []).map((intervention) => ({
+    id: intervention.id,
+    name: intervention.name,
+    label: null,
+    description: intervention.description ?? null,
+    role: v4Code(
+      `${intervention.id}__role`,
+      ...INTERVENTION_ROLE_CT[intervention.role]
+    ),
+    type: v4Code(
+      `${intervention.id}__type`,
+      ...INTERVENTION_TYPE_CT[intervention.type]
+    ),
+    codes: [],
+    extensionAttributes: [
+      crfExtension(
+        intervention.id,
+        "intervention",
+        withoutUndefined({
+          armIds: intervention.armIds,
+          administrationFormIds: intervention.administrationFormIds,
+          procedure: intervention.procedure,
+        })
+      ),
+    ],
+    instanceType: "StudyIntervention",
+  }));
+}
+
+/**
+ * One procedure for each intervention a form records the giving of, so the
+ * activity names what it gives (CORE-001065).
+ */
+function administrationProcedures(
+  activityId: string,
+  interventions: StudyInterventionPlan[]
+): UsdmV4Procedure[] {
+  return interventions
+    .filter((i) => i.administrationFormIds?.includes(activityId))
+    .map((intervention) => {
+      const procedure = intervention.procedure ?? MEDICATION_ADMINISTRATION;
+      const id = `${activityId}__admin_${intervention.id}`;
+      return {
+        id,
+        name: `Administer ${intervention.name}`,
+        label: null,
+        description: null,
+        procedureType: procedure.name,
+        code: {
+          id: `${id}__code`,
+          code: procedure.code,
+          codeSystem: NCIT_SYSTEM,
+          codeSystemVersion: NCIT_VERSION,
+          decode: procedure.name,
+          instanceType: "Code",
+        },
+        studyInterventionId: intervention.id,
+        instanceType: "Procedure",
+      };
+    });
 }
 
 function liftDesign(design: UsdmStudyDesign, phaseLabel: string | undefined) {
@@ -1729,7 +2016,10 @@ function liftDesign(design: UsdmStudyDesign, phaseLabel: string | undefined) {
         label: null,
         description: act.description ?? null,
         childIds: [],
-        definedProcedures: [],
+        definedProcedures: administrationProcedures(
+          act.id,
+          design.interventions ?? []
+        ),
         biomedicalConceptIds: [...conceptIds],
         bcCategoryIds: [],
         bcSurrogateIds: [],
@@ -1782,19 +2072,11 @@ function liftDesign(design: UsdmStudyDesign, phaseLabel: string | undefined) {
     epochs,
     elements,
     estimands: [],
-    studyInterventionIds: [],
-    objectives: [],
-    population: {
-      id: `${design.id}__population`,
-      name: "Study population",
-      label: null,
-      description: null,
-      includesHealthySubjects: false,
-      cohorts,
-      instanceType: "StudyDesignPopulation",
-    },
+    studyInterventionIds: (design.interventions ?? []).map((i) => i.id),
+    objectives: liftObjectives(design),
+    population: liftPopulation(design, cohorts),
     scheduleTimelines: buildMainTimeline(design, epochIds),
-    eligibilityCriteria: [],
+    eligibilityCriteria: liftEligibility(design).criteria,
     analysisPopulations: [],
     // One arm is a single group; more are parallel groups (CORE-001077
     // expects a parallel design to reference more than one intervention).
@@ -1926,6 +2208,12 @@ function liftLegacyToUsdmV4(legacy: UsdmDocument): UsdmV4Document {
               instanceType: "StudyRole",
             },
           ],
+          ...(design.interventions?.length
+            ? { studyInterventions: liftInterventions(design) }
+            : {}),
+          ...(design.eligibilityCriteria?.length
+            ? { eligibilityCriterionItems: liftEligibility(design).items }
+            : {}),
           biomedicalConcepts: (design.biomedicalConcepts || []).map(
             liftBiomedicalConcept
           ),
@@ -1971,6 +2259,175 @@ function nativeDescription(obj: Record<string, unknown> | undefined) {
 function codeDecode(code: unknown): string | undefined {
   const rec = asRecord(code);
   return asString(rec?.decode) ?? asString(asRecord(rec?.standardCode)?.decode);
+}
+
+function records(value: unknown): Record<string, unknown>[] {
+  return asArray(value)
+    .map(asRecord)
+    .filter((r): r is Record<string, unknown> => Boolean(r));
+}
+
+/** A level from its CT code, or from the words of its decode. */
+function lowerLevel(
+  table: Record<StudyObjectiveLevel, [string, string]>,
+  code: unknown
+): StudyObjectiveLevel {
+  const decode = codeDecode(code) ?? "";
+  return (
+    ctKey(table, code) ??
+    (/secondary/i.test(decode)
+      ? "Secondary"
+      : /exploratory/i.test(decode)
+        ? "Exploratory"
+        : "Primary")
+  );
+}
+
+/**
+ * Reads the planned population, eligibility criteria, objectives and study
+ * interventions back from native USDM v4 properties. CRF Studio extension
+ * payloads restore what USDM does not hold, such as which forms record an
+ * intervention being given.
+ */
+function lowerProtocolContent(
+  version: Record<string, unknown>,
+  design: Record<string, unknown>
+): Pick<
+  UsdmStudyDesign,
+  "population" | "eligibilityCriteria" | "objectives" | "interventions"
+> {
+  const populationRecord = asRecord(design.population);
+  const populationExt = readCrfExtension(populationRecord, "population");
+  let population: StudyPopulationPlan | undefined;
+  if (populationExt) {
+    population = populationExt as StudyPopulationPlan;
+  } else if (populationRecord) {
+    const plannedSex = asArray(populationRecord.plannedSex)
+      .map((code) => ctKey(PLANNED_SEX_CT, code))
+      .filter((sex): sex is StudyPlannedSex => Boolean(sex));
+    const age = asRecord(populationRecord.plannedAge);
+    const min = asRecord(age?.minValue)?.value;
+    const max = asRecord(age?.maxValue)?.value;
+    const plan: StudyPopulationPlan = withoutUndefined({
+      description: nativeDescription(populationRecord),
+      plannedSex: plannedSex.length > 0 ? plannedSex : undefined,
+      plannedAgeYears:
+        typeof min === "number" && typeof max === "number"
+          ? { min, max }
+          : undefined,
+      includesHealthySubjects:
+        populationRecord.includesHealthySubjects === true ? true : undefined,
+    });
+    population = Object.keys(plan).length > 0 ? plan : undefined;
+  }
+
+  const items = new Map(
+    records(version.eligibilityCriterionItems).map((item) => [
+      asString(item.id),
+      item,
+    ])
+  );
+  const eligibilityCriteria: StudyEligibilityCriterion[] = records(
+    design.eligibilityCriteria
+  ).flatMap((criterion, idx) => {
+    const item = items.get(asString(criterion.criterionItemId));
+    const text = asString(item?.text);
+    if (!text) return [];
+    const id = asString(criterion.id) ?? `criterion_${idx + 1}`;
+    return [
+      {
+        id,
+        category:
+          ctKey(CRITERION_CATEGORY_CT, criterion.category) ??
+          (/exclu/i.test(codeDecode(criterion.category) ?? "")
+            ? "Exclusion"
+            : "Inclusion"),
+        name: nativeName(item, nativeName(criterion, id)),
+        text,
+      },
+    ];
+  });
+
+  const objectives: StudyObjective[] = records(design.objectives).map(
+    (objective, idx) => {
+      const id = asString(objective.id) ?? `objective_${idx + 1}`;
+      return {
+        id,
+        level: lowerLevel(OBJECTIVE_LEVEL_CT, objective.level),
+        name: nativeName(objective, id),
+        text: asString(objective.text) ?? "",
+        endpoints: records(objective.endpoints).map((endpoint, eIdx) => {
+          const endpointId =
+            asString(endpoint.id) ?? `${id}_endpoint_${eIdx + 1}`;
+          return {
+            id: endpointId,
+            level: lowerLevel(ENDPOINT_LEVEL_CT, endpoint.level),
+            name: nativeName(endpoint, endpointId),
+            text: asString(endpoint.text) ?? "",
+            purpose: asString(endpoint.purpose) ?? "",
+          };
+        }),
+      };
+    }
+  );
+
+  const procedures = records(design.activities).flatMap((activity) =>
+    records(activity.definedProcedures).map((procedure) => ({
+      activityId: asString(activity.id),
+      procedure,
+    }))
+  );
+  const interventions: StudyInterventionPlan[] = records(
+    version.studyInterventions
+  ).map((intervention, idx) => {
+    const id = asString(intervention.id) ?? `intervention_${idx + 1}`;
+    const ext = readCrfExtension(intervention, "intervention");
+    const given = procedures.filter(
+      (p) => asString(p.procedure.studyInterventionId) === id
+    );
+    const givenCode = asRecord(given[0]?.procedure.code);
+    return withoutUndefined({
+      id,
+      name: nativeName(intervention, id),
+      description: nativeDescription(intervention),
+      role:
+        ctKey(INTERVENTION_ROLE_CT, intervention.role) ??
+        "Experimental Intervention",
+      type: ctKey(INTERVENTION_TYPE_CT, intervention.type) ?? "Drug",
+      ...(ext
+        ? (ext as Pick<
+            StudyInterventionPlan,
+            "armIds" | "administrationFormIds" | "procedure"
+          >)
+        : {
+            administrationFormIds:
+              given.length > 0
+                ? given
+                    .map((p) => p.activityId)
+                    .filter((a): a is string => Boolean(a))
+                : undefined,
+            procedure:
+              givenCode &&
+              asString(givenCode.code) !== MEDICATION_ADMINISTRATION.code
+                ? {
+                    name:
+                      asString(given[0].procedure.procedureType) ??
+                      codeDecode(givenCode) ??
+                      "",
+                    code: asString(givenCode.code) ?? "",
+                  }
+                : undefined,
+          }),
+    });
+  });
+
+  return withoutUndefined({
+    population,
+    eligibilityCriteria:
+      eligibilityCriteria.length > 0 ? eligibilityCriteria : undefined,
+    objectives: objectives.length > 0 ? objectives : undefined,
+    interventions: interventions.length > 0 ? interventions : undefined,
+  });
 }
 
 /**
@@ -2060,6 +2517,8 @@ function lowerUsdmV4ToLegacy(doc: Record<string, unknown>): UsdmDocument {
       });
     });
 
+  const protocolContent = lowerProtocolContent(version, design);
+
   const encounters: UsdmEncounter[] = asArray(design.encounters)
     .map(asRecord)
     .filter((e): e is Record<string, unknown> => Boolean(e))
@@ -2144,6 +2603,7 @@ function lowerUsdmV4ToLegacy(doc: Record<string, unknown>): UsdmDocument {
     arms,
     epochs,
     cohorts,
+    ...protocolContent,
     encounters,
     activities,
     biomedicalConcepts,

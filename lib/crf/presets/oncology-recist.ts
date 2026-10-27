@@ -89,6 +89,133 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
       targetSize: 450,
     },
   ],
+  population: {
+    description:
+      "Adults with an advanced or metastatic solid tumour that progressed after at least one prior line of systemic therapy.",
+    plannedSex: ["Female", "Male"],
+    plannedAgeYears: { min: 18, max: 85 },
+  },
+  eligibilityCriteria: [
+    {
+      id: "ec_onc_age",
+      category: "Inclusion",
+      name: "Age",
+      text: "Aged 18 to 85 years at informed consent.",
+    },
+    {
+      id: "ec_onc_tumour",
+      category: "Inclusion",
+      name: "Advanced solid tumour",
+      text: "Histologically confirmed advanced or metastatic solid tumour that progressed on or after at least one prior line of systemic therapy.",
+    },
+    {
+      id: "ec_onc_measurable",
+      category: "Inclusion",
+      name: "Measurable disease",
+      text: "At least one measurable lesion per RECIST 1.1 on imaging within 28 days before randomization.",
+    },
+    {
+      id: "ec_onc_ecog",
+      category: "Inclusion",
+      name: "Performance status",
+      text: "ECOG performance status of 0 or 1.",
+    },
+    {
+      id: "ec_onc_autoimmune",
+      category: "Exclusion",
+      name: "Autoimmune disease",
+      text: "Active autoimmune disease that needed systemic treatment in the past 2 years.",
+    },
+    {
+      id: "ec_onc_cns",
+      category: "Exclusion",
+      name: "CNS metastases",
+      text: "Untreated or symptomatic central nervous system metastases.",
+    },
+    {
+      id: "ec_onc_prior_io",
+      category: "Exclusion",
+      name: "Prior checkpoint inhibitor",
+      text: "Prior treatment with an anti-PD-1, anti-PD-L1 or anti-CTLA-4 antibody.",
+    },
+  ],
+  objectives: [
+    {
+      id: "obj_onc_primary",
+      level: "Primary",
+      name: "Primary objective",
+      text: "To compare progression-free survival between the checkpoint combination and standard of care chemotherapy.",
+      endpoints: [
+        {
+          id: "ep_onc_pfs",
+          level: "Primary",
+          name: "Progression-free survival",
+          text: "Time from randomization to disease progression per RECIST 1.1 or death from any cause, whichever comes first.",
+          purpose: "Efficacy",
+        },
+      ],
+    },
+    {
+      id: "obj_onc_secondary",
+      level: "Secondary",
+      name: "Secondary objectives",
+      text: "To compare overall survival and objective response, and to describe the safety of each arm.",
+      endpoints: [
+        {
+          id: "ep_onc_os",
+          level: "Secondary",
+          name: "Overall survival",
+          text: "Time from randomization to death from any cause.",
+          purpose: "Efficacy",
+        },
+        {
+          id: "ep_onc_orr",
+          level: "Secondary",
+          name: "Objective response rate",
+          text: "Proportion of subjects with a confirmed complete or partial response per RECIST 1.1.",
+          purpose: "Efficacy",
+        },
+        {
+          id: "ep_onc_teae",
+          level: "Secondary",
+          name: "Adverse events",
+          text: "Incidence of treatment-emergent adverse events by CTCAE grade.",
+          purpose: "Safety",
+        },
+      ],
+    },
+  ],
+  interventions: [
+    {
+      id: "int_onc_pembrolizumab",
+      name: "Pembrolizumab",
+      description: "200 mg intravenous infusion every 3 weeks.",
+      role: "Experimental Intervention",
+      type: "Biologic",
+      armIds: ["arm_exp"],
+      administrationFormIds: ["form_ex_onc"],
+    },
+    {
+      id: "int_onc_aur117",
+      name: "AUR-117",
+      description:
+        "Investigational anti-CTLA-4 antibody, 1 mg/kg intravenous infusion every 6 weeks.",
+      role: "Experimental Intervention",
+      type: "Biologic",
+      armIds: ["arm_exp"],
+      administrationFormIds: ["form_ex_onc"],
+    },
+    {
+      id: "int_onc_chemo",
+      name: "Investigator's choice chemotherapy",
+      description:
+        "Docetaxel, paclitaxel or pemetrexed at the labelled dose and schedule.",
+      role: "Active Comparator",
+      type: "Drug",
+      armIds: ["arm_ctrl"],
+      administrationFormIds: ["form_ex_onc"],
+    },
+  ],
   biomedicalConcepts: [
     {
       id: "bc_age",
@@ -153,10 +280,20 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
       windowAfter: 2,
       epochId: "e_trt",
       armIds: ["arm_exp", "arm_ctrl"],
-      assignedFormIds: ["form_vs_onc", "form_recist_onc", "form_lb_onc"],
+      assignedFormIds: [
+        "form_vs_onc",
+        "form_recist_onc",
+        "form_lb_onc",
+        "form_ex_onc",
+      ],
       armFormAssignments: {
-        arm_exp: ["form_vs_onc", "form_recist_onc", "form_lb_onc"],
-        arm_ctrl: ["form_vs_onc", "form_lb_onc"],
+        arm_exp: [
+          "form_vs_onc",
+          "form_recist_onc",
+          "form_lb_onc",
+          "form_ex_onc",
+        ],
+        arm_ctrl: ["form_vs_onc", "form_lb_onc", "form_ex_onc"],
       },
     },
     {
@@ -169,7 +306,7 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
       windowAfter: 3,
       epochId: "e_trt",
       armIds: ["arm_exp", "arm_ctrl"],
-      assignedFormIds: ["form_vs_onc", "form_lb_onc"],
+      assignedFormIds: ["form_vs_onc", "form_lb_onc", "form_ex_onc"],
     },
     {
       id: "v_c3d1",
@@ -181,10 +318,20 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
       windowAfter: 3,
       epochId: "e_trt",
       armIds: ["arm_exp", "arm_ctrl"],
-      assignedFormIds: ["form_vs_onc", "form_recist_onc", "form_lb_onc"],
+      assignedFormIds: [
+        "form_vs_onc",
+        "form_recist_onc",
+        "form_lb_onc",
+        "form_ex_onc",
+      ],
       armFormAssignments: {
-        arm_exp: ["form_vs_onc", "form_recist_onc", "form_lb_onc"],
-        arm_ctrl: ["form_vs_onc", "form_lb_onc"],
+        arm_exp: [
+          "form_vs_onc",
+          "form_recist_onc",
+          "form_lb_onc",
+          "form_ex_onc",
+        ],
+        arm_ctrl: ["form_vs_onc", "form_lb_onc", "form_ex_onc"],
       },
     },
     {
@@ -234,6 +381,10 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
     {
       ...scaffoldCdashDomain("LB", PRESET_ID_STAMP),
       id: "form_lb_onc",
+    },
+    {
+      ...scaffoldCdashDomain("EX", PRESET_ID_STAMP),
+      id: "form_ex_onc",
     },
   ],
 };

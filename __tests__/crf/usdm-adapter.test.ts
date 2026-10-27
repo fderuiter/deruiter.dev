@@ -98,7 +98,7 @@ describe("Graph-Extended Schema & USDM Bidirectional Adapter", () => {
     expect(design.epochs.length).toBe(3);
     expect(design.population.cohorts.length).toBe(1);
     expect(design.encounters.length).toBe(6);
-    expect(design.activities.length).toBe(6);
+    expect(design.activities.length).toBe(7);
     expect(version.biomedicalConcepts.length).toBeGreaterThanOrEqual(3);
 
     const imported = importStudyFromUsdm(usdmJson);

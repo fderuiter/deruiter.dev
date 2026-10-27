@@ -141,6 +141,129 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
     showTableOfContents: true,
   },
   codelists: [...STANDARD_CODELISTS],
+  arms: [
+    {
+      id: "arm_cns_active",
+      name: "CBX-210 10 mg/kg",
+      type: "Experimental",
+      description: "CBX-210 10 mg/kg intravenous infusion every 4 weeks",
+      epochIds: ["ep_cns_scrn", "ep_cns_trt"],
+    },
+    {
+      id: "arm_cns_placebo",
+      name: "Placebo",
+      type: "Placebo Comparator",
+      description: "Matching placebo intravenous infusion every 4 weeks",
+      epochIds: ["ep_cns_scrn", "ep_cns_trt"],
+    },
+  ],
+  epochs: [
+    {
+      id: "ep_cns_scrn",
+      name: "Screening Epoch",
+      sequenceNumber: 1,
+      type: "Screening",
+      description: "Cognitive testing, amyloid PET and MRI safety screening",
+    },
+    {
+      id: "ep_cns_trt",
+      name: "Treatment Epoch",
+      sequenceNumber: 2,
+      type: "Treatment",
+      description: "Six months of infusions every 4 weeks",
+    },
+  ],
+  population: {
+    description:
+      "Adults with mild cognitive impairment or mild dementia due to Alzheimer's disease and confirmed amyloid pathology.",
+    plannedSex: ["Female", "Male"],
+    plannedAgeYears: { min: 50, max: 85 },
+  },
+  eligibilityCriteria: [
+    {
+      id: "ec_cns_age",
+      category: "Inclusion",
+      name: "Age",
+      text: "Aged 50 to 85 years at screening.",
+    },
+    {
+      id: "ec_cns_mmse",
+      category: "Inclusion",
+      name: "Early Alzheimer's disease",
+      text: "Mild cognitive impairment or mild dementia due to Alzheimer's disease, with an MMSE total score of 22 to 30 at screening.",
+    },
+    {
+      id: "ec_cns_amyloid",
+      category: "Inclusion",
+      name: "Amyloid pathology",
+      text: "Amyloid PET scan read as positive.",
+    },
+    {
+      id: "ec_cns_microbleeds",
+      category: "Exclusion",
+      name: "Microhaemorrhages",
+      text: "More than 4 microhaemorrhages, or any superficial siderosis, on screening MRI.",
+    },
+    {
+      id: "ec_cns_anticoag",
+      category: "Exclusion",
+      name: "Anticoagulation",
+      text: "Current treatment with an anticoagulant.",
+    },
+  ],
+  objectives: [
+    {
+      id: "obj_cns_primary",
+      level: "Primary",
+      name: "Primary objective",
+      text: "To evaluate the effect of CBX-210 compared with placebo on cognition after 6 months.",
+      endpoints: [
+        {
+          id: "ep_cns_mmse",
+          level: "Primary",
+          name: "MMSE change at Month 6",
+          text: "Change from baseline in MMSE total score at Month 6.",
+          purpose: "Efficacy",
+        },
+      ],
+    },
+    {
+      id: "obj_cns_safety",
+      level: "Secondary",
+      name: "Safety objective",
+      text: "To evaluate the safety and tolerability of CBX-210.",
+      endpoints: [
+        {
+          id: "ep_cns_aria",
+          level: "Secondary",
+          name: "Adverse events including ARIA",
+          text: "Incidence of treatment-emergent adverse events, including amyloid-related imaging abnormalities.",
+          purpose: "Safety",
+        },
+      ],
+    },
+  ],
+  interventions: [
+    {
+      id: "int_cns_cbx210",
+      name: "CBX-210",
+      description: "Investigational anti-amyloid monoclonal antibody.",
+      role: "Experimental Intervention",
+      type: "Biologic",
+      armIds: ["arm_cns_active"],
+      administrationFormIds: ["form_ex_cns"],
+    },
+    {
+      id: "int_cns_placebo",
+      name: "Placebo",
+      description: "Matching saline infusion.",
+      role: "Placebo",
+      // The role says it is a placebo; the type is that of the product it matches.
+      type: "Biologic",
+      armIds: ["arm_cns_placebo"],
+      administrationFormIds: ["form_ex_cns"],
+    },
+  ],
   visits: [
     {
       id: "v_cns_scrn",
@@ -150,6 +273,7 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
       targetDay: -14,
       windowBefore: 14,
       windowAfter: 0,
+      epochId: "ep_cns_scrn",
       assignedFormIds: ["form_dm_cns", "form_vs_cns", "form_mmse_cns"],
     },
     {
@@ -160,7 +284,8 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
       targetDay: 1,
       windowBefore: 0,
       windowAfter: 2,
-      assignedFormIds: ["form_vs_cns", "form_mmse_cns"],
+      epochId: "ep_cns_trt",
+      assignedFormIds: ["form_vs_cns", "form_mmse_cns", "form_ex_cns"],
     },
     {
       id: "v_cns_m3",
@@ -170,7 +295,8 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
       targetDay: 90,
       windowBefore: 7,
       windowAfter: 7,
-      assignedFormIds: ["form_vs_cns", "form_mmse_cns"],
+      epochId: "ep_cns_trt",
+      assignedFormIds: ["form_vs_cns", "form_mmse_cns", "form_ex_cns"],
     },
     {
       id: "v_cns_m6",
@@ -180,6 +306,7 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
       targetDay: 180,
       windowBefore: 7,
       windowAfter: 7,
+      epochId: "ep_cns_trt",
       assignedFormIds: ["form_vs_cns", "form_mmse_cns"],
     },
   ],
@@ -200,6 +327,10 @@ export const CNS_NEURO_PRESET: StudyProtocol = {
     {
       ...scaffoldCdashDomain("CM", PRESET_ID_STAMP),
       id: "form_cm_cns",
+    },
+    {
+      ...scaffoldCdashDomain("EX", PRESET_ID_STAMP),
+      id: "form_ex_cns",
     },
   ],
 };

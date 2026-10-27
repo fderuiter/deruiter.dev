@@ -19,6 +19,15 @@ import {
   runPipeline,
   sha256Hex,
   writeDatasetJson,
+  type CoreView,
+  type RecordedCrfPreset,
+  type RecordedDefaultView,
+  type RecordedExplanation,
+  type RecordedFindings,
+  type RecordedLines,
+  type RecordedRule,
+  type RecordedScenarioView,
+  type RecordedTwin,
   type ScenarioId,
 } from "../lib/study-data";
 import { STUDY_PRESETS } from "../lib/crf/presets";
@@ -91,9 +100,6 @@ export interface ExportOptions {
    */
   readonly scenario?: ScenarioId;
 }
-
-/** The default run, then each "Inject an issue" scenario, by view id. */
-export type CoreView = "default" | ScenarioId;
 
 /** Every view CI runs CORE over: the default run and all 16 scenarios. */
 export const CORE_VIEWS: readonly CoreView[] = [
@@ -349,6 +355,9 @@ export interface AllowlistEntry {
 
 /** The allowlist file, relative to the workspace root. */
 export const ALLOWLIST_FILE = "scripts/study-data-core-allowlist.json";
+
+/** The measured map from local rules to CORE rules (#2994). */
+export const CROSSWALK_FILE = "scripts/study-data-core-crosswalk.json";
 
 const CATEGORIES = new Set<AllowlistEntry["category"]>([
   "defect",
@@ -795,26 +804,6 @@ export function reconcileCrfFolder(
 export const RECORDED_FINDINGS_FILE =
   "lib/study-data/internal/core/recorded-findings.json";
 
-/** One rule's outcome in a CORE run, from its `Rules_Report`. */
-export interface RecordedRule {
-  /** SUCCESS, ISSUE REPORTED, SKIPPED (not applicable) or EXECUTION ERROR. */
-  readonly status: string;
-  /** The CDISC conformance rule ids CORE cites (CG, TIG), comma separated. */
-  readonly cdisc: string;
-  /** The FDA Business or Validator Rule ids CORE cites, comma separated. */
-  readonly fda: string;
-  readonly message: string;
-}
-
-/** The pinned engine and inputs every recorded finding came from. */
-export interface RecordedLock {
-  readonly engine: string;
-  readonly tag: string;
-  readonly commit: string;
-  readonly standards: Readonly<Record<CoreTarget["id"], string>>;
-  readonly ct: { readonly declared: string; readonly validated: string };
-}
-
 /**
  * How many example lines are kept per rule and dataset. CORE can report a
  * cascade of thousands of rows for one planted defect (a duplicated DM
@@ -822,52 +811,6 @@ export interface RecordedLock {
  * sorted order, and the full count, as CORE's own issue limit does.
  */
 export const RECORDED_EXAMPLES_PER_RULE = 20;
-
-/** Sorted finding lines, capped per rule and dataset, with full counts. */
-export interface RecordedLines {
-  readonly lines: readonly string[];
-  /** Findings per "rule dataset", before the cap. */
-  readonly counts: Readonly<Record<string, number>>;
-}
-
-/** The default view's findings. */
-export interface RecordedDefaultView {
-  readonly inputSha256: string;
-  readonly sdtm: RecordedLines;
-  readonly usdm: RecordedLines;
-}
-
-/** A scenario view, as its change to the default view's SDTM findings. */
-export interface RecordedScenarioView {
-  readonly inputSha256: string;
-  readonly added: RecordedLines;
-  readonly removed: RecordedLines;
-  /** SDTM rules whose status differs from the default view's. */
-  readonly status: Readonly<Record<string, string>>;
-}
-
-/** One CRF Studio preset's USDM export (#3051). */
-export interface RecordedCrfPreset {
-  readonly inputSha256: string;
-  readonly usdm: RecordedLines;
-  /** USDM rules whose status differs from the default view's. */
-  readonly status: Readonly<Record<string, string>>;
-}
-
-/** The file `record` writes and the site reads (#2992). */
-export interface RecordedFindings {
-  readonly $comment: string;
-  readonly lock: RecordedLock;
-  readonly rules: {
-    readonly sdtm: Readonly<Record<string, RecordedRule>>;
-    readonly usdm: Readonly<Record<string, RecordedRule>>;
-  };
-  readonly views: {
-    readonly default: RecordedDefaultView;
-  } & Readonly<Partial<Record<ScenarioId, RecordedScenarioView>>>;
-  /** Every CRF Studio preset's USDM export, by preset id. */
-  readonly crf: Readonly<Record<string, RecordedCrfPreset>>;
-}
 
 /**
  * One CORE finding as a line: rule, dataset or entity, the record (subject
@@ -965,6 +908,8 @@ export interface RecordOptions {
   readonly commit: string;
   /** The `export-crf` folder and the CORE reports on it (#3051). */
   readonly crf: { readonly inputsDir: string; readonly reportsDir: string };
+  /** The allowlist and crosswalk; the checked-in files when absent. */
+  readonly annotations?: AnnotationSources;
 }
 
 /**
@@ -1085,9 +1030,63 @@ export function recordFindings(
       ct: { declared: notes.declaredCt, validated: notes.validatedCt },
     },
     rules: { sdtm: sdtm.rules, usdm: usdm.rules },
+    ...recordedAnnotations(options.annotations ?? readAnnotationSources()),
     views: views as RecordedFindings["views"],
     crf,
   };
+}
+
+/** The allowlist and crosswalk, as `recordedAnnotations` reads them. */
+export interface AnnotationSources {
+  readonly allowlist: unknown;
+  readonly crosswalk: unknown;
+}
+
+/** Reads the checked-in allowlist and crosswalk. */
+export function readAnnotationSources(
+  root: string = process.cwd()
+): AnnotationSources {
+  const read = (file: string) =>
+    JSON.parse(fs.readFileSync(path.join(root, file), "utf8"));
+  return { allowlist: read(ALLOWLIST_FILE), crosswalk: read(CROSSWALK_FILE) };
+}
+
+/**
+ * What the page shows beside CORE's findings: the allowlist's reason for
+ * each accepted default-view finding, and the CORE rules measured to catch
+ * each local rule's defect. They are copied into the recorded file so the
+ * site reads one file and never the scripts folder.
+ */
+export function recordedAnnotations(
+  sources: AnnotationSources
+): Pick<RecordedFindings, "explained" | "twins"> {
+  const explained: Record<
+    "sdtm" | "usdm",
+    Record<string, RecordedExplanation>
+  > = { sdtm: {}, usdm: {} };
+  for (const entry of parseAllowlist(sources.allowlist)) {
+    if (entry.target !== "sdtm" && entry.target !== "usdm") continue;
+    explained[entry.target][`${entry.coreId} ${entry.dataset}`] = {
+      category: entry.category,
+      reason: entry.reason,
+      ...(entry.issue ? { issue: entry.issue } : {}),
+    };
+  }
+  const entries = (sources.crosswalk as { entries?: unknown })?.entries;
+  if (!Array.isArray(entries)) {
+    throw new TypeError("The crosswalk has no entries array.");
+  }
+  const twins: Record<string, RecordedTwin> = {};
+  for (const item of entries as {
+    ruleId: string;
+    core: string[];
+    coverage: string;
+  }[]) {
+    if (item.coverage !== "same-defect" && item.coverage !== "related")
+      continue;
+    twins[item.ruleId] = { coverage: item.coverage, core: [...item.core] };
+  }
+  return { explained, twins };
 }
 
 async function main(argv: readonly string[]): Promise<number> {
@@ -1132,6 +1131,20 @@ async function main(argv: readonly string[]): Promise<number> {
     fs.writeFileSync(path.join(rest[0], "reconciliation.md"), markdown);
     console.log(markdown);
     return failed ? 1 : 0;
+  }
+  if (command === "annotate") {
+    const file = path.resolve(root ?? RECORDED_FINDINGS_FILE);
+    const recorded = JSON.parse(
+      fs.readFileSync(file, "utf8")
+    ) as RecordedFindings;
+    const { explained, twins } = recordedAnnotations(readAnnotationSources());
+    const { views, crf, ...head } = recorded;
+    fs.writeFileSync(
+      file,
+      `${JSON.stringify({ ...head, explained, twins, views, crf }, null, 2)}\n`
+    );
+    console.log(`Updated the allowlist reasons and rule twins in ${file}.`);
+    return 0;
   }
   if (command === "record" && root && rest[0]) {
     const option = (name: string) => {
@@ -1184,6 +1197,7 @@ async function main(argv: readonly string[]): Promise<number> {
       "       tsx scripts/study-data-core.ts record <dir> <reports> --core-tag <tag> --core-commit <sha> --crf-inputs <dir> --crf-reports <dir> [--out <file>]",
       "       tsx scripts/study-data-core.ts reconcile <dir> <reports> [--engine <label>]",
       "       tsx scripts/study-data-core.ts reconcile-crf <dir> <reports> [--engine <label>]",
+      "       tsx scripts/study-data-core.ts annotate [<recorded-findings.json>]",
     ].join("\n")
   );
   return 2;

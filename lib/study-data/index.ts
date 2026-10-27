@@ -206,3 +206,24 @@ export type {
   LineageTraceOptions,
   LineageVisit,
 } from "./internal/lineage/model";
+export {
+  CORE_EXAMPLES_SHOWN,
+  coreViewReport,
+  loadRecordedCoreFindings,
+  recordedCoreView,
+} from "./internal/core/recorded";
+export type {
+  CoreFinding,
+  CoreFindingExample,
+  CoreView,
+  CoreViewReport,
+  RecordedCrfPreset,
+  RecordedDefaultView,
+  RecordedExplanation,
+  RecordedFindings,
+  RecordedLines,
+  RecordedLock,
+  RecordedRule,
+  RecordedScenarioView,
+  RecordedTwin,
+} from "./internal/core/recorded";

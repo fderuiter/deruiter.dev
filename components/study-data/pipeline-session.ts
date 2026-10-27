@@ -11,6 +11,8 @@ import { standardCitation } from "@/lib/clinical-standards";
 import { clamp } from "@/lib/game-utils";
 import { validateUsdmV4Document } from "@/lib/clinical-standards";
 import {
+  DEFAULT_SEED,
+  DEFAULT_SUBJECT_COUNT,
   DEMO_301_STUDY,
   MESSY_DATA_SCENARIOS,
   PACKAGE_FIXED_TIMESTAMP,
@@ -22,6 +24,7 @@ import {
   buildTlfOutputs,
   createLineageIndex,
   prepareStudyHandoff,
+  recordedCoreView,
   renderReviewerGuideHtml,
   runPipeline,
   sha256Hex,
@@ -311,6 +314,13 @@ export function createStudyDataSession() {
       ...(scenario === undefined
         ? {}
         : { injected: injectedIssue(result, scenario) }),
+      coreView: recordedCoreView({
+        defaultStudy: study === undefined,
+        seed,
+        nSubjects,
+        scenario,
+        defaults: { seed: DEFAULT_SEED, nSubjects: DEFAULT_SUBJECT_COUNT },
+      }),
       define,
       tables: outputs.tables,
       figures: outputs.figures,

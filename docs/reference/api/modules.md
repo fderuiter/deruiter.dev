@@ -564,6 +564,7 @@
 - [lib/study-data/internal/adam/specs](lib/study-data/internal/adam/specs/README.md)
 - [lib/study-data/internal/conformance/rules](lib/study-data/internal/conformance/rules/README.md)
 - [lib/study-data/internal/conformance/run-conformance](lib/study-data/internal/conformance/run-conformance/README.md)
+- [lib/study-data/internal/core/recorded](lib/study-data/internal/core/recorded/README.md)
 - [lib/study-data/internal/define/build-define](lib/study-data/internal/define/build-define/README.md)
 - [lib/study-data/internal/define/model](lib/study-data/internal/define/model/README.md)
 - [lib/study-data/internal/define/parity](lib/study-data/internal/define/parity/README.md)

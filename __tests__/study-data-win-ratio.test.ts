@@ -411,14 +411,19 @@ describe("winStatistics properties", () => {
             components,
             weighting,
           });
-          expect(b.winRatio.estimate).toBe(a.winRatio.estimate);
-          expect(b.winRatio.standardError).toBeCloseTo(
-            a.winRatio.standardError ?? 0,
-            10
-          );
-          expect(b.finkelsteinSchoenfeld.variance).toBeCloseTo(
-            a.finkelsteinSchoenfeld.variance,
-            9
+          // Stratum totals are summed in a different order, so values may
+          // differ in the last bits: compare relative to their size.
+          const close = (x: number | null, y: number | null) => {
+            if (x === null || y === null) return expect(x).toBe(y);
+            expect(Math.abs(x - y)).toBeLessThanOrEqual(
+              1e-10 * Math.max(1, Math.abs(x), Math.abs(y))
+            );
+          };
+          close(b.winRatio.estimate, a.winRatio.estimate);
+          close(b.winRatio.standardError, a.winRatio.standardError);
+          close(
+            b.finkelsteinSchoenfeld.variance,
+            a.finkelsteinSchoenfeld.variance
           );
         }
       )

@@ -8,7 +8,8 @@
 
 > **buildTables**(`definition`, `plan`, `analyses`): readonly [`TlfTable`](../../../../types/interfaces/TlfTable.md)[]
 
-The three tables, in output order: 14.1.1, 14.2.1 and 14.3.1.
+The tables, in output order: 14.1.1, 14.2.1, 14.2.3 when the study has a
+comparator arm, and 14.3.1.
 
 ## Parameters
 

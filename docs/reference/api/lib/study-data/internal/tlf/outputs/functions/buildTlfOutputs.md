@@ -11,8 +11,11 @@
 Runs the reporting plan against a pipeline run: Table 14.1.1
 (demographic and baseline characteristics, Safety Set), Table 14.2.1
 (systolic blood pressure, observed values and change from baseline by
-visit, Full Analysis Set), Table 14.3.1 (TEAEs by system organ class
-and preferred term, Safety Set) and Figure 14.2.2 (Kaplan-Meier estimate
+visit, Full Analysis Set), Table 14.2.3 (win ratio, net benefit and win
+odds of the hierarchical composite, each arm against the comparator,
+Full Analysis Set; only when the study has a comparator arm), Table
+14.3.1 (TEAEs by system organ class and preferred term, Safety Set) and
+Figure 14.2.2 (Kaplan-Meier estimate
 of time to first TEAE leading to discontinuation, with the number at
 risk, Greenwood log-log 95% limits and the log-rank test, Safety Set).
 
@@ -42,7 +45,7 @@ A run from `runPipeline`.
 
 [`TlfOutputs`](../../../../types/interfaces/TlfOutputs.md)
 
-The reporting event, the three tables and the figure.
+The reporting event, the tables and the figure.
 
 ## Throws
 

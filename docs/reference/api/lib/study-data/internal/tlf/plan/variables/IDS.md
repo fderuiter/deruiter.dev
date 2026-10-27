@@ -88,6 +88,18 @@ Ids the table builders look results up by.
 
 > `readonly` **fas**: `"AnalysisSet_FAS"` = `"AnalysisSet_FAS"`
 
+### fsP
+
+> `readonly` **fsP**: `"Mth_WinStat_FS_PVAL"` = `"Mth_WinStat_FS_PVAL"`
+
+### fsZ
+
+> `readonly` **fsZ**: `"Mth_WinStat_FS_Z"` = `"Mth_WinStat_FS_Z"`
+
+### hceComponent
+
+> `readonly` **hceComponent**: `"AnlsGrouping_HCE_COMPONENT"` = `"AnlsGrouping_HCE_COMPONENT"`
+
 ### km
 
 > `readonly` **km**: `"Mth_KM"` = `"Mth_KM"`
@@ -151,6 +163,18 @@ Ids the table builders look results up by.
 ### logRankP
 
 > `readonly` **logRankP**: `"Mth_LogRank_PVAL"` = `"Mth_LogRank_PVAL"`
+
+### netBenefit
+
+> `readonly` **netBenefit**: `"Mth_WinStat_NB"` = `"Mth_WinStat_NB"`
+
+### netBenefitLcl
+
+> `readonly` **netBenefitLcl**: `"Mth_WinStat_NB_LCL"` = `"Mth_WinStat_NB_LCL"`
+
+### netBenefitUcl
+
+> `readonly` **netBenefitUcl**: `"Mth_WinStat_NB_UCL"` = `"Mth_WinStat_NB_UCL"`
 
 ### pt
 
@@ -247,3 +271,75 @@ Ids the table builders look results up by.
 ### visitPost
 
 > `readonly` **visitPost**: `"AnlsGrouping_AVISITN_POST"` = `"AnlsGrouping_AVISITN_POST"`
+
+### winComp
+
+> `readonly` **winComp**: `"Mth_WinComp"` = `"Mth_WinComp"`
+
+### winCompLosses
+
+> `readonly` **winCompLosses**: `"Mth_WinComp_LOSSES"` = `"Mth_WinComp_LOSSES"`
+
+### winCompTies
+
+> `readonly` **winCompTies**: `"Mth_WinComp_TIES"` = `"Mth_WinComp_TIES"`
+
+### winCompWins
+
+> `readonly` **winCompWins**: `"Mth_WinComp_WINS"` = `"Mth_WinComp_WINS"`
+
+### winLosses
+
+> `readonly` **winLosses**: `"Mth_WinStat_LOSSES"` = `"Mth_WinStat_LOSSES"`
+
+### winOdds
+
+> `readonly` **winOdds**: `"Mth_WinStat_WO"` = `"Mth_WinStat_WO"`
+
+### winOddsLcl
+
+> `readonly` **winOddsLcl**: `"Mth_WinStat_WO_LCL"` = `"Mth_WinStat_WO_LCL"`
+
+### winOddsUcl
+
+> `readonly` **winOddsUcl**: `"Mth_WinStat_WO_UCL"` = `"Mth_WinStat_WO_UCL"`
+
+### winPairs
+
+> `readonly` **winPairs**: `"Mth_WinStat_PAIRS"` = `"Mth_WinStat_PAIRS"`
+
+### winRatio
+
+> `readonly` **winRatio**: `"Mth_WinStat_WR"` = `"Mth_WinStat_WR"`
+
+### winRatioDen
+
+> `readonly` **winRatioDen**: `"Mth_WinStat_WR_DEN"` = `"Mth_WinStat_WR_DEN"`
+
+### winRatioLcl
+
+> `readonly` **winRatioLcl**: `"Mth_WinStat_WR_LCL"` = `"Mth_WinStat_WR_LCL"`
+
+### winRatioNum
+
+> `readonly` **winRatioNum**: `"Mth_WinStat_WR_NUM"` = `"Mth_WinStat_WR_NUM"`
+
+### winRatioP
+
+> `readonly` **winRatioP**: `"Mth_WinStat_WR_PVAL"` = `"Mth_WinStat_WR_PVAL"`
+
+### winRatioUcl
+
+> `readonly` **winRatioUcl**: `"Mth_WinStat_WR_UCL"` = `"Mth_WinStat_WR_UCL"`
+
+### winStat
+
+> `readonly` **winStat**: `"Mth_WinStat"` = `"Mth_WinStat"`
+
+### winTies
+
+> `readonly` **winTies**: `"Mth_WinStat_TIES"` = `"Mth_WinStat_TIES"`
+
+### winWins
+
+> `readonly` **winWins**: `"Mth_WinStat_WINS"` = `"Mth_WinStat_WINS"`

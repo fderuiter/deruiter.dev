@@ -12,6 +12,27 @@ An analysis before it is run: everything but its results.
 
 ## Type Declaration
 
+### comparison?
+
+> `readonly` `optional` **comparison?**: `object`
+
+For a two-group comparison, which group of the treatment grouping is
+the treatment and which the control. ARS 1.0 has no place for the
+direction of a comparison, so it is left out of the reporting event and
+written into the analysis name instead.
+
+#### comparison.controlGroupId
+
+> `readonly` **controlGroupId**: `string`
+
+#### comparison.groupingId
+
+> `readonly` **groupingId**: `string`
+
+#### comparison.treatmentGroupId
+
+> `readonly` **treatmentGroupId**: `string`
+
 ### precisionVariable?
 
 > `readonly` `optional` **precisionVariable?**: `string`

@@ -890,6 +890,53 @@
         ]
       },
       {
+        "id": "Out_14_2_3",
+        "name": "Table 14.2.3",
+        "title": "Table 14.2.3: Hierarchical Composite Endpoint: Win Ratio, Net Benefit and Win Odds (Full Analysis Set)",
+        "analyses": [
+          {
+            "id": "An_14_2_1_N",
+            "name": "Subjects in the Full Analysis Set by planned treatment",
+            "dataset": "ADSL",
+            "variable": "USUBJID",
+            "population": "Full Analysis Set: randomized subjects who received at least one dose",
+            "method": "Count of subjects"
+          },
+          {
+            "id": "An_14_2_3_COMP_DMX10",
+            "name": "Hierarchical composite, pairs decided on each component: Demoxacin 10 mg vs Placebo",
+            "dataset": "ADHCE",
+            "variable": "AVAL",
+            "population": "Full Analysis Set: randomized subjects who received at least one dose",
+            "method": "Pairs decided on each component of a hierarchy"
+          },
+          {
+            "id": "An_14_2_3_COMP_DMX20",
+            "name": "Hierarchical composite, pairs decided on each component: Demoxacin 20 mg vs Placebo",
+            "dataset": "ADHCE",
+            "variable": "AVAL",
+            "population": "Full Analysis Set: randomized subjects who received at least one dose",
+            "method": "Pairs decided on each component of a hierarchy"
+          },
+          {
+            "id": "An_14_2_3_WIN_DMX10",
+            "name": "Hierarchical composite, win statistics: Demoxacin 10 mg vs Placebo",
+            "dataset": "ADHCE",
+            "variable": "AVAL",
+            "population": "Full Analysis Set: randomized subjects who received at least one dose",
+            "method": "Win statistics"
+          },
+          {
+            "id": "An_14_2_3_WIN_DMX20",
+            "name": "Hierarchical composite, win statistics: Demoxacin 20 mg vs Placebo",
+            "dataset": "ADHCE",
+            "variable": "AVAL",
+            "population": "Full Analysis Set: randomized subjects who received at least one dose",
+            "method": "Win statistics"
+          }
+        ]
+      },
+      {
         "id": "Out_14_3_1",
         "name": "Table 14.3.1",
         "title": "Table 14.3.1: Treatment-Emergent Adverse Events by System Organ Class and Preferred Term (Safety Set)",

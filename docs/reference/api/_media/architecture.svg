@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="540" viewBox="0 0 1280 540" role="img" aria-labelledby="t d">
+  <title id="t">How deruiter.dev is put together</title>
+  <desc id="d">Three columns. In your browser: React 19 pages, Canvas 2D and Three.js studios and games, the Study Data Pipeline in a Web Worker, and DuckDB-WASM for SQL. On Vercel: statically generated pages refreshed daily, Zod-validated API routes, and one daily maintenance cron. Behind it: Neon Postgres through Prisma, Upstash Redis, Clerk, Resend and Sentry. Along the bottom, GitHub Actions runs CI, the CDISC CORE rules and the Sunday release train, which asks Vercel to build the release.</desc>
+  <defs>
+    <pattern id="g" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04"/>
+    </pattern>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#71717a"/>
+    </marker>
+    <marker id="aa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="1279" height="539" rx="14" fill="#0d0e11" stroke="#2a2d35"/>
+  <rect x="1" y="1" width="1278" height="538" rx="14" fill="url(#g)"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" letter-spacing="1.6" font-weight="700">
+    <text x="48" y="54" fill="#10b981">01 / IN YOUR BROWSER</text>
+    <text x="468" y="54" fill="#f59e0b">02 / ON VERCEL</text>
+    <text x="888" y="54" fill="#94a3b8">03 / BEHIND IT</text>
+    <text x="48" y="420" fill="#94a3b8">04 / ON GITHUB</text>
+  </g>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <!-- column 1 -->
+    <g>
+      <rect x="48" y="72" width="344" height="300" rx="10" fill="#13151a" stroke="#2a2d35"/>
+      <g font-size="15" fill="#f4f4f6" font-weight="600">
+        <text x="72" y="110">Next.js 16 and React 19 pages</text>
+        <text x="72" y="176">Canvas 2D and Three.js</text>
+        <text x="72" y="242">Study Data Pipeline</text>
+        <text x="72" y="308">DuckDB-WASM</text>
+      </g>
+      <g font-size="13" fill="#a1a1aa">
+        <text x="72" y="132">Tailwind v4, Pretext text layout</text>
+        <text x="72" y="198">studios, the brain viewer, twelve games</text>
+        <text x="72" y="264">USDM to SDTM, ADaM and tables, off-thread</text>
+        <text x="72" y="330">read-only SQL over the warehouse, no server</text>
+      </g>
+      <g stroke="#2a2d35"><path d="M72 150H368M72 216H368M72 282H368"/></g>
+    </g>
+    <!-- column 2 -->
+    <g>
+      <rect x="468" y="72" width="344" height="300" rx="10" fill="#13151a" stroke="#2a2d35"/>
+      <g font-size="15" fill="#f4f4f6" font-weight="600">
+        <text x="492" y="110">Static pages, refreshed daily</text>
+        <text x="492" y="198">API routes with Zod contracts</text>
+        <text x="492" y="286">One daily maintenance job</text>
+      </g>
+      <g font-size="13" fill="#a1a1aa">
+        <text x="492" y="132">a visit never wakes the database;</text>
+        <text x="492" y="152">content writes revalidate on demand</text>
+        <text x="492" y="220">contact, newsletter and telemetry,</text>
+        <text x="492" y="240">rate-limited, listed in openapi.json</text>
+        <text x="492" y="308">flushes counters and retries email</text>
+        <text x="492" y="328">inside the free tier's one cron</text>
+      </g>
+      <g stroke="#2a2d35"><path d="M492 172H788M492 260H788"/></g>
+    </g>
+    <!-- column 3 -->
+    <g>
+      <rect x="888" y="72" width="344" height="300" rx="10" fill="#13151a" stroke="#2a2d35"/>
+      <g font-size="15" fill="#f4f4f6" font-weight="600">
+        <text x="912" y="110">Neon Postgres, through Prisma 7</text>
+        <text x="912" y="198">Upstash Redis</text>
+        <text x="912" y="286">Clerk, Resend, Sentry</text>
+      </g>
+      <g font-size="13" fill="#a1a1aa">
+        <text x="912" y="132">case studies, reactions, subscribers;</text>
+        <text x="912" y="152">sleeps after five idle minutes</text>
+        <text x="912" y="220">read-through cache, buffered counters</text>
+        <text x="912" y="240">and rate limits</text>
+        <text x="912" y="308">admin sign-in, email, errors and traces</text>
+        <text x="912" y="328">all on free tiers</text>
+      </g>
+      <g stroke="#2a2d35"><path d="M912 172H1208M912 260H1208"/></g>
+    </g>
+  </g>
+
+  <!-- arrows between columns -->
+  <path d="M466 160H396" stroke="#71717a" stroke-width="1.5" marker-end="url(#a)"/>
+  <path d="M394 230H464" stroke="#71717a" stroke-width="1.5" marker-end="url(#a)"/>
+  <path d="M814 130H884" stroke="#71717a" stroke-width="1.5" marker-end="url(#a)"/>
+  <path d="M814 220H884" stroke="#71717a" stroke-width="1.5" marker-end="url(#a)"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a" letter-spacing="1">
+    <text x="431" y="152" text-anchor="middle">HTML</text>
+    <text x="429" y="222" text-anchor="middle">POST</text>
+    <text x="849" y="122" text-anchor="middle">BUILD</text>
+    <text x="849" y="212" text-anchor="middle">CACHE</text>
+  </g>
+
+  <!-- github row -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13">
+    <rect x="48" y="438" width="250" height="76" rx="10" fill="#13151a" stroke="#2a2d35"/>
+    <text x="68" y="468" fill="#f4f4f6" font-weight="700">Pull request</text>
+    <text x="68" y="492" fill="#a1a1aa">CI, Merge Gate</text>
+    <rect x="338" y="438" width="250" height="76" rx="10" fill="#13151a" stroke="#2a2d35"/>
+    <text x="358" y="468" fill="#f4f4f6" font-weight="700">main</text>
+    <text x="358" y="492" fill="#a1a1aa">merging never deploys</text>
+    <rect x="628" y="438" width="250" height="76" rx="10" fill="#13151a" stroke="#f59e0b"/>
+    <text x="648" y="468" fill="#f4f4f6" font-weight="700">Sunday train</text>
+    <text x="648" y="492" fill="#a1a1aa">test, tag, release</text>
+    <rect x="918" y="438" width="314" height="76" rx="10" fill="#13151a" stroke="#2a2d35"/>
+    <text x="938" y="468" fill="#f4f4f6" font-weight="700">Deploy hook</text>
+    <text x="938" y="492" fill="#a1a1aa">Vercel builds it, then smoke test</text>
+  </g>
+  <path d="M300 476H334" stroke="#71717a" stroke-width="1.5" marker-end="url(#a)"/>
+  <path d="M590 476H624" stroke="#71717a" stroke-width="1.5" marker-end="url(#a)"/>
+  <path d="M880 476H914" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#aa)"/>
+  <path d="M1075 436V382 H640 V376" stroke="#f59e0b" stroke-width="1.5" fill="none" stroke-dasharray="4 4" marker-end="url(#aa)"/>
+  <text x="1064" y="400" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#a1a1aa" letter-spacing="1">ONCE A WEEK</text>
+</svg>

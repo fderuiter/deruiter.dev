@@ -6,7 +6,7 @@
 
 # Function: getFieldOptions()
 
-> **getFieldOptions**(`field`, `study`): [`CodelistOption`](../../types/interfaces/CodelistOption.md)[]
+> **getFieldOptions**(`field`, `study`): [`CodelistOption`](../../../clinical-standards/codelists/interfaces/CodelistOption.md)[]
 
 Retrieves field options from custom options or referenced codelists.
 
@@ -22,4 +22,4 @@ Retrieves field options from custom options or referenced codelists.
 
 ## Returns
 
-[`CodelistOption`](../../types/interfaces/CodelistOption.md)[]
+[`CodelistOption`](../../../clinical-standards/codelists/interfaces/CodelistOption.md)[]

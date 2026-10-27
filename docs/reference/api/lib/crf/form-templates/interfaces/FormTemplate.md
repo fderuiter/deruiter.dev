@@ -12,7 +12,7 @@ A saved form.
 
 ### codelists
 
-> **codelists**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[]
+> **codelists**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[]
 
 Only the codelists the form's fields reference.
 

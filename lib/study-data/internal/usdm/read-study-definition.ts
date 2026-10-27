@@ -17,8 +17,8 @@ import {
   type UsdmV4Code,
   type UsdmV4InterventionalStudyDesign,
   type UsdmV4StudyVersion,
-} from "@/lib/crf/usdm-v4-types";
-import { getUsdmV4EncounterSchedule } from "@/lib/crf/usdm-v4-schedule";
+} from "@/lib/clinical-standards";
+import { getUsdmV4EncounterSchedule } from "@/lib/clinical-standards";
 import type {
   ActivityDefinition,
   ArmDefinition,

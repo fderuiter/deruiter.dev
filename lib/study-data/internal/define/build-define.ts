@@ -9,7 +9,7 @@
  * describe a variable the data does not have, or miss one it does.
  */
 import { STANDARD_VERSIONS, SYNTHETIC_DATA_NOTICE } from "../../presets";
-import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../../standards";
+import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "@/lib/clinical-standards";
 import type {
   CellValue,
   Dataset,
@@ -22,7 +22,7 @@ import {
   DECODE_VARIABLES,
   terminologyCodelist,
   type TerminologyCodelist,
-} from "../conformance/terminology";
+} from "@/lib/clinical-standards";
 import {
   exportColumns,
   toSasNumber,

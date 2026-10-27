@@ -1,6 +1,6 @@
 /** Runs the local versioned rule subset and records pass/fail per domain. */
 import { STANDARD_VERSIONS } from "../../presets";
-import { standardCitation } from "../../standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import type {
   ConformanceDomainSummary,
   ConformanceReport,

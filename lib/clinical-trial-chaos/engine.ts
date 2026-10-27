@@ -1,7 +1,7 @@
 import {
   CLINICAL_STANDARDS_PROFILE,
   standardCitation,
-} from "@/lib/study-data/standards";
+} from "@/lib/clinical-standards";
 import { clamp } from "../game-utils";
 import { escapeXml } from "../utils";
 import {

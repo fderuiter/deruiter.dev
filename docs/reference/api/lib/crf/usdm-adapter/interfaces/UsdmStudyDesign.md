@@ -28,7 +28,7 @@
 
 ### codeLists?
 
-> `optional` **codeLists?**: [`CodelistDefinition`](../../types/interfaces/CodelistDefinition.md)[] \| `Record`\<`string`, `unknown`\>[]
+> `optional` **codeLists?**: [`CodelistDefinition`](../../../clinical-standards/codelists/interfaces/CodelistDefinition.md)[] \| `Record`\<`string`, `unknown`\>[]
 
 ***
 

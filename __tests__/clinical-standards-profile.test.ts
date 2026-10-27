@@ -67,7 +67,7 @@ describe("clinical standards profile", () => {
     // Prose about other projects and search aliases name versions as
     // facts about something else, not as this site's declarations.
     const exempt = new Set([
-      "lib/study-data/standards.ts",
+      "lib/clinical-standards/profile.ts",
       "lib/case-studies-data.ts",
       "lib/term-glossary.ts",
     ]);

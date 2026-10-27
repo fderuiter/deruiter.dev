@@ -8,7 +8,7 @@
  * 5. Diagnostic dplyr::glimpse() and summary() verification suites
  */
 
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import {
   StudyProtocol,
   CRFForm,
@@ -16,7 +16,7 @@ import {
   ExportROptions,
   CodelistOption,
 } from "./types";
-import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
+import { STANDARD_CODELISTS } from "@/lib/clinical-standards";
 import { consultationUrl } from "./export-annotations";
 
 /**

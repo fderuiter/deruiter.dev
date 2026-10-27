@@ -19,6 +19,8 @@ lib/
     core/             ← Private package subfolder (hidden from outside).
 ```
 
+`lib/clinical-standards/` holds what CRF Studio and the study-data pipeline share: the standards profile, the USDM v4 types, schema and schedule, and both controlled-terminology subsets. `lib/crf/` and `lib/study-data/` each import it and never import each other (#2927).
+
 A module with several pipeline stages keeps one private folder per stage under `internal/`. `lib/study-data/` ([ADR 0065](../adr/0065-study-data-pipeline-architecture.md)) is the reference: `internal/usdm`, `internal/synth`, `internal/sdtm`, `internal/conformance`, `internal/adam`, `internal/define`, `internal/export`, `internal/tlf` and `internal/lineage`, all reached only through `runPipeline` and the types and presets at the package root.
 
 ### The 6 Canonical Boundary Rules (`.dependency-cruiser.cjs`)

@@ -3,7 +3,7 @@
 import {
   CLINICAL_STANDARDS_PROFILE,
   standardCitation,
-} from "@/lib/study-data/standards";
+} from "@/lib/clinical-standards";
 import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol } from "@/lib/crf/types";

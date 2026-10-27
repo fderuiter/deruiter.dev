@@ -1,4 +1,4 @@
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import type { DirectAnnotation } from "./types";
 
 /**

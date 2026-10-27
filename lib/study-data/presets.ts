@@ -6,7 +6,7 @@
  */
 import { readStudyDefinition } from "./internal/usdm/read-study-definition";
 import { DEMO_301_USDM } from "./presets/demo-301";
-import { CLINICAL_STANDARDS_PROFILE } from "./standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import type { PipelineStage, StandardVersions, StudyDefinition } from "./types";
 export { ADAM_METHODS } from "./internal/adam/specs";
 export type { AdamMethodId } from "./internal/adam/specs";
@@ -14,23 +14,23 @@ export {
   CLINICAL_STANDARDS_PROFILE,
   controlledTerminologyCitation,
   standardCitation,
-} from "./standards";
+} from "@/lib/clinical-standards";
 export type {
   ClinicalStandardsProfile,
   ControlledTerminologyClaim,
   ProfileStandard,
-} from "./standards";
+} from "@/lib/clinical-standards";
 export { SDTM_METHODS } from "./internal/sdtm/methods";
 export type { SdtmMethodId } from "./internal/sdtm/methods";
 export {
   CONTROLLED_TERMINOLOGY,
   DECODE_VARIABLES,
-} from "./internal/conformance/terminology";
+} from "@/lib/clinical-standards";
 export type {
   CodelistId,
   TerminologyCodelist,
   TerminologyTerm,
-} from "./internal/conformance/terminology";
+} from "@/lib/clinical-standards";
 export { VALUE_LEVEL } from "./internal/define/value-level";
 export type { ValueLevelSpec } from "./internal/define/value-level";
 

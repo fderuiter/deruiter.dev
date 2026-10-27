@@ -1,4 +1,4 @@
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 /**
  * Registry of engineering bridges (ADR 0053 section 3): the technical
  * narrative shown beneath an interactive tool or game, and the case studies

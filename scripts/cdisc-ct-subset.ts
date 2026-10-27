@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   CLINICAL_STANDARDS_PROFILE,
   controlledTerminologyCitation,
-} from "../lib/study-data/standards";
+} from "../lib/clinical-standards";
 
 /**
  * The CDISC Controlled Terminology subset the repository is checked

@@ -7,7 +7,7 @@
 import {
   CLINICAL_STANDARDS_PROFILE,
   standardCitation,
-} from "@/lib/study-data/standards";
+} from "@/lib/clinical-standards";
 import {
   StudyProtocol,
   CRFField,

@@ -1,6 +1,6 @@
 /** Versioned, data-defined subset of SDTMIG and ADaMIG conformance checks. */
-import { STANDARD_CODELISTS } from "@/lib/crf/cdisc-controlled-terminology";
-import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../../standards";
+import { STANDARD_CODELISTS } from "@/lib/clinical-standards";
+import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "@/lib/clinical-standards";
 import type { CellValue, Dataset, FindingSeverity } from "../../types";
 
 /** The ids of every collected source record in the run. */

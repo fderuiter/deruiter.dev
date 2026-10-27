@@ -1,4 +1,4 @@
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CRFForm, StudyProtocol, CRFField, ExportPdfOptions } from "./types";

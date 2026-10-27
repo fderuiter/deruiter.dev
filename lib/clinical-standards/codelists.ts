@@ -1,5 +1,21 @@
-import { controlledTerminologyCitation } from "@/lib/study-data/standards";
-import { CodelistDefinition } from "./types";
+import { controlledTerminologyCitation } from "./profile";
+
+/** One term of a CRF Studio codelist. */
+export interface CodelistOption {
+  code: string;
+  label: string;
+  nciCode?: string;
+  order: number;
+}
+
+/** A codelist CRF Studio offers for coded fields. */
+export interface CodelistDefinition {
+  id: string;
+  name: string;
+  nciCodelistCode?: string; // e.g. C66742 for Sex
+  options: CodelistOption[];
+  isStandard?: boolean;
+}
 
 /**
  * The CDISC Controlled Terminology package that the codelist and term codes
@@ -546,7 +562,7 @@ function findOptionByProperty(
   searchValue: string,
   propKey: "code" | "nciCode",
   codelists: CodelistDefinition[] = STANDARD_CODELISTS
-): import("./types").CodelistOption | undefined {
+): CodelistOption | undefined {
   if (!searchValue) return undefined;
   const cl = resolveCodelist(codelistInput, codelists);
   if (!cl || !Array.isArray(cl.options)) return undefined;
@@ -565,7 +581,7 @@ export function findOptionByCode(
   codelist: CodelistDefinition | string,
   code: string,
   codelists: CodelistDefinition[] = STANDARD_CODELISTS
-): import("./types").CodelistOption | undefined {
+): CodelistOption | undefined {
   return findOptionByProperty(codelist, code, "code", codelists);
 }
 
@@ -576,7 +592,7 @@ export function findOptionByNciCode(
   codelist: CodelistDefinition | string,
   nciCode: string,
   codelists: CodelistDefinition[] = STANDARD_CODELISTS
-): import("./types").CodelistOption | undefined {
+): CodelistOption | undefined {
   return findOptionByProperty(codelist, nciCode, "nciCode", codelists);
 }
 
@@ -587,7 +603,7 @@ export function matchTermByLabel(
   codelist: CodelistDefinition | string,
   label: string,
   options: { caseSensitive?: boolean; codelists?: CodelistDefinition[] } = {}
-): import("./types").CodelistOption | undefined {
+): CodelistOption | undefined {
   if (!label) return undefined;
   const { caseSensitive = false, codelists = STANDARD_CODELISTS } = options;
   const cl = resolveCodelist(codelist, codelists);

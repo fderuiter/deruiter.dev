@@ -1,4 +1,4 @@
-import { standardCitation } from "@/lib/study-data/standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import { FieldManualData } from "@/types/game-manual";
 import { manualControlsFromActions } from "@/lib/arcade";
 import { DUCK_ACTIONS } from "@/lib/working-with-duck-actions";

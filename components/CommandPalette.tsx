@@ -14,7 +14,7 @@ import { getNavGroupForHref } from "@/lib/navigation";
 import {
   CLINICAL_STANDARDS_PROFILE,
   standardCitation,
-} from "@/lib/study-data/standards";
+} from "@/lib/clinical-standards";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";

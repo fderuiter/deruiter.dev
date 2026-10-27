@@ -382,13 +382,13 @@ Re-exports [chiSquareSurvival](internal/tlf/km/functions/chiSquareSurvival.md)
 
 ### CLINICAL\_STANDARDS\_PROFILE
 
-Re-exports [CLINICAL_STANDARDS_PROFILE](standards/variables/CLINICAL_STANDARDS_PROFILE.md)
+Re-exports [CLINICAL_STANDARDS_PROFILE](../clinical-standards/profile/variables/CLINICAL_STANDARDS_PROFILE.md)
 
 ***
 
 ### ClinicalStandardsProfile
 
-Re-exports [ClinicalStandardsProfile](standards/interfaces/ClinicalStandardsProfile.md)
+Re-exports [ClinicalStandardsProfile](../clinical-standards/profile/interfaces/ClinicalStandardsProfile.md)
 
 ***
 
@@ -400,7 +400,7 @@ Re-exports [CodedValue](types/interfaces/CodedValue.md)
 
 ### CodelistId
 
-Re-exports [CodelistId](internal/conformance/terminology/type-aliases/CodelistId.md)
+Re-exports [CodelistId](../clinical-standards/terminology/type-aliases/CodelistId.md)
 
 ***
 
@@ -460,19 +460,19 @@ Re-exports [ConformanceRuleResult](types/interfaces/ConformanceRuleResult.md)
 
 ### CONTROLLED\_TERMINOLOGY
 
-Re-exports [CONTROLLED_TERMINOLOGY](internal/conformance/terminology/variables/CONTROLLED_TERMINOLOGY.md)
+Re-exports [CONTROLLED_TERMINOLOGY](../clinical-standards/terminology/variables/CONTROLLED_TERMINOLOGY.md)
 
 ***
 
 ### controlledTerminologyCitation
 
-Re-exports [controlledTerminologyCitation](standards/functions/controlledTerminologyCitation.md)
+Re-exports [controlledTerminologyCitation](../clinical-standards/profile/functions/controlledTerminologyCitation.md)
 
 ***
 
 ### ControlledTerminologyClaim
 
-Re-exports [ControlledTerminologyClaim](standards/interfaces/ControlledTerminologyClaim.md)
+Re-exports [ControlledTerminologyClaim](../clinical-standards/profile/interfaces/ControlledTerminologyClaim.md)
 
 ***
 
@@ -532,7 +532,7 @@ Re-exports [DatasetJsonOptions](internal/export/dataset-json/interfaces/DatasetJ
 
 ### DECODE\_VARIABLES
 
-Re-exports [DECODE_VARIABLES](internal/conformance/terminology/variables/DECODE_VARIABLES.md)
+Re-exports [DECODE_VARIABLES](../clinical-standards/terminology/variables/DECODE_VARIABLES.md)
 
 ***
 
@@ -1114,7 +1114,7 @@ Re-exports [prepareStudyHandoff](internal/usdm/handoff/functions/prepareStudyHan
 
 ### ProfileStandard
 
-Re-exports [ProfileStandard](standards/type-aliases/ProfileStandard.md)
+Re-exports [ProfileStandard](../clinical-standards/profile/type-aliases/ProfileStandard.md)
 
 ***
 
@@ -1306,7 +1306,7 @@ Re-exports [STANDARD_VERSIONS](presets/variables/STANDARD_VERSIONS.md)
 
 ### standardCitation
 
-Re-exports [standardCitation](standards/functions/standardCitation.md)
+Re-exports [standardCitation](../clinical-standards/profile/functions/standardCitation.md)
 
 ***
 
@@ -1414,13 +1414,13 @@ Re-exports [SYNTHETIC_DATA_NOTICE](presets/variables/SYNTHETIC_DATA_NOTICE.md)
 
 ### TerminologyCodelist
 
-Re-exports [TerminologyCodelist](internal/conformance/terminology/interfaces/TerminologyCodelist.md)
+Re-exports [TerminologyCodelist](../clinical-standards/terminology/interfaces/TerminologyCodelist.md)
 
 ***
 
 ### TerminologyTerm
 
-Re-exports [TerminologyTerm](internal/conformance/terminology/interfaces/TerminologyTerm.md)
+Re-exports [TerminologyTerm](../clinical-standards/terminology/interfaces/TerminologyTerm.md)
 
 ***
 

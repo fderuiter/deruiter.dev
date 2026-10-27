@@ -18,8 +18,6 @@ import type { StudyBaseline, StudyProtocol } from "@/lib/crf/types";
 import {
   listStudyBaselines,
   computeStudyChecksum,
-} from "@/lib/crf/study-baselines";
-import {
   buildReviewPackage,
   createReviewPackageSnapshot,
   previewReviewPackage,
@@ -31,7 +29,7 @@ import {
   type ReviewPackageOptionalArtifactId,
   type ReviewPackageProgress,
   type ReviewPackageStalenessResolver,
-} from "@/lib/crf/review-package";
+} from "@/lib/crf";
 
 interface ReviewPackageModalProps {
   study: StudyProtocol;

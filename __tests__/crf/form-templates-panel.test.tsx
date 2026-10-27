@@ -13,14 +13,12 @@ import { FormTemplatesPanel } from "@/components/crf/LeftSidebar/FormTemplatesPa
 import {
   buildFormCatalog,
   instantiateCatalogForm,
-} from "@/lib/crf/form-catalog";
-import { FormCanvas } from "@/components/crf/CenterCanvas/FormCanvas";
-import {
   captureFormTemplate,
   exportFormTemplates,
   listFormTemplates,
   saveFormTemplate,
-} from "@/lib/crf/form-templates";
+} from "@/lib/crf";
+import { FormCanvas } from "@/components/crf/CenterCanvas/FormCanvas";
 import type { CRFForm, StudyProtocol } from "@/lib/crf/types";
 
 vi.mock("@/lib/download", () => ({

@@ -6,7 +6,14 @@
 
 # lib/crf/export-pdf
 
-## Functions
+## References
 
-- [generateFormPdf](functions/generateFormPdf.md)
-- [generateStudyPdf](functions/generateStudyPdf.md)
+### generateFormPdf
+
+Re-exports [generateFormPdf](../internal/export-pdf/functions/generateFormPdf.md)
+
+***
+
+### generateStudyPdf
+
+Re-exports [generateStudyPdf](../internal/export-pdf/functions/generateStudyPdf.md)

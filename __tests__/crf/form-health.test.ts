@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { computeFormHealthMetrics } from "@/lib/crf/form-health";
+import { computeFormHealthMetrics } from "@/lib/crf";
 import { CRFForm } from "@/lib/crf/types";
 import { fromAny } from "@total-typescript/shoehorn";
 

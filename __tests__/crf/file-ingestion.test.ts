@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { detectAndParseStudyFile } from "@/lib/crf/file-ingestion";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
-import { exportStudyToUsdm } from "@/lib/crf/usdm-adapter";
+import {
+  detectAndParseStudyFile,
+  exportStudyToCdiscOdmXml,
+  exportStudyToUsdm,
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 
 describe("CRF Studio - File Ingestion & Format Signature Detection", () => {

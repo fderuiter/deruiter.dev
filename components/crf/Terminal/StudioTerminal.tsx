@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { StudyProtocol, StudioMode } from "@/lib/crf/types";
-import { executeCliString, stripAnsi } from "@/lib/crf/cli-engine";
+import { executeCliString, stripAnsi } from "@/lib/crf";
 import {
   IconTerminal2,
   IconX,

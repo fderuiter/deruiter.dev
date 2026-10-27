@@ -16,8 +16,8 @@ import {
   executeDiffCommand,
   executeCliString,
   stripAnsi,
-} from "@/lib/crf/cli-engine";
-import { StudyProtocolEngine } from "@/lib/crf/study-engine";
+  StudyProtocolEngine,
+} from "@/lib/crf";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
 import type { StudyProtocol, StudyVisit } from "@/lib/crf/types";
 

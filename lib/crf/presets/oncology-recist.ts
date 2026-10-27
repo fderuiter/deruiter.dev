@@ -4,7 +4,7 @@ import {
   STANDARD_CODELISTS,
   PRESET_ID_STAMP,
   scaffoldCdashDomain,
-} from "../cdisc-cdash-library";
+} from "../internal/cdisc-cdash-library";
 
 /**
  * The CDASH metadata of a vital sign, so a preset concept that stands in for

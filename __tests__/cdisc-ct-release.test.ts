@@ -2,15 +2,17 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { STANDARD_CODELISTS } from "@/lib/clinical-standards";
+import {
+  STANDARD_CODELISTS,
+  CLINICAL_STANDARDS_PROFILE,
+} from "@/lib/clinical-standards";
 import { STUDY_PRESETS } from "@/lib/crf/presets";
-import { exportStudyToUsdmObject } from "@/lib/crf/usdm-adapter";
+import { exportStudyToUsdmObject } from "@/lib/crf";
 import type { CodelistDefinition } from "@/lib/crf/types";
 import {
   CONTROLLED_TERMINOLOGY,
   DEMO_301_USDM,
 } from "@/lib/study-data/presets";
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import {
   CT_SOURCES,
   NCIT_ONLY_CODES,

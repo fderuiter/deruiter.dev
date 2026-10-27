@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   UniversalCrfProtocolSchema,
   getUniversalCrfSchemaUrl,
-} from "@/lib/crf/universal-schema";
+} from "@/lib/crf";
 
 // Every Universal CRF export points its `$schema` here (#1202). Generating
 // the document from the Zod schema keeps the published contract identical to

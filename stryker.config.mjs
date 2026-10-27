@@ -42,11 +42,11 @@ const config = {
     "lib/error-sanitization.ts",
     "lib/security.ts",
     "lib/telemetry/outbox.ts",
-    "lib/crf/ast-evaluator.ts",
-    "lib/crf/expression-evaluator.ts:1-150",
-    "lib/crf/conditional-logic.ts:1-100",
-    "lib/crf/cross-visit-rules.ts",
-    "lib/crf/form-health.ts",
+    "lib/crf/internal/ast-evaluator.ts",
+    "lib/crf/internal/expression-evaluator.ts:1-150",
+    "lib/crf/internal/conditional-logic.ts:1-100",
+    "lib/crf/internal/cross-visit-rules.ts",
+    "lib/crf/internal/form-health.ts",
   ],
   // Ratchet (#960, #968): break went 45, 53, 65, 75, and reached the 80
   // target on 2026-10-02, when CI and a full local run both measured 82.24%

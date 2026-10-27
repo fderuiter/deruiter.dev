@@ -2,7 +2,7 @@
 
 import React, { useId } from "react";
 import { IconLibrary, IconX } from "@tabler/icons-react";
-import type { FormCatalogEntry } from "@/lib/crf/form-catalog";
+import type { FormCatalogEntry } from "@/lib/crf";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { FormCatalogList } from "./FormCatalogList";
 

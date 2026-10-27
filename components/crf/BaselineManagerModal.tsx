@@ -23,7 +23,7 @@ import {
   deleteStudyBaseline,
   exportBaselinesBundle,
   importBaselinesBundle,
-} from "@/lib/crf/study-baselines";
+} from "@/lib/crf";
 
 interface BaselineManagerModalProps {
   isOpen: boolean;

@@ -213,7 +213,7 @@ describe("CRF Studio - Light Mode & Theming", () => {
   // #1514: the theme and default branding now go through lib/safe-storage.
   // Blocked storage for those keys must still give the dark default and a
   // working toggle. (Only these keys throw: the study draft loader in
-  // lib/crf/study-draft-storage.ts is a separate path.)
+  // lib/crf/internal/study-draft-storage.ts is a separate path.)
   it("falls back to dark and still toggles when storage throws", async () => {
     const blocked = new Set([
       "crf_studio_theme",

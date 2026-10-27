@@ -15,7 +15,7 @@ import {
   computeStudyChecksum,
   STUDY_BASELINES_STORAGE_KEY,
   STUDY_BASELINES_CORRUPT_BACKUP_KEY,
-} from "@/lib/crf/study-engine";
+} from "@/lib/crf";
 import { BaselineManagerModal } from "@/components/crf/BaselineManagerModal";
 import type { StudyProtocol, CRFForm } from "@/lib/crf/types";
 

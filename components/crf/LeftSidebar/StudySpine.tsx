@@ -17,15 +17,17 @@ import {
   IconGitFork,
 } from "@tabler/icons-react";
 import { StudyProtocol, CRFForm } from "@/lib/crf/types";
-import { formatVisitWindow } from "@/lib/crf/visit-window";
-import { StudyProtocolEngine } from "@/lib/crf/study-engine";
-import type { FormCatalogEntry } from "@/lib/crf/form-catalog";
+import {
+  formatVisitWindow,
+  StudyProtocolEngine,
+  type FormCatalogEntry,
+  getFormUses,
+} from "@/lib/crf";
 import { CATALOG_DRAG_TYPE, FormCatalogList } from "../FormCatalogList";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
 import { FormTemplatesPanel } from "./FormTemplatesPanel";
-import { getFormUses } from "@/lib/crf/form-variants";
 
 export type LeftSidebarTab = "spine" | "forms" | "palette";
 

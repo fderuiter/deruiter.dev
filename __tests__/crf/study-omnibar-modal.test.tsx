@@ -11,7 +11,7 @@ import {
 } from "@testing-library/react";
 import { StudyOmnibar } from "@/components/crf/StudyOmnibar";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
-import type { OmnibarAction } from "@/lib/crf/study-omnibar";
+import type { OmnibarAction } from "@/lib/crf";
 
 const study = ONCOLOGY_RECIST_PRESET;
 

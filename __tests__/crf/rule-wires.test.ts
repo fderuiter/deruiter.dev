@@ -14,7 +14,7 @@ import {
   setWireGroupOperator,
   setWireOuterOperator,
   updateWireCondition,
-} from "@/lib/crf/rule-wires";
+} from "@/lib/crf";
 
 // Synthetic fields and rules only (#674).
 const fields: CRFField[] = [

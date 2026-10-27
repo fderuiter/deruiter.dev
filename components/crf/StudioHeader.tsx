@@ -39,7 +39,7 @@ import {
   IconSearch,
   IconArrowRight,
 } from "@tabler/icons-react";
-import { getStudyBranding } from "@/lib/crf/branding-defaults";
+import { getStudyBranding } from "@/lib/crf";
 import {
   STUDIO_MODE_ORDER,
   STUDIO_STAGES,
@@ -128,8 +128,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     setIsSendingToPipeline(true);
     let failed = true;
     try {
-      const { exportStudyToUsdmObject } =
-        await import("@/lib/crf/usdm-adapter");
+      const { exportStudyToUsdmObject } = await import("@/lib/crf");
       failed = storeStudyHandoff(exportStudyToUsdmObject(study)) !== null;
     } catch {
       failed = true;

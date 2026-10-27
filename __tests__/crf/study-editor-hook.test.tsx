@@ -28,13 +28,8 @@ vi.mock("@/lib/crf", async (importOriginal) => {
     ...actual,
     saveStudySnapshot: drafts.snapshot,
     saveStudyDraft: drafts.draft,
+    saveFormTemplate: templates.save,
   };
-});
-
-vi.mock("@/lib/crf/form-templates", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/crf/form-templates")>();
-  return { ...actual, saveFormTemplate: templates.save };
 });
 
 const AUTHOR: StudyReviewActor = { name: "Study author", role: "Data Manager" };

@@ -27,7 +27,11 @@ import {
   isMissingOrNullFlavor,
   ExpressionEvaluator,
   tokenizeWithSpans,
-} from "@/lib/crf/ast-evaluator";
+  computeFormHealthMetrics,
+  autoFixAllViolations,
+  exportStudyToCdiscOdmXml,
+  exportStudyToSas,
+} from "@/lib/crf";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
   getTacticBlock,
@@ -39,13 +43,11 @@ import {
   type ASTNode,
   type LevelScore,
 } from "@/lib/quasi-perfect";
-import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import {
   LOON_MAX_HITS,
   resolveLoonCollision,
   type Target as LoonTarget,
 } from "@/lib/laser-loon";
-import { autoFixAllViolations } from "@/lib/crf/cdisc-conformance-linter";
 import {
   createInitialState,
   updateGameSimulation,
@@ -87,10 +89,8 @@ import {
   generateSDTMDataset,
 } from "@/lib/clinical-trial-chaos/engine";
 import { ClinicalSubject } from "@/lib/clinical-trial-chaos/types";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf";
-import { generateStudyPdf } from "@/lib/crf";
+import { generateStudyPdf } from "@/lib/crf/export-pdf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
-import { exportStudyToSas } from "@/lib/crf/export-sas";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
 import { SCENARIOS } from "@/lib/neuro/scenarios";
 import {

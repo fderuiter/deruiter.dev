@@ -4,7 +4,7 @@ import {
   scaffoldCdashDomain,
   CDASH_STANDARD_VARIABLES,
   STANDARD_CODELISTS,
-} from "@/lib/crf/cdisc-cdash-library";
+} from "@/lib/crf";
 
 describe("CDASH Expanded Domain Library (13 Standard Domains)", () => {
   const domains = [

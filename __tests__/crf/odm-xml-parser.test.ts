@@ -3,8 +3,8 @@ import { describe, it, expect } from "vitest";
 import {
   importStudyFromCdiscOdmXml,
   mapOdmDataTypeToClinical,
-} from "@/lib/crf/odm-xml-parser";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
+  exportStudyToCdiscOdmXml,
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 
 describe("CRF Studio - CDISC ODM-XML Parser & Deserializer", () => {

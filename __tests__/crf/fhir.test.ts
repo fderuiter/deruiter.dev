@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { exportFormToFhirQuestionnaire } from "@/lib/crf/fhir-questionnaire";
-import { generateAcrfHtml } from "@/lib/crf/export-acrf";
+import { exportFormToFhirQuestionnaire, generateAcrfHtml } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 
 describe("CRF Studio - FHIR Questionnaire & aCRF Generator", () => {

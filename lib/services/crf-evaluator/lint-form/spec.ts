@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { CRFForm } from "@/lib/crf/types";
-import type { DiagnosticItem } from "@/lib/crf/form-linter";
+import type { DiagnosticItem } from "@/lib/crf";
 import type { ServiceResult } from "@/lib/services/service-result";
 
 export const LintFormInputSchema = z.object({

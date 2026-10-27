@@ -1,5 +1,5 @@
 import { LintFormSpec, LintFormInput, LintFormResult } from "./spec";
-import * as astEvaluator from "@/lib/crf/ast-evaluator";
+import * as astEvaluator from "@/lib/crf";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 export class LintFormHandler implements LintFormSpec {

@@ -29,7 +29,7 @@ import {
   updateWireCondition,
   type RuleWire,
   type WireActionType,
-} from "@/lib/crf/rule-wires";
+} from "@/lib/crf";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { AstRuleEditor } from "./AstRuleEditor";
 

@@ -4,7 +4,17 @@ import "./studio-theme.css";
 import React, { useState, useCallback, useMemo } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
-import { DeviceViewport, SlashCommandItem, getStudyBranding } from "@/lib/crf";
+import {
+  DeviceViewport,
+  SlashCommandItem,
+  getStudyBranding,
+  buildFormCatalog,
+  catalogBlockCommand,
+  instantiateCatalogForm,
+  DEFAULT_TEST_SCOPE,
+  type ConditionalFieldValues,
+  type OmnibarAction,
+} from "@/lib/crf";
 import {
   loadInitialStudy,
   loadRecoveredDraftSavedAt,
@@ -23,11 +33,6 @@ import { StudySpine } from "./LeftSidebar/StudySpine";
 import { WidgetPalette } from "./LeftSidebar/WidgetPalette";
 import { FormCatalogModal } from "./FormCatalogModal";
 import { useSavedFormTemplates } from "./useSavedFormTemplates";
-import {
-  buildFormCatalog,
-  catalogBlockCommand,
-  instantiateCatalogForm,
-} from "@/lib/crf/form-catalog";
 import { FormCanvas } from "./CenterCanvas/FormCanvas";
 import { InspectorPanel } from "./RightInspector/InspectorPanel";
 import dynamic from "next/dynamic";
@@ -83,10 +88,8 @@ const SpotlightTourOverlay = dynamic(
 import { StudioTerminal } from "./Terminal/StudioTerminal";
 import { FormTestDock } from "./Modes/FormTestDock";
 import { ScenarioImpactPanel } from "./Modes/ScenarioImpactPanel";
-import { DEFAULT_TEST_SCOPE, type ConditionalFieldValues } from "@/lib/crf";
 import { SlashPaletteModal } from "./SlashPaletteModal";
 import { StudyOmnibar } from "./StudyOmnibar";
-import type { OmnibarAction } from "@/lib/crf/study-omnibar";
 import { BaselineManagerModal } from "./BaselineManagerModal";
 import {
   BaselineCompareModal,

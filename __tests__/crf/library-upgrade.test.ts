@@ -14,14 +14,12 @@ import {
   type EditCheckRule,
   type PersonalLibraryEntry,
   type StudyProtocol,
-} from "@/lib/crf";
-import {
   applyLibraryUpgrade,
   detectLibraryUpgrades,
   insertLibraryEntryWithLineage,
   previewLibraryUpgrade,
   type LibraryUpgradePreview,
-} from "@/lib/crf/library-upgrade";
+} from "@/lib/crf";
 
 /**
  * #681 — preview and apply a personal-library upgrade.

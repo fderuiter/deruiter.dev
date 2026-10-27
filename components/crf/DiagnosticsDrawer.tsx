@@ -11,7 +11,7 @@ import {
   validateStudyCompliance,
   autoFixViolation,
   autoFixAllViolations,
-} from "@/lib/crf/cdisc-conformance-linter";
+} from "@/lib/crf";
 import {
   IconCheck,
   IconX,

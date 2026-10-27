@@ -10,11 +10,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { ExportImportModal } from "@/components/crf/Modes/ExportImportModal";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import type { StudyProtocol } from "@/lib/crf/types";
-import { exportStudyToUsdm } from "@/lib/crf/usdm-adapter";
 import {
+  exportStudyToUsdm,
   validateUniversalCrf,
   exportUniversalCrfJson,
-} from "@/lib/crf/universal-schema";
+} from "@/lib/crf";
 
 async function waitForCondition(
   predicate: () => boolean,
@@ -469,7 +469,7 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
     expect(handleImport).not.toHaveBeenCalled();
 
     // Mock autoFixAllViolations to return an updated study that still has a critical error
-    const linter = await import("@/lib/crf/cdisc-conformance-linter");
+    const linter = await import("@/lib/crf");
     vi.spyOn(linter, "autoFixAllViolations").mockReturnValue({
       updatedStudy: invalidStudy, // still contains VERY_LONG_VARIABLE_NAME_EXCEEDING_LIMIT error
       fixedCount: 0,
@@ -633,7 +633,7 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
   });
 
   it("rejects invalid supplied simulationState or provenance extensions with actionable import errors and preserves valid extensions", async () => {
-    const { importStudyFromUsdm } = await import("@/lib/crf/usdm-adapter");
+    const { importStudyFromUsdm } = await import("@/lib/crf");
 
     // Construct USDM payload with malformed simulationState (invalid auditLog structure)
     const malformedSimUsdmJson = JSON.stringify({

@@ -7,7 +7,7 @@ import { CLINICAL_STANDARDS_PROFILE } from "../lib/clinical-standards";
  * ADaM metadata from the CDISC Library (#2992 step 7).
  *
  * `sync` reads the ADaMIG and ADaM OCCDS versions the profile pins from the
- * CDISC Library API and writes
+ * CDISC Library API, in at most {@link MAX_LIBRARY_CALLS} calls, and writes
  * `lib/study-data/internal/conformance/adam-library-metadata.json`: for each
  * data structure, every variable's name, core designation (Req, Cond, Perm),
  * simple data type and the NCI codes of its codelists. It copies no labels,
@@ -62,41 +62,26 @@ export function linkHrefs(json: Json): string[] {
 const slug = (version: string) => version.replace(/\./g, "-");
 
 /**
- * The Library paths of the pinned ADaMIG and ADaM OCCDS, picked from the
- * `/mdr/products` response.
+ * Most CDISC Library calls one sync makes. A free Library key allows five
+ * calls a day, so a run must leave room for anything else that day.
+ */
+export const MAX_LIBRARY_CALLS = 4;
+
+/**
+ * The Library paths of the pinned ADaMIG and ADaM OCCDS. They are built from
+ * the pinned versions rather than read from `/mdr/products`, which would
+ * spend a call.
  *
- * @param products - The `/mdr/products` response.
  * @param versions - The pinned versions.
  * @returns Each product's path.
- * @throws When either product is not listed, naming the ADaM paths that are.
  */
-export function pickAdamProducts(
-  products: Json,
-  versions: { readonly adamig: string; readonly occds: string }
-): { adamig: string; occds: string } {
-  const adam = [
-    ...new Set(
-      linkHrefs(products).filter((h) => /^\/mdr\/adam\/[^/]+$/.test(h))
-    ),
-  ];
-  const find = (pattern: RegExp, what: string) => {
-    const hit = adam.find((h) => pattern.test(h));
-    if (!hit) {
-      throw new Error(
-        `The CDISC Library lists no ${what}. ADaM products listed: ${adam.join(", ") || "none"}.`
-      );
-    }
-    return hit;
-  };
+export function adamProductPaths(versions: {
+  readonly adamig: string;
+  readonly occds: string;
+}): { adamig: string; occds: string } {
   return {
-    adamig: find(
-      new RegExp(`/adamig-${slug(versions.adamig)}$`),
-      `ADaMIG ${versions.adamig}`
-    ),
-    occds: find(
-      new RegExp(`/adam-occds-${slug(versions.occds)}$`),
-      `ADaM OCCDS ${versions.occds}`
-    ),
+    adamig: `/mdr/adam/adamig-${slug(versions.adamig)}`,
+    occds: `/mdr/adam/adam-occds-${slug(versions.occds)}`,
   };
 }
 
@@ -162,6 +147,8 @@ export function collectVariables(
 /**
  * Reads a product's variables: from the product response when it embeds
  * them, otherwise by following its links, at most `limit` requests.
+ * Following links costs a call per page, so with the daily call budget a
+ * product that does not embed its variables fails the sync.
  *
  * @param get - Fetches a Library path and parses the JSON.
  * @param root - The product's path.
@@ -171,7 +158,7 @@ export function collectVariables(
 export async function crawlProduct(
   get: (href: string) => Promise<Json>,
   root: string,
-  limit = 400
+  limit = 2
 ): Promise<Map<string, AdamLibraryVariable[]>> {
   const merged = new Map<string, AdamLibraryVariable[]>();
   const seen = new Set<string>([root]);
@@ -238,23 +225,46 @@ async function main(argv: readonly string[]): Promise<number> {
     console.error("CDISC_LIBRARY_API_KEY is not set.");
     return 1;
   }
+  let calls = 0;
   const get = async (href: string): Promise<Json> => {
+    calls += 1;
+    if (calls > MAX_LIBRARY_CALLS) {
+      throw new Error(
+        `Stopped before CDISC Library call ${calls}: a sync makes at most ${MAX_LIBRARY_CALLS}.`
+      );
+    }
     const response = await fetch(`${LIBRARY_API}${href}`, {
       headers: { "api-key": key, Accept: "application/json" },
       signal: AbortSignal.timeout(60_000),
     });
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `CDISC Library ${href} returned ${response.status}: it did not accept the key. Check that the CDISC_LIBRARY_API_KEY secret holds a current key from the CDISC Library API portal.`
+      );
+    }
+    if (response.status === 429) {
+      throw new Error(
+        `CDISC Library ${href} returned 429: the key's daily call quota is used up. Run the sync again tomorrow.`
+      );
+    }
+    if (response.status === 404) {
+      throw new Error(
+        `The CDISC Library has nothing at ${href}. Check that it publishes the pinned version.`
+      );
+    }
     if (!response.ok) {
       throw new Error(`CDISC Library ${href} returned ${response.status}.`);
     }
     return response.json();
   };
-  const products = pickAdamProducts(await get("/mdr/products"), {
+  const products = adamProductPaths({
     adamig: CLINICAL_STANDARDS_PROFILE.ADaMIG,
     occds: CLINICAL_STANDARDS_PROFILE.OCCDS,
   });
   const structures = new Map<string, AdamLibraryVariable[]>();
   for (const href of Object.values(products)) {
-    for (const [name, variables] of await crawlProduct(get, href)) {
+    const limit = MAX_LIBRARY_CALLS / Object.keys(products).length;
+    for (const [name, variables] of await crawlProduct(get, href, limit)) {
       structures.set(name, variables);
     }
   }

@@ -56,6 +56,12 @@ Re-exports [NCI_CODE_REGEX](../cdisc-controlled-terminology/variables/NCI_CODE_R
 
 ***
 
+### PRESET\_ID\_STAMP
+
+Re-exports [PRESET_ID_STAMP](../cdash-domain-templates/variables/PRESET_ID_STAMP.md)
+
+***
+
 ### scaffoldCdashDomain
 
 Re-exports [scaffoldCdashDomain](../cdash-domain-templates/functions/scaffoldCdashDomain.md)

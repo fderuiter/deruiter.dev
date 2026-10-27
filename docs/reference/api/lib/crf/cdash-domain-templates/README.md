@@ -9,6 +9,7 @@
 ## Variables
 
 - [CDASH\_STANDARD\_VARIABLES](variables/CDASH_STANDARD_VARIABLES.md)
+- [PRESET\_ID\_STAMP](variables/PRESET_ID_STAMP.md)
 
 ## Functions
 

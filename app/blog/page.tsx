@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { getAllPublishedBlogPosts } from "@/lib/blog";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PageLayout } from "@/components/PageLayout";
@@ -54,19 +54,19 @@ export default async function BlogIndexPage() {
             </p>
             <p className="text-xs text-zinc-500 font-mono">
               The first posts are on the way. In the meantime, the{" "}
-              <Link
+              <IntentLink
                 href="/case-studies"
                 className="text-accent hover:underline"
               >
                 case studies
-              </Link>{" "}
+              </IntentLink>{" "}
               cover the same engineering in more depth.
             </p>
           </div>
         ) : (
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-6">
             {posts.map((post) => (
-              <Link
+              <IntentLink
                 key={post.slug}
                 href={`/blog/${post.slug}`}
                 className="block p-6 bg-zinc-900/20 border border-zinc-800/80 rounded-2xl hover:border-accent/40 transition-colors"
@@ -75,7 +75,7 @@ export default async function BlogIndexPage() {
                   {post.title}
                 </h2>
                 <p className="text-sm text-zinc-400">{post.dek}</p>
-              </Link>
+              </IntentLink>
             ))}
           </div>
         )}

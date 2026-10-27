@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
@@ -65,13 +65,13 @@ export default async function AdminBlogPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
+            <IntentLink
               href="/admin/blog/new"
               className="px-4 py-2.5 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-colors"
             >
               <IconPlus className="w-4 h-4" />
               <span>Draft New Post</span>
-            </Link>
+            </IntentLink>
           </div>
         </header>
 
@@ -88,12 +88,12 @@ export default async function AdminBlogPage() {
               <p className="text-sm font-mono text-zinc-400">
                 No blog posts or drafts found in database persistence.
               </p>
-              <Link
+              <IntentLink
                 href="/admin/blog/new"
                 className="px-4 py-2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono text-xs hover:bg-amber-500/30 transition-colors"
               >
                 Create your first draft
-              </Link>
+              </IntentLink>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -147,13 +147,13 @@ export default async function AdminBlogPage() {
                         })}
                       </td>
                       <td className="p-3 text-right">
-                        <Link
+                        <IntentLink
                           href={`/admin/blog/${post.id}`}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-white/5 transition-colors"
                         >
                           <IconEdit className="w-3.5 h-3.5" />
                           <span>Edit</span>
-                        </Link>
+                        </IntentLink>
                       </td>
                     </tr>
                   ))}

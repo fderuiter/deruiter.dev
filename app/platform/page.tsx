@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import {
@@ -109,12 +109,12 @@ export default function PlatformPage() {
         <p className="mt-4 border-l-2 border-emerald-500 pl-4 text-sm leading-relaxed text-slate-300">
           Governance, quality, lineage and validation evidence span every layer.
           The gold layer&apos;s SDTM and ADaM come from the{" "}
-          <Link
+          <IntentLink
             href="/study-data"
             className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             Study Data Pipeline
-          </Link>
+          </IntentLink>
           , which you can run and trace end to end.
         </p>
       </section>
@@ -173,12 +173,12 @@ export default function PlatformPage() {
                   {capability.evidence.map((evidence) => (
                     <li key={evidence.href} className="min-w-0">
                       {evidence.kind === "route" ? (
-                        <Link
+                        <IntentLink
                           className="inline-block max-w-full break-words border border-white/[0.08] bg-[#13151a] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-amber-500/50 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                           href={evidence.href}
                         >
                           {evidence.label} ↗
-                        </Link>
+                        </IntentLink>
                       ) : (
                         <a
                           className="inline-block max-w-full break-words border border-white/[0.08] bg-[#13151a] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-amber-500/50 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"

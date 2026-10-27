@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import Image from "next/image";
 import {
   IconCalendar,
@@ -563,13 +563,13 @@ export default function SchedulePage() {
             Prefer direct email or messaging?
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-            <Link
+            <IntentLink
               href="/contact"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-accent hover:border-accent/40 transition-colors"
             >
               <IconMessageCode className="w-4 h-4 text-accent" />
               <span>Send a Message</span>
-            </Link>
+            </IntentLink>
             <a
               href="https://www.linkedin.com/in/frederick-de-ruiter-88012467/"
               target="_blank"

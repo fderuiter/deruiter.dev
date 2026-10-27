@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback, useMemo, useRef } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useAudio } from "@/components/providers/AudioProvider";
@@ -423,14 +423,14 @@ export default function ArchetypeSimulatorClient() {
                     <IconRefresh className="w-4 h-4" aria-hidden="true" />
                     <span>Run Again</span>
                   </button>
-                  <Link
+                  <IntentLink
                     href="/case-studies"
                     onClick={() => recordEvent("simulator", "project_click")}
                     className="flex items-center justify-center gap-2 px-4 py-3 bg-[#0d0e11] border border-zinc-800 hover:border-zinc-600 text-zinc-300 font-mono font-bold text-xs uppercase tracking-wider rounded-lg transition-colors active:scale-[0.98]"
                   >
                     <IconBook2 className="w-4 h-4" aria-hidden="true" />
                     <span>Case Studies</span>
-                  </Link>
+                  </IntentLink>
                 </div>
               </motion.section>
             )}

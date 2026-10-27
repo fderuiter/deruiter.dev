@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { ProjectTeaserGrid } from "@/components/ProjectTeaserGrid";
 import { BaseCaseStudy } from "@/types/domain";
@@ -232,7 +232,7 @@ export default async function PortfolioHomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full max-w-6xl justify-center items-stretch">
             {/* Say Hello & Contact Form */}
-            <Link
+            <IntentLink
               href="/contact"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-[#13151a]/80 border border-white/10 rounded-2xl transition-all duration-200 hover:border-amber-500/40 hover:bg-[#181b22] active:scale-[0.98] text-center cursor-pointer min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
@@ -245,10 +245,10 @@ export default async function PortfolioHomePage() {
               <span className="text-xs font-mono text-amber-300">
                 Send a Message ↗
               </span>
-            </Link>
+            </IntentLink>
 
             {/* Schedule 1:1 */}
-            <Link
+            <IntentLink
               href="/schedule"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-amber-500/5 border border-amber-500/30 rounded-2xl transition-all duration-200 hover:border-amber-400 hover:bg-amber-500/10 active:scale-[0.98] text-center cursor-pointer relative overflow-hidden min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
@@ -264,7 +264,7 @@ export default async function PortfolioHomePage() {
               <span className="text-xs font-mono text-amber-300">
                 Book on Calendar ↗
               </span>
-            </Link>
+            </IntentLink>
 
             {/* GitHub Portal */}
             <a

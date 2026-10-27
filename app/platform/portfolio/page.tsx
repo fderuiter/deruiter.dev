@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { PortfolioDashboard } from "@/components/platform/portfolio/PortfolioDashboard";
 import {
@@ -45,12 +45,12 @@ export default function PlatformPortfolioPage() {
           governed metric registry, the enrollment forecast from a seeded Monte
           Carlo model, and every chart has its data table. To drill into one
           study, open the{" "}
-          <Link
+          <IntentLink
             href="/platform/operations"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"
           >
             operations dashboards
-          </Link>
+          </IntentLink>
           .
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">

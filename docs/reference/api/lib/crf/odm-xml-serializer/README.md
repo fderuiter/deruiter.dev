@@ -8,6 +8,8 @@
 
 ## Variables
 
+- [CRF\_STUDIO\_ODM\_NAMESPACE](variables/CRF_STUDIO_ODM_NAMESPACE.md)
+- [NCI\_ALIAS\_CONTEXT](variables/NCI_ALIAS_CONTEXT.md)
 - [serializeStudyToOdmXml](variables/serializeStudyToOdmXml.md)
 
 ## Functions

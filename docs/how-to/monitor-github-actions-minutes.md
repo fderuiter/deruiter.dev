@@ -290,9 +290,9 @@ need verification:
   required check, has governed `main` since 2026-10-20; see
   [Main Branch Protection](release-and-deploy.md#main-branch-protection). Client-side guardrails remain defense-in-depth. Since
   [ADR 0049](../../adr/0049-deploy-main-on-green-ci.md), no GitHub workflow or
-  environment deploys. During the manual hold, an operator starts Production from
-  the Vercel Dashboard after CI passes ([ADR 0051](../../adr/0051-manual-production-releases.md)).
-  Keep the hold until a replacement release policy is approved and verified.
+  environment deploys. The weekly release train only POSTs a Vercel Deploy Hook;
+  Vercel builds Production ([ADR 0063](../../adr/0063-weekly-release-train.md)).
+  Its release-candidate suite adds about 35 runner minutes a week.
 - **Runtime measurements**: The `timeout-minutes` values (`changes` 5,
   `static-gate` 20, `unit-gate` 20 per shard, `unit-coverage` 10,
   `mutation-gate` 20, `security-gate` 15, `build` 25, `heavy-gate` 30 per

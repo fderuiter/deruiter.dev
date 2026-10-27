@@ -2,16 +2,21 @@
 
 ## Status
 
-Proposed on 2026-10-26, under
+Accepted on 2026-10-27; proposed on 2026-10-26, under
 [#1168](https://github.com/fderuiter/deruiter.dev/issues/1168) and the owner
 checklist [#2889](https://github.com/fderuiter/deruiter.dev/issues/2889). The
 operator asked for weekly automatic production releases with automatic
 versioning on 2026-10-26 and chose Sunday 7 PM Central. This ADR amends the
-trigger in [ADR 0049](0049-deploy-main-on-green-ci.md). It replaces
-[ADR 0051](0051-manual-production-releases.md) only once accepted, after the
-operator's first manual run proves the Deploy Hook builds Production; until
-then ADR 0051's manual hold stands. It replaces the nightly cadence in the
-2026-10-19 release pipeline design.
+trigger in [ADR 0049](0049-deploy-main-on-green-ci.md) and supersedes
+[ADR 0051](0051-manual-production-releases.md). It replaces the nightly
+cadence in the 2026-10-19 release pipeline design.
+
+The operator's first manual run released v1.0.0 on 2026-10-27
+([run 40436481576](https://github.com/fderuiter/deruiter.dev/actions/runs/40436481576)):
+every gate passed, the Deploy Hook built Production while
+`git.deploymentEnabled` is `false` (#2539), `/api/version` reported the
+release commit and the smoke test passed before the Release was published.
+The operator then set `WEEKLY_TRAIN` to `on`.
 
 ## Context
 
@@ -93,9 +98,9 @@ the build starts.
   confirm stage sees the mismatch, leaves the Release a draft and holds the
   train. If that ever happens, move the trigger to a `production` branch that
   the train fast-forwards to the tag.
-- Whether a Deploy Hook builds while `git.deploymentEnabled` is `false` is
-  not documented. The operator's first manual run settles it; if it does not
-  build, this ADR is amended to the `production` branch before acceptance.
+- A Deploy Hook builds Production while `git.deploymentEnabled` is `false`.
+  Vercel does not document this; the v1.0.0 run established it (#2539). If
+  Vercel ever changes it, move the trigger to the `production` branch above.
 - The release candidate suite adds about 35 minutes of standard runner time
   a week and widens the window in which a merge can move `main` past the
   candidate. When that happens the run stops before firing and ships
@@ -104,7 +109,7 @@ the build starts.
 
 ## Acceptance
 
-Accept this ADR after the operator has created the hook and secret, lifted
-the hold, and seen one manual run go live. Acceptance supersedes ADR 0051
-and reconciles AGENTS.md, DEPLOYMENT.md, the runbook and
-`scripts/git-guardrail.sh` in the same change.
+Accepted on 2026-10-27, after the operator created the hook and secret,
+lifted the hold and saw v1.0.0 go live through a manual run. The same change
+superseded ADR 0051 and reconciled AGENTS.md, DEPLOYMENT.md, the runbooks and
+`scripts/git-guardrail.sh` (#2540).

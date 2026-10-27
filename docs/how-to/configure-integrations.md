@@ -198,8 +198,8 @@ curl -X POST http://localhost:3000/api/telemetry \
 - **Credential rotation**: Generate a new REST token in the Upstash console.
   Update the Production URL and token together in Vercel project environment
   variables, then create a Production deployment from the current green `main`
-  SHA in the Dashboard. During the manual hold, all Production releases are
-  Dashboard-only (ADR 0051). There is no dual-secret overlap window in the
+  SHA in the Dashboard (or run the Weekly Train). Vercel binds variables at
+  deploy time (ADR 0063). There is no dual-secret overlap window in the
   Upstash REST API, so the deployment constitutes the atomic switch.
 - **Preview namespace cleanup**: Ephemeral preview keys prefixed with `preview:`
   or a custom PR prefix can be listed via `SCAN 0 MATCH preview:* COUNT 100`.
@@ -220,9 +220,10 @@ curl -X POST http://localhost:3000/api/telemetry \
   schedule below. There is no dedicated setup script for this, it's a
   one-time dashboard action per Vercel's own
   [Git integration docs](https://vercel.com/docs/git). `vercel.json` also sets
-  `git.deploymentEnabled: false`, so pushes do not deploy. An operator creates
-  each Production deployment from Vercel Dashboard → Deployments → Create
-  Deployment ([ADR 0051](../../adr/0051-manual-production-releases.md)).
+  `git.deploymentEnabled: false`, so pushes do not deploy. The weekly release
+  train fires a Deploy Hook for Production; Vercel Dashboard → Deployments →
+  Create Deployment is the break-glass path
+  ([ADR 0063](../../adr/0063-weekly-release-train.md)).
 - **Cron**: `vercel.json` schedules `GET /api/cron/maintenance` daily
   (`0 0 * * *`). Vercel signs every cron invocation with an
   `Authorization: Bearer <CRON_SECRET>` header matching the `CRON_SECRET`

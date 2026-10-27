@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [CapabilitySupport](interfaces/CapabilitySupport.md)
 - [PublishedVersions](interfaces/PublishedVersions.md)
 - [StandardBomEntry](interfaces/StandardBomEntry.md)
 - [StandardBomSpec](interfaces/StandardBomSpec.md)
@@ -18,8 +19,13 @@
 
 ## Type Aliases
 
+- [CapabilityStatus](type-aliases/CapabilityStatus.md)
+- [StandardArtifactType](type-aliases/StandardArtifactType.md)
+- [StandardCapability](type-aliases/StandardCapability.md)
 - [StandardCheckKind](type-aliases/StandardCheckKind.md)
+- [StandardFamily](type-aliases/StandardFamily.md)
 - [StandardFeed](type-aliases/StandardFeed.md)
+- [StandardLifecycle](type-aliases/StandardLifecycle.md)
 - [StandardStatus](type-aliases/StandardStatus.md)
 
 ## Variables

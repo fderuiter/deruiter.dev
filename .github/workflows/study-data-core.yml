@@ -20,11 +20,16 @@ name: Study Data CDISC CORE
 # export (`study-data-core.ts export-crf`), reconciled against the
 # allowlist's crf-usdm entries and recorded under `crf` in the same file.
 #
+# #3090: both exports build on lib/clinical-standards (the standards profile,
+# the USDM v4 schema and the shared terminology), so a change there runs CORE
+# too. Other shared helpers are left out; a change to them that moves an
+# export fails __tests__/study-data-core-recorded.test.ts in ci.yml.
+#
 # CORE v0.17.1 ships its rule and terminology cache in the repository, so no
 # CDISC Library API key is needed. It publishes no ADaMIG rules yet; the
 # ADaM layer is reported as not run until it does. This is a separate
-# workflow, not a gate in ci.yml: it reads only lib/study-data, lib/crf and
-# its own files.
+# workflow, not a gate in ci.yml: it reads only lib/study-data, lib/crf,
+# lib/clinical-standards and its own files.
 
 on:
   push:
@@ -32,12 +37,14 @@ on:
     paths:
       - "lib/study-data/**"
       - "lib/crf/**"
+      - "lib/clinical-standards/**"
       - "scripts/study-data-core*"
       - ".github/workflows/study-data-core.yml"
   pull_request:
     paths:
       - "lib/study-data/**"
       - "lib/crf/**"
+      - "lib/clinical-standards/**"
       - "scripts/study-data-core*"
       - ".github/workflows/study-data-core.yml"
   schedule:

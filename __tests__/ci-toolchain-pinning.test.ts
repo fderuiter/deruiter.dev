@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import { TYPECHECK_BUDGET_ARGS } from "../scripts/typecheck-budget";
 
 /**
  * A GitHub Actions `run:` step is a plain shell; unlike an `npm run` script it
@@ -106,45 +107,84 @@ describe("CI Workflow Toolchain Pinning", () => {
       fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
     ) as { scripts: Record<string, string> };
     // `next typegen` first, so the check covers the generated route types that
-    // Next's own in-build checker used to (#2100).
+    // Next's own in-build checker used to (#2100). The compiler is TypeScript 7
+    // by its explicit path: `.bin/tsc` can link to the TypeScript 6 copy that
+    // ESLint, TypeDoc and Next.js load as a library (ADR 0072).
     expect(pkg.scripts.typecheck).toBe(
-      "next typegen && node --max-old-space-size=3584 node_modules/typescript/bin/tsc --noEmit"
+      "next typegen && node node_modules/@typescript/native/bin/tsc --noEmit --checkers 2"
     );
   });
 
   /**
-   * #2014: the whole-project check needs a little over 2 GB of heap, which is
-   * the default limit in the Vercel Deployment Checks sandbox, so the gate
-   * crashed with exit 134 there while passing on larger runners. The ceiling
-   * is set in the script so every caller (CI, Husky, Vercel) gets the same one.
-   * #2743 raised it to 3.5 GB once the program's live heap reached 2.54 GB.
-   * That sandbox then ran out of machine memory instead (exit 137), so the
-   * Vercel checks were removed (#2899); CI and the production build remain.
+   * ADR 0072: TypeScript 7 ships no JavaScript API until 7.1, so `typescript`
+   * stays the 6.0 compatibility package for every tool that imports it, and
+   * the TypeScript 7 compiler sits beside it under an alias. Swapping either
+   * one silently breaks linting, TypeDoc and the Next.js build, or puts the
+   * type check back on TypeScript 6.
    */
-  it("gives the typecheck an explicit heap ceiling above 2 GB", () => {
+  it("pins TypeScript 7 as the compiler and TypeScript 6 as the library", () => {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
-    ) as { scripts: Record<string, string> };
-    const heap = /--max-old-space-size=(\d+)/.exec(pkg.scripts.typecheck);
-    expect(Number(heap?.[1])).toBeGreaterThan(2048);
+    ) as { devDependencies: Record<string, string> };
+    expect(pkg.devDependencies["@typescript/native"]).toMatch(
+      /^npm:typescript@\^7\./
+    );
+    expect(pkg.devDependencies.typescript).toMatch(
+      /^npm:@typescript\/typescript6@\^6\./
+    );
   });
 
   /**
-   * #2014: CI checks the whole program cold under a smaller heap than the
-   * Vercel ceiling, so growth fails the pull request while the deploy check
-   * still has headroom.
+   * The 6.0 compatibility package ships no tsserver, so VS Code's built-in
+   * TypeScript support (the fallback when the TypeScript 7 extension is off,
+   * and the only host for the Next.js language service plugin) needs the
+   * real 6.0 install it re-exports.
    */
-  it("runs a cold typecheck in CI under a heap budget below the ceiling", () => {
+  it("points the editor fallback at a TypeScript 6 install with a tsserver", () => {
+    const settings = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), ".vscode/settings.json"), "utf8")
+    ) as Record<string, string>;
+    const tsdk = settings["typescript.tsdk"];
+    expect(tsdk).toBe("node_modules/@typescript/old/lib");
+    expect(fs.existsSync(path.join(process.cwd(), tsdk, "tsserver.js"))).toBe(
+      true
+    );
+  });
+
+  it("never runs a bare tsc from a package script", () => {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
     ) as { scripts: Record<string, string> };
-    const heapOf = (script: string) =>
-      Number(/--max-old-space-size=(\d+)/.exec(script)?.[1]);
-    const budget = pkg.scripts["typecheck:budget"];
+    const bare = Object.entries(pkg.scripts).filter(([, script]) =>
+      /(^|[\s"&|;])tsc(\s|"|$)/.test(script)
+    );
+    expect(bare).toEqual([]);
+  });
 
-    expect(budget).toContain("node_modules/typescript/bin/tsc --noEmit");
-    expect(budget).toContain("--incremental false");
-    expect(heapOf(budget)).toBeLessThan(heapOf(pkg.scripts.typecheck));
+  /**
+   * #2014, #2743, ADR 0072: CI checks the whole program cold and fails when
+   * the compiler reports more memory than the budget, so growth fails the
+   * pull request before it reaches the production build's type-check phase.
+   * The TypeScript 7 compiler is a Go binary, so a V8 heap flag no longer
+   * bounds it; the budget reads the compiler's own "Memory used" figure.
+   */
+  it("runs a cold typecheck in CI under a memory budget", () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
+    ) as { scripts: Record<string, string> };
+    expect(pkg.scripts["typecheck:budget"]).toBe(
+      "next typegen && tsx scripts/typecheck-budget.ts"
+    );
+
+    expect(TYPECHECK_BUDGET_ARGS).toEqual(
+      expect.arrayContaining([
+        "--incremental",
+        "false",
+        "--extendedDiagnostics",
+      ])
+    );
+    const checkers = TYPECHECK_BUDGET_ARGS.indexOf("--checkers");
+    expect(TYPECHECK_BUDGET_ARGS[checkers + 1]).toBe("2");
 
     const ci = fs.readFileSync(path.join(workflowDir, "ci.yml"), "utf8");
     const typeCheckStep = ci

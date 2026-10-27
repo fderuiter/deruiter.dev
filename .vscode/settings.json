@@ -6,7 +6,7 @@
     "source.fixAll.eslint": "explicit"
   },
   "editor.rulers": [100, 120],
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.tsdk": "node_modules/@typescript/old/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "tailwindCSS.experimental.classRegex": [
     ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],

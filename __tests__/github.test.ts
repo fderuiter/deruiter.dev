@@ -90,6 +90,14 @@ describe("GitHub Telemetry & Caching Suite", () => {
       expect(keyParts).toContain("github-repo-metrics-cache");
       expect(keyParts).toContain(owner);
       expect(keyParts).toContain(repo);
+
+      // The lowest revalidate in a route wins, so an hourly GitHub cache would
+      // rebuild the daily ISR home and case-study pages every hour (#3031).
+      expect(lastCall[2]).toMatchObject({ revalidate: 86400 });
+      const init = vi.mocked(global.fetch).mock.calls[0][1] as {
+        next?: { revalidate?: number };
+      };
+      expect(init.next?.revalidate).toBe(86400);
     });
   });
 

@@ -24,6 +24,22 @@ Versioned analysis method text shared by derivations and future Define-XML.
 
 > `readonly` **ADAE\_TEAE**: `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."` = `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."`
 
+### ADCM\_DAY
+
+> `readonly` **ADCM\_DAY**: `"ASTDY and AENDY count from first dose (ADSL.TRTSDT) as day 1, with no day 0: the analysis date minus TRTSDT, plus 1 on or after first dose. Missing when either date is missing."` = `"ASTDY and AENDY count from first dose (ADSL.TRTSDT) as day 1, with no day 0: the analysis date minus TRTSDT, plus 1 on or after first dose. Missing when either date is missing."`
+
+### ADCM\_IMPUTE
+
+> `readonly` **ADCM\_IMPUTE**: `"Impute month-only medication starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days. A medication marked ongoing has no analysis end date."` = `"Impute month-only medication starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days. A medication marked ongoing has no analysis end date."`
+
+### ADCM\_RESCUE
+
+> `readonly` **ADCM\_RESCUE**: `"RESCUEFL is Y when the medication was recorded as rescue medication (CM.CMCAT is RESCUE MEDICATION), and blank otherwise."` = `"RESCUEFL is Y when the medication was recorded as rescue medication (CM.CMCAT is RESCUE MEDICATION), and blank otherwise."`
+
+### ADCM\_TIMING
+
+> `readonly` **ADCM\_TIMING**: `"For a dosed subject, PREFL is Y when the medication started before first dose, or has no analysis start date. ONTRTFL is Y when it started on or before the end of the on-treatment period (14 days after last dose, capped at last known contact) and ended on or after first dose, or has no analysis end date. A medication started before and continued after first dose has both flags. Both are blank for a subject never dosed."` = `"For a dosed subject, PREFL is Y when the medication started before first dose, or has no analysis start date. ONTRTFL is Y when it started on or before the end of the on-treatment period (14 days after last dose, capped at last known contact) and ended on or after first dose, or has no analysis end date. A medication started before and continued after first dose has both flags. Both are blank for a subject never dosed."`
+
 ### ADEG\_CRIT
 
 > `readonly` **ADEG\_CRIT**: `"QTcF records only: CRIT1FL is Y when AVAL exceeds 500 ms, and CRIT2FL is Y when CHG exceeds 60 ms, the ICH E14 categorical thresholds for a QTc outlier. CRIT2FL is blank when there is no baseline."` = `"QTcF records only: CRIT1FL is Y when AVAL exceeds 500 ms, and CRIT2FL is Y when CHG exceeds 60 ms, the ICH E14 categorical thresholds for a QTc outlier. CRIT2FL is blank when there is no baseline."`

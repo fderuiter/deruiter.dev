@@ -1,4 +1,4 @@
-/** Occurrence and time-to-event analysis from SDTM AE, DS and subject contact. */
+/** Occurrence and time-to-event analysis from SDTM AE, CM, DS and subject contact. */
 import type {
   Dataset,
   Finding,
@@ -186,6 +186,105 @@ const ADAE_VARIABLES: readonly VariableMeta[] = [
   ...SOURCE,
 ];
 
+const ADCM_VARIABLES: readonly VariableMeta[] = [
+  ...COMMON,
+  column(
+    "CMTRT",
+    "Reported Name of Drug, Med, or Therapy",
+    "text",
+    "Predecessor",
+    undefined,
+    "CM.CMTRT"
+  ),
+  column(
+    "CMDECOD",
+    "Standardized Medication Name",
+    "text",
+    "Predecessor",
+    undefined,
+    "CM.CMDECOD"
+  ),
+  column(
+    "CMCAT",
+    "Category for Medication",
+    "text",
+    "Predecessor",
+    undefined,
+    "CM.CMCAT"
+  ),
+  column("CMINDC", "Indication", "text", "Predecessor", undefined, "CM.CMINDC"),
+  column(
+    "CMCLAS",
+    "Medication Class",
+    "text",
+    "Predecessor",
+    undefined,
+    "CM.CMCLAS"
+  ),
+  column("ASTDT", "Analysis Start Date", "date", "Derived", "ADCM_IMPUTE"),
+  column(
+    "ASTDTF",
+    "Start Date Imputation Flag",
+    "text",
+    "Derived",
+    "ADCM_IMPUTE"
+  ),
+  column("AENDT", "Analysis End Date", "date", "Derived", "ADCM_IMPUTE"),
+  column(
+    "AENDTF",
+    "End Date Imputation Flag",
+    "text",
+    "Derived",
+    "ADCM_IMPUTE"
+  ),
+  column(
+    "ASTDY",
+    "Analysis Start Relative Day",
+    "integer",
+    "Derived",
+    "ADCM_DAY"
+  ),
+  column(
+    "AENDY",
+    "Analysis End Relative Day",
+    "integer",
+    "Derived",
+    "ADCM_DAY"
+  ),
+  column(
+    "CMENRTPT",
+    "End Relative to Reference Time Point",
+    "text",
+    "Predecessor",
+    undefined,
+    "CM.CMENRTPT"
+  ),
+  column("PREFL", "Pre-treatment Flag", "text", "Derived", "ADCM_TIMING"),
+  column(
+    "ONTRTFL",
+    "On Treatment Record Flag",
+    "text",
+    "Derived",
+    "ADCM_TIMING"
+  ),
+  column(
+    "RESCUEFL",
+    "Rescue Medication Flag",
+    "text",
+    "Derived",
+    "ADCM_RESCUE"
+  ),
+  column(
+    "LSTALVDT",
+    "Last Known Contact Date",
+    "date",
+    "Derived",
+    "ADCM_TIMING"
+  ),
+  ...TREATMENT,
+  ...SOURCE,
+];
+
 const ADTTE_VARIABLES: readonly VariableMeta[] = [
   ...COMMON,
   column("PARAMCD", "Parameter Code", "text", "Assigned"),
@@ -304,9 +403,27 @@ function impute(
   };
 }
 
+/** The day after the on-treatment period ends, capped at last contact. */
+function onTreatmentEnd(
+  lastDose: string | null,
+  lastContact: string | null
+): string | null {
+  const windowEnd = lastDose ? addDays(lastDose, 14) : null;
+  return windowEnd && lastContact && lastContact < windowEnd
+    ? lastContact
+    : windowEnd;
+}
+
+/** ADaM relative day: first dose is day 1 and there is no day 0. */
+function relativeDay(value: string | null, firstDose: string | null) {
+  if (!value || !firstDose) return null;
+  const days = daysBetween(firstDose, value);
+  return days >= 0 ? days + 1 : days;
+}
+
 function finding(
   ruleId: string,
-  dataset: "ADAE" | "ADTTE",
+  dataset: "ADAE" | "ADCM" | "ADTTE",
   row: number,
   message: string
 ): Finding {
@@ -361,11 +478,7 @@ export function deriveAdae(
       );
       end.value = null;
     }
-    const treatmentWindowEnd = lastDose ? addDays(lastDose, 14) : null;
-    const emergenceEnd =
-      treatmentWindowEnd && lastContact && lastContact < treatmentWindowEnd
-        ? lastContact
-        : treatmentWindowEnd;
+    const emergenceEnd = onTreatmentEnd(lastDose, lastContact);
     const emergent = Boolean(
       firstDose &&
       start.value &&
@@ -438,6 +551,117 @@ export function deriveAdae(
         structure: "One record per adverse event per subject",
       },
       ADAE_VARIABLES,
+      output.map(({ row }) => row),
+      output.map(({ lineage }) => lineage)
+    ),
+    findings,
+  };
+}
+
+/** Derive medication occurrence rows with prior and concomitant flags. */
+export function deriveAdcm(
+  sdtm: readonly Dataset[],
+  adsl: Dataset
+): { readonly dataset: Dataset; readonly findings: readonly Finding[] } {
+  const get = (name: string) => sdtm.find((dataset) => dataset.name === name);
+  const subjectRows = new Map(
+    rows(adsl).map((row) => [string(row.USUBJID), row])
+  );
+  const sv = bySubject(get("SV"));
+  const ds = bySubject(get("DS"));
+  const output: { row: AnalysisRow; lineage: readonly string[] }[] = [];
+  const findings: Finding[] = [];
+  for (const [index, source] of records(get("CM")).entries()) {
+    const record = source.row;
+    const subject = string(record.USUBJID)!;
+    const adslRow = subjectRows.get(subject);
+    const firstDose = date(adslRow?.TRTSDT);
+    const lastDose = date(adslRow?.TRTEDT);
+    const lastContactRecord = contacts(subject, sv, ds)[0];
+    const lastContact = lastContactRecord?.date ?? null;
+    const ongoing = string(record.CMENRTPT) === "ONGOING";
+    const start = impute(
+      string(record.CMSTDTC),
+      "start",
+      firstDose,
+      lastContact
+    );
+    const end = ongoing
+      ? { value: null, flag: null }
+      : impute(string(record.CMENDTC), "end", firstDose, lastContact);
+    if (start.value && end.value && end.value < start.value) {
+      findings.push(
+        finding(
+          "DEMO301-CM-DATE",
+          "ADCM",
+          index,
+          "Analysis end date precedes analysis start date after imputation."
+        )
+      );
+      end.value = null;
+    }
+    const treatmentEnd = onTreatmentEnd(lastDose, lastContact);
+    const prior = Boolean(
+      firstDose && (!start.value || start.value < firstDose)
+    );
+    const concomitant = Boolean(
+      firstDose &&
+      treatmentEnd &&
+      (!start.value || start.value <= treatmentEnd) &&
+      (!end.value || end.value >= firstDose)
+    );
+    output.push({
+      row: {
+        STUDYID: record.STUDYID,
+        USUBJID: subject,
+        ASEQ: number(record.CMSEQ),
+        CMTRT: record.CMTRT,
+        CMDECOD: record.CMDECOD,
+        CMCAT: record.CMCAT,
+        CMINDC: record.CMINDC,
+        CMCLAS: record.CMCLAS,
+        ASTDT: start.value,
+        ASTDTF: start.flag,
+        AENDT: end.value,
+        AENDTF: end.flag,
+        ASTDY: relativeDay(start.value, firstDose),
+        AENDY: relativeDay(end.value, firstDose),
+        CMENRTPT: record.CMENRTPT,
+        PREFL: prior ? "Y" : null,
+        ONTRTFL: concomitant ? "Y" : null,
+        RESCUEFL: string(record.CMCAT) === "RESCUE MEDICATION" ? "Y" : null,
+        LSTALVDT: lastContact,
+        TRT01P: adslRow?.TRT01P ?? null,
+        TRT01A: adslRow?.TRT01A ?? null,
+        TRTSDT: firstDose,
+        TRTEDT: lastDose,
+        SAFFL: adslRow?.SAFFL ?? "N",
+        ITTFL: adslRow?.ITTFL ?? "N",
+        SRCDOM: "CM",
+        SRCVAR: "CMSTDTC",
+        SRCSEQ: number(record.CMSEQ),
+        SRCVAL: number(record.CMSEQ),
+      },
+      lineage: [
+        ...new Set([...source.lineage, ...(lastContactRecord?.lineage ?? [])]),
+      ],
+    });
+  }
+  return {
+    dataset: table(
+      "ADCM",
+      "Concomitant Meds Analysis",
+      {
+        class: "OCCDS",
+        structure: "One record per medication per subject",
+        codelists: {
+          PREFL: "NY",
+          ONTRTFL: "NY",
+          RESCUEFL: "NY",
+          CMENRTPT: "STENRF",
+        },
+      },
+      ADCM_VARIABLES,
       output.map(({ row }) => row),
       output.map(({ lineage }) => lineage)
     ),

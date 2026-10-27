@@ -155,35 +155,44 @@ test("starts the engine and runs a saved query", async ({ page }) => {
   expect(refused).toEqual([]);
 });
 
-test("says so, rather than waiting, when the browser refuses to compile the engine", async ({
-  page,
-}) => {
-  test.setTimeout(180_000);
-  // The worker's own policy governs its compile: without the allowance on
-  // the worker's response, the engine cannot start, which is why
-  // WASM_POLICY_SOURCES lists the worker as well as the page.
-  await page.route(
-    /\/_next\/static\/media\/duckdb-browser-eh\.worker\./,
-    async (route) => {
-      const response = await route.fetch();
-      const headers = { ...response.headers() };
-      headers["content-security-policy"] = headers[
-        "content-security-policy"
-      ].replace(" 'wasm-unsafe-eval'", "");
-      await route.fulfill({ response, headers });
-    }
-  );
-  await page.goto("/platform/sql");
-  const start = page.getByRole("button", { name: "Start SQL engine" });
-  await expect(async () => {
-    await start.click({ timeout: 2_000 });
-    await expect(start).toBeDisabled({ timeout: 2_000 });
-  }).toPass({ timeout: 15_000 });
-  await expect(page.locator("main").getByRole("alert")).toContainText(
-    /The engine did not start: it stopped responding while it compiled/,
-    { timeout: 150_000 }
-  );
-  await expect(
-    page.getByRole("button", { name: "Try starting the engine again" })
-  ).toBeEnabled();
+test.describe("without a service worker", () => {
+  // The rewrite below is a page route, and a fetch the service worker makes
+  // never reaches it. The worker used to spend the whole test precaching
+  // the site, so it never controlled the page; now that it precaches only
+  // the offline shell (#3064) it takes control within seconds and fetches
+  // the engine's worker itself, with the policy intact.
+  test.use({ serviceWorkers: "block" });
+
+  test("says so, rather than waiting, when the browser refuses to compile the engine", async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    // The worker's own policy governs its compile: without the allowance on
+    // the worker's response, the engine cannot start, which is why
+    // WASM_POLICY_SOURCES lists the worker as well as the page.
+    await page.route(
+      /\/_next\/static\/media\/duckdb-browser-eh\.worker\./,
+      async (route) => {
+        const response = await route.fetch();
+        const headers = { ...response.headers() };
+        headers["content-security-policy"] = headers[
+          "content-security-policy"
+        ].replace(" 'wasm-unsafe-eval'", "");
+        await route.fulfill({ response, headers });
+      }
+    );
+    await page.goto("/platform/sql");
+    const start = page.getByRole("button", { name: "Start SQL engine" });
+    await expect(async () => {
+      await start.click({ timeout: 2_000 });
+      await expect(start).toBeDisabled({ timeout: 2_000 });
+    }).toPass({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("alert")).toContainText(
+      /The engine did not start: it stopped responding while it compiled/,
+      { timeout: 150_000 }
+    );
+    await expect(
+      page.getByRole("button", { name: "Try starting the engine again" })
+    ).toBeEnabled();
+  });
 });

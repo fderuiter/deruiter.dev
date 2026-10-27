@@ -10,7 +10,16 @@ for each one:
 - the checks in this repository that hold the site to the pinned version,
   each marked as CDISC's own engine (CORE), an official schema, local rules,
   or terminology;
-- when the site deliberately stays behind, the reason (`hold`).
+- when the site deliberately stays behind, the reason (`hold`);
+- its publisher, family, artifact type and lifecycle, the pinned
+  standards it builds on (`dependsOn`), what the site can do with it
+  (`capabilities`, each `yes` or `subset` with the rest implied `no`) and
+  what part of it the site covers (`coverage`).
+
+These are the first fields of the standards registry Protocol Studio will
+read. Their names follow the registry proposal in the Clinical Study Studio
+plan. Applicability, access and evidence dimensions, and entries for
+standards outside the profile, come later.
 
 It does the same for the three NCI EVS terminology packages the CT subset
 comes from, and for the pinned CDISC CORE engine.

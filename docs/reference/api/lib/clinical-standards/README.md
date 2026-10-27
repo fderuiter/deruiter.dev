@@ -14,6 +14,12 @@ Re-exports [addCalendarDaysToStudyDay](usdm-v4-schedule/functions/addCalendarDay
 
 ***
 
+### canonicalUsdmJson
+
+Re-exports [canonicalUsdmJson](usdm-handoff/functions/canonicalUsdmJson.md)
+
+***
+
 ### CapabilityStatus
 
 Re-exports [CapabilityStatus](bom/type-aliases/CapabilityStatus.md)
@@ -47,6 +53,12 @@ Re-exports [CLINICAL_STANDARDS_PROFILE](profile/variables/CLINICAL_STANDARDS_PRO
 ### ClinicalStandardsProfile
 
 Re-exports [ClinicalStandardsProfile](profile/interfaces/ClinicalStandardsProfile.md)
+
+***
+
+### ClinicalTool
+
+Re-exports [ClinicalTool](usdm-handoff/type-aliases/ClinicalTool.md)
 
 ***
 
@@ -89,6 +101,12 @@ Re-exports [controlledTerminologyCitation](profile/functions/controlledTerminolo
 ### ControlledTerminologyClaim
 
 Re-exports [ControlledTerminologyClaim](profile/interfaces/ControlledTerminologyClaim.md)
+
+***
+
+### createUsdmHandoff
+
+Re-exports [createUsdmHandoff](usdm-handoff/functions/createUsdmHandoff.md)
 
 ***
 
@@ -185,6 +203,18 @@ Re-exports [ProfileStandard](profile/type-aliases/ProfileStandard.md)
 ### PublishedVersions
 
 Re-exports [PublishedVersions](bom/interfaces/PublishedVersions.md)
+
+***
+
+### readUsdmHandoff
+
+Re-exports [readUsdmHandoff](usdm-handoff/functions/readUsdmHandoff.md)
+
+***
+
+### ReadUsdmHandoffResult
+
+Re-exports [ReadUsdmHandoffResult](usdm-handoff/type-aliases/ReadUsdmHandoffResult.md)
 
 ***
 
@@ -314,6 +344,12 @@ Re-exports [ToolBomEntry](bom/interfaces/ToolBomEntry.md)
 
 ***
 
+### USDM\_HANDOFF\_ENVELOPE\_VERSION
+
+Re-exports [USDM_HANDOFF_ENVELOPE_VERSION](usdm-handoff/variables/USDM_HANDOFF_ENVELOPE_VERSION.md)
+
+***
+
 ### USDM\_SDTM\_DOMAIN\_EXTENSION\_URL
 
 Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
@@ -353,6 +389,30 @@ Re-exports [USDM_TIMING_FIXED_REFERENCE](usdm-v4-schedule/variables/USDM_TIMING_
 ### USDM\_V4\_VERSION
 
 Re-exports [USDM_V4_VERSION](usdm-v4-types/variables/USDM_V4_VERSION.md)
+
+***
+
+### usdmContentHash
+
+Re-exports [usdmContentHash](usdm-handoff/functions/usdmContentHash.md)
+
+***
+
+### UsdmHandoffEnvelope
+
+Re-exports [UsdmHandoffEnvelope](usdm-handoff/interfaces/UsdmHandoffEnvelope.md)
+
+***
+
+### UsdmHandoffProblem
+
+Re-exports [UsdmHandoffProblem](usdm-handoff/type-aliases/UsdmHandoffProblem.md)
+
+***
+
+### UsdmHandoffStudy
+
+Re-exports [UsdmHandoffStudy](usdm-handoff/interfaces/UsdmHandoffStudy.md)
 
 ***
 

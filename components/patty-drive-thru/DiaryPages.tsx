@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { downloadFile } from "@/lib/download";
 import { clamp } from "@/lib/game-utils";
@@ -1018,12 +1018,12 @@ function ClosingNote() {
 
 function CompanionLink() {
   return (
-    <Link
+    <IntentLink
       href={COMPANION_POST_PATH}
       className="inline-flex min-h-12 items-center font-mono text-xs font-bold underline underline-offset-4 hover:text-[var(--pdt-paper-dim)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
     >
       Read the notes behind this shift
-    </Link>
+    </IntentLink>
   );
 }
 

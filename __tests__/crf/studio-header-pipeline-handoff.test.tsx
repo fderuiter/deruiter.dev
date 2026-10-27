@@ -117,8 +117,9 @@ describe("CRF Studio header: Run Pipeline (#2927)", () => {
       expect(push).toHaveBeenCalledWith(STUDY_DATA_HANDOFF_PATH)
     );
     const stored = JSON.parse(storage.getItem(STUDY_DATA_HANDOFF_KEY) ?? "{}");
-    expect(stored.version).toBe(1);
+    expect(stored.envelopeVersion).toBe(1);
     expect(stored.source).toBe("crf-studio");
+    expect(stored.target).toBe("study-data");
     expect(JSON.stringify(stored.usdm)).toContain(study.protocolNumber);
   });
 

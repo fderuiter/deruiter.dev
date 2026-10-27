@@ -6,7 +6,7 @@ import React, {
   useRef,
   useSyncExternalStore,
 } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import {
@@ -161,13 +161,13 @@ export const FooterStatusTicker: React.FC = () => {
         <div className="flex items-center gap-4 relative">
           {/* Secret Vault Badge (if unlocked) */}
           {vaultUnlocked && (
-            <Link
+            <IntentLink
               href="/arcade/meme-vault"
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] transition-colors"
             >
               <IconDeviceGamepad2 className="w-3.5 h-3.5" />
               <span>Meme Vault Unlocked</span>
-            </Link>
+            </IntentLink>
           )}
 
           {/* Duck Mascot Button with Speech Bubble and Physics Treats */}

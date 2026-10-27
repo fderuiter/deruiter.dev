@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { IconChevronDown } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import {
@@ -73,13 +73,13 @@ function ItemRow({
     );
   }
   return (
-    <Link
+    <IntentLink
       href={href}
       onClick={(e) => onNavigate(e, href)}
       className={className}
     >
       {content}
-    </Link>
+    </IntentLink>
   );
 }
 
@@ -143,7 +143,7 @@ function ExpandableGroup({
           );
         })}
         {group.overviewLabel ? (
-          <Link
+          <IntentLink
             href={group.href}
             aria-current={pathname === group.href ? "page" : undefined}
             onClick={(e) => onNavigate(e, group.href)}
@@ -153,7 +153,7 @@ function ExpandableGroup({
             <span aria-hidden="true" className="font-mono text-xs">
               →
             </span>
-          </Link>
+          </IntentLink>
         ) : null}
       </div>
     </div>
@@ -172,7 +172,7 @@ export const MobileNavSections: React.FC<MobileNavSectionsProps> = (props) => {
         isNavMenu(group) ? (
           <ExpandableGroup key={group.id} group={group} {...props} />
         ) : (
-          <Link
+          <IntentLink
             key={group.id}
             href={group.href}
             aria-current={
@@ -183,7 +183,7 @@ export const MobileNavSections: React.FC<MobileNavSectionsProps> = (props) => {
           >
             <span>{group.label}</span>
             <span className="font-mono text-xs text-zinc-500">→</span>
-          </Link>
+          </IntentLink>
         )
       )}
     </nav>

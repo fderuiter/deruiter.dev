@@ -10,7 +10,7 @@ import React, {
   useMemo,
   type SetStateAction,
 } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
@@ -6136,13 +6136,13 @@ export const ClinicalTrialChaos: React.FC = () => {
             </p>
           </div>
 
-          <Link
+          <IntentLink
             href="/case-studies/imednet-python-sdk"
             className="shrink-0 inline-flex min-h-[44px] items-center gap-1.5 px-4 py-2 rounded-lg border border-brand-blue/40 bg-brand-blue/15 text-xs font-bold text-brand-cyan hover:bg-brand-blue/25 transition shadow-sm"
           >
             <span>Read SDK Case Study</span>
             <IconExternalLink className="h-3.5 w-3.5" />
-          </Link>
+          </IntentLink>
         </div>
       )}
 

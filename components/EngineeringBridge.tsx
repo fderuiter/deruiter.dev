@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { IconArrowDown } from "@tabler/icons-react";
 import {
   ADR_REPOSITORY_URL,
@@ -112,12 +112,12 @@ export function EngineeringBridge({ route }: { route: string }) {
             <ul className="mt-2 space-y-1.5 text-sm">
               {entry.caseStudies.map((study) => (
                 <li key={study.slug} className="break-words">
-                  <Link
+                  <IntentLink
                     href={`/case-studies/${study.slug}`}
                     className="text-accent underline underline-offset-2 hover:text-white"
                   >
                     {study.title}
-                  </Link>
+                  </IntentLink>
                 </li>
               ))}
             </ul>

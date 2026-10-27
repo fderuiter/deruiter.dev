@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
@@ -47,7 +47,7 @@ export default function LabsPage() {
       <ul className="grid min-w-0 gap-4 py-10 sm:grid-cols-2 sm:py-14">
         {labs.map((lab) => (
           <li key={lab.id} className="min-w-0">
-            <Link
+            <IntentLink
               href={lab.href}
               className="flex h-full min-w-0 flex-col gap-2 border border-white/[0.08] bg-[#13151a] p-5 transition-colors hover:border-amber-500/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:scale-[0.98] sm:p-6"
             >
@@ -60,7 +60,7 @@ export default function LabsPage() {
                 {lab.title}
               </span>
               <span className="break-words text-slate-300">{lab.subtitle}</span>
-            </Link>
+            </IntentLink>
           </li>
         ))}
       </ul>

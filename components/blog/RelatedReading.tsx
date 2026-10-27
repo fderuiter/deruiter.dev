@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import type { RelatedItem } from "@/lib/blog/related";
 import { InlineMarkdown } from "@/components/ui/InlineMarkdown";
 
@@ -35,7 +35,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {items.map((item) => (
-          <Link
+          <IntentLink
             key={item.id}
             href={item.href}
             className="group relative flex flex-col justify-between p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-accent/40 hover:bg-zinc-900/70 transition-all duration-200"
@@ -107,7 +107,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
                 </svg>
               </span>
             </div>
-          </Link>
+          </IntentLink>
         ))}
       </div>
     </section>

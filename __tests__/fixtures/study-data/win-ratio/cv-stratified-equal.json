@@ -1,0 +1,1028 @@
+{
+  "name": "cv-stratified-equal",
+  "generator": "scripts/r/win-ratio-reference.R",
+  "reference": {
+    "r": "R version 4.3.3 (2024-02-29)",
+    "wins": "1.5.1",
+    "method": "WINS::win.stat, method = 'unadjusted'; Finkelstein-Schoenfeld in this script"
+  },
+  "settings": {
+    "weighting": "equal",
+    "alpha": 0.050000000000000003,
+    "sided": "two-sided"
+  },
+  "components": [
+    {
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": 365
+    },
+    {
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": 365
+    },
+    {
+      "kind": "continuous",
+      "better": "larger",
+      "margin": 5,
+      "horizon": null
+    }
+  ],
+  "subjects": [
+    {
+      "id": 1,
+      "arm": 1,
+      "stratum": 2,
+      "values": [259, 259, -4],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 2,
+      "arm": 1,
+      "stratum": 1,
+      "values": [398, 398, 21],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 3,
+      "arm": 1,
+      "stratum": 1,
+      "values": [313, 313, 2],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 4,
+      "arm": 1,
+      "stratum": 1,
+      "values": [209, 24, 18],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 5,
+      "arm": 1,
+      "stratum": 1,
+      "values": [304, 304, 11],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 6,
+      "arm": 1,
+      "stratum": 3,
+      "values": [401, 214, 18],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 7,
+      "arm": 1,
+      "stratum": 2,
+      "values": [238, 238, 18],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 8,
+      "arm": 1,
+      "stratum": 1,
+      "values": [225, 176, 12],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 9,
+      "arm": 1,
+      "stratum": 1,
+      "values": [381, 23, 15],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 10,
+      "arm": 1,
+      "stratum": 3,
+      "values": [216, 216, 13],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 11,
+      "arm": 1,
+      "stratum": 2,
+      "values": [221, 221, 29],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 12,
+      "arm": 1,
+      "stratum": 3,
+      "values": [327, 327, 9],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 13,
+      "arm": 1,
+      "stratum": 1,
+      "values": [367, 367, 6],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 14,
+      "arm": 1,
+      "stratum": 3,
+      "values": [274, 274, 15],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 15,
+      "arm": 1,
+      "stratum": 2,
+      "values": [384, 384, 22],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 16,
+      "arm": 1,
+      "stratum": 3,
+      "values": [245, 245, 28],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 17,
+      "arm": 1,
+      "stratum": 2,
+      "values": [142, 142, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 18,
+      "arm": 1,
+      "stratum": 2,
+      "values": [279, 279, 44],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 19,
+      "arm": 1,
+      "stratum": 2,
+      "values": [229, 229, -13],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 20,
+      "arm": 1,
+      "stratum": 2,
+      "values": [345, 208, 11],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 21,
+      "arm": 1,
+      "stratum": 2,
+      "values": [246, 32, 18],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 22,
+      "arm": 1,
+      "stratum": 2,
+      "values": [30, 30, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 23,
+      "arm": 1,
+      "stratum": 2,
+      "values": [408, 382, 12],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 24,
+      "arm": 1,
+      "stratum": 2,
+      "values": [362, 185, 7],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 25,
+      "arm": 1,
+      "stratum": 2,
+      "values": [327, 327, 2],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 26,
+      "arm": 1,
+      "stratum": 3,
+      "values": [63, 63, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 27,
+      "arm": 1,
+      "stratum": 1,
+      "values": [280, 280, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 28,
+      "arm": 1,
+      "stratum": 3,
+      "values": [344, 344, -35],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 29,
+      "arm": 1,
+      "stratum": 2,
+      "values": [281, 281, 14],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 30,
+      "arm": 1,
+      "stratum": 3,
+      "values": [258, 258, 19],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 31,
+      "arm": 1,
+      "stratum": 3,
+      "values": [213, 213, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 32,
+      "arm": 1,
+      "stratum": 2,
+      "values": [248, 248, 32],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 33,
+      "arm": 1,
+      "stratum": 2,
+      "values": [240, 240, 11],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 34,
+      "arm": 1,
+      "stratum": 1,
+      "values": [395, 395, 37],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 35,
+      "arm": 1,
+      "stratum": 2,
+      "values": [330, 330, 5],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 36,
+      "arm": 1,
+      "stratum": 3,
+      "values": [259, 143, 28],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 37,
+      "arm": 1,
+      "stratum": 3,
+      "values": [277, 277, -0],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 38,
+      "arm": 1,
+      "stratum": 1,
+      "values": [413, 119, -11],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 39,
+      "arm": 1,
+      "stratum": 3,
+      "values": [392, 364, -6],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 40,
+      "arm": 1,
+      "stratum": 2,
+      "values": [288, 29, 14],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 41,
+      "arm": 1,
+      "stratum": 1,
+      "values": [258, 258, 22],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 42,
+      "arm": 1,
+      "stratum": 1,
+      "values": [334, 328, 13],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 43,
+      "arm": 1,
+      "stratum": 3,
+      "values": [334, 334, 30],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 44,
+      "arm": 1,
+      "stratum": 2,
+      "values": [217, 188, 27],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 45,
+      "arm": 1,
+      "stratum": 1,
+      "values": [106, 106, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 46,
+      "arm": 1,
+      "stratum": 3,
+      "values": [12, 12, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 47,
+      "arm": 1,
+      "stratum": 1,
+      "values": [182, 116, -100],
+      "events": [1, 1, null]
+    },
+    {
+      "id": 48,
+      "arm": 1,
+      "stratum": 3,
+      "values": [350, 350, 10],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 49,
+      "arm": 1,
+      "stratum": 2,
+      "values": [300, 300, -3],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 50,
+      "arm": 1,
+      "stratum": 2,
+      "values": [289, 289, 9],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 51,
+      "arm": 1,
+      "stratum": 1,
+      "values": [189, 189, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 52,
+      "arm": 1,
+      "stratum": 3,
+      "values": [404, 404, -4],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 53,
+      "arm": 1,
+      "stratum": 2,
+      "values": [257, 257, 57],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 54,
+      "arm": 1,
+      "stratum": 1,
+      "values": [366, 366, 32],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 55,
+      "arm": 1,
+      "stratum": 1,
+      "values": [266, 266, -10],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 56,
+      "arm": 1,
+      "stratum": 2,
+      "values": [214, 147, -100],
+      "events": [1, 1, null]
+    },
+    {
+      "id": 57,
+      "arm": 1,
+      "stratum": 2,
+      "values": [232, 232, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 58,
+      "arm": 1,
+      "stratum": 2,
+      "values": [368, 368, 14],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 59,
+      "arm": 1,
+      "stratum": 2,
+      "values": [391, 79, -28],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 60,
+      "arm": 1,
+      "stratum": 2,
+      "values": [275, 99, -8],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 61,
+      "arm": 1,
+      "stratum": 1,
+      "values": [369, 192, 26],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 62,
+      "arm": 1,
+      "stratum": 2,
+      "values": [400, 400, 11],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 63,
+      "arm": 1,
+      "stratum": 1,
+      "values": [348, 348, 26],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 64,
+      "arm": 1,
+      "stratum": 2,
+      "values": [346, 175, 23],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 65,
+      "arm": 1,
+      "stratum": 1,
+      "values": [396, 216, 28],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 66,
+      "arm": 1,
+      "stratum": 2,
+      "values": [2, 2, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 67,
+      "arm": 1,
+      "stratum": 2,
+      "values": [258, 258, -17],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 68,
+      "arm": 1,
+      "stratum": 1,
+      "values": [83, 83, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 69,
+      "arm": 1,
+      "stratum": 2,
+      "values": [253, 253, -22],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 70,
+      "arm": 1,
+      "stratum": 2,
+      "values": [247, 135, 41],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 71,
+      "arm": 2,
+      "stratum": 1,
+      "values": [371, 371, 25],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 72,
+      "arm": 2,
+      "stratum": 1,
+      "values": [212, 212, -2],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 73,
+      "arm": 2,
+      "stratum": 2,
+      "values": [269, 269, -5],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 74,
+      "arm": 2,
+      "stratum": 2,
+      "values": [256, 256, -11],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 75,
+      "arm": 2,
+      "stratum": 2,
+      "values": [324, 16, 14],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 76,
+      "arm": 2,
+      "stratum": 1,
+      "values": [418, 418, 17],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 77,
+      "arm": 2,
+      "stratum": 1,
+      "values": [61, 61, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 78,
+      "arm": 2,
+      "stratum": 1,
+      "values": [236, 236, -3],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 79,
+      "arm": 2,
+      "stratum": 1,
+      "values": [239, 239, -22],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 80,
+      "arm": 2,
+      "stratum": 3,
+      "values": [420, 374, -27],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 81,
+      "arm": 2,
+      "stratum": 3,
+      "values": [222, 222, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 82,
+      "arm": 2,
+      "stratum": 1,
+      "values": [362, 362, 8],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 83,
+      "arm": 2,
+      "stratum": 1,
+      "values": [243, 43, -2],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 84,
+      "arm": 2,
+      "stratum": 1,
+      "values": [286, 57, 23],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 85,
+      "arm": 2,
+      "stratum": 1,
+      "values": [398, 295, 34],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 86,
+      "arm": 2,
+      "stratum": 3,
+      "values": [304, 261, -2],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 87,
+      "arm": 2,
+      "stratum": 3,
+      "values": [420, 356, 3],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 88,
+      "arm": 2,
+      "stratum": 1,
+      "values": [351, 181, 31],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 89,
+      "arm": 2,
+      "stratum": 2,
+      "values": [252, 252, 6],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 90,
+      "arm": 2,
+      "stratum": 2,
+      "values": [261, 14, 20],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 91,
+      "arm": 2,
+      "stratum": 2,
+      "values": [371, 371, -24],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 92,
+      "arm": 2,
+      "stratum": 2,
+      "values": [280, 155, 13],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 93,
+      "arm": 2,
+      "stratum": 1,
+      "values": [212, 212, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 94,
+      "arm": 2,
+      "stratum": 1,
+      "values": [218, 218, 32],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 95,
+      "arm": 2,
+      "stratum": 1,
+      "values": [358, 358, 2],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 96,
+      "arm": 2,
+      "stratum": 2,
+      "values": [346, 282, -100],
+      "events": [1, 1, null]
+    },
+    {
+      "id": 97,
+      "arm": 2,
+      "stratum": 2,
+      "values": [192, 192, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 98,
+      "arm": 2,
+      "stratum": 2,
+      "values": [267, 85, -12],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 99,
+      "arm": 2,
+      "stratum": 3,
+      "values": [287, 51, -100],
+      "events": [1, 1, null]
+    },
+    {
+      "id": 100,
+      "arm": 2,
+      "stratum": 2,
+      "values": [309, 158, 33],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 101,
+      "arm": 2,
+      "stratum": 3,
+      "values": [415, 415, 1],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 102,
+      "arm": 2,
+      "stratum": 3,
+      "values": [59, 59, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 103,
+      "arm": 2,
+      "stratum": 1,
+      "values": [416, 416, 26],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 104,
+      "arm": 2,
+      "stratum": 2,
+      "values": [262, 17, 38],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 105,
+      "arm": 2,
+      "stratum": 1,
+      "values": [343, 343, 27],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 106,
+      "arm": 2,
+      "stratum": 1,
+      "values": [319, 319, 18],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 107,
+      "arm": 2,
+      "stratum": 2,
+      "values": [40, 40, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 108,
+      "arm": 2,
+      "stratum": 2,
+      "values": [405, 13, 11],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 109,
+      "arm": 2,
+      "stratum": 3,
+      "values": [365, 3, 27],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 110,
+      "arm": 2,
+      "stratum": 1,
+      "values": [390, 390, 19],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 111,
+      "arm": 2,
+      "stratum": 1,
+      "values": [410, 410, -22],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 112,
+      "arm": 2,
+      "stratum": 3,
+      "values": [195, 195, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 113,
+      "arm": 2,
+      "stratum": 2,
+      "values": [407, 246, -22],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 114,
+      "arm": 2,
+      "stratum": 2,
+      "values": [204, 204, -36],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 115,
+      "arm": 2,
+      "stratum": 3,
+      "values": [329, 329, 26],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 116,
+      "arm": 2,
+      "stratum": 1,
+      "values": [412, 56, -14],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 117,
+      "arm": 2,
+      "stratum": 1,
+      "values": [211, 211, 16],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 118,
+      "arm": 2,
+      "stratum": 2,
+      "values": [293, 74, 3],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 119,
+      "arm": 2,
+      "stratum": 1,
+      "values": [113, 113, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 120,
+      "arm": 2,
+      "stratum": 3,
+      "values": [371, 213, 1],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 121,
+      "arm": 2,
+      "stratum": 2,
+      "values": [232, 232, 38],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 122,
+      "arm": 2,
+      "stratum": 1,
+      "values": [332, 105, 24],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 123,
+      "arm": 2,
+      "stratum": 1,
+      "values": [23, 23, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 124,
+      "arm": 2,
+      "stratum": 1,
+      "values": [386, 214, -7],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 125,
+      "arm": 2,
+      "stratum": 3,
+      "values": [384, 244, -16],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 126,
+      "arm": 2,
+      "stratum": 3,
+      "values": [339, 131, 14],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 127,
+      "arm": 2,
+      "stratum": 3,
+      "values": [217, 217, 1],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 128,
+      "arm": 2,
+      "stratum": 1,
+      "values": [359, 359, 19],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 129,
+      "arm": 2,
+      "stratum": 3,
+      "values": [354, 354, -3],
+      "events": [0, 0, null]
+    },
+    {
+      "id": 130,
+      "arm": 2,
+      "stratum": 3,
+      "values": [62, 31, -100],
+      "events": [1, 1, null]
+    },
+    {
+      "id": 131,
+      "arm": 2,
+      "stratum": 3,
+      "values": [104, 76, -100],
+      "events": [1, 1, null]
+    },
+    {
+      "id": 132,
+      "arm": 2,
+      "stratum": 1,
+      "values": [369, 338, 33],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 133,
+      "arm": 2,
+      "stratum": 2,
+      "values": [317, 164, 24],
+      "events": [0, 1, null]
+    },
+    {
+      "id": 134,
+      "arm": 2,
+      "stratum": 3,
+      "values": [114, 114, -100],
+      "events": [1, 0, null]
+    },
+    {
+      "id": 135,
+      "arm": 2,
+      "stratum": 3,
+      "values": [302, 302, 13],
+      "events": [0, 0, null]
+    }
+  ],
+  "expected": {
+    "per_endpoint": [
+      {
+        "wins": 235,
+        "losses": 252
+      },
+      {
+        "wins": 408,
+        "losses": 239
+      },
+      {
+        "wins": 208,
+        "losses": 104
+      }
+    ],
+    "win_ratio": {
+      "WR": 1.4302521008403359,
+      "WR_L": 0.93604826926368101,
+      "WR_U": 2.1853798988030082
+    },
+    "net_benefit": {
+      "NB": 0.17089452603471289,
+      "NB_L": -0.033716866494785391,
+      "NB_U": 0.37550591856421117
+    },
+    "win_odds": {
+      "WO": 1.4122383252818032,
+      "WO_L": 0.93796103193303415,
+      "WO_U": 2.1263325655272465
+    },
+    "z": {
+      "zstat_WR": 1.6544233955628536,
+      "zstat_NB": 1.6369915283910272,
+      "zstat_WO": 1.6532128158336761
+    },
+    "p": {
+      "pvalue_WR": 0.098041516139615759,
+      "pvalue_NB": 0.10163223969388246,
+      "pvalue_WO": 0.098287559117818279
+    },
+    "finkelstein_schoenfeld": {
+      "statistic": 256,
+      "variance": 23499.165414185314,
+      "z": 1.6699895215261751,
+      "p_two_sided": 0.094921436799945455
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
   MERCH_PRODUCTS,
@@ -70,12 +70,12 @@ export function MerchView() {
           <li className="break-words">
             The artwork is CC0, a public domain dedication. You can also print
             your own from the{" "}
-            <Link
+            <IntentLink
               href="/work/laser-loon"
               className="underline decoration-zinc-600 underline-offset-4 hover:text-amber-400"
             >
               free vector files
-            </Link>
+            </IntentLink>
             .
           </li>
         </ul>

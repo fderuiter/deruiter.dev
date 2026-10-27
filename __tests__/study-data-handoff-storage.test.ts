@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createUsdmHandoff } from "@/lib/clinical-standards";
 import {
   STUDY_DATA_HANDOFF_KEY,
   STUDY_DATA_HANDOFF_PATH,
@@ -42,11 +43,9 @@ describe("study-data handoff storage", () => {
     useSessionStorage(storage);
     const usdm = { usdmVersion: "4.0.0", study: { name: "S" } };
     expect(storeStudyHandoff(usdm)).toBeNull();
-    expect(JSON.parse(storage.getItem(STUDY_DATA_HANDOFF_KEY)!)).toEqual({
-      version: 1,
-      source: "crf-studio",
-      usdm,
-    });
+    expect(JSON.parse(storage.getItem(STUDY_DATA_HANDOFF_KEY)!)).toEqual(
+      createUsdmHandoff(usdm, { source: "crf-studio", target: "study-data" })
+    );
     expect(takeStudyHandoff()).toEqual({ status: "found", usdm });
     expect(storage.getItem(STUDY_DATA_HANDOFF_KEY)).toBeNull();
     expect(takeStudyHandoff()).toEqual({ status: "missing" });
@@ -59,12 +58,30 @@ describe("study-data handoff storage", () => {
   it.each([
     ["not JSON", "{"],
     [
-      "another payload version",
-      JSON.stringify({ version: 2, source: "crf-studio", usdm: {} }),
+      "the version 1 payload",
+      JSON.stringify({ version: 1, source: "crf-studio", usdm: {} }),
     ],
     [
-      "another source",
-      JSON.stringify({ version: 1, source: "elsewhere", usdm: {} }),
+      "an envelope from another tool",
+      JSON.stringify(
+        createUsdmHandoff({}, { source: "study-data", target: "study-data" })
+      ),
+    ],
+    [
+      "an envelope for another tool",
+      JSON.stringify(
+        createUsdmHandoff({}, { source: "crf-studio", target: "crf-studio" })
+      ),
+    ],
+    [
+      "an envelope whose study was changed after hashing",
+      JSON.stringify({
+        ...createUsdmHandoff(
+          { study: { name: "A" } },
+          { source: "crf-studio", target: "study-data" }
+        ),
+        usdm: { study: { name: "B" } },
+      }),
     ],
     ["null", "null"],
   ])("treats %s as unreadable and still removes it", (_label, raw) => {

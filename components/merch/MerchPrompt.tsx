@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { IconShoppingBag } from "@tabler/icons-react";
 import { MERCH_STORE_STATUS } from "@/lib/merch-data";
 
@@ -16,7 +16,7 @@ interface MerchPromptProps {
 export function MerchPrompt({ liveLabel, className = "" }: MerchPromptProps) {
   const live = MERCH_STORE_STATUS === "live";
   return (
-    <Link
+    <IntentLink
       href="/merch"
       className={`inline-flex min-h-12 items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-4 py-2 text-sm text-zinc-200 transition hover:border-amber-400/60 hover:text-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:scale-[0.98] ${className}`}
     >
@@ -24,6 +24,6 @@ export function MerchPrompt({ liveLabel, className = "" }: MerchPromptProps) {
       <span className="min-w-0 break-words">
         {live ? liveLabel : "Laser Loon merch, coming soon at cost"}
       </span>
-    </Link>
+    </IntentLink>
   );
 }

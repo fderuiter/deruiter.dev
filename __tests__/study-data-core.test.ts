@@ -603,6 +603,24 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).toContain("name: study-data-core-recorded-findings");
   });
 
+  // #3090: lib/clinical-standards holds the profile, USDM schema and CT both
+  // exports build on, so a change there must run CORE on the PR and on main.
+  it("runs on every module the validated exports are built from", () => {
+    const filters = [...workflow.matchAll(/paths:\n((?:\s+- ".*"\n)+)/g)].map(
+      (match) => match[1]
+    );
+    expect(filters).toHaveLength(2);
+    for (const filter of filters) {
+      for (const dir of [
+        "lib/study-data",
+        "lib/crf",
+        "lib/clinical-standards",
+      ]) {
+        expect(filter).toContain(`- "${dir}/**"`);
+      }
+    }
+  });
+
   it("reconciles, publishes the summary and uploads the reports", () => {
     expect(workflow).toContain(
       "npx --no-install tsx scripts/study-data-core.ts reconcile"

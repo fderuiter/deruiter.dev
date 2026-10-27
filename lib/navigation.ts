@@ -204,6 +204,19 @@ const PLATFORM_TOOL_ITEMS: NavItem[] = [
   },
 ];
 
+/** Evidence about the clinical work as a whole, not one journey step. */
+const CLINICAL_EVIDENCE_ITEMS: NavItem[] = [
+  {
+    id: "clinical-standards",
+    title: "Standards Conformance",
+    subtitle: "Every CDISC standard, its version and what checked it",
+    href: "/clinical/standards",
+    icon: "shield",
+    tone: "amber",
+    badge: "CDISC",
+  },
+];
+
 const LABS_ITEMS: NavItem[] = [
   {
     id: "proof-workspace",
@@ -472,9 +485,16 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         label: "Platform tools",
         items: PLATFORM_TOOL_ITEMS,
       },
+      { id: "evidence", label: "Evidence", items: CLINICAL_EVIDENCE_ITEMS },
     ],
     activeWhen: {
-      exact: ["/clinical", "/crf", "/protocol-drift", "/study-data"],
+      exact: [
+        "/clinical",
+        "/clinical/standards",
+        "/crf",
+        "/protocol-drift",
+        "/study-data",
+      ],
       prefixes: ["/platform", "/m/crf"],
     },
   },

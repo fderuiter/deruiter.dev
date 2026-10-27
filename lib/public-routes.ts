@@ -28,6 +28,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     name: "Clinical Journey Overview",
     category: "top-level",
   },
+  {
+    path: "/clinical/standards",
+    name: "CDISC Standards Conformance Matrix",
+    category: "tool",
+  },
   { path: "/labs", name: "Labs Overview", category: "top-level" },
   { path: "/proof", name: "Formal Proof Studio", category: "tool" },
   { path: "/m/proof", name: "Mobile Formal Proof Studio", category: "tool" },

@@ -147,3 +147,12 @@ The top bar keeps six items.
   fallback now shows one trail. The
   Operations dashboard's drill-down path is labelled "Dashboard level", so
   each page has a single Breadcrumb landmark.
+
+## Amendment 2026-10-27: an Evidence section under Clinical
+
+[#2992](https://github.com/fderuiter/deruiter.dev/issues/2992) step 6 adds the
+standards conformance matrix at `/clinical/standards`. It is about the
+clinical work as a whole, not one journey step, and it is not a Clinical Data
+Platform tool, so the Clinical menu gains a third section, "Evidence", after
+Platform tools. The page sits under `/clinical`, so its breadcrumb is Clinical,
+then Standards Conformance. No other group changes.

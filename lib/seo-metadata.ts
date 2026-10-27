@@ -32,6 +32,23 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  clinicalStandards: {
+    title: "CDISC Standards Conformance Matrix",
+    description:
+      "Each CDISC standard a synthetic clinical data pipeline uses, the version it is pinned to, the newest published, and what CDISC CORE and local rules found.",
+    path: "/clinical/standards",
+    keywords: [
+      "CDISC",
+      "CDISC CORE",
+      "SDTM",
+      "ADaM",
+      "USDM",
+      "Conformance Rules",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   labs: {
     title: "Labs: Studios and Simulators",
     description:

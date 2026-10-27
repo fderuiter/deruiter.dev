@@ -57,7 +57,7 @@ describe("navigation structure (#1842, #2952)", () => {
   });
 
   it("lists the clinical journey's pages in journey order, then the platform tools", () => {
-    const [journey, tools] = getNavGroup("clinical").sections;
+    const [journey, tools, evidence] = getNavGroup("clinical").sections;
     const pages = CLINICAL_JOURNEY.filter(
       (step) => !step.href.startsWith("/case-studies/")
     );
@@ -70,6 +70,8 @@ describe("navigation structure (#1842, #2952)", () => {
     expect(tools.items.every((i) => i.href.startsWith("/platform/"))).toBe(
       true
     );
+    expect(evidence.label).toBe("Evidence");
+    expect(evidence.items.map((i) => i.href)).toEqual(["/clinical/standards"]);
   });
 
   it("puts the studios and non-clinical simulators under Labs", () => {

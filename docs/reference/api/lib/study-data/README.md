@@ -440,6 +440,12 @@ Re-exports [ConformanceDomainSummary](types/interfaces/ConformanceDomainSummary.
 
 ***
 
+### conformanceLayers
+
+Re-exports [conformanceLayers](internal/core/layers/functions/conformanceLayers.md)
+
+***
+
 ### ConformanceOutcome
 
 Re-exports [ConformanceOutcome](internal/conformance/run-conformance/interfaces/ConformanceOutcome.md)
@@ -497,6 +503,12 @@ Re-exports [CoreFinding](internal/core/recorded/interfaces/CoreFinding.md)
 ### CoreFindingExample
 
 Re-exports [CoreFindingExample](internal/core/recorded/interfaces/CoreFindingExample.md)
+
+***
+
+### coreRuleStates
+
+Re-exports [coreRuleStates](internal/core/layers/functions/coreRuleStates.md)
 
 ***
 
@@ -938,6 +950,12 @@ Re-exports [KM_CONFIDENCE_LEVEL](internal/tlf/km/variables/KM_CONFIDENCE_LEVEL.m
 
 ***
 
+### LayerEvidence
+
+Re-exports [LayerEvidence](internal/core/layers/interfaces/LayerEvidence.md)
+
+***
+
 ### leafId
 
 Re-exports [leafId](internal/export/oids/functions/leafId.md)
@@ -1334,9 +1352,27 @@ Re-exports [rowSetRowIds](internal/tlf/row-ids/functions/rowSetRowIds.md)
 
 ***
 
+### RULE\_STATES
+
+Re-exports [RULE_STATES](internal/core/layers/variables/RULE_STATES.md)
+
+***
+
 ### RuleIssue
 
 Re-exports [RuleIssue](internal/conformance/rules/interfaces/RuleIssue.md)
+
+***
+
+### RuleLayer
+
+Re-exports [RuleLayer](internal/core/layers/interfaces/RuleLayer.md)
+
+***
+
+### RuleState
+
+Re-exports [RuleState](internal/core/layers/type-aliases/RuleState.md)
 
 ***
 

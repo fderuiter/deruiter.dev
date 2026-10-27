@@ -7,6 +7,7 @@ Canonical origin: https://deruiter.dev. The full architectural dossier, with cas
 ## Clinical
 
 - [Clinical Data, End to End: The Journey](https://deruiter.dev/clinical): One synthetic study followed from case report forms through SDTM, ADaM and study tables to a governed portfolio, with the evidence behind each step.
+- [CDISC Standards Conformance Matrix](https://deruiter.dev/clinical/standards): Each CDISC standard a synthetic clinical data pipeline uses, the version it is pinned to, the newest published, and what CDISC CORE and local rules found.
 - [CRF Studio: Clinical Form Designer](https://deruiter.dev/crf): Build clinical research forms, add validation rules, and try them with sample data. Explore a browser-based study designer by Fred de Ruiter.
 - [Clinical Data Platform Architecture](https://deruiter.dev/platform): Explore a synthetic clinical sponsor portfolio, its governed data architecture, and a capability map linking live demonstrations with planned evidence.
 - [Self-Service Clinical Metrics Explorer](https://deruiter.dev/platform/explore): Pick a governed clinical metric, group and filter it only the ways its semantic layer allows, and see its chart, data table, definition and generated SQL.

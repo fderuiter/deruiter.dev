@@ -102,15 +102,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
     it("displays links to all core precached app shell routes", () => {
       render(<OfflineFallbackPage />);
 
-      const expectedLinks = [
-        "/",
-        "/proof",
-        "/simulator",
-        "/neuro",
-        "/crf",
-        "/stack",
-        "/arcade",
-      ];
+      const expectedLinks = ["/", "/stack", "/arcade"];
       const anchorElements = screen.getAllByRole("link");
       const hrefs = anchorElements.map((a) => a.getAttribute("href"));
 

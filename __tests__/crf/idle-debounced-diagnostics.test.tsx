@@ -11,8 +11,8 @@ import { useDebouncedDiagnostics } from "@/hooks/useDebouncedDiagnostics";
 import { DiagnosticsDrawer } from "@/components/crf/DiagnosticsDrawer";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { StudyProtocol, CRFForm } from "@/lib/crf/types";
-import * as astEvaluator from "@/lib/crf/ast-evaluator";
-import * as conformanceLinter from "@/lib/crf/cdisc-conformance-linter";
+import * as astEvaluator from "@/lib/crf";
+import * as conformanceLinter from "@/lib/crf";
 
 describe("Targeted Main-Thread Idle Scheduling & Debounced Diagnostic Badge Suite", () => {
   let container: HTMLDivElement;

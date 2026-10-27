@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { StudyProtocolEngine } from "@/lib/crf/study-engine";
 import {
+  StudyProtocolEngine,
   explainCalculationDerivation,
   lintForm,
-} from "@/lib/crf/ast-evaluator";
+} from "@/lib/crf";
 import type { StudyProtocol, CRFForm, CRFField } from "@/lib/crf/types";
 
 describe("CRF Usability Foundation - Slice 2 Suite", () => {

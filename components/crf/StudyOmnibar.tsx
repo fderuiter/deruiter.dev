@@ -25,7 +25,7 @@ import {
   type OmnibarAction,
   type OmnibarCategory,
   type OmnibarEntry,
-} from "@/lib/crf/study-omnibar";
+} from "@/lib/crf";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";

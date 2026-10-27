@@ -2,16 +2,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { exportStudyToSas, exportFormToSas } from "@/lib/crf/export-sas";
-import { exportStudyToR, exportFormToR } from "@/lib/crf/export-r";
 import {
+  exportStudyToSas,
+  exportFormToSas,
+  exportStudyToR,
+  exportFormToR,
   generateAcrfHtml,
   generateStudyAcrfBookHtml,
-} from "@/lib/crf/export-acrf";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
-import { exportFormToFhirQuestionnaire } from "@/lib/crf/fhir-questionnaire";
+  exportStudyToCdiscOdmXml,
+  exportFormToFhirQuestionnaire,
+  consultationUrl,
+} from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
-import { consultationUrl } from "@/lib/crf/export-annotations";
 
 const SCHEDULE = consultationUrl();
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";

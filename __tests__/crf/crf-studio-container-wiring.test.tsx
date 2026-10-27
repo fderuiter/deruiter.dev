@@ -1,5 +1,13 @@
 import React from "react";
-import type { FormCatalogEntry } from "@/lib/crf/form-catalog";
+import {
+  type FormCatalogEntry,
+  ALL_SLASH_COMMANDS,
+  type CRFField,
+  type CRFForm,
+  type StudyBaseline,
+  type StudyProtocol,
+  getOncologyPresetSync,
+} from "@/lib/crf";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   act,
@@ -9,14 +17,6 @@ import {
   screen,
 } from "@testing-library/react";
 import { fromPartial } from "@total-typescript/shoehorn";
-import {
-  ALL_SLASH_COMMANDS,
-  type CRFField,
-  type CRFForm,
-  type StudyBaseline,
-  type StudyProtocol,
-  getOncologyPresetSync,
-} from "@/lib/crf";
 import { CRFStudioContainer } from "@/components/crf/CRFStudioContainer";
 import { resetStubs, stubArgs, stubProps } from "./studio-stubs";
 

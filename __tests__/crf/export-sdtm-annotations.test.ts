@@ -3,11 +3,13 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
-import { generateSdtmMappingMatrix } from "@/lib/crf/export-acrf";
-import { exportStudyToSas } from "@/lib/crf/export-sas";
-import { exportStudyToR } from "@/lib/crf/export-r";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
-import { exportFormToFhirQuestionnaire } from "@/lib/crf/fhir-questionnaire";
+import {
+  generateSdtmMappingMatrix,
+  exportStudyToSas,
+  exportStudyToR,
+  exportStudyToCdiscOdmXml,
+  exportFormToFhirQuestionnaire,
+} from "@/lib/crf";
 import { resolveBaseUrl } from "@/lib/domain";
 
 /**
@@ -35,7 +37,7 @@ describe("[#1203] exports annotate SDTM targets and use absolute links", () => {
   it("never picks sdtmVariable as the annotation in the PDF or DOCX writers", () => {
     for (const file of ["export-pdf.ts", "export-docx.ts", "export-acrf.ts"]) {
       const src = fs.readFileSync(
-        path.resolve(process.cwd(), "lib/crf", file),
+        path.resolve(process.cwd(), "lib/crf/internal", file),
         "utf8"
       );
       expect(src, file).not.toMatch(/cdashMetadata\?\.sdtmVariable\s*\|\|/);

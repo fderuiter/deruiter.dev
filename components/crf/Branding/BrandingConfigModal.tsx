@@ -3,10 +3,7 @@
 import { standardCitation } from "@/lib/clinical-standards";
 import React, { useState, useRef } from "react";
 import { StudyBranding } from "@/lib/crf/types";
-import {
-  BRANDING_PRESETS,
-  DEFAULT_STUDY_BRANDING,
-} from "@/lib/crf/branding-defaults";
+import { BRANDING_PRESETS, DEFAULT_STUDY_BRANDING } from "@/lib/crf";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { safeSetRawItem } from "@/lib/safe-storage";
 import {

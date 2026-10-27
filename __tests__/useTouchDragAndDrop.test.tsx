@@ -1,4 +1,4 @@
-import { buildFormCatalog } from "@/lib/crf/form-catalog";
+import { buildFormCatalog } from "@/lib/crf";
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {

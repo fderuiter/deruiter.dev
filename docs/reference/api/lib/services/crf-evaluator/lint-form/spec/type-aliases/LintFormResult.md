@@ -6,4 +6,4 @@
 
 # Type Alias: LintFormResult
 
-> **LintFormResult** = [`ServiceResult`](../../../../service-result/type-aliases/ServiceResult.md)\<[`DiagnosticItem`](../../../../../crf/form-linter/interfaces/DiagnosticItem.md)[], [`LintFormErrorCode`](LintFormErrorCode.md)\>
+> **LintFormResult** = [`ServiceResult`](../../../../service-result/type-aliases/ServiceResult.md)\<[`DiagnosticItem`](../../../../../crf/internal/form-linter/interfaces/DiagnosticItem.md)[], [`LintFormErrorCode`](LintFormErrorCode.md)\>

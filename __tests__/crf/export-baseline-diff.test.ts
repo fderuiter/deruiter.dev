@@ -8,8 +8,8 @@ import {
   exportBaselineDiffCsv,
   exportBaselineDiffJson,
   exportBaselineDiffText,
-} from "@/lib/crf/export-baseline-diff";
-import type { BaselineComparisonResult } from "@/lib/crf/study-baseline-diff";
+  type BaselineComparisonResult,
+} from "@/lib/crf";
 
 vi.mock("@/lib/download", () => ({
   downloadFile: vi.fn().mockReturnValue(true),

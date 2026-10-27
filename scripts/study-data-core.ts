@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,7 +30,7 @@ import {
   type ScenarioId,
 } from "../lib/study-data";
 import { STUDY_PRESETS } from "../lib/crf/presets";
-import { exportStudyToUsdmObject } from "../lib/crf/usdm-adapter";
+import { exportStudyToUsdmObject } from "../lib/crf";
 
 /**
  * CDISC CORE check of the Study Data Pipeline's outputs (#2603).
@@ -735,7 +734,7 @@ export function renderCrfReconciliation(
     lines.push(
       "## Unexplained findings",
       "",
-      "Fix the export in `lib/crf/usdm-adapter.ts`, or add a `crf-usdm` entry with a reason to `" +
+      "Fix the export in `lib/crf/internal/usdm-adapter.ts`, or add a `crf-usdm` entry with a reason to `" +
         ALLOWLIST_FILE +
         "`.",
       "",

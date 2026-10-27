@@ -52,8 +52,6 @@ import {
   exportUniversalCrfYaml,
   fillSampleValues,
   generateStudyAcrfBookHtml,
-  generateStudyDocx,
-  generateStudyPdf,
   loadStudyDraft,
   parseUniversalCrf,
   runFormTest,
@@ -66,6 +64,8 @@ import {
   STUDY_DRAFT_STORAGE_KEY,
   type StudyProtocol,
 } from "../lib/crf";
+import { generateStudyDocx } from "../lib/crf/export-docx";
+import { generateStudyPdf } from "../lib/crf/export-pdf";
 import type { RawStorage } from "../lib/safe-storage";
 import {
   summarizeTimings,

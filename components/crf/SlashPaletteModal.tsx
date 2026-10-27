@@ -33,7 +33,7 @@ import {
   SlashCommandCategory,
   searchSlashCommands,
   CLINICAL_SMART_BLOCKS,
-} from "@/lib/crf/smart-blocks-engine";
+} from "@/lib/crf";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface SlashPaletteModalProps {

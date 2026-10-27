@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import type jsPDF from "jspdf";
-import { generateStudyPdf, generateFormPdf } from "@/lib/crf";
+import { generateStudyPdf, generateFormPdf } from "@/lib/crf/export-pdf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { StudyBranding } from "@/lib/crf/types";
 import { createNearFooterSectionStudy } from "./pdf-export-fixtures";

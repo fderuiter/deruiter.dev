@@ -28,12 +28,10 @@ import {
   executeDiffCommand,
   ansi,
   CliExecutionOptions,
-} from "../lib/crf/cli-engine";
-import { StudyProtocolEngine } from "../lib/crf/study-engine";
-import {
+  StudyProtocolEngine,
   parseUniversalCrf,
   exportUniversalCrfJson,
-} from "../lib/crf/universal-schema";
+} from "../lib/crf";
 
 const DEFAULT_FILE = "study.crf.json";
 

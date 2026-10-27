@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, startTransition } from "react";
 import { StudyProtocol } from "@/lib/crf/types";
-import { lintForm } from "@/lib/crf/ast-evaluator";
+import { lintForm } from "@/lib/crf";
 
 export interface UseDebouncedDiagnosticsOptions {
   debounceMs?: number;
@@ -57,7 +57,10 @@ export function useDebouncedDiagnostics(
 
   const recalculateImmediately = (): number => {
     cancelPending();
-    const count = studyRef.current.forms.reduce((acc, f) => acc + lintForm(f).length, 0);
+    const count = studyRef.current.forms.reduce(
+      (acc, f) => acc + lintForm(f).length,
+      0
+    );
     setTotalIssues(count);
     setIsPending(false);
     return count;
@@ -89,7 +92,10 @@ export function useDebouncedDiagnostics(
         if (!isMountedRef.current) return;
         const currentStudy = studyRef.current;
         // Requirement 4: Preserve object reference identity without worker message cloning
-        const count = currentStudy.forms.reduce((acc, f) => acc + lintForm(f).length, 0);
+        const count = currentStudy.forms.reduce(
+          (acc, f) => acc + lintForm(f).length,
+          0
+        );
 
         // Requirement 2: Schedule diagnostic badge updates using non-blocking transition wrappers
         startTransition(() => {

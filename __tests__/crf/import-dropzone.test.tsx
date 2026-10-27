@@ -9,7 +9,7 @@ import { fromAny } from "@total-typescript/shoehorn";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ImportDropzone } from "@/components/crf/ImportDropzone";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
+import { exportStudyToCdiscOdmXml } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 
 describe("ImportDropzone - Drag and Drop File Upload Component", () => {

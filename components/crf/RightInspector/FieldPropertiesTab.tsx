@@ -7,7 +7,7 @@ import {
   CodelistOption,
   ClinicalDataType,
 } from "@/lib/crf/types";
-import { validateCdashVariableName } from "@/lib/crf/precision-date";
+import { validateCdashVariableName } from "@/lib/crf";
 import { generateId } from "@/lib/utils";
 import { AstRuleEditor } from "./AstRuleEditor";
 import {

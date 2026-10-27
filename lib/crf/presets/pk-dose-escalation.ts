@@ -3,7 +3,7 @@ import {
   PRESET_ID_STAMP,
   STANDARD_CODELISTS,
   scaffoldCdashDomain,
-} from "../cdisc-cdash-library";
+} from "../internal/cdisc-cdash-library";
 
 const PK_SAMPLING_FORM: CRFForm = {
   id: "form_pk_esc",

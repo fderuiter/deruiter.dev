@@ -7,7 +7,7 @@ import {
 import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol } from "@/lib/crf/types";
-import type { SdtmMappingRow } from "@/lib/crf/export-acrf";
+import { type SdtmMappingRow, getStudyBranding } from "@/lib/crf";
 import {
   IconFileCode,
   IconPrinter,
@@ -16,7 +16,6 @@ import {
   IconPalette,
   IconFileSpreadsheet,
 } from "@tabler/icons-react";
-import { getStudyBranding } from "@/lib/crf/branding-defaults";
 
 interface AcrfOverlayViewerProps {
   study: StudyProtocol;
@@ -48,7 +47,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    import("@/lib/crf/export-acrf").then(
+    import("@/lib/crf").then(
       ({
         generateSdtmMappingMatrix,
         generateStudyAcrfBookHtml,
@@ -77,7 +76,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
     let htmlContent = acrfHtml;
     if (!htmlContent) {
       const { generateStudyAcrfBookHtml, generateAcrfHtml } =
-        await import("@/lib/crf/export-acrf");
+        await import("@/lib/crf");
       htmlContent =
         viewMode === "study_book"
           ? generateStudyAcrfBookHtml(study, { mode: "annotated", branding })

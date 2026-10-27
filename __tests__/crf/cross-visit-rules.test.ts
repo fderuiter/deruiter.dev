@@ -10,8 +10,8 @@ import {
   calculateRecistSldChange,
   evaluateCondition,
   evaluateRule,
-} from "@/lib/crf/ast-evaluator";
-import { evaluateMatrixFormObligations } from "@/lib/crf/cross-visit-rules";
+  evaluateMatrixFormObligations,
+} from "@/lib/crf";
 import { CRFField, EditCheckRule, StudyVisit } from "@/lib/crf/types";
 
 describe("AST Clinical Calculations & Cross-Visit Logic Engine", () => {

@@ -6,10 +6,10 @@ import {
   STUDY_DRAFT_STORAGE_KEY,
   STUDY_DRAFT_CORRUPT_BACKUP_KEY,
   STUDY_DRAFT_ENVELOPE_VERSION,
-} from "@/lib/crf/study-draft-storage";
+  listStudyBaselines,
+  loadPersonalLibrary,
+} from "@/lib/crf";
 import type { StudyProtocol } from "@/lib/crf/types";
-import { listStudyBaselines } from "@/lib/crf/study-baselines";
-import { loadPersonalLibrary } from "@/lib/crf/personal-library";
 
 // Regression coverage for #657: authors must be able to recover their most
 // recently acknowledged local draft after a refresh, and a corrupt or

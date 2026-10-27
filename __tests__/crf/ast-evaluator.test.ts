@@ -17,7 +17,7 @@ import {
   calculateBazettQTc,
   calculateFridericiaQTc,
   calculateRecistSldChange,
-} from "@/lib/crf/ast-evaluator";
+} from "@/lib/crf";
 import { CRFField, EditCheckRule, CRFForm } from "@/lib/crf/types";
 
 describe("CRF Studio - AST Formula & Rule Evaluator", () => {

@@ -25,9 +25,8 @@ import {
 } from "./types";
 import { AMENDMENT_PRESETS, MOCK_OBSERVATION_TEMPLATES } from "./scenarios";
 import { getAuditYearSpawnFactor } from "./escalation";
-import { evaluateCondition, evaluateRule } from "../crf/ast-evaluator";
+import { evaluateCondition, evaluateRule, StudyProtocolEngine } from "../crf";
 import { EditCheckRule, StudyProtocol, CRFField } from "../crf/types";
-import { StudyProtocolEngine } from "../crf/study-engine";
 
 export function createInitialScoreState(): GameScoreState {
   return {

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { importStudyFromCsvSpec } from "@/lib/crf/csv-spec-parser";
+import { importStudyFromCsvSpec } from "@/lib/crf";
 
 describe("CRF Studio - CSV Study Specification Parser", () => {
   it("parses structured CSV study specifications into valid StudyProtocol", () => {

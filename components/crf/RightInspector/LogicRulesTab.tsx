@@ -8,10 +8,9 @@ import {
   AstCondition,
   ConditionGroup,
 } from "@/lib/crf/types";
-import { explainRule } from "@/lib/crf/ast-evaluator";
+import { explainRule, describeRuleLogic } from "@/lib/crf";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { AstRuleEditor } from "./AstRuleEditor";
-import { describeRuleLogic } from "@/lib/crf/rule-wires";
 import { RuleWireEditor } from "./RuleWireEditor";
 
 interface LogicRulesTabProps {

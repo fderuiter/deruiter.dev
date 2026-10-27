@@ -10,20 +10,18 @@ import {
   SubjectFormStatus,
   EdcSimulationState,
 } from "@/lib/crf/types";
-import { evaluateRule } from "@/lib/crf/ast-evaluator";
 import {
+  evaluateRule,
   resolveFormConditionalState,
   describeFieldConditionalState,
-} from "@/lib/crf";
-import { useCrfService } from "@/hooks/useCrfService";
-import { generateId } from "@/lib/utils";
-import {
   parsePrecisionDate,
   formatPrecisionDate,
   isCdiscNullFlavor,
   validatePrecisionDate,
   CDISC_NULL_FLAVORS,
-} from "@/lib/crf/precision-date";
+} from "@/lib/crf";
+import { useCrfService } from "@/hooks/useCrfService";
+import { generateId } from "@/lib/utils";
 import { NoPhiNotice } from "../NoPhiNotice";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import {

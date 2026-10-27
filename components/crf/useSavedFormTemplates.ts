@@ -5,7 +5,7 @@ import {
   FORM_TEMPLATES_STORAGE_KEY,
   parseStoredFormTemplates,
   type FormTemplate,
-} from "@/lib/crf/form-templates";
+} from "@/lib/crf";
 import { STORAGE_CHANGE_EVENT, safeGetRawItem } from "@/lib/safe-storage";
 
 function subscribe(onChange: () => void) {

@@ -9,7 +9,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FieldPropertiesTab } from "@/components/crf/RightInspector/FieldPropertiesTab";
 import { CRFField } from "@/lib/crf/types";
-import { STANDARD_CODELISTS } from "@/lib/crf/cdisc-cdash-library";
+import { STANDARD_CODELISTS } from "@/lib/crf";
 import {
   A11yProvider,
   LiveAnnouncer,

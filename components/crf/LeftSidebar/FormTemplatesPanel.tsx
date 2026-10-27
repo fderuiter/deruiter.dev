@@ -13,7 +13,7 @@ import {
   exportFormTemplates,
   importFormTemplates,
   type FormTemplate,
-} from "@/lib/crf/form-templates";
+} from "@/lib/crf";
 import { downloadFile } from "@/lib/download";
 import { useSavedFormTemplates } from "../useSavedFormTemplates";
 

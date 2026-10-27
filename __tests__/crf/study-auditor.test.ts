@@ -1,10 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import {
-  StudyAuditor,
-  AuditDiagnostic,
-  StudyAuditReport,
-} from "@/lib/crf/study-auditor";
+import { StudyAuditor, AuditDiagnostic, StudyAuditReport } from "@/lib/crf";
 import { StudyProtocol, CRFForm, CRFField } from "@/lib/crf/types";
 import { getOncologyPresetSync, getStudyPresetsSync } from "@/lib/crf/presets";
 

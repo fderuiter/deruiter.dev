@@ -8,7 +8,8 @@ import { getOncologyPresetSync } from "@/lib/crf/presets";
 // tab never went idle. Counting regenerations proves the effect settles.
 const generateSdtmMappingMatrix = vi.fn(() => []);
 
-vi.mock("@/lib/crf/export-acrf", () => ({
+vi.mock("@/lib/crf", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/crf")>()),
   generateSdtmMappingMatrix: () => generateSdtmMappingMatrix(),
   generateStudyAcrfBookHtml: () => "<p>book</p>",
   generateAcrfHtml: () => "<p>form</p>",

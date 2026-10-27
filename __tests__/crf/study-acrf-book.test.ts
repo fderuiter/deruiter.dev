@@ -4,7 +4,7 @@ import {
   generateAcrfHtml,
   generateStudyAcrfBookHtml,
   generateSdtmMappingMatrix,
-} from "@/lib/crf/export-acrf";
+} from "@/lib/crf";
 import {
   ONCOLOGY_RECIST_PRESET,
   CLINICAL_INSTRUMENTS_PRESET,

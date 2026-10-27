@@ -17,7 +17,7 @@
   "rules": {
     "sdtm": {
       "CORE-000001": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0176, TIG0405",
         "fda": "",
         "message": "IEORRES is not equal to 'N' when IECAT equals 'INCLUSION'."
@@ -77,7 +77,7 @@
         "message": "ARMCD value length is greater than 20"
       },
       "CORE-000011": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0175, TIG0404",
         "fda": "",
         "message": "IEORRES is not equal to 'Y' when IECAT equals 'EXCLUSION'."
@@ -161,7 +161,7 @@
         "message": "--BODSYS is not empty and --BDSYCD is empty"
       },
       "CORE-000025": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0177, TIG0406",
         "fda": "",
         "message": "IESTRESC is not equal to IEORRES"
@@ -1343,13 +1343,13 @@
         "message": "--DTHREL must never be used in SDTM-based data for human clinical trials"
       },
       "CORE-000227": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0178, TIG0407",
         "fda": "",
         "message": "IETEST is not in TI.IETEST"
       },
       "CORE-000228": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0179, TIG0408",
         "fda": "",
         "message": "IETESTCD from IE domain does not exist in IETESTCD of TI domain."
@@ -1697,7 +1697,7 @@
         "message": "ARMCD and ARM do not have a one-to-one relationship."
       },
       "CORE-000321": {
-        "status": "SUCCESS",
+        "status": "ISSUE REPORTED",
         "cdisc": "",
         "fda": "FB3201",
         "message": "Study Day of Visit/Collection/Exam (--DY) variable is missing when Date/Time of Collection (--DTC) is present."
@@ -2393,7 +2393,7 @@
         "message": "--CLASCD and --CLAS do not have a one-to-one relationship."
       },
       "CORE-000793": {
-        "status": "SUCCESS",
+        "status": "ISSUE REPORTED",
         "cdisc": "",
         "fda": "FB1601",
         "message": "Collection study day (--DY) is missing when date/time of collection (--DTC) is populated."
@@ -3844,7 +3844,7 @@
   },
   "views": {
     "default": {
-      "inputSha256": "b283af78a1fd60204c0c926a193db48f0782861f3192919c85d2285c7726769e",
+      "inputSha256": "bd1b836712338b5972c31a6a6b278f548b9d1d4a3dbbc579ac5fd059507ebd47",
       "sdtm": {
         "lines": [
           "CORE-000264 MH DEMO-301-0001#1 MHTERM=Hypertension|MHBODSYS=Vascular disorders|MHSOC=Not in dataset",
@@ -3867,6 +3867,7 @@
           "CORE-000264 MH DEMO-301-0012#1 MHTERM=Hypertension|MHBODSYS=Vascular disorders|MHSOC=Not in dataset",
           "CORE-000264 MH DEMO-301-0012#2 MHTERM=Type 2 diabetes mellitus|MHBODSYS=Metabolism and nutrition disorders|MHSOC=Not in dataset",
           "CORE-000264 MH DEMO-301-0012#3 MHTERM=Appendicitis|MHBODSYS=Infections and infestations|MHSOC=Not in dataset",
+          "CORE-000321 IE -#- IEDY=Not in dataset|IEDTC=2029-12-25",
           "CORE-000328 MH -#- MHSTDY=Not in dataset|MHSTDTC=2025-03",
           "CORE-000701 AE DEMO-301-0027#1 EPOCH=null",
           "CORE-000701 AE DEMO-301-0034#1 EPOCH=null",
@@ -3982,12 +3983,14 @@
           "CORE-000767 MH DEMO-301-0012#2 RELREC.FAOBJ=Not in dataset|MHDECOD=Type 2 diabetes mellitus",
           "CORE-000767 MH DEMO-301-0012#3 RELREC.FAOBJ=Not in dataset|MHDECOD=Appendicitis",
           "CORE-000776 MH -#- MHENDY=Not in dataset|MHENDTC=null",
+          "CORE-000793 IE -#- IEDTC=2029-12-25|IEDY=Not in dataset",
           "CORE-000929 SUPPDM -#- -",
           "CORE-001080 TS -#- -",
           "CORE-001081 SUPPDM -#- -"
         ],
         "counts": {
           "CORE-000264 MH": 152,
+          "CORE-000321 IE": 1,
           "CORE-000328 MH": 1,
           "CORE-000701 AE": 6,
           "CORE-000701 CM": 76,
@@ -3998,6 +4001,7 @@
           "CORE-000767 DS": 261,
           "CORE-000767 MH": 152,
           "CORE-000776 MH": 1,
+          "CORE-000793 IE": 1,
           "CORE-000929 SUPPDM": 1,
           "CORE-001080 TS": 1,
           "CORE-001081 SUPPDM": 1
@@ -4073,7 +4077,7 @@
       }
     },
     "impossible-date": {
-      "inputSha256": "7ba2ce34fbad12f0936b6385b5208530e27bec2262de6871bf09eee585d2021e",
+      "inputSha256": "6f8b1aaa3e93d45262ca6b3ceb0d3c1c917720caf1b36fe81354fe8f3ebd403f",
       "added": {
         "lines": [
           "CORE-000701 AE DEMO-301-0003#1 EPOCH=null"
@@ -4089,7 +4093,7 @@
       "status": {}
     },
     "partial-end-date": {
-      "inputSha256": "f382a4141cadf1d01c4bc0bbcf98f54537bd0ba5621a72685acb77ad5bfaaeac",
+      "inputSha256": "15d2c5d645db544c1bb2866eddb60ef6aa38f6aac961e4d3eeac5eb2f6152b58",
       "added": {
         "lines": [],
         "counts": {}
@@ -4101,7 +4105,7 @@
       "status": {}
     },
     "ae-before-first-dose": {
-      "inputSha256": "a14fc960e91227aa4311c14ad6ab25438fa292f08081ca1e541dedf85296503e",
+      "inputSha256": "cdcaeb77110650acff60eeaabde233f175a39be4f8ebd42212703f4c77c69672",
       "added": {
         "lines": [],
         "counts": {}
@@ -4113,7 +4117,7 @@
       "status": {}
     },
     "missing-baseline": {
-      "inputSha256": "29d8ee520c63dda72856f614290b5c67e5baf706c8623965cfcd9fd8c5a77971",
+      "inputSha256": "5723b8453283567e51e23f5a45bb8a170ae1f52f7f5bca85aa356133c7870da1",
       "added": {
         "lines": [],
         "counts": {}
@@ -4125,7 +4129,7 @@
       "status": {}
     },
     "no-post-baseline": {
-      "inputSha256": "29c3adee49ba58551d89e33d19aa41e824190f1470eb04f591a4073a90da4195",
+      "inputSha256": "a722b6509f08a320278af3253c5805feaa84485c77bc521257e7f0ef54654a19",
       "added": {
         "lines": [],
         "counts": {}
@@ -4137,7 +4141,7 @@
       "status": {}
     },
     "off-codelist-extensible": {
-      "inputSha256": "ddf7c0f1b3b4f2ef8799e40a54a90a834e0711c99c81a1a42528d8004c3a001c",
+      "inputSha256": "57b7b686d843641db5972268b285d5bad4bc3c09a09b7febb98ab1e4c805f05c",
       "added": {
         "lines": [],
         "counts": {}
@@ -4149,7 +4153,7 @@
       "status": {}
     },
     "off-codelist-non-extensible": {
-      "inputSha256": "b821933496086faa3f6451d9c90ec143fd878d8e856a8a6e0243c57f8a9324cd",
+      "inputSha256": "82cf061c68e8b2427260b2e4ec542121a5fff60b7d03d2146de0a5e205eadb15",
       "added": {
         "lines": [],
         "counts": {}
@@ -4161,7 +4165,7 @@
       "status": {}
     },
     "duplicate-record": {
-      "inputSha256": "d08631fbb0429c63692155bb77663eab624de8f89e7ad6f51883d96d00ba6aff",
+      "inputSha256": "b2b0f2b28a149fbfc48210a839ee01ca50f1f8039e668fb5667552725e125d02",
       "added": {
         "lines": [],
         "counts": {}
@@ -4173,7 +4177,7 @@
       "status": {}
     },
     "unit-change": {
-      "inputSha256": "db508553dff5db8bd15777968fb845b5b07b13c79c1f20719a8fa9f009b1093b",
+      "inputSha256": "47876f11576ffcb98a6416d1d12a59817b5e2c4e3f333f99380444f151d5db7e",
       "added": {
         "lines": [],
         "counts": {}
@@ -4185,7 +4189,7 @@
       "status": {}
     },
     "lab-retest-same-day": {
-      "inputSha256": "b12d06bcc9f65cc8ed5308a4831c411de09f875b4c9380cbbda244ddae9dcc0c",
+      "inputSha256": "4ce39457f192ce6d283498dc32be228ab5f2df2cbec5b7396c650ce639ba12b0",
       "added": {
         "lines": [],
         "counts": {}
@@ -4197,7 +4201,7 @@
       "status": {}
     },
     "unscheduled-visit-in-window": {
-      "inputSha256": "03250ec216b59bfbc89ef04776c732375d4e6347e4db9ed4eca1af1a03db318d",
+      "inputSha256": "dbc6e01cf513a1b0ba980e3d7bb48519cda69accec2f091c3034c61a3d878f18",
       "added": {
         "lines": [],
         "counts": {}
@@ -4209,7 +4213,7 @@
       "status": {}
     },
     "rescreened-subject": {
-      "inputSha256": "4bacce961fe2c70dec96434df7a2e9bebaabb35cd78a35f282830c6e71c5dc25",
+      "inputSha256": "c6e7d57a71c6aed78f244ca6720b96a04e79f431f1d35e5bfc6040bea6fa4436",
       "added": {
         "lines": [
           "CORE-000186 DM -#- SUBJID=0001",
@@ -4412,7 +4416,7 @@
       }
     },
     "death-during-treatment": {
-      "inputSha256": "45b3911e2b1775a2e927d90fe46cb54eaa03efd8982b4a9bcf4fdab019f051ed",
+      "inputSha256": "c16762fc88b6bec65bbe328c6f970f96b747e59fc7a628eedc591bc428e91b56",
       "added": {
         "lines": [
           "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=DEATH"
@@ -4432,7 +4436,7 @@
       "status": {}
     },
     "withdrawal-before-week-12": {
-      "inputSha256": "66338ae8d902bb13402f5d0a327360de56c5e535b4502be63fb654a84c77ed15",
+      "inputSha256": "b5583a25e89889116e75174a8fb9eebeccfa4b1dae4208ddfd775647970e0ab1",
       "added": {
         "lines": [
           "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=WITHDRAWAL BY SUBJECT"
@@ -4452,7 +4456,7 @@
       "status": {}
     },
     "qtcf-outlier": {
-      "inputSha256": "1b94a6bbfcfd23714389590d10339bf41a0f163f438af37d666d3455582695e3",
+      "inputSha256": "4715010dfd06fa2bcdd8df0bbac4b88c0fae5756c0411e6c6086df2bde1bd873",
       "added": {
         "lines": [],
         "counts": {}
@@ -4464,7 +4468,7 @@
       "status": {}
     },
     "ecg-missing-rr": {
-      "inputSha256": "d4ff367adb672c20e5e9489002dc81e5d9093ee8f5dbe42cdfaa3df645388663",
+      "inputSha256": "cf4b8fca7c20894518dad7c3c73b45d2c87a49fc6fbc92e00ba225f14b01cf54",
       "added": {
         "lines": [],
         "counts": {}

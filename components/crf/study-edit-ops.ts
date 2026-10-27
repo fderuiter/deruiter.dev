@@ -8,10 +8,12 @@ import {
   type StudyVisit,
   type TestScenario,
   assessScenarioFreshness,
+  assignFormsToVisit,
   generateCdashVariableName,
   generateEngineId,
   getOncologyPresetSync,
   loadStudyDraft,
+  unassignFormsFromVisit,
 } from "@/lib/crf";
 
 /**
@@ -139,35 +141,24 @@ export function withUniqueVariableNames(
   };
 }
 
+/** Binds a form to a visit through the operation the CLI also uses. */
 export function assignFormToVisit(
   study: StudyProtocol,
   visitId: string,
   formId: string
 ): StudyProtocol {
-  const visits = study.visits.map((v) => {
-    if (v.id !== visitId) return v;
-    if (v.assignedFormIds.includes(formId)) return v;
-    return {
-      ...v,
-      assignedFormIds: [...v.assignedFormIds, formId],
-    };
-  });
-  return { ...study, visits };
+  const result = assignFormsToVisit(study, visitId, [formId]);
+  return result.ok ? result.study : study;
 }
 
+/** Unbinds a form from a visit through the operation the CLI also uses. */
 export function unassignFormFromVisit(
   study: StudyProtocol,
   visitId: string,
   formId: string
 ): StudyProtocol {
-  const visits = study.visits.map((v) => {
-    if (v.id !== visitId) return v;
-    return {
-      ...v,
-      assignedFormIds: v.assignedFormIds.filter((id) => id !== formId),
-    };
-  });
-  return { ...study, visits };
+  const result = unassignFormsFromVisit(study, visitId, [formId]);
+  return result.ok ? result.study : study;
 }
 
 /** The next scheduled visit, 28 days after the last, carrying every non-log form. */

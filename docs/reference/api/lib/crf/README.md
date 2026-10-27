@@ -80,6 +80,12 @@ Re-exports [assessScenarioFreshness](internal/scenario-impact/functions/assessSc
 
 ***
 
+### assignFormsToVisit
+
+Re-exports [assignFormsToVisit](internal/schedule-ops/functions/assignFormsToVisit.md)
+
+***
+
 ### AstCondition
 
 Re-exports [AstCondition](types/interfaces/AstCondition.md)
@@ -2918,6 +2924,12 @@ Re-exports [ScheduleDriftAnalysis](internal/visit-window/interfaces/ScheduleDrif
 
 ***
 
+### ScheduleOpResult
+
+Re-exports [ScheduleOpResult](internal/schedule-ops/type-aliases/ScheduleOpResult.md)
+
+***
+
 ### scoreOmnibarEntry
 
 Re-exports [scoreOmnibarEntry](internal/study-omnibar/functions/scoreOmnibarEntry.md)
@@ -3383,6 +3395,12 @@ Re-exports [tokenizeWithSpans](internal/formula-linter/functions/tokenizeWithSpa
 ### TokenType
 
 Re-exports [TokenType](internal/expression-evaluator/type-aliases/TokenType.md)
+
+***
+
+### unassignFormsFromVisit
+
+Re-exports [unassignFormsFromVisit](internal/schedule-ops/functions/unassignFormsFromVisit.md)
 
 ***
 

@@ -118,7 +118,9 @@ describe("ADaM ADCM (#2962)", () => {
     for (const variable of adcmDataset.variables) {
       if (variable.origin !== "Derived") continue;
       expect(variable.method, variable.name).toBeDefined();
-      expect(ADAM_METHODS[variable.method!]).toBeTruthy();
+      expect(
+        ADAM_METHODS[variable.method as keyof typeof ADAM_METHODS]
+      ).toBeTruthy();
     }
   });
 

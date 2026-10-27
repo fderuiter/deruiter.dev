@@ -43,6 +43,21 @@ const CT_VERSION = CLINICAL_STANDARDS_PROFILE.CT.packageDate;
 const MEDRT_SYSTEM = "http://va.gov/terminology/medrt";
 const MEDRT_VERSION = "2026.10.05";
 
+/** The NCI Thesaurus, for concepts that no CDISC CT package publishes. */
+const NCIT_SYSTEM = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl";
+const NCIT_VERSION = "26.09d";
+
+function ncit(id: string, code: string, decode: string): UsdmV4Code {
+  return {
+    id,
+    code,
+    codeSystem: NCIT_SYSTEM,
+    codeSystemVersion: NCIT_VERSION,
+    decode,
+    instanceType: "Code",
+  };
+}
+
 function ct(id: string, code: string, decode: string): UsdmV4Code {
   return {
     id,
@@ -226,7 +241,7 @@ function administration(interventionId: string, name: string): UsdmV4Procedure {
     label: null,
     description: `Once-daily oral ${name}.`,
     procedureType: "Medication Administration",
-    code: ct(`${id}_code`, "C128534", "Medication Administration"),
+    code: ncit(`${id}_code`, "C128534", "Medication Administration"),
     studyInterventionId: interventionId,
     instanceType: "Procedure",
   };
@@ -560,7 +575,7 @@ const EPOCHS = [
     id: "epoch_screening",
     name: "SCREENING",
     label: "Screening",
-    type: ct("epoch_screening_type", "C48262", "Screening"),
+    type: ct("epoch_screening_type", "C202487", "Screening"),
   },
   {
     id: "epoch_treatment",
@@ -572,7 +587,7 @@ const EPOCHS = [
     id: "epoch_followup",
     name: "FOLLOW-UP",
     label: "Follow-up",
-    type: ct("epoch_followup_type", "C99158", "Follow-Up"),
+    type: ct("epoch_followup_type", "C202578", "Follow-Up"),
   },
 ];
 

@@ -36,7 +36,9 @@ describe("clinical standards profile", () => {
     expect(Object.isFrozen(CLINICAL_STANDARDS_PROFILE)).toBe(true);
     expect(Object.isFrozen(CLINICAL_STANDARDS_PROFILE.CT)).toBe(true);
     expect(CLINICAL_STANDARDS_PROFILE.CT.scope).toBe("local subset");
-    expect(CLINICAL_STANDARDS_PROFILE.CT.verifiedAgainst).toBeUndefined();
+    expect(CLINICAL_STANDARDS_PROFILE.CT.verifiedAgainst).toBe(
+      `NCI EVS CDISC SDTM, ADaM and DDF Terminology ${CLINICAL_STANDARDS_PROFILE.CT.packageDate}`
+    );
   });
 
   it("is where every consumer's version comes from", () => {

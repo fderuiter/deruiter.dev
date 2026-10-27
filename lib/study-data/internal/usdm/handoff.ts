@@ -381,7 +381,7 @@ function narrowDesign(
         name: "SCREENING",
         label: "Screening",
         description: null,
-        type: ct(`${SCREENING_EPOCH_ID}_type`, "C48262", "Screening"),
+        type: ct(`${SCREENING_EPOCH_ID}_type`, "C202487", "Screening"),
         previousId: null,
         nextId: TREATMENT_EPOCH_ID,
         instanceType: "StudyEpoch",

@@ -3,11 +3,12 @@
  * and ADaM variables point to through `VariableMeta.codelist`, and from which
  * Define-XML writes its CodeLists.
  *
- * The CDISC entries are hand-curated. Their NCI codes were looked up in the
- * NCI EVS CDISC SDTM and ADaM terminology text exports on 2026-10-24. The
- * subset is aligned to the CT package date in `STANDARD_VERSIONS` but has not
- * been verified against that package, so it is not a claim of conformance to
- * it. Sponsor-defined entries carry no NCI code.
+ * The CDISC entries are hand-curated. `__tests__/cdisc-ct-release.test.ts`
+ * checks each codelist's NCI code, publishing set and extensibility, and each
+ * term's submission value and NCI code, against the NCI EVS release of the
+ * CT package date in `STANDARD_VERSIONS`. The subset covers only what the
+ * pipeline uses, so it is not a claim of conformance to the whole package.
+ * Sponsor-defined entries carry no NCI code.
  */
 
 /** One term of a codelist. */
@@ -298,7 +299,7 @@ const CODELISTS = [
 
 /**
  * The local controlled terminology subset, in the order Define-XML writes
- * it. Not verified against the NCI EVS package; see the module comment.
+ * it. Checked against the NCI EVS release; see the module comment.
  */
 export const CONTROLLED_TERMINOLOGY: readonly TerminologyCodelist[] =
   Object.freeze(CODELISTS);

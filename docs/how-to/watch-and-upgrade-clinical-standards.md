@@ -77,6 +77,11 @@ codes, and no IG text. When that file changes, the workflow records it on a
 `chore/cdisc-library-sync-<hash>` pull request the same way the standards
 watch does (`scripts/open-bot-pr.sh`).
 
+A free CDISC Library key allows five calls a day, so the sync builds the
+two product paths from the pinned versions and makes at most four calls
+(`MAX_LIBRARY_CALLS`). A 401 or 403 means the key was not accepted, and a
+429 means the day's calls are used up.
+
 The key is passed only to the step that reads the Library. The site, its
 build and its tests read the committed file, so none of them need the key.
 

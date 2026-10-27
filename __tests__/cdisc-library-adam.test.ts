@@ -6,7 +6,8 @@ import {
   collectVariables,
   crawlProduct,
   linkHrefs,
-  pickAdamProducts,
+  adamProductPaths,
+  MAX_LIBRARY_CALLS,
   serializeMetadata,
 } from "../scripts/cdisc-library-adam";
 
@@ -79,13 +80,16 @@ describe("CDISC Library ADaM metadata (#2992 step 7)", () => {
     expect(linkHrefs(products)).toContain("/mdr/adam/adam-occds-1-0");
   });
 
-  it("picks the pinned ADaMIG and OCCDS, and names what is listed when one is missing", () => {
-    expect(pickAdamProducts(products, { adamig: "1.3", occds: "1.0" })).toEqual(
-      { adamig: "/mdr/adam/adamig-1-3", occds: "/mdr/adam/adam-occds-1-0" }
-    );
-    expect(() =>
-      pickAdamProducts(products, { adamig: "1.4", occds: "1.0" })
-    ).toThrow(/no ADaMIG 1\.4\. ADaM products listed: \/mdr\/adam\/adam-2-1/);
+  it("builds the pinned products' paths without spending a call", () => {
+    expect(adamProductPaths({ adamig: "1.3", occds: "1.0" })).toEqual({
+      adamig: "/mdr/adam/adamig-1-3",
+      occds: "/mdr/adam/adam-occds-1-0",
+    });
+  });
+
+  it("fits a sync within a free key's five calls a day", () => {
+    expect(MAX_LIBRARY_CALLS).toBeLessThan(5);
+    expect(MAX_LIBRARY_CALLS % 2).toBe(0);
   });
 
   it("reads variables by structure from an embedded product", () => {
@@ -144,10 +148,14 @@ describe("CDISC Library ADaM metadata (#2992 step 7)", () => {
       },
     };
     const requested: string[] = [];
-    const found = await crawlProduct(async (href) => {
-      requested.push(href);
-      return pages[href];
-    }, "/mdr/adam/adam-occds-1-0");
+    const found = await crawlProduct(
+      async (href) => {
+        requested.push(href);
+        return pages[href];
+      },
+      "/mdr/adam/adam-occds-1-0",
+      4
+    );
     expect(found.get("OCCDS")?.map((v) => `${v.name}:${v.core}`)).toEqual([
       "AEDECOD:Req",
       "TRTEMFL:Cond",

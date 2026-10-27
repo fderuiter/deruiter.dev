@@ -877,6 +877,160 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>CDISC CORE is CDISC's open-source engine. Running it here does not imply CDISC endorsement.</p>
 `.trim(),
   },
+  {
+    id: "fallback-blog-17",
+    slug: "merging-is-not-releasing",
+    title: "Merging Is Not Releasing",
+    dek: "This site used to ship whenever I remembered to press a button. Now it ships once a week, and a release only counts after the live site has passed its checks.",
+    pillar: "field-notes",
+    tags: "release-engineering, change-control, ci, github-actions, vercel, engineering-practice",
+    published: true,
+    reading_time_minutes: 6,
+    hero_image_url: null,
+    created_at: new Date("2026-10-27T13:00:00.000Z"),
+    updated_at: new Date("2026-10-27T13:00:00.000Z"),
+    body: `
+<h2>What a release used to be</h2>
+<p>Until 26 October, production shipped when I opened the Vercel dashboard and pressed Create Deployment. About fourteen commits reach main on a typical day. I released five times between 4 and 19 October, and the last version tag was v0.4.1, from 30 September. If you had asked which version was live, the honest answer was a commit SHA from <code>/api/version</code> and whatever I remembered about it.</p>
+<p>Clinical systems often have the same shape. Each change is reviewed and tested on its own, but the release, the moment changes reach the people using them, rests on one person's memory. Change control asks a release four questions: what changed, who decided it should ship, what evidence showed it worked, and how do we get back. A pull request answers them for one change. Nothing answered them for the batch that went live.</p>
+
+<h2>Merges never deploy</h2>
+<p>The first rule is that a merge does nothing to production. <code>vercel.json</code> sets <code>git.deploymentEnabled</code> to <code>false</code>, so merges and branch pushes never start a build. Production ships from one GitHub Actions workflow, the weekly release train, every Sunday evening at 7 PM Central. I can also start it by hand.</p>
+<p>The train checks its gates in order and stops at the first that fails:</p>
+<ul>
+  <li>It runs only while a repository variable says it is on, and not at all while any open issue carries the <code>release:hold</code> label.</li>
+  <li>The candidate is the head of main. If the live site already serves it, there is nothing to release.</li>
+  <li>The repository's required check, Merge Gate, must have passed on that exact commit.</li>
+  <li>A script reads every database migration added between the live commit and the candidate and flags statements that would break the running app: dropped tables or columns, renames, new NOT NULL constraints, type changes. A finding holds the release so that I ship it by hand.</li>
+</ul>
+
+<h2>Test the commit you ship</h2>
+<p>This gap was the one I did not see coming. Every pull request passes the full browser suite before it merges. A squash merge then creates a new commit, and CI on main skips the browser jobs, so the commit that ships has never been in a browser. It is almost always the same code as the pull request. "Almost always" is a poor thing to write in a release record.</p>
+<p>So the train builds the candidate itself, with the same bundle budgets as CI, and runs the full Chromium Playwright suite against it in three shards, in the same digest-pinned container image. Those jobs get a read-only token. If they fail, nothing ships and the train opens an issue for me. That issue does not hold next week's train, because production has not changed.</p>
+
+<h2>Publish after production answers</h2>
+<p>With the gates passed, the train drafts a GitHub Release. The version comes from the commit messages since the last tag: a feature bumps the minor number, anything else the patch. It checks that main still points at the candidate, then POSTs a Vercel Deploy Hook. The hook can build main and do nothing else, and its URL is the only production-related value GitHub holds. Database credentials stay in Vercel. The train never holds a Vercel token, never runs a migration and never builds what ships.</p>
+<p>Then it waits up to 40 minutes for <code>/api/version</code> to report the release commit, runs the synthetic probes against the live site, and only after they pass publishes the Release, which creates the tag. If any of that fails, the Release stays a draft and the train opens a <code>release:hold</code> issue assigned to me, which also stops next week's run. A version tag on this repository now records a commit that passed in production.</p>
+<p>v1.0.0 shipped this way on 27 October, from a manual run. Every gate passed, and the Deploy Hook built production while Git deployments were switched off. Vercel does not document that those two work together. The first real run is how we found out, and the decision record says what to do if Vercel changes it.</p>
+
+<h2>The dry run that probed nothing</h2>
+<p>The train has a dry-run mode that probes the live site without drafting or deploying anything. The first dry run finished green. Its smoke-test job had been skipped.</p>
+<p>The probe job's <code>if</code> condition had no status function, so GitHub Actions added an implicit <code>success()</code>, which is false whenever any upstream job was skipped. A dry run always skips the release-candidate jobs. The fix was an explicit condition starting with <code>!cancelled()</code>, and a test now pins it (#3027). A skipped job shows as a grey icon in a green run, and nobody reads grey icons. A gate needs a test that proves it ran.</p>
+
+<h2>What I would keep anywhere</h2>
+<ul>
+  <li>Separate merging from releasing, and give each release its own record: a version, notes, a compare link and the evidence.</li>
+  <li>Test the artifact you ship. If your merge strategy creates a new commit, test that commit.</li>
+  <li>Publish the release record after production has answered, so it describes what happened.</li>
+  <li>Make holding a release cheaper than overriding a check. Here a label on an issue stops the train, and removing it is a deliberate act.</li>
+  <li>Keep the deploy credential narrow. A URL that can only rebuild one branch can do far less harm than a token that can do anything.</li>
+</ul>
+<p>Rollback is still a person, using Vercel's Instant Rollback. None of this makes the site a validated system. It does mean every week's changes have a record a reviewer can follow from the Release to each pull request in it.</p>
+`.trim(),
+  },
+  {
+    id: "fallback-blog-18",
+    slug: "an-export-is-a-claim-until-the-schema-agrees",
+    title: "An Export Is a Claim Until the Official Schema Agrees",
+    dek: "Every form CRF Studio exported failed CDISC's own ODM schema, and nothing on the site had noticed. Here is what turned up when I checked the exports against the standards' own tools.",
+    pillar: "clinical-data-engineering",
+    tags: "cdisc, odm, usdm, ars, controlled-terminology, conformance, ci",
+    published: true,
+    reading_time_minutes: 7,
+    hero_image_url: null,
+    created_at: new Date("2026-10-27T14:00:00.000Z"),
+    updated_at: new Date("2026-10-27T14:00:00.000Z"),
+    body: `
+<h2>Shaped like the standard</h2>
+<p><a href="/crf">CRF Studio</a> builds case report forms and exports them as CDISC ODM XML, the format EDC systems use to exchange study metadata. It also exports a USDM study design. The <a href="/study-data">study data pipeline</a> writes an ARS reporting event that describes its analysis results. All of those files looked right. The element names matched the specifications, the structure was plausible, and our own importer read every file back without complaint.</p>
+<p>Then I checked every preset's ODM export against the official XSD that CDISC publishes. Every one failed, for four reasons:</p>
+<ul>
+  <li>Item definitions carried a <code>CodeListOID</code> attribute where the schema expects a <code>CodeListRef</code> child element.</li>
+  <li>An annotated-CRF element sat inside the item definition, where the schema does not allow it.</li>
+  <li>NCI codes were written as an attribute that neither ODM nor Define-XML defines.</li>
+  <li>The design audit trail was written as ODM elements that do not exist.</li>
+</ul>
+<p>Nothing had caught these because the only reader of the files was our own importer, written alongside the exporter. A round trip proves the two halves agree with each other. Whether either agrees with the standard is a separate question.</p>
+
+<h2>Use the schema the authors publish</h2>
+<p>Each fix was small (#3039). The audit trail moved into a CRF Studio namespace in ODM's extension slot, which is how Define-XML extends ODM, with its own small extension schema. The importer still reads files saved before the change. The test is the part that lasts: every preset is now checked against the vendored official XSD on every run, so the next drift fails CI instead of somebody's import.</p>
+<p>The ARS reporting event got the same treatment (#3045). Checked against the official ARS JSON schema, it failed in five ways. Lineage fields sat on classes that do not define them. Some analyses had no purpose. Nested where clauses had no level or order. Two file types were outside ARS's enumeration. Results carried ids ARS has no place for. The lineage was worth keeping, so it moved to its own file beside the ARS file, and a test proves the two files together rebuild the whole event. The schema test runs over the default study, two other seeds and all sixteen messy-data scenarios.</p>
+
+<h2>Codes that looked right</h2>
+<p>Controlled terminology is where plausible and wrong are hardest to tell apart, because a C-code is a letter and some digits. I swept the 213 NCI codes cited in the site's code against the published NCI EVS release of CDISC terminology (#3050). Some were wrong in ways nobody would catch by eye:</p>
+<ul>
+  <li>The USDM screening and follow-up epochs used general NCI Thesaurus concepts instead of the DDF epoch type terms.</li>
+  <li>The code given for the NYHA class codelist belonged to a different codelist, and the PHQ-9 codelist code belonged to another questionnaire.</li>
+  <li>One concept that exists only in the NCI Thesaurus was filed under the CDISC code system.</li>
+</ul>
+<p>The gate is a script that reads the hash-pinned EVS exports and writes a subset of only the codes the repository cites: 34 codelists and 186 concepts. A test fails if a cited code is not published, if the subset holds a code nothing cites, or if a CRF Studio term is not a term of its own codelist. EVS answers a request for a missing archive with an HTML page instead of an error, so the script also refuses HTML.</p>
+
+<h2>Then the rules engine</h2>
+<p>A schema checks shape. CDISC CORE, the open-source conformance engine CDISC publishes, checks rules on top of it. <a href="/blog/the-engine-checks-the-standard-not-the-study">An earlier post</a> covered running CORE over the study data pipeline. On 27 October we ran its USDM rules over every CRF Studio preset's export as well (#3055). It reported 103 findings, which came down to 19 explanations.</p>
+<p>Three of the nineteen were CORE's own mistakes: a rule that flags next and previous chains that are correct, one that reports a study's only title twice, and one that reports governance dates the export does not contain. Those are recorded as engine limitations, each with its reason. Bending the export to quiet them would have made it worse. The other sixteen were real export defects, among them missing eligibility criteria and five of the six presets with no arms, epochs or cells.</p>
+<p>A follow-up fixed the ones the export code caused (#3061). The sponsor is now named as a study role. Every visit falls in an epoch, an unscheduled one in the epoch of the visit before it. The timeline orders visits the same way the visits order themselves. A one-arm design is labelled single group instead of parallel. That removed seven of the sixteen allowlist entries and narrowed two more. What remains is content CRF Studio does not hold yet, such as eligibility and endpoints, and the allowlist names each gap.</p>
+
+<h2>Check the checker too</h2>
+<p>The three misfires are the part I would point to when someone asks how to evaluate a tool, from a vendor or from your own team. An outside reference is useful only if you read what it says and are willing to disagree with it in writing. A suppressed finding needs a reason a reviewer can read. A finding you cannot explain needs a fix.</p>
+<p>What I would take to any team that exports a standard:</p>
+<ul>
+  <li>Get the official schema and run it in CI. A round trip through your own importer proves consistency with yourself, and that is all.</li>
+  <li>Pin every reference: the schema, the terminology release, the engine version. A result can be reproduced only with its inputs.</li>
+  <li>Check terminology codes against the published release, not a list someone typed once.</li>
+  <li>Treat the reference engine as a second opinion to evaluate. Record its false positives with reasons, and fix everything else.</li>
+</ul>
+<p>CDISC CORE and these schemas are CDISC's. Using them here does not imply CDISC endorsement.</p>
+`.trim(),
+  },
+  {
+    id: "fallback-blog-19",
+    slug: "a-cloud-warehouse-no-visitor-waits-on",
+    title: "A Cloud Warehouse No Visitor Ever Waits On",
+    dek: "The clinical data platform on this site now has an AWS warehouse of record. It runs on free quotas, no stored key can reach it, and no page request ever touches it.",
+    pillar: "clinical-data-engineering",
+    tags: "aws, aurora-dsql, dynamodb, data-warehouse, architecture, governance",
+    published: true,
+    reading_time_minutes: 6,
+    hero_image_url: null,
+    created_at: new Date("2026-10-27T15:00:00.000Z"),
+    updated_at: new Date("2026-10-27T15:00:00.000Z"),
+    body: `
+<h2>The constraints came first</h2>
+<p>The <a href="/platform">clinical data platform</a> on this site runs on a synthetic study warehouse that lives in the browser, in DuckDB. Its cloud side had stayed on paper: an earlier decision record kept the AWS reference design synthesized with nothing deployed, because a live account costs money.</p>
+<p>Two things changed on 26 October. The Vercel Marketplace now provisions some AWS products with short-lived OIDC credentials, and I wanted a version that uses only AWS's permanent monthly free quotas, not trials or credits. Of the seven products on offer, two have one: Aurora DSQL, with 100,000 DPUs and 1 GB of storage a month, and DynamoDB, with 25 GB of storage and 25 read and 25 write capacity units in provisioned mode.</p>
+<p>The other constraint was compute. The site runs on Vercel's Hobby plan, which allows 4 hours of active CPU in 30 days, and it had used about 3 hours 15 minutes. Any design that added a server call per visitor was out.</p>
+
+<h2>Writes from CI, reads at build time</h2>
+<p>The decision, ADR 0070, gives each store one job. DSQL is the warehouse of record: the synthetic gold layer is loaded into it and checked against the DuckDB copy. DynamoDB is to be the run ledger, one item per pipeline or release run, holding versions, hashes and conformance results.</p>
+<p>The rules about who touches them, and when, matter more than the products:</p>
+<ul>
+  <li>Writes come only from GitHub Actions workflows on main, through an OIDC role. No access key exists anywhere. The role may connect to the one cluster, put, query and describe on the one table, and read one CloudWatch metric. A test pins that list so it cannot widen quietly. Pull requests, forks and other branches cannot assume the role.</li>
+  <li>Reads happen only while the production site is built, through the Marketplace's read role. No route handler, server component, revalidation or middleware calls AWS. Visitors get static pages, and the compute budget does not move.</li>
+  <li>A failed read fails the production build, the same rule the site applies to its database and cache. A build without the warehouse variables renders the page without that section. It never fills the gap with invented numbers.</li>
+</ul>
+<p>I would want the same shape in any clinical platform: one automated path writes the system of record, a second one reads it, and nobody writes to it by hand.</p>
+
+<h2>Prove the copy matches</h2>
+<p>Loading a warehouse is easy. Knowing the load is right takes the effort. The load plan (#3004) is pure code. It emits the statements, batched inside DSQL's limit of 3,000 rows per transaction, and a fingerprint for each table from the rows it loads. The loader (#3013) reads every table back, fingerprints what DSQL returns the same way, and writes a load manifest only when every table matches. It empties the manifest before it drops the first table, so a load that dies halfway leaves no manifest at all, rather than an old one that still says everything matched.</p>
+<p>Each fingerprint is a row count, a text length and a hash over the sorted rows, so the order DSQL returns rows in does not matter. It is a change detector, not a cryptographic hash, and the code says so. Making the two sides agree meant spelling out how PostgreSQL renders each type as text: dates as YYYY-MM-DD, booleans as words, and decimals sent as text so that no binary float reaches a NUMERIC column.</p>
+<p>DSQL has limits of its own: no temporary tables, no triggers, no PL/pgSQL, and one DDL statement per transaction. So its DDL is generated on its own instead of being shared with the DuckDB and T-SQL dialects the warehouse already produces.</p>
+
+<h2>An exit plan before the first load</h2>
+<p>The AWS account is on the Free plan: no card, and it closes after six months, around 26 April 2027, unless it is upgraded. The always-free quotas continue only on the paid plan. So the way out is already written down (#3014), with a reminder set for 1 March.</p>
+<p>Leaving is cheap because nothing in AWS is the only copy. The repository regenerates the gold layer, and the run ledger is history. The loader speaks plain PostgreSQL, so the same plan, parity check and manifest can point at a separate Neon schema instead. The plan also lists the clean-up: the integrations, the CloudFormation stack, the repository variables, and an amendment to the decision record that says what moved and why.</p>
+
+<h2>Where it stands</h2>
+<p>The plan, the loader, the role template and the workflow are merged. The first load has not run yet. It waits on a one-time step in the AWS console that creates the role, and then a manual run of the load workflow, which reports how many DPUs the load used. The workflow stays manual until that number is known. The decision record also commits to a monthly check that usage beyond the free quotas is $0.00.</p>
+<p>What I would carry to any regulated cloud platform:</p>
+<ul>
+  <li>Decide the write path and the read path before choosing the database.</li>
+  <li>Store no keys. Use short-lived credentials scoped to one resource, with a test that fails if the policy grows.</li>
+  <li>Fail the build when a source is unreachable, instead of publishing fallback data as if it were real.</li>
+  <li>Prove each load with a read-back, and write the success record last.</li>
+  <li>Write the exit plan while leaving is still cheap.</li>
+</ul>
+`.trim(),
+  },
 ];
 
 /**

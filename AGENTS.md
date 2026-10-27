@@ -221,3 +221,7 @@ Five canonical triage roles matching standard label names (`needs-triage`, `need
 ### Domain docs
 
 Single-context repository using `CONTEXT.md` and `adr/` at root. See `docs/agents/domain.md`.
+
+### Writing
+
+Edit prose with the `humanizer` skill (vendored, pinned in `.claude/skills/humanizer/UPSTREAM.md`) and then the `site-prose` skill for this site's voice and claim rules. `/i-have-adhd` (vendored, opt-in) shapes replies to the person, never site copy. See `docs/agents/writing.md`.

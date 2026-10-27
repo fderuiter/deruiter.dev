@@ -18,6 +18,8 @@ export interface BlogPostData {
   updated_at: Date;
 }
 
+// Edit post prose with the humanizer and site-prose skills in .claude/skills/
+// before it ships; the wording guards in __tests__/ still apply (#3041).
 const rawFallbackBlogPosts: BlogPostData[] = [
   {
     id: "fallback-blog-1",

@@ -17,3 +17,7 @@ Use the five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `r
 ### Domain docs
 
 Single-context repo using root `CONTEXT.md` and relevant ADRs in root `adr/`. See `docs/agents/domain.md`.
+
+### Writing
+
+Edit prose with the `humanizer` skill (vendored, pinned in `.claude/skills/humanizer/UPSTREAM.md`) and then the `site-prose` skill for this site's voice and claim rules. `/i-have-adhd` (vendored, opt-in) shapes replies to the person, never site copy. See `docs/agents/writing.md`.

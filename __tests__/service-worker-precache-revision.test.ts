@@ -46,12 +46,12 @@ describe("Service Worker Precache Revisioning", () => {
     expect(fallbackMatcher).toMatch(/navigator\.onLine/);
   });
 
-  it("precaches the shared public route registry, not a private copy", () => {
-    // The route list moved to lib/public-routes.ts in c0b17b46, which widened
-    // precaching from ten shells to the whole public surface. This fix changes
-    // how those entries are revisioned, not which routes are covered.
-    expect(swCode).toMatch(/PUBLIC_ROUTE_PATHS\.map/);
-    expect(swCode).not.toMatch(/const coreAppShellRoutes/);
+  it("revisions only the offline shell routes, not the whole public registry (#3064)", () => {
+    // c0b17b46 widened precaching from ten shells to every public route, and
+    // the injected manifest added every chunk and public file on top. #3064
+    // narrowed it back to the routes the offline page lists.
+    expect(swCode).toMatch(/OFFLINE_SHELL_ROUTES\.map/);
+    expect(swCode).not.toMatch(/PUBLIC_ROUTE_PATHS/);
   });
 });
 

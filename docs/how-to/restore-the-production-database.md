@@ -56,9 +56,10 @@ database grows.
 
 ## Limitations you cannot engineer around on this plan
 
-1. **Six hours is the whole window.** An incident discovered on a Monday morning
-   that began Sunday night is not recoverable. This is the single largest gap in
-   the recovery posture and no procedure below mitigates it.
+1. **Six hours is the whole window inside Neon.** An incident discovered on a
+   Monday morning that began Sunday night is not recoverable from Neon alone.
+   The weekly encrypted backup covers older incidents, at up to a week of data
+   loss; see [Back up the production database](back-up-the-production-database.md).
 2. **No snapshot schedule exists.** `list_snapshots` returns `[]`. Manual
    snapshots are possible and expire; nothing creates them automatically.
 3. **One role, no least privilege.** `neondb_owner` has full read/write and is

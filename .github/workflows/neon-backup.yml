@@ -1,0 +1,99 @@
+name: Neon Backup
+
+# #3036: Neon's free plan keeps only six hours of point-in-time history and no
+# snapshots, so an incident noticed the next morning is unrecoverable. This
+# takes a weekly logical backup of the production database a couple of hours
+# before Sunday's release train, so every release has a restore point taken
+# before its migrations run.
+#
+# The dump is encrypted with age before it leaves the runner. Artifacts of a
+# public repository can be downloaded by any signed-in GitHub user, so only
+# ciphertext is uploaded; the private key never touches GitHub. It runs in
+# Actions, never on Vercel, so it costs no Fluid CPU.
+#
+# Needs, from docs/how-to/back-up-the-production-database.md:
+# - secret NEON_BACKUP_DATABASE_URL: direct (unpooled) connection string for
+#   the read-only backup_reader role
+# - variable BACKUP_AGE_RECIPIENT: the age public key (age1...)
+
+on:
+  schedule:
+    # Sunday 23:00 UTC, two hours before the weekly train (Monday 01:00 UTC).
+    - cron: "0 23 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: neon-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Encrypted pg_dump of production
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEON_BACKUP_DATABASE_URL: ${{ secrets.NEON_BACKUP_DATABASE_URL }}
+      BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+
+    steps:
+      - name: Check configuration
+        run: |
+          if [ -z "$NEON_BACKUP_DATABASE_URL" ] || [ -z "$BACKUP_AGE_RECIPIENT" ]; then
+            echo "::error::Set the secret NEON_BACKUP_DATABASE_URL and the variable BACKUP_AGE_RECIPIENT (docs/how-to/back-up-the-production-database.md)."
+            exit 1
+          fi
+          case "$BACKUP_AGE_RECIPIENT" in
+            age1*) ;;
+            *) echo "::error::BACKUP_AGE_RECIPIENT must be an age public key (age1...)."; exit 1 ;;
+          esac
+
+      - name: Install age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+
+      - name: Dump, verify and encrypt
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y-%m-%dT%H%MZ)"
+          plain="$RUNNER_TEMP/neon-$stamp.dump"
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          mkdir -p backup
+
+          # pg_dump must match the server's major version (Neon runs 17). The
+          # image digest matches the CI migration-replay service.
+          docker run --rm -v "$RUNNER_TEMP:/out" \
+            -e URL="$NEON_BACKUP_DATABASE_URL" -e OUT="/out/$(basename "$plain")" \
+            postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --schema=public --file="$OUT" "$URL"'
+
+          # A dump pg_restore cannot list is not a backup.
+          tables="$(docker run --rm -v "$RUNNER_TEMP:/out" \
+            postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f \
+            pg_restore --list "/out/$(basename "$plain")" | grep -c ' TABLE DATA ' || true)"
+          if [ "$tables" -lt 1 ]; then
+            echo "::error::The dump lists no table data."
+            exit 1
+          fi
+
+          age --encrypt --recipient "$BACKUP_AGE_RECIPIENT" \
+            --output "backup/neon-$stamp.dump.age" "$plain"
+          shred -u "$plain"
+
+          {
+            echo "### Neon backup $stamp"
+            echo ""
+            echo "| Tables with data | Encrypted size | SHA-256 |"
+            echo "| --- | --- | --- |"
+            echo "| $tables | $(du -h "backup/neon-$stamp.dump.age" | cut -f1) | \`$(sha256sum "backup/neon-$stamp.dump.age" | cut -c1-16)…\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: neon-backup-${{ env.STAMP }}
+          path: backup/
+          retention-days: 90
+          if-no-files-found: error

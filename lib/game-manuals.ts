@@ -2119,7 +2119,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Switch modes",
         description:
-          "Use the mode bar (Canvas, Form Grid, Matrix, AST Rules, Live EDC, aCRF Viewer, Exports), or press 1 to 7.",
+          "Use the mode bar (Design: Canvas, Form Grid, AST Rules; Schedule: Matrix; Verify and ship: Live EDC, aCRF Viewer, Exports), or press 1 to 7.",
         key: "1 to 7",
       },
       {

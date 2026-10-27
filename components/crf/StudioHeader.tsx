@@ -40,6 +40,12 @@ import {
   IconArrowRight,
 } from "@tabler/icons-react";
 import { getStudyBranding } from "@/lib/crf/branding-defaults";
+import {
+  STUDIO_MODE_ORDER,
+  STUDIO_STAGES,
+  modeShortcut,
+  nextStepFor,
+} from "./studio-stages";
 import { safeSetRawItem } from "@/lib/safe-storage";
 import {
   STUDY_DATA_HANDOFF_PATH,
@@ -178,11 +184,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     tabRefs.current[nextMode]?.focus();
   };
 
-  const MODES: {
+  const MODE_DETAILS: {
     mode: StudioMode;
     label: string;
     shortLabel: string;
-    shortcut: string;
     /** Plain-language tooltip for visitors who don't know the CDISC terms. */
     description: string;
     icon: React.ReactNode;
@@ -191,7 +196,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "designer",
       label: "Form Designer",
       shortLabel: "Canvas",
-      shortcut: "1",
       description: "Build the open form: add, arrange and configure fields",
       icon: <IconLayoutGrid className="w-3.5 h-3.5" />,
     },
@@ -199,7 +203,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "grid",
       label: "Active Form Grid",
       shortLabel: "Form Grid",
-      shortcut: "2",
       description: "Edit every field of the open form in one table",
       icon: <IconFileSpreadsheet className="w-3.5 h-3.5" />,
     },
@@ -207,7 +210,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "matrix",
       label: "Visit Matrix (SoA)",
       shortLabel: "Matrix (SoA)",
-      shortcut: "3",
       description:
         "Schedule of Assessments: which forms are collected at which visit",
       icon: <IconCalendar className="w-3.5 h-3.5" />,
@@ -216,7 +218,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "rules",
       label: "Logic & AST Rules",
       shortLabel: "AST Rules",
-      shortcut: "4",
       description: "Edit checks and show/hide logic, drawn as a graph",
       icon: <IconMathFunction className="w-3.5 h-3.5" />,
     },
@@ -224,7 +225,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "edc",
       label: "Live EDC Simulation",
       shortLabel: "Live EDC",
-      shortcut: "5",
       description:
         "Enter test data as a clinical site would and see the checks fire",
       icon: <IconShieldCheck className="w-3.5 h-3.5" />,
@@ -233,7 +233,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "acrf",
       label: "Annotated aCRF",
       shortLabel: "aCRF Viewer",
-      shortcut: "6",
       description:
         "The annotated CRF: each question tagged with its SDTM variable",
       icon: <IconFileCode className="w-3.5 h-3.5" />,
@@ -242,12 +241,21 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       mode: "export",
       label: "CDISC / Exports",
       shortLabel: "Exports",
-      shortcut: "7",
       description:
         "Download the study as JSON, ODM-XML, SAS, R, FHIR, Word or PDF",
       icon: <IconCode className="w-3.5 h-3.5" />,
     },
   ];
+
+  // Stage order (Design, Schedule, Verify and ship) decides the tab order and
+  // each mode's number-key shortcut.
+  const MODES = STUDIO_MODE_ORDER.map((mode) => ({
+    ...MODE_DETAILS.find((item) => item.mode === mode)!,
+    shortcut: modeShortcut(mode),
+  }));
+  const modesOf = (stageModes: readonly StudioMode[]) =>
+    MODES.filter((item) => stageModes.includes(item.mode));
+  const nextStep = nextStepFor(activeMode);
 
   const headerObserverRef = useResizeObserver<HTMLElement>(
     (entry) => {
@@ -795,60 +803,102 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           value={activeMode}
           onChange={(event) => onChangeMode(event.target.value as StudioMode)}
           aria-label="Studio mode"
-          className="sm:hidden min-w-0 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+          className="sm:hidden min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
         >
-          {MODES.map((item) => (
-            <option key={item.mode} value={item.mode}>
-              {item.shortLabel}
-            </option>
+          {STUDIO_STAGES.map((stage) => (
+            <optgroup key={stage.id} label={stage.label}>
+              {modesOf(stage.modes).map((item) => (
+                <option key={item.mode} value={item.mode}>
+                  {item.shortLabel}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
-        {/* Left Side: 6 Segmented Mode Navigation Pills */}
+        {/* Left Side: the seven modes, grouped into three stages */}
         <nav
           role="tablist"
           aria-label="Studio Mode Navigation"
           data-tour="modes"
           className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 min-w-0"
         >
-          {MODES.map((item) => {
-            const isActive = activeMode === item.mode;
-            return (
-              <button
-                ref={(node) => {
-                  tabRefs.current[item.mode] = node;
-                }}
-                key={item.mode}
-                role="tab"
-                aria-selected={isActive}
-                tabIndex={isActive ? 0 : -1}
-                onClick={() => onChangeMode(item.mode)}
-                onKeyDown={(e) => handleModeKeyDown(e, item.mode)}
-                title={`${item.description} (${item.shortcut})`}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 ${
-                  isActive
-                    ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent"
-                }`}
-              >
-                {item.icon}
-                <span className="hidden 2xl:inline">{item.label}</span>
-                <span className="hidden sm:inline 2xl:hidden">
-                  {item.shortLabel}
-                </span>
-                <span className="sm:hidden">{item.shortLabel}</span>
+          {STUDIO_STAGES.map((stage, stageIndex) => (
+            <div
+              key={stage.id}
+              role="presentation"
+              data-stage={stage.id}
+              className="flex items-center gap-1 shrink-0"
+            >
+              {stageIndex > 0 && (
                 <span
-                  className={`text-[9px] px-1 py-0.2 rounded font-mono hidden 2xl:inline-block ${
-                    isActive
-                      ? "bg-brand-cyan/25 text-brand-cyan font-bold"
-                      : "bg-zinc-900 text-zinc-600"
-                  }`}
-                >
-                  {item.shortcut}
-                </span>
-              </button>
-            );
-          })}
+                  aria-hidden="true"
+                  className="mx-1 h-4 w-px bg-zinc-800 shrink-0"
+                />
+              )}
+              <span
+                aria-hidden="true"
+                className="hidden lg:inline text-[10px] font-mono uppercase tracking-wider text-zinc-400 whitespace-nowrap"
+              >
+                {stage.label}
+              </span>
+              {modesOf(stage.modes).map((item) => {
+                const isActive = activeMode === item.mode;
+                return (
+                  <button
+                    ref={(node) => {
+                      tabRefs.current[item.mode] = node;
+                    }}
+                    key={item.mode}
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => onChangeMode(item.mode)}
+                    onKeyDown={(e) => handleModeKeyDown(e, item.mode)}
+                    title={`${item.description} (${item.shortcut})`}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 ${
+                      isActive
+                        ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent"
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="hidden 2xl:inline">{item.label}</span>
+                    <span className="hidden sm:inline 2xl:hidden">
+                      {item.shortLabel}
+                    </span>
+                    <span className="sm:hidden">{item.shortLabel}</span>
+                    <span
+                      className={`text-[9px] px-1 py-0.2 rounded font-mono hidden 2xl:inline-block ${
+                        isActive
+                          ? "bg-brand-cyan/25 text-brand-cyan font-bold"
+                          : "bg-zinc-900 text-zinc-600"
+                      }`}
+                    >
+                      {item.shortcut}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
+
+        {/* The one step to take next, so the stages read as a path. */}
+        <button
+          type="button"
+          onClick={() =>
+            nextStep.kind === "mode"
+              ? onChangeMode(nextStep.mode)
+              : void sendToPipeline()
+          }
+          disabled={nextStep.kind === "pipeline" && isSendingToPipeline}
+          data-testid="studio-next-step"
+          className="inline-flex items-center gap-1 px-2.5 py-2 sm:py-1 rounded-lg border border-amber-800/50 bg-amber-950/30 text-amber-200 hover:bg-amber-900/40 text-[11px] font-mono font-semibold whitespace-nowrap shrink-0 transition-colors disabled:opacity-60 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-brand-cyan outline-none"
+        >
+          <span className="hidden md:inline text-amber-400/80">Next:</span>
+          {nextStep.label}
+          <IconArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
 
         {/* Right Side: In-Studio Terminal Toggle & Workspace Sidebar Toggles */}
         <div className="hidden sm:flex items-center gap-1.5 shrink-0">

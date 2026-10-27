@@ -1414,6 +1414,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-clinical-standards",
+        title: "Standards Conformance",
+        subtitle:
+          "Every CDISC standard, its pinned and published version, and what checked it.",
+        category: "navigation",
+        url: "/clinical/standards",
+        icon: <IconShieldCheck className="h-4 w-4 text-amber-400" />,
+        badge: "CDISC",
+        status: "Evidence",
+        description:
+          "The conformance matrix: each pinned CDISC standard against the newest published version, and each rule family from official schemas to CDISC CORE to the site's own rules, with pass, fail, not applicable, not evaluated, unsupported and execution error counted apart.",
+        techStack: ["CDISC CORE", "SDTM", "ADaM", "USDM"],
+        highlights: [
+          "Pinned against newest published, read weekly",
+          "CDISC CORE results recorded in CI",
+          "Every check linked to the file that runs it",
+        ],
+      },
+      {
         id: "nav-platform-governance",
         title: "Clinical Data Governance",
         subtitle:

@@ -213,6 +213,16 @@ export type {
   LineageVisit,
 } from "./internal/lineage/model";
 export {
+  conformanceLayers,
+  coreRuleStates,
+  RULE_STATES,
+} from "./internal/core/layers";
+export type {
+  LayerEvidence,
+  RuleLayer,
+  RuleState,
+} from "./internal/core/layers";
+export {
   CORE_EXAMPLES_SHOWN,
   coreViewReport,
   loadRecordedCoreFindings,

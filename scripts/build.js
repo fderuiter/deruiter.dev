@@ -48,6 +48,12 @@ const {
   shouldRunPreflight,
   verifyUpstashCredentials,
 } = require("./vercel-production-preflight");
+// 0.6. Preview Isolation Preflight (ADR 0071)
+//
+// Only on Vercel's preview build. It fails the build when the Preview scope
+// holds a production credential or names the production Neon endpoint, before
+// any step below could connect with it.
+const { runVercelPreviewPreflight } = require("./vercel-preview-preflight");
 const {
   captureSourceState,
   clearBuildProvenance,
@@ -61,6 +67,9 @@ async function runBuildPipeline() {
   clearBuildProvenance();
 
   if (!runVercelProductionPreflight(process.env)) {
+    process.exit(1);
+  }
+  if (!runVercelPreviewPreflight(process.env)) {
     process.exit(1);
   }
 

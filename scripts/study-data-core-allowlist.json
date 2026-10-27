@@ -171,14 +171,6 @@
     },
     {
       "target": "crf-usdm",
-      "coreId": "CORE-000417",
-      "dataset": "Timing",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The Fixed Reference timing carries a zero window (P0D to P0D); a fixed reference takes no window."
-    },
-    {
-      "target": "crf-usdm",
       "coreId": "CORE-000419",
       "dataset": "Activity",
       "category": "core-limitation",
@@ -227,7 +219,14 @@
       "dataset": "ScheduledActivityInstance",
       "category": "defect",
       "issue": 3051,
-      "reason": "Main-timeline instances name no epoch: presets without epochs leave every instance without one, and the unscheduled visit has none in any preset."
+      "reason": "Main-timeline instances name no epoch because these presets define no epochs.",
+      "presets": [
+        "device_cardiovascular_implant",
+        "clinical_instruments",
+        "cns_neuro",
+        "pk_escalation",
+        "custom_blank"
+      ]
     },
     {
       "target": "crf-usdm",
@@ -254,60 +253,11 @@
     },
     {
       "target": "crf-usdm",
-      "coreId": "CORE-000961",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The encounter order from the next chain differs from the order the main timeline references, which lists only some encounters."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000973",
-      "dataset": "StudyVersion",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The study version has no sponsor study role (C70793)."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-001006",
-      "dataset": "BiomedicalConcept",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "Biomedical concept synonyms repeat the concept's label."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-001016",
-      "dataset": "ScheduleTimeline",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The main timeline has no planned duration."
-    },
-    {
-      "target": "crf-usdm",
       "coreId": "CORE-001036",
       "dataset": "InterventionalStudyDesign",
       "category": "defect",
       "issue": 3051,
       "reason": "The design has no primary endpoint; CRF Studio holds no objectives or endpoints yet."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-001048",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 3051,
-      "presets": ["oncology_recist"],
-      "reason": "The epoch order from the next chain differs from the order the main timeline references."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-001054",
-      "dataset": "StudyVersion",
-      "category": "defect",
-      "issue": 3051,
-      "reason": "The study version has no sponsor study identifier."
     },
     {
       "target": "crf-usdm",
@@ -323,7 +273,8 @@
       "dataset": "InterventionalStudyDesign",
       "category": "defect",
       "issue": 3051,
-      "reason": "The number of referenced study interventions does not fit the intervention model."
+      "reason": "A two-arm parallel design that references no study interventions; CRF Studio holds none yet.",
+      "presets": ["oncology_recist"]
     }
   ]
 }

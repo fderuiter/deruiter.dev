@@ -1935,6 +1935,44 @@ Appends a resolve or reopen event without rewriting previous review history.
 
 ***
 
+### unassignVisitForms()
+
+> `static` **unassignVisitForms**(`study`, `visitIdOrName`, `formIdsOrDomains`): `object`
+
+Unbinds forms from a study visit, the counterpart of `assignVisitForms`.
+
+#### Parameters
+
+##### study
+
+[`StudyProtocol`](../../../types/interfaces/StudyProtocol.md)
+
+##### visitIdOrName
+
+`string`
+
+##### formIdsOrDomains
+
+`string`[]
+
+#### Returns
+
+`object`
+
+##### error?
+
+> `optional` **error?**: `string`
+
+##### study
+
+> **study**: [`StudyProtocol`](../../../types/interfaces/StudyProtocol.md)
+
+##### visit?
+
+> `optional` **visit?**: [`StudyVisit`](../../../types/interfaces/StudyVisit.md)
+
+***
+
 ### updateField()
 
 > `static` **updateField**(`study`, `domainOrFormId`, `fieldIdOrVar`, `updates`, `actor?`): `object`

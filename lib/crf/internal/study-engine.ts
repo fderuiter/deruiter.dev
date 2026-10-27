@@ -69,6 +69,7 @@ import {
   getOncologyPresetSync,
 } from "../presets/loader";
 import { exportStudyToCdiscOdmXml } from "./odm-xml-serializer";
+import { assignFormsToVisit, unassignFormsFromVisit } from "./schedule-ops";
 import { exportStudyToFhirQuestionnaire } from "./fhir-questionnaire";
 import { exportStudyToSas } from "./export-sas";
 import { exportStudyToR } from "./export-r";
@@ -3044,41 +3045,32 @@ export class StudyProtocolEngine {
     visitIdOrName: string,
     formIdsOrDomains: string[]
   ): { study: StudyProtocol; visit?: StudyVisit; error?: string } {
-    const target = visitIdOrName.trim().toLowerCase();
-    const visit = study.visits.find(
-      (v) => v.id === visitIdOrName || v.name.toLowerCase() === target
-    );
-
-    if (!visit) {
-      return {
-        study,
-        error: `Visit '${visitIdOrName}' not found in protocol.`,
-      };
-    }
-
-    const resolvedFormIds: string[] = [];
-    for (const token of formIdsOrDomains) {
-      const f = this.getForm(study, token);
-      if (f && !resolvedFormIds.includes(f.id)) {
-        resolvedFormIds.push(f.id);
-      }
-    }
-
-    const mergedFormIds = Array.from(
-      new Set([...visit.assignedFormIds, ...resolvedFormIds])
-    );
-    const updatedVisit: StudyVisit = {
-      ...visit,
-      assignedFormIds: mergedFormIds,
+    const result = assignFormsToVisit(study, visitIdOrName, formIdsOrDomains);
+    if (!result.ok) return { study, error: result.error };
+    return {
+      study: { ...result.study, lastModified: new Date().toISOString() },
+      visit: result.visit,
     };
+  }
 
-    const updatedStudy: StudyProtocol = {
-      ...study,
-      lastModified: new Date().toISOString(),
-      visits: study.visits.map((v) => (v.id === visit.id ? updatedVisit : v)),
+  /**
+   * Unbinds forms from a study visit, the counterpart of `assignVisitForms`.
+   */
+  static unassignVisitForms(
+    study: StudyProtocol,
+    visitIdOrName: string,
+    formIdsOrDomains: string[]
+  ): { study: StudyProtocol; visit?: StudyVisit; error?: string } {
+    const result = unassignFormsFromVisit(
+      study,
+      visitIdOrName,
+      formIdsOrDomains
+    );
+    if (!result.ok) return { study, error: result.error };
+    return {
+      study: { ...result.study, lastModified: new Date().toISOString() },
+      visit: result.visit,
     };
-
-    return { study: updatedStudy, visit: updatedVisit };
   }
 
   /**

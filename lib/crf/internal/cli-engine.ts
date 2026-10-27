@@ -481,7 +481,7 @@ export function executeRemoveFieldCommand(
  */
 export function executeVisitCommand(
   study: StudyProtocol,
-  action: "add" | "rm" | "assign",
+  action: "add" | "rm" | "assign" | "unassign",
   args: string[],
   options: CliExecutionOptions = {}
 ): CliCommandResult {
@@ -573,6 +573,36 @@ export function executeVisitCommand(
     return {
       success: true,
       document: `${ansi.bold}${ansi.green}✔ Assigned ${forms.join(", ")} to visit "${res.visit.name}".${ansi.reset}`,
+      data: res.visit,
+      updatedStudy: options.dryRun ? study : res.study,
+    };
+  }
+
+  if (action === "unassign") {
+    const visitNameOrId = args[0];
+    const forms = args.slice(1);
+    if (!visitNameOrId || forms.length === 0) {
+      return {
+        success: false,
+        document: `${ansi.brightRed}Usage: crf visit unassign <visit> <forms...>${ansi.reset}`,
+        error: "Missing arguments.",
+      };
+    }
+    const res = StudyProtocolEngine.unassignVisitForms(
+      study,
+      visitNameOrId,
+      forms
+    );
+    if (!res.visit) {
+      return {
+        success: false,
+        document: `${ansi.brightRed}Error: ${res.error || "Failed to unassign forms."}${ansi.reset}`,
+        error: res.error,
+      };
+    }
+    return {
+      success: true,
+      document: `${ansi.bold}${ansi.green}✔ Unassigned ${forms.join(", ")} from visit "${res.visit.name}".${ansi.reset}`,
       data: res.visit,
       updatedStudy: options.dryRun ? study : res.study,
     };
@@ -901,7 +931,7 @@ export function executeCliString(
       `  ${ansi.cyan}crf add field <form> --var <n> --type <t>${ansi.reset} Add clinical variable with unit and type`,
       `  ${ansi.cyan}crf rm form <domain>${ansi.reset}                   Remove domain form and prune SoA assignments`,
       `  ${ansi.cyan}crf rm field <form> <var>${ansi.reset}               Remove clinical variable and prune AST rules`,
-      `  ${ansi.cyan}crf visit <add|rm|assign> <args...>${ansi.reset}     Configure Schedule of Activities (SoA) visits`,
+      `  ${ansi.cyan}crf visit <add|rm|assign|unassign> <args...>${ansi.reset} Configure Schedule of Activities (SoA) visits`,
       `  ${ansi.cyan}crf rule <add|list> [args...]${ansi.reset}           Add or list dynamic AST edit checks and formulas`,
       `  ${ansi.cyan}crf export --format <odm|json|yaml|fhir|sas|r>${ansi.reset} Export to standardized clinical formats`,
       `  ${ansi.cyan}crf diff <studyA> <studyB>${ansi.reset}           Compare semantic diff between two protocols`,
@@ -1016,7 +1046,7 @@ export function executeCliString(
 
   // 8. Visit
   if (cmd === "visit") {
-    const sub = rest[0] as "add" | "rm" | "assign";
+    const sub = rest[0] as "add" | "rm" | "assign" | "unassign";
     return executeVisitCommand(study, sub, rest.slice(1), options);
   }
 

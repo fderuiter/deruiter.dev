@@ -1,6 +1,11 @@
 import { StudyProtocol, CRFForm } from "./types";
 import { consultationUrl } from "./export-annotations";
 
+/** The NCI Thesaurus code system URI that HL7 terminology assigns. */
+const NCIT_SYSTEM = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl";
+/** CRF Studio's code system for values that are not CDISC terms. */
+const CRF_STUDIO_CODE_SYSTEM = "https://deruiter.dev/crf-studio";
+
 /**
  * Maps ClinicalDataType to FHIR QuestionnaireItemType
  */
@@ -95,14 +100,17 @@ export function exportFormToFhirQuestionnaire(
         );
         const options = field.customOptions || codelist?.options;
         if (options && options.length > 0) {
+          // A CDISC term is coded by its NCI Thesaurus concept, under the
+          // NCIt system URI HL7 assigns; any other option keeps its
+          // submission value under CRF Studio's own code system.
           itemObj.answerOption = options.map((opt) => ({
-            valueCoding: {
-              system: codelist?.nciCodelistCode
-                ? `http://ncithesaurus-stage.nci.nih.gov/ncitbrowser/${codelist.nciCodelistCode}`
-                : "https://cdisc.org/terminology",
-              code: opt.code,
-              display: opt.label,
-            },
+            valueCoding: opt.nciCode
+              ? { system: NCIT_SYSTEM, code: opt.nciCode, display: opt.label }
+              : {
+                  system: CRF_STUDIO_CODE_SYSTEM,
+                  code: opt.code,
+                  display: opt.label,
+                },
           }));
         }
 

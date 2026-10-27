@@ -38,9 +38,10 @@ export type { ValueLevelSpec } from "./internal/define/value-level";
  * The standard versions every run applies and declares in TS, Define-XML and
  * the run manifest. The CT entry is the date of the NCI EVS CDISC
  * Controlled Terminology package that the local codelist subset is aligned
- * to. The subset is hand-curated and has not been verified against that
- * package, so it is not a claim of conformance to it. Every value comes from
- * {@link CLINICAL_STANDARDS_PROFILE}.
+ * to. The subset is hand-curated; every NCI code, codelist and term in it
+ * is checked against that release by `__tests__/cdisc-ct-release.test.ts`. It
+ * covers only what the pipeline uses, so it is not a claim of conformance to
+ * the whole package. Every value comes from {@link CLINICAL_STANDARDS_PROFILE}.
  */
 export const STANDARD_VERSIONS: StandardVersions = Object.freeze({
   USDM: CLINICAL_STANDARDS_PROFILE.USDM,

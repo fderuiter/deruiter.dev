@@ -39,5 +39,7 @@ package. No new codelists are added through this profile.
 
 > `readonly` `optional` **verifiedAgainst?**: `string`
 
-The package file the subset was verified against, when it has been.
-Absent: the codes have not been verified against a downloaded package.
+The package files the subset is verified against, when it is:
+`__tests__/cdisc-ct-release.test.ts` checks every code against the subset
+`scripts/cdisc-ct-subset.ts` derives from them. Absent: the codes have
+not been verified against a downloaded package.

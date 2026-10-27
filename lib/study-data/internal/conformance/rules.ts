@@ -129,7 +129,7 @@ export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
 const LINEAGE_CITATION = `Source traceability for ${standardCitation("Define-XML")} origins: https://www.cdisc.org/standards/data-exchange/define-xml`;
-const CT_CITATION = `Local CT subset aligned to NCI EVS CDISC CT ${CLINICAL_STANDARDS_PROFILE.CT.packageDate}, not verified against the package: https://evs.nci.nih.gov/ftp1/CDISC/`;
+const CT_CITATION = `Local CT subset of NCI EVS CDISC CT ${CLINICAL_STANDARDS_PROFILE.CT.packageDate}, each code checked against that release: https://evs.nci.nih.gov/ftp1/CDISC/`;
 
 export interface RuleIssue {
   readonly row?: number;

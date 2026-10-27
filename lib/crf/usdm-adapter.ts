@@ -390,8 +390,10 @@ function buildLegacyUsdmDocument(study: StudyProtocol): UsdmDocument {
           const newConcept: UsdmBiomedicalConcept = {
             id: conceptId,
             name: field.label,
-            conceptId: field.cdashMetadata?.nciConceptId || conceptId,
-            code: field.cdashMetadata?.nciConceptId,
+            // A field's cdashMetadata.nciConceptId is the NCI code of its
+            // codelist, not of a biomedical concept, so a derived concept
+            // carries no NCI code: it is a CRF Studio concept.
+            conceptId,
             domain: form.domain,
             synonyms: [field.variableName, field.label],
             properties: {
@@ -1284,11 +1286,11 @@ const ARM_TYPE_CT: Record<string, [string, string]> = {
 };
 
 const EPOCH_TYPE_CT: Record<string, [string, string]> = {
-  screening: ["C48262", "Screening"],
+  screening: ["C202487", "Screening"],
   runin: ["C98779", "Run-in"],
   washout: ["C42872", "Washout"],
   treatment: ["C101526", "Treatment"],
-  followup: ["C99158", "Follow-Up"],
+  followup: ["C202578", "Follow-Up"],
 };
 
 const PHASE_CT: Record<string, [string, string]> = {
@@ -1435,7 +1437,9 @@ function liftBiomedicalConcept(
       v4Code(
         `${bc.id}__code_std`,
         codeValue,
-        bc.label || bc.name || codeValue,
+        // An NCI code is decoded by the concept's name; the label is how a
+        // form asks for it, such as "Age at Informed Consent" for Age.
+        nci ? bc.name || codeValue : bc.label || bc.name || codeValue,
         nci ? CDISC_CT_SYSTEM : CRF_STUDIO_CODE_SYSTEM
       )
     ),

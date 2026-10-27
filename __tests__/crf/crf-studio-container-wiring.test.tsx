@@ -1,4 +1,5 @@
 import React from "react";
+import type { FormCatalogEntry } from "@/lib/crf/form-catalog";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   act,
@@ -62,9 +63,9 @@ vi.mock("@/components/crf/LeftSidebar/WidgetPalette", async () => ({
     "WidgetPalette"
   ),
 }));
-vi.mock("@/components/crf/LeftSidebar/CdashScaffolderModal", async () => ({
-  CdashScaffolderModal: (await import("./studio-stubs")).stubComponent(
-    "CdashScaffolderModal"
+vi.mock("@/components/crf/FormCatalogModal", async () => ({
+  FormCatalogModal: (await import("./studio-stubs")).stubComponent(
+    "FormCatalogModal"
   ),
 }));
 vi.mock("@/components/crf/CenterCanvas/FormCanvas", async () => ({
@@ -155,7 +156,7 @@ describe("CRF Studio header", () => {
   it("opens and closes each panel it offers", () => {
     const panels: [string, string, string][] = [
       ["onOpenDiagnostics", "DiagnosticsDrawer", "isOpen"],
-      ["onOpenCdashScaffolder", "CdashScaffolderModal", "isOpen"],
+      ["onOpenFormCatalog", "FormCatalogModal", "isOpen"],
       ["onOpenWizard", "WorkflowWizardModal", "isOpen"],
       ["onOpenBaselines", "BaselineManagerModal", "isOpen"],
       ["onOpenCompareBaseline", "BaselineCompareModal", "isOpen"],
@@ -317,9 +318,47 @@ describe("CRF Studio designer", () => {
     expect(props("StudySpine").activeTab).toBe("forms");
   });
 
-  it("opens the CDASH scaffolder from the navigator", () => {
-    press("StudySpine.onOpenCdashScaffolder");
-    expect(props("CdashScaffolderModal").isOpen).toBe(true);
+  it("opens the form catalog from the navigator", () => {
+    press("StudySpine.onOpenFormCatalog");
+    expect(props("FormCatalogModal").isOpen).toBe(true);
+  });
+
+  // #2927 item 11: one catalog, one add path for forms and blocks.
+  const catalogEntry = (id: string) =>
+    (props("FormCatalogModal").entries as FormCatalogEntry[]).find(
+      (entry) => entry.id === id
+    );
+
+  it("adds a catalog form to the visit it was dropped on", () => {
+    const before = study().forms.length;
+    press("StudySpine.onAddCatalogEntry", ["cdash:DS", "v_eos"]);
+    expect(study().forms).toHaveLength(before + 1);
+    const added = study().forms[before];
+    expect(added.domain).toBe("DS");
+    expect(
+      study().visits.find((v) => v.id === "v_eos")?.assignedFormIds
+    ).toContain(added.id);
+  });
+
+  it("inserts a catalog block's fields into the open form", () => {
+    press("StudySpine.onSelectForm", ["form_vs_onc"]);
+    const fieldCount = () =>
+      canvasForm().sections.reduce(
+        (sum, section) => sum + section.fields.length,
+        0
+      );
+    const before = fieldCount();
+    press("FormCatalogModal.onAdd", [catalogEntry("block:ecg")]);
+    expect(fieldCount()).toBe(before + 6);
+  });
+
+  it("copies a form from an example study with fresh ids", () => {
+    const before = study().forms.length;
+    press("FormCatalogModal.onAdd", [catalogEntry("preset:form_phq9")]);
+    expect(study().forms).toHaveLength(before + 1);
+    const added = study().forms[before];
+    expect(added.name).toBe("PHQ-9 Depression Inventory");
+    expect(added.id).not.toBe("form_phq9");
   });
 
   it("adds a palette field to the section the canvas asked for", () => {

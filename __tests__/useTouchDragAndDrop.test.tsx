@@ -1,3 +1,4 @@
+import { buildFormCatalog } from "@/lib/crf/form-catalog";
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
@@ -324,11 +325,12 @@ describe("CRF Studio Touch Drag and Drop Integration", () => {
         onAddForm={() => {}}
         onDuplicateForm={() => {}}
         onDeleteForm={() => {}}
-        onOpenCdashScaffolder={() => {}}
+        onOpenFormCatalog={() => {}}
         onAddField={() => {}}
         onAssignFormToVisit={onAssignFormToVisit}
         onUnassignFormFromVisit={() => {}}
-        onInjectCdashForm={() => {}}
+        catalogEntries={buildFormCatalog()}
+        onAddCatalogEntry={() => {}}
       />
     );
 

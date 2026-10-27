@@ -2113,8 +2113,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Add a standard form",
         description:
-          "Click '+ CDASH Form' in the studio header to add a ready-made CDASH form such as Demographics, Vital Signs or Adverse Events.",
-        key: "+ CDASH Form",
+          "Click '+ Add form' in the studio header to open the form catalog. It lists the CDASH domains, forms from the example studies, your saved templates and smart blocks, with one search box.",
+        key: "+ Add form",
       },
       {
         action: "Switch modes",

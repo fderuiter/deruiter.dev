@@ -318,6 +318,22 @@ describe("/study-data workbench", () => {
     expect(screen.getByText(/^Enter a whole number from 0 to/)).toBeTruthy();
   });
 
+  it("shows CDISC CORE's section on the conformance tab", async () => {
+    await renderFinishedRun();
+    fireEvent.click(screen.getByRole("tab", { name: "Conformance" }));
+    const heading = await screen.findByRole("heading", {
+      name: "CDISC CORE on this run",
+    });
+    const section = heading.closest("section");
+    if (!section) throw new Error("No CORE section");
+    // The test runs 30 subjects, so CORE never saw this output.
+    await waitFor(() =>
+      expect(
+        within(section).getByText(/only the local rules above/)
+      ).toBeTruthy()
+    );
+  });
+
   it("makes no compliance or validation claims in what it renders", async () => {
     const { container } = await renderFinishedRun();
     const text = container.textContent ?? "";

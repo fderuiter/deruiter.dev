@@ -1,6 +1,12 @@
 "use client";
 
-import type { ConformanceReport, DataLayer } from "@/lib/study-data";
+import type {
+  ConformanceReport,
+  CoreViewReport,
+  DataLayer,
+  RecordedTwin,
+} from "@/lib/study-data";
+import { CoreFindingsPanel } from "./CoreFindingsPanel";
 import type { FindingSample } from "./protocol";
 import { useRovingGrid } from "./useRovingGrid";
 import { CELL, CELL_FOCUS, TABLE_SCROLL } from "./ui";
@@ -9,6 +15,23 @@ interface ConformancePanelProps {
   readonly report: ConformanceReport;
   readonly findings: FindingSample;
   readonly onTrace: (layer: DataLayer, dataset: string, row: number) => void;
+  /** CDISC CORE's recorded findings for the run, and how they loaded. */
+  readonly core: {
+    readonly report: CoreViewReport | null;
+    readonly loading: boolean;
+    readonly failed: boolean;
+    readonly defaults: { readonly seed: number; readonly nSubjects: number };
+    /** Local rule ids with the CORE rules measured to catch their defect. */
+    readonly twins: Readonly<Record<string, RecordedTwin>>;
+  };
+}
+
+/** How a local rule's CORE twins read in its Source cell. */
+function twinText(twin: RecordedTwin | undefined): string | null {
+  if (!twin || twin.core.length === 0) return null;
+  return twin.coverage === "same-defect"
+    ? `CDISC CORE also catches this: ${twin.core.join(", ")}.`
+    : `CDISC CORE flags a consequence: ${twin.core.join(", ")}.`;
 }
 
 const STATUS_STYLE: Readonly<Record<string, string>> = {
@@ -40,6 +63,7 @@ export function ConformancePanel({
   report,
   findings,
   onTrace,
+  core,
 }: ConformancePanelProps) {
   const findingGrid = useRovingGrid();
   const columns = ["Rule", "Severity", "Dataset", "Variable", "Row", "Message"];
@@ -134,6 +158,7 @@ export function ConformancePanel({
             <tbody className="text-slate-100">
               {report.ruleResults.map((result) => {
                 const citation = citationParts(result.citation);
+                const twin = twinText(core.twins[result.ruleId]);
                 return (
                   <tr
                     key={`${result.ruleId}-${result.dataset}`}
@@ -160,6 +185,11 @@ export function ConformancePanel({
                       ) : (
                         citation.text
                       )}
+                      {twin ? (
+                        <span className="mt-1 block break-words text-slate-400">
+                          {twin}
+                        </span>
+                      ) : null}
                     </td>
                   </tr>
                 );
@@ -241,6 +271,13 @@ export function ConformancePanel({
           </div>
         ) : null}
       </div>
+
+      <CoreFindingsPanel
+        report={core.report}
+        loading={core.loading}
+        failed={core.failed}
+        defaults={core.defaults}
+      />
     </div>
   );
 }

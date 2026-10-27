@@ -476,6 +476,42 @@ Re-exports [ControlledTerminologyClaim](../clinical-standards/profile/interfaces
 
 ***
 
+### CORE\_EXAMPLES\_SHOWN
+
+Re-exports [CORE_EXAMPLES_SHOWN](internal/core/recorded/variables/CORE_EXAMPLES_SHOWN.md)
+
+***
+
+### CoreFinding
+
+Re-exports [CoreFinding](internal/core/recorded/interfaces/CoreFinding.md)
+
+***
+
+### CoreFindingExample
+
+Re-exports [CoreFindingExample](internal/core/recorded/interfaces/CoreFindingExample.md)
+
+***
+
+### CoreView
+
+Re-exports [CoreView](internal/core/recorded/type-aliases/CoreView.md)
+
+***
+
+### coreViewReport
+
+Re-exports [coreViewReport](internal/core/recorded/functions/coreViewReport.md)
+
+***
+
+### CoreViewReport
+
+Re-exports [CoreViewReport](internal/core/recorded/interfaces/CoreViewReport.md)
+
+***
+
 ### createLineageIndex
 
 Re-exports [createLineageIndex](internal/lineage/trace/functions/createLineageIndex.md)
@@ -968,6 +1004,12 @@ Re-exports [LineageVisit](internal/lineage/model/interfaces/LineageVisit.md)
 
 ***
 
+### loadRecordedCoreFindings
+
+Re-exports [loadRecordedCoreFindings](internal/core/recorded/functions/loadRecordedCoreFindings.md)
+
+***
+
 ### logRankTest
 
 Re-exports [logRankTest](internal/tlf/km/functions/logRankTest.md)
@@ -1121,6 +1163,66 @@ Re-exports [ProfileStandard](../clinical-standards/profile/type-aliases/ProfileS
 ### readStudyDefinition
 
 Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/readStudyDefinition.md)
+
+***
+
+### recordedCoreView
+
+Re-exports [recordedCoreView](internal/core/recorded/functions/recordedCoreView.md)
+
+***
+
+### RecordedCrfPreset
+
+Re-exports [RecordedCrfPreset](internal/core/recorded/interfaces/RecordedCrfPreset.md)
+
+***
+
+### RecordedDefaultView
+
+Re-exports [RecordedDefaultView](internal/core/recorded/interfaces/RecordedDefaultView.md)
+
+***
+
+### RecordedExplanation
+
+Re-exports [RecordedExplanation](internal/core/recorded/interfaces/RecordedExplanation.md)
+
+***
+
+### RecordedFindings
+
+Re-exports [RecordedFindings](internal/core/recorded/interfaces/RecordedFindings.md)
+
+***
+
+### RecordedLines
+
+Re-exports [RecordedLines](internal/core/recorded/interfaces/RecordedLines.md)
+
+***
+
+### RecordedLock
+
+Re-exports [RecordedLock](internal/core/recorded/interfaces/RecordedLock.md)
+
+***
+
+### RecordedRule
+
+Re-exports [RecordedRule](internal/core/recorded/interfaces/RecordedRule.md)
+
+***
+
+### RecordedScenarioView
+
+Re-exports [RecordedScenarioView](internal/core/recorded/interfaces/RecordedScenarioView.md)
+
+***
+
+### RecordedTwin
+
+Re-exports [RecordedTwin](internal/core/recorded/interfaces/RecordedTwin.md)
 
 ***
 

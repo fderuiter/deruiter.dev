@@ -28,12 +28,12 @@ import {
   CHIP_WIDTH,
   chipName,
   clampChip,
-  chipHeight,
   touchZoomFloor,
   type ChipNode,
   type WireEdge,
 } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
+import { findChipSpot } from "./parts/placement";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { TouchWireControls } from "./TouchWireControls";
 import { canRewire, resolveTouchWire } from "./touch-wire";
@@ -45,6 +45,8 @@ import {
   frameLane,
   sizeOf,
 } from "./touch-frame";
+
+export { touchChipSpot } from "./parts/placement";
 
 /** Drag payload key shared with the toolbox. */
 export const CHIP_DRAG_TYPE = "application/x-protocol-drift-chip";
@@ -110,107 +112,8 @@ function LaneOverlay() {
   );
 }
 
-/** Where a clicked or keyboard-added chip lands. */
-function suggestPosition(
-  kind: ChipKind,
-  nodes: ChipNode[]
-): { x: number; y: number } {
-  const lane = CHIP_SPECS[kind].lane;
-  const n = nodes.filter(
-    (node) => CHIP_SPECS[node.data.kind].lane === lane
-  ).length;
-  const x = 40 + ((n * 190) % 1100);
-  if (lane === "ANALYSIS")
-    return { x, y: LANE_GEOMETRY.conservationWallY + 90 };
-  if (lane === "WALL")
-    return { x, y: LANE_GEOMETRY.conservationWallY - chipHeight(kind) - 4 };
-  return { x, y: LANE_GEOMETRY.tabulationTop + 30 + (n % 3) * 40 };
-}
-
 /** Window event sent after a touch add, so the canvas can pan to the chip. */
 const PROTOCOL_DRIFT_CHIP_ADDED_EVENT = "protocol-drift:chip-added";
-
-/** Empty space kept between chips when a new one is placed on touch. */
-const CHIP_GAP = 16;
-
-/** True when a chip of this kind at this spot would touch a chip already there. */
-function clashes(
-  kind: ChipKind,
-  spot: { x: number; y: number },
-  nodes: ChipNode[]
-): boolean {
-  const h = chipHeight(kind);
-  return nodes.some((node) => {
-    const other = node.data.kind;
-    const otherH = chipHeight(other);
-    return (
-      spot.x < node.position.x + CHIP_WIDTH + CHIP_GAP &&
-      node.position.x < spot.x + CHIP_WIDTH + CHIP_GAP &&
-      spot.y < node.position.y + otherH + CHIP_GAP &&
-      node.position.y < spot.y + h + CHIP_GAP
-    );
-  });
-}
-
-/**
- * Touch: the first spot for a new chip that clears every existing chip's box.
- * It steps along the lane's row, then down to the next row, until it is clear
- * (#2045). Desktop uses desktopChipSpot.
- */
-export function touchChipSpot(
-  kind: ChipKind,
-  nodes: ChipNode[]
-): { x: number; y: number } {
-  const base = suggestPosition(kind, nodes);
-  const stepX = CHIP_WIDTH + CHIP_GAP;
-  const stepY = chipHeight(kind) + CHIP_GAP;
-  for (let row = 0; row < 6; row++) {
-    for (let col = 0; col < 7; col++) {
-      const spot = clampChip(kind, {
-        x: base.x + col * stepX,
-        y: base.y + row * stepY,
-      });
-      if (!clashes(kind, spot, nodes)) return spot;
-    }
-  }
-  return clampChip(kind, base);
-}
-
-/** Vertical step of the desktop spot search, in canvas pixels. */
-const DESKTOP_SCAN_STEP_Y = 8;
-/** Columns tried past the lane world before giving up on a clear spot. */
-const DESKTOP_EXTRA_COLUMNS = 24;
-
-/**
- * Desktop: the first spot for a new chip that clears every existing chip's
- * box (#2324). It scans the chip's lane top to bottom, one column of chips at
- * a time across the lane world, so the chips fill the lane in rows. When the
- * lane is full it continues to the right of the world, never on top of a
- * chip; a player can still drag any chip anywhere.
- */
-function desktopChipSpot(
-  kind: ChipKind,
-  nodes: ChipNode[]
-): { x: number; y: number } {
-  const base = clampChip(kind, suggestPosition(kind, []));
-  const lowest = clampChip(kind, {
-    x: base.x,
-    y: LANE_GEOMETRY.analysisBottom,
-  }).y;
-  const stepX = CHIP_WIDTH + CHIP_GAP;
-  const columns = Math.floor((WORLD_WIDTH - base.x - CHIP_WIDTH) / stepX) + 1;
-  for (let y = base.y; y <= lowest; y += DESKTOP_SCAN_STEP_Y) {
-    for (let col = 0; col < columns; col++) {
-      const spot = clampChip(kind, { x: base.x + col * stepX, y });
-      if (!clashes(kind, spot, nodes)) return spot;
-    }
-  }
-  for (let col = columns; col < columns + DESKTOP_EXTRA_COLUMNS; col++) {
-    const spot = clampChip(kind, { x: base.x + col * stepX, y: base.y });
-    if (!clashes(kind, spot, nodes)) return spot;
-  }
-  return clampChip(kind, suggestPosition(kind, nodes));
-}
 
 /**
  * Adds a chip (toolbox buttons and keyboard). On touch the chip takes a clear
@@ -224,9 +127,9 @@ export async function placeChip(
   const before = new Set(state.nodes.map((node) => node.id));
   await state.addChip(
     kind,
-    options.touch
-      ? touchChipSpot(kind, state.nodes)
-      : desktopChipSpot(kind, state.nodes)
+    findChipSpot(kind, state.nodes, {
+      mode: options.touch ? "touch" : "desktop",
+    })
   );
   const latest = useProtocolDriftStore.getState();
   const added = latest.nodes.find((node) => !before.has(node.id));

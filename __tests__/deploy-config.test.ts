@@ -173,6 +173,14 @@ describe("production deploy configuration", () => {
     );
   });
 
+  // The webpack compile ran Vercel's 8 GB build machine out of memory on
+  // 2026-10-28; Next's webpack memory optimizations keep it under the limit.
+  it("keeps Next's webpack memory optimizations on for the 8 GB build machine", () => {
+    expect(read("next.config.ts")).toMatch(
+      /webpackMemoryOptimizations:\s*true/
+    );
+  });
+
   // Issue #995: bundling jsdom pulled @exodus/bytes (ESM-only) through
   // html-encoding-sniffer into a require() chain and every SSR page returned
   // 500 with ERR_REQUIRE_ESM. All four packages must stay external.

@@ -303,7 +303,7 @@ them.
 | `NEXT_PUBLIC_SENTRY_DSN` | Optional | Production | The only DSN. Server, edge and browser all read it. Unset means events are dropped. |
 | `SENTRY_ORG` | Optional | Production | Source-map upload only. |
 | `SENTRY_PROJECT` | Optional | Production | Source-map upload only. |
-| `SENTRY_AUTH_TOKEN` | Optional | Production | Source-map upload only. Read by the Sentry build plugin, not by `lib/env.ts`. |
+| `SENTRY_AUTH_TOKEN` | Optional | Production | Source-map upload only, which is off while source maps are disabled ([Build Memory](#build-memory)). Read by the Sentry build plugin, not by `lib/env.ts`. |
 
 ### Vercel Blob, cron and GitHub
 
@@ -323,7 +323,7 @@ them.
 
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
-| `NODE_OPTIONS` | Required | Production, Preview | Must contain `--experimental-require-module`, which lets the server load the ESM-only dependency under `isomorphic-dompurify`. Without it server-rendered routes return 500 (#995). |
+| `NODE_OPTIONS` | Required | Production, Preview | Must contain `--experimental-require-module`, which lets the server load the ESM-only dependency under `isomorphic-dompurify`. Without it server-rendered routes return 500 (#995). Any `--max-old-space-size` in it is replaced during builds by `scripts/build.js` ([Build Memory](#build-memory)). |
 | `NODE_ENV` | Platform | None | Set by Next.js. |
 | `VERCEL` | Platform | None | Set by Vercel on its builds. |
 | `VERCEL_ENV` | Platform | None | Set by Vercel. Gates migrations and production-only behaviour. |
@@ -432,6 +432,39 @@ succeeds: the data-source guard (`failBuildOnDataSourceError` in
 - `vercel env pull` **overwrites** `.env.local` without a backup. Back up a
   working `.env.local` before running any `vercel` command that writes env
   files (#851).
+
+## Build Memory
+
+Vercel builds on a Hobby machine with 2 cores and 8 GB. On 2026-10-28 the
+production build outgrew it twice. First the machine ran out of memory
+during the webpack compile. After `experimental.webpackMemoryOptimizations`
+(#3124), the compile ran out of Node heap at about 3.4 GB instead. CI and
+local builds didn't catch either failure, because they ran with more memory
+and a 4096 MB heap cap.
+
+Three settings now keep the build inside the machine:
+
+- `scripts/build.js` sets the heap cap itself (`BUILD_HEAP_MB`, 3584 MB). It
+  replaces any `--max-old-space-size` in an inherited `NODE_OPTIONS`, so
+  Vercel, CI and a laptop compile under the same limit. The build log prints
+  the value as `Node heap cap for this build`.
+- `next.config.ts` keeps `experimental.webpackMemoryOptimizations` on.
+- Sentry source maps are off (`sourcemaps.disable` in `next.config.ts`).
+  Generating them took the compile past the cap. Errors still reach Sentry,
+  but their stack traces show minified frames.
+
+To build with Vercel's core count (the heap cap comes from `scripts/build.js`),
+pin the build to two cores:
+
+```bash
+taskset -c 0,1 npm run build
+```
+
+Measured on 2 cores on 2026-10-28, the compile at 19ef625 finished with
+source maps off and failed with them on. Before raising `BUILD_HEAP_MB`,
+measure resident memory as well as heap. The compile's resident memory runs
+2 to 3 GB above its heap, so a larger cap can trade a heap failure for the
+machine killing the build.
 
 ## Production Configuration Preflight
 

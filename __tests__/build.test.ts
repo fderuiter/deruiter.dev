@@ -100,6 +100,25 @@ describe("build.js script execution", () => {
     expect(exitMock).toHaveBeenCalledWith(0);
   });
 
+  it("replaces an inherited heap cap with the build's own, so every environment compiles under one limit", async () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.NODE_OPTIONS =
+      "--experimental-require-module --max-old-space-size=8192";
+
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+
+    const nextBuild = spawnSpy.mock.calls.find((c: any[]) =>
+      c[1].includes("next")
+    );
+    const flags = String(nextBuild[2].env.NODE_OPTIONS).split(/\s+/);
+    expect(flags).toContain("--experimental-require-module");
+    expect(
+      flags.filter((f: string) => f.startsWith("--max-old-space-size"))
+    ).toEqual(["--max-old-space-size=3584"]);
+  });
+
   it("type-checks in its own phase before migrations and before next build (#2100)", async () => {
     process.env.VERCEL_ENV = "preview";
 

@@ -54,6 +54,20 @@ const {
 // holds a production credential or names the production Neon endpoint, before
 // any step below could connect with it.
 const { runVercelPreviewPreflight } = require("./vercel-preview-preflight");
+// Heap cap, in MB, for every Node process the build starts. Vercel's Hobby
+// build machine has 8 GB and 2 cores; the webpack compile's resident memory
+// runs well above its heap, so a larger cap trades a heap failure for the
+// machine killing the build. Change it only with a measured Vercel-shaped
+// build (docs/how-to/release-and-deploy.md#build-memory).
+const BUILD_HEAP_MB = 3584;
+
+function withBuildHeapCap(nodeOptions) {
+  const kept = (nodeOptions || "")
+    .split(/\s+/)
+    .filter((flag) => flag && !flag.startsWith("--max-old-space-size"));
+  return [...kept, `--max-old-space-size=${BUILD_HEAP_MB}`].join(" ");
+}
+
 const {
   captureSourceState,
   clearBuildProvenance,
@@ -107,13 +121,14 @@ async function runBuildPipeline() {
     );
     process.env.CRON_SECRET = "dummy-secret-for-compilation";
   }
-  if (
-    !process.env.NODE_OPTIONS ||
-    !process.env.NODE_OPTIONS.includes("--max-old-space-size")
-  ) {
-    process.env.NODE_OPTIONS =
-      `${process.env.NODE_OPTIONS || ""} --max-old-space-size=4096`.trim();
-  }
+  // The build sets its own heap cap rather than inheriting one, so Vercel,
+  // CI's Vercel-shaped build and a laptop all compile under the same limit.
+  // An inherited cap is what hid the 2026-10-28 out-of-memory failure: CI and
+  // local builds ran with 4096 MB while Vercel's compile died near 3.4 GB.
+  process.env.NODE_OPTIONS = withBuildHeapCap(process.env.NODE_OPTIONS);
+  console.log(
+    `Node heap cap for this build: ${BUILD_HEAP_MB} MB (NODE_OPTIONS=${process.env.NODE_OPTIONS})`
+  );
   if (!process.env.NODE_OPTIONS.includes("--no-warnings")) {
     process.env.NODE_OPTIONS =
       `${process.env.NODE_OPTIONS} --no-warnings`.trim();

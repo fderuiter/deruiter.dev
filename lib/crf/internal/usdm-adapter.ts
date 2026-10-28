@@ -7,6 +7,8 @@ import {
   CLINICAL_STANDARDS_PROFILE,
   STANDARD_CODELISTS,
   USDM_SDTM_DOMAIN_EXTENSION_URL,
+  USDM_SDTM_STRESU_EXTENSION_URL,
+  USDM_SDTM_TESTCD_EXTENSION_URL,
   USDM_V4_VERSION,
   getUsdmV4ExtensionString,
   type UsdmV4Activity,
@@ -44,6 +46,7 @@ import {
   CRFForm,
   CRFField,
   CRFSection,
+  ClinicalDataType,
   StudyVisit,
   StudyArm,
   StudyEpoch,
@@ -2460,6 +2463,71 @@ function lowerProtocolContent(
  * from other tools are read from native USDM v4 properties, with visit days
  * and windows resolved from the main schedule timeline.
  */
+/**
+ * What a plain USDM biomedical concept says about the item that collects it:
+ * the SDTM test code (or a CDASH-style synonym) as the variable name, the
+ * standard unit, and a data type inferred from those, since USDM carries no
+ * form layout. A concept with a unit is numeric; a variable ending DAT, DTC
+ * or DTM is a date; anything else is text.
+ */
+function plainConceptItem(bc: Record<string, unknown>, id: string) {
+  const testCode = getUsdmV4ExtensionString(bc, USDM_SDTM_TESTCD_EXTENSION_URL);
+  const synonym = asArray(bc.synonyms).find(
+    (s): s is string => typeof s === "string" && /^[A-Z][A-Z0-9]{0,7}$/.test(s)
+  );
+  const variableName = testCode ?? synonym;
+  const unit = getUsdmV4ExtensionString(bc, USDM_SDTM_STRESU_EXTENSION_URL);
+  const dataType: ClinicalDataType = unit
+    ? "number"
+    : variableName && /(DAT|DTC|DTM)$/.test(variableName)
+      ? "date"
+      : "text";
+  return {
+    variableName: variableName ?? id.toUpperCase(),
+    unit,
+    dataType,
+  };
+}
+
+/**
+ * Builds a form for a plain USDM activity (one written without CRF Studio's
+ * extensions) from the biomedical concepts it collects: one section, one
+ * item per concept, in the activity's order. An activity that names no
+ * concepts, such as one described only by a surrogate, gets no sections.
+ */
+function plainActivitySections(
+  activity: Record<string, unknown>,
+  concepts: Map<string, Record<string, unknown>>
+): CRFSection[] | undefined {
+  const fields: CRFField[] = asArray(activity.biomedicalConceptIds)
+    .filter((id): id is string => typeof id === "string")
+    .flatMap((conceptId) => {
+      const bc = concepts.get(conceptId);
+      if (!bc) return [];
+      const item = plainConceptItem(bc, conceptId);
+      return [
+        withoutUndefined({
+          id: `${asString(activity.id)}__${conceptId}`,
+          conceptId,
+          variableName: item.variableName,
+          label: asString(bc.label) ?? nativeName(bc, conceptId),
+          dataType: item.dataType,
+          unit: item.unit,
+          columnSpan: 6,
+          required: false,
+        }),
+      ];
+    });
+  if (fields.length === 0) return undefined;
+  return [
+    {
+      id: `${asString(activity.id)}__section`,
+      title: nativeName(activity, "Items"),
+      fields,
+    },
+  ];
+}
+
 function lowerUsdmV4ToLegacy(
   doc: Record<string, unknown>,
   selection?: UsdmStudySelection
@@ -2588,6 +2656,16 @@ function lowerUsdmV4ToLegacy(
       });
     });
 
+  const conceptList = asArray(version.biomedicalConcepts)
+    .map(asRecord)
+    .filter((b): b is Record<string, unknown> => Boolean(b));
+  const conceptRecords = new Map(
+    conceptList.flatMap((bc) => {
+      const id = asString(bc.id);
+      return id ? [[id, bc] as const] : [];
+    })
+  );
+
   const activities: UsdmActivity[] = asArray(design.activities)
     .map(asRecord)
     .filter((a): a is Record<string, unknown> => Boolean(a))
@@ -2606,22 +2684,23 @@ function lowerUsdmV4ToLegacy(
         name: nativeName(act, id),
         domain: getUsdmV4ActivityDomain(act) ?? "GENERAL",
         description: nativeDescription(act),
+        sections: plainActivitySections(act, conceptRecords),
       });
     });
 
-  const biomedicalConcepts: UsdmBiomedicalConcept[] = asArray(
-    version.biomedicalConcepts
-  )
-    .map(asRecord)
-    .filter((b): b is Record<string, unknown> => Boolean(b))
-    .map((bc, idx) => {
+  const biomedicalConcepts: UsdmBiomedicalConcept[] = conceptList.map(
+    (bc, idx) => {
       const ext = readCrfExtension(bc, "biomedical-concept");
       if (ext) return ext as unknown as UsdmBiomedicalConcept;
       const id = asString(bc.id) ?? `bc_${idx + 1}`;
       const std = asRecord(asRecord(bc.code)?.standardCode);
+      const item = plainConceptItem(bc, id);
       return withoutUndefined({
         id,
         name: nativeName(bc, id),
+        variableName: item.variableName,
+        dataType: item.dataType,
+        unit: item.unit,
         conceptId: asString(std?.code) ?? id,
         code: asString(std?.code),
         synonyms: asArray(bc.synonyms).filter(
@@ -2638,7 +2717,8 @@ function lowerUsdmV4ToLegacy(
             datatype: asString(p.datatype),
           })),
       });
-    });
+    }
+  );
 
   const legacyDesign: UsdmStudyDesign = withoutUndefined({
     id: designId,

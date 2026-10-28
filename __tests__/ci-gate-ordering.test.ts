@@ -76,7 +76,7 @@ describe("CI Gate Ordering", () => {
   };
 
   it("runs the production build before the invariant verification", () => {
-    const build = exactLineIndex("run: npm run build");
+    const build = exactLineIndex("run: bash scripts/vercel-shaped-build.sh");
     // The full verify, not the static gate's early pass without bench
     // evidence (`npm run verify -- --skip-benchmark-evidence`).
     const verify = exactLineIndex("run: npm run verify");
@@ -128,6 +128,12 @@ describe("CI Gate Ordering", () => {
     // complete for this app, so CI must not diverge from the shipped path.
     expect(ci).toContain("npm run build");
     expect(ci).not.toMatch(/^\s*(run:\s*)?npx next build\s*$/m);
+    // The PR build runs it through the Vercel-shaped wrapper (2026-10-28).
+    const wrapper = fs.readFileSync(
+      path.join(process.cwd(), "scripts/vercel-shaped-build.sh"),
+      "utf8"
+    );
+    expect(wrapper).toContain("exec npm run build");
 
     const buildScript = fs.readFileSync(
       path.join(process.cwd(), "scripts/build.js"),
@@ -157,7 +163,11 @@ describe("CI Gate Ordering", () => {
     const buildJobs = lines
       .filter((line) => /^ {2}[a-z][a-z0-9-]*:$/.test(line))
       .map((line) => line.trim().replace(/:$/, ""))
-      .filter((job) => /run: npm run build\s*$/m.test(jobBlock(job)));
+      .filter((job) =>
+        /run: (npm run build|bash scripts\/vercel-shaped-build\.sh)\s*$/m.test(
+          jobBlock(job)
+        )
+      );
 
     it("runs npm run build only in the build job, cache-warm, and the manual matrix", () => {
       expect(buildJobs.sort()).toEqual(
@@ -201,7 +211,9 @@ describe("CI Gate Ordering", () => {
       const block = jobBlock("build");
       expect(
         block.indexOf("npm run analyze:bundle -- --strict")
-      ).toBeGreaterThan(block.indexOf("run: npm run build"));
+      ).toBeGreaterThan(
+        block.indexOf("run: bash scripts/vercel-shaped-build.sh")
+      );
     });
 
     it("keeps the dummy database URL on every build and server step", () => {

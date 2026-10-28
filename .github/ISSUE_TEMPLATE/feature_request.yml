@@ -28,15 +28,24 @@ body:
     id: acceptance
     attributes:
       label: Acceptance criteria
+      description: Observable results that show the work is done. Agents use these to know when to stop.
       placeholder: |
         - [ ] …
         - [ ] …
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent issue
+      description: Initiative, epic or feature this belongs under, if known. Leave blank if unsure.
+      placeholder: "#3173"
   - type: checkboxes
     id: checks
     attributes:
       label: Checklist
       options:
-        - label: I searched existing issues and the release-readiness board.
+        - label: I searched existing issues for this request.
           required: true
         - label: This request contains no credentials or private data.
           required: true

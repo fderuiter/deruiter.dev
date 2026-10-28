@@ -104,7 +104,7 @@ const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
   },
   "schema-parity": {
     title: "Technical guide Prisma schema or environment variable drift",
-    steps: ["npm run doctor:fix", "git add CMS_GUIDELINES.md docs/"],
+    steps: ["npm run doctor:fix", "git add docs/"],
   },
   "llms-manifests": {
     title:

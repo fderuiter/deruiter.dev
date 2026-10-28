@@ -16,7 +16,7 @@ for a given provider.
 | Integration | Status | Purpose | Primary code entrypoint |
 | --- | --- | --- | --- |
 | Neon Postgres (via Prisma) | Active | Primary relational datastore | `prisma/schema.prisma`, `lib/db.ts` (setup: [tutorial §4](../tutorials/01-local-development-and-onboarding.md#4-migrate-the-database-with-prisma); capacity & audit: [Neon capacity inventory](neon-capacity-inventory.md)) |
-| Prisma ORM | Active | Schema, migrations, typed client | `prisma/schema.prisma`, `prisma/migrations/`; see [`DATABASE_MIGRATIONS.md`](../../DATABASE_MIGRATIONS.md) |
+| Prisma ORM | Active | Schema, migrations, typed client | `prisma/schema.prisma`, `prisma/migrations/`; see [the database migration how-to](../how-to/write-a-database-migration.md) |
 | Clerk | Active | Admin-console authentication | `proxy.ts`, `lib/auth/admin.ts` (setup: [how-to §Clerk](../how-to/configure-integrations.md#clerk-admin-authentication)) |
 | Resend | Active | Transactional email + deliverability webhook | `lib/services/email-service.ts`, `app/api/webhooks/resend/route.ts` (setup: [how-to: configure Resend and webhooks](../how-to/configure-resend-and-webhooks.md)) |
 | Upstash QStash | Optional | Sub-daily outbound email retries; falls back to the daily maintenance run | `lib/qstash-retry.ts`, `app/api/webhooks/qstash/retry/route.ts` |
@@ -191,7 +191,7 @@ for the design rationale behind the DX CLI these commands belong to.
 - [How-to: configure Resend and webhooks](../how-to/configure-resend-and-webhooks.md)
 - [How-to: configure Clerk, Sentry, Upstash, Vercel Cron/Analytics, and GitHub data fetching](../how-to/configure-integrations.md)
 - [Tutorial: local development & onboarding](../tutorials/01-local-development-and-onboarding.md)
-- [`DATABASE_MIGRATIONS.md`](../../DATABASE_MIGRATIONS.md) at the repository root
+- [Write a database migration](../how-to/write-a-database-migration.md)
 - [ADR 0001: pre-build database migrations](../../adr/0001-pre-build-database-migrations.md)
 - [ADR 0013: Next.js 16 proxy migration and SSG telemetry resilience](../../adr/0013-next16-proxy-migration-and-ssg-telemetry-resilience.md)
 - [ADR 0014: Clerk auth admin portal](../../adr/0014-clerk-auth-admin-portal.md)

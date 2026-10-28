@@ -36,6 +36,15 @@ an audit if the two disagree.
   the latest release-readiness audit. The current release process is
   [ADR 0063](../../adr/0063-weekly-release-train.md) and the
   [release and deploy guide](../how-to/release-and-deploy.md).
+- [Product excellence evaluation](audits/product-excellence-evaluation.md),
+  a point-in-time product opportunity catalog.
+
+## Case studies
+
+- [InBody QR decoder case study](inbody-qr-decoder-case-study.md), the InBody
+  QR decoder and Sortify document classification deep dives.
+- [Case study engineering notes](case-study-engineering-notes.md), the
+  engineering notes behind several case studies.
 
 ## Planning
 

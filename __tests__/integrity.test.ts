@@ -91,7 +91,10 @@ describe("Programmatic Integrity Gates", () => {
   describe("Requirement 1: Database-to-Guidelines Sync Validation", () => {
     it("should have exact match between prisma schema fields and CMS guidelines fields", () => {
       const schemaPath = path.join(rootDir, "prisma/schema.prisma");
-      const guidelinesPath = path.join(rootDir, "CMS_GUIDELINES.md");
+      const guidelinesPath = path.join(
+        rootDir,
+        "docs/reference/cms-guidelines.md"
+      );
 
       expect(fs.existsSync(schemaPath)).toBe(true);
       expect(fs.existsSync(guidelinesPath)).toBe(true);
@@ -212,7 +215,10 @@ describe("Programmatic Integrity Gates", () => {
   describe("Requirement 4: Code Sanitization & HTML Allowlist Consistency", () => {
     it("should align allowed tags and attributes between RichNarrative component and CMS guidelines", () => {
       const componentPath = path.join(rootDir, "components/RichNarrative.tsx");
-      const guidelinesPath = path.join(rootDir, "CMS_GUIDELINES.md");
+      const guidelinesPath = path.join(
+        rootDir,
+        "docs/reference/cms-guidelines.md"
+      );
 
       expect(fs.existsSync(componentPath)).toBe(true);
       expect(fs.existsSync(guidelinesPath)).toBe(true);
@@ -242,7 +248,7 @@ describe("Programmatic Integrity Gates", () => {
           ?.map((a) => a.replace(/"/g, ""))
           .sort() || [];
 
-      // 3. Extract permitted tags and attributes from CMS_GUIDELINES.md
+      // 3. Extract permitted tags and attributes from docs/reference/cms-guidelines.md
       const guidelineLines = guidelinesContent.split("\n");
       const guidelinePermittedTags: string[] = [];
       const guidelinePermittedAttrs: string[] = [];

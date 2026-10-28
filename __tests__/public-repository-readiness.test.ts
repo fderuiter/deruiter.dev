@@ -24,7 +24,7 @@ const sha256 = (content: string): string =>
  */
 const EXPECTED_HASHES: Record<string, string> = {
   LICENSE: "f8225b59f17909e08220e9dc57d38d8ec857a1e77cc780c03ea5176a7b2c120d",
-  NOTICE: "893e0ea6ea801fa264526003f04568d7d2fb8b4937837853aa6a1f7048afb58d",
+  NOTICE: "dc727b7493fac969ec8df56eb408a3f8d73e0572a05f87662d74759f695051a0",
   "public/files/LICENSE.txt":
     "fe200206479d4485ef58d8a73d8bdc4a4bf6467619876701b3d08aa0f2fd1d98",
 };

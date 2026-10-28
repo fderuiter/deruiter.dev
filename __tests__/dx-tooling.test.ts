@@ -241,6 +241,13 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(validateBranchName("stitch/fix/example").valid).toBe(false);
     });
 
+    it("rejects claude/ cloud branches and points them to dx/", () => {
+      const cloudBranch = validateBranchName("claude/project-thread-4n2nl3");
+      expect(cloudBranch.valid).toBe(false);
+      expect(cloudBranch.error).toContain("dx/<slug>");
+      expect(validateBranchName("dx/project-thread-4n2nl3").valid).toBe(true);
+    });
+
     it("passes checkGitHygieneConfig diagnostic check", () => {
       const result = checkGitHygieneConfig(root, false);
       expect(result.status).toBe("pass");

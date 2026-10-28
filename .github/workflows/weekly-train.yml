@@ -10,7 +10,9 @@ name: Weekly Train
 #
 # Inert until the operator turns it on (#2889):
 #   - scheduled runs exit unless the repository variable WEEKLY_TRAIN is "on";
-#   - any run exits while an open issue carries the `release:hold` label;
+#   - any run exits while an open issue carries the `release:hold` label,
+#     unless an operator re-runs it with `ignore_release_hold` (the hold stays
+#     open; only a person closes it);
 #   - firing fails clearly while the secret VERCEL_DEPLOY_HOOK_MAIN is unset.
 #
 # Stages:
@@ -59,6 +61,10 @@ on:
         description: "Only browser-test main HEAD as a release candidate; draft and deploy nothing"
         type: boolean
         default: false
+      ignore_release_hold:
+        description: "Operator only: run despite an open release:hold issue. The hold stays open."
+        type: boolean
+        default: false
 
 concurrency:
   group: weekly-train
@@ -95,6 +101,7 @@ jobs:
           FORCE: ${{ inputs.force }}
           DRY_RUN: ${{ inputs.dry_run }}
           RC_ONLY: ${{ inputs.rc_only }}
+          IGNORE_HOLD: ${{ inputs.ignore_release_hold }}
         run: |
           set -euo pipefail
           skip() {
@@ -117,7 +124,11 @@ jobs:
 
             holds=$(gh issue list --state open --label "release:hold" --json number --jq '[.[].number] | map("#" + tostring) | join(", ")')
             if [ -n "$holds" ]; then
-              skip "open release:hold issue(s) $holds."
+              if [ "$IGNORE_HOLD" = "true" ]; then
+                echo "Operator override: ignoring open release:hold issue(s) $holds. The holds stay open; close them by hand once the release is confirmed." | tee -a "$GITHUB_STEP_SUMMARY"
+              else
+                skip "open release:hold issue(s) $holds. Close them after confirming the live site, or re-run with ignore_release_hold."
+              fi
             fi
           fi
 

@@ -83,6 +83,11 @@ issue without that label. A failed release or smoke test leaves its GitHub Relea
 a draft and opens a `release:hold` issue, so the next week skips until a person closes
 it. **Create Deployment** and **Instant Rollback** work as before.
 
+To run despite an open hold, an operator starts **Run workflow** on Weekly Train
+with `ignore_release_hold` ticked. The run prints the hold number in its summary.
+The hold stays open: close it by hand once the release is confirmed on `/api/version`.
+Scheduled runs never set this input.
+
 ## One-Time Setup
 
 In the Vercel dashboard for the `portfolio` project:

@@ -134,6 +134,9 @@ describe("production deploy configuration", () => {
     expect(train).toContain('"$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]');
     expect(train).toContain("SWITCH: ${{ vars.WEEKLY_TRAIN }}");
     expect(train).toContain('--label "release:hold"');
+    expect(train).toContain("ignore_release_hold:");
+    expect(train).toContain("IGNORE_HOLD: ${{ inputs.ignore_release_hold }}");
+    expect(train).toContain('if [ "$IGNORE_HOLD" = "true" ]; then');
     expect(train).toContain("Merge Gate (Required Checks Summary)");
     expect(train).toContain("scripts/check-migration-safety.ts");
     expect(train).toContain("${{ secrets.VERCEL_DEPLOY_HOOK_MAIN }}");

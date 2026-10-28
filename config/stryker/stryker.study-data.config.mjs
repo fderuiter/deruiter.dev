@@ -42,7 +42,7 @@ export const ENGINES_JSON_REPORT =
 const config = {
   ...engineConfig,
   vitest: {
-    configFile: "vitest.stryker-study-data.config.mts",
+    configFile: "config/stryker/vitest.stryker-study-data.config.mts",
     related: false,
   },
   htmlReporter: {

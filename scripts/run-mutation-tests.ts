@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Stryker Mutation Testing Gateway Runner
- * Directly executes Stryker mutation testing using stryker.config.mjs.
+ * Directly executes Stryker mutation testing using
+ * config/stryker/stryker.config.mjs.
  *
  * Optional flags (#1772), passed through to `stryker run`:
  *   --incremental  Reuse results from reports/stryker-incremental.json for
@@ -9,16 +10,16 @@
  *   --force        Run every mutant even in incremental mode, then rewrite
  *                  the incremental report.
  *   --engines      Run the weekly game engine scope (#2529) from
- *                  stryker.engines.config.mjs instead, then hold every
+ *                  config/stryker/stryker.engines.config.mjs instead, then hold every
  *                  mutated file to its own floor in that config's
  *                  `fileBreaks`.
  *   --garmin       Run the weekly Garmin engine scope (#2564) from
- *                  stryker.garmin.config.mjs the same way.
+ *                  config/stryker/stryker.garmin.config.mjs the same way.
  *   --study-data   Run the weekly study data derivation scope (#2607) from
- *                  stryker.study-data.config.mjs the same way. Pass one
+ *                  config/stryker/stryker.study-data.config.mjs the same way. Pass one
  *                  scope at most.
  * With no flags it runs every mutant, as before. The score threshold in
- * stryker.config.mjs applies identically in every mode.
+ * config/stryker/stryker.config.mjs applies identically in every mode.
  */
 
 import { execFileSync } from "child_process";
@@ -41,6 +42,9 @@ export const MUTATION_GATE_FLAGS = [
   "--study-data",
 ] as const;
 
+/** The PR mutation gate's scope, used when no weekly scope is named. */
+const BASE_CONFIG = "config/stryker/stryker.config.mjs";
+
 /**
  * Weekly scopes that run from their own config and hold a break per file
  * (#2529). The Garmin engine has its own scope (#2564) because its 4,000
@@ -48,9 +52,9 @@ export const MUTATION_GATE_FLAGS = [
  * study data derivations (#2607) for the same reason.
  */
 const SCOPE_CONFIGS: Record<string, string> = {
-  "--engines": "stryker.engines.config.mjs",
-  "--garmin": "stryker.garmin.config.mjs",
-  "--study-data": "stryker.study-data.config.mjs",
+  "--engines": "config/stryker/stryker.engines.config.mjs",
+  "--garmin": "config/stryker/stryker.garmin.config.mjs",
+  "--study-data": "config/stryker/stryker.study-data.config.mjs",
 };
 
 /** Validates runner arguments and returns the `stryker run` argv. */
@@ -71,13 +75,13 @@ export function buildStrykerArgs(args: readonly string[]): string[] {
       `Pick one mutation scope, not ${scopes.join(" and ")}: each runs as its own job.`
     );
   }
-  const config = scopes.map((flag) => SCOPE_CONFIGS[flag]);
+  const config = scopes.length > 0 ? SCOPE_CONFIGS[scopes[0]] : BASE_CONFIG;
   const modes = [...new Set(args)].filter((arg) => !(arg in SCOPE_CONFIGS));
   if (modes.includes("--force") && !modes.includes("--incremental")) {
     // Without --incremental every mutant already runs; --force is a no-op.
-    return ["run", ...config];
+    return ["run", config];
   }
-  return ["run", ...config, ...modes];
+  return ["run", config, ...modes];
 }
 
 /** The slice of Stryker's JSON report the per-file floors read. */

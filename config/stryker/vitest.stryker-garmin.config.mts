@@ -6,7 +6,10 @@ import path from "path";
 // test that covers a mutant, so the whole-run simulations (balance,
 // difficulty) stay out, as do the suites that assert rendering data
 // rather than rules (*-art, heatmap, manual).
+const repoRoot = path.resolve(import.meta.dirname, "../..");
+
 export default defineConfig({
+  root: repoRoot,
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
@@ -25,7 +28,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "./"),
+      "@": repoRoot,
     },
   },
 });

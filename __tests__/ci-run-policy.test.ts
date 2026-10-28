@@ -191,8 +191,8 @@ describe("CI run policy (#1773)", () => {
 
     it("forces a full Stryker run when Stryker's inputs change", () => {
       for (const file of [
-        "stryker.config.mjs",
-        "vitest.stryker.config.mts",
+        "config/stryker/stryker.config.mjs",
+        "config/stryker/vitest.stryker.config.mts",
         "package-lock.json",
       ]) {
         expect(pr({ changedFiles: [file] }).strykerForce).toBe(true);

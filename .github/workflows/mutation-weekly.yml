@@ -6,7 +6,7 @@ name: Mutation Testing (Weekly Full Run)
 # once a week (and on demand) every mutant runs again. `--incremental
 # --force` runs all of them and rewrites the incremental report, which is
 # saved under the default branch so the next pull requests start from it.
-# The break threshold in stryker.config.mjs applies exactly as in ci.yml.
+# The break threshold in config/stryker/stryker.config.mjs applies exactly as in ci.yml.
 
 on:
   schedule:
@@ -89,7 +89,7 @@ jobs:
   # #2564: the Garmin engine (lib/garmin/engine.ts and its rule modules)
   # has its own scope and job, because its ~4,500 covered mutants alone run
   # longer than mutation-engines' whole bound. Its config holds a break per
-  # file, as stryker.engines.config.mjs does.
+  # file, as config/stryker/stryker.engines.config.mjs does.
   mutation-garmin:
     name: Mutation Gate (Garmin Engine)
     runs-on: ubuntu-latest

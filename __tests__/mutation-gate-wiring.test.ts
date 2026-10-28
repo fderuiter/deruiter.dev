@@ -17,7 +17,7 @@ describe("mutation gate wiring", () => {
       "utf8"
     );
     const configSource = fs.readFileSync(
-      path.join(workspaceRoot, "stryker.config.mjs"),
+      path.join(workspaceRoot, "config/stryker/stryker.config.mjs"),
       "utf8"
     );
 
@@ -39,7 +39,7 @@ describe("mutation gate wiring", () => {
 
   it("never lets the mutation break threshold fall below the ratcheted floor (#968)", async () => {
     const { default: config } = (await import(
-      path.join(workspaceRoot, "stryker.config.mjs")
+      path.join(workspaceRoot, "config/stryker/stryker.config.mjs")
     )) as { default: { thresholds: { break: number } } };
 
     expect(config.thresholds.break).toBeGreaterThanOrEqual(75);

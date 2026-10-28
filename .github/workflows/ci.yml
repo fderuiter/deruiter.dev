@@ -341,7 +341,7 @@ jobs:
   # run incrementally against the newest report a main push saved; a manual
   # dispatch runs every mutant, and so does a PR that changes Stryker's own
   # configuration or dependencies (`--force`). The weekly full run lives in
-  # mutation-weekly.yml. thresholds.break in stryker.config.mjs is unchanged.
+  # mutation-weekly.yml. thresholds.break in config/stryker/stryker.config.mjs is unchanged.
   mutation-gate:
     name: Mutation Gate (Stryker)
     needs: changes

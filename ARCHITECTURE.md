@@ -48,6 +48,7 @@ components/                                # React UI Component Ecosystem
 ├── Navbar.tsx                             # Top bar shell around the nav data
 └── Footer.tsx                             # Global footer & telemetry ticker
 
+config/                                    # Tool configs that need not sit at the root: stryker/ (mutation testing)
 docs/                                      # Diátaxis docs: tutorials/, how-to/, reference/ (api/ is git-ignored TypeDoc), explanation/
 hooks/                                     # Custom React hooks (pretext, telemetry, sound, theme)
 infra/                                     # AWS: GitHub Actions OIDC role for the always-free data stores (ADR 0070)

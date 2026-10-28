@@ -180,7 +180,12 @@ export default withSentryConfig(withSerwist(nextConfig), {
   org: process.env.SENTRY_ORG || "dummy-org",
   project: process.env.SENTRY_PROJECT || "dummy-project",
   widenClientFileUpload: true,
+  // Generating source maps for Sentry pushed the webpack compile past its
+  // heap cap on Vercel's 8 GB build machine (2026-10-28): with maps the
+  // compile ran out of heap at 3584 MB, without them it finished with room
+  // to spare. Errors still reach Sentry; their stack traces show minified
+  // frames until maps come back with build headroom to pay for them.
   sourcemaps: {
-    disable: false,
+    disable: true,
   },
 });

@@ -244,11 +244,13 @@ jobs:
           restore-keys: |
             nextjs-${{ hashFiles('package-lock.json') }}-
 
-      # The same entrypoint Vercel runs. Off Vercel, scripts/build.js never
-      # migrates, and the dead-end DATABASE_URL makes static generation fall
-      # back exactly as ci.yml's `build` job does.
-      - name: Build Production
-        run: npm run build
+      # The same entrypoint Vercel runs, under Vercel's build machine limits
+      # (scripts/vercel-shaped-build.sh), so a candidate that would run out of
+      # memory on Vercel fails here, before the Deploy Hook fires. Off Vercel,
+      # scripts/build.js never migrates, and the dead-end DATABASE_URL makes
+      # static generation fall back exactly as ci.yml's `build` job does.
+      - name: Build Production (Vercel-shaped, 2 cores and 8 GB)
+        run: bash scripts/vercel-shaped-build.sh
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
 

@@ -469,14 +469,16 @@ jobs:
           restore-keys: |
             nextjs-${{ hashFiles('package-lock.json') }}-
 
-      - name: Build Production
+      - name: Build Production (Vercel-shaped, 2 cores and 8 GB)
         # Must be the same entrypoint Vercel runs. `npx next build` defaults to
         # Turbopack on Next 16, which never completes for this app (it was
         # cancelled at 41m47s here and never finished locally either).
         # scripts/build.js pins `next build --webpack`, which is what actually
         # ships, and it also runs the prisma/openapi/docs/standalone phases the
-        # production build depends on.
-        run: npm run build
+        # production build depends on. The wrapper runs it under Vercel's Hobby
+        # build machine limits and fails above 85% of its memory, which this
+        # 16 GB runner would otherwise hide (2026-10-28).
+        run: bash scripts/vercel-shaped-build.sh
         env:
           # Port 59999 has no listener, so @neondatabase/serverless fails fast and
           # static generation falls back. Never point this at a Postgres service:

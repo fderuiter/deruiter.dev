@@ -90,6 +90,12 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ["@tabler/icons-react"],
+    // The webpack compile itself outgrew Vercel's 8 GB build machine on
+    // 2026-10-28 (OOM SIGKILL in "Creating an optimized production build").
+    // Measured on 2 cores, this cut the compile peak from ~8.1 GB to ~6.3 GB
+    // and the whole build from ~9.8 GB to ~7.0 GB, for a slightly slower
+    // compile. Remove it only with a fresh memory measurement.
+    webpackMemoryOptimizations: true,
   },
   images: {
     formats: ["image/avif", "image/webp"],

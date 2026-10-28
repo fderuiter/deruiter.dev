@@ -48,7 +48,7 @@ components/                                # React UI Component Ecosystem
 ├── Navbar.tsx                             # Top bar shell around the nav data
 └── Footer.tsx                             # Global footer & telemetry ticker
 
-docs/                                      # Diátaxis docs: tutorials/, how-to/, reference/api/ (TypeDoc), explanation/
+docs/                                      # Diátaxis docs: tutorials/, how-to/, reference/ (api/ is git-ignored TypeDoc), explanation/
 hooks/                                     # Custom React hooks (pretext, telemetry, sound, theme)
 infra/                                     # AWS: GitHub Actions OIDC role for the always-free data stores (ADR 0070)
 lib/                                       # Core TypeScript utilities, DX engine, & domain logic
@@ -479,14 +479,14 @@ To guarantee that technical specifications, API documentation, and internal arch
   - All API routes (`/api/telemetry`, `/api/telemetry/sync`, `/api/case-studies`) define declarative Zod contracts.
   - The OpenAPI generator (`scripts/generate-openapi.ts`) compiles these schemas into OpenAPI 3.0 specifications.
   - Automated route discovery enforces 100% route coverage, failing verification if any handler in `app/api/**/route.ts` lacks specification coverage.
-- **TypeDoc Markdown Parity & API Documentation Compilation (`docs/reference/api/`):**
-  - Public hooks, types, and library symbols automatically compile to Markdown documentation via the explicit CLI command `npm run compile-docs`.
+- **TypeDoc API Reference (`docs/reference/api/`, git-ignored):**
+  - Public hooks, types, and library symbols compile to Markdown with `npm run compile-docs`. The output is not committed; `npm run check-docs-drift` compiles it with warnings as errors on every commit and CI run.
 - **Local Documentation Drift Verification (`scripts/check-drift.ts`):**
   - Contributors run `npm run check-docs-drift` prior to committing to detect uncommitted documentation mutations or undocumented API routes.
   - `scripts/check-drift.ts` verifies zero uncommitted modifications and zero untracked documentation files.
 - **DX Doctor Invariant Verification & One-Command Auto-Remediation:**
   - `npm run dx doctor` and `npm run verify` check documentation and API parity alongside the architectural invariants registered in `lib/dx/doctor.ts`.
-  - Running `npm run doctor:fix` automatically synchronizes `openapi.json` and recompiles TypeDoc markdown files.
+  - Running `npm run doctor:fix` automatically synchronizes `openapi.json`.
 - **Strict Hygiene Boundaries:**
   - Brainstorming notes, intermediate agent traces, and temporary scratchpad directories (`.scratch/`, `scratch/`, `tmp/`) are excluded from markdown linting and repository tracking to preserve documentation integrity. Curated agent skills in `.agents/skills/` are tracked.
 

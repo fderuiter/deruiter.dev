@@ -1,15 +1,12 @@
 import { execFileSync } from "node:child_process";
-import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import { syncGeneratedDocumentation } from "./docs-union-order";
 
-/** Relative to the workspace root: where compiled TypeDoc reference markdown is checked in (ADR 0023). */
-export const API_REFERENCE_RELATIVE_PATH = path.join(
-  "docs",
-  "reference",
-  "api"
-);
+/**
+ * Relative to the workspace root: where TypeDoc writes the reference markdown.
+ * The folder is git-ignored; CI compiles it on every run instead (ADR 0023,
+ * amended 2026-10-28).
+ */
+const API_REFERENCE_RELATIVE_PATH = path.join("docs", "reference", "api");
 
 const typedocArguments = [
   "typedoc",
@@ -26,8 +23,6 @@ const typedocArguments = [
   "--plugin",
   "typedoc-plugin-markdown",
   "--hideGenerator",
-  "--cleanOutputDir",
-  "false",
   "--disableSources",
   "--intentionallyNotExported",
   "TypeMap",
@@ -36,42 +31,50 @@ const typedocArguments = [
   "--intentionallyNotExported",
   "TypeMapCb",
   "--skipErrorChecking",
+  // A type that is used but not exported is a design choice in a deep module,
+  // not a broken comment, so it is not reported.
+  "--validation.notExported",
+  "false",
 ];
+
+export interface CompileDocumentationOptions {
+  /**
+   * Fail on any TypeDoc warning, such as a `{@link}` to a symbol that is not
+   * documented. `check-docs-drift` compiles strictly so a broken doc comment
+   * fails pre-commit and CI; a local `npm run compile-docs` does not.
+   */
+  strict?: boolean;
+}
 
 /** Compiles TypeDoc into the requested destination. */
 export function compileDocumentation(
   workspaceRoot: string,
-  outputDirectory: string
+  outputDirectory: string,
+  { strict = false }: CompileDocumentationOptions = {}
 ): void {
   const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
-  execFileSync(npxCommand, [...typedocArguments, "--out", outputDirectory], {
-    cwd: workspaceRoot,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
-}
-
-/**
- * Regenerates the checked-in reference. TypeDoc compiles into a scratch
- * directory first, and only pages that changed beyond literal-union order
- * are copied in, so an unrelated change never rewrites a page (#951).
- */
-export function regenerateDocumentation(workspaceRoot: string): string[] {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "portfolio-docs-"));
-  try {
-    compileDocumentation(workspaceRoot, scratch);
-    return syncGeneratedDocumentation(
-      scratch,
-      path.join(workspaceRoot, API_REFERENCE_RELATIVE_PATH)
-    );
-  } finally {
-    fs.rmSync(scratch, { recursive: true, force: true });
-  }
+  execFileSync(
+    npxCommand,
+    [
+      ...typedocArguments,
+      ...(strict ? ["--treatWarningsAsErrors"] : []),
+      "--out",
+      outputDirectory,
+    ],
+    {
+      cwd: workspaceRoot,
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    }
+  );
 }
 
 if (require.main === module) {
-  const written = regenerateDocumentation(process.cwd());
+  compileDocumentation(
+    process.cwd(),
+    path.join(process.cwd(), API_REFERENCE_RELATIVE_PATH)
+  );
   console.log(
-    `Updated ${written.length} reference page${written.length === 1 ? "" : "s"} in ${API_REFERENCE_RELATIVE_PATH}.`
+    `Compiled the API reference into ${API_REFERENCE_RELATIVE_PATH}.`
   );
 }

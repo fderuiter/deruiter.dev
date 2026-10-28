@@ -3,7 +3,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { compileDocumentation } from "./compile-docs";
-import { sameExceptUnionOrder } from "./docs-union-order";
 
 export interface DocumentationGitStatus {
   modified: string[];
@@ -12,15 +11,9 @@ export interface DocumentationGitStatus {
 
 export interface DocumentationDriftOptions {
   workspaceRoot: string;
+  /** Compiles TypeDoc strictly into the given scratch directory. */
   compile: (outputDirectory: string) => void;
   getGitStatus: () => DocumentationGitStatus;
-  /**
-   * Path (relative to workspaceRoot, forward-slash normalized) where
-   * compiled TypeDoc reference output is checked in, e.g.
-   * "docs/reference/api" (ADR 0023). Defaults to "docs" so callers that
-   * don't relocate generated output keep comparing against the docs root.
-   */
-  generatedDocsRelativePath?: string;
 }
 
 export interface DocumentationDriftResult {
@@ -28,62 +21,15 @@ export interface DocumentationDriftResult {
   details: string[];
 }
 
-function listFiles(directory: string, relativeDirectory = ""): string[] {
-  if (!fs.existsSync(directory)) return [];
-
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const relativePath = path.join(relativeDirectory, entry.name);
-    const absolutePath = path.join(directory, entry.name);
-    return entry.isDirectory()
-      ? listFiles(absolutePath, relativePath)
-      : [relativePath];
-  });
-}
-
 function normalizePath(filePath: string): string {
   return filePath.replaceAll("\\", "/");
 }
 
-function getGeneratedDifferences(
-  generatedDirectory: string,
-  docsDirectory: string,
-  displayPrefix: string
-): string[] {
-  return listFiles(generatedDirectory).flatMap((relativePath) => {
-    const generatedPath = path.join(generatedDirectory, relativePath);
-    const documentationPath = path.join(docsDirectory, relativePath);
-    const displayPath = `${displayPrefix}/${normalizePath(relativePath)}`;
-    if (!fs.existsSync(documentationPath)) {
-      return [`Stale generated reference: missing ${displayPath}`];
-    }
-    // Literal-union order is load-order noise, not drift (#951).
-    return sameExceptUnionOrder(
-      fs.readFileSync(generatedPath, "utf8"),
-      fs.readFileSync(documentationPath, "utf8")
-    )
-      ? []
-      : [
-          `Stale generated reference: ${displayPath} differs from generated output`,
-        ];
-  });
-}
-
 function classifyWorkingTreeChanges(
-  gitStatus: DocumentationGitStatus,
-  generatedFiles: Set<string>,
-  generatedDocsRelativePath: string
+  gitStatus: DocumentationGitStatus
 ): string[] {
-  const generatedPrefix = `${normalizePath(generatedDocsRelativePath)}/`;
-
   const classify = (filePath: string, state: "modified" | "untracked") => {
-    const normalizedFull = normalizePath(filePath);
-    const displayPath = normalizedFull.replace(/^docs\//u, "");
-    const isGenerated =
-      normalizedFull.startsWith(generatedPrefix) &&
-      generatedFiles.has(normalizedFull.slice(generatedPrefix.length));
-    if (isGenerated) {
-      return `Stale generated reference: docs/${displayPath} is ${state}`;
-    }
+    const displayPath = normalizePath(filePath).replace(/^docs\//u, "");
     const action =
       state === "modified"
         ? "Stage or revert the authored edit"
@@ -98,19 +44,18 @@ function classifyWorkingTreeChanges(
 }
 
 /**
- * Compiles generated documentation into a temporary destination and compares it
- * with the checked-in references without mutating the workspace.
+ * Compiles the API reference into a scratch directory, so a broken doc comment
+ * fails here, and reports authored files under docs/ that are not staged. The
+ * compiled reference itself is not committed (ADR 0023, amended 2026-10-28),
+ * so there is nothing generated to compare against.
  */
 export function checkDocumentationDrift({
-  workspaceRoot,
   compile,
   getGitStatus,
-  generatedDocsRelativePath = "docs",
 }: DocumentationDriftOptions): DocumentationDriftResult {
   const outputDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "portfolio-docs-check-")
   );
-  const docsDirectory = path.join(workspaceRoot, generatedDocsRelativePath);
 
   try {
     try {
@@ -119,25 +64,14 @@ export function checkDocumentationDrift({
       const message = error instanceof Error ? error.message : String(error);
       return {
         status: "error",
-        details: [`Documentation generator failed: ${message}`],
+        details: [
+          `Documentation generator failed: ${message}`,
+          "Fix the doc comment TypeDoc names above; `npm run compile-docs` prints the same warnings.",
+        ],
       };
     }
 
-    const generatedFiles = new Set(
-      listFiles(outputDirectory).map(normalizePath)
-    );
-    const details = [
-      ...getGeneratedDifferences(
-        outputDirectory,
-        docsDirectory,
-        normalizePath(generatedDocsRelativePath)
-      ),
-      ...classifyWorkingTreeChanges(
-        getGitStatus(),
-        generatedFiles,
-        generatedDocsRelativePath
-      ),
-    ];
+    const details = classifyWorkingTreeChanges(getGitStatus());
     return details.length === 0
       ? { status: "pass", details }
       : { status: "fail", details };

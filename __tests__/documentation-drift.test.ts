@@ -43,96 +43,38 @@ afterEach(() => {
 });
 
 describe("documentation drift checking", () => {
-  it("compares an isolated compilation without rewriting the tracked documentation", () => {
+  it("compiles into a scratch directory without touching the tracked documentation", () => {
     const { root, docs } = createFixture();
     const original = fs.readFileSync(path.join(docs, "reference.md"), "utf8");
+    let compiledInto = "";
 
     const result = checkDocumentationDrift({
       workspaceRoot: root,
       compile: (outputDirectory) => {
-        fs.mkdirSync(outputDirectory, { recursive: true });
+        compiledInto = outputDirectory;
         fs.writeFileSync(
           path.join(outputDirectory, "reference.md"),
-          original,
+          "# Compiled\n",
           "utf8"
         );
       },
       getGitStatus: () => ({ modified: [], untracked: [] }),
     });
 
-    expect(result.status).toBe("pass");
+    expect(result).toEqual({ status: "pass", details: [] });
+    expect(compiledInto.startsWith(root)).toBe(false);
+    expect(fs.existsSync(compiledInto)).toBe(false);
     expect(fs.readFileSync(path.join(docs, "reference.md"), "utf8")).toBe(
       original
     );
   });
 
-  it("reports stale generated references without rewriting them", () => {
-    const { root, docs } = createFixture();
-    const original = fs.readFileSync(path.join(docs, "reference.md"), "utf8");
-
-    const result = checkDocumentationDrift({
-      workspaceRoot: root,
-      compile: (outputDirectory) => {
-        fs.writeFileSync(
-          path.join(outputDirectory, "reference.md"),
-          "# Updated reference\n",
-          "utf8"
-        );
-      },
-      getGitStatus: () => ({ modified: [], untracked: [] }),
-    });
-
-    expect(result).toMatchObject({ status: "fail" });
-    expect(result.details).toContain(
-      "Stale generated reference: docs/reference.md differs from generated output"
-    );
-    expect(fs.readFileSync(path.join(docs, "reference.md"), "utf8")).toBe(
-      original
-    );
-  });
-
-  it("reports a missing generated page when a public export is added", () => {
+  it("reports an untracked authored report", () => {
     const { root } = createFixture();
 
     const result = checkDocumentationDrift({
       workspaceRoot: root,
-      compile: (outputDirectory) => {
-        fs.writeFileSync(
-          path.join(outputDirectory, "reference.md"),
-          "# Reference\n",
-          "utf8"
-        );
-        fs.mkdirSync(path.join(outputDirectory, "hooks"), { recursive: true });
-        fs.writeFileSync(
-          path.join(outputDirectory, "hooks", "useNewExport.md"),
-          "# New public export\n",
-          "utf8"
-        );
-      },
-      getGitStatus: () => ({ modified: [], untracked: [] }),
-    });
-
-    expect(result).toMatchObject({ status: "fail" });
-    expect(result.details).toContain(
-      "Stale generated reference: missing docs/hooks/useNewExport.md"
-    );
-  });
-
-  it("distinguishes an untracked authored audit report from generated drift", () => {
-    const { root, docs } = createFixture();
-    const auditPath = path.join(docs, "audits", "workflow.md");
-    fs.mkdirSync(path.dirname(auditPath), { recursive: true });
-    fs.writeFileSync(auditPath, "# Workflow audit\n", "utf8");
-
-    const result = checkDocumentationDrift({
-      workspaceRoot: root,
-      compile: (outputDirectory) => {
-        fs.writeFileSync(
-          path.join(outputDirectory, "reference.md"),
-          "# Reference\n",
-          "utf8"
-        );
-      },
+      compile: () => {},
       getGitStatus: () => ({
         modified: [],
         untracked: ["docs/audits/workflow.md"],
@@ -143,21 +85,14 @@ describe("documentation drift checking", () => {
     expect(result.details).toContain(
       "Authored documentation untracked: docs/audits/workflow.md. Stage or remove the authored report."
     );
-    expect(fs.readFileSync(auditPath, "utf8")).toBe("# Workflow audit\n");
   });
 
-  it("distinguishes an authored documentation edit from generated drift", () => {
+  it("reports an unstaged authored edit", () => {
     const { root } = createFixture();
 
     const result = checkDocumentationDrift({
       workspaceRoot: root,
-      compile: (outputDirectory) => {
-        fs.writeFileSync(
-          path.join(outputDirectory, "reference.md"),
-          "# Reference\n",
-          "utf8"
-        );
-      },
+      compile: () => {},
       getGitStatus: () => ({
         modified: ["docs/planning/next.md"],
         untracked: [],
@@ -168,58 +103,6 @@ describe("documentation drift checking", () => {
     expect(result.details).toContain(
       "Authored documentation modified: docs/planning/next.md. Stage or revert the authored edit."
     );
-  });
-
-  it("compares generated output against a custom generatedDocsRelativePath instead of the docs root (ADR 0023)", () => {
-    const { root } = createFixture();
-    const apiReferenceDir = path.join(root, "docs", "reference", "api");
-    fs.mkdirSync(apiReferenceDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(apiReferenceDir, "modules.md"),
-      "# Modules\n",
-      "utf8"
-    );
-
-    const result = checkDocumentationDrift({
-      workspaceRoot: root,
-      compile: (outputDirectory) => {
-        fs.writeFileSync(
-          path.join(outputDirectory, "modules.md"),
-          "# Modules\n",
-          "utf8"
-        );
-      },
-      getGitStatus: () => ({ modified: [], untracked: [] }),
-      generatedDocsRelativePath: path.join("docs", "reference", "api"),
-    });
-
-    expect(result).toEqual({ status: "pass", details: [] });
-  });
-
-  it("reports a stale generated reference at the custom generatedDocsRelativePath location, not the docs root", () => {
-    const { root, docs } = createFixture();
-    // Nothing exists yet at docs/reference/api/modules.md.
-
-    const result = checkDocumentationDrift({
-      workspaceRoot: root,
-      compile: (outputDirectory) => {
-        fs.writeFileSync(
-          path.join(outputDirectory, "modules.md"),
-          "# Modules\n",
-          "utf8"
-        );
-      },
-      getGitStatus: () => ({ modified: [], untracked: [] }),
-      generatedDocsRelativePath: path.join("docs", "reference", "api"),
-    });
-
-    expect(result).toMatchObject({ status: "fail" });
-    expect(result.details).toContain(
-      "Stale generated reference: missing docs/reference/api/modules.md"
-    );
-    // The pre-existing docs/reference.md fixture at the plain docs root is
-    // untouched and irrelevant to this custom-path comparison.
-    expect(fs.existsSync(path.join(docs, "reference.md"))).toBe(true);
   });
 
   it("returns an actionable generator failure", () => {
@@ -233,25 +116,24 @@ describe("documentation drift checking", () => {
       getGitStatus: () => ({ modified: [], untracked: [] }),
     });
 
-    expect(result).toEqual({
-      status: "error",
-      details: ["Documentation generator failed: TypeDoc failed"],
-    });
+    expect(result.status).toBe("error");
+    expect(result.details[0]).toBe(
+      "Documentation generator failed: TypeDoc failed"
+    );
+    expect(result.details[1]).toContain("npm run compile-docs");
   });
 
-  it("returns a failing CLI status for stale generated references", () => {
+  it("returns a failing CLI status when TypeDoc reports a warning", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const dependencies = passingDependencies();
     dependencies.checkDocumentation = () => ({
-      status: "fail",
-      details: ["Stale generated reference: missing docs/hooks/useRemoved.md"],
+      status: "error",
+      details: ["Documentation generator failed: 1 warning"],
     });
 
     expect(checkDrift("/workspace", dependencies)).toBe(1);
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Stale generated reference: missing docs/hooks/useRemoved.md"
-      )
+      expect.stringContaining("Documentation generator failed: 1 warning")
     );
     error.mockRestore();
   });
@@ -383,12 +265,6 @@ describe("LLM discovery manifests drift checking", () => {
  * one to discover the drift, one after guessing the fix.
  */
 describe("Drift remedy guidance", () => {
-  it("names the exact command for stale generated references", () => {
-    const remedy = formatDriftRemedy(["generated-docs"]);
-    expect(remedy).toContain("npm run compile-docs");
-    expect(remedy).toContain("git add docs/");
-  });
-
   it("names the contract regeneration command for OpenAPI drift", () => {
     const remedy = formatDriftRemedy(["openapi"]);
     expect(remedy).toContain("npm run doctor:fix");
@@ -411,7 +287,7 @@ describe("Drift remedy guidance", () => {
   });
 
   it("reports only the categories that actually failed", () => {
-    const remedy = formatDriftRemedy(["generated-docs"]);
+    const remedy = formatDriftRemedy(["llms-manifests"]);
     expect(remedy).not.toContain("Broken markdown links");
     expect(remedy).not.toContain("openapi.json");
   });
@@ -427,7 +303,7 @@ describe("Drift remedy guidance", () => {
 
   it("stays copy-pasteable rather than prose", () => {
     const remedy = formatDriftRemedy([
-      "generated-docs",
+      "llms-manifests",
       "openapi",
       "authored-docs",
     ]);

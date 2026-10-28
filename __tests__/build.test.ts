@@ -119,6 +119,47 @@ describe("build.js script execution", () => {
     ).toEqual(["--max-old-space-size=3584"]);
   });
 
+  it("replaces the underscore spelling of the heap flag that Vercel's NODE_OPTIONS used", async () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.NODE_OPTIONS =
+      "--max_old_space_size=8192 --experimental-require-module";
+
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+
+    const nextBuild = spawnSpy.mock.calls.find((c: any[]) =>
+      c[1].includes("next")
+    );
+    const flags = String(nextBuild[2].env.NODE_OPTIONS).split(/\s+/);
+    expect(flags).toContain("--experimental-require-module");
+    expect(
+      flags.filter((f: string) => /^--max[-_]old[-_]space[-_]size/.test(f))
+    ).toEqual(["--max-old-space-size=3584"]);
+  });
+
+  it("compiles the TypeDoc reference outside Vercel and skips it on Vercel, where CI already checks it", async () => {
+    const compilesDocs = () =>
+      spawnSpy.mock.calls.some(
+        (c: any[]) => c[0] === "npm" && c[1].includes("compile-docs")
+      );
+
+    process.env.VERCEL_ENV = "preview";
+    delete process.env.VERCEL;
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+    expect(compilesDocs()).toBe(true);
+
+    delete require.cache[require.resolve("../scripts/build.js")];
+    spawnSpy.mockClear();
+    setProductionConfig();
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+    expect(compilesDocs()).toBe(false);
+  });
+
   it("type-checks in its own phase before migrations and before next build (#2100)", async () => {
     process.env.VERCEL_ENV = "preview";
 

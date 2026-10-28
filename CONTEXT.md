@@ -566,7 +566,7 @@ When refactoring authored copy, select replacement punctuation based on the gram
 ### Editorial Governance & Workflow Invariants
 
 - **Accessible Name Parity**: In interactive navigation and toggle controls, maintain 100% semantic parity between `aria-label` descriptions and hover `title` tooltips.
-- **Documentation Synchronization**: When editing exported JSDoc comments or public API descriptions, regenerate TypeDoc markdown using `npm run compile-docs` and verify zero drift with `npm run check-docs-drift`.
+- **Documentation Synchronization**: When editing exported JSDoc comments or public API descriptions, run `npm run check-docs-drift`, which compiles the TypeDoc reference with warnings as errors. The compiled reference is git-ignored and never committed.
 - **Database-Backed CMS Content**: Update repository-controlled seed data (`prisma/seed.ts`) and static fallbacks (`lib/fallback-blog-posts.ts`) within the pull request. For live Neon PostgreSQL records, provide an explicit record-by-record checklist for the content owner to update through the authorized `/admin` CMS flow.
 - **Verification Standard**: Verify copy changes with desktop and narrow-mobile smoke tests (320px viewport clearance) to ensure replacement punctuation introduces no text overflow or layout wrapping regressions.
 

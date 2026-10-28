@@ -237,24 +237,20 @@ directly.
 
 When introducing or modifying public interfaces (`lib/`, `hooks/`, `types/`) or HTTP API routes (`app/api/`), contributors must ensure documentation and specifications remain synchronized to prevent pre-commit blocks and CI build failures:
 
-1. **Compile API Documentation**
-   After changing public functions, hooks, or types, manually recompile the TypeDoc reference documentation:
-
-   ```bash
-   npm run compile-docs
-   ```
-
-2. **Verify Local Documentation Drift**
-   Execute the local documentation drift check before committing changes:
+1. **Check the docs compile**
+   Run the drift check before committing. It compiles the TypeDoc reference with warnings as errors, so a broken `{@link}` or doc comment fails here rather than in CI:
 
    ```bash
    npm run check-docs-drift
    ```
 
-3. **Resolve Drift & Stage Documentation**
-   If documentation drift is detected, run `npm run compile-docs` (or `npm run doctor:fix` to auto-remediate) and stage updated markdown files in `docs/` alongside code changes before committing:
+   The compiled reference lands in `docs/reference/api/`, which is git-ignored. Run `npm run compile-docs` to browse it locally; never commit it.
+
+2. **Regenerate and stage the API contract**
+   If the check reports an API route missing from `openapi.json`, run `npm run doctor:fix` and stage the contract with your code:
+
    ```bash
-   git add docs/ openapi.json
+   git add openapi.json
    ```
 
 ---

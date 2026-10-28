@@ -323,7 +323,7 @@ them.
 
 | Variable | Class | Vercel scope | Notes |
 | --- | --- | --- | --- |
-| `NODE_OPTIONS` | Required | Production, Preview | Must contain `--experimental-require-module`, which lets the server load the ESM-only dependency under `isomorphic-dompurify`. Without it server-rendered routes return 500 (#995). Any `--max-old-space-size` in it is replaced during builds by `scripts/build.js` ([Build Memory](#build-memory)). |
+| `NODE_OPTIONS` | Required | Production, Preview | Must contain `--experimental-require-module`, which lets the server load the ESM-only dependency under `isomorphic-dompurify`. Without it server-rendered routes return 500 (#995). Leave the heap flag out: `scripts/build.js` replaces any `--max-old-space-size` (or `--max_old_space_size`) during builds ([Build Memory](#build-memory)). |
 | `NODE_ENV` | Platform | None | Set by Next.js. |
 | `VERCEL` | Platform | None | Set by Vercel on its builds. |
 | `VERCEL_ENV` | Platform | None | Set by Vercel. Gates migrations and production-only behaviour. |
@@ -445,13 +445,17 @@ and a 4096 MB heap cap.
 Three settings now keep the build inside the machine:
 
 - `scripts/build.js` sets the heap cap itself (`BUILD_HEAP_MB`, 3584 MB). It
-  replaces any `--max-old-space-size` in an inherited `NODE_OPTIONS`, so
-  Vercel, CI and a laptop compile under the same limit. The build log prints
+  replaces any heap flag in an inherited `NODE_OPTIONS`, spelled with dashes
+  or underscores, so Vercel, CI and a laptop compile under the same limit. The build log prints
   the value as `Node heap cap for this build`.
 - `next.config.ts` keeps `experimental.webpackMemoryOptimizations` on.
 - Sentry source maps are off (`sourcemaps.disable` in `next.config.ts`).
   Generating them took the compile past the cap. Errors still reach Sentry,
   but their stack traces show minified frames.
+
+On Vercel the build skips the TypeDoc reference (`npm run compile-docs`). The
+site never serves it, CI's drift check verifies it on the same commit, and it
+cost about a minute per deploy.
 
 To build with Vercel's core count (the heap cap comes from `scripts/build.js`),
 pin the build to two cores:

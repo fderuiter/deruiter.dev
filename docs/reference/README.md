@@ -10,6 +10,8 @@ lookup rather than sequential reading.
 - [`openapi.json`](../../openapi.json), generated HTTP API contract.
 - [Integration catalog](integrations-catalog.md), external services and their
   environment boundaries.
+- [CMS guidelines](cms-guidelines.md), the Prisma-backed content schema and
+  the HTML tags and attributes the sanitizer allows.
 - [Setup wizard](setup.md), the fresh-clone command, its flags, profiles,
   mutation boundaries and recovery steps.
 - [Clinical Data Platform star schema](clinical-platform-star-schema.md), the

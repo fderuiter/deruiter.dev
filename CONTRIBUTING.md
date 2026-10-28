@@ -316,7 +316,7 @@ The repository provides standardized CLI commands for generating multi-resolutio
 ## 10. Database Changes
 
 Schema changes must include a checked-in Prisma migration. See
-[DATABASE_MIGRATIONS.md](DATABASE_MIGRATIONS.md) for the development workflow,
+[database migrations](docs/how-to/write-a-database-migration.md) for the development workflow,
 production rollout order, and the one-time production baseline procedure.
 
 ---

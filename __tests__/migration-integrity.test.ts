@@ -38,7 +38,7 @@ describe("Prisma migration integrity", () => {
 
   const rootDir = process.cwd();
   const migrationsDir = resolve(rootDir, "prisma/migrations");
-  const docPath = resolve(rootDir, "DATABASE_MIGRATIONS.md");
+  const docPath = resolve(rootDir, "docs/how-to/write-a-database-migration.md");
 
   function readMigrationSql(migrationName: string): string {
     return readFileSync(
@@ -409,7 +409,7 @@ describe("Prisma migration integrity", () => {
     }
   });
 
-  it("validates that DATABASE_MIGRATIONS.md contains all required operational commands and environment variables", () => {
+  it("validates that the migration how-to contains all required operational commands and environment variables", () => {
     expect(() => validateDocCommands(docPath)).not.toThrow();
   });
 

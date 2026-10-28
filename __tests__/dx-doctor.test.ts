@@ -219,7 +219,7 @@ describe("DX Invariant Doctor Engine", () => {
       expect(result.details?.[0]).toContain("DROP COLUMN");
     });
 
-    it("flags DATABASE_MIGRATIONS.md when missing mandatory release or drift commands", () => {
+    it("flags the migration how-to when missing mandatory release or drift commands", () => {
       const migDir = path.join(
         tempDir,
         "prisma",
@@ -233,8 +233,9 @@ describe("DX Invariant Doctor Engine", () => {
       );
 
       // Incomplete documentation without Vercel production migration or drift guidance
+      fs.mkdirSync(path.join(tempDir, "docs", "how-to"), { recursive: true });
       fs.writeFileSync(
-        path.join(tempDir, "DATABASE_MIGRATIONS.md"),
+        path.join(tempDir, "docs", "how-to", "write-a-database-migration.md"),
         "# Migrations\n- `20260814000000_init`\n\nRun `npm run check:migrations`."
       );
 

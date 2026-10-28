@@ -232,7 +232,7 @@ flowchart LR
 
 Rollback is Vercel's Instant Rollback. The runbook is
 [`DEPLOYMENT.md`](DEPLOYMENT.md), and schema changes follow
-[`DATABASE_MIGRATIONS.md`](DATABASE_MIGRATIONS.md).
+[`docs/how-to/write-a-database-migration.md`](docs/how-to/write-a-database-migration.md).
 
 ## Accessibility
 
@@ -251,7 +251,7 @@ it counts as a bug.
 - [`adr/`](https://github.com/fderuiter/deruiter.dev/tree/main/adr): seventy architecture decision records, one per significant design choice, including the ones a later record reversed
 - [`docs/`](docs/README.md): tutorials, how-to guides, reference (including the TypeDoc API reference) and explanation
 - [`CONTEXT.md`](https://github.com/fderuiter/deruiter.dev/blob/main/CONTEXT.md): the project's glossary
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) and [`DATABASE_MIGRATIONS.md`](DATABASE_MIGRATIONS.md): release and schema-change runbooks
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/how-to/write-a-database-migration.md`](docs/how-to/write-a-database-migration.md): release and schema-change runbooks
 - [Releases](https://github.com/fderuiter/deruiter.dev/releases) for v1.0.0 onward, and [`CHANGELOG.md`](CHANGELOG.md) for the history before it
 
 ## Contributing

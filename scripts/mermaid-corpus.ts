@@ -11,9 +11,9 @@ const CORPUS_FILES = [
   "lib/case-studies-data.ts",
   "prisma/seed.ts",
   "ARCHITECTURE.md",
-  "CASE_STUDY.md",
-  "docs/CASE_STUDY.md",
-  "PRODUCT_EXCELLENCE_EVALUATION.md",
+  "docs/explanation/case-study-engineering-notes.md",
+  "docs/explanation/inbody-qr-decoder-case-study.md",
+  "docs/explanation/audits/product-excellence-evaluation.md",
   "docs/reference/clinical-platform-star-schema.md",
 ];
 

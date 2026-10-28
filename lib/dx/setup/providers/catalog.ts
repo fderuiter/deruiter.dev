@@ -119,7 +119,7 @@ const postgres: ProviderAdapter = {
   ],
   manualPath:
     "Paste any postgresql:// URL. For a local server, use the same URL for both keys and run a Neon-compatible WebSocket proxy if you want the app itself (not just Prisma) to read it.",
-  docs: "DATABASE_MIGRATIONS.md",
+  docs: "docs/how-to/write-a-database-migration.md",
   degraded:
     "Without a database, pages serve their static fallback content and writes (contact form, admin) are unavailable.",
   validate(values) {

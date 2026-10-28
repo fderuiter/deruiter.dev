@@ -909,11 +909,14 @@ export function checkMigrationGuard(root: string): DiagnosticCheckResult {
   }
 
   // 4. Check Migration Documentation Parity & Operational Command Completeness
-  const docPath = path.join(root, "DATABASE_MIGRATIONS.md");
+  const docPath = path.join(
+    root,
+    "docs",
+    "how-to",
+    "write-a-database-migration.md"
+  );
   if (!fs.existsSync(docPath)) {
-    failures.push(
-      "DATABASE_MIGRATIONS.md file is missing from repository root."
-    );
+    failures.push("docs/how-to/write-a-database-migration.md is missing.");
   } else {
     try {
       const docContent = fs.readFileSync(docPath, "utf-8");
@@ -936,7 +939,7 @@ export function checkMigrationGuard(root: string): DiagnosticCheckResult {
       );
       if (missingInDoc.length > 0) {
         failures.push(
-          `DATABASE_MIGRATIONS.md is missing active migration(s): ${missingInDoc.join(", ")}`
+          `docs/how-to/write-a-database-migration.md is missing active migration(s): ${missingInDoc.join(", ")}`
         );
       }
 
@@ -968,7 +971,7 @@ export function checkMigrationGuard(root: string): DiagnosticCheckResult {
       for (const cmd of requiredDocCommands) {
         if (!cmd.pattern.test(docContent)) {
           failures.push(
-            `DATABASE_MIGRATIONS.md is missing documentation for ${cmd.name}`
+            `docs/how-to/write-a-database-migration.md is missing documentation for ${cmd.name}`
           );
         }
       }
@@ -993,7 +996,7 @@ export function checkMigrationGuard(root: string): DiagnosticCheckResult {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       failures.push(
-        `Failed to verify DATABASE_MIGRATIONS.md completeness: ${msg}`
+        `Failed to verify docs/how-to/write-a-database-migration.md completeness: ${msg}`
       );
     }
   }

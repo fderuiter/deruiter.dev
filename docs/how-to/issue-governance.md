@@ -2,7 +2,7 @@
 
 Goal: know how work is structured, filed, triaged, executed and closed in this repository, so that a person or an agent can pick up any issue without asking for context.
 
-This is the one authoritative governance document. `AGENTS.md` links here and does not repeat it. Label names follow the taxonomy in force; where a label is still pending confirmation it is marked as such.
+This is the one authoritative governance document. `AGENTS.md` links here and does not repeat it. Label names follow the taxonomy approved on 2026-10-28.
 
 ---
 
@@ -29,12 +29,14 @@ The repository does not use a GitHub Projects board. Ownership of the hierarchy 
 Each issue has exactly one `type:*` label, except structural issues, which take the structural label alone.
 
 - `type:feature`, `type:bug`, `type:chore`, `type:test`, `type:docs`, `type:design`: work items.
-- `type:decision`: a question a person must answer before work can start. Pending taxonomy confirmation.
+- `type:decision`: a question a person must answer before work can start, such as a decision card.
 - `type:epic`, `type:initiative`, `type:portfolio`: structure. These take no triage state.
 
 The native GitHub issue type is Task, Bug or Feature. Set it to match the `type:*` label where the native type exists. The `type:*` label is the authority.
 
-Do not use the plain `epic` label. It is retired in favor of `type:epic`.
+Each work item may carry at most one area label, prefixed `area:`: `area:arcade`, `area:study-data`, `area:a11y`, `area:platform`, `area:infra`, `area:quality`, `area:security` or `area:content`. Do not use the retired unprefixed labels `game`, `cdisc` or `accessibility`.
+
+Do not use the plain `epic` or `p1` labels. They are retired in favor of `type:epic` and `p1-critical`.
 
 ## 3. Triage states
 
@@ -50,7 +52,7 @@ Every work item has exactly one triage state:
 
 Lifecycle: `needs-triage` moves to `needs-info`, `ready-for-agent`, `ready-for-human` or `wontfix`. A claimed item moves to `status:in-progress` before a branch is cut.
 
-Execution state is separate from triage state. `status:blocked` marks an unresolved "Blocked by #N". `needs-decision` and `status:on-hold` are set by a person or by a thread that records why. Automation never clears them.
+Execution state is separate from triage state. `status:blocked` marks an unresolved "Blocked by #N". `status:in-progress` marks a claim. `needs-decision` and `status:on-hold` are set by a person or by a thread that records why. Automation never clears them.
 
 ## 4. Definition of Ready
 

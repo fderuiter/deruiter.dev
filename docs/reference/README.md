@@ -6,7 +6,7 @@ lookup rather than sequential reading.
 
 ## Contracts
 
-- [TypeDoc API reference](api/README.md), generated TypeScript API contracts.
+- TypeDoc API reference for the TypeScript API contracts: run `npm run compile-docs` and open `api/README.md`. It is generated and git-ignored.
 - [`openapi.json`](../../openapi.json), generated HTTP API contract.
 - [Integration catalog](integrations-catalog.md), external services and their
   environment boundaries.

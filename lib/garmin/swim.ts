@@ -49,7 +49,7 @@ export const SUIT_LAND_JUMP_VY = -8.5;
 export const CURRENT_FLOW = 0.09;
 /**
  * Underside of a Basement Gym rack, in canvas pixels: a Base runner standing
- * under it has head room of {@link RACK_HEAD_ROOM} pixels.
+ * under it has head room of `RACK_HEAD_ROOM` pixels.
  */
 export const CEILING_BOTTOM = LANE_Y - BASE_HEIGHT - RACK_HEAD_ROOM;
 /** Height of the buoy line, below the surface. */

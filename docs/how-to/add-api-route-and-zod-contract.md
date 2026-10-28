@@ -67,12 +67,12 @@ reference for public `lib/`, `hooks/` and `types/` exports.
 npm run check-docs-drift
 ```
 
-If this reports drift, stage the regenerated `openapi.json` (and any
-TypeDoc markdown under `docs/reference/api/` if you also touched a public
-`lib/`, `hooks/`, or `types/` export) alongside your code change:
+If this reports drift, stage the regenerated `openapi.json` alongside your
+code change. The TypeDoc reference under `docs/reference/api/` is git-ignored,
+so there is nothing else to stage:
 
 ```bash
-git add openapi.json docs/reference/api
+git add openapi.json
 ```
 
 ## 5. Add a test

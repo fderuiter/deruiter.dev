@@ -20,8 +20,9 @@ that table doesn't say.
   `npm run lint:docs`, `npm run verify -- --skip-benchmark-evidence`
   (what CI's static gate runs), and `npx vitest related --run` on the
   changed files. Run the full `npm test` before marking the PR ready.
-- Changing an export in `lib/`, `hooks/` or `types/`, or an API route,
-  means `npm run compile-docs` and committing the regenerated `docs/`.
+- Changing an API route means `npm run doctor:fix` and committing the
+  regenerated `openapi.json`. The TypeDoc reference in `docs/reference/api/`
+  is git-ignored; `check-docs-drift` only checks that it compiles cleanly.
 
 ## Merge lane
 
@@ -59,9 +60,9 @@ parallel; merge one at a time.
   staged file, so a broad `prettier --write` glob drags formatting-only
   changes into unrelated files, and removing them later needs a
   force-push the guardrail blocks.
-- **README or `docs/` conflicts after a merge from main** are usually
-  generated output. Take main's side, re-run `npm run compile-docs`, and
-  commit the result instead of hand-merging.
+- **`openapi.json` conflicts after a merge from main** are generated
+  output. Take main's side, re-run `npm run doctor:fix`, and commit the
+  result instead of hand-merging.
 - **No double casts in tests.** DX Doctor rejects `as unknown as Type`
   in test files; use `fromPartial` / `fromAny` from
   `@total-typescript/shoehorn`.

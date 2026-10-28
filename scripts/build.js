@@ -61,10 +61,14 @@ const { runVercelPreviewPreflight } = require("./vercel-preview-preflight");
 // build (docs/how-to/release-and-deploy.md#build-memory).
 const BUILD_HEAP_MB = 3584;
 
+// Node accepts the flag with dashes or underscores, and Vercel's NODE_OPTIONS
+// used underscores (2026-10-28), so both spellings are replaced.
+const HEAP_FLAG = /^--max[-_]old[-_]space[-_]size(=|$)/;
+
 function withBuildHeapCap(nodeOptions) {
   const kept = (nodeOptions || "")
     .split(/\s+/)
-    .filter((flag) => flag && !flag.startsWith("--max-old-space-size"));
+    .filter((flag) => flag && !HEAP_FLAG.test(flag));
   return [...kept, `--max-old-space-size=${BUILD_HEAP_MB}`].join(" ");
 }
 
@@ -213,10 +217,21 @@ async function runBuildPipeline() {
   }
 
   // 3.5. Documentation Compilation Phase (Phase 1.8)
-  console.log(
-    "\n--- Phase 1.8: Strictly Compiling and Verifying Documentation ---"
-  );
-  runStep("npm", ["run", "compile-docs"]);
+  //
+  // Skipped on Vercel: the TypeDoc reference in docs/ is never served, CI's
+  // drift check already verifies it on the same commit, and the prebuild step
+  // has written the llms.txt files compile-docs would regenerate. On Vercel it
+  // cost about a minute per deploy and rewrote pages nobody ships.
+  if (process.env.VERCEL === "1") {
+    console.log(
+      "\n--- Phase 1.8: Documentation compilation skipped on Vercel (CI checks it) ---"
+    );
+  } else {
+    console.log(
+      "\n--- Phase 1.8: Strictly Compiling and Verifying Documentation ---"
+    );
+    runStep("npm", ["run", "compile-docs"]);
+  }
 
   // 3.8. Standalone Engine Asset Target Compilation & Budget Validation Phase (Phase 1.9)
   console.log(

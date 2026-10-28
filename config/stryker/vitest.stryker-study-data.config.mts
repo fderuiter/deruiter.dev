@@ -6,7 +6,10 @@ import path from "path";
 // test that covers a mutant, so the independent QC suite, which re-derives
 // a whole study in about 30 seconds, stays out; the unit suites below
 // assert the derivations directly.
+const repoRoot = path.resolve(import.meta.dirname, "../..");
+
 export default defineConfig({
+  root: repoRoot,
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
@@ -25,7 +28,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "./"),
+      "@": repoRoot,
     },
   },
 });

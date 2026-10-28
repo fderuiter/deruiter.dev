@@ -81,24 +81,28 @@ describe("CI support scripts (#1767)", () => {
   });
 
   describe("mutation gate arguments", () => {
+    const BASE = "config/stryker/stryker.config.mjs";
+
     it("runs every mutant by default", () => {
-      expect(buildStrykerArgs([])).toEqual(["run"]);
+      expect(buildStrykerArgs([])).toEqual(["run", BASE]);
     });
 
     it("passes --incremental and --force through", () => {
       expect(buildStrykerArgs(["--incremental"])).toEqual([
         "run",
+        BASE,
         "--incremental",
       ]);
       expect(buildStrykerArgs(["--incremental", "--force"])).toEqual([
         "run",
+        BASE,
         "--incremental",
         "--force",
       ]);
     });
 
     it("treats --force alone as the full run it already is", () => {
-      expect(buildStrykerArgs(["--force"])).toEqual(["run"]);
+      expect(buildStrykerArgs(["--force"])).toEqual(["run", BASE]);
     });
 
     it("rejects anything that could change thresholds or scope", () => {
@@ -111,27 +115,27 @@ describe("CI support scripts (#1767)", () => {
     it("runs the weekly engine scope from its own config (#2529)", () => {
       expect(buildStrykerArgs(["--engines"])).toEqual([
         "run",
-        "stryker.engines.config.mjs",
+        "config/stryker/stryker.engines.config.mjs",
       ]);
       expect(buildStrykerArgs(["--engines", "--incremental"])).toEqual([
         "run",
-        "stryker.engines.config.mjs",
+        "config/stryker/stryker.engines.config.mjs",
         "--incremental",
       ]);
       expect(buildStrykerArgs(["--force", "--engines"])).toEqual([
         "run",
-        "stryker.engines.config.mjs",
+        "config/stryker/stryker.engines.config.mjs",
       ]);
     });
 
     it("runs the weekly Garmin scope from its own config (#2564)", () => {
       expect(buildStrykerArgs(["--garmin"])).toEqual([
         "run",
-        "stryker.garmin.config.mjs",
+        "config/stryker/stryker.garmin.config.mjs",
       ]);
       expect(buildStrykerArgs(["--garmin", "--incremental"])).toEqual([
         "run",
-        "stryker.garmin.config.mjs",
+        "config/stryker/stryker.garmin.config.mjs",
         "--incremental",
       ]);
       expect(() => buildStrykerArgs(["--engines", "--garmin"])).toThrow(
@@ -142,7 +146,7 @@ describe("CI support scripts (#1767)", () => {
     it("runs the weekly study data scope from its own config (#2607)", () => {
       expect(buildStrykerArgs(["--study-data"])).toEqual([
         "run",
-        "stryker.study-data.config.mjs",
+        "config/stryker/stryker.study-data.config.mjs",
       ]);
       expect(() => buildStrykerArgs(["--garmin", "--study-data"])).toThrow(
         /Pick one mutation scope/
@@ -182,9 +186,9 @@ describe("CI support scripts (#1767)", () => {
     });
 
     it.each([
-      "stryker.engines.config.mjs",
-      "stryker.garmin.config.mjs",
-      "stryker.study-data.config.mjs",
+      "config/stryker/stryker.engines.config.mjs",
+      "config/stryker/stryker.garmin.config.mjs",
+      "config/stryker/stryker.study-data.config.mjs",
     ])("never lets a %s floor sit at zero once measured", async (config) => {
       const { fileBreaks } = (await import(
         path.join(process.cwd(), config)
@@ -205,9 +209,9 @@ describe("CI support scripts (#1767)", () => {
         };
       const scopes = await Promise.all(
         [
-          "stryker.engines.config.mjs",
-          "stryker.garmin.config.mjs",
-          "stryker.study-data.config.mjs",
+          "config/stryker/stryker.engines.config.mjs",
+          "config/stryker/stryker.garmin.config.mjs",
+          "config/stryker/stryker.study-data.config.mjs",
         ].map(load)
       );
       const files = scopes.flatMap((scope) => Object.keys(scope.fileBreaks));

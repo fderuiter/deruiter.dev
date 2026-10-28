@@ -1,7 +1,10 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 
+const repoRoot = path.resolve(import.meta.dirname, "../..");
+
 export default defineConfig({
+  root: repoRoot,
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
@@ -28,7 +31,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "./"),
+      "@": repoRoot,
     },
   },
 });

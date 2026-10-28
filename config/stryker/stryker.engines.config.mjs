@@ -37,7 +37,7 @@ const config = {
   ...baseConfig,
   reporters: ["html", "json", "clear-text", "progress"],
   vitest: {
-    configFile: "vitest.stryker-engines.config.mts",
+    configFile: "config/stryker/vitest.stryker-engines.config.mts",
     related: false,
   },
   htmlReporter: {

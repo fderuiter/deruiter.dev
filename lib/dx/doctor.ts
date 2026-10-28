@@ -2321,7 +2321,7 @@ export function checkProactiveDefectInterception(
 
   const requiredFiles = [
     {
-      file: "stryker.config.mjs",
+      file: "config/stryker/stryker.config.mjs",
       desc: "Stryker mutation testing configuration",
     },
     {

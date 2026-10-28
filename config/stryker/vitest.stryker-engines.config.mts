@@ -7,7 +7,10 @@ import path from "path";
 // and validation directly. The .tsx UI suites and the balance, campaign
 // and replay simulations cover nearly every mutant and would add seconds
 // to each one without asserting a specific score.
+const repoRoot = path.resolve(import.meta.dirname, "../..");
+
 export default defineConfig({
+  root: repoRoot,
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
@@ -35,7 +38,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "./"),
+      "@": repoRoot,
     },
   },
 });

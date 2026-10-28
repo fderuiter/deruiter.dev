@@ -37,7 +37,7 @@ export const ENGINES_JSON_REPORT = ".stryker-tmp/garmin-mutation-report.json";
 const config = {
   ...engineConfig,
   vitest: {
-    configFile: "vitest.stryker-garmin.config.mts",
+    configFile: "config/stryker/vitest.stryker-garmin.config.mts",
     related: false,
   },
   htmlReporter: {

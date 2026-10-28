@@ -2,6 +2,8 @@ import os from "node:os";
 
 // @ts-check
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
+// Every path here is relative to the repository root, where
+// `npm run test:mutation` runs Stryker.
 const config = {
   packageManager: "npm",
   reporters: ["html", "clear-text", "progress"],
@@ -15,7 +17,7 @@ const config = {
     ],
   },
   vitest: {
-    configFile: "vitest.stryker.config.mts",
+    configFile: "config/stryker/vitest.stryker.config.mts",
     related: false,
   },
   htmlReporter: {

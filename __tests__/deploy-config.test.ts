@@ -238,7 +238,7 @@ describe("production deploy configuration", () => {
 
   it("documents Vercel as the only production migration path", () => {
     const productionDocs = [
-      "DATABASE_MIGRATIONS.md",
+      "docs/how-to/write-a-database-migration.md",
       "SECURITY.md",
       "CONTRIBUTING.md",
       "docs/how-to/release-and-deploy.md",

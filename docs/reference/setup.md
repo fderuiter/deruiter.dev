@@ -195,7 +195,7 @@ Every integration is optional; core setup completes with all of them skipped.
 
 | Adapter | Capability | Portable? | Live probe | If skipped | Guide |
 | --- | --- | --- | --- | --- | --- |
-| `postgres` | database | Schema commands: any PostgreSQL. Runtime and seed: Neon protocol | none (use `--verify db`) | Pages serve static fallbacks; writes unavailable | [DATABASE_MIGRATIONS.md](../../DATABASE_MIGRATIONS.md) |
+| `postgres` | database | Schema commands: any PostgreSQL. Runtime and seed: Neon protocol | none (use `--verify db`) | Pages serve static fallbacks; writes unavailable | [database migrations](../how-to/write-a-database-migration.md) |
 | `upstash-redis` | cache | Any Upstash-REST-compatible endpoint | `GET /ping` | In-memory rate limiting; no read-through cache | [Upstash Redis](../how-to/configure-integrations.md#upstash-redis) |
 | `upstash-qstash` | queue | Upstash-specific | none | Retries wait for the daily cron | [Integration catalog](integrations-catalog.md) |
 | `clerk` | authentication | Clerk-specific | `GET /v1/jwks` | Admin area denies everyone | [Clerk](../how-to/configure-integrations.md#clerk-admin-authentication) |
@@ -234,7 +234,7 @@ non-secret values to GitHub Actions variables.
   with `git checkout -- package-lock.json` and run `npm ci`.
 - **Database:** a local `db push` is disposable; drop and recreate the local
   database. Hosted databases follow
-  [DATABASE_MIGRATIONS.md](../../DATABASE_MIGRATIONS.md) and
+  [database migrations](../how-to/write-a-database-migration.md) and
   [restore the production database](../how-to/restore-the-production-database.md).
 
 ## Related

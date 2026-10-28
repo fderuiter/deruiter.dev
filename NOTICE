@@ -23,9 +23,10 @@ they are not licensed identically. Only the first is covered by LICENSE.
 3. Editorial content and personal identity material — all rights reserved.
    Case study prose, narrative copy, biography, resume data, photography, and
    the "Frederick de Ruiter" and "deruiter.dev" marks are not licensed for
-   reuse. This includes CASE_STUDY.md, PRODUCT_EXCELLENCE_EVALUATION.md, the
-   seeded editorial records in prisma/seed.ts, and the copy embedded in page
-   and component source. Apache-2.0 section 6 grants no trademark rights, and
+   reuse. This includes docs/explanation/case-study-engineering-notes.md,
+   docs/explanation/audits/product-excellence-evaluation.md, the seeded
+   editorial records in prisma/seed.ts, and the copy embedded in page and
+   component source. Apache-2.0 section 6 grants no trademark rights, and
    nothing here grants any either.
 
 The practical reading: fork the engineering freely, and replace the writing and

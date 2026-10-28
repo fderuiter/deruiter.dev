@@ -97,8 +97,8 @@ npx prisma db seed
 Schema changes in this repository always ship as a checked-in Prisma
 migration. See
 [how-to: add an API route and Zod contract](../how-to/add-api-route-and-zod-contract.md)
-for the pattern most new routes follow, and `DATABASE_MIGRATIONS.md` at the
-repository root for the full migration workflow, production rollout order,
+for the pattern most new routes follow, and
+[write a database migration](../how-to/write-a-database-migration.md) for the full migration workflow, production rollout order,
 and the one-time production baseline procedure.
 
 ## 5. Run the diagnostic doctor before writing code

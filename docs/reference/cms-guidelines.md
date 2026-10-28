@@ -154,7 +154,7 @@ npx prisma migrate dev --name <descriptive_name>
 
 Review and commit the generated migration with `schema.prisma`. Do not run
 `prisma db push` against production or a long-lived shared database because it
-bypasses Prisma's migration ledger. See [DATABASE_MIGRATIONS.md](DATABASE_MIGRATIONS.md)
+bypasses Prisma's migration ledger. See [database migrations](../how-to/write-a-database-migration.md)
 for the production runbook and CI guarantees.
 
 ---

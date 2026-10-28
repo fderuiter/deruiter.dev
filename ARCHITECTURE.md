@@ -459,7 +459,7 @@ To capture and display user engagement metrics in real-time without introducing 
 
 ## Sortify Backend Core Package Utilities (External Repository)
 
-These Python modules are **not part of this repository**. They live in the separate Sortify project and are summarized here because the portfolio showcases that case study; the full deep dives are in `docs/CASE_STUDY.md`. Paths below are relative to the Sortify repository root. They power air-gapped document ingestion, encrypted storage, and forensic data classification:
+These Python modules are **not part of this repository**. They live in the separate Sortify project and are summarized here because the portfolio showcases that case study; the full deep dives are in `docs/explanation/inbody-qr-decoder-case-study.md`. Paths below are relative to the Sortify repository root. They power air-gapped document ingestion, encrypted storage, and forensic data classification:
 
 - **`app/core/crypto.py` (Encrypted Database Concurrency & Lifecycle):**
   - Manages SQLCipher database encryption keys, concurrent session pooling, and cryptographically secure key derivation routines.

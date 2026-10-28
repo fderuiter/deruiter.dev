@@ -1,7 +1,7 @@
 /**
  * Shared allowlist for persisted editorial HTML. This is the established
  * CaseStudy architectural-narrative policy, also required for BlogPost bodies
- * by ADR 0041 and CMS_GUIDELINES.md.
+ * by ADR 0041 and docs/reference/cms-guidelines.md.
  */
 export const CONTENT_SANITIZE_OPTIONS = {
   ALLOWED_TAGS: [

@@ -193,7 +193,8 @@ function checkMigrationIntegrity(options = {}) {
   const migrationsDir =
     options.migrationsPath || path.join(rootDir, "prisma/migrations");
   const docFile =
-    options.docPath || path.join(rootDir, "DATABASE_MIGRATIONS.md");
+    options.docPath ||
+    path.join(rootDir, "docs/how-to/write-a-database-migration.md");
 
   const schemaProvider = getSchemaProvider(fs.readFileSync(schemaFile, "utf8"));
   const lockProvider = getLockProvider(fs.readFileSync(lockFile, "utf8"));

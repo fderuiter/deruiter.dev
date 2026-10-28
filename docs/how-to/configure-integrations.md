@@ -4,7 +4,7 @@ Goal: set up, verify, and recover each of this project's remaining external
 integrations that aren't already covered by a dedicated guide. For Neon/
 Prisma and the database itself, see
 [tutorial: local development & onboarding](../tutorials/01-local-development-and-onboarding.md)
-and [`DATABASE_MIGRATIONS.md`](../../DATABASE_MIGRATIONS.md). For Resend and
+and [the database migration how-to](write-a-database-migration.md). For Resend and
 its deliverability webhook, see
 [how-to: configure Resend and webhooks](configure-resend-and-webhooks.md).
 See [reference: integration catalog](../reference/integrations-catalog.md)

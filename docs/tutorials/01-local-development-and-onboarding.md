@@ -161,8 +161,8 @@ by its Merge Gate.
   [how-to: configure Clerk, Sentry, Upstash, Vercel Cron/Analytics, and GitHub data fetching](../how-to/configure-integrations.md),
   or the full per-environment fact table in the
   [integration catalog](../reference/integrations-catalog.md).
-- Looking for the compiled `lib/`, `hooks/`, and `types/` API surface? See
-  [reference/api](../reference/api/README.md).
+- Looking for the compiled `lib/`, `hooks/`, and `types/` API surface? Run
+  `npm run compile-docs` and open `docs/reference/api/README.md`.
 - Curious about *why* the codebase is shaped the way it is? See
   [explanation](../explanation/README.md) and the Architecture Decision
   Records in `adr/` at the repository root.

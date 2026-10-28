@@ -27,12 +27,6 @@ const EXPECTED_HASHES: Record<string, string> = {
   NOTICE: "893e0ea6ea801fa264526003f04568d7d2fb8b4937837853aa6a1f7048afb58d",
   "public/files/LICENSE.txt":
     "fe200206479d4485ef58d8a73d8bdc4a4bf6467619876701b3d08aa0f2fd1d98",
-  "docs/reference/api/_media/LICENSE":
-    "f8225b59f17909e08220e9dc57d38d8ec857a1e77cc780c03ea5176a7b2c120d",
-  "docs/reference/api/_media/LICENSE.txt":
-    "fe200206479d4485ef58d8a73d8bdc4a4bf6467619876701b3d08aa0f2fd1d98",
-  "docs/reference/api/_media/NOTICE":
-    "893e0ea6ea801fa264526003f04568d7d2fb8b4937837853aa6a1f7048afb58d",
 };
 
 const assertPinnedContent = (file: string): void => {
@@ -170,18 +164,6 @@ describe("public repository readiness contracts", () => {
       "3. Editorial content and personal identity material — all rights reserved."
     );
     expect(notice).toContain("deruiter.dev");
-  });
-
-  it("keeps the generated-assets NOTICE and LICENSE mirrors byte-identical to their source", () => {
-    assertPinnedContent("docs/reference/api/_media/LICENSE");
-    assertPinnedContent("docs/reference/api/_media/LICENSE.txt");
-    assertPinnedContent("docs/reference/api/_media/NOTICE");
-
-    expect(read("docs/reference/api/_media/LICENSE")).toBe(read("LICENSE"));
-    expect(read("docs/reference/api/_media/LICENSE.txt")).toBe(
-      read("public/files/LICENSE.txt")
-    );
-    expect(read("docs/reference/api/_media/NOTICE")).toBe(read("NOTICE"));
   });
 
   it("states inbound = outbound contribution terms", () => {

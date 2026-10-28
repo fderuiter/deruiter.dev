@@ -27,29 +27,19 @@ describe("compile-docs TypeDoc invocation", () => {
     expect(cliArgs).not.toContain("--gitRevision");
   });
 
-  it("regenerates through a scratch directory and syncs only real changes (#951)", async () => {
-    const fs = await import("node:fs");
-    const os = await import("node:os");
-    const path = await import("node:path");
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "portfolio-regen-"));
-    execFileSyncMock.mockImplementation((_cmd: string, args: string[]) => {
-      const out = args[args.indexOf("--out") + 1];
-      fs.writeFileSync(path.join(out, "Page.md"), "# Page\n");
-    });
-    try {
-      const { regenerateDocumentation } =
-        await import("../scripts/compile-docs");
-      expect(regenerateDocumentation(root)).toEqual(["Page.md"]);
-      expect(
-        fs.readFileSync(
-          path.join(root, "docs", "reference", "api", "Page.md"),
-          "utf8"
-        )
-      ).toBe("# Page\n");
-      expect(regenerateDocumentation(root)).toEqual([]);
-    } finally {
-      execFileSyncMock.mockReset();
-      fs.rmSync(root, { recursive: true, force: true });
-    }
+  it("fails on TypeDoc warnings only when compiling strictly", async () => {
+    const { compileDocumentation } = await import("../scripts/compile-docs");
+    execFileSyncMock.mockReset();
+
+    compileDocumentation("/workspace", "out");
+    compileDocumentation("/workspace", "out", { strict: true });
+
+    const [[, relaxed], [, strict]] = execFileSyncMock.mock.calls as [
+      string,
+      string[],
+    ][];
+    expect(relaxed).not.toContain("--treatWarningsAsErrors");
+    expect(strict).toContain("--treatWarningsAsErrors");
+    expect(strict.slice(-2)).toEqual(["--out", "out"]);
   });
 });

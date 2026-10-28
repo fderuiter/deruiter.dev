@@ -32,6 +32,12 @@
 
 # production
 /build
+
+# TypeDoc API reference: `npm run compile-docs` writes it, CI compiles it
+# strictly on every run, and nothing in the app reads it (ADR 0023, amended
+# 2026-10-28). Only this folder is generated; the rest of docs/reference/ is
+# written by hand.
+/docs/reference/api/
 /.benchmark-results/
 
 # misc

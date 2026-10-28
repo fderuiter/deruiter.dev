@@ -7,7 +7,6 @@ import {
   getDocumentationGitStatus,
   type DocumentationDriftResult,
 } from "./documentation-drift";
-import { API_REFERENCE_RELATIVE_PATH } from "./compile-docs";
 import {
   checkMarkdownLinkIntegrity,
   type MarkdownLinkCheckResult,
@@ -48,9 +47,10 @@ function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
       checkDocumentationDrift({
         workspaceRoot,
         compile: (outputDirectory) =>
-          compileDocumentation(workspaceRoot, outputDirectory),
+          compileDocumentation(workspaceRoot, outputDirectory, {
+            strict: true,
+          }),
         getGitStatus: () => getDocumentationGitStatus(workspaceRoot),
-        generatedDocsRelativePath: API_REFERENCE_RELATIVE_PATH,
       }),
     checkOpenApi: () => generateOpenApi(workspaceRoot),
     checkOnboarding: () => checkOnboardingDocsDrift(workspaceRoot),
@@ -64,7 +64,6 @@ function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
 
 /** The kinds of drift this check reports, each with a different remedy. */
 export type DriftCategory =
-  | "generated-docs"
   | "authored-docs"
   | "openapi"
   | "onboarding"
@@ -75,14 +74,9 @@ export type DriftCategory =
   | "llms-manifests";
 
 const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
-  "generated-docs": {
-    title:
-      "Stale generated references (TypeDoc is behind lib/, hooks/ or types/)",
-    steps: ["npm run compile-docs", "git add docs/"],
-  },
   openapi: {
     title: "API contract drift (a route is missing from openapi.json)",
-    steps: ["npm run doctor:fix", "git add openapi.json docs/"],
+    steps: ["npm run doctor:fix", "git add openapi.json"],
   },
   onboarding: {
     title: "Onboarding documentation drift",
@@ -154,7 +148,7 @@ export function checkDrift(
   const categories: DriftCategory[] = [];
 
   console.log(
-    "Comparing documentation against an isolated TypeDoc compilation..."
+    "Compiling the API reference strictly and checking authored docs are staged..."
   );
   const documentationResult = dependencies.checkDocumentation();
   if (documentationResult.status === "error") {
@@ -164,13 +158,7 @@ export function checkDrift(
   if (documentationResult.status === "fail") {
     docsDrift = true;
     driftSummary += `${documentationResult.details.map((detail) => `• ${detail}`).join("\n")}\n`;
-    for (const detail of documentationResult.details) {
-      categories.push(
-        detail.startsWith("Stale generated reference")
-          ? "generated-docs"
-          : "authored-docs"
-      );
-    }
+    categories.push("authored-docs");
   }
 
   console.log(

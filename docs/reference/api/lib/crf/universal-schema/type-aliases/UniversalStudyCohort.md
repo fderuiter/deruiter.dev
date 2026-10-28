@@ -1,9 +1,0 @@
-[**fderuiter-portfolio**](../../../../README.md)
-
-***
-
-[fderuiter-portfolio](../../../../modules.md) / [lib/crf/universal-schema](../README.md) / UniversalStudyCohort
-
-# Type Alias: UniversalStudyCohort
-
-> **UniversalStudyCohort** = `z.infer`\<*typeof* [`StudyCohortSchema`](../variables/StudyCohortSchema.md)\>

@@ -147,7 +147,7 @@ export function validateBranchName(branch: string): {
   if (!hasValidPrefix) {
     return {
       valid: false,
-      error: `Branch name '${cleanBranch}' does not follow convention. Expected prefixes: ${validPrefixes.join(", ")} (e.g. feat/add-dx-suite)`,
+      error: `Branch name '${cleanBranch}' does not follow convention. Expected prefixes: ${validPrefixes.join(", ")} (e.g. feat/add-dx-suite). Cloud sessions push as dx/<slug>, not claude/<slug>.`,
     };
   }
 

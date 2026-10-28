@@ -69,4 +69,5 @@ exit 0
   control planes directly; use the claude.ai connectors instead.
 - Branch names must use an allowed prefix (`feat/`, `fix/`, `chore/`,
   `docs/`, `test/`, `dev/`, ...). The harness default `claude/*` is
-  rejected by `.husky/pre-push`.
+  rejected by `.husky/pre-push`. Cloud sessions push as `dx/<slug>`
+  instead; the guard's error message says so.

@@ -15,6 +15,7 @@
   "scripts": {
     "dx": "tsx scripts/dx.ts",
     "crf": "tsx scripts/crf.ts",
+    "study": "tsx scripts/study.ts",
     "setup": "tsx scripts/dx.ts setup",
     "setup:clerk": "./scripts/setup-clerk-wizard.sh",
     "bootstrap": "bash scripts/setup.sh",

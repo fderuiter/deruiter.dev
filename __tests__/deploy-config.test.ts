@@ -90,6 +90,36 @@ describe("production deploy configuration", () => {
 
   // ADR 0063 (Proposed): the one workflow allowed to start a release, and
   // only by POSTing the Deploy Hook behind the operator's switch and holds.
+  it("builds in CI and the train under Vercel's Hobby build machine limits", () => {
+    // 2026-10-28: two out-of-memory failures reached Vercel because CI and the
+    // train built on 4 cores and 16 GB. The wrapper holds the build to 2
+    // cores, 8 GB and no swap, and fails above 85% of that memory.
+    const wrapper = fs.readFileSync(
+      path.join(process.cwd(), "scripts/vercel-shaped-build.sh"),
+      "utf8"
+    );
+    expect(wrapper).toMatch(
+      /^LIMIT_BYTES=\$\(\(8 \* 1024 \* 1024 \* 1024\)\)$/m
+    );
+    expect(wrapper).toMatch(/^CPUS="0-1"$/m);
+    expect(wrapper).toMatch(/^BUDGET_PERCENT=85$/m);
+    expect(wrapper).toContain('echo 0 | sudo tee "$CG/memory.swap.max"');
+    expect(wrapper).toContain("exec npm run build");
+    expect(wrapper).toMatch(/oom_kill/);
+
+    for (const file of ["ci.yml", "weekly-train.yml"]) {
+      const workflow = fs.readFileSync(
+        path.join(process.cwd(), ".github/workflows", file),
+        "utf8"
+      );
+      expect(workflow, file).toContain(
+        "run: bash scripts/vercel-shaped-build.sh"
+      );
+      // Vercel builds on Node 24.x.
+      expect(workflow, file).toMatch(/node-version: 24\b/);
+    }
+  });
+
   it("keeps the weekly train behind its switch, holds and gates", () => {
     const train = read(".github/workflows/weekly-train.yml");
 
@@ -123,9 +153,13 @@ describe("production deploy configuration", () => {
         ? train.slice(start)
         : train.slice(start, start + 1 + next);
     };
-    expect(train.match(/npm run build/g)).toHaveLength(1);
+    // The one build runs through the Vercel-shaped wrapper, so a candidate
+    // that would run out of memory on Vercel fails before the hook fires.
+    expect(
+      train.match(/run: bash scripts\/vercel-shaped-build\.sh/g)
+    ).toHaveLength(1);
     const rcBuild = job("rc-build");
-    expect(rcBuild).toContain("npm run build");
+    expect(rcBuild).toContain("run: bash scripts/vercel-shaped-build.sh");
     expect(rcBuild).toContain("127.0.0.1:59999");
     expect(rcBuild).toContain("npm run analyze:bundle -- --strict");
     for (const name of ["rc-build", "rc-browser"]) {

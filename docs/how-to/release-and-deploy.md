@@ -466,6 +466,13 @@ measure resident memory as well as heap. The compile's resident memory runs
 2 to 3 GB above its heap, so a larger cap can trade a heap failure for the
 machine killing the build.
 
+CI's `build` job and the Weekly Train's `rc-build` job run the build through
+`scripts/vercel-shaped-build.sh`. It puts the build in a cgroup with 2 CPUs,
+8 GB and no swap, the same as Vercel's Hobby machine. The job fails if the
+build is killed for memory, or if its peak memory passes 85% of 8 GB. The
+step summary reports the peak, so a pull request that adds build memory shows
+it before the train deploys it.
+
 ## Production Configuration Preflight
 
 A Vercel production build checks its own configuration before it does

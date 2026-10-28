@@ -27,7 +27,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue with appropriate labels (`ready-for-agent` for actionable tickets, `epic` for milestones).
+Create a GitHub issue with appropriate labels (`ready-for-agent` for actionable tickets, `type:epic` for milestones). The full rules for hierarchy, labels and agent execution are in [`docs/how-to/issue-governance.md`](../how-to/issue-governance.md).
 
 ## When a skill says "fetch the relevant ticket"
 

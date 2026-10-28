@@ -1,0 +1,82 @@
+name: Task
+description: A specific, bounded piece of work that an agent or a person can finish in one pull request.
+title: "chore: "
+labels:
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Write the steps as if the reader has never seen the repository. Name
+        exact file paths and commands. Do not include credentials or personal
+        data.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences on what changes and why.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: Numbered steps with exact file paths and symbols.
+      placeholder: |
+        1. Open `path/to/file.ts` and find `symbolName`.
+        2. Replace … with …
+        3. Run `npm test -- path/to/file.test.ts`.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: Observable results that show the work is done.
+      placeholder: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: Verify commands
+      description: Commands to run before opening the pull request.
+      placeholder: |
+        npm run typecheck
+        npm test
+        npm run quality
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent issue
+      description: Feature, epic or initiative this belongs under. Leave blank if standalone.
+      placeholder: "#3173"
+  - type: input
+    id: blockers
+    attributes:
+      label: Blocked by
+      description: Issue numbers that must close first, such as "#2462". Leave blank if none.
+  - type: textarea
+    id: brief
+    attributes:
+      label: Agent Review Brief
+      description: Required for work an external agent will execute. Fill all three lines.
+      value: |
+        - **Files and symbols:**
+        - **Invariant boundaries:** Non-destructive Git. No direct push to main. Environment-scoped credentials. Quota caps.
+        - **Verification commands:**
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for this task.
+          required: true
+        - label: This task contains no credentials or private data.
+          required: true

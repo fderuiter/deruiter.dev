@@ -212,7 +212,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### Issue tracker
 
-GitHub issues managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+GitHub issues managed via the `gh` CLI. See `docs/agents/issue-tracker.md`. Hierarchy, labels, triage states and agent execution rules are in `docs/how-to/issue-governance.md`.
 
 ### Triage labels
 

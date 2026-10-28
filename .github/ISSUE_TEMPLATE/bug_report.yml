@@ -44,6 +44,22 @@ body:
     attributes:
       label: Additional evidence
       description: Add sanitized logs, screenshots, or links. Remove secrets first.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: Observable results that show the fix works, such as a test that fails now and passes after the fix.
+      placeholder: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent issue
+      description: Initiative, epic or feature this belongs under, if known. Leave blank if unsure.
+      placeholder: "#3173"
   - type: checkboxes
     id: checks
     attributes:

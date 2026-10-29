@@ -412,13 +412,64 @@ describe("getCaseStudyBySlug outage matrix", () => {
     ).resolves.toBeNull();
   });
 
-  it("Redis up, Neon down: resolves to the static entry", async () => {
+  it("Redis up, Neon down: resolves to the static entry and does not cache it", async () => {
     const { CaseStudyService } = await load();
     m.prisma.caseStudy.findUnique.mockRejectedValueOnce(neonDown());
 
     await expect(
       CaseStudyService.getCaseStudyBySlug(KNOWN.slug)
     ).resolves.toEqual(KNOWN);
+    expect(m.redis.set).not.toHaveBeenCalled();
+  });
+
+  it("serves fresh Postgres data once Neon recovers from an outage (#3614)", async () => {
+    const { CaseStudyService, key } = await load();
+    m.prisma.caseStudy.findUnique.mockRejectedValueOnce(neonDown());
+
+    await expect(
+      CaseStudyService.getCaseStudyBySlug(KNOWN.slug)
+    ).resolves.toEqual(KNOWN);
+    expect(m.redis.set).not.toHaveBeenCalled();
+
+    // Nothing was cached during the outage, so the next read is a miss
+    // that reaches the recovered database.
+    m.prisma.caseStudy.findUnique.mockResolvedValueOnce(
+      dbRow({ slug: KNOWN.slug, title: "Recovered title" })
+    );
+
+    const recovered = await CaseStudyService.getCaseStudyBySlug(KNOWN.slug);
+
+    expect(m.prisma.caseStudy.findUnique).toHaveBeenCalledTimes(2);
+    expect(recovered?.title).toBe("Recovered title");
+    expect(m.redis.set).toHaveBeenCalledTimes(1);
+    expect(m.redis.set).toHaveBeenCalledWith(
+      key(`cs:slug:${KNOWN.slug}`),
+      recovered,
+      { ex: 3600 }
+    );
+  });
+
+  it("Neon up with no row: caches the static entry, since the query succeeded", async () => {
+    const { CaseStudyService, key } = await load();
+    m.prisma.caseStudy.findUnique.mockResolvedValueOnce(null);
+
+    await CaseStudyService.getCaseStudyBySlug(KNOWN.slug);
+
+    expect(m.redis.set).toHaveBeenCalledWith(
+      key(`cs:slug:${KNOWN.slug}`),
+      KNOWN,
+      { ex: 3600 }
+    );
+  });
+
+  it("Neon down for an unknown slug: resolves to null and caches nothing", async () => {
+    const { CaseStudyService } = await load();
+    m.prisma.caseStudy.findUnique.mockRejectedValueOnce(neonDown());
+
+    await expect(
+      CaseStudyService.getCaseStudyBySlug("never-existed")
+    ).resolves.toBeNull();
+    expect(m.redis.set).not.toHaveBeenCalled();
   });
 
   it("Redis down, Neon up: reads Postgres and tolerates the failed cache write", async () => {
@@ -469,6 +520,17 @@ describe("getCaseStudyBySlug outage matrix", () => {
     await expect(
       CaseStudyService.getCaseStudyBySlug(KNOWN.slug)
     ).rejects.toBeInstanceOf(DataSourceUnavailableError);
+    expect(m.redis.set).not.toHaveBeenCalled();
+  });
+
+  it("Neon down during a production build with the emergency override: falls back without caching", async () => {
+    const { CaseStudyService } = await load("production-build", true);
+    m.prisma.caseStudy.findUnique.mockRejectedValueOnce(neonDown());
+
+    await expect(
+      CaseStudyService.getCaseStudyBySlug(KNOWN.slug)
+    ).resolves.toEqual(KNOWN);
+    expect(m.redis.set).not.toHaveBeenCalled();
   });
 });
 

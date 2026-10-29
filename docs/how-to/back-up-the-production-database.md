@@ -26,6 +26,10 @@ backup.
 
 ## Set up (once)
 
+For interactive, read-only guidance and GitHub metadata checks, run
+`scripts/setup-operator-wizard.sh backup` from the repository. The guide does
+not write credentials or dispatch a workflow; follow the steps below to do so.
+
 1. Make a key pair on your own computer and keep the private key safe (a
    password manager works):
 

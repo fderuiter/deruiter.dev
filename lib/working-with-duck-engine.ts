@@ -3791,7 +3791,7 @@ export function advanceToNextLevel(
   };
 }
 
-import { ArcadeEngine } from "@/lib/arcade/core/engine";
+import { ArcadeEngine } from "@/lib/arcade/engine";
 
 export interface WorkingWithDuckSnapshot {
   status: WorkingWithDuckState["status"];

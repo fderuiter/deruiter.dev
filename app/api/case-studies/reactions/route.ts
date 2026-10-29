@@ -2,26 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { ReactionSubmissionSchema } from "@/lib/schemas";
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
-export const GET = createApiHandler(async (req: NextRequest) => {
-  const { searchParams } = new URL(req.url);
-  const slug = searchParams.get("slug") || searchParams.get("caseStudySlug");
+export const GET = createApiHandler(
+  async (req: NextRequest) => {
+    const { searchParams } = new URL(req.url);
+    const slug = searchParams.get("slug") || searchParams.get("caseStudySlug");
 
-  if (!slug) {
-    return NextResponse.json(
-      { error: "Missing required query parameter 'slug' or 'caseStudySlug'" },
-      { status: 400 }
-    );
-  }
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Missing required query parameter 'slug' or 'caseStudySlug'" },
+        { status: 400 }
+      );
+    }
 
-  const connectionHash = await getConnectionHashFromRequest(req);
-  const result = await CaseStudyService.getReactions(slug, connectionHash);
-  return NextResponse.json(result);
-});
+    const connectionHash = await getConnectionHashFromRequest(req);
+    const result = await CaseStudyService.getReactions(slug, connectionHash);
+    return NextResponse.json(result);
+  },
+  { auth: "public" }
+);
 
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
@@ -50,21 +53,14 @@ export const POST = createApiHandler(
     }
   },
   {
+    auth: "public",
     schema: ReactionSubmissionSchema,
     type: "body",
     customJsonError: "Invalid JSON body payload",
     customValidationError: (err) => {
-      const issues = (
-        err as {
-          issues: Array<{ path: Array<string | number>; message: string }>;
-        }
-      ).issues;
       return {
         error: "Validation failed",
-        details: issues.map((issue) => ({
-          path: issue.path.join("."),
-          message: issue.message,
-        })),
+        details: zodIssueDetails(err),
       };
     },
   }

@@ -2,28 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { BlogPostReactionSubmissionSchema } from "@/lib/schemas";
 import { BlogPostService } from "@/lib/services/blog-service";
 import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { isRedisConfigured, redis, getScopedRedisKey } from "@/lib/redis";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
-export const GET = createApiHandler(async (req: NextRequest) => {
-  const { searchParams } = new URL(req.url);
-  const slug = searchParams.get("slug") || searchParams.get("blogPostSlug");
+export const GET = createApiHandler(
+  async (req: NextRequest) => {
+    const { searchParams } = new URL(req.url);
+    const slug = searchParams.get("slug") || searchParams.get("blogPostSlug");
 
-  if (!slug) {
-    return NextResponse.json(
-      { error: "Missing required query parameter 'slug' or 'blogPostSlug'" },
-      { status: 400 }
-    );
-  }
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Missing required query parameter 'slug' or 'blogPostSlug'" },
+        { status: 400 }
+      );
+    }
 
-  const connectionHash = await getConnectionHashFromRequest(req);
-  const result = await BlogPostService.getReactions(slug, connectionHash);
-  return NextResponse.json(result);
-});
+    const connectionHash = await getConnectionHashFromRequest(req);
+    const result = await BlogPostService.getReactions(slug, connectionHash);
+    return NextResponse.json(result);
+  },
+  { auth: "public" }
+);
 
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
@@ -108,21 +111,14 @@ export const POST = createApiHandler(
     }
   },
   {
+    auth: "public",
     schema: BlogPostReactionSubmissionSchema,
     type: "body",
     customJsonError: "Invalid JSON body payload",
     customValidationError: (err) => {
-      const issues = (
-        err as {
-          issues: Array<{ path: Array<string | number>; message: string }>;
-        }
-      ).issues;
       return {
         error: "Validation failed",
-        details: issues.map((issue) => ({
-          path: issue.path.join("."),
-          message: issue.message,
-        })),
+        details: zodIssueDetails(err),
       };
     },
   }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { validateRouteInitialization } from "@/lib/security";
 import { SyncParamsSchema } from "@/lib/schemas";
 import { MaintenanceService } from "@/lib/services/maintenance-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +22,7 @@ export const GET = createApiHandler(
         return NextResponse.json(
           {
             error: "Validation failed",
-            details: parsedQuery.error.issues.map((issue) => ({
-              path: issue.path.join("."),
-              message: issue.message,
-            })),
+            details: zodIssueDetails(parsedQuery.error),
           },
           { status: 400 }
         );

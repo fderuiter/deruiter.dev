@@ -609,7 +609,12 @@ export interface ElectronicSignature {
   timestamp: string;
   meaning:
     "Author" | "Investigator Approval" | "Data Lock" | "Monitor Verification";
-  digest: string; // Cryptographic SHA-256 simulated signature hash
+  /**
+   * Random reference token for the simulated signature. It is not a hash or
+   * a cryptographic signature. Records saved before #3617 carry a `SHA256-`
+   * prefix; that value was random too.
+   */
+  digest: string;
 }
 
 export interface EdcSimulationState {

@@ -113,7 +113,8 @@ const postgres: ProviderAdapter = {
   ],
   destinations: ["vercel"],
   guidedSteps: [
-    "Create a free Neon project at https://console.neon.tech and a development branch (never point setup at the production branch).",
+    "Create or select a Neon project at https://console.neon.tech and a development branch (never point setup at the production branch).",
+    "Use separate development credentials; schema and seed operations need their own confirmation.",
     "Open Connection Details, choose Prisma, and copy the pooled connection string.",
     "Turn off connection pooling in the same panel and copy the direct connection string.",
   ],
@@ -156,7 +157,7 @@ const upstashRedis: ProviderAdapter = {
   ],
   destinations: ["vercel"],
   guidedSteps: [
-    "Create a free Redis database at https://console.upstash.com.",
+    "Create or select a development Redis database at https://console.upstash.com; use a separate key namespace for each environment.",
     "Open the database's REST API section and copy UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
   ],
   manualPath:
@@ -321,7 +322,7 @@ const resend: ProviderAdapter = {
   ],
   destinations: ["vercel"],
   guidedSteps: [
-    "Create an API key at https://resend.com/api-keys (sending access is enough for local work).",
+    "Create a development API key at https://resend.com/api-keys (sending access is enough for local work). A sending-only key cannot be live-verified without sending mail.",
     "Verify a sending domain at https://resend.com/domains before sending to anyone but yourself.",
   ],
   manualPath:
@@ -385,7 +386,7 @@ const sentry: ProviderAdapter = {
   ],
   destinations: ["vercel"],
   guidedSteps: [
-    "In Sentry, open Settings, Projects, your project, Client Keys (DSN) and copy the DSN.",
+    "In Sentry, open Settings, Projects, your project, Client Keys (DSN) and copy the DSN. Setup validates its format without sending an event.",
     "SENTRY_ORG and SENTRY_PROJECT are only needed for source-map upload in production builds.",
   ],
   manualPath: "Paste the DSN of any Sentry-protocol-compatible service.",

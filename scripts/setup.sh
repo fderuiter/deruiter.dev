@@ -245,6 +245,8 @@ if [[ "$DEPS_STATUS" != failed && ! -f app/generated/prisma/client.ts ]] && (( !
     rm -f tsconfig.tsbuildinfo
   else
     wizard_fail "Prisma client generation failed; check the error above."
+    wizard_say "For download failures, check proxy access to binaries.prisma.sh and TLS trust, then rerun ./scripts/setup.sh --resume."
+    wizard_say "Keep checksum verification enabled; schema errors need a schema fix instead."
     DEPS_STATUS=failed; DEPS_DETAIL="Prisma client generation failed."
   fi
 fi

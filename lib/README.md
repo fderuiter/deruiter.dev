@@ -30,7 +30,7 @@ A module with several pipeline stages keeps one private folder per stage under `
 ### The 6 Canonical Boundary Rules (`.dependency-cruiser.cjs`)
 
 1. **Root Entry Points Are the Only Public Surface (`entrypoint-boundary-from-app`)**:
-   Outside code (`app/`, `components/`, `scripts/`) may only import from root files directly under `lib/<package>/` (e.g., `import { evaluateFormula } from "@/lib/crf"` or `import { STUDY_PRESETS } from "@/lib/crf/presets"`). Importing directly into subfolders (e.g., `@/lib/crf/presets/oncology-recist`) is strictly forbidden.
+   Outside code (`app/`, `components/`, `scripts/`, and root files directly under `lib/` such as `lib/env.ts`) may only import from root files directly under `lib/<package>/` (e.g., `import { evaluateFormula } from "@/lib/crf"` or `import { STUDY_PRESETS } from "@/lib/crf/presets"`). Importing directly into subfolders (e.g., `@/lib/crf/presets/oncology-recist`) is strictly forbidden.
 
 2. **Intra-Module Freedom with Inter-Module Seams (`entrypoint-boundary-across-packages`)**:
    Files within a package (e.g., `lib/crf/*`) can import each other freely. When crossing package boundaries (e.g., `lib/laser-loon/` importing from `lib/arcade/`), access must go through the other package's public root entry point (`@/lib/arcade`), never its internal subfolders.

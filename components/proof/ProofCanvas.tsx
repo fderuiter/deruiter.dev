@@ -175,8 +175,8 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
     >
       <div className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur overflow-hidden flex flex-col shadow-2xl relative">
         {/* Canvas Header */}
-        <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <div className="flex items-center gap-2">
+        <div className="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-950/40">
+          <div className="flex min-w-0 items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-emerald-500/80 animate-ping" />
             <span className="text-xs font-semibold text-white">
               {activeTheorem.ruleName}
@@ -185,7 +185,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSnapping}
-              className={`px-2.5 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
+              className={`px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
                 isSnappingEnabled
                   ? "bg-brand-cyan/15 border-brand-cyan/50 text-brand-cyan shadow-sm shadow-cyan-500/20"
                   : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
@@ -208,15 +208,16 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             </button>
             <button
               onClick={handleAutoStep}
-              className="px-2.5 py-1.5 rounded-lg bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+              className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
             >
               <IconWand className="w-3.5 h-3.5" />
               Auto-Step
             </button>
             <button
               onClick={handleResetLayout}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
+              className="p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
               title="Reset node positions & connections"
+              aria-label="Reset node positions and connections"
             >
               <IconRefresh className="w-4 h-4" />
             </button>
@@ -777,7 +778,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                 <button
                   key={rule.id}
                   onClick={() => handleApplyRule(rule.id)}
-                  className={`min-h-8 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98] ${
+                  className={`min-h-8 pointer-coarse:min-h-11 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98] ${
                     isApplicable
                       ? isRecommended
                         ? "bg-emerald-950/80 border-emerald-400 text-emerald-200 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-400/80"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   IconCpu,
   IconLink,
@@ -53,6 +53,33 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
   const catalogToggleRef = useRef<HTMLButtonElement>(null);
   const activeTheorem = THEOREMS[activeTheoremId];
 
+  // On a phone the four view tabs can be wider than the screen, so they
+  // scroll; a fade on either edge shows there is more to reach (#3465).
+  const tabScrollerRef = useRef<HTMLDivElement>(null);
+  const [tabOverflow, setTabOverflow] = useState({ start: false, end: false });
+  const measureTabs = useCallback(() => {
+    const el = tabScrollerRef.current;
+    if (!el) return;
+    // The strip's padding is a few pixels; less than that left to scroll
+    // means the last tab is already in full view.
+    const SLACK = 8;
+    const max = el.scrollWidth - el.clientWidth;
+    const start = el.scrollLeft > SLACK;
+    const end = el.scrollLeft < max - SLACK;
+    setTabOverflow((prev) =>
+      prev.start === start && prev.end === end ? prev : { start, end }
+    );
+  }, []);
+  useEffect(() => {
+    const el = tabScrollerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    // A ResizeObserver reports once on observe, so this also takes the
+    // first measurement.
+    const observer = new ResizeObserver(measureTabs);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measureTabs]);
+
   const selectTheorem = (id: TheoremId) => {
     handleSwitchTheorem(id);
     setCatalogOpen(false);
@@ -74,10 +101,10 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
             follows.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <button
             onClick={handleCopyShareLink}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
             title="Copy Shareable Proof Link with Active Theorem & Tab"
           >
             <IconLink className="w-4 h-4 text-brand-cyan" />
@@ -89,7 +116,7 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
               event.currentTarget.focus();
               setIsCustomStudioOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-purple/40 bg-brand-purple/10 text-brand-purple hover:bg-brand-purple/20 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-brand-purple/40 bg-brand-purple/10 text-brand-purple hover:bg-brand-purple/20 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
           >
             <IconPlus className="w-4 h-4" />
             Custom Studio
@@ -100,7 +127,7 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
               event.currentTarget.focus();
               setIsExportModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
           >
             <IconDownload className="w-4 h-4" />
             Export
@@ -180,57 +207,80 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
       </div>
 
       {/* Mobile View Switcher Tabs (Visible on < lg screens) */}
-      <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-2xl p-1 gap-1 text-xs font-mono select-none">
-        <button
-          onClick={() => setMobileActiveView("canvas")}
-          className={`flex-1 py-2.5 px-2 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-            mobileActiveView === "canvas"
-              ? "bg-brand-cyan text-slate-950 shadow-md"
-              : "text-slate-400 hover:text-white"
-          }`}
+      <div className="lg:hidden relative min-w-0">
+        <div
+          ref={tabScrollerRef}
+          role="region"
+          aria-label="Proof views"
+          data-testid="proof-view-tabs"
+          onScroll={measureTabs}
+          className="overflow-x-auto overscroll-x-contain bg-slate-900 border border-slate-800 rounded-2xl p-1"
         >
-          <IconCpu className="w-4 h-4" />
-          <span>Canvas</span>
-        </button>
-        <button
-          onClick={() => {
-            setMobileActiveView("ledger");
-            setActiveTab("ledger");
-          }}
-          className={`flex-1 py-2.5 px-2 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-            mobileActiveView === "ledger"
-              ? "bg-brand-cyan text-slate-950 shadow-md"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <IconTable className="w-4 h-4" />
-          <span>Ledger</span>
-        </button>
-        <button
-          onClick={() => {
-            setMobileActiveView("fallacy");
-            setActiveTab("fallacy");
-          }}
-          className={`flex-1 py-2.5 px-2 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-            mobileActiveView === "fallacy"
-              ? "bg-brand-cyan text-slate-950 shadow-md"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <IconAlertTriangle className="w-4 h-4" />
-          <span>Fallacy</span>
-        </button>
-        <button
-          onClick={() => setMobileActiveView("terminal")}
-          className={`flex-1 py-2.5 px-2 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-            mobileActiveView === "terminal"
-              ? "bg-brand-cyan text-slate-950 shadow-md"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <IconTerminal className="w-4 h-4" />
-          <span>Terminal</span>
-        </button>
+          <div className="flex min-w-max sm:min-w-0 items-center gap-1 text-xs font-mono select-none">
+            <button
+              onClick={() => setMobileActiveView("canvas")}
+              className={`flex-1 shrink-0 py-2.5 px-3 pointer-coarse:min-h-11 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileActiveView === "canvas"
+                  ? "bg-brand-cyan text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <IconCpu className="w-4 h-4" />
+              <span>Canvas</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileActiveView("ledger");
+                setActiveTab("ledger");
+              }}
+              className={`flex-1 shrink-0 py-2.5 px-3 pointer-coarse:min-h-11 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileActiveView === "ledger"
+                  ? "bg-brand-cyan text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <IconTable className="w-4 h-4" />
+              <span>Ledger</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileActiveView("fallacy");
+                setActiveTab("fallacy");
+              }}
+              className={`flex-1 shrink-0 py-2.5 px-3 pointer-coarse:min-h-11 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileActiveView === "fallacy"
+                  ? "bg-brand-cyan text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <IconAlertTriangle className="w-4 h-4" />
+              <span>Fallacy</span>
+            </button>
+            <button
+              onClick={() => setMobileActiveView("terminal")}
+              className={`flex-1 shrink-0 py-2.5 px-3 pointer-coarse:min-h-11 rounded-xl text-center font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                mobileActiveView === "terminal"
+                  ? "bg-brand-cyan text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <IconTerminal className="w-4 h-4" />
+              <span>Terminal</span>
+            </button>
+          </div>
+        </div>
+        <span
+          aria-hidden="true"
+          data-testid="proof-view-tabs-more-start"
+          data-visible={tabOverflow.start}
+          className={`pointer-events-none absolute inset-y-px left-px w-8 rounded-l-2xl bg-linear-to-r from-slate-900 to-transparent transition-opacity ${tabOverflow.start ? "opacity-100" : "opacity-0"}`}
+        />
+        <span
+          aria-hidden="true"
+          data-testid="proof-view-tabs-more-end"
+          data-visible={tabOverflow.end}
+          className={`pointer-events-none absolute inset-y-px right-px w-8 rounded-r-2xl bg-linear-to-l from-slate-900 to-transparent transition-opacity ${tabOverflow.end ? "opacity-100" : "opacity-0"}`}
+        />
       </div>
     </div>
   );

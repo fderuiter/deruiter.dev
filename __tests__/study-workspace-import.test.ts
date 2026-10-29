@@ -298,6 +298,80 @@ describe("revisions and saved files", () => {
     });
   });
 
+  describe("a hash-valid file with a malformed nested workspace (#3619)", () => {
+    // Saved files are edited as loose JSON to build malformed variants.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type Saved = Record<string, any>;
+
+    /**
+     * A saved workspace with one part replaced, its revision hash recomputed
+     * so the hash check alone would let it through.
+     */
+    async function rehashed(edit: (saved: Saved) => void): Promise<string> {
+      const { workspace } = ok(
+        await importUsdmStudy({ document: DEMO_301_USDM })
+      );
+      const saved = JSON.parse(serializeStudyWorkspace(workspace));
+      edit(saved);
+      if (saved.revision && typeof saved.revision === "object") {
+        saved.revision.sha256 = usdmContentHash(saved.usdm);
+      }
+      return JSON.stringify(saved);
+    }
+
+    it.each<[string, (saved: Saved) => void]>([
+      ["an empty USDM document", (s) => (s.usdm = {})],
+      ["a USDM document with no study", (s) => delete s.usdm.study],
+      ["a study with no name", (s) => delete s.usdm.study.name],
+      ["a study with no versions", (s) => (s.usdm.study.versions = [])],
+      ["a non-v4 USDM document", (s) => (s.usdm.usdmVersion = "3.0.0")],
+      [
+        "a selection naming a missing study version",
+        (s) => (s.selection.studyVersionId = "Missing_Version"),
+      ],
+      [
+        "a selection naming a missing design",
+        (s) => (s.selection.studyDesignId = "Missing_Design"),
+      ],
+      [
+        "a selection with no design id",
+        (s) => delete s.selection.studyDesignId,
+      ],
+      ["a revision with no id", (s) => delete s.revision.id],
+      ["a revision with a numeric note", (s) => (s.revision.note = 7)],
+      ["a source with no sha256", (s) => delete s.source.sha256],
+      ["locks with no USDM version", (s) => delete s.locks.USDM],
+      [
+        "a preserved item with an unknown reason",
+        (s) => s.preserved.push({ path: "study", reason: "other", label: "x" }),
+      ],
+      ["a preserved item that is not an object", (s) => s.preserved.push(1)],
+    ])("refuses %s", async (_label, edit) => {
+      expect(openStudyWorkspace(await rehashed(edit))).toEqual({
+        status: "invalid",
+        problem: "not-a-workspace",
+      });
+    });
+
+    it("opens a workspace whose selection is not the first design", async () => {
+      const result = ok(
+        await importUsdmStudy(
+          { document: multiVersionStudy() },
+          {
+            selection: {
+              studyVersionId: multiVersionStudy().study.versions[0]
+                .id as string,
+              studyDesignId: "Design_Extra",
+            },
+          }
+        )
+      );
+      expect(
+        openStudyWorkspace(serializeStudyWorkspace(result.workspace))
+      ).toEqual({ status: "ok", workspace: result.workspace });
+    });
+  });
+
   it("refuses another workspace file version", async () => {
     const { workspace } = ok(
       await importUsdmStudy({ document: DEMO_301_USDM })

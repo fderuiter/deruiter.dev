@@ -426,6 +426,7 @@ export class CaseStudyService {
    * - Check Upstash Redis read-through cache first (`cs:slug:[slug]`, 3600s TTL).
    * - On cache miss or Redis error, query Prisma and populate cache.
    * - Fall back to static dataset (FALLBACK_CASE_STUDIES) if absent from DB.
+   * - A fallback served because the query failed is never cached.
    */
   static async getCaseStudyBySlug(slug: string): Promise<CaseStudyData | null> {
     const cacheKey = getScopedRedisKey(`cs:slug:${slug}`);
@@ -500,6 +501,9 @@ export class CaseStudyService {
         );
       }
       failBuildOnDataSourceError("CaseStudyService.getCaseStudyBySlug", err);
+      // Serve the static entry but never cache it: a cached fallback would
+      // outlive the outage by the full TTL (#3614).
+      return FALLBACK_CASE_STUDIES.find((s) => s.slug === slug) ?? null;
     }
 
     const finalResult =

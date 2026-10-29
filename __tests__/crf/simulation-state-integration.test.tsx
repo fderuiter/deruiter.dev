@@ -156,8 +156,48 @@ describe("EDC Simulation State Integration", () => {
       expect(draft.study.simulationState?.signatures?.[0].meaning).toBe(
         "Data Lock"
       );
-      expect(draft.study.simulationState?.signatures?.[0].digest).toContain(
-        "SHA256-"
+      // The token is a random simulation reference, not a hash, so it must
+      // not be labelled as one (#3617).
+      const digest = draft.study.simulationState?.signatures?.[0].digest;
+      expect(digest).toMatch(/^sim_[0-9a-z]+$/);
+      expect(digest).not.toMatch(/sha/i);
+    }
+  });
+
+  it("2b. A draft saved before #3617 with a SHA256- prefixed token still loads and shows the form as signed", async () => {
+    const basePreset = getOncologyPresetSync();
+    const visitId = basePreset.visits[0].id;
+    const formId = basePreset.forms[0].id;
+    saveStudyDraft({
+      ...basePreset,
+      simulationState: {
+        signatures: [
+          {
+            id: "sig_historical_1",
+            subjectId: "001-101",
+            formId,
+            visitId,
+            signedBy: "Dr. Sarah Jenkins, M.D. (Investigator)",
+            userRole: "Principal Investigator",
+            timestamp: "2026-09-28T10:05:00Z",
+            meaning: "Data Lock",
+            digest: "SHA256-historicaltoken123",
+          },
+        ],
+      },
+    });
+
+    window.location.hash = "#mode=edc";
+    render(<CRFStudioContainer />);
+
+    expect(await screen.findByText("Signed")).toBeDefined();
+
+    await advanceClock(1000);
+    const draft = loadStudyDraft();
+    expect(draft.status).toBe("recovered");
+    if (draft.status === "recovered") {
+      expect(draft.study.simulationState?.signatures?.[0].digest).toBe(
+        "SHA256-historicaltoken123"
       );
     }
   });

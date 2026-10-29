@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { CaseStudySubmissionSchema } from "@/lib/schemas";
 import { CaseStudyService } from "@/lib/services/case-study-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { sanitizeError } from "@/lib/error-sanitization";
 import { checkRequestSubmissionRateLimit } from "@/lib/moderation";
 import { logger } from "@/lib/logger";
@@ -86,10 +86,7 @@ export const POST = createApiHandler(
           issues: Array<{ path: Array<string | number>; message: string }>;
         }
       ).issues;
-      const details = issues.map((issue) => ({
-        path: issue.path.join(".") || "payload",
-        message: issue.message,
-      }));
+      const details = zodIssueDetails(err, "payload");
       const isToneViolation = issues.some(
         (i) =>
           i.message.toLowerCase().includes("tone") ||

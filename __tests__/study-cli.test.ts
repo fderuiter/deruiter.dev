@@ -9,6 +9,7 @@ import {
   importUsdmStudy,
   serializeStudyWorkspace,
 } from "@/lib/study-workspace";
+import { usdmContentHash } from "@/lib/clinical-standards";
 import { EXIT, runStudyCommand } from "../scripts/study";
 
 /**
@@ -137,6 +138,88 @@ describe("study import", () => {
   });
 });
 
+describe("options that take a value (#3618)", () => {
+  /** Runs a command with the temporary directory as the working directory. */
+  async function runIn(argv: string[]) {
+    const previous = process.cwd();
+    process.chdir(dir);
+    try {
+      return await runStudyCommand(argv);
+    } finally {
+      process.chdir(previous);
+    }
+  }
+
+  it("refuses --out followed by another flag instead of writing a file named after it", async () => {
+    const usdm = write("device.usdm.json", TAVR_DEVICE_USDM);
+    const result = await runIn(["import", usdm, "--out", "--json"]);
+    expect(result.exitCode).toBe(EXIT.badInput);
+    expect(JSON.parse(result.stdout)).toEqual({
+      error: "--out needs a value",
+    });
+    expect(fs.readdirSync(dir)).toEqual(["device.usdm.json"]);
+  });
+
+  it("refuses the reported --out --json --dry-run order with the JSON error", async () => {
+    const usdm = write("device.usdm.json", TAVR_DEVICE_USDM);
+    const result = await runIn([
+      "import",
+      usdm,
+      "--out",
+      "--json",
+      "--dry-run",
+    ]);
+    expect(result.exitCode).toBe(EXIT.badInput);
+    expect(JSON.parse(result.stdout)).toEqual({
+      error: "--out needs a value",
+    });
+    expect(result.stderr).toBe("study: --out needs a value\n");
+  });
+
+  it.each(["--out", "--version", "--design"])(
+    "refuses %s as the last argument",
+    async (flag) => {
+      const usdm = write("device.usdm.json", TAVR_DEVICE_USDM);
+      const result = await runIn(["import", usdm, flag]);
+      expect(result.exitCode).toBe(EXIT.badInput);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toBe(`study: ${flag} needs a value\n`);
+      expect(fs.readdirSync(dir)).toEqual(["device.usdm.json"]);
+    }
+  );
+
+  it.each(["--version", "--design"])(
+    "refuses %s followed by another flag",
+    async (flag) => {
+      const usdm = write("device.usdm.json", TAVR_DEVICE_USDM);
+      const result = await runIn(["import", usdm, flag, "--dry-run"]);
+      expect(result.exitCode).toBe(EXIT.badInput);
+      expect(result.stderr).toBe(`study: ${flag} needs a value\n`);
+    }
+  );
+
+  it("refuses export --out with no value and writes nothing", async () => {
+    const usdm = write("device.usdm.json", TAVR_DEVICE_USDM);
+    const ws = file("device.study.json");
+    expect((await runIn(["import", usdm, "--out", ws])).exitCode).toBe(EXIT.ok);
+    const result = await runIn(["export", ws, "--out"]);
+    expect(result.exitCode).toBe(EXIT.badInput);
+    expect(fs.readdirSync(dir).sort()).toEqual([
+      "device.study.json",
+      "device.usdm.json",
+    ]);
+  });
+
+  it("still accepts a value given after the flag, with --json anywhere", async () => {
+    const usdm = write("device.usdm.json", TAVR_DEVICE_USDM);
+    const out = file("device.study.json");
+    const result = await runIn(["import", "--json", usdm, "--out", out]);
+    expect(result.exitCode).toBe(EXIT.ok);
+    expect(JSON.parse(result.stdout).written).toBe(out);
+    expect(fs.existsSync(out)).toBe(true);
+  });
+});
+
 describe("study info and export", () => {
   async function workspace(): Promise<string> {
     const out = file("rct.study.json");
@@ -167,6 +250,26 @@ describe("study info and export", () => {
     expect(result.exitCode).toBe(EXIT.badInput);
     expect(result.stderr).toMatch(/not a study workspace/);
   });
+
+  it.each(["info", "export"])(
+    "%s refuses a hash-valid workspace with a malformed study, without crashing (#3619)",
+    async (command) => {
+      const saved = JSON.parse(fs.readFileSync(await workspace(), "utf-8"));
+      saved.usdm = {};
+      saved.revision.sha256 = usdmContentHash(saved.usdm);
+      const result = await runStudyCommand([
+        command,
+        write("malformed.study.json", saved),
+        "--out",
+        file("out.usdm.json"),
+      ]);
+      expect(result.exitCode).toBe(EXIT.badInput);
+      expect(result.stderr).toMatch(
+        /not a study workspace \(not-a-workspace\)/
+      );
+      expect(fs.existsSync(file("out.usdm.json"))).toBe(false);
+    }
+  );
 
   it("exports the working USDM document unchanged", async () => {
     const out = file("exported.usdm.json");

@@ -24,9 +24,12 @@ module.exports = {
     {
       name: "entrypoint-boundary-from-app",
       comment:
-        "App, components, and root code may import a package's entry points (root files), but nothing inside its subfolders.",
+        "App, components, root code and root lib/ files may import a package's entry points (root files), but nothing inside its subfolders.",
       severity: "error",
-      from: { pathNot: `^${R}/` },
+      // Only files inside a package are left to the across-packages rule.
+      // Root lib/ files (lib/env.ts) are outside every package, so they are
+      // held to entry points too (#3613).
+      from: { pathNot: `^${R}/[^/]+/` },
       to: { path: PACKAGE_INTERNALS },
     },
     {

@@ -99,6 +99,7 @@ export const POST = createApiHandler(
     }
   },
   {
+    auth: "public",
     schema: NewsletterSubscriptionSchema,
     type: "body",
     customJsonError: "Invalid JSON body payload",

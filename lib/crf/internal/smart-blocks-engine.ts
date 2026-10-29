@@ -1627,7 +1627,7 @@ export const ATOMIC_SLASH_COMMANDS: SlashCommandItem[] = [
     id: "signature",
     title: "21 CFR Part 11 Electronic Signature",
     description:
-      "Investigator sign-off widget with cryptographic attestation and audit trail.",
+      "Investigator sign-off widget with a simulated attestation and audit trail.",
     category: "widget",
     command: "/signature",
     keywords: ["signature", "sign", "part11", "21cfr", "attestation", "pi"],

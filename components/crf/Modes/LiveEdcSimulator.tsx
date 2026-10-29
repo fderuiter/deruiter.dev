@@ -498,7 +498,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         userRole: "Principal Investigator",
         timestamp: new Date().toISOString(),
         meaning: "Data Lock",
-        digest: `SHA256-${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
+        // A random reference token: nothing is hashed or signed (#3617).
+        digest: generateId("sim_"),
       };
       setSignatures((prev) => [...prev, signature]);
     }

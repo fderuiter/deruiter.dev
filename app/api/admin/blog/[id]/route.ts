@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BlogDraftIdParamsSchema, BlogDraftUpdateSchema } from "@/lib/schemas";
 import { BlogPostService } from "@/lib/services/blog-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
 function validationError(error: unknown) {
-  const issues = (
-    error as {
-      issues: Array<{ path: Array<string | number>; message: string }>;
-    }
-  ).issues;
   return {
     error: "Invalid blog draft request",
-    details: issues.map((issue) => ({
-      path: issue.path.join(".") || "payload",
-      message: issue.message,
-    })),
+    details: zodIssueDetails(error, "payload"),
   };
 }
 

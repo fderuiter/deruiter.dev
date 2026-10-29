@@ -203,6 +203,50 @@ describe("setup shell entrypoint (#982, #985)", () => {
       expect(result.stderr).toContain("fnm install");
     });
 
+    it("repairs a missing Prisma client in an existing install", () => {
+      const bin = path.join(dir, "node_modules", ".bin");
+      fs.mkdirSync(bin, { recursive: true });
+      fs.writeFileSync(path.join(dir, "package-lock.json"), "{}");
+      fs.writeFileSync(
+        path.join(dir, "node_modules", ".package-lock.json"),
+        "{}"
+      );
+      const future = new Date(Date.now() + 5000);
+      fs.utimesSync(
+        path.join(dir, "node_modules", ".package-lock.json"),
+        future,
+        future
+      );
+      fs.writeFileSync(path.join(bin, "tsx"), "#!/bin/sh\nexit 0\n", {
+        mode: 0o755,
+      });
+      const fakeBin = path.join(dir, "fake-bin");
+      fs.mkdirSync(fakeBin);
+      fs.writeFileSync(
+        path.join(fakeBin, "npx"),
+        "#!/bin/sh\nmkdir -p app/generated/prisma\ntouch app/generated/prisma/client.ts\n",
+        { mode: 0o755 }
+      );
+      fs.writeFileSync(path.join(dir, "tsconfig.tsbuildinfo"), "stale");
+      const result = spawnSync(
+        "bash",
+        [path.join(dir, "scripts/setup.sh"), "--non-interactive"],
+        {
+          encoding: "utf-8",
+          env: {
+            ...process.env,
+            CI: "",
+            PATH: `${fakeBin}:${process.env.PATH}`,
+          },
+        }
+      );
+      expect(result.status).toBe(0);
+      expect(
+        fs.existsSync(path.join(dir, "app/generated/prisma/client.ts"))
+      ).toBe(true);
+      expect(fs.existsSync(path.join(dir, "tsconfig.tsbuildinfo"))).toBe(false);
+    });
+
     it("never runs npm ci through a symlinked node_modules", () => {
       const shared = fs.mkdtempSync(path.join(os.tmpdir(), "dx-shared-nm-"));
       fs.writeFileSync(path.join(shared, "keep.txt"), "shared install");

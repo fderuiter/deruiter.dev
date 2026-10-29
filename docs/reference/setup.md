@@ -46,6 +46,13 @@ never installs a system package itself.
 | `database` | `npm run setup` | The database at the URL Prisma resolves, only after a separate yes for the schema and for sample data | `--skip-db`, `--skip-db-seed` |
 | `verification` | `npm run setup` | Nothing (read-only checks and probes) | runs only what `--verify` asks for, or what you accept |
 
+If an existing installation lacks the generated Prisma client, setup regenerates
+it and clears the stale incremental TypeScript cache. Prisma generation needs
+access to `binaries.prisma.sh` through the configured proxy; preserve TLS and
+checksum verification. An `npm ci` failure may also come from a lifecycle
+script or network failure, so inspect the original output before changing the
+lockfile.
+
 Each stage reports one status: `completed`, `skipped`, `failed`, `manual`
 (a person must finish it, for example a missing secret or a refused
 production target) or `cancelled`. Stage outcomes, never values, are saved to

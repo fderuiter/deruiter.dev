@@ -9,6 +9,7 @@ The application structure maps App Router routes, React UI components, developer
 ```text
 __tests__/                                 # Vitest unit/integration tests, Playwright E2E, & fuzzing
 adr/                                       # Architectural Decision Records (ADRs)
+plans/                                     # Dated planning records (roadmaps, audits, lane plans); not runtime code
 app/                                       # Next.js 16 App Router routes, layouts & API endpoints
 ├── page.tsx                               # Portfolio Hub landing page & bento showcase
 ├── layout.tsx                             # Global layout shell, Providers & Cmd+K palette portal

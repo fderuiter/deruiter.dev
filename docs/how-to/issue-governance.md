@@ -22,7 +22,7 @@ Work nests in this order:
 
 Use the native sub-issue link for parent and child relationships. Do not rely on a text reference alone. Text such as "Part of #N" may be kept as a human hint, but it is not the source of truth.
 
-The repository does not use a GitHub Projects board. Ownership of the hierarchy sits with the organizing thread.
+The roadmap lives on GitHub Projects board 19 (planning fields and views only). Labels stay the authority for type, priority, area and triage, and the board mirrors them rather than replacing them. Ownership of the hierarchy sits with the organizing thread. The board setup and built-in workflows are in `plans/2026-10-29-roadmap/README.md`.
 
 ## 2. Issue types and labels
 
@@ -115,7 +115,7 @@ Do not close an issue because it is old. Do not move a `needs-decision` or `stat
 - Answer decision cards that set labels, priorities or retirements.
 - Set repository variables that switch automation from dry-run to apply.
 - Ready or merge draft PRs, and enable auto-merge.
-- Create or change a GitHub Projects board, if one is ever wanted. The repository currently has none.
+- Create or change the GitHub Projects board (project 19), including its fields, views, built-in workflows and the bulk backfill of open issues.
 - Revoke or rotate any credential.
 
 ## See also

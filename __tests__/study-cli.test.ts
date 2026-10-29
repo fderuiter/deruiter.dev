@@ -9,6 +9,7 @@ import {
   importUsdmStudy,
   serializeStudyWorkspace,
 } from "@/lib/study-workspace";
+import { usdmContentHash } from "@/lib/clinical-standards";
 import { EXIT, runStudyCommand } from "../scripts/study";
 
 /**
@@ -167,6 +168,26 @@ describe("study info and export", () => {
     expect(result.exitCode).toBe(EXIT.badInput);
     expect(result.stderr).toMatch(/not a study workspace/);
   });
+
+  it.each(["info", "export"])(
+    "%s refuses a hash-valid workspace with a malformed study, without crashing (#3619)",
+    async (command) => {
+      const saved = JSON.parse(fs.readFileSync(await workspace(), "utf-8"));
+      saved.usdm = {};
+      saved.revision.sha256 = usdmContentHash(saved.usdm);
+      const result = await runStudyCommand([
+        command,
+        write("malformed.study.json", saved),
+        "--out",
+        file("out.usdm.json"),
+      ]);
+      expect(result.exitCode).toBe(EXIT.badInput);
+      expect(result.stderr).toMatch(
+        /not a study workspace \(not-a-workspace\)/
+      );
+      expect(fs.existsSync(file("out.usdm.json"))).toBe(false);
+    }
+  );
 
   it("exports the working USDM document unchanged", async () => {
     const out = file("exported.usdm.json");

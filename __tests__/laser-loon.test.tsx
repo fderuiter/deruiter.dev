@@ -5,7 +5,13 @@ import { LaserLoon } from "@/components/LaserLoon";
 
 describe("LaserLoon Component Architecture & Functional Rules", () => {
   const componentPath = path.resolve(__dirname, "../components/LaserLoon.tsx");
-  const content = fs.readFileSync(componentPath, "utf-8");
+  // The session logic lives in its hook since #3436.
+  const content = [
+    componentPath,
+    path.resolve(__dirname, "../components/laser-loon/useLaserLoonSession.ts"),
+  ]
+    .map((file) => fs.readFileSync(file, "utf-8"))
+    .join("\n");
 
   it("exports a function or component named LaserLoon", () => {
     expect(typeof LaserLoon).toBe("function");

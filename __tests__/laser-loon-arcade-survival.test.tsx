@@ -111,28 +111,38 @@ describe("Arcade Survival in the cabinet (#2141)", () => {
   });
 
   it("lets contact damage and minion fire run outside the campaign, never in sandbox", () => {
-    const source = fs.readFileSync(
-      path.resolve(process.cwd(), "components/LaserLoon.tsx"),
-      "utf8"
-    );
+    // The session logic lives in its hook since #3436.
+    const source = [
+      "components/LaserLoon.tsx",
+      "components/laser-loon/useLaserLoonSession.ts",
+    ]
+      .map((file) => fs.readFileSync(path.resolve(process.cwd(), file), "utf8"))
+      .join("\n");
     expect(source).toContain(
       'Enemy contact costs the loon a hit in campaign and survival play\n      if (gameState === "playing" && mode !== "sandbox")'
     );
     expect(source).toContain(
       'mode === "arcade" ? wave.fireLevel : currentActNum'
     );
-    expect(source).toMatch(/if \(mode === "arcade"\) \{\s+setGameState\("gameover"\);/);
+    expect(source).toMatch(
+      /if \(mode === "arcade"\) \{\s+setGameState\("gameover"\);/
+    );
   });
 
   it("keeps the result cards from repeating the clock or centering the star row (#2262)", () => {
-    const source = fs.readFileSync(
-      path.resolve(process.cwd(), "components/LaserLoon.tsx"),
-      "utf8"
-    );
+    // The session logic lives in its hook since #3436.
+    const source = [
+      "components/LaserLoon.tsx",
+      "components/laser-loon/useLaserLoonSession.ts",
+    ]
+      .map((file) => fs.readFileSync(path.resolve(process.cwd(), file), "utf8"))
+      .join("\n");
     // The headline already reads "Survived 1:42"; a "102s" tile repeated it.
     expect(source).not.toContain('{ label: "Survived", value: survivalSecs');
     expect(source).toContain('{ label: "Flags downed", value: runKills }');
-    expect(source).toMatch(/runKillsRef\.current \+= 1;\s+setRunKills\(runKillsRef\.current\);\s+if \(mode !== "campaign"\) return;/);
+    expect(source).toMatch(
+      /runKillsRef\.current \+= 1;\s+setRunKills\(runKillsRef\.current\);\s+if \(mode !== "campaign"\) return;/
+    );
     expect(source).toMatch(/setRunKills\(0\);\s+runKillsRef\.current = 0;/);
     expect(source).toMatch(
       /data-testid="laser-loon-campaign-stars"\s+className="font-mono text-xs text-neutral-300"/

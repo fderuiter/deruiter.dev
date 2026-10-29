@@ -3347,6 +3347,8 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "lib/clinical-trial-chaos/engine.ts": "Clinical Trial Chaos seam",
   "lib/clinical-trial-chaos/scenarios.ts": "Clinical Trial Chaos seam",
   "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",
+  "components/laser-loon/useLaserLoonSession.ts":
+    "Laser Loon seam: game code moved verbatim from LaserLoon.tsx by #3436; seeding follows in #2442",
   "lib/laser-loon/engine.ts": "Laser Loon seam",
   "lib/quasi-perfect/engine.ts": "Quasi-Perfect Puzzler seam",
   "lib/working-with-duck-engine.ts": "Working with Duck seam",

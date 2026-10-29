@@ -199,6 +199,7 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 run_wizard() {
+  local TARGET_REPO="fderuiter/deruiter.dev"
   local mode="${1:-}"
   if [[ "$mode" != backup && "$mode" != release ]]; then
     printf 'Usage: %s backup|release\n' "$0" >&2
@@ -211,7 +212,7 @@ run_wizard() {
   TOTAL_STAGES=3
   stage "Prerequisites"
   say "This guide reads GitHub metadata; it makes no configuration changes."
-  if ! command -v gh >/dev/null 2>&1 || ! gh repo view --json nameWithOwner --jq .nameWithOwner >/dev/null 2>&1; then
+  if ! command -v gh >/dev/null 2>&1 || ! gh repo view "$TARGET_REPO" --json nameWithOwner --jq .nameWithOwner >/dev/null 2>&1; then
     warn "GitHub repository access unavailable. Check gh authentication and repository access; remaining checks are unknown."
     SKIPPED+=("GitHub readiness checks")
   fi
@@ -238,14 +239,14 @@ run_wizard() {
     open_url "https://github.com/fderuiter/deruiter.dev/settings/secrets/actions"
     check_secret VERCEL_DEPLOY_HOOK_MAIN
     check_variable WEEKLY_TRAIN
-    if train=$(gh variable list --json name,value --jq '[.[] | select(.name == "WEEKLY_TRAIN") | .value] | first // ""' 2>/dev/null); then
+    if train=$(gh variable list --repo "$TARGET_REPO" --json name,value --jq '[.[] | select(.name == "WEEKLY_TRAIN") | .value] | first // ""' 2>/dev/null); then
       if [[ "$train" == on ]]; then say "Scheduled train switch: on."; else say "Scheduled train switch: not on."; fi
     else warn "Could not read the scheduled train switch; status unknown."; SKIPPED+=("train switch"); fi
     step "In Vercel, verify the deploy hook targets main; the secret's presence does not verify its value."
     pause "Press Enter to check release holds."
     stage "Release readiness"
     open_url "https://vercel.com/dashboard"
-    if holds=$(gh issue list --state open --label release:hold --json number --jq 'length' 2>/dev/null); then
+    if holds=$(gh issue list --repo "$TARGET_REPO" --state open --label release:hold --json number --jq 'length' 2>/dev/null); then
       say "Open release holds: $holds"
       [[ "$holds" == 0 ]] || warn "Resolve release holds before enabling scheduled releases."
     else
@@ -262,13 +263,13 @@ run_wizard() {
 # Read names only. Do not print secret values or infer missing from an API error.
 check_secret() {
   local names
-  if names=$(gh secret list --json name --jq '.[].name' 2>/dev/null); then
+  if names=$(gh secret list --repo "$TARGET_REPO" --json name --jq '.[].name' 2>/dev/null); then
     if printf '%s\n' "$names" | grep -Fxq "$1"; then say "Secret $1: configured (value not verified)."; else warn "Secret $1: not listed at repository scope."; fi
   else warn "Secret $1: could not check; status unknown."; SKIPPED+=("secret metadata"); fi
 }
 check_variable() {
   local names
-  if names=$(gh variable list --json name --jq '.[].name' 2>/dev/null); then
+  if names=$(gh variable list --repo "$TARGET_REPO" --json name --jq '.[].name' 2>/dev/null); then
     if printf '%s\n' "$names" | grep -Fxq "$1"; then say "Variable $1: configured (value not verified)."; else warn "Variable $1: not listed at repository scope."; fi
   else warn "Variable $1: could not check; status unknown."; SKIPPED+=("variable metadata"); fi
 }

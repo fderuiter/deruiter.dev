@@ -7,8 +7,9 @@
  *   npm run study -- <command> [args] [--json]
  *
  * Every command shares one contract. A file that is named must exist and
- * parse; nothing falls back to an example study. With `--json`, stdout is
- * one JSON object and diagnostics go to stderr. Exit codes: 0 ok, 1
+ * parse; nothing falls back to an example study. `--out`, `--version` and
+ * `--design` need a value, and a following flag is not one. With `--json`,
+ * stdout is one JSON object and diagnostics go to stderr. Exit codes: 0 ok, 1
  * findings at error level, 2 bad input, 3 revision conflict. Writes go to
  * a temporary file first and are renamed into place, so a failed run never
  * leaves half a file. `npm run crf` keeps working; `study crf ...` runs the
@@ -45,27 +46,38 @@ export interface StudyCommandResult {
 interface ParsedArgs {
   readonly positional: string[];
   readonly flags: Map<string, string | true>;
+  /** The first value-taking flag given without a value, e.g. `--out`. */
+  readonly missingValue: string | null;
 }
 
 const VALUE_FLAGS = new Set(["out", "version", "design"]);
 
+/**
+ * Splits arguments into positionals and flags. A value-taking flag never
+ * swallows the next flag: `--out --json` is a missing value, not an output
+ * file named `--json` (#3618). The run reports it before reading or writing
+ * anything, and `--json` still selects the JSON error.
+ */
 function parseArgs(argv: readonly string[]): ParsedArgs {
   const positional: string[] = [];
   const flags = new Map<string, string | true>();
+  let missingValue: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
       const name = arg.slice(2);
-      if (VALUE_FLAGS.has(name) && i + 1 < argv.length) {
+      if (!VALUE_FLAGS.has(name)) {
+        flags.set(name, true);
+      } else if (i + 1 < argv.length && !argv[i + 1].startsWith("--")) {
         flags.set(name, argv[++i]);
       } else {
-        flags.set(name, true);
+        missingValue ??= arg;
       }
     } else {
       positional.push(arg);
     }
   }
-  return { positional, flags };
+  return { positional, flags, missingValue };
 }
 
 function flagValue(args: ParsedArgs, name: string): string | undefined {
@@ -242,6 +254,9 @@ export async function runStudyCommand(
   const json = args.flags.has("json");
   const command = args.positional[0];
   try {
+    if (args.missingValue) {
+      throw new StudyInputError(`${args.missingValue} needs a value`);
+    }
     let output: Output;
     if (command === "import") output = await importCommand(args);
     else if (command === "info") output = await infoCommand(args);

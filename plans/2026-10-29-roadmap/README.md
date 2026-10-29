@@ -6,7 +6,7 @@ Companion file: [open-issues.csv](open-issues.csv) lists all 335 open issues wit
 
 ## 1. Snapshot
 
-- 335 open issues, 0 open pull requests (checked 2026-10-29 against the REST issues endpoint).
+- 335 open issues at first pull, 0 open pull requests (see section 8 for the refresh to 380).
 - Portfolio #3172 has 6 native sub-issues, the six initiatives. The initiatives hold 35 native sub-issues between them (#3173 2, #3174 2, #3175 7, #3176 12, #3177 10, #3183 2). The rest are standalone or parented only by text.
 - Every open issue has exactly one `type:*` label or is a structural issue, and one `p1` to `p4` label, as the taxonomy requires.
 - Gaps to fix:
@@ -97,3 +97,22 @@ Why no Actions workflow for the board: a workflow that writes to a user-owned pr
 - Taxonomy and ledger: `plans/2026-10-28-issue-governance/`, in project files.
 - GitHub documentation on built-in project workflows: auto-add filters, default Done workflows, and no backfill of existing items (docs.github.com, "Using the built-in automations").
 - GitHub documentation on roadmap layout: start and target date fields, and iteration fields for week-by-week work ("Customizing the roadmap layout" and "Best practices for projects").
+
+## 8. Refresh, later on 2026-10-29
+
+The first snapshot above is at 15:08 UTC. A second pull at about 15:25 UTC changed the numbers. The CSV is refreshed to match.
+
+- Open issues: 380 (was 335). No open pull requests. Nothing closed since the first pull.
+- 45 new issues, #3546 to #3598, mostly from the clinical-AI, CRF usability, content and neuro-mesh threads. #3559 is the seventh initiative (clinical expertise applied to systems and AI); its 7 children are open.
+- Native sub-issue links: portfolio #3172 has 7 children; #3176 platform now has 17 (13 open); #3177 arcade and quality has 12. The other initiatives are unchanged.
+- Triage states now: ready-for-agent 228, ready-for-human 74, needs-info 18, needs-triage 0, needs-decision 2 (#3584 and #3597).
+- Board fields: Initiative options now include #3559.
+
+Findings for the governance thread (it owns these fixes; this roadmap does not edit issues):
+
+1. Eight issues are `ready-for-agent` with no Agent Review Brief: #3072, #3074, #3075, #3076, #3078, #3080, #3145, #3146. The Definition of Ready requires a brief, so these should move to needs-info or be briefed.
+2. 82 issues carry both `ready-for-agent` and `status:blocked`. The taxonomy allows one triage state, and a blocked item is not ready. Recommendation: remove `ready-for-agent` from blocked items and keep `status:blocked` with a "Blocked by #N" line.
+3. #3589 (container rule in the governance how-to) is still open and is its own change. This roadmap PR does not touch the triage section.
+4. Milestone "CRF Studio AI Agent beta" still sits on #2680 and #2681 (see Decision 3).
+
+Still waiting on Fred: the go to push `dx/roadmap-2026-10-29` and open the draft PR; the go for the 380-item backfill to project 19; the board steps in section 4.

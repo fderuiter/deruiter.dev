@@ -152,7 +152,8 @@ npm run dev
 Agents and CI use the same command without prompts, for example
 `./scripts/setup.sh --non-interactive --skip-db --json`. The
 [setup reference](docs/reference/setup.md) lists every flag, profile and
-safeguard.
+safeguard. For production backup and release-train operator guidance, run
+`scripts/setup-operator-wizard.sh backup` or `scripts/setup-operator-wizard.sh release`.
 
 To set it up by hand instead:
 

@@ -13,10 +13,58 @@ export interface ApiWrapperOptions<TSchema extends ZodSchema = ZodSchema> {
   customValidationError?: (
     error: unknown,
     req: NextRequest
-  ) => { error: string; details?: Array<{ path: string; message: string }> };
+  ) => { error: string; details?: ApiValidationDetail[] };
   customJsonError?: string;
   defaultStatus?: number;
+  /** Who may call the route. Defaults to `"public"`; name it anyway (#3472). */
   auth?: ApiAuthRequirement;
+  /**
+   * Replaces the Content-Security-Policy after the standard security headers
+   * are applied, for responses such as raw media that must not run anything.
+   */
+  contentSecurityPolicy?: string;
+}
+
+/** One Zod issue as an API error detail. */
+export interface ApiValidationDetail {
+  path: string;
+  message: string;
+}
+
+/**
+ * Maps a Zod error's issues to API error details: each issue's dotted path
+ * and message. An issue at the top level has an empty path; `fallbackPath`
+ * names it instead (`"payload"`, `"query"`), and is empty by default.
+ */
+export function zodIssueDetails(
+  error: unknown,
+  fallbackPath = ""
+): ApiValidationDetail[] {
+  const issues =
+    (error as { issues?: Array<{ path: PropertyKey[]; message: string }> })
+      ?.issues ?? [];
+  return issues.map((issue) => ({
+    path: issue.path.map(String).join(".") || fallbackPath,
+    message: issue.message,
+  }));
+}
+
+function validationError(
+  options: ApiWrapperOptions,
+  error: unknown,
+  req: NextRequest,
+  fallbackPath: string
+): NextResponse {
+  const formatted = options.customValidationError
+    ? options.customValidationError(error, req)
+    : {
+        error: "Validation failed",
+        details: zodIssueDetails(error, fallbackPath),
+      };
+  return applySecurityHeaders(
+    NextResponse.json(formatted, { status: 400 }),
+    req
+  );
 }
 
 export type ApiHandler<TData = unknown> = (
@@ -108,17 +156,7 @@ export function createApiHandler<TSchema extends ZodSchema>(
           });
           const result = options.schema.safeParse(queryObj);
           if (!result.success) {
-            const formatted = options.customValidationError
-              ? options.customValidationError(result.error, req)
-              : {
-                  error: "Validation failed",
-                  details: result.error.issues.map((issue) => ({
-                    path: issue.path.join(".") || "query",
-                    message: issue.message,
-                  })),
-                };
-            const response = NextResponse.json(formatted, { status: 400 });
-            return applySecurityHeaders(response, req);
+            return validationError(options, result.error, req, "query");
           }
           validatedData = result.data;
         } else {
@@ -142,17 +180,7 @@ export function createApiHandler<TSchema extends ZodSchema>(
 
           const result = options.schema.safeParse(body);
           if (!result.success) {
-            const formatted = options.customValidationError
-              ? options.customValidationError(result.error, req)
-              : {
-                  error: "Validation failed",
-                  details: result.error.issues.map((issue) => ({
-                    path: issue.path.join(".") || "payload",
-                    message: issue.message,
-                  })),
-                };
-            const response = NextResponse.json(formatted, { status: 400 });
-            return applySecurityHeaders(response, req);
+            return validationError(options, result.error, req, "payload");
           }
           validatedData = result.data;
         }
@@ -163,7 +191,14 @@ export function createApiHandler<TSchema extends ZodSchema>(
         params: resolvedParams,
       });
 
-      return applySecurityHeaders(response, req);
+      applySecurityHeaders(response, req);
+      if (options?.contentSecurityPolicy) {
+        response.headers.set(
+          "Content-Security-Policy",
+          options.contentSecurityPolicy
+        );
+      }
+      return response;
     } catch (err: unknown) {
       // Check for unique constraint failure (e.g. Prisma P2002)
       const errorObj = err as { code?: string; message?: string };
@@ -195,7 +230,7 @@ export function createApiHandler<TSchema extends ZodSchema>(
       return applySecurityHeaders(response, req);
     }
   };
-  wrapped.auth = options?.auth || "public";
+  wrapped.auth = options?.auth ?? "public";
   return wrapped;
 }
 

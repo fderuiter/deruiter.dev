@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ContactSubmissionSchema } from "@/lib/schemas";
 import { EmailService } from "@/lib/services/email-service";
 import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { logger } from "@/lib/logger";
 
@@ -106,6 +106,7 @@ export const POST = createApiHandler(
     }
   },
   {
+    auth: "public",
     schema: ContactSubmissionSchema,
     type: "body",
     customJsonError: "Invalid JSON body payload",
@@ -125,10 +126,7 @@ export const POST = createApiHandler(
         error: isToneViolation
           ? "Submission rejected: Content violates community tone standards."
           : "Validation failed",
-        details: issues.map((issue) => ({
-          path: issue.path.join("."),
-          message: issue.message,
-        })),
+        details: zodIssueDetails(err),
       };
     },
   }

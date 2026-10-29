@@ -26,7 +26,7 @@ export const GET = createApiHandler(
       "This unsubscribe link is invalid. If you keep receiving dispatches, reply to one and ask to be removed."
     );
   },
-  { schema: NewsletterTokenQuerySchema, type: "query" }
+  { auth: "public", schema: NewsletterTokenQuerySchema, type: "query" }
 );
 
 /**
@@ -41,5 +41,5 @@ export const POST = createApiHandler(
     }
     return NextResponse.json({ success: true }, { status: 200 });
   },
-  { schema: NewsletterTokenQuerySchema, type: "query" }
+  { auth: "public", schema: NewsletterTokenQuerySchema, type: "query" }
 );

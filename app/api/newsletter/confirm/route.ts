@@ -25,5 +25,5 @@ export const GET = createApiHandler(
       "This confirmation link is invalid or has already been replaced by a newer one. Subscribe again to get a fresh link."
     );
   },
-  { schema: NewsletterTokenQuerySchema, type: "query" }
+  { auth: "public", schema: NewsletterTokenQuerySchema, type: "query" }
 );

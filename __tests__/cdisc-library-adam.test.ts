@@ -209,9 +209,9 @@ describe("CDISC Library sync workflow", () => {
     "utf8"
   );
 
-  it("runs weekly and on demand, never on a pull request or push", () => {
+  it("runs on demand only, never on a schedule, a pull request or a push", () => {
     expect(workflow).toContain("workflow_dispatch:");
-    expect(workflow).toMatch(/schedule:\s*\n\s*- cron: "[^"]+"/);
+    expect(workflow).not.toMatch(/^\s{2}schedule:/m);
     expect(workflow).not.toMatch(
       /^\s{2}(pull_request|pull_request_target|push):/m
     );

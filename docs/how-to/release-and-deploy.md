@@ -54,6 +54,10 @@ guardrail.
 
 ## Weekly Train
 
+Run `scripts/setup-operator-wizard.sh release` for interactive, read-only
+configuration and release-hold checks. It does not enable the train or verify
+the deploy hook; follow the operator steps below to do those.
+
 [ADR 0063](../../adr/0063-weekly-release-train.md) (Accepted) ships Production
 through `.github/workflows/weekly-train.yml`. Every Sunday at 7 PM
 Central (01:00 UTC Monday), it checks that **Merge Gate (Required Checks

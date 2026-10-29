@@ -213,7 +213,7 @@ else
   if npm ci >&"$WIZARD_FD"; then
     DEPS_STATUS=completed; DEPS_DETAIL="npm ci finished."
   else
-    wizard_fail "npm ci failed. It needs package.json and package-lock.json to agree."
+    wizard_fail "npm ci failed. Check the output above for the failing install or lifecycle step."
     if ((INTERACTIVE)) && wizard_confirm "Fall back to npm install? It may rewrite package-lock.json."; then
       if npm install >&"$WIZARD_FD"; then
         wizard_warn "npm install changed the lockfile; review git diff package-lock.json before committing."
@@ -222,7 +222,7 @@ else
         DEPS_STATUS=failed; DEPS_DETAIL="npm ci and npm install both failed."
       fi
     else
-      wizard_say "Fix the lockfile mismatch, or run npm install yourself, then rerun setup."
+      wizard_say "Resolve the reported failure, then rerun setup."
       DEPS_STATUS=failed; DEPS_DETAIL="npm ci failed and the npm install fallback was not confirmed."
     fi
   fi
@@ -236,6 +236,17 @@ if [[ "$DEPS_STATUS" != failed && ! -x node_modules/.bin/tsx ]]; then
   fi
   wizard_fail "node_modules/.bin/tsx is missing, so the remaining stages cannot run."
   DEPS_STATUS=failed; DEPS_DETAIL="$DEPS_DETAIL node_modules/.bin/tsx is missing."
+fi
+# npm's hidden lockfile can survive a failed postinstall. Verify the generated
+# client independently before declaring the dependency stage complete.
+if [[ "$DEPS_STATUS" != failed && ! -f app/generated/prisma/client.ts ]] && (( ! DRY_RUN )); then
+  wizard_say "Generating the missing Prisma client..."
+  if npx --no-install prisma generate >&"$WIZARD_FD"; then
+    rm -f tsconfig.tsbuildinfo
+  else
+    wizard_fail "Prisma client generation failed; check the error above."
+    DEPS_STATUS=failed; DEPS_DETAIL="Prisma client generation failed."
+  fi
 fi
 record dependencies "$DEPS_STATUS" "$DEPS_DETAIL"
 [[ "$DEPS_STATUS" == failed ]] && stop 1

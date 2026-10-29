@@ -2,8 +2,7 @@
 
 > [!NOTE]
 > This is a point-in-time product opportunity catalog, not current release
-> status. Live work and blockers are tracked on the
-> [Release Readiness board](https://github.com/users/fderuiter/projects/18).
+> status. Live work and blockers are tracked as GitHub issues.
 
 ## Executive Summary
 

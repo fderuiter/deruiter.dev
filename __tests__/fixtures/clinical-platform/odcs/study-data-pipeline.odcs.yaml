@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.12.0"
+version: "2.13.0"
 status: active
 domain: "Study data"
 tags:
@@ -2302,6 +2302,97 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, RDOMAIN, USUBJID, QNAM) identifies one row."
+  - id: RELREC
+    name: RELREC
+    physicalName: "m5/datasets/tabulations/sdtm/relrec.json"
+    physicalType: file
+    logicalType: object
+    description: "Related Records"
+    dataGranularityDescription: "One record per related record per relationship"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: RDOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Related Domain Abbreviation"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: IDVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        classification: confidential
+      - name: IDVARVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable Value"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 5
+        classification: confidential
+      - name: RELTYPE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Relationship Type"
+        required: false
+        classification: confidential
+      - name: RELID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Relationship Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 6
+        classification: confidential
+    quality:
+      - id: RELREC_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - RDOMAIN
+            - USUBJID
+            - IDVAR
+            - IDVARVAL
+            - RELID
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, RDOMAIN, USUBJID, IDVAR, IDVARVAL, RELID) identifies one row."
   - id: ADSL
     name: ADSL
     physicalName: "m5/datasets/analysis/adam/adsl.json"

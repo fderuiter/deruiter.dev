@@ -4158,6 +4158,19 @@
       "core": [
         "CORE-000544"
       ]
+    },
+    "SD-076": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-077": {
+      "coverage": "related",
+      "core": [
+        "CORE-000167",
+        "CORE-000506"
+      ]
     }
   },
   "views": {

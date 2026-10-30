@@ -30,6 +30,7 @@ const DIMENSIONS: Readonly<Record<Kind, DqDimension>> = {
   duplicate: "uniqueness",
   unit: "consistency",
   eligibility: "consistency",
+  relationship: "consistency",
   lineage: "consistency",
 };
 
@@ -94,6 +95,11 @@ const TEXT: Readonly<
     name: (d) => `${d} records match who failed screening`,
     rationale:
       "Screen failure counts and reasons come from the criteria a subject did not meet; a disposition and its eligibility record must agree.",
+  },
+  relationship: {
+    name: (d) => `${d} pairs resolve to existing AE and CM records`,
+    rationale:
+      "A reviewer follows an adverse event to the medication given for it through RELREC; a pair that names a missing record, or relates anything but one AE and one CM, breaks that trail.",
   },
   unit: {
     name: (d, v) => `${d}.${v} is the test's standard unit`,

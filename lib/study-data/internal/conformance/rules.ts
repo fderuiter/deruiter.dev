@@ -1,6 +1,9 @@
 /** Versioned, data-defined subset of SDTMIG and ADaMIG conformance checks. */
 import { STANDARD_CODELISTS } from "@/lib/clinical-standards";
-import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "@/lib/clinical-standards";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/clinical-standards";
 import type { CellValue, Dataset, FindingSeverity } from "../../types";
 
 /** The ids of every collected source record in the run. */
@@ -124,7 +127,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.7.0";
+export const CONFORMANCE_RULES_VERSION = "1.8.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -159,6 +162,7 @@ export interface ConformanceRule {
     | "duplicate"
     | "unit"
     | "eligibility"
+    | "relationship"
     | "lineage";
   readonly variable?: string;
   readonly check: (
@@ -726,6 +730,69 @@ function eligibilityRule(id: string): ConformanceRule {
   };
 }
 
+/**
+ * Every RELREC row names an existing record of its domain by its --SEQ, and
+ * each relationship pairs exactly one AE record with one CM record of the
+ * same subject (#3414).
+ */
+function relatedRecordsRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain: "RELREC" },
+    citation: SDTM_CITATION,
+    kind: "relationship",
+    variable: "IDVARVAL",
+    check(dataset, datasets) {
+      const issues: RuleIssue[] = [];
+      const keys = new Map<string, Set<string>>();
+      for (const domain of ["AE", "CM"] as const) {
+        const target = datasets.find(
+          (item) => item.layer === "sdtm" && item.name === domain
+        );
+        const seen = new Set<string>();
+        if (target)
+          for (let row = 0; row < target.rowCount; row += 1)
+            seen.add(
+              `${at(target, "USUBJID", row)}|${at(target, `${domain}SEQ`, row)}`
+            );
+        keys.set(domain, seen);
+      }
+      const pairs = new Map<string, string[]>();
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const domain = String(at(dataset, "RDOMAIN", row));
+        const subject = String(at(dataset, "USUBJID", row));
+        const seq = at(dataset, "IDVARVAL", row);
+        const known = keys.get(domain);
+        if (!known || at(dataset, "IDVAR", row) !== `${domain}SEQ`)
+          issues.push({
+            row,
+            variable: "IDVAR",
+            message: `RELREC links ${domain} by ${String(at(dataset, "IDVAR", row))}; only AE and CM records by their --SEQ are related.`,
+          });
+        else if (!known.has(`${subject}|${seq}`))
+          issues.push({
+            row,
+            message: `RELREC names ${domain}SEQ ${String(seq)} for ${subject}, which is not a record in ${domain}.`,
+          });
+        const relationship = `${subject}|${String(at(dataset, "RELID", row))}`;
+        pairs.set(relationship, [...(pairs.get(relationship) ?? []), domain]);
+      }
+      for (const [relationship, domains] of pairs)
+        if (
+          domains.length !== 2 ||
+          !domains.includes("AE") ||
+          !domains.includes("CM")
+        )
+          issues.push({
+            variable: "RELID",
+            message: `Relationship ${relationship.replace("|", " ")} relates ${domains.join(", ")} rather than one AE and one CM record.`,
+          });
+      return issues;
+    },
+  };
+}
+
 /** Local rule ids model a documented subset; they are not official CORE ids. */
 export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   required("SD-001", "DM", ["STUDYID", "USUBJID", "RFSTDTC", "ARMCD"]),
@@ -876,6 +943,9 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   dateRule("SD-073", "IE", "IEDTC"),
   eligibilityRule("SD-074"),
   sourceLineageRule("SD-075", "IE"),
+  required("SD-076", "RELREC", ["STUDYID", "RDOMAIN", "IDVAR", "RELID"]),
+  relatedRecordsRule("SD-077"),
+  sourceLineageRule("SD-078", "RELREC"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

@@ -470,6 +470,26 @@
       "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
     },
     {
+      "ruleId": "SD-076",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Drop RELREC.RELID.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by the same reading of CORE-000355 (domains ALL) used for IE; not yet planted for RELREC."
+    },
+    {
+      "ruleId": "SD-077",
+      "core": ["CORE-000167", "CORE-000506"],
+      "coverage": "related",
+      "planted": "Point one RELREC row at an AESEQ the subject does not have, or leave a RELID with one record.",
+      "reason": "CORE v0.17.1 checks parts of this: CORE-000167 that IDVAR names a variable of the RDOMAIN dataset, and CORE-000506 that each RELID within a subject is on more than one RELREC record. No rule in the cache checks that IDVARVAL names an existing record, which is the local rule's main check. Found by searching the rule cache for RELREC; not yet planted."
+    },
+    {
+      "ruleId": "SD-078",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
       "ruleId": "AD-001",
       "core": [],
       "coverage": "none",

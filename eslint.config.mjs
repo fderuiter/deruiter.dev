@@ -11,7 +11,7 @@ const nestedMathRestriction = {
   selector:
     "CallExpression[callee.object.name='Math'][callee.property.name=/^(min|max)$/] CallExpression[callee.object.name='Math'][callee.property.name=/^(min|max)$/]",
   message:
-    "Do not use inline nested Math.min or Math.max. Use clamp() or lerp() from lib/game-utils.ts instead.",
+    "Do not use inline nested Math.min or Math.max. Use clamp() from @/lib/utils or lerp() from lib/game-utils.ts instead.",
 };
 
 const processEnvRestriction = {
@@ -75,10 +75,11 @@ const storageExemptFiles = [
 const storageUnrestrictedFiles = storageExemptFiles;
 
 // The files that implement what the global restrictions point callers to.
-// lib/arcade/utils.ts holds clamp() itself; lib/game-utils.ts re-exports it.
+// lib/utils/number-format.ts holds clamp() itself; lib/arcade/utils.ts and lib/game-utils.ts re-export it.
 const restrictedSyntaxHelperFiles = [
   "lib/game-utils.ts",
   "lib/arcade/utils.ts",
+  "lib/utils/number-format.ts",
   "components/providers/AudioProvider.tsx",
   "lib/clipboard.ts",
 ];

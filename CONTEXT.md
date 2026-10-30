@@ -10,6 +10,12 @@
 - **Human Gate**: A ticket requiring human authorization, protected credentials, destructive cloud action, production promotion, or subjective real-device validation. Human gates are prepared with reproducible evidence before being handed to a person.
 - **Completion Evidence**: The commit, pull request, automated results, deployment observation, or human sign-off demonstrating that every acceptance criterion of a ticket is satisfied.
 
+## Agent Tooling & Workflow Capabilities
+
+- **Canonical Agent Skills**: The authoritative, shared suite of engineering skills tracked in `.agents/skills/`, defining structured workflows (such as triage, test-driven development, bug diagnosis, and ticket decomposition) consumed natively by general agent runtimes.
+- **Tool-Specific Skills**: Operational workflow skills hosted directly in a tool-designated directory (such as `.claude/skills/`), tailored to the command model and execution constraints of a single agent runtime.
+- **Bridged Skills**: Canonical agent skills mapped into a tool-specific skill directory through relative symbolic links, enabling single-directory agent tools to discover and run shared engineering workflows without content duplication or synchronization drift.
+
 ## Release Branches
 
 - **`main`**: The sole long-lived integration and stable release branch, and the only Vercel production source.

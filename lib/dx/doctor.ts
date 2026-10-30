@@ -3348,6 +3348,8 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
     "Clinical Trial Chaos seam: game code moved verbatim from ClinicalTrialChaos.tsx by #3438; seeding follows in #2456",
   "lib/clinical-trial-chaos/engine.ts": "Clinical Trial Chaos seam",
   "lib/clinical-trial-chaos/scenarios.ts": "Clinical Trial Chaos seam",
+  "components/garmin-watch/useMonkeyCSession.ts":
+    "Garmin Watch seam: game code moved verbatim from GarminWatchSimulator.tsx by #3435; its clock reads move to createStepClock in #2432",
   "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",
   "components/study-director/useStudyDirectorSession.ts":
     "Study Director desk: Date.now() and Math.random() only name a new study's seed, moved verbatim by #3437; the study runs from that seed",

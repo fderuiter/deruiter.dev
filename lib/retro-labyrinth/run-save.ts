@@ -50,6 +50,16 @@ export interface RetroLabyrinthRunSave {
   readonly score: number;
   /** Run time so far, in milliseconds. */
   readonly elapsedMs: number;
+  /**
+   * Rooms in the run, for the Resume offer's "Room N of M" (#3466). Saves
+   * written before it was added leave it out.
+   */
+  readonly runLength?: number;
+  /**
+   * Damage taken so far, for the run summary (#3466). Saves written before
+   * it was added leave it out.
+   */
+  readonly runDamage?: number;
 }
 
 type Json = Record<string, unknown>;
@@ -130,7 +140,10 @@ function isRunSave(value: unknown): value is RetroLabyrinthRunSave {
     isWeaponId(value.activeWeaponId) &&
     isFirmware(value.firmware) &&
     isCount(value.score) &&
-    isCount(value.elapsedMs)
+    isCount(value.elapsedMs) &&
+    (value.runLength === undefined ||
+      (isIndex(value.runLength) && value.runLength > value.roomIndex)) &&
+    (value.runDamage === undefined || isCount(value.runDamage))
   );
 }
 
@@ -157,7 +170,16 @@ export function saveRun(run: Omit<RetroLabyrinthRunSave, "version">): boolean {
  */
 export function loadRun(): RetroLabyrinthRunSave | null {
   const raw = safeGetRawItem(RUN_SAVE_KEY);
-  if (raw === null) return null;
+  return raw === null ? null : parseRunSave(raw);
+}
+
+/**
+ * Reads a save from its stored text, with the same rules as {@link loadRun}.
+ *
+ * @param raw - The text stored under {@link RUN_SAVE_KEY}.
+ * @returns The saved run, or null when it cannot be trusted.
+ */
+export function parseRunSave(raw: string): RetroLabyrinthRunSave | null {
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -170,4 +192,27 @@ export function loadRun(): RetroLabyrinthRunSave | null {
 /** Removes the saved run, if any. */
 export function clearRun(): void {
   safeRemoveItem(RUN_SAVE_KEY);
+}
+
+let pendingResume: RetroLabyrinthRunSave | null = null;
+
+/**
+ * Asks the next session that mounts to resume this run (#3466). The Launch
+ * screen calls it just before it launches the cabinet.
+ *
+ * @param run - The save to resume.
+ */
+export function requestRunResume(run: RetroLabyrinthRunSave): void {
+  pendingResume = run;
+}
+
+/**
+ * Takes the pending resume request, if any, so it is used once.
+ *
+ * @returns The run to resume, or null to start as usual.
+ */
+export function takeRunResumeRequest(): RetroLabyrinthRunSave | null {
+  const run = pendingResume;
+  pendingResume = null;
+  return run;
 }

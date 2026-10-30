@@ -7,6 +7,10 @@ import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { defineGameViews } from "@/components/arcade/views";
 import { RetroLabyrinthCabinetSession } from "@/components/retro-labyrinth/RetroLabyrinthSession";
+import {
+  RunResumeChoice,
+  useSavedRun,
+} from "@/components/retro-labyrinth/RunResumeChoice";
 import { LABYRINTH_CONTROLS } from "@/lib/retro-labyrinth/actions";
 import { IntentLink } from "@/components/ui/IntentLink";
 import {
@@ -42,6 +46,8 @@ const RETRO_LABYRINTH_VIEWS = defineGameViews({
 });
 
 export const RetroLabyrinthClient: React.FC = () => {
+  // A saved run swaps Launch for Resume and New run (#3466).
+  const savedRun = useSavedRun();
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -100,6 +106,7 @@ export const RetroLabyrinthClient: React.FC = () => {
             mobileOrientation="landscape"
             mobileLayout="fit"
             views={RETRO_LABYRINTH_VIEWS}
+            launchControl={savedRun ? RunResumeChoice : undefined}
           />
         </div>
 

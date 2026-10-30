@@ -6,7 +6,7 @@ import {
   ContextLossStatus,
   ContextLossManager,
 } from "@/lib/webgl/context-manager";
-import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { useOptionalAnnouncer } from "@/hooks/useAnnouncer";
 
 export interface UseWebGLContextLossOptions {
   canvasRef?: React.RefObject<HTMLCanvasElement | null> | null;
@@ -47,13 +47,7 @@ export function useWebGLContextLoss(
   const [, setActiveCanvas] = useState<HTMLCanvasElement | null>(null);
 
   // Announcer for accessible screen reader alerts
-  let announcer: { announce: (msg: string, priority?: "polite" | "assertive") => void } | null = null;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    announcer = useAnnouncer();
-  } catch {
-    announcer = null;
-  }
+  const announcer = useOptionalAnnouncer();
 
   const managerRef = useRef<ContextLossManager | null>(null);
   const canvasRefInternal = useRef<HTMLCanvasElement | null>(null);

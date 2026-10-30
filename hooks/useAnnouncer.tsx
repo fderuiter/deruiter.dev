@@ -2,6 +2,7 @@
 
 export {
   useAnnouncer,
+  useOptionalAnnouncer,
   A11yProvider as LiveAnnouncerProvider,
   sanitizePII,
   initialAnnouncerState,

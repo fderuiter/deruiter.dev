@@ -46,7 +46,11 @@ describe("no-restricted-syntax configuration (#1119, #1123)", () => {
   }, 60_000);
 
   it("lets the clamp implementation nest Math calls but still bans process.env there", async () => {
-    for (const file of ["lib/arcade/utils.ts", "lib/game-utils.ts"]) {
+    for (const file of [
+      "lib/arcade/utils.ts",
+      "lib/game-utils.ts",
+      "lib/utils/number-format.ts",
+    ]) {
       const messages = await restrictedMessages(nested + envRead, file);
       expect(messages.some((m) => m.includes("nested Math.min"))).toBe(false);
       expect(messages.some((m) => m.includes("process.env"))).toBe(true);

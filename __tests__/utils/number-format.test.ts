@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import {
   NUMBER_FALLBACK,
+  clamp,
   formatBytes,
   formatNumber,
   formatPercent,
@@ -126,10 +127,20 @@ describe("formatBytes", () => {
   it("returns 0 B for zero, negative and non-finite input", () => {
     expect(formatBytes(0)).toBe("0 B");
     expect(formatBytes(-10)).toBe("0 B");
+    expect(formatBytes(-0)).toBe("0 B");
+    expect(formatBytes(-0.5)).toBe("0 B");
     expect(formatBytes(NaN)).toBe("0 B");
     expect(formatBytes(Infinity)).toBe("0 B");
     expect(formatBytes(null)).toBe("0 B");
     expect(formatBytes(undefined)).toBe("0 B");
+  });
+
+  it("formats boundary edge values across binary unit transitions", () => {
+    expect(formatBytes(1023)).toBe("1023 B");
+    expect(formatBytes(1024)).toBe("1 KB");
+    expect(formatBytes(1025)).toBe("1 KB");
+    expect(formatBytes(1048575)).toBe("1024 KB");
+    expect(formatBytes(1048576)).toBe("1 MB");
   });
 
   it("pins a unit with fixed decimals like the legacy uploader label", () => {
@@ -158,5 +169,27 @@ describe("formatBytes", () => {
       expect(formatNeuroBytes(bytes)).toBe(legacy(bytes));
       expect(formatNeuroBytes(bytes, 2)).toBe(legacy(bytes, 2));
     }
+  });
+});
+
+describe("clamp", () => {
+  it("constrains values within lower and upper bounds", () => {
+    expect(clamp(5, 0, 10)).toBe(5);
+    expect(clamp(-5, 0, 10)).toBe(0);
+    expect(clamp(15, 0, 10)).toBe(10);
+    expect(clamp(0, 0, 10)).toBe(0);
+    expect(clamp(10, 0, 10)).toBe(10);
+  });
+
+  it("handles inverted bounds defensively", () => {
+    expect(clamp(5, 10, 0)).toBe(5);
+    expect(clamp(-5, 10, 0)).toBe(0);
+    expect(clamp(15, 10, 0)).toBe(10);
+  });
+
+  it("handles NaN inputs safely", () => {
+    expect(clamp(NaN, 0, 10)).toBe(0);
+    expect(clamp(NaN, 5, 10)).toBe(5);
+    expect(clamp(NaN, NaN, 10)).toBe(0);
   });
 });

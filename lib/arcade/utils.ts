@@ -1,5 +1,9 @@
 /** Shared, deterministic math and scoring utilities for arcade games. */
 
+import { clamp } from "../utils/number-format";
+
+export { clamp };
+
 export interface Rect {
   x: number;
   y: number;
@@ -14,20 +18,6 @@ export interface MultiplierOptions {
   step?: number;
   maxMultiplier?: number;
 }
-
-/** Clamps a number between a minimum and maximum value, defensively handling inverted bounds. */
-export const clamp = (
-  value: number,
-  minimum: number,
-  maximum: number
-): number => {
-  if (Number.isNaN(value)) {
-    return Number.isNaN(minimum) ? 0 : minimum;
-  }
-  const realMin = Math.min(minimum, maximum);
-  const realMax = Math.max(minimum, maximum);
-  return Math.min(realMax, Math.max(realMin, value));
-};
 
 /** Linearly interpolates between start and end by progress, clamped between 0 and 1. */
 export const lerp = (start: number, end: number, progress: number): number =>

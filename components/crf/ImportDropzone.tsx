@@ -11,20 +11,13 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { detectAndParseStudyFile, ParsedStudyFileResult } from "@/lib/crf";
+import { clamp, formatBytes } from "@/lib/utils";
 import { NoPhiNotice } from "./NoPhiNotice";
 
 interface ImportDropzoneProps {
   onFileParsed: (result: ParsedStudyFileResult, rawText: string) => void;
   onError: (errorMsg: string | null) => void;
   className?: string;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
@@ -140,6 +133,8 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const progressPercent = clamp(readProgress, 0, 100);
+
   return (
     <div className={`space-y-3 ${className}`}>
       <input
@@ -246,11 +241,11 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
               <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-brand-cyan transition-all duration-200"
-                  style={{ width: `${readProgress}%` }}
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
               <p className="text-[11px] font-mono text-zinc-400">
-                {readProgress}% uploaded and parsed
+                {progressPercent}% uploaded and parsed
               </p>
             </div>
           )}

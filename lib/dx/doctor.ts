@@ -3366,6 +3366,8 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
     "Quasi-Perfect Puzzler sandbox: Date.now() only ids log entries, moved verbatim from SandboxMode.tsx by #3433",
   "components/patty-drive-thru/usePattySession.ts":
     "Patty's Drive-Thru: Date.now() only names a fresh shift's seed (freshSeed), moved verbatim from PattyDriveThruGame.tsx by #3439; the shift runs from that seed",
+  "components/for-better-or-bulk/useForBetterOrBulkSession.ts":
+    "For Better or Bulk: Date.now() and new Date() only read today's date for the Arcade Daily seed and result, moved verbatim from ForBetterOrBulkGame.tsx by #3440; the day runs from its seed",
   "lib/quasi-perfect/engine.ts": "Quasi-Perfect Puzzler seam",
   "lib/working-with-duck-engine.ts": "Working with Duck seam",
 };

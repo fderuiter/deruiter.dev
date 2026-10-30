@@ -1331,7 +1331,7 @@ export const NeuroReconClient: React.FC = () => {
         {/* 3D Brain Surface Canvas (Span 5 or 12 or 0) */}
         {(viewMode === "split" || viewMode === "3d") && (
           <div
-            className={`h-[460px] ${
+            className={`min-h-[460px] flex flex-col ${
               viewMode === "3d" ? "lg:col-span-12" : "lg:col-span-5"
             }`}
           >
@@ -1350,7 +1350,7 @@ export const NeuroReconClient: React.FC = () => {
         {/* 2D Multi-Planar Orthoview Slices (Span 7 or 12 or 0) */}
         {(viewMode === "split" || viewMode === "2d") && (
           <div
-            className={`h-[460px] ${
+            className={`min-h-[460px] flex flex-col ${
               viewMode === "2d" ? "lg:col-span-12" : "lg:col-span-7"
             }`}
           >

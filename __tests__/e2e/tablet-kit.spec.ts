@@ -1930,6 +1930,7 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
     const dialog = page.getByRole("dialog", { name: /GAME PAUSED/ });
     await expect(dialog).toBeVisible();
     await expectBoxInViewport(page, dialog, "pause menu");
+    await expectFocusInside(page, '[role="dialog"]');
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(page.locator(IMMERSIVE)).toBeVisible();
@@ -1956,6 +1957,7 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
     const sheet = page.getByTestId("loon-menu-sheet");
     await expect(sheet).toBeVisible();
     await expectBoxInViewport(page, sheet, "menu sheet");
+    await expectFocusInside(page, '[data-testid="loon-menu-sheet"]');
     for (let i = 0; i < 12; i += 1) {
       await page.keyboard.press("Tab");
       expect(
@@ -1984,6 +1986,7 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
     const { width, height } = page.viewportSize()!;
     await page.setViewportSize({ width: height, height: width });
     await expectBoxInViewport(page, museum, "museum (turned)");
+    await expectFocusInside(page, '[role="dialog"]');
     for (let i = 0; i < 12; i += 1) {
       await page.keyboard.press("Tab");
       expect(
@@ -2039,6 +2042,7 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
     });
     await page.keyboard.press("m");
     await expect(museum).toBeVisible();
+    await expectFocusInside(page, '[role="dialog"]');
     await page.keyboard.press("Escape");
     await expect(museum).toBeHidden();
     await page.locator(".arcade-shooter-playfield").focus();

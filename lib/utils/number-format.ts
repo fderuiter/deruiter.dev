@@ -6,8 +6,6 @@
  * and React hydration never sees a mismatched separator.
  */
 
-import { clamp } from "@/lib/game-utils";
-
 /** Locale used by every number formatter unless a caller overrides it. */
 export const DEFAULT_NUMBER_LOCALE = "en-US";
 
@@ -48,9 +46,30 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+/**
+ * Clamps a number between a minimum and maximum value, defensively handling inverted bounds.
+ *
+ * @param value The value to clamp. If `NaN`, returns `minimum` (or 0 if `minimum` is `NaN`).
+ * @param minimum Lower bound (or upper bound if inverted).
+ * @param maximum Upper bound (or lower bound if inverted).
+ * @returns The clamped value.
+ */
+export function clamp(
+  value: number,
+  minimum: number,
+  maximum: number
+): number {
+  if (Number.isNaN(value)) {
+    return Number.isNaN(minimum) ? 0 : minimum;
+  }
+  const realMin = Math.min(minimum, maximum);
+  const realMax = Math.max(minimum, maximum);
+  return Math.min(realMax, Math.max(realMin, value));
+}
+
 function clampDecimals(decimals: number): number {
-  if (!Number.isFinite(decimals) || decimals < 0) return 0;
-  return Math.min(Math.floor(decimals), 20);
+  if (!Number.isFinite(decimals)) return 0;
+  return clamp(Math.floor(decimals), 0, 20);
 }
 
 /**

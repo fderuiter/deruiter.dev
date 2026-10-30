@@ -262,6 +262,7 @@ export {
   formatNumber,
   formatPercent,
   formatBytes,
+  clamp,
 } from "./utils/number-format";
 export type {
   FormatPercentOptions,

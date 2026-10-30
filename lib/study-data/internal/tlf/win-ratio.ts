@@ -594,8 +594,8 @@ export function winStatistics(
     const z = netBenefitValue / se;
     netBenefit = {
       estimate: netBenefitValue,
-      lower: netBenefitValue - quantile * se,
-      upper: netBenefitValue + quantile * se,
+      lower: Math.max(-1, netBenefitValue - quantile * se),
+      upper: Math.min(1, netBenefitValue + quantile * se),
       standardError: se,
       zStatistic: z,
       pValue: normalPValue(z, sided),

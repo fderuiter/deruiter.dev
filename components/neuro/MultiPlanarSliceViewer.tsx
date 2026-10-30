@@ -225,11 +225,11 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
     <div
       onMouseUp={interaction.release}
       onMouseLeave={interaction.release}
-      className="relative w-full h-full min-h-[380px] bg-zinc-950 rounded-2xl border border-zinc-800/80 p-3 flex flex-col gap-3 select-none"
+      className="relative w-full h-full flex-1 min-h-[380px] bg-zinc-950 rounded-2xl border border-zinc-800/80 p-3 flex flex-col gap-3 select-none"
     >
       {/* Top Header / View Mode Controls */}
-      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <IconLayersSubtract className="w-4 h-4 text-brand-cyan" />
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
             2D Multi-Planar Orthoview
@@ -239,7 +239,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <div className="bg-zinc-900 border border-zinc-750 px-2.5 py-1 rounded-lg text-zinc-300">
             <span>INTENSITY: </span>
             <span className="font-bold text-brand-cyan">
@@ -252,7 +252,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
           <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-750 p-0.5 rounded-lg">
             <button
               onClick={() => setViewLayout("multi")}
-              className={`px-2 py-0.5 rounded-md transition-all ${
+              className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-3 rounded-md transition-all ${
                 viewLayout === "multi"
                   ? "bg-brand-cyan text-zinc-950 font-bold"
                   : "text-zinc-400 hover:text-white"
@@ -262,7 +262,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
             </button>
             <button
               onClick={() => setViewLayout("focused")}
-              className={`px-2 py-0.5 rounded-md transition-all ${
+              className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-3 rounded-md transition-all ${
                 viewLayout === "focused"
                   ? "bg-brand-cyan text-zinc-950 font-bold"
                   : "text-zinc-400 hover:text-white"
@@ -322,7 +322,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
                       [axis]: parseInt(e.target.value, 10),
                     })
                   }
-                  className="w-full mt-2 accent-brand-cyan h-1 bg-zinc-800 rounded-lg cursor-pointer"
+                  className="w-full mt-2 accent-brand-cyan h-1 bg-zinc-800 pointer-coarse:h-11 pointer-coarse:bg-transparent rounded-lg cursor-pointer"
                 />
               </div>
             );
@@ -331,13 +331,13 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
       ) : (
         /* Focused Single View */
         <div className="flex flex-col flex-1 bg-zinc-900/60 rounded-xl border border-zinc-800 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div className="flex flex-wrap gap-2">
               {PLANE_ORDER.map((p) => (
                 <button
                   key={p}
                   onClick={() => setActivePlane(p)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono uppercase font-bold transition-all ${
+                  className={`px-3 py-1 pointer-coarse:min-h-11 rounded-lg text-xs font-mono uppercase font-bold transition-all ${
                     activePlane === p
                       ? "bg-brand-cyan text-zinc-950"
                       : "bg-zinc-800 text-zinc-400 hover:text-white"

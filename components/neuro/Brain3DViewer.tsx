@@ -600,7 +600,7 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full min-h-[380px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col select-none">
+    <div className="relative w-full h-full flex-1 min-h-[380px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col select-none">
       {/* 3D Viewport Top Header */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 p-2 sm:p-2.5 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800/80">
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-mono min-w-0">
@@ -619,14 +619,14 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
         </div>
 
         {/* Surface Mode Toggle Bar */}
-        <div className="flex items-center gap-1 bg-zinc-950/90 p-0.5 rounded-lg border border-zinc-800 text-xs font-mono overflow-x-auto scrollbar-none">
+        <div className="flex min-w-0 flex-wrap items-center gap-1 bg-zinc-950/90 p-0.5 rounded-lg border border-zinc-800 text-xs font-mono">
           {(
             ["pial", "white", "inflated", "aparc", "aseg"] as SurfaceMode[]
           ).map((mode) => (
             <button
               key={mode}
               onClick={() => onSurfaceChange?.(mode)}
-              className={`px-2 py-0.5 rounded-md transition-all text-[11px] font-mono capitalize whitespace-nowrap ${
+              className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-3 rounded-md transition-all text-[11px] font-mono capitalize whitespace-nowrap ${
                 surfaceMode === mode
                   ? "bg-brand-cyan text-zinc-950 font-bold shadow-xs"
                   : "text-zinc-400 hover:text-white hover:bg-zinc-800"
@@ -636,64 +636,64 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Hemisphere and Wireframe Secondary Controls */}
-      <div className="absolute top-14 left-2.5 z-10 flex items-center gap-1.5 bg-zinc-900/85 backdrop-blur-md p-1 rounded-lg border border-zinc-800 text-[10px] font-mono text-zinc-400 shadow-sm">
-        <span className="px-1.5 text-zinc-400 font-semibold">HEMI:</span>
-        <button
-          onClick={() => setHemiFilter("both")}
-          className={`px-2 py-0.5 rounded transition ${
-            hemiFilter === "both"
-              ? "bg-zinc-700 text-white font-bold"
-              : "hover:text-zinc-200"
-          }`}
-        >
-          Both
-        </button>
-        <button
-          onClick={() => setHemiFilter("lh")}
-          className={`px-2 py-0.5 rounded transition ${
-            hemiFilter === "lh"
-              ? "bg-zinc-700 text-white font-bold"
-              : "hover:text-zinc-200"
-          }`}
-        >
-          Left (lh)
-        </button>
-        <button
-          onClick={() => setHemiFilter("rh")}
-          className={`px-2 py-0.5 rounded transition ${
-            hemiFilter === "rh"
-              ? "bg-zinc-700 text-white font-bold"
-              : "hover:text-zinc-200"
-          }`}
-        >
-          Right (rh)
-        </button>
-        <span className="text-zinc-700 mx-0.5">|</span>
-        <button
-          onClick={() => setWireframeActive((prev) => !prev)}
-          className={`flex items-center gap-1 px-2 py-0.5 rounded transition ${
-            wireframeActive
-              ? "bg-brand-cyan/20 text-brand-cyan font-bold"
-              : "hover:text-zinc-200"
-          }`}
-        >
-          <IconLayersSubtract className="w-3 h-3" />
-          <span>Wireframe</span>
-          {wireframeActive && <IconCheck className="w-2.5 h-2.5" />}
-        </button>
-        <span className="text-zinc-700 mx-0.5">|</span>
-        <button
-          onClick={() => triggerSimulation(800)}
-          title="Simulate WebGL Context Loss & Recovery (GPU Resilience Test)"
-          aria-label="GPU Test: simulate WebGL context loss and recovery"
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-zinc-400 hover:text-amber-300 hover:bg-zinc-800 transition"
-        >
-          <IconRefresh className="w-2.5 h-2.5 text-amber-400" />
-          <span>GPU Test</span>
-        </button>
+        {/* Hemisphere and Wireframe Secondary Controls: anchored under the
+            header so they follow it when it wraps on a phone (#3464). */}
+        <div className="absolute top-full left-2.5 right-2.5 sm:right-auto mt-2.5 flex flex-wrap items-center gap-1.5 bg-zinc-900/85 backdrop-blur-md p-1 rounded-lg border border-zinc-800 text-[10px] font-mono text-zinc-400 shadow-sm">
+          <span className="px-1.5 text-zinc-400 font-semibold">HEMI:</span>
+          <button
+            onClick={() => setHemiFilter("both")}
+            className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-2.5 rounded transition ${
+              hemiFilter === "both"
+                ? "bg-zinc-700 text-white font-bold"
+                : "hover:text-zinc-200"
+            }`}
+          >
+            Both
+          </button>
+          <button
+            onClick={() => setHemiFilter("lh")}
+            className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-2.5 rounded transition ${
+              hemiFilter === "lh"
+                ? "bg-zinc-700 text-white font-bold"
+                : "hover:text-zinc-200"
+            }`}
+          >
+            Left (lh)
+          </button>
+          <button
+            onClick={() => setHemiFilter("rh")}
+            className={`px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-2.5 rounded transition ${
+              hemiFilter === "rh"
+                ? "bg-zinc-700 text-white font-bold"
+                : "hover:text-zinc-200"
+            }`}
+          >
+            Right (rh)
+          </button>
+          <span className="text-zinc-700 mx-0.5">|</span>
+          <button
+            onClick={() => setWireframeActive((prev) => !prev)}
+            className={`flex items-center gap-1 px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-2.5 rounded transition ${
+              wireframeActive
+                ? "bg-brand-cyan/20 text-brand-cyan font-bold"
+                : "hover:text-zinc-200"
+            }`}
+          >
+            <IconLayersSubtract className="w-3 h-3" />
+            <span>Wireframe</span>
+            {wireframeActive && <IconCheck className="w-2.5 h-2.5" />}
+          </button>
+          <span className="text-zinc-700 mx-0.5">|</span>
+          <button
+            onClick={() => triggerSimulation(800)}
+            title="Simulate WebGL Context Loss & Recovery (GPU Resilience Test)"
+            aria-label="GPU Test: simulate WebGL context loss and recovery"
+            className="flex items-center gap-1 px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-2.5 rounded text-zinc-400 hover:text-amber-300 hover:bg-zinc-800 transition"
+          >
+            <IconRefresh className="w-2.5 h-2.5 text-amber-400" />
+            <span>GPU Test</span>
+          </button>
+        </div>
       </div>
 
       {/* WebGL Context Loss & Recovery HUD Banner */}

@@ -1279,6 +1279,15 @@ async function closeWorldIntro(page: Page) {
   }).toPass({ timeout: 15000 });
 }
 
+/** Waits until focus is inside `selector`, as a dialog's focus trap puts it. */
+async function expectFocusInside(page: Page, selector: string) {
+  await expect
+    .poll(() =>
+      page.evaluate((sel) => !!document.activeElement?.closest(sel), selector)
+    )
+    .toBe(true);
+}
+
 async function openClassicDesk(page: Page) {
   await page
     .getByRole("button", { name: /Switch to the classic desk/ })
@@ -1551,6 +1560,9 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
     const box = (await intro.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    // Escape belongs to the help once its focus trap has taken focus; before
+    // that a slow runner hands the key to the cabinet, which closes.
+    await expectFocusInside(page, '[data-testid="world-intro"]');
     await page.keyboard.press("Escape");
     await expect(intro).toBeHidden();
     await expect(page.locator(IMMERSIVE)).toBeVisible();
@@ -1586,6 +1598,7 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
     const box = (await sheet.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    await expectFocusInside(page, '[role="dialog"]');
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();
     await expect(page.locator(IMMERSIVE)).toBeVisible();

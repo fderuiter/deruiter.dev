@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-const CODE_FILE = /\.(?:[cm]?js|jsx|tsx?)$/u;
+const CODE_FILE = /\.(?:[cm]?[jt]s|jsx|tsx)$/u;
 
 /**
  * Paths that are executed rather than imported, mapped to the tests covering them.
@@ -36,6 +36,10 @@ export const NON_IMPORTABLE_COVERAGE: Array<{
       /commit-wizard/u,
       /gate-ordering/u,
     ],
+  },
+  {
+    match: /^vitest\.config\.[cm]?ts$/u,
+    testNameMatches: [/^vitest-config-esm/u, /^coverage-policy-governance/u],
   },
   {
     match:
@@ -102,7 +106,11 @@ export function resolveNonImportableTests(
  */
 export function runStagedTests(cwd: string): void {
   const staged = getStagedFiles(cwd);
-  const graphFiles = staged.filter((file) => CODE_FILE.test(file));
+  // A config file is part of every Vitest graph; passing it to `related`
+  // selects the entire suite. Its dedicated tests below provide bounded coverage.
+  const graphFiles = staged.filter(
+    (file) => CODE_FILE.test(file) && !/^vitest\.config\.[cm]?ts$/u.test(file)
+  );
   const nonImportable = resolveNonImportableTests(cwd, staged);
   const files = Array.from(new Set([...graphFiles, ...nonImportable]));
 

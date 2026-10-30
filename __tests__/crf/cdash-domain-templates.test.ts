@@ -79,7 +79,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
             expect(meta.sdtmVariable).toBe(meta.sdtmVariable.toUpperCase());
 
             expect(meta.cdashLabel).toBeTruthy();
-            expect(["R", "HR", "O"]).toContain(meta.core);
+            expect(["R", "HR", "O", "R/C"]).toContain(meta.core);
             expect(meta.acrfAnnotation).toBeTruthy();
             expect([
               "Topic",

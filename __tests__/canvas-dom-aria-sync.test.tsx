@@ -2,6 +2,14 @@ import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Telemetry is not under test here. The real hook keeps a background sync
+// timer that, with no network, logs a failure after the last test; under load
+// the worker can close while that log is in flight, an EnvironmentTeardownError
+// that fails the shard though every test passed.
+vi.mock("@/hooks/useTelemetry", () => ({
+  useTelemetry: () => ({ recordEvent: vi.fn().mockResolvedValue(true) }),
+}));
+
 // Mocks for window / canvas
 beforeEach(() => {
   vi.restoreAllMocks();

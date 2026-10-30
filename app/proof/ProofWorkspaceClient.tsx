@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
-import { THEOREMS, TheoremId } from "@/lib/proof-utils";
+import { THEOREMS, TheoremId } from "@/lib/proof";
 import { createCustomTheorem } from "@/lib/proof-custom";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";

@@ -157,6 +157,7 @@ export default defineConfig({
         "lib/trial-and-error/index.ts",
         "lib/study-data/types.ts",
         "lib/study-data/index.ts",
+        "lib/proof/index.ts",
       ],
       thresholds: coverageThresholdsDeferred
         ? undefined

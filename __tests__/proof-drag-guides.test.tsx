@@ -5,7 +5,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   getCompatibleTargets,
   computeMagneticSnap,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/proof/ProofWorkspaceClient";
 
 describe("Magnetic Snapping & Drag Guides Suite", () => {

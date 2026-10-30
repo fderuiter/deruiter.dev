@@ -19,7 +19,7 @@ import {
   exportWorkspaceProof,
   getSuggestion,
   PropAst,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 import {
   evaluateFormula,
   evaluateCondition,

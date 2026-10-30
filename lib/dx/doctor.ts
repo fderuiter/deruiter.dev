@@ -2254,7 +2254,7 @@ export function checkDefectRemediationInvariants(
   // Scan computational engine files for boundary guards
   const engineChecks = [
     {
-      file: "lib/proof-utils.ts",
+      file: "lib/proof/internal/proof-utils.ts",
       pattern: /depth\s*>\s*500/,
       label: "Proof AST recursion limit guard",
     },

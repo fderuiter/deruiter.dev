@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProofHeader } from "@/components/proof/ProofHeader";
-import { THEOREMS } from "@/lib/proof-utils";
+import { THEOREMS } from "@/lib/proof";
 
 /**
  * Proof Canvas on phones (#3465): the view tabs scroll inside a labelled

@@ -1,5 +1,5 @@
 import { createCustomTheorem } from "@/lib/proof-custom";
-import { generateTruthTable } from "@/lib/proof-utils";
+import { generateTruthTable } from "@/lib/proof";
 
 type TheoremId =
   | "modus-ponens"

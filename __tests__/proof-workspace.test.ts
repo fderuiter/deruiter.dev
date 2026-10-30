@@ -10,7 +10,7 @@ import {
   pruneStepOrNode,
   getFallacyDiagnosis,
   type Edge,
-} from "../lib/proof-utils";
+} from "@/lib/proof";
 
 describe("Logic Proof Workspace Utilities", () => {
   describe("isValidNode", () => {

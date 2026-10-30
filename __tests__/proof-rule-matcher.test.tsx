@@ -6,7 +6,7 @@ import {
   scanApplicableRules,
   solveNextDeductionStep,
   THEOREMS,
-} from "../lib/proof-utils";
+} from "@/lib/proof";
 
 afterEach(() => {
   cleanup();

@@ -9,7 +9,7 @@ import {
   type Edge,
   type ProofNode,
   type TheoremDefinition,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 /** Canvas node box, matching the size ProofCanvas draws. */
 const NODE_WIDTH = 160;

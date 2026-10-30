@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { getSuggestion } from "@/lib/proof-utils";
+import { getSuggestion } from "@/lib/proof";
 
 interface ProofConsoleInputOptions {
   /** Runs a submitted, trimmed, non-blank line. */

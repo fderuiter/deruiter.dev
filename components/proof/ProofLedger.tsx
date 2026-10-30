@@ -13,7 +13,7 @@ import {
   FallacyDiagnosis,
   TheoremDefinition,
   LedgerStep,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 interface ProofLedgerProps {
   activeTab: "ledger" | "systems" | "fallacy";

@@ -1175,7 +1175,9 @@ test.describe("Trial & Error seeded runs (#1528)", () => {
     await expect(info.getByTestId("run-daily")).toContainText(today);
     const seed = (await info.getByTestId("run-seed").textContent()) ?? "";
     expect(seed).toBe(dailySeed(today));
-    expect(await handIds(page)).toEqual(firstHand(seed));
+    // The previous hand's cards can still be leaving when the new run starts,
+    // so poll for the dealt hand as the challenge-link test does.
+    await expect.poll(() => handIds(page)).toEqual(firstHand(seed));
   });
 });
 

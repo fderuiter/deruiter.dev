@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.11.0"
+version: "2.12.0"
 status: active
 domain: "Study data"
 tags:
@@ -2330,6 +2330,14 @@ schema:
         primaryKey: true
         primaryKeyPosition: 2
         classification: confidential
+      - name: SITEID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Site Identifier"
+        required: false
+        classification: confidential
       - name: TRT01P
         logicalType: string
         logicalTypeOptions:
@@ -2428,6 +2436,14 @@ schema:
           maxLength: 80
         physicalType: "VARCHAR(80)"
         description: Race
+        required: false
+        classification: confidential
+      - name: COUNTRY
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Country
         required: false
         classification: confidential
       - name: BSYSBP

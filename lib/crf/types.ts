@@ -35,7 +35,13 @@ export interface CdashVariableMetadata {
   cdashLabel: string; // e.g. "Adverse Event Start Date"
   nciConceptId?: string; // NCI codelist code when CDISC publishes the codelist, e.g. C66731
   codelistId?: string; // CRF Studio codelist the variable is collected with, e.g. CL_SEX
-  core: "HR" | "O" | "R"; // Highly Recommended, Optional, Required
+  /**
+   * CDASH core designation: Highly Recommended, Required, Optional, or
+   * Recommended/Conditional (collected only when another answer calls for
+   * it, such as the seriousness criteria after a Yes to Serious Event,
+   * #2826). Only HR and R are expected on every page of their domain.
+   */
+  core: "HR" | "O" | "R" | "R/C";
   acrfAnnotation: string; // e.g. "AE.AESTDTC"
   dataCategory?: string; // Identifier, Timing, Topic, Qualifier
 }

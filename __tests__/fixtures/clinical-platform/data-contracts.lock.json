@@ -79449,6 +79449,5294 @@
         "freshnessHours": 720
       },
       "version": "2.11.0"
+    },
+    {
+      "id": "clinical-platform/study-data-pipeline",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned Arm Code",
+              "maxLength": 200,
+              "name": "ARMCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Description of Planned Arm",
+              "maxLength": 200,
+              "name": "ARM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Element Order",
+              "maxLength": null,
+              "name": "TAETORD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Element Code",
+              "maxLength": 200,
+              "name": "ETCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Description of Element",
+              "maxLength": 200,
+              "name": "ELEMENT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Branch",
+              "maxLength": 200,
+              "name": "TABRANCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Transition Rule",
+              "maxLength": 200,
+              "name": "TATRANS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Trial Arms",
+          "grain": "One record per planned element per arm",
+          "name": "TA",
+          "physicalName": "m5/datasets/tabulations/sdtm/ta.json",
+          "primaryKey": [
+            "STUDYID",
+            "ARMCD",
+            "TAETORD"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Element Code",
+              "maxLength": 200,
+              "name": "ETCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Description of Element",
+              "maxLength": 200,
+              "name": "ELEMENT",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Rule for Start of Element",
+              "maxLength": 200,
+              "name": "TESTRL",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Rule for End of Element",
+              "maxLength": 200,
+              "name": "TEENRL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned Duration of Element",
+              "maxLength": 200,
+              "name": "TEDUR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Trial Elements",
+          "grain": "One record per planned element",
+          "name": "TE",
+          "physicalName": "m5/datasets/tabulations/sdtm/te.json",
+          "primaryKey": [
+            "STUDYID",
+            "ETCD"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Visit Number",
+              "maxLength": null,
+              "name": "VISITNUM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Visit Name",
+              "maxLength": 200,
+              "name": "VISIT",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned Study Day",
+              "maxLength": null,
+              "name": "VISITDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned Arm Code",
+              "maxLength": 200,
+              "name": "ARMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Rule for Start of Visit",
+              "maxLength": 200,
+              "name": "TVSTRL",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Rule for End of Visit",
+              "maxLength": 200,
+              "name": "TVENRL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Trial Visits",
+          "grain": "One record per planned visit",
+          "name": "TV",
+          "physicalName": "m5/datasets/tabulations/sdtm/tv.json",
+          "primaryKey": [
+            "STUDYID",
+            "VISITNUM"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Criterion Short Name",
+              "maxLength": 200,
+              "name": "IETESTCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Criterion Text",
+              "maxLength": 200,
+              "name": "IETEST",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Criterion Category",
+              "maxLength": 200,
+              "name": "IECAT",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Trial Inclusion Exclusion Criteria",
+          "grain": "One record per inclusion or exclusion criterion",
+          "name": "TI",
+          "physicalName": "m5/datasets/tabulations/sdtm/ti.json",
+          "primaryKey": [
+            "STUDYID",
+            "IETESTCD"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "TSSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Trial Summary Parameter Short Name",
+              "maxLength": 200,
+              "name": "TSPARMCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Trial Summary Parameter",
+              "maxLength": 200,
+              "name": "TSPARM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Parameter Value",
+              "maxLength": 200,
+              "name": "TSVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Parameter Value Code",
+              "maxLength": 200,
+              "name": "TSVALCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Value Code Reference",
+              "maxLength": 200,
+              "name": "TSVCDREF",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Value Code Version",
+              "maxLength": 200,
+              "name": "TSVCDVER",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Trial Summary",
+          "grain": "One record per trial summary parameter value",
+          "name": "TS",
+          "physicalName": "m5/datasets/tabulations/sdtm/ts.json",
+          "primaryKey": [
+            "STUDYID",
+            "TSPARMCD",
+            "TSSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject Identifier",
+              "maxLength": 200,
+              "name": "SUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject Reference Start Date",
+              "maxLength": null,
+              "name": "RFSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject Reference End Date",
+              "maxLength": null,
+              "name": "RFENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of First Study Treatment",
+              "maxLength": null,
+              "name": "RFXSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of Last Study Treatment",
+              "maxLength": null,
+              "name": "RFXENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Informed Consent Date",
+              "maxLength": null,
+              "name": "RFICDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date/Time of End of Participation",
+              "maxLength": null,
+              "name": "RFPENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date/Time of Death",
+              "maxLength": null,
+              "name": "DTHDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject Death Flag",
+              "maxLength": 200,
+              "name": "DTHFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Site Identifier",
+              "maxLength": 200,
+              "name": "SITEID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Age",
+              "maxLength": null,
+              "name": "AGE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Age Units",
+              "maxLength": 200,
+              "name": "AGEU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sex",
+              "maxLength": 200,
+              "name": "SEX",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Race",
+              "maxLength": 200,
+              "name": "RACE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Arm Code",
+              "maxLength": 200,
+              "name": "ARMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Description of Planned Arm",
+              "maxLength": 200,
+              "name": "ARM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Arm Code",
+              "maxLength": 200,
+              "name": "ACTARMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Description of Actual Arm",
+              "maxLength": 200,
+              "name": "ACTARM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reason Arm and/or Actual Arm is Null",
+              "maxLength": 200,
+              "name": "ARMNRS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Description of Unplanned Actual Arm",
+              "maxLength": 200,
+              "name": "ACTARMUD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Country",
+              "maxLength": 200,
+              "name": "COUNTRY",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Demographics",
+          "grain": "One record per subject",
+          "name": "DM",
+          "physicalName": "m5/datasets/tabulations/sdtm/dm.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Number",
+              "maxLength": null,
+              "name": "VISITNUM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Name",
+              "maxLength": 200,
+              "name": "VISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Pre-specified",
+              "maxLength": 200,
+              "name": "SVPRESP",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Occurrence",
+              "maxLength": 200,
+              "name": "SVOCCUR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date of Visit",
+              "maxLength": null,
+              "name": "SVSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date of Visit",
+              "maxLength": null,
+              "name": "SVENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Start of Visit",
+              "maxLength": null,
+              "name": "SVSTDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of End of Visit",
+              "maxLength": null,
+              "name": "SVENDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Subject Visits",
+          "grain": "One record per actual or planned visit per subject",
+          "name": "SV",
+          "physicalName": "m5/datasets/tabulations/sdtm/sv.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "VISITNUM"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "EXSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "restricted",
+              "description": "Name of Treatment",
+              "maxLength": 200,
+              "name": "EXTRT",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Dose",
+              "maxLength": null,
+              "name": "EXDOSE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dose Units",
+              "maxLength": 200,
+              "name": "EXDOSU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dose Form",
+              "maxLength": 200,
+              "name": "EXDOSFRM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date of Treatment",
+              "maxLength": null,
+              "name": "EXSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date of Treatment",
+              "maxLength": null,
+              "name": "EXENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Start of Treatment",
+              "maxLength": null,
+              "name": "EXSTDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of End of Treatment",
+              "maxLength": null,
+              "name": "EXENDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Exposure",
+          "grain": "One record per constant-dosing interval per subject",
+          "name": "EX",
+          "physicalName": "m5/datasets/tabulations/sdtm/ex.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "EXSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "CMSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported Name of Drug, Med, or Therapy",
+              "maxLength": 200,
+              "name": "CMTRT",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Standardized Medication Name",
+              "maxLength": 200,
+              "name": "CMDECOD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Category for Medication",
+              "maxLength": 200,
+              "name": "CMCAT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Indication",
+              "maxLength": 200,
+              "name": "CMINDC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Medication Class",
+              "maxLength": 200,
+              "name": "CMCLAS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Medication Class Code",
+              "maxLength": 200,
+              "name": "CMCLASCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dose per Administration",
+              "maxLength": null,
+              "name": "CMDOSE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dose Units",
+              "maxLength": 200,
+              "name": "CMDOSU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dosing Frequency per Interval",
+              "maxLength": 200,
+              "name": "CMDOSFRQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Route of Administration",
+              "maxLength": 200,
+              "name": "CMROUTE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date/Time of Medication",
+              "maxLength": null,
+              "name": "CMSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date/Time of Medication",
+              "maxLength": null,
+              "name": "CMENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Start of Medication",
+              "maxLength": null,
+              "name": "CMSTDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of End of Medication",
+              "maxLength": null,
+              "name": "CMENDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Relative to Reference Time Point",
+              "maxLength": 200,
+              "name": "CMENRTPT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Reference Time Point",
+              "maxLength": 200,
+              "name": "CMENTPT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Concomitant/Prior Medications",
+          "grain": "One record per recorded intervention occurrence or constant-dosing interval per subject",
+          "name": "CM",
+          "physicalName": "m5/datasets/tabulations/sdtm/cm.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "CMSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "AESEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported Term for the Adverse Event",
+              "maxLength": 200,
+              "name": "AETERM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Lowest Level Term",
+              "maxLength": 200,
+              "name": "AELLT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Lowest Level Term Code",
+              "maxLength": null,
+              "name": "AELLTCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dictionary Derived Term",
+              "maxLength": 200,
+              "name": "AEDECOD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Preferred Term Code",
+              "maxLength": null,
+              "name": "AEPTCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "High Level Term",
+              "maxLength": 200,
+              "name": "AEHLT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "High Level Term Code",
+              "maxLength": null,
+              "name": "AEHLTCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "High Level Group Term",
+              "maxLength": 200,
+              "name": "AEHLGT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "High Level Group Term Code",
+              "maxLength": null,
+              "name": "AEHLGTCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Body System or Organ Class",
+              "maxLength": 200,
+              "name": "AEBODSYS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Body System or Organ Class Code",
+              "maxLength": null,
+              "name": "AEBDSYCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Primary System Organ Class",
+              "maxLength": 200,
+              "name": "AESOC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Primary System Organ Class Code",
+              "maxLength": null,
+              "name": "AESOCCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Serious Event",
+              "maxLength": 200,
+              "name": "AESER",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Action Taken with Study Treatment",
+              "maxLength": 200,
+              "name": "AEACN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Causality",
+              "maxLength": 200,
+              "name": "AEREL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Congenital Anomaly or Birth Defect",
+              "maxLength": 200,
+              "name": "AESCONG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Persist or Signif Disability/Incapacity",
+              "maxLength": 200,
+              "name": "AESDISAB",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Results in Death",
+              "maxLength": 200,
+              "name": "AESDTH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Requires or Prolongs Hospitalization",
+              "maxLength": 200,
+              "name": "AESHOSP",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Is Life Threatening",
+              "maxLength": 200,
+              "name": "AESLIFE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Other Medically Important Serious Event",
+              "maxLength": 200,
+              "name": "AESMIE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date of Adverse Event",
+              "maxLength": null,
+              "name": "AESTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date of Adverse Event",
+              "maxLength": null,
+              "name": "AEENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Start of Adverse Event",
+              "maxLength": null,
+              "name": "AESTDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of End of Adverse Event",
+              "maxLength": null,
+              "name": "AEENDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Adverse Events",
+          "grain": "One record per adverse event per subject",
+          "name": "AE",
+          "physicalName": "m5/datasets/tabulations/sdtm/ae.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "AESEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "MHSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported Term for the Medical History",
+              "maxLength": 200,
+              "name": "MHTERM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Dictionary-Derived Term",
+              "maxLength": 200,
+              "name": "MHDECOD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Category for Medical History",
+              "maxLength": 200,
+              "name": "MHCAT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Body System or Organ Class",
+              "maxLength": 200,
+              "name": "MHBODSYS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date/Time of History Collection",
+              "maxLength": null,
+              "name": "MHDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date/Time of Medical History Event",
+              "maxLength": null,
+              "name": "MHSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date/Time of Medical History Event",
+              "maxLength": null,
+              "name": "MHENDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of History Collection",
+              "maxLength": null,
+              "name": "MHDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Relative to Reference Time Point",
+              "maxLength": 200,
+              "name": "MHENRTPT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Reference Time Point",
+              "maxLength": 200,
+              "name": "MHENTPT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Medical History",
+          "grain": "One record per medical history event per subject",
+          "name": "MH",
+          "physicalName": "m5/datasets/tabulations/sdtm/mh.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "MHSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "IESEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Inclusion/Exclusion Criterion Short Name",
+              "maxLength": 200,
+              "name": "IETESTCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Inclusion/Exclusion Criterion",
+              "maxLength": 200,
+              "name": "IETEST",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Inclusion/Exclusion Category",
+              "maxLength": 200,
+              "name": "IECAT",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "I/E Criterion Original Result",
+              "maxLength": 200,
+              "name": "IEORRES",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "I/E Criterion Result in Std Format",
+              "maxLength": 200,
+              "name": "IESTRESC",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Number",
+              "maxLength": null,
+              "name": "VISITNUM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Name",
+              "maxLength": 200,
+              "name": "VISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date/Time of Collection",
+              "maxLength": null,
+              "name": "IEDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Inclusion/Exclusion Criteria Not Met",
+          "grain": "One record per inclusion/exclusion criterion not met per subject",
+          "name": "IE",
+          "physicalName": "m5/datasets/tabulations/sdtm/ie.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "IETESTCD"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "VSSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Vital Signs Test Short Name",
+              "maxLength": 200,
+              "name": "VSTESTCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Vital Signs Test Name",
+              "maxLength": 200,
+              "name": "VSTEST",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Result or Finding in Original Units",
+              "maxLength": 200,
+              "name": "VSORRES",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Original Units",
+              "maxLength": 200,
+              "name": "VSORRESU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Character Result in Standard Units",
+              "maxLength": 200,
+              "name": "VSSTRESC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Numeric Result in Standard Units",
+              "maxLength": null,
+              "name": "VSSTRESN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Standard Units",
+              "maxLength": 200,
+              "name": "VSSTRESU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Last Observation Before Exposure Flag",
+              "maxLength": 200,
+              "name": "VSLOBXFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Number",
+              "maxLength": null,
+              "name": "VISITNUM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Name",
+              "maxLength": 200,
+              "name": "VISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of Vital Signs",
+              "maxLength": null,
+              "name": "VSDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Vital Signs",
+              "maxLength": null,
+              "name": "VSDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Vital Signs",
+          "grain": "One record per vital sign measurement per visit per subject",
+          "name": "VS",
+          "physicalName": "m5/datasets/tabulations/sdtm/vs.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "VSSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "LBSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Lab Test Short Name",
+              "maxLength": 200,
+              "name": "LBTESTCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Lab Test Name",
+              "maxLength": 200,
+              "name": "LBTEST",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Category for Lab Test",
+              "maxLength": 200,
+              "name": "LBCAT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Result or Finding in Original Units",
+              "maxLength": 200,
+              "name": "LBORRES",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Original Units",
+              "maxLength": 200,
+              "name": "LBORRESU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reference Range Lower Limit in Orig Unit",
+              "maxLength": 200,
+              "name": "LBORNRLO",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reference Range Upper Limit in Orig Unit",
+              "maxLength": 200,
+              "name": "LBORNRHI",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Character Result in Standard Units",
+              "maxLength": 200,
+              "name": "LBSTRESC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Numeric Result in Standard Units",
+              "maxLength": null,
+              "name": "LBSTRESN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Standard Units",
+              "maxLength": 200,
+              "name": "LBSTRESU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reference Range Lower Limit-Std Units",
+              "maxLength": null,
+              "name": "LBSTNRLO",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reference Range Upper Limit-Std Units",
+              "maxLength": null,
+              "name": "LBSTNRHI",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reference Range Indicator",
+              "maxLength": 200,
+              "name": "LBNRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Last Observation Before Exposure Flag",
+              "maxLength": 200,
+              "name": "LBLOBXFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Number",
+              "maxLength": null,
+              "name": "VISITNUM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Name",
+              "maxLength": 200,
+              "name": "VISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of Lab Test",
+              "maxLength": null,
+              "name": "LBDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Lab Test",
+              "maxLength": null,
+              "name": "LBDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Laboratory Test Results",
+          "grain": "One record per lab test per visit per subject",
+          "name": "LB",
+          "physicalName": "m5/datasets/tabulations/sdtm/lb.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "LBSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "EGSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "ECG Test or Examination Short Name",
+              "maxLength": 200,
+              "name": "EGTESTCD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ECG Test or Examination Name",
+              "maxLength": 200,
+              "name": "EGTEST",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Result or Finding in Original Units",
+              "maxLength": 200,
+              "name": "EGORRES",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Original Units",
+              "maxLength": 200,
+              "name": "EGORRESU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Character Result/Finding in Std Format",
+              "maxLength": 200,
+              "name": "EGSTRESC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Numeric Result/Finding in Standard Units",
+              "maxLength": null,
+              "name": "EGSTRESN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Standard Units",
+              "maxLength": 200,
+              "name": "EGSTRESU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Last Observation Before Exposure Flag",
+              "maxLength": 200,
+              "name": "EGLOBXFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Number",
+              "maxLength": null,
+              "name": "VISITNUM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit Name",
+              "maxLength": 200,
+              "name": "VISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date/Time of ECG",
+              "maxLength": null,
+              "name": "EGDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of ECG",
+              "maxLength": null,
+              "name": "EGDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "ECG Test Results",
+          "grain": "One record per ECG observation per replicate per time point or one record per ECG observation per beat per visit per subject",
+          "name": "EG",
+          "physicalName": "m5/datasets/tabulations/sdtm/eg.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "EGSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Domain Abbreviation",
+              "maxLength": 200,
+              "name": "DOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sequence Number",
+              "maxLength": null,
+              "name": "DSSEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported Term for Disposition",
+              "maxLength": 200,
+              "name": "DSTERM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Standardized Disposition Term",
+              "maxLength": 200,
+              "name": "DSDECOD",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Category for Disposition",
+              "maxLength": 200,
+              "name": "DSCAT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Epoch",
+              "maxLength": 200,
+              "name": "EPOCH",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date of Disposition Event",
+              "maxLength": null,
+              "name": "DSSTDTC",
+              "nullable": true,
+              "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$",
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Day of Disposition Event",
+              "maxLength": null,
+              "name": "DSSTDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Disposition",
+          "grain": "One record per disposition status or protocol milestone per subject",
+          "name": "DS",
+          "physicalName": "m5/datasets/tabulations/sdtm/ds.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "DSSEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 200,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Related Domain Abbreviation",
+              "maxLength": 200,
+              "name": "RDOMAIN",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 200,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Identifying Variable",
+              "maxLength": 200,
+              "name": "IDVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Identifying Variable Value",
+              "maxLength": 200,
+              "name": "IDVARVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Qualifier Variable Name",
+              "maxLength": 200,
+              "name": "QNAM",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Qualifier Variable Label",
+              "maxLength": 200,
+              "name": "QLABEL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Data Value",
+              "maxLength": 200,
+              "name": "QVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Origin",
+              "maxLength": 200,
+              "name": "QORIG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Evaluator",
+              "maxLength": 200,
+              "name": "QEVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            }
+          ],
+          "description": "Supplemental Qualifiers for DM",
+          "grain": "One record per supplemental qualifier per subject",
+          "name": "SUPPDM",
+          "physicalName": "m5/datasets/tabulations/sdtm/suppdm.json",
+          "primaryKey": [
+            "STUDYID",
+            "RDOMAIN",
+            "USUBJID",
+            "QNAM"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Study Site Identifier",
+              "maxLength": 80,
+              "name": "SITEID",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment Number",
+              "maxLength": null,
+              "name": "TRT01PN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment Number",
+              "maxLength": null,
+              "name": "TRT01AN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment Start Date",
+              "maxLength": null,
+              "name": "TRTSDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment End Date",
+              "maxLength": null,
+              "name": "TRTEDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Efficacy Population Flag",
+              "maxLength": 80,
+              "name": "EFFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Age",
+              "maxLength": null,
+              "name": "AGE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Age Group",
+              "maxLength": 80,
+              "name": "AGEGR1",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Age Group Number",
+              "maxLength": null,
+              "name": "AGEGR1N",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Sex",
+              "maxLength": 80,
+              "name": "SEX",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Race",
+              "maxLength": 80,
+              "name": "RACE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Country",
+              "maxLength": 80,
+              "name": "COUNTRY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Systolic Blood Pressure",
+              "maxLength": null,
+              "name": "BSYSBP",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Diastolic Blood Pressure",
+              "maxLength": null,
+              "name": "BDIABP",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "End of Study Status",
+              "maxLength": 80,
+              "name": "EOSSTT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Discontinuation Reason",
+              "maxLength": 80,
+              "name": "DCSREAS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of Death",
+              "maxLength": null,
+              "name": "DTHDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Subject-Level Analysis Dataset",
+          "grain": "One record per subject",
+          "name": "ADSL",
+          "physicalName": "m5/datasets/analysis/adam/adsl.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter Code",
+              "maxLength": 80,
+              "name": "PARAMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter",
+              "maxLength": 80,
+              "name": "PARAM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value",
+              "maxLength": null,
+              "name": "AVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value Unit",
+              "maxLength": 80,
+              "name": "AVALU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Date",
+              "maxLength": null,
+              "name": "ADT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Day",
+              "maxLength": null,
+              "name": "ADY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Visit",
+              "maxLength": 80,
+              "name": "AVISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Visit Number",
+              "maxLength": null,
+              "name": "AVISITN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Record Flag",
+              "maxLength": 80,
+              "name": "ABLFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Value",
+              "maxLength": null,
+              "name": "BASE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Change from Baseline",
+              "maxLength": null,
+              "name": "CHG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Percent Change from Baseline",
+              "maxLength": null,
+              "name": "PCHG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Primary Analysis Flag",
+              "maxLength": 80,
+              "name": "ANL01FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Derivation Type",
+              "maxLength": 80,
+              "name": "DTYPE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Normal Range Indicator",
+              "maxLength": 80,
+              "name": "ANRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Normal Range Indicator",
+              "maxLength": 80,
+              "name": "BNRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Efficacy Population Flag",
+              "maxLength": 80,
+              "name": "EFFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Vital Signs Analysis",
+          "grain": "One or more records per subject per parameter per analysis visit",
+          "name": "ADVS",
+          "physicalName": "m5/datasets/analysis/adam/advs.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter Code",
+              "maxLength": 80,
+              "name": "PARAMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter",
+              "maxLength": 80,
+              "name": "PARAM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value",
+              "maxLength": null,
+              "name": "AVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value Unit",
+              "maxLength": 80,
+              "name": "AVALU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Date",
+              "maxLength": null,
+              "name": "ADT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Day",
+              "maxLength": null,
+              "name": "ADY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Visit",
+              "maxLength": 80,
+              "name": "AVISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Visit Number",
+              "maxLength": null,
+              "name": "AVISITN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Record Flag",
+              "maxLength": 80,
+              "name": "ABLFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Value",
+              "maxLength": null,
+              "name": "BASE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Change from Baseline",
+              "maxLength": null,
+              "name": "CHG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Percent Change from Baseline",
+              "maxLength": null,
+              "name": "PCHG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Primary Analysis Flag",
+              "maxLength": 80,
+              "name": "ANL01FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Derivation Type",
+              "maxLength": 80,
+              "name": "DTYPE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Normal Range Indicator",
+              "maxLength": 80,
+              "name": "ANRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Normal Range Indicator",
+              "maxLength": 80,
+              "name": "BNRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Efficacy Population Flag",
+              "maxLength": 80,
+              "name": "EFFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Laboratory Analysis",
+          "grain": "One or more records per subject per parameter per analysis visit",
+          "name": "ADLB",
+          "physicalName": "m5/datasets/analysis/adam/adlb.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter Code",
+              "maxLength": 80,
+              "name": "PARAMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter",
+              "maxLength": 80,
+              "name": "PARAM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter Type",
+              "maxLength": 80,
+              "name": "PARAMTYP",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value",
+              "maxLength": null,
+              "name": "AVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value Unit",
+              "maxLength": 80,
+              "name": "AVALU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Date",
+              "maxLength": null,
+              "name": "ADT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Day",
+              "maxLength": null,
+              "name": "ADY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Visit",
+              "maxLength": 80,
+              "name": "AVISIT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Visit Number",
+              "maxLength": null,
+              "name": "AVISITN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Record Flag",
+              "maxLength": 80,
+              "name": "ABLFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Value",
+              "maxLength": null,
+              "name": "BASE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Change from Baseline",
+              "maxLength": null,
+              "name": "CHG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Percent Change from Baseline",
+              "maxLength": null,
+              "name": "PCHG",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Primary Analysis Flag",
+              "maxLength": 80,
+              "name": "ANL01FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Derivation Type",
+              "maxLength": 80,
+              "name": "DTYPE",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Normal Range Indicator",
+              "maxLength": 80,
+              "name": "ANRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Baseline Normal Range Indicator",
+              "maxLength": 80,
+              "name": "BNRIND",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Criterion 1",
+              "maxLength": 80,
+              "name": "CRIT1",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Criterion 1 Evaluation Result Flag",
+              "maxLength": 80,
+              "name": "CRIT1FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Criterion 2",
+              "maxLength": 80,
+              "name": "CRIT2",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Criterion 2 Evaluation Result Flag",
+              "maxLength": 80,
+              "name": "CRIT2FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Efficacy Population Flag",
+              "maxLength": 80,
+              "name": "EFFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "ECG Analysis",
+          "grain": "One or more records per subject per parameter per analysis visit",
+          "name": "ADEG",
+          "physicalName": "m5/datasets/analysis/adam/adeg.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported Event Term",
+              "maxLength": 80,
+              "name": "AETERM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Preferred Term",
+              "maxLength": 80,
+              "name": "AEDECOD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Body System",
+              "maxLength": 80,
+              "name": "AEBODSYS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Serious Event",
+              "maxLength": 80,
+              "name": "AESER",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Action with Treatment",
+              "maxLength": 80,
+              "name": "AEACN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Start Date",
+              "maxLength": null,
+              "name": "ASTDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date Imputation Flag",
+              "maxLength": 80,
+              "name": "ASTDTF",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis End Date",
+              "maxLength": null,
+              "name": "AENDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date Imputation Flag",
+              "maxLength": 80,
+              "name": "AENDTF",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment-Emergent Flag",
+              "maxLength": 80,
+              "name": "TRTEMFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Last Known Contact Date",
+              "maxLength": null,
+              "name": "LSTALVDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "First Event Flag",
+              "maxLength": 80,
+              "name": "AOCCFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "First Body System Event Flag",
+              "maxLength": 80,
+              "name": "AOCCSFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "First Preferred Term Event Flag",
+              "maxLength": 80,
+              "name": "AOCCPFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment Start Date",
+              "maxLength": null,
+              "name": "TRTSDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment End Date",
+              "maxLength": null,
+              "name": "TRTEDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence Number",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Key Value",
+              "maxLength": null,
+              "name": "SRCVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Adverse Events Analysis",
+          "grain": "One record per adverse event per subject",
+          "name": "ADAE",
+          "physicalName": "m5/datasets/analysis/adam/adae.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Reported Name of Drug, Med, or Therapy",
+              "maxLength": 80,
+              "name": "CMTRT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Standardized Medication Name",
+              "maxLength": 80,
+              "name": "CMDECOD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Category for Medication",
+              "maxLength": 80,
+              "name": "CMCAT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Indication",
+              "maxLength": 80,
+              "name": "CMINDC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Medication Class",
+              "maxLength": 80,
+              "name": "CMCLAS",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Start Date",
+              "maxLength": null,
+              "name": "ASTDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Start Date Imputation Flag",
+              "maxLength": 80,
+              "name": "ASTDTF",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis End Date",
+              "maxLength": null,
+              "name": "AENDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Date Imputation Flag",
+              "maxLength": 80,
+              "name": "AENDTF",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Start Relative Day",
+              "maxLength": null,
+              "name": "ASTDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis End Relative Day",
+              "maxLength": null,
+              "name": "AENDY",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "End Relative to Reference Time Point",
+              "maxLength": 80,
+              "name": "CMENRTPT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Pre-treatment Flag",
+              "maxLength": 80,
+              "name": "PREFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "On Treatment Record Flag",
+              "maxLength": 80,
+              "name": "ONTRTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Rescue Medication Flag",
+              "maxLength": 80,
+              "name": "RESCUEFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Last Known Contact Date",
+              "maxLength": null,
+              "name": "LSTALVDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment Start Date",
+              "maxLength": null,
+              "name": "TRTSDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment End Date",
+              "maxLength": null,
+              "name": "TRTEDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence Number",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Key Value",
+              "maxLength": null,
+              "name": "SRCVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Concomitant Meds Analysis",
+          "grain": "One record per medication per subject",
+          "name": "ADCM",
+          "physicalName": "m5/datasets/analysis/adam/adcm.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter Code",
+              "maxLength": 80,
+              "name": "PARAMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter",
+              "maxLength": 80,
+              "name": "PARAM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Risk Start Date",
+              "maxLength": null,
+              "name": "STARTDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Event or Censor Date",
+              "maxLength": null,
+              "name": "ADT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Time to Event in Days",
+              "maxLength": null,
+              "name": "AVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Censor Flag",
+              "maxLength": null,
+              "name": "CNSR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Event Description",
+              "maxLength": 80,
+              "name": "EVNTDESC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Censor Date Description",
+              "maxLength": 80,
+              "name": "CNSDTDSC",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Corroborating DS Sequence",
+              "maxLength": null,
+              "name": "DSSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Actual Treatment",
+              "maxLength": 80,
+              "name": "TRT01A",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment Start Date",
+              "maxLength": null,
+              "name": "TRTSDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Treatment End Date",
+              "maxLength": null,
+              "name": "TRTEDT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Safety Population Flag",
+              "maxLength": 80,
+              "name": "SAFFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence Number",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Key Value",
+              "maxLength": null,
+              "name": "SRCVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Time-to-Event Analysis",
+          "grain": "One record per subject per parameter",
+          "name": "ADTTE",
+          "physicalName": "m5/datasets/analysis/adam/adtte.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        },
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Study Identifier",
+              "maxLength": 80,
+              "name": "STUDYID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Unique Subject Identifier",
+              "maxLength": 80,
+              "name": "USUBJID",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Sequence Number",
+              "maxLength": null,
+              "name": "ASEQ",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter Code",
+              "maxLength": 80,
+              "name": "PARAMCD",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter",
+              "maxLength": 80,
+              "name": "PARAM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Parameter (N)",
+              "maxLength": null,
+              "name": "PARAMN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Date",
+              "maxLength": null,
+              "name": "ADT",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value",
+              "maxLength": null,
+              "name": "AVAL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "decimal"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Value Unit",
+              "maxLength": 80,
+              "name": "AVALU",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Censor Flag",
+              "maxLength": null,
+              "name": "CNSR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Flag 01",
+              "maxLength": 80,
+              "name": "ANL01FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment",
+              "maxLength": 80,
+              "name": "TRT01P",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "restricted",
+              "description": "Planned Treatment Number",
+              "maxLength": null,
+              "name": "TRT01PN",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "ITT Population Flag",
+              "maxLength": 80,
+              "name": "ITTFL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Domain",
+              "maxLength": 80,
+              "name": "SRCDOM",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Variable",
+              "maxLength": 80,
+              "name": "SRCVAR",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Source Sequence Number",
+              "maxLength": null,
+              "name": "SRCSEQ",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            }
+          ],
+          "description": "Hierarchical Composite",
+          "grain": "One record per subject per hierarchy component",
+          "name": "ADHCE",
+          "physicalName": "m5/datasets/analysis/adam/adhce.json",
+          "primaryKey": [
+            "STUDYID",
+            "USUBJID",
+            "ASEQ"
+          ]
+        }
+      ],
+      "productId": "study-data-pipeline",
+      "retention": {
+        "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
+        "regulatory": true,
+        "years": 25
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 720
+      },
+      "version": "2.12.0"
     }
   ]
 }

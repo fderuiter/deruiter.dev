@@ -75,7 +75,7 @@ export const CdashVariableMetadataSchema = z.object({
   cdashLabel: z.string().min(1),
   nciConceptId: z.string().optional(),
   codelistId: z.string().optional(),
-  core: z.enum(["HR", "O", "R"]),
+  core: z.enum(["HR", "O", "R", "R/C"]),
   acrfAnnotation: z.string().min(1),
   dataCategory: z.string().optional(),
 });

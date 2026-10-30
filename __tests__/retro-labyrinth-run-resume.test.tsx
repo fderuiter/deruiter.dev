@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 //
-// Retro Labyrinth save and resume (#3466): the session saves each room as it
-// was entered, a resume restarts the saved room from its start (a boss room
-// at the boss's opening), and the save is cleared when it no longer applies.
+// Retro Labyrinth save and resume (#3466): the session saves each room after
+// Room 01 as it was entered, a resume restarts the saved room from its start
+// (a boss room at the boss's opening), and the save is cleared when a new run
+// starts or the save can't be read.
 // The session is driven with no view mounted, as in the seam tests.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React, { type ReactNode } from "react";
@@ -49,6 +50,7 @@ import {
   RUN_SAVE_KEY,
   loadRun,
   requestRunResume,
+  saveRun,
   type RetroLabyrinthRunSave,
 } from "@/lib/retro-labyrinth";
 import { safeStorage } from "@/lib/safe-storage";
@@ -90,25 +92,35 @@ function routeOf(rooms: number): RunRoute {
   return route;
 }
 
-/** The save a fresh session writes for its opening room. */
-function openingSave(): RetroLabyrinthRunSave {
-  renderSession();
-  const save = loadRun();
-  if (!save) throw new Error("the opening room was not saved");
-  cleanup();
-  return save;
-}
-
+/** A save made on entering the last room of a route `rooms` long. */
 function savedAt(
   rooms: number,
   overrides: Partial<RetroLabyrinthRunSave> = {}
 ): RetroLabyrinthRunSave {
   const route = routeOf(rooms);
   return {
-    ...openingSave(),
+    version: 1,
     seed: route.seed,
     route: [...route.path],
     roomIndex: rooms - 1,
+    hp: 60,
+    maxHp: 80,
+    ram: 24,
+    maxRam: 24,
+    crypto: 40,
+    ammo: { npm_install: 3 },
+    loadout: { bonusWeapons: [], passives: [] },
+    classId: "script_kiddie",
+    activeWeaponId: "npm_install",
+    firmware: {
+      maxRamTier: 0,
+      scanSpeedTier: 0,
+      exploitRadiusTier: 0,
+      startChipsTier: 0,
+    },
+    score: 900,
+    elapsedMs: 10_000,
+    runLength: RUN_LENGTH,
     ...overrides,
   };
 }
@@ -127,30 +139,26 @@ afterEach(() => {
 });
 
 describe("Retro Labyrinth run save (#3466)", () => {
-  it("saves the opening room of a run, with the run's length", () => {
+  it("saves nothing for Room 01, where every run starts", () => {
     const session = renderSession();
-    const save = loadRun();
-    expect(save).not.toBeNull();
-    expect(save!.roomIndex).toBe(0);
-    expect(save!.route).toHaveLength(1);
-    expect(save!.runLength).toBe(RUN_LENGTH);
-    expect(save!.seed).toBe(session.view().route.seed);
-    expect(save!.hp).toBe(session.view().playerHp);
+    expect(session.view().roomIndex).toBe(0);
+    expect(loadRun()).toBeNull();
   });
 
   it("saves the room entry again, with the time played, when the page hides", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-30T12:00:00Z"));
+    requestRunResume(savedAt(2, { hp: 5 }));
     const session = renderSession();
-    const entryHp = loadRun()!.hp;
 
     vi.setSystemTime(new Date("2026-10-30T12:01:30Z"));
     act(() => session.controller.suspend());
 
     const save = loadRun()!;
-    expect(save.elapsedMs).toBeGreaterThanOrEqual(90_000);
-    expect(save.hp).toBe(entryHp);
-    expect(save.roomIndex).toBe(0);
+    expect(save.elapsedMs).toBeGreaterThanOrEqual(100_000);
+    expect(save.hp).toBe(5);
+    expect(save.roomIndex).toBe(1);
+    expect(save.runLength).toBe(RUN_LENGTH);
   });
 });
 
@@ -203,16 +211,14 @@ describe("Retro Labyrinth resume (#3466)", () => {
 });
 
 describe("Retro Labyrinth save clearing (#3466)", () => {
-  it("discards the saved run when a new run starts, and saves the new Room 01", () => {
+  it("discards the saved run when a new run starts", () => {
     requestRunResume(savedAt(3));
     const session = renderSession();
-    const resumedSeed = loadRun()!.seed;
+    expect(loadRun()).not.toBeNull();
 
     act(() => session.intents().newRun());
 
-    const save = loadRun()!;
-    expect(save.roomIndex).toBe(0);
-    expect(save.seed).not.toBe(resumedSeed);
+    expect(loadRun()).toBeNull();
     expect(session.view().roomIndex).toBe(0);
   });
 
@@ -226,13 +232,17 @@ describe("Retro Labyrinth save clearing (#3466)", () => {
     renderSession();
 
     expect(remove).toHaveBeenCalledWith(RUN_SAVE_KEY);
-    // The new run's opening room replaces it.
-    expect(loadRun()).toMatchObject({ version: 1, roomIndex: 0 });
+    expect(window.localStorage.getItem(RUN_SAVE_KEY)).toBeNull();
   });
 
   it("keeps a valid save untouched when the session starts without a resume", () => {
+    const save = savedAt(3);
+    saveRun(save);
     const remove = vi.spyOn(Storage.prototype, "removeItem");
+
     renderSession();
+
     expect(remove).not.toHaveBeenCalledWith(RUN_SAVE_KEY);
+    expect(loadRun()?.seed).toBe(save.seed);
   });
 });

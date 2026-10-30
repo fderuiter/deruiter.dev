@@ -909,6 +909,9 @@ export function useRetroLabyrinthSession(
 
   // Start Roguelike Campaign with chosen Cyberdeck Class
   const startRoguelikeCampaign = useCallback(() => {
+    // A new run, from New run, Restart, Setup or the end of a run, replaces
+    // any saved one (#3466).
+    clearRun();
     const chosenClass =
       CYBERDECK_CLASSES[selectedClassId] || CYBERDECK_CLASSES.script_kiddie;
     // A new run takes the firmware the profile owns now (#2085).
@@ -1090,6 +1093,9 @@ export function useRetroLabyrinthSession(
     const src = saveSourceRef.current;
     if (src.gameMode !== "roguelike") return;
     if (src.runRoute === placeholderRouteRef.current) return;
+    // Room 01 is where every run starts, so a save there resumes nothing.
+    // Saving it would turn Launch into Resume for anyone who only looked in.
+    if (src.roomIndex === 0) return;
     const entry = roomEntryVitalsRef.current;
     const ammo: Partial<Record<WeaponId, number>> = {};
     for (const [id, weapon] of Object.entries(entry.weapons)) {
@@ -1116,8 +1122,8 @@ export function useRetroLabyrinthSession(
     });
   }, []);
 
-  // Every roguelike room entry is a save point (#3466): a new run, the next
-  // room on the route and a resumed room all land here.
+  // Every roguelike room entry after Room 01 is a save point (#3466): the
+  // next room on the route and a resumed room both land here.
   useEffect(() => {
     writeRoomSave();
   }, [runRoute, roomIndex, gameMode, writeRoomSave]);
@@ -2606,12 +2612,6 @@ export function useRetroLabyrinthSession(
     (classicStage: 1 | 2) => switchStage(classicStage),
     [switchStage]
   );
-  // A new run discards any saved one before it saves its own Room 01 (#3466).
-  const newRun = useCallback(() => {
-    clearRun();
-    startRoguelikeCampaign();
-  }, [startRoguelikeCampaign]);
-
   const intents: LabyrinthIntents = {
     move,
     fireTool,
@@ -2632,7 +2632,7 @@ export function useRetroLabyrinthSession(
     buyFirmware: buyFirmwareTier,
     continue: handleNextRoom,
     retry: handleRestart,
-    newRun,
+    newRun: startRoguelikeCampaign,
     playClassic,
     toggleCrt,
     setTheme: setCrtThemeId,

@@ -3,7 +3,7 @@ import React from "react";
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { InteractiveTruthTable } from "@/components/proof/InteractiveTruthTable";
-import { getFallacyDiagnosis } from "@/lib/proof-utils";
+import { getFallacyDiagnosis } from "@/lib/proof";
 
 describe("InteractiveTruthTable Component", () => {
   afterEach(() => {

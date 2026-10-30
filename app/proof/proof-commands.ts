@@ -3,8 +3,8 @@ import type {
   LedgerStep,
   TheoremDefinition,
   TheoremId,
-} from "@/lib/proof-utils";
-import { THEOREMS } from "@/lib/proof-utils";
+} from "@/lib/proof";
+import { THEOREMS } from "@/lib/proof";
 
 /** Export formats the terminal prints inline; anything else opens the export dialog. */
 type InlineExportFormat = "lean" | "latex" | "markdown" | "mermaid";

@@ -16,7 +16,7 @@ import {
   THEOREMS,
   type PropAst,
   type TheoremId,
-} from "../lib/proof-utils";
+} from "@/lib/proof";
 
 describe("Proof Engine: Extended AST Inference & Propositional Logic Suite", () => {
   describe("AST Parsing & Formatting Invariants", () => {

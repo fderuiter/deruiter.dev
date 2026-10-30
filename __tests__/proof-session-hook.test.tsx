@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { THEOREMS, type TheoremDefinition } from "@/lib/proof-utils";
+import { THEOREMS, type TheoremDefinition } from "@/lib/proof";
 import { createCustomTheorem } from "@/lib/proof-custom";
 import {
   WELCOME_LOG,

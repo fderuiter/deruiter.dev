@@ -6,7 +6,7 @@ import {
   THEOREMS,
   getDeductionLedger,
   getStepStatusLabel,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/proof");

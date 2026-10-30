@@ -10,7 +10,7 @@ import {
   parseFormula,
   formatFormula,
   type TheoremId,
-} from "../lib/proof-utils";
+} from "@/lib/proof";
 
 describe("Formal Theorem Library & Multi-Theorem Validation", () => {
   const allTheoremIds: TheoremId[] = [

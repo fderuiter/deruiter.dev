@@ -18,7 +18,7 @@ import {
   TheoremId,
   Edge,
   evaluateProofStatus,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 interface ProofHeaderProps {
   activeTheoremId: TheoremId;

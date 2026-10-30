@@ -39,7 +39,7 @@ const config = {
   // saved and only ever saves from `main`. The path is gitignored (/reports).
   incrementalFile: "reports/stryker-incremental.json",
   mutate: [
-    "lib/proof-utils.ts:270-350",
+    "lib/proof/internal/proof-utils.ts:270-350",
     "lib/masonry.ts",
     "lib/error-sanitization.ts",
     "lib/security.ts",

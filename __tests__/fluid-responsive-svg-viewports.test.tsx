@@ -7,7 +7,7 @@ import {
   VectorComparisonViewer,
   VectorComparisonTool,
 } from "@/components/laser-loon/VectorComparisonViewer";
-import { THEOREMS } from "@/lib/proof-utils";
+import { THEOREMS } from "@/lib/proof";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }

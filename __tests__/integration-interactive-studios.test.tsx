@@ -9,7 +9,7 @@ import {
   exportProofToMarkdown,
   exportProofToMermaid,
   type Edge,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 import {
   evaluateFormula,
   lintFormula,

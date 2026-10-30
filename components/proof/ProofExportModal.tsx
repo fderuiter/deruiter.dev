@@ -14,7 +14,7 @@ import {
   TheoremId,
   TheoremDefinition,
   Edge,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 interface ProofExportModalProps {
   isOpen: boolean;

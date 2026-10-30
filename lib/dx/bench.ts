@@ -17,7 +17,7 @@ import {
   parseFormula,
   extractVariables,
   generateTruthTable,
-} from "../proof-utils";
+} from "@/lib/proof";
 import {
   createInitialDuckGameState,
   stepDuckGame,

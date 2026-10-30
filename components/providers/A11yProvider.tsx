@@ -34,6 +34,13 @@ export function useAnnouncer(): AnnouncerContextType {
   return ctx ?? fallbackAnnouncer;
 }
 
+/**
+ * Hook returning the nearest screen reader announcer context, or null outside a provider.
+ */
+export function useOptionalAnnouncer(): AnnouncerContextType | null {
+  return useContext(AnnouncerContext);
+}
+
 export interface A11yProviderProps {
   children: React.ReactNode;
   announcer?: LiveAnnouncer;

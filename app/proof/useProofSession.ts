@@ -19,7 +19,7 @@ import {
   type ProofNode,
   type TheoremDefinition,
   type TheoremId,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 import type { TerminalLog } from "@/components/proof/ProofTerminalConsole";
 import {
   PROOF_HELP_TEXT,

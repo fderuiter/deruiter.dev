@@ -20,7 +20,7 @@ import {
   FallacyDiagnosis,
   evaluateAst,
   RuleMatch,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 import { IconX } from "@tabler/icons-react";
 
 interface ProofCanvasProps {

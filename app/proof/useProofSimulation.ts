@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { TheoremId } from "@/lib/proof-utils";
+import type { TheoremId } from "@/lib/proof";
 import type { TerminalLog } from "@/components/proof/ProofTerminalConsole";
 import { makeLogId } from "./useProofSession";
 

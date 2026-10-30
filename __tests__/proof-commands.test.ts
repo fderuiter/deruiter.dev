@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { THEOREMS, getDeductionLedger } from "@/lib/proof-utils";
+import { THEOREMS, getDeductionLedger } from "@/lib/proof";
 import {
   PROOF_HELP_TEXT,
   formatLedger,

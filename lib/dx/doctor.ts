@@ -3364,6 +3364,8 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
     "Quasi-Perfect Puzzler: Date.now() and Math.random() only id and time-stamp log entries, proof steps and the saved score, moved verbatim by #3433; tactics are deterministic",
   "components/QuasiPerfectPuzzler/useQuasiSandboxSession.ts":
     "Quasi-Perfect Puzzler sandbox: Date.now() only ids log entries, moved verbatim from SandboxMode.tsx by #3433",
+  "components/patty-drive-thru/usePattySession.ts":
+    "Patty's Drive-Thru: Date.now() only names a fresh shift's seed (freshSeed), moved verbatim from PattyDriveThruGame.tsx by #3439; the shift runs from that seed",
   "lib/quasi-perfect/engine.ts": "Quasi-Perfect Puzzler seam",
   "lib/working-with-duck-engine.ts": "Working with Duck seam",
 };

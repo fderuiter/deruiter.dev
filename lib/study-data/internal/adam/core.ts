@@ -43,6 +43,15 @@ const POPULATIONS = [
 
 const ADSL_VARIABLES: readonly VariableMeta[] = [
   ...COMMON,
+  // Required in ADSL by ADaMIG 1.3, copied from DM (#2807).
+  column(
+    "SITEID",
+    "Study Site Identifier",
+    "text",
+    "Predecessor",
+    undefined,
+    "DM.SITEID"
+  ),
   column("TRT01P", "Planned Treatment", "text", "Derived", "ADSL_TRT"),
   column(
     "TRT01PN",
@@ -67,6 +76,7 @@ const ADSL_VARIABLES: readonly VariableMeta[] = [
   column("AGEGR1N", "Age Group Number", "integer", "Derived", "ADSL_POP"),
   column("SEX", "Sex", "text", "Predecessor", undefined, "DM.SEX"),
   column("RACE", "Race", "text", "Predecessor", undefined, "DM.RACE"),
+  column("COUNTRY", "Country", "text", "Predecessor", undefined, "DM.COUNTRY"),
   column(
     "BSYSBP",
     "Baseline Systolic Blood Pressure",
@@ -277,6 +287,7 @@ export function deriveAdsl(
     data.push({
       STUDYID: definition.studyId,
       USUBJID: subject,
+      SITEID: source.SITEID,
       TRT01P: randomized ? source.ARM : null,
       TRT01PN: randomized ? (armNumber.get(planned!) ?? null) : null,
       TRT01A: actual,
@@ -292,6 +303,7 @@ export function deriveAdsl(
       AGEGR1N: ageGroupNumber,
       SEX: source.SEX,
       RACE: source.RACE,
+      COUNTRY: source.COUNTRY,
       BSYSBP: number(systolicBaseline?.row.VSSTRESN),
       BDIABP: number(diastolicBaseline?.row.VSSTRESN),
       EOSSTT:

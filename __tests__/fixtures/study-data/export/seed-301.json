@@ -1,5 +1,5 @@
 {
-  "manifestSha256": "14ac54f33dd97b8f0369342e4c867c34d2cb9d15476239f7e269257d686bdfeb",
+  "manifestSha256": "98bb04bad67738377328422b0a1b6e45b32c08c25ed4ccc63f0c620fa7f58188",
   "files": {
     "README.txt": {
       "bytes": 1910,
@@ -70,16 +70,16 @@
       "sha256": "2dcee5612e6ed9fca8ab45f806eadb08c7f30ec566ad6194dd5b93bec55decf1"
     },
     "m5/datasets/analysis/adam/adsl.csv": {
-      "bytes": 12415,
-      "sha256": "38764176fc8c24b313bcbc8d6a29e0cbe28c9fc457595827043e83ff1b3629c8"
+      "bytes": 13150,
+      "sha256": "1285f81dc30c447c112189aa867d18b1b35a3f46cd6b86f01987794452bb63c0"
     },
     "m5/datasets/analysis/adam/adsl.json": {
-      "bytes": 19355,
-      "sha256": "2de7acaa3189578c75f9d4a0afb85ab9c345d49fd0b84d1274d104aecc5299f9"
+      "bytes": 20639,
+      "sha256": "1b518ba665d35b3c86912c6e49763a3386c8948ac48a74002d6adb4dc6dd2489"
     },
     "m5/datasets/analysis/adam/adsl.xpt": {
-      "bytes": 23120,
-      "sha256": "1905274c1053b13690a02431b5675fdb956c3dcf67e9656820cd6758a4610c24"
+      "bytes": 24000,
+      "sha256": "e8791344d4c7e6b4d2955d222a47d94dc4ef34442c1c15b39c4f4e8c185fcdd5"
     },
     "m5/datasets/analysis/adam/adtte.csv": {
       "bytes": 63503,
@@ -106,8 +106,8 @@
       "sha256": "71526a3daf9bdcad90ae02d4742eae3c4fb7ac974f9cce9b77a9b82d896de977"
     },
     "m5/datasets/analysis/adam/define.xml": {
-      "bytes": 154503,
-      "sha256": "f86dd528f52d38615925d5784a6c1c089f9e586deb8f97f22d35f9daad6281c2"
+      "bytes": 155488,
+      "sha256": "8cec5c3853e8e4a6e9fcd3f00262afa6a63b917b30137d39453b95b6f4d45d7c"
     },
     "m5/datasets/tabulations/sdtm/ae.csv": {
       "bytes": 12891,

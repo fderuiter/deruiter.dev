@@ -26,11 +26,13 @@ import {
 } from "@/lib/garmin/engine";
 
 describe("GarminWatchSimulator Architecture & Feature Completeness", () => {
-  const componentPath = path.resolve(
-    __dirname,
-    "../components/GarminWatchSimulator.tsx"
-  );
-  const content = fs.readFileSync(componentPath, "utf-8");
+  // The component and, since #3435, the session hook it renders from.
+  const content = [
+    "../components/GarminWatchSimulator.tsx",
+    "../components/garmin-watch/useMonkeyCSession.ts",
+  ]
+    .map((file) => fs.readFileSync(path.resolve(__dirname, file), "utf-8"))
+    .join("\n");
 
   it("exports a function or component named GarminWatchSimulator", () => {
     expect(typeof GarminWatchSimulator).toBe("function");

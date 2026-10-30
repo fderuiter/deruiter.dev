@@ -58,6 +58,29 @@ describe("ADSL, ADVS, ADLB and ADEG", () => {
     expect(actual).toEqual(expected);
   });
 
+  it("carries each subject's SITEID and COUNTRY from DM, in ADaMIG order (#2807)", () => {
+    for (const seed of [301, 7, 999]) {
+      const { get } = analysis(seed, 60);
+      const dm = new Map(
+        records(get("DM")).map((row) => [row.USUBJID, row] as const)
+      );
+      const adsl = get("ADSL");
+      for (const row of records(adsl)) {
+        const subject = dm.get(row.USUBJID);
+        expect(row.SITEID, `${seed} ${row.USUBJID}`).toBe(subject?.SITEID);
+        expect(row.COUNTRY, `${seed} ${row.USUBJID}`).toBe(subject?.COUNTRY);
+        expect(row.SITEID).not.toBeNull();
+      }
+      const names = adsl.variables.map((variable) => variable.name);
+      expect(names.slice(0, 3)).toEqual(["STUDYID", "USUBJID", "SITEID"]);
+      expect(names.indexOf("COUNTRY")).toBe(names.indexOf("RACE") + 1);
+      const origin = (name: string) =>
+        adsl.variables.find((variable) => variable.name === name);
+      expect(origin("SITEID")).toMatchObject({ origin: "Predecessor" });
+      expect(origin("COUNTRY")).toMatchObject({ origin: "Predecessor" });
+    }
+  });
+
   it("has one ADSL row per screened subject and uses observed exposure for treatment", () => {
     const { get } = analysis(301, 90);
     const adsl = records(get("ADSL"));

@@ -184,16 +184,6 @@ describe("DEMO-301 collection against CRF Studio's CDASH catalog", () => {
     // collects as IETESTCD with its category; CRF Studio's catalog has no
     // IE page yet (#2964).
     eligibility: ["IETESTCD", "IECAT"],
-    // CDASHIG AE seriousness criteria that CRF Studio's catalog does not
-    // list yet (#2826).
-    "seriousness criteria": [
-      "AESCONG",
-      "AESDISAB",
-      "AESDTH",
-      "AESHOSP",
-      "AESLIFE",
-      "AESMIE",
-    ],
     // CDASHIG CM fields that CRF Studio's catalog does not list yet: the
     // category that tells rescue medication apart, the dosing frequency and
     // the number of the adverse event a medication treats (#2961).

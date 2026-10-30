@@ -131,6 +131,8 @@ Formal inference rules used to derive logical steps from valid premises:
 - **HTML/DOM HUD Overlay Pattern**: UI design standard placing static game UI, health bars, inventory, and action docks in absolute-positioned responsive HTML/CSS overlays while restricting Canvas rendering to in-world diegetic elements.
 - **Unified Arcade Input Manager**: Input abstraction layer normalizing pointer events, keyboard keys, and virtual touch docks into a uniform coordinate and action vector.
 - **Deterministic Object Pool**: Zero-allocation memory management mechanism pre-allocating reusable entity instances (projectiles, particles, damage text) to eliminate garbage collection stutters.
+- **Field Manual**: The unified instructional and reference dossier available for an interactive application (arcade game cabinet or engineering tool), detailing objectives, controls, rules, pro tips, and engineering lore.
+- **Field Manual Registry**: The centralized catalog mapping each application identifier to its canonical Field Manual dossier, rendered uniformly across all experiences via the field manual modal.
 
 ## Accessibility Architecture & WCAG 2.1 Compliance
 

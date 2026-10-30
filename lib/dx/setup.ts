@@ -360,32 +360,45 @@ async function configureIntegration(
   }
 
   const merged = { ...values, ...updates };
-  const written = Object.keys(updates);
+  const candidateValues = Object.fromEntries(
+    Object.entries(merged).filter(
+      ([key, value]) => !isPlaceholderValue(value, template[key])
+    )
+  );
+  const check = adapter.validate(candidateValues);
+
+  const hasPlaceholderUpdate = Object.entries(updates).some(([key, value]) =>
+    isPlaceholderValue(value, template[key])
+  );
+  const valid =
+    !hasPlaceholderUpdate &&
+    check.status !== "failed" &&
+    check.status !== "not-checked";
+  const written = valid ? Object.keys(updates) : [];
+  if (!valid && Object.keys(updates).length > 0) {
+    log(
+      "Values were not saved or published. Complete or correct them and rerun setup; you will need to enter them again."
+    );
+  }
   if (written.length > 0 && !context.dryRun) {
     writeFileAtomic(envPath, upsertEnvContent(content, updates));
   }
 
-  const check = adapter.validate(
-    Object.fromEntries(
-      Object.entries(merged).filter(
-        ([key, value]) => !isPlaceholderValue(value, template[key])
-      )
-    )
-  );
-
   const published: string[] = [];
   const destination =
     context.publish ??
-    (prompter.interactive &&
-    adapter.destinations.length > 0 &&
-    check.status !== "not-checked"
+    (prompter.interactive && adapter.destinations.length > 0 && valid
       ? await prompter.choose(
           "Publish these values to a deployment destination",
           ["none", ...adapter.destinations] as const,
           "none"
         )
       : "none");
-  if (destination !== "none" && adapter.destinations.includes(destination)) {
+  if (
+    valid &&
+    destination !== "none" &&
+    adapter.destinations.includes(destination)
+  ) {
     const environment =
       context.publishEnvironment ??
       (destination === "vercel"
@@ -404,7 +417,7 @@ async function configureIntegration(
         {
           destination,
           environment,
-          values: merged,
+          values: candidateValues,
           keys: adapter.keys.map((key) => key.name),
         },
         prompter,
@@ -422,9 +435,9 @@ async function configureIntegration(
   }
 
   const status: IntegrationOutcome["status"] =
-    check.status === "not-checked"
+    check.status === "not-checked" && Object.keys(updates).length === 0
       ? "degraded"
-      : check.status === "failed"
+      : !valid
         ? "manual"
         : "configured";
   return {
@@ -432,7 +445,12 @@ async function configureIntegration(
     status,
     written: context.dryRun ? [] : written,
     published,
-    detail: status === "degraded" ? adapter.degraded : check.detail,
+    detail:
+      status === "degraded"
+        ? adapter.degraded
+        : hasPlaceholderUpdate
+          ? "A supplied value is empty or a placeholder."
+          : check.detail,
   };
 }
 

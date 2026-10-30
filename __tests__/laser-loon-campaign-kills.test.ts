@@ -29,10 +29,15 @@ describe("Laser Loon campaign kills (#1303)", () => {
   // Tremolo and Cryo-Mortar kills skipping campaign progression, so check
   // that each path hands its kills to the shared handler.
   describe("every weapon's kills reach campaign progression", () => {
-    const source = fs.readFileSync(
-      path.resolve(process.cwd(), "components/LaserLoon.tsx"),
-      "utf-8"
-    );
+    // The run loop lives in the session hook since #3436.
+    const source = [
+      "components/LaserLoon.tsx",
+      "components/laser-loon/useLaserLoonSession.ts",
+    ]
+      .map((file) =>
+        fs.readFileSync(path.resolve(process.cwd(), file), "utf-8")
+      )
+      .join("\n");
 
     function block(startMarker: string, endMarker: string): string {
       const start = source.indexOf(startMarker);

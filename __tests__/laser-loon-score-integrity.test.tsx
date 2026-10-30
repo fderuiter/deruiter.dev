@@ -26,10 +26,13 @@ vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({ recordEvent: vi.fn().mockResolvedValue(true) }),
 }));
 
-const source = fs.readFileSync(
-  path.resolve(process.cwd(), "components/LaserLoon.tsx"),
-  "utf8"
-);
+// The session logic lives in its hook since #3436.
+const source = [
+  "components/LaserLoon.tsx",
+  "components/laser-loon/useLaserLoonSession.ts",
+]
+  .map((file) => fs.readFileSync(path.resolve(process.cwd(), file), "utf8"))
+  .join("\n");
 
 async function chooseMode(name: RegExp) {
   await act(async () => {

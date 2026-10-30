@@ -22,6 +22,29 @@ export interface DefineOptions {
    * depend only on the run; the real build time stays in its timestamp file.
    */
   readonly createdAt: string;
+  /**
+   * Called once for each codelist whose data holds values outside it when it
+   * is not extensible (#3020). The define describes the planned codelist
+   * without those values; the datasets keep them as collected, and the
+   * conformance rules report them, so a caller can carry the findings with
+   * the define.
+   */
+  readonly onValuesOutsideCodelist?: (
+    outside: DefineValuesOutsideCodelist
+  ) => void;
+}
+
+/** Values a non-extensible codelist does not admit, and where they are. */
+export interface DefineValuesOutsideCodelist {
+  /** The codelist id, as in `CONTROLLED_TERMINOLOGY`. */
+  readonly codelist: string;
+  /** The values outside the codelist, in code point order. */
+  readonly values: readonly string[];
+  /** The variables that hold them. */
+  readonly variables: readonly {
+    readonly dataset: string;
+    readonly variable: string;
+  }[];
 }
 
 /** One `def:Standard`: an implementation guide or a CT package. */

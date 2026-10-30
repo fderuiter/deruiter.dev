@@ -79,6 +79,7 @@ export type {
   DefineOrigin,
   DefineStandard,
   DefineValueList,
+  DefineValuesOutsideCodelist,
   DefineWhereClause,
 } from "./internal/define/model";
 export { exportColumns } from "./internal/export/columns";

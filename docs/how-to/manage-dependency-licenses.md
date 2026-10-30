@@ -72,7 +72,7 @@ needs a person to decide how it is credited.
 
 - **Unapproved license on a dev-only package.** Prefer a different package.
   If the tool is worth keeping, add a dated exception to
-  `license-policy.json` with an owner, a ticket and a rationale that
+  `config/license-policy.json` with an owner, a ticket and a rationale that
   explains how the tool is used. Exceptions last at most 90 days.
 - **Strong copyleft (GPL, AGPL, SSPL and similar) on a shipped package.** No
   exception is accepted. Remove the package or replace it. A dual license that

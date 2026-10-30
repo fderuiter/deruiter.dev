@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { reportClientError } from "@/lib/client-sentry";
 import { resolveBaseUrl } from "@/lib/domain";
@@ -13,17 +14,15 @@ export default function CaseStudyError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [canonicalUrl, setCanonicalUrl] = useState<string>(
-    `${resolveBaseUrl()}/`
-  );
+  const isMounted = useIsMounted();
+  const canonicalUrl =
+    isMounted && typeof window !== "undefined"
+      ? window.location.href
+      : `${resolveBaseUrl()}/`;
 
   useEffect(() => {
     reportClientError(error);
     logger.error("Case study route error:", error, { skipTelemetry: true });
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCanonicalUrl(window.location.href);
-    }
   }, [error]);
 
   return (

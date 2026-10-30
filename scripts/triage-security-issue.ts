@@ -390,7 +390,7 @@ export async function triageSecurityIssues(options?: {
         "2. Update the affected dependency to a patched version if available."
       );
       rawBodyLines.push(
-        "3. If an upstream patch is unavailable, create a valid entry in `security-audit-ignore.json` with justification, owner, follow-up ticket, explicit `severity`, and an expiration date within policy limit."
+        "3. If an upstream patch is unavailable, create a valid entry in `config/security-audit-ignore.json` with justification, owner, follow-up ticket, explicit `severity`, and an expiration date within policy limit."
       );
 
       const body = sanitizeLogDetails(rawBodyLines.join("\n"));

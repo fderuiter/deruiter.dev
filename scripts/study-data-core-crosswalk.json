@@ -478,10 +478,10 @@
     },
     {
       "ruleId": "SD-077",
-      "core": ["CORE-000167", "CORE-000506"],
-      "coverage": "related",
+      "core": ["CORE-000206", "CORE-000916", "CORE-000484"],
+      "coverage": "same-defect",
       "planted": "Point one RELREC row at an AESEQ the subject does not have, or leave a RELID with one record.",
-      "reason": "CORE v0.17.1 checks parts of this: CORE-000167 that IDVAR names a variable of the RDOMAIN dataset, and CORE-000506 that each RELID within a subject is on more than one RELREC record. No rule in the cache checks that IDVARVAL names an existing record, which is the local rule's main check. Found by searching the rule cache for RELREC; not yet planted."
+      "reason": "CORE-000206 reports an IDVARVAL that is not a value of the IDVAR variable in the RDOMAIN dataset, which is the local rule's main check, and CORE-000484 a RELID that is not on more than one RELREC record within a subject. CORE-000916 (Part B) checks that IDVAR names a variable of the RDOMAIN dataset. None checks that a RELID pairs exactly one AE with one CM, which the local rule also requires. Paired by reading the rules' definitions in the CORE v0.17.1 cache; not yet planted."
     },
     {
       "ruleId": "SD-078",

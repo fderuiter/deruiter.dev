@@ -27,21 +27,14 @@
       "coreId": "CORE-000767",
       "dataset": "AE",
       "category": "core-limitation",
-      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+      "reason": "The rule compares --DECOD with FAOBJ on any record that RELREC relates, as though the relationship were to a Findings About record. The study has no FA domain: RELREC relates adverse events to the medications given for them, so FAOBJ is absent and every related AE and CM record is reported."
     },
     {
       "target": "sdtm",
       "coreId": "CORE-000767",
       "dataset": "CM",
       "category": "core-limitation",
-      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000767",
-      "dataset": "DS",
-      "category": "core-limitation",
-      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+      "reason": "The rule compares --DECOD with FAOBJ on any record that RELREC relates, as though the relationship were to a Findings About record. The study has no FA domain: RELREC relates adverse events to the medications given for them, so FAOBJ is absent and every related AE and CM record is reported."
     },
     {
       "target": "sdtm",
@@ -140,13 +133,6 @@
       "dataset": "MH",
       "category": "by-design",
       "reason": "SDTMIG 3.4 MH has no MHSTDY. History starts years before first dose and is mostly year or year-month only, so MHDY on the collection date is the study day the domain carries."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000767",
-      "dataset": "MH",
-      "category": "core-limitation",
-      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
     },
     {
       "target": "sdtm",

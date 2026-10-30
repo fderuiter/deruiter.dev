@@ -37,7 +37,8 @@ export interface TerminologyCodelist {
   /**
    * Whether values outside `terms` are allowed. They are written to
    * Define-XML as extended values. A value outside a non-extensible codelist
-   * is an error.
+   * is an error: the data keeps it as collected, a conformance rule reports
+   * it, and Define-XML describes the planned codelist without it (#3020).
    */
   readonly extensible: boolean;
   /** The planned terms, in display order. */

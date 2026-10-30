@@ -26,6 +26,7 @@ import {
   type Dataset,
   type DefineDocument,
   type DefineLayer,
+  type DefineValuesOutsideCodelist,
   type PipelineRun,
 } from "@/lib/study-data";
 import {
@@ -425,11 +426,10 @@ describe("checkDefineParity (#2931)", () => {
   });
 
   it("finds no gap across seeds and the messy-data scenarios", () => {
-    // The off-codelist scenarios put values outside non-extensible codelists,
-    // which buildDefine refuses to describe; they are covered by its own tests.
-    const scenarios = MESSY_DATA_SCENARIOS.map(
-      (scenario) => scenario.id
-    ).filter((id) => !id.startsWith("off-codelist-"));
+    // Every scenario, the off-codelist ones included: a value outside a
+    // non-extensible codelist is kept in the data and left out of the define
+    // (#3020), which parity does not compare.
+    const scenarios = MESSY_DATA_SCENARIOS.map((scenario) => scenario.id);
     const runs = [
       ...[1, 2, 302, 999].map((seed) => ({ seed })),
       { seed: 301, scenarios },
@@ -839,12 +839,6 @@ describe("buildDefine rejects metadata it cannot describe", () => {
       PACKAGE_FIXED_TIMESTAMP,
     ],
     [
-      "a value outside a non-extensible codelist",
-      withDataset("DM", sexValue),
-      "sdtm",
-      PACKAGE_FIXED_TIMESTAMP,
-    ],
-    [
       "a key with missing values",
       withDataset("AE", (dataset) => ({
         ...dataset,
@@ -860,6 +854,37 @@ describe("buildDefine rejects metadata it cannot describe", () => {
     ],
   ] as const)("rejects %s", (_case, source, layer, createdAt) => {
     expect(() => buildDefine(source, { layer, createdAt })).toThrow(RangeError);
+  });
+
+  it("describes the planned codelist when a value falls outside a non-extensible one (#3020)", () => {
+    const source = withDataset("DM", sexValue);
+    const outside: DefineValuesOutsideCodelist[] = [];
+    const define = buildDefine(source, {
+      layer: "sdtm",
+      createdAt: PACKAGE_FIXED_TIMESTAMP,
+      onValuesOutsideCodelist: (values) => outside.push(values),
+    });
+
+    const sexItem = define.items.find(
+      (item) => item.dataset === "DM" && item.name === "SEX"
+    );
+    const sexList = define.codeLists.find(
+      (list) => list.oid === sexItem?.codeListOid
+    );
+    const planned = CONTROLLED_TERMINOLOGY.find(
+      (list) => list.id === sexList?.id
+    );
+    expect(planned?.extensible).toBe(false);
+    expect(sexList?.terms.map((term) => term.codedValue)).toEqual(
+      planned?.terms.map((term) => term.value)
+    );
+    expect(outside).toEqual([
+      {
+        codelist: planned?.id,
+        values: ["X"],
+        variables: [{ dataset: "DM", variable: "SEX" }],
+      },
+    ]);
   });
 });
 

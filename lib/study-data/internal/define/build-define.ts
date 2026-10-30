@@ -9,7 +9,10 @@
  * describe a variable the data does not have, or miss one it does.
  */
 import { STANDARD_VERSIONS, SYNTHETIC_DATA_NOTICE } from "../../presets";
-import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "@/lib/clinical-standards";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/clinical-standards";
 import type {
   CellValue,
   Dataset,
@@ -257,7 +260,8 @@ interface CodelistUse {
 function resolveCodeList(
   codelist: TerminologyCodelist,
   uses: readonly CodelistUse[],
-  standardFor: (set: "SDTM" | "ADaM") => string
+  standardFor: (set: "SDTM" | "ADaM") => string,
+  onOutside?: DefineOptions["onValuesOutsideCodelist"]
 ): DefineCodeList {
   const values = new Set<string>();
   const decodes = new Map<string, string>();
@@ -287,15 +291,31 @@ function resolveCodeList(
     ? codelist.terms.filter((term) => values.has(term.value))
     : codelist.terms;
   const plannedValues = new Set(codelist.terms.map((term) => term.value));
-  const extra = [...values]
+  const outside = [...values]
     .filter((value) => !plannedValues.has(value))
     .sort(compareCodePoints);
   const cdisc = codelist.publishingSet !== undefined;
-  if (extra.length > 0 && !codelist.extensible && !codelist.fromData) {
-    throw new RangeError(
-      `${extra.join(", ")} ${extra.length === 1 ? "is" : "are"} outside the non-extensible codelist ${codelist.id}.`
-    );
+  // A non-extensible codelist admits no other value, so the define describes
+  // the planned codelist and the value stays in the data as collected, where
+  // a conformance rule reports it (#3020). An extensible codelist lists it.
+  const admitsOthers = codelist.extensible || codelist.fromData;
+  if (outside.length > 0 && !admitsOthers) {
+    onOutside?.({
+      codelist: codelist.id,
+      values: outside,
+      variables: uses
+        .filter(({ dataset, variable }) =>
+          (dataset.columns[variable] ?? []).some(
+            (cell) => typeof cell === "string" && outside.includes(cell)
+          )
+        )
+        .map(({ dataset, variable }) => ({
+          dataset: dataset.name,
+          variable,
+        })),
+    });
   }
+  const extra = admitsOthers ? outside : [];
   const terms: DefineCodeListTerm[] = [
     ...planned.map((term) => ({
       codedValue: term.value,
@@ -359,8 +379,10 @@ function isMandatory(dataset: Dataset, variable: VariableMeta): boolean {
  * ItemDef whose OID is the Dataset-JSON `itemOID`. Lengths are the longest
  * value in the data, as in the Dataset-JSON and XPT files. Codelists hold the
  * planned terms of the local terminology subset plus any value the data adds
- * to an extensible CDISC codelist, flagged as an extended value. VS, LB, ADVS
- * and ADLB get value-level metadata per parameter.
+ * to an extensible CDISC codelist, flagged as an extended value. A value
+ * outside a non-extensible codelist is left out of it and reported through
+ * `onValuesOutsideCodelist` (#3020). VS, LB, ADVS and ADLB get value-level
+ * metadata per parameter.
  *
  * @param run - A pipeline run from `runPipeline`.
  * @param options - The layer and the creation timestamp.
@@ -368,8 +390,7 @@ function isMandatory(dataset: Dataset, variable: VariableMeta): boolean {
  * @throws RangeError when `createdAt` is not an ISO 8601 timestamp, the
  *   layer has no datasets, a dataset has no structure or an unknown class, a
  *   Derived variable names no method, a Collected or Predecessor variable
- *   names no source, a key variable has missing values, or a value falls
- *   outside a non-extensible codelist.
+ *   names no source, or a key variable has missing values.
  */
 export function buildDefine(
   run: PipelineRun,
@@ -503,7 +524,12 @@ export function buildDefine(
     codelistUses.has(codelist.id)
   )
     .map((codelist) =>
-      resolveCodeList(codelist, codelistUses.get(codelist.id)!, ctOid)
+      resolveCodeList(
+        codelist,
+        codelistUses.get(codelist.id)!,
+        ctOid,
+        options.onValuesOutsideCodelist
+      )
     )
     .filter((list) => list.terms.length > 0);
   const codeListById = new Map(codeLists.map((list) => [list.id, list]));

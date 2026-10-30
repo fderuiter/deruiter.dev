@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 import {
   ADAM_DEFINE_PATH,
   ADAM_PACKAGE_DIR,
+  CSDRG_PATH,
+  MESSY_DATA_SCENARIOS,
   DATASET_JSON_ORIGINATOR,
   DEMO_301_STUDY,
   PACKAGE_FIXED_TIMESTAMP,
@@ -452,6 +454,47 @@ describe("SAS XPORT v5", () => {
 });
 
 describe("study data package", () => {
+  it("downloads a value outside a non-extensible codelist as collected, with its finding (#3020)", async () => {
+    const offList = runPipeline(DEMO_301_STUDY, {
+      seed: 301,
+      nSubjects: 60,
+      scenarios: ["off-codelist-non-extensible"],
+    });
+    const finding = offList.findings.find(
+      (f) => f.ruleId === "SD-021" && f.dataset === "DM" && f.variable === "SEX"
+    );
+    expect(finding).toBeDefined();
+
+    const pkg = await buildStudyDataPackage(offList, {
+      generatedAt: GENERATED_AT,
+    });
+    const file = (path: string) =>
+      text(pkg.files.find((f) => f.path === path)!.bytes);
+
+    // The datasets keep the value as collected.
+    expect(file(`${SDTM_PACKAGE_DIR}/dm.csv`)).toContain("FEMALE");
+    // The define describes the planned SEX codelist, without the value.
+    expect(file(SDTM_DEFINE_PATH)).not.toContain('CodedValue="FEMALE"');
+    // The manifest and the reviewer guide carry the conformance finding.
+    expect(pkg.packageManifest.findings).toContainEqual(finding);
+    expect(file(CSDRG_PATH)).toContain("SD-021");
+  });
+
+  it("downloads every messy-data scenario", async () => {
+    for (const scenario of MESSY_DATA_SCENARIOS) {
+      const messy = runPipeline(DEMO_301_STUDY, {
+        seed: 301,
+        nSubjects: 60,
+        scenarios: [scenario.id],
+      });
+      await expect(
+        buildStudyDataPackage(messy, { generatedAt: GENERATED_AT }),
+        scenario.id
+      ).resolves.toBeDefined();
+    }
+    // One package per scenario: slower than the default timeout under load.
+  }, 120_000);
+
   it("lays files out like eCTD module 5 and hashes every one of them", async () => {
     const pkg = await buildStudyDataPackage(run, { generatedAt: GENERATED_AT });
     const paths = pkg.files.map((file) => file.path);

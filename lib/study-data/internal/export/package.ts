@@ -285,10 +285,27 @@ export async function buildStudyDataPackage(
   }
   // Each define is checked against the datasets it describes before it is
   // written, so a gap between the two is a finding in the package manifest.
+  // A value outside a non-extensible codelist stays in the datasets as
+  // collected and out of the define; the run's conformance findings on that
+  // variable go into the manifest with it, so the package still downloads
+  // and says why (#3020).
   const defineFor = (layer: "sdtm" | "adam") => {
     const define = buildDefine(run, {
       layer,
       createdAt: PACKAGE_FIXED_TIMESTAMP,
+      onValuesOutsideCodelist: ({ variables }) => {
+        findings.push(
+          ...run.findings.filter(
+            (finding) =>
+              finding.layer === layer &&
+              variables.some(
+                ({ dataset, variable }) =>
+                  finding.dataset === dataset && finding.variable === variable
+              ) &&
+              !findings.includes(finding)
+          )
+        );
+      },
     });
     findings.push(...checkDefineParity(define, exported));
     return define;

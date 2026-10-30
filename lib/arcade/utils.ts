@@ -1,6 +1,6 @@
 /** Shared, deterministic math and scoring utilities for arcade games. */
 
-import { clamp } from "../utils";
+import { clamp } from "../utils/number-format";
 
 export { clamp };
 

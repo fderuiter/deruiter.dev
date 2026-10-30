@@ -50,7 +50,7 @@ values.
 
 The security audit CLI evaluates vulnerability severity levels and enforces the following policy:
 
-- **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `security-audit-ignore.json`.
+- **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `config/security-audit-ignore.json`.
 - **Low & Moderate Severities:** Do not block a local run by default, though developers are encouraged to remediate them during routine maintenance.
 - **CI Security Gate:** CI runs `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window also fail the Security Gate.
 
@@ -64,11 +64,11 @@ Automated security checks are enforced across continuous integration and release
 
 ## Vulnerability Override Governance Rules
 
-When a critical, high, or moderate third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `security-audit-ignore.json` (at the root of the repository or in `scripts/security-audit-ignore.json`).
+When a critical, high, or moderate third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `config/security-audit-ignore.json`.
 
 ### Mandatory Override Parameters
 
-All suppression rules in `security-audit-ignore.json` must strictly adhere to the following governance requirements:
+All suppression rules in `config/security-audit-ignore.json` must strictly adhere to the following governance requirements:
 
 1. **Advisory Identifier (`advisory` / `advisoryId` / `cve` / `ghsa` / `id`):** Must specify a valid advisory identifier (e.g., `GHSA-c2qf-rxjj-4v5w` or `CVE-XXXX-XXXX`). Entries missing an advisory ID are invalid and rejected by the audit tool.
 2. **Severity Classification (`severity`):** Specifies the vulnerability severity (`critical`, `high` or `moderate`). If omitted, rules default to Critical severity validation limits (**14 days**) to fail closed.
@@ -96,7 +96,7 @@ During local, CI, or scheduled daily execution, the audit tool validates all act
 
 ## npm Package Overrides
 
-The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports no advisories, and `security-audit-ignore.json` holds no waivers (the fast-uri and js-yaml waivers were replaced by the two pins added on 2026-10-19, #2510).
+The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports no advisories, and `config/security-audit-ignore.json` holds no waivers (the fast-uri and js-yaml waivers were replaced by the two pins added on 2026-10-19, #2510).
 
 | Override                     | Pinned to                | Pulled in by                                            | Resolves to without the pin | Effect of removing it                                 |
 | ---------------------------- | ------------------------ | ------------------------------------------------------- | --------------------------- | ----------------------------------------------------- |
@@ -118,7 +118,7 @@ The `overrides` block in `package.json` pins transitive dependencies that an ups
 
 The `fast-glob` override swaps the package for `tinyglobby` rather than pinning a version (#1783). `fast-glob` reaches `braces` through `micromatch`, and GHSA-vfj7-8cjw-p6xm affects every `braces` release with no patched version published, so no pin can clear it. The only consumer is `@next/eslint-plugin-next`, whose single call is `globSync(rootDir, { onlyDirectories: true })` for the `settings.next.rootDir` option; `tinyglobby` exports the same function and option, and builds on `picomatch` without `braces`. One difference matters: `tinyglobby` expands a literal directory pattern to its subdirectories and `fast-glob` does not, so `settings.next.rootDir` must stay unset in `eslint.config.mjs` while the override stands. `__tests__/fast-glob-override.test.ts` checks that contract, that the setting is unset, and that `braces` stays out of the lockfile. Drop the override once `@next/eslint-plugin-next` no longer depends on `fast-glob` or a patched `braces` ships.
 
-The `js-yaml` pin is scoped to `markdownlint-cli` so ESLint keeps its own js-yaml 4. It stops at 5.4.x because js-yaml 5.5 moves to `argparse` 3, which is PSF-2.0 and not in `license-policy.json`. Drop it once `markdownlint-cli` depends on js-yaml 5.4.1 or later.
+The `js-yaml` pin is scoped to `markdownlint-cli` so ESLint keeps its own js-yaml 4. It stops at 5.4.x because js-yaml 5.5 moves to `argparse` 3, which is PSF-2.0 and not in `config/license-policy.json`. Drop it once `markdownlint-cli` depends on js-yaml 5.4.1 or later.
 
 The `jsdom` pin is not a vulnerability fix. jsdom 27 and later depend on the ESM-only `@exodus/bytes`, which made serverless functions fail with `ERR_REQUIRE_ESM` (#995). `next.config.ts` keeps those packages out of the server bundle and `__tests__/deploy-config.test.ts` guards that, but lifting the pin also needs a deployed check of the routes that sanitize HTML, so it stays until that check is done.
 

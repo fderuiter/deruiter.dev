@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import {
   tokenizeSpdx,
@@ -253,6 +254,128 @@ describe("Lockfile License Audit Engine", () => {
         expect(report.totalViolations).toBe(1);
         expect(report.violations[0].packageName).toBe("bad-pkg");
         expect(report.violations[0].licenseExpression).toBe("AGPL-3.0");
+      } finally {
+        fs.rmSync(mockDir, { recursive: true, force: true });
+      }
+    });
+
+    it("evaluates licenses when policy sits in config/license-policy.json", () => {
+      const mockDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "license-mock-config-")
+      );
+      fs.mkdirSync(path.join(mockDir, "config"), { recursive: true });
+
+      const mockLock = {
+        name: "mock-app",
+        version: "1.0.0",
+        lockfileVersion: 3,
+        packages: {
+          "": { name: "mock-app" },
+          "node_modules/ok-pkg": {
+            name: "ok-pkg",
+            version: "1.0.0",
+            license: "MIT",
+          },
+        },
+      };
+
+      const mockPolicy = {
+        allowedLicenses: ["MIT"],
+        exceptions: [],
+      };
+
+      fs.writeFileSync(
+        path.join(mockDir, "package-lock.json"),
+        JSON.stringify(mockLock)
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "config", "license-policy.json"),
+        JSON.stringify(mockPolicy)
+      );
+
+      try {
+        const report = runLicenseAudit({
+          workspaceRoot: mockDir,
+          now: mockNow,
+        });
+        expect(report.passed).toBe(true);
+        expect(report.totalViolations).toBe(0);
+        expect(report.totalPackagesScanned).toBe(1);
+      } finally {
+        fs.rmSync(mockDir, { recursive: true, force: true });
+      }
+    });
+
+    it("prefers config/license-policy.json when both config and root policy exist", () => {
+      const mockDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "license-mock-precedence-")
+      );
+      fs.mkdirSync(path.join(mockDir, "config"), { recursive: true });
+
+      const mockLock = {
+        name: "mock-app",
+        version: "1.0.0",
+        lockfileVersion: 3,
+        packages: {
+          "": { name: "mock-app" },
+          "node_modules/pkg-a": {
+            name: "pkg-a",
+            version: "1.0.0",
+            license: "MIT",
+          },
+        },
+      };
+
+      // config/ policy allows MIT (should pass)
+      const configPolicy = {
+        allowedLicenses: ["MIT"],
+        exceptions: [],
+      };
+
+      // legacy root policy allows only ISC (would fail if legacy were used)
+      const rootPolicy = {
+        allowedLicenses: ["ISC"],
+        exceptions: [],
+      };
+
+      fs.writeFileSync(
+        path.join(mockDir, "package-lock.json"),
+        JSON.stringify(mockLock)
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "config", "license-policy.json"),
+        JSON.stringify(configPolicy)
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "license-policy.json"),
+        JSON.stringify(rootPolicy)
+      );
+
+      try {
+        const report = runLicenseAudit({
+          workspaceRoot: mockDir,
+          now: mockNow,
+        });
+        expect(report.passed).toBe(true);
+        expect(report.totalViolations).toBe(0);
+      } finally {
+        fs.rmSync(mockDir, { recursive: true, force: true });
+      }
+    });
+
+    it("throws clear error when license-policy.json is not found", () => {
+      const mockDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "license-mock-empty-")
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "package-lock.json"),
+        JSON.stringify({ packages: { "": {} } })
+      );
+
+      try {
+        expect(() =>
+          runLicenseAudit({ workspaceRoot: mockDir, now: mockNow })
+        ).toThrow("license-policy.json not found");
       } finally {
         fs.rmSync(mockDir, { recursive: true, force: true });
       }

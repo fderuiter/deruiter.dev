@@ -6,6 +6,7 @@ import os from "node:os";
 import { execFileSync } from "node:child_process";
 import {
   NON_IMPORTABLE_COVERAGE,
+  getStagedTestableFiles,
   resolveNonImportableTests,
 } from "../scripts/test-staged";
 
@@ -104,6 +105,98 @@ describe("Pre-commit test scope for non-importable paths", () => {
   it("selects config coverage when root configuration is staged", () => {
     const selected = resolveNonImportableTests(workspaceRoot, ["package.json"]);
     expect(selected.length).toBeGreaterThan(0);
+  });
+
+  it("recognizes staged ESM TypeScript alongside existing source types", () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), "staged-esm-"));
+    const env = { ...process.env };
+    for (const key of execFileSync("git", ["rev-parse", "--local-env-vars"], {
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n"))
+      delete env[key];
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: repo, env });
+      for (const name of [
+        "vitest.config.mts",
+        "example.ts",
+        "example.js",
+        "notes.md",
+      ])
+        fs.writeFileSync(path.join(repo, name), "");
+      execFileSync("git", ["add", "."], { cwd: repo, env });
+      expect(getStagedTestableFiles(repo).sort()).toEqual([
+        "example.js",
+        "example.ts",
+        "vitest.config.mts",
+      ]);
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("does not pass the staged Vitest config to related as a graph input", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "staged-config-"));
+    const bin = path.join(root, "bin");
+    const repo = path.join(root, "repo");
+    fs.mkdirSync(bin);
+    fs.mkdirSync(repo);
+    fs.mkdirSync(path.join(repo, "__tests__"));
+    const env = { ...process.env };
+    for (const key of execFileSync("git", ["rev-parse", "--local-env-vars"], {
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n"))
+      delete env[key];
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: repo, env });
+      fs.writeFileSync(path.join(repo, "vitest.config.mts"), "");
+      for (const name of [
+        "vitest-config-esm.test.ts",
+        "coverage-policy-governance.test.ts",
+      ])
+        fs.writeFileSync(path.join(repo, "__tests__", name), "");
+      execFileSync("git", ["add", "vitest.config.mts"], { cwd: repo, env });
+      fs.writeFileSync(
+        path.join(bin, "npx"),
+        '#!/bin/sh\nprintf "%s\n" "$@" > "$ARGS_FILE"\n',
+        { mode: 0o755 }
+      );
+      const argsFile = path.join(root, "args");
+      execFileSync(
+        process.execPath,
+        [
+          path.join(workspaceRoot, "node_modules/tsx/dist/cli.mjs"),
+          path.join(workspaceRoot, "scripts/test-staged.ts"),
+        ],
+        {
+          cwd: repo,
+          env: {
+            ...env,
+            PATH: `${bin}:${env.PATH ?? ""}`,
+            ARGS_FILE: argsFile,
+          },
+          stdio: "pipe",
+        }
+      );
+      const args = fs.readFileSync(argsFile, "utf8").trim().split("\n");
+      expect(args).not.toContain("vitest.config.mts");
+      expect(args).toContain("__tests__/vitest-config-esm.test.ts");
+      expect(args).toContain("__tests__/coverage-policy-governance.test.ts");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("selects Vitest configuration and coverage policy checks for the ESM config", () => {
+    const selected = resolveNonImportableTests(workspaceRoot, [
+      "vitest.config.mts",
+    ]);
+    expect(selected).toContain("__tests__/vitest-config-esm.test.ts");
+    expect(selected).toContain("__tests__/coverage-policy-governance.test.ts");
+    expect(selected.length).toBeLessThan(40);
   });
 
   it("stays out of the way for ordinary source changes", () => {

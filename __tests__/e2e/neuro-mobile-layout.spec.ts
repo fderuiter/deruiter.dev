@@ -6,6 +6,11 @@ import { expect, test } from "@playwright/test";
  * hemisphere, Wireframe, GPU Test and layout toggles and the slice sliders
  * are at least 44 px tall. Each case sets its own viewport and touch
  * emulation so the spec means the same thing under every project.
+ *
+ * The controls are measured where they are rather than scrolled to.
+ * With the 3D viewer on screen, software WebGL on CI runners leaves the
+ * page about one animation frame a second, and Playwright's scroll and
+ * stability checks wait on frames until the test times out.
  */
 
 const CONTROLS = [
@@ -40,16 +45,27 @@ for (const width of [320, 375, 393]) {
       await expect(page.getByText("2D Multi-Planar Orthoview")).toBeVisible({
         timeout: 30000,
       });
+      // The 3D viewer replaces its skeleton once loaded; measure after that.
+      await page
+        .getByTestId("brain-3d-skeleton")
+        .waitFor({ state: "detached", timeout: 30000 });
 
       for (const { role, name } of CONTROLS) {
         const control = page.getByRole(role, { name, exact: true }).first();
-        await control.scrollIntoViewIfNeeded();
-        await expect(control).toBeVisible();
-        const box = await control.boundingBox();
-        expect(box, name).not.toBeNull();
-        expect(box!.x, name).toBeGreaterThanOrEqual(0);
-        expect(box!.x + box!.width, name).toBeLessThanOrEqual(width + 1);
-        expect(box!.height, name).toBeGreaterThanOrEqual(44);
+        await expect(control).toBeAttached();
+        const box = await control.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            x: r.x,
+            right: r.right,
+            height: r.height,
+            visible: el.checkVisibility({ visibilityProperty: true }),
+          };
+        });
+        expect(box.visible, name).toBe(true);
+        expect(box.x, name).toBeGreaterThanOrEqual(0);
+        expect(box.right, name).toBeLessThanOrEqual(width + 1);
+        expect(box.height, name).toBeGreaterThanOrEqual(44);
       }
 
       const horizontalOverflow = await page.evaluate(

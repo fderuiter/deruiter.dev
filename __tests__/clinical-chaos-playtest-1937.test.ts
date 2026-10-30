@@ -19,6 +19,10 @@ import { getReportTone } from "@/components/clinical-trial-chaos/floor-scene";
 
 const read = (file: string) =>
   fs.readFileSync(path.resolve(process.cwd(), file), "utf8");
+// The component and, since #3438, the session hook it renders from.
+const readChaos = () =>
+  read("components/ClinicalTrialChaos.tsx") +
+  read("components/clinical-trial-chaos/useClinicalChaosSession.ts");
 
 function subject(isSAE: boolean): ClinicalSubject {
   return fromPartial<ClinicalSubject>({
@@ -51,6 +55,7 @@ describe("SDTM copy (#1937)", () => {
 describe("Regulatory copy (#1937)", () => {
   const sources = [
     "components/ClinicalTrialChaos.tsx",
+    "components/clinical-trial-chaos/useClinicalChaosSession.ts",
     "lib/clinical-trial-chaos/engine.ts",
     "lib/clinical-trial-chaos/sponsor.ts",
     "lib/clinical-trial-chaos/types.ts",
@@ -106,9 +111,7 @@ describe("Sign is a real choice (#1937)", () => {
   });
 
   it("opens the signature dialog on the routine reason, not the answer", () => {
-    expect(read("components/ClinicalTrialChaos.tsx")).not.toMatch(
-      /selectedReason: activeSubject\.isSAE/
-    );
+    expect(readChaos()).not.toMatch(/selectedReason: activeSubject\.isSAE/);
   });
 });
 
@@ -143,14 +146,10 @@ describe("BIMO report colour (#1937)", () => {
 
 describe("Cabinet layout (#1937)", () => {
   it("leaves cabinet alignment to PlayCabinet on Start", () => {
-    expect(read("components/ClinicalTrialChaos.tsx")).toContain(
-      'board.closest("[data-arcade-cabinet]")'
-    );
+    expect(readChaos()).toContain('board.closest("[data-arcade-cabinet]")');
   });
 
   it("keeps small labels at zinc-400 or brighter", () => {
-    expect(read("components/ClinicalTrialChaos.tsx")).not.toContain(
-      "text-zinc-500"
-    );
+    expect(readChaos()).not.toContain("text-zinc-500");
   });
 });

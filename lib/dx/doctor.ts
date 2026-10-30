@@ -3360,6 +3360,10 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "components/laser-loon/useLaserLoonSession.ts":
     "Laser Loon seam: game code moved verbatim from LaserLoon.tsx by #3436; seeding follows in #2442",
   "lib/laser-loon/engine.ts": "Laser Loon seam",
+  "components/QuasiPerfectPuzzler/useQuasiSession.ts":
+    "Quasi-Perfect Puzzler: Date.now() and Math.random() only id and time-stamp log entries, proof steps and the saved score, moved verbatim by #3433; tactics are deterministic",
+  "components/QuasiPerfectPuzzler/useQuasiSandboxSession.ts":
+    "Quasi-Perfect Puzzler sandbox: Date.now() only ids log entries, moved verbatim from SandboxMode.tsx by #3433",
   "lib/quasi-perfect/engine.ts": "Quasi-Perfect Puzzler seam",
   "lib/working-with-duck-engine.ts": "Working with Duck seam",
 };

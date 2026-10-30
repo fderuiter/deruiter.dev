@@ -8,13 +8,13 @@ import {
   SEAL_DRAG_TYPE,
   handActivationIntent,
   handDisplayOrder,
-  handKeyIntent,
   pressTravelled,
   reorderTarget,
   type HandIntent,
   type RunAction,
   type TableView,
 } from "@/lib/trial-and-error";
+import { resolveHandKeyIntent } from "@/components/trial-and-error/actions";
 
 /** Where focus lands once the dispatched action has rendered. */
 export type PendingFocus =
@@ -223,7 +223,7 @@ export function useHandInteraction({
       },
       onFocus: () => setFocusIndex(index),
       onKeyDown: (event) => {
-        const intent = handKeyIntent(
+        const intent = resolveHandKeyIntent(
           {
             key: event.key,
             altKey: event.altKey,

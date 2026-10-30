@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { fromPartial } from "@total-typescript/shoehorn";
 import type React from "react";
-import { THEOREMS } from "@/lib/proof-utils";
+import { THEOREMS } from "@/lib/proof";
 import { useProofCanvasDrag } from "@/app/proof/useProofCanvasDrag";
 
 const MP = THEOREMS["modus-ponens"];

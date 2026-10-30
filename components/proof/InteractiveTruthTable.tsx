@@ -15,7 +15,7 @@ import {
   TruthTableRow,
   evaluateAstWithTrace,
   AstTraceNode,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 interface InteractiveTruthTableProps {
   diagnosis: FallacyDiagnosis;

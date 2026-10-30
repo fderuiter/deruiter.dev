@@ -5,7 +5,7 @@ import {
   evaluateProofStatus,
   exportWorkspaceProof,
   getDeductionLedger,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 describe("Custom Proof formulas", () => {
   it("loads submitted premises and goal through the proof ledger and faithful exports", () => {

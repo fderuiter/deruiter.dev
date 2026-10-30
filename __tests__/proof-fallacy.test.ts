@@ -5,7 +5,7 @@ import {
   evaluateAstWithTrace,
   generateTruthTable,
   PropAst,
-} from "../lib/proof-utils";
+} from "@/lib/proof";
 
 describe("Formal Fallacy Diagnostic Engine & Truth Tables", () => {
   it("identifies Fallacy of Circular Reasoning when connecting a node to itself", () => {

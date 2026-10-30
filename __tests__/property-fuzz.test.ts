@@ -33,7 +33,7 @@ import {
   areAstsEqual,
   generateTruthTable,
   type PropAst,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 import {
   calculateColumnCount,
   calculateColumnWidth,

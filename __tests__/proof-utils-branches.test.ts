@@ -31,7 +31,7 @@ import {
   type ProofNode,
   type PropAst,
   type TheoremDefinition,
-} from "@/lib/proof-utils";
+} from "@/lib/proof";
 
 const P: PropAst = { type: "var", name: "P" };
 const Q: PropAst = { type: "var", name: "Q" };

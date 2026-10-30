@@ -8,7 +8,7 @@ import {
   exportWorkspaceProof,
   getExportFilename,
   getExportMimeType,
-} from "../lib/proof-utils";
+} from "@/lib/proof";
 import { createCustomTheorem } from "../lib/proof-custom";
 
 describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {

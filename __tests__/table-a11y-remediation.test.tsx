@@ -8,7 +8,7 @@ import { ClinicalTrialChaos } from "@/components/ClinicalTrialChaos";
 import { ExportImportModal } from "@/components/crf/Modes/ExportImportModal";
 import { LiveEdcSimulator } from "@/components/crf/Modes/LiveEdcSimulator";
 import { ActiveFormGrid } from "@/components/crf/Modes/ActiveFormGrid";
-import { getFallacyDiagnosis } from "@/lib/proof-utils";
+import { getFallacyDiagnosis } from "@/lib/proof";
 import { getOncologyPresetSync } from "@/lib/crf";
 
 (

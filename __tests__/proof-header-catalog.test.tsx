@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ProofHeader } from "@/components/proof/ProofHeader";
-import { THEOREMS } from "@/lib/proof-utils";
+import { THEOREMS } from "@/lib/proof";
 
 const renderHeader = (onSwitch = vi.fn()) =>
   render(

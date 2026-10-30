@@ -6,7 +6,7 @@ import {
   INFERENCE_RULES,
   type PropAst,
   type TheoremDefinition,
-} from "./proof-utils";
+} from "@/lib/proof";
 
 /** Parses bounded propositional syntax without discarding invalid characters. */
 export function parseCustomFormula(input: string): PropAst {

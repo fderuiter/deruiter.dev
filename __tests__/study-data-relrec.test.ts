@@ -94,6 +94,22 @@ describe("SDTM RELREC", () => {
     expect(
       relrec.variables.find((variable) => variable.name === "RELID")
     ).toMatchObject({ origin: "Derived", method: "RELATED_RECORDS" });
+    // SDTMIG 3.4 roles, which Define-XML writes and CORE-001081 compares
+    // with the IG: the keys that identify the related record are
+    // Identifiers, the relationship's type and id Record Qualifiers.
+    expect(
+      Object.fromEntries(
+        relrec.variables.map((variable) => [variable.name, variable.role])
+      )
+    ).toEqual({
+      STUDYID: "Identifier",
+      RDOMAIN: "Identifier",
+      USUBJID: "Identifier",
+      IDVAR: "Identifier",
+      IDVARVAL: "Identifier",
+      RELTYPE: "Record Qualifier",
+      RELID: "Record Qualifier",
+    });
   });
 
   it("traces each row to both collected records of its pair", () => {

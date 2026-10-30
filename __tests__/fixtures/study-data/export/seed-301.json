@@ -1,5 +1,5 @@
 {
-  "manifestSha256": "b934822dd154ffd01a58fee8ee9f1eba9515a2f19850a038e10ef3edf8120672",
+  "manifestSha256": "5154e91f69301895600176d32fad593b00ef28f9684792e991c6f24a2236b606",
   "files": {
     "README.txt": {
       "bytes": 1910,
@@ -138,8 +138,8 @@
       "sha256": "6debe178c4302ca9b03cbec0e76891fcbcb020675c8921a8267dd1461f97561a"
     },
     "m5/datasets/tabulations/sdtm/define.xml": {
-      "bytes": 221365,
-      "sha256": "f3b711f4002d4d7bbc4f41fa1c966f8c6662dea07478d2f2b2de9ad6e8b79d49"
+      "bytes": 221353,
+      "sha256": "fa747dbce81a293527c3420cea6e1e9afc9332cdc5aba62bf960f456603d8de9"
     },
     "m5/datasets/tabulations/sdtm/dm.csv": {
       "bytes": 14764,

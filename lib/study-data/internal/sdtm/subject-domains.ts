@@ -873,8 +873,9 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       assigned("STUDYID", "Study Identifier"),
       assigned("RDOMAIN", "Related Domain Abbreviation"),
       assigned("USUBJID", "Unique Subject Identifier"),
-      assigned("IDVAR", "Identifying Variable", "Record Qualifier"),
-      assigned("IDVARVAL", "Identifying Variable Value", "Record Qualifier"),
+      // SDTMIG 3.4 makes the keys of the related record Identifiers.
+      assigned("IDVAR", "Identifying Variable"),
+      assigned("IDVARVAL", "Identifying Variable Value"),
       assigned("RELTYPE", "Relationship Type", "Record Qualifier"),
       derived(
         "RELID",

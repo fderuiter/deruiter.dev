@@ -88,6 +88,14 @@ interface ControlItem {
   action: string;
 }
 
+/** What a game's own launch choices get from the cabinet (#3466). */
+interface LaunchControlProps {
+  /** Launches the cabinet, as the Launch button does. */
+  readonly launch: () => void;
+  /** Starts loading the game engine, as hovering Launch does. */
+  readonly prefetch: () => void;
+}
+
 interface PlayCabinetProps {
   gameId?: string;
   title: string;
@@ -160,6 +168,12 @@ interface PlayCabinetProps {
    * `useCabinetTutorial()` for its practice signals.
    */
   tutorial?: TutorialScript;
+  /**
+   * Replaces the Launch button with the game's own launch choices, such as
+   * Resume and New run (#3466). It gets the cabinet's `launch` and the
+   * engine `prefetch`; leave it out for the standard Launch button.
+   */
+  launchControl?: React.ComponentType<LaunchControlProps>;
   children?: React.ReactNode;
 }
 
@@ -254,6 +268,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   views,
   setupItems,
   tutorial,
+  launchControl: LaunchControl,
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -599,6 +614,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   // so its own key rules and the disarm listener leave that press alone.
   const syntheticEscapeRef = useRef(false);
   const launchButtonRef = useRef<HTMLButtonElement>(null);
+  const launchControlRef = useRef<HTMLDivElement>(null);
   const focusTriggerOnExitRef = useRef(false);
   const resumeFromOverlay = () => {
     setExitOffered(false);
@@ -919,7 +935,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   useEffect(() => {
     if (isLaunched || isWarmingUp || !focusTriggerOnExitRef.current) return;
     focusTriggerOnExitRef.current = false;
-    launchButtonRef.current?.focus({ preventScroll: true });
+    const target =
+      launchButtonRef.current ??
+      launchControlRef.current?.querySelector<HTMLElement>("button");
+    target?.focus({ preventScroll: true });
   }, [isLaunched, isWarmingUp]);
 
   if (isLaunched) {
@@ -1653,18 +1672,27 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                 ))}
               </div>
 
-              {/* Glowing Play Button */}
+              {/* Glowing Play Button, or the game's own launch choices */}
               <div className="flex justify-end w-full">
-                <button
-                  ref={launchButtonRef}
-                  onMouseEnter={handlePrefetch}
-                  onFocus={handlePrefetch}
-                  onClick={handleLaunch}
-                  className={`w-full md:w-auto min-h-[44px] min-w-[44px] px-8 py-3.5 arcade-launch-button text-black font-extrabold rounded-xl border-b-4 hover:border-b-2 active:border-b-0 active:translate-y-1 active:scale-95 transition-all duration-75 flex items-center justify-center gap-2 font-mono text-xs sm:text-sm tracking-wider shadow-lg uppercase cursor-pointer touch-manipulation select-none`}
-                >
-                  <IconPlayerPlay className="w-4 h-4 fill-black text-black" />
-                  <span>Launch Cabinet</span>
-                </button>
+                {LaunchControl ? (
+                  <div ref={launchControlRef} className="w-full md:w-auto">
+                    <LaunchControl
+                      launch={handleLaunch}
+                      prefetch={handlePrefetch}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    ref={launchButtonRef}
+                    onMouseEnter={handlePrefetch}
+                    onFocus={handlePrefetch}
+                    onClick={handleLaunch}
+                    className={`w-full md:w-auto min-h-[44px] min-w-[44px] px-8 py-3.5 arcade-launch-button text-black font-extrabold rounded-xl border-b-4 hover:border-b-2 active:border-b-0 active:translate-y-1 active:scale-95 transition-all duration-75 flex items-center justify-center gap-2 font-mono text-xs sm:text-sm tracking-wider shadow-lg uppercase cursor-pointer touch-manipulation select-none`}
+                  >
+                    <IconPlayerPlay className="w-4 h-4 fill-black text-black" />
+                    <span>Launch Cabinet</span>
+                  </button>
+                )}
               </div>
             </div>
           </>

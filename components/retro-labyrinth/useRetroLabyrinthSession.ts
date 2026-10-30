@@ -54,6 +54,14 @@ import {
 } from "@/components/retro-labyrinth/run-rules";
 import { describeAmmoGrants } from "@/components/retro-labyrinth/labels";
 import {
+  RUN_SAVE_KEY,
+  clearRun,
+  loadRun,
+  saveRun,
+  takeRunResumeRequest,
+  type RetroLabyrinthRunSave,
+} from "@/lib/retro-labyrinth";
+import {
   ActiveSideEffect,
   BossState,
   CRTThemeConfig,
@@ -793,11 +801,68 @@ export function useRetroLabyrinthSession(
     [loadRoom, score, cryptoBounty, weapons]
   );
 
-  // Load the opening room on mount so the maze, fog and HUD match the room
+  // Picks a saved run up at the start of the room it was saved in (#3466).
+  // The room loads as on entry, so a reload never resumes mid-room and a
+  // boss room opens at the boss's opening. The no-hit boss trophy reads a
+  // flag every room load clears, so a resume earns it only by a clean room.
+  const resumeRun = useCallback(
+    (save: RetroLabyrinthRunSave) => {
+      const start = cyberdeckStartingStats(save.classId, save.firmware);
+      const resumedWeapons: Record<WeaponId, Weapon> = { ...DEFAULT_WEAPONS };
+      for (const [id, ammo] of Object.entries(save.ammo)) {
+        const weaponId = id as WeaponId;
+        resumedWeapons[weaponId] = { ...resumedWeapons[weaponId], ammo };
+      }
+      setSelectedClassId(save.classId);
+      setRunFirmware(save.firmware);
+      setMaxPlayerHp(save.maxHp);
+      setPlayerHp(save.hp);
+      setMaxRam(save.maxRam);
+      setCurrentRam(save.ram);
+      setBypassChips(start.bypassChips);
+      setWeapons(resumedWeapons);
+      setActiveWeaponId(save.activeWeaponId);
+      setScore(save.score);
+      setCryptoBounty(save.crypto);
+      setRunBuild(save.loadout);
+      setClearedRooms([]);
+      setRunDamage(save.runDamage ?? 0);
+      setRunTimeMs(null);
+      runEndRecordedRef.current = false;
+      cveFeedRef.current = false;
+      setCveFeedActive(false);
+      runStartedAtRef.current = Date.now() - save.elapsedMs;
+      roomEntryVitalsRef.current = {
+        hp: save.hp,
+        ram: save.ram,
+        score: save.score,
+        cryptoBounty: save.crypto,
+        weapons: resumedWeapons,
+        cveFeed: false,
+      };
+      loadRoom("roguelike", save.roomIndex, {
+        seed: save.seed,
+        path: save.route,
+      });
+    },
+    [loadRoom]
+  );
+
+  // Load the opening room on mount so the maze, fog and HUD match the room,
+  // or the saved run the Launch screen asked to resume (#3466).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const resume = takeRunResumeRequest();
+    if (resume) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      resumeRun(resume);
+      return;
+    }
+    // A save of an unknown version or shape is never resumed; drop it.
+    if (safeGetRawItem(RUN_SAVE_KEY) !== null && loadRun() === null) {
+      clearRun();
+    }
     loadRoom("roguelike", 0);
-  }, [loadRoom]);
+  }, [loadRoom, resumeRun]);
 
   // A run that ends in a trace still counts toward the high score; only
   // reaching the exit used to record it (#1552). Same key and bare numeric
@@ -982,6 +1047,80 @@ export function useRetroLabyrinthSession(
     weapons,
     cveFeedActive,
   ]);
+
+  // The run as it stood when the current room was entered, for the save
+  // (#3466). Refs, so the save effect and the suspend listener read the
+  // latest without re-subscribing.
+  const saveSourceRef = useRef({
+    gameMode,
+    gameStatus,
+    runRoute,
+    roomIndex,
+    runLength,
+    maxPlayerHp,
+    maxRam,
+    runBuild,
+    selectedClassId,
+    activeWeaponId,
+    runFirmware,
+    runDamage,
+  });
+  useEffect(() => {
+    saveSourceRef.current = {
+      gameMode,
+      gameStatus,
+      runRoute,
+      roomIndex,
+      runLength,
+      maxPlayerHp,
+      maxRam,
+      runBuild,
+      selectedClassId,
+      activeWeaponId,
+      runFirmware,
+      runDamage,
+    };
+  });
+  // The route the session holds before its first room loads; it is never a
+  // run worth saving.
+  const placeholderRouteRef = useRef(runRoute);
+
+  /** Saves the current roguelike room as it was entered (#3466). */
+  const writeRoomSave = useCallback(() => {
+    const src = saveSourceRef.current;
+    if (src.gameMode !== "roguelike") return;
+    if (src.runRoute === placeholderRouteRef.current) return;
+    const entry = roomEntryVitalsRef.current;
+    const ammo: Partial<Record<WeaponId, number>> = {};
+    for (const [id, weapon] of Object.entries(entry.weapons)) {
+      ammo[id as WeaponId] = weapon.ammo;
+    }
+    saveRun({
+      seed: src.runRoute.seed,
+      route: [...src.runRoute.path],
+      roomIndex: src.roomIndex,
+      hp: entry.hp,
+      maxHp: src.maxPlayerHp,
+      ram: entry.ram,
+      maxRam: src.maxRam,
+      crypto: entry.cryptoBounty,
+      ammo,
+      loadout: src.runBuild,
+      classId: src.selectedClassId,
+      activeWeaponId: src.activeWeaponId,
+      firmware: src.runFirmware,
+      score: entry.score,
+      elapsedMs: Math.max(0, Date.now() - runStartedAtRef.current),
+      runLength: src.runLength,
+      runDamage: src.runDamage,
+    });
+  }, []);
+
+  // Every roguelike room entry is a save point (#3466): a new run, the next
+  // room on the route and a resumed room all land here.
+  useEffect(() => {
+    writeRoomSave();
+  }, [runRoute, roomIndex, gameMode, writeRoomSave]);
 
   // Crypto the player earns (not spends) counts toward this room's exit
   // bonus as well as the balance (#1668).
@@ -1398,6 +1537,8 @@ export function useRetroLabyrinthSession(
           setGameStatus("victory");
           if (gameMode === "roguelike" && roomIndex >= runLength - 1) {
             setRunTimeMs(Date.now() - runStartedAtRef.current);
+            // A finished run has nothing left to resume (#3466).
+            clearRun();
           }
           playSuccess();
           retroAudio.playHackSuccess();
@@ -2266,6 +2407,21 @@ export function useRetroLabyrinthSession(
       }),
     [pauseService]
   );
+  // Hiding the tab or leaving the page saves the run at its room's entry,
+  // with the time played so far (#3466). A finished run has no save left.
+  useEffect(
+    () =>
+      pauseService.onSuspend(() => {
+        const {
+          gameStatus: status,
+          roomIndex: idx,
+          runLength: length,
+        } = saveSourceRef.current;
+        if (status === "victory" && idx >= length - 1) return;
+        writeRoomSave();
+      }),
+    [pauseService, writeRoomSave]
+  );
   useEffect(
     () =>
       pauseService.onResume(() =>
@@ -2450,6 +2606,11 @@ export function useRetroLabyrinthSession(
     (classicStage: 1 | 2) => switchStage(classicStage),
     [switchStage]
   );
+  // A new run discards any saved one before it saves its own Room 01 (#3466).
+  const newRun = useCallback(() => {
+    clearRun();
+    startRoguelikeCampaign();
+  }, [startRoguelikeCampaign]);
 
   const intents: LabyrinthIntents = {
     move,
@@ -2471,7 +2632,7 @@ export function useRetroLabyrinthSession(
     buyFirmware: buyFirmwareTier,
     continue: handleNextRoom,
     retry: handleRestart,
-    newRun: startRoguelikeCampaign,
+    newRun,
     playClassic,
     toggleCrt,
     setTheme: setCrtThemeId,

@@ -3344,6 +3344,8 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "app/proof/useProofSession.ts": "Proof Studio log ids, not an arcade session",
   "components/retro-labyrinth/useRetroLabyrinthSession.ts":
     "Retro Labyrinth pilot: game code moved verbatim by #2376; seeding follows in the pilot",
+  "components/clinical-trial-chaos/useClinicalChaosSession.ts":
+    "Clinical Trial Chaos seam: game code moved verbatim from ClinicalTrialChaos.tsx by #3438; seeding follows in #2456",
   "lib/clinical-trial-chaos/engine.ts": "Clinical Trial Chaos seam",
   "lib/clinical-trial-chaos/scenarios.ts": "Clinical Trial Chaos seam",
   "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",

@@ -103,6 +103,18 @@ import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
 import { NextRequest } from "next/server";
 import { calculateFOV } from "@/lib/dungeon";
 
+/**
+ * Clinical Trial Chaos source: the component and, since #3438, the session
+ * hook that holds its state and loop.
+ */
+const readChaosSources = () =>
+  [
+    "../components/ClinicalTrialChaos.tsx",
+    "../components/clinical-trial-chaos/useClinicalChaosSession.ts",
+  ]
+    .map((file) => fs.readFileSync(path.resolve(__dirname, file), "utf-8"))
+    .join("\n");
+
 describe("Defect Remediation & Regression Verification Suite (Invariant #11)", () => {
   describe("Dungeon FOV sparse-matrix fallback", () => {
     it("rebuilds unexplored state instead of throwing on a sparse outer matrix", () => {
@@ -2129,10 +2141,7 @@ describe("Clinical Trial Chaos phase-clear report counts the final CRF (#1609)",
 
     // The component grades the phase on the settled score, not on the score
     // before the final CRF with only the submission count bumped.
-    const code = fs.readFileSync(
-      path.resolve(__dirname, "../components/ClinicalTrialChaos.tsx"),
-      "utf-8"
-    );
+    const code = readChaosSources();
     expect(code).not.toContain(
       "subjectsSubmitted: scoreState.subjectsSubmitted + 1"
     );
@@ -2175,11 +2184,6 @@ describe("Clinical Trial Chaos auditor resumes after a Coffee Break (#1610)", ()
 
 // Behavioural reproductions live in __tests__/arcade-animation-loops.test.tsx.
 describe("Arcade loops read current state (#1628)", () => {
-  const readComponent = (name: string) =>
-    fs.readFileSync(
-      path.resolve(__dirname, `../components/${name}.tsx`),
-      "utf-8"
-    );
   // Retro Labyrinth's loop lives in its session since #2376.
   const readLabyrinthSession = () =>
     fs.readFileSync(
@@ -2228,7 +2232,7 @@ describe("Arcade loops read current state (#1628)", () => {
     expect(labyrinth).not.toContain("loopCampaignRoomsRef");
     expect(labyrinth).toContain("campaignRoomsRef.current = campaignRooms;");
 
-    const chaos = readComponent("ClinicalTrialChaos");
+    const chaos = readChaosSources();
     expect(chaos).not.toContain("loopStartSubjects");
     const body = loopBody(
       chaos,
@@ -2410,11 +2414,7 @@ describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
 });
 
 describe("Clinical Trial Chaos pass-4 fixes (#1670, #1671, #1672, #1673)", () => {
-  const readChaos = () =>
-    fs.readFileSync(
-      path.resolve(__dirname, "../components/ClinicalTrialChaos.tsx"),
-      "utf-8"
-    );
+  const readChaos = () => readChaosSources();
 
   it("#1670: reports expired subjects as expiries, not as submissions", async () => {
     const {

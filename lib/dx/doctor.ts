@@ -3349,6 +3349,10 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "lib/clinical-trial-chaos/engine.ts": "Clinical Trial Chaos seam",
   "lib/clinical-trial-chaos/scenarios.ts": "Clinical Trial Chaos seam",
   "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",
+  "components/study-director/useStudyDirectorSession.ts":
+    "Study Director desk: Date.now() and Math.random() only name a new study's seed, moved verbatim by #3437; the study runs from that seed",
+  "components/study-director-world/useStudyDirectorWorldSession.ts":
+    "Study Director office: Date.now() and Math.random() only name a new run's seed, moved verbatim by #3437; the run is seeded",
   "components/laser-loon/useLaserLoonSession.ts":
     "Laser Loon seam: game code moved verbatim from LaserLoon.tsx by #3436; seeding follows in #2442",
   "lib/laser-loon/engine.ts": "Laser Loon seam",

@@ -3351,6 +3351,8 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "components/garmin-watch/useMonkeyCSession.ts":
     "Garmin Watch seam: game code moved verbatim from GarminWatchSimulator.tsx by #3435; its clock reads move to createStepClock in #2432",
   "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",
+  "components/trial-and-error/useTrialAndErrorSession.ts":
+    "Trial & Error: Date.now() only date-stamps Codex history entries, moved verbatim from CardTable.tsx by #3434; runs are seeded",
   "components/study-director/useStudyDirectorSession.ts":
     "Study Director desk: Date.now() and Math.random() only name a new study's seed, moved verbatim by #3437; the study runs from that seed",
   "components/study-director-world/useStudyDirectorWorldSession.ts":
@@ -3358,6 +3360,12 @@ export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "components/laser-loon/useLaserLoonSession.ts":
     "Laser Loon seam: game code moved verbatim from LaserLoon.tsx by #3436; seeding follows in #2442",
   "lib/laser-loon/engine.ts": "Laser Loon seam",
+  "components/QuasiPerfectPuzzler/useQuasiSession.ts":
+    "Quasi-Perfect Puzzler: Date.now() and Math.random() only id and time-stamp log entries, proof steps and the saved score, moved verbatim by #3433; tactics are deterministic",
+  "components/QuasiPerfectPuzzler/useQuasiSandboxSession.ts":
+    "Quasi-Perfect Puzzler sandbox: Date.now() only ids log entries, moved verbatim from SandboxMode.tsx by #3433",
+  "components/patty-drive-thru/usePattySession.ts":
+    "Patty's Drive-Thru: Date.now() only names a fresh shift's seed (freshSeed), moved verbatim from PattyDriveThruGame.tsx by #3439; the shift runs from that seed",
   "lib/quasi-perfect/engine.ts": "Quasi-Perfect Puzzler seam",
   "lib/working-with-duck-engine.ts": "Working with Duck seam",
 };

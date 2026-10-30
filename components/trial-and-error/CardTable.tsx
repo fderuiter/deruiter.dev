@@ -1,36 +1,18 @@
 "use client";
 
-import React, {
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
-import {
-  getArcadeProgress,
-  recordArcadeMilestone,
-  recordArcadeScore,
-} from "@/lib/arcade-achievements";
+import { getArcadeProgress } from "@/lib/arcade-achievements";
 import { AnimatePresence, Reorder } from "framer-motion";
 import {
-  BIOSTAT_OPS_CAMPAIGN,
   CLINICAL_HOLD,
   CPU_COSTS,
   HAND_LEVEL_BONUS,
   HAND_NAMES,
   STALE_ALERT,
-  advanceRun,
   cardShortName,
   consumableSellValue,
   costOf,
-  createCustomScenario,
-  createRunState,
-  parseSeed,
-  currentRunAct,
   deriveRunView,
   describeBlindLoss,
   previewAllocation,
@@ -43,20 +25,13 @@ import {
   type RunAction,
   type RunChoice,
   type RunPlan,
-  type RunLog,
   type RunOrigin,
-  type RunState,
   type Scenario,
   type TableCardView,
   type TableEvent,
   type TableState,
   RELIC_PHASE_LABELS,
-  recordDiscoveries,
-  recordRun,
   relicPhase,
-  summarizeCampaignWin,
-  summarizeRun,
-  utcDate,
 } from "@/lib/trial-and-error";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { isAnyFocusTrapActive, useFocusTrap } from "@/hooks/useFocusTrap";
@@ -79,22 +54,16 @@ import { QcDesk } from "@/components/trial-and-error/QcDesk";
 import { FigureDesk } from "@/components/trial-and-error/FigureDesk";
 import { CrisisPanel } from "@/components/trial-and-error/CrisisPanel";
 import { LevelUpPlate } from "@/components/trial-and-error/LevelUpPlate";
-import {
-  clearRunSave,
-  useSavedRun,
-  writeRunSave,
-} from "@/components/trial-and-error/useRunSave";
+import { clearRunSave } from "@/components/trial-and-error/useRunSave";
 import { RunInfo } from "@/components/trial-and-error/RunInfo";
 import { NewRun } from "@/components/trial-and-error/NewRun";
 import { DeckBuilder } from "@/components/trial-and-error/DeckBuilder";
 import { Codex } from "@/components/trial-and-error/Codex";
-import { updateCodex, useCodex } from "@/components/trial-and-error/useCodex";
 import { SeedShare } from "@/components/trial-and-error/SeedShare";
 import { RunChoiceBadges } from "@/components/trial-and-error/RunChoiceBadges";
 import {
   clearChallengeHash,
   freshSeed,
-  useChallengeHash,
 } from "@/components/trial-and-error/useChallenge";
 import { ScoreLog } from "@/components/trial-and-error/ScoreLog";
 import { HandCheatSheet } from "@/components/trial-and-error/HandCheatSheet";
@@ -143,6 +112,7 @@ import {
   LoudLayer,
 } from "@/components/trial-and-error/LoudLayer";
 import { cueForStep, type TeCue } from "@/components/trial-and-error/teAudio";
+import { useTrialAndErrorSession } from "@/components/trial-and-error/useTrialAndErrorSession";
 import {
   useTeMusic,
   useTeSound,
@@ -182,112 +152,6 @@ interface CardTableProps {
    * does to hand over to the campaign.
    */
   endAction?: (won: boolean) => { label: string; onSelect: () => void };
-}
-
-/** The run and every move since it started: what a save replays. */
-interface LoggedRun {
-  run: RunState;
-  log: RunLog;
-}
-
-/**
- * A move, a saved run replacing the fresh one on resume, or a new run on a
- * chosen seed, sponsor and stake, whose log records how the seed was chosen
- * (#1528) and the sponsor and stake (#950).
- */
-type TableIntent =
-  | RunAction
-  | { type: "LOAD_SAVED"; saved: RestoredRun }
-  | {
-      type: "NEW_RUN";
-      seed: string;
-      origin: RunOrigin;
-      choice: RunChoice;
-      customScenario?: CustomScenarioSpec;
-    };
-
-/**
- * The sponsor and stake a run log records: only what differs from the
- * defaults, as the run state and save do, so a default run's log is exactly
- * what it was before sponsors existed.
- */
-function loggedChoice(run: RunState): Pick<RunLog, "sponsorId" | "stake"> {
-  return {
-    ...(run.sponsorId !== undefined && { sponsorId: run.sponsorId }),
-    ...(run.stake !== undefined && { stake: run.stake }),
-  };
-}
-
-function logRun(
-  act: RunPlan,
-  current: LoggedRun,
-  intent: TableIntent
-): LoggedRun {
-  if (intent.type === "LOAD_SAVED") {
-    return { run: intent.saved.run, log: intent.saved.log };
-  }
-  if (intent.type === "NEW_RUN") {
-    const customScenarioObj = intent.customScenario
-      ? createCustomScenario(intent.customScenario)
-      : null;
-    const effectiveAct: RunPlan = customScenarioObj
-      ? {
-          id: customScenarioObj.id,
-          title: customScenarioObj.title,
-          blinds: [customScenarioObj],
-        }
-      : act;
-
-    const chosen = createRunState(effectiveAct, intent.seed, intent.choice);
-    const run = advanceRun(
-      effectiveAct,
-      {
-        ...chosen,
-        table: { ...chosen.table, lastEvent: current.run.table.lastEvent },
-      },
-      { type: "RESTART_RUN", seed: intent.seed }
-    );
-    return {
-      run,
-      log: {
-        actId: effectiveAct.id,
-        seed: run.seed,
-        ...loggedChoice(run),
-        origin: intent.origin,
-        actions: [],
-      },
-    };
-  }
-
-  const run = advanceRun(act, current.run, intent);
-  // A new run starts a new log; every other move joins the current one.
-  if (intent.type === "RESTART_RUN") {
-    return {
-      run,
-      log: {
-        actId: act.id,
-        seed: run.seed,
-        ...loggedChoice(run),
-        actions: [],
-      },
-    };
-  }
-  return {
-    run,
-    log: { ...current.log, actions: [...current.log.actions, intent] },
-  };
-}
-
-/** The page's `?seed=` parameter when it is a valid seed, else a fresh one. */
-function initialSeed(): { seed: string; origin?: RunOrigin } {
-  try {
-    const param = new URLSearchParams(window.location.search).get("seed");
-    const seed = param === null ? null : parseSeed(param);
-    if (seed) return { seed, origin: { kind: "SEEDED" } };
-  } catch {
-    // No location (a test harness): fall through to a fresh seed.
-  }
-  return { seed: freshSeed() };
 }
 
 const SPEEDS = [1, 2, 4] as const;
@@ -542,42 +406,33 @@ export function CardTable({
   onReplayTutorial,
   endAction,
 }: CardTableProps) {
-  const act = useMemo<RunPlan>(
-    () =>
-      actProp ??
-      (single
-        ? { id: single.id, title: single.title, blinds: [single] }
-        : BIOSTAT_OPS_CAMPAIGN),
-    [actProp, single]
-  );
-  const [{ run, log }, dispatch] = useReducer(
-    (current: LoggedRun, intent: TableIntent) => logRun(act, current, intent),
+  const {
     act,
-    (a: RunPlan): LoggedRun => {
-      const start = seed === undefined ? initialSeed() : { seed };
-      const run = createRunState(a, start.seed);
-      return {
-        run,
-        log: {
-          actId: a.id,
-          seed: run.seed,
-          ...(start.origin ? { origin: start.origin } : {}),
-          actions: [],
-        },
-      };
-    }
-  );
-  const saved = useSavedRun(act, persist);
-  // A save found on arrival waits for Resume or New run; until then nothing
-  // is written, so the save is never overwritten before the choice.
-  const [resumeChoice, setResumeChoice] = useState<
-    "PENDING" | "CONFIRM_NEW" | "DONE"
-  >("PENDING");
-  const offerResume =
-    persist &&
-    saved !== null &&
-    resumeChoice !== "DONE" &&
-    log.actions.length === 0;
+    challenge,
+    codex,
+    codexEnabled,
+    currentAct,
+    dispatch,
+    endlessRound,
+    log,
+    offerResume,
+    resumeChoice,
+    runOver,
+    runView,
+    saved,
+    scenario,
+    setResumeChoice,
+    tableState,
+    view,
+    wonLabel,
+  } = useTrialAndErrorSession({
+    act: actProp,
+    scenario: single,
+    seed,
+    persist,
+    endAction,
+    onTableChange,
+  });
   // Launching the cabinet focuses the cabinet itself, where the hand's keys
   // do nothing and Space scrolls the page (#1944). Once the table is up, put
   // focus on the hand, and while focus is still idle let the first arrow or
@@ -599,94 +454,6 @@ export function CardTable({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-  const runView = deriveRunView(act, run);
-  // A won campaign that can still go on into post-marketing is not over
-  // until the player chooses.
-  const runOver =
-    runView.phase === "RUN_FAILED" ||
-    (runView.phase === "RUN_WON" && !runView.endless?.canContinue);
-  const endlessRound = runView.endless?.round ?? null;
-  // The act being played: its shop runs between its Blinds. In
-  // post-marketing this is the round's study, past the planned acts (#2330).
-  const currentAct = currentRunAct(act, run);
-  // A campaign with post-marketing rounds is won once, whatever act shows.
-  const wonLabel =
-    runView.act.count > 1 || runView.endless
-      ? "Campaign won"
-      : `${runView.act.title} complete`;
-  // Keep this browser's save in step with the run: written after each move,
-  // removed when the run ends or a new one starts. Never while a found save
-  // still waits for the player's choice.
-  useEffect(() => {
-    if (!persist || offerResume) return;
-    if (runOver || log.actions.length === 0) {
-      clearRunSave(log.actId);
-    } else {
-      writeRunSave(log);
-    }
-  }, [persist, offerResume, runOver, log]);
-  // The Codex (#1529) records what this browser's runs have shown, and each
-  // finished run's summary. Only a persisted campaign table keeps one; the
-  // guided Blind and embedded tables never write it.
-  const codexEnabled = persist && !endAction;
-  const codex = useCodex(codexEnabled);
-  const logOrigin = log.origin;
-  useEffect(() => {
-    if (!codexEnabled || offerResume) return;
-    updateCodex((current) =>
-      recordDiscoveries(current, act, run, {
-        actId: log.actId,
-        seed: log.seed,
-        ...(logOrigin ? { origin: logOrigin } : {}),
-      })
-    );
-  }, [codexEnabled, offerResume, act, run, log.actId, log.seed, logOrigin]);
-  // A run that continues into post-marketing records its campaign win then,
-  // so the win and its unlocks survive the run being abandoned (#2331). The
-  // run's own end replaces this entry in the history.
-  const continuedRun = run.endless && !runOver;
-  const recordedWin = useRef<RunLog | null>(null);
-  useEffect(() => {
-    if (!codexEnabled || offerResume || !continuedRun) return;
-    const previous = recordedWin.current;
-    recordedWin.current = log;
-    // One run's later moves keep the same win: summarize it once per run.
-    if (
-      previous &&
-      previous.seed === log.seed &&
-      previous.actId === log.actId &&
-      previous.actions.length <= log.actions.length &&
-      previous.actions.every((a, i) => a === log.actions[i])
-    ) {
-      return;
-    }
-    const win = summarizeCampaignWin(act, log, utcDate(Date.now()));
-    if (win) updateCodex((current) => recordRun(current, win));
-  }, [codexEnabled, offerResume, continuedRun, act, log]);
-  // A finished run is summarized once, from its log, into the history.
-  const recordedRun = useRef<RunLog | null>(null);
-  useEffect(() => {
-    if (!codexEnabled || offerResume || !runOver) return;
-    if (log.actions.length === 0 || recordedRun.current === log) return;
-    recordedRun.current = log;
-    const entry = summarizeRun(act, log, utcDate(Date.now()));
-    if (!entry) return;
-    updateCodex((current) => recordRun(current, entry));
-    // A Daily Protocol run is Trial & Error's Arcade Daily (#2113).
-    if (entry.origin?.kind === "DAILY") {
-      recordArcadeDailyResult("trial-and-error", entry.origin.date, {
-        score: entry.bestHand?.score ?? 0,
-      });
-    }
-  }, [codexEnabled, offerResume, runOver, act, log]);
-  const scenario = runView.blind;
-  // The reducer state goes only to domain helpers and the tutorial; every
-  // render decision reads the derived view (#996).
-  const tableState = run.table;
-  useEffect(() => {
-    onTableChange?.(tableState);
-  }, [onTableChange, tableState]);
-  const view = runView.table;
   // Stable effect inputs: the ids keep their identity until the hand changes.
   const handIds = view.handIds;
   const status = view.status;
@@ -768,32 +535,6 @@ export function CardTable({
     progress?.crossed === true &&
     playback.shown === (timeline?.length ?? 0);
 
-  // Sync round score with the arcade achievements system
-  useEffect(() => {
-    if (view.roundScore > 0) {
-      recordArcadeScore("trial-and-error", view.roundScore);
-    }
-  }, [view.roundScore]);
-
-  // Trophies follow progress through the run, not the round score: one
-  // Small Blind hand already scores thousands (#2047).
-  const bossBlind = scenario.blind.tier === "BOSS_BLIND";
-  const campaignRun = runView.act.count > 1;
-  useEffect(() => {
-    if (runView.phase === "BLIND_CLEARED") {
-      recordArcadeMilestone("trial-and-error", "blind_cleared");
-      if (bossBlind && campaignRun) {
-        recordArcadeMilestone("trial-and-error", "act_cleared");
-      }
-    } else if (runView.phase === "RUN_WON") {
-      recordArcadeMilestone("trial-and-error", "blind_cleared");
-      // A single-act table (the guided Blind, a custom deck) is not a run.
-      if (!campaignRun) return;
-      recordArcadeMilestone("trial-and-error", "act_cleared");
-      recordArcadeMilestone("trial-and-error", "run_won");
-    }
-  }, [runView.phase, bossBlind, campaignRun]);
-
   const [detailId, setDetailId] = useState<string | null>(null);
   const [runInfoOpen, setRunInfoOpen] = useState(false);
   const [newRunOpen, setNewRunOpen] = useState(false);
@@ -811,10 +552,6 @@ export function CardTable({
       window.setTimeout(() => runInfoButtonRef.current?.focus(), 0);
     }
   };
-  // A challenge link opens the New Run dialog on a persisted table, once any
-  // saved run's Resume choice is made; the guided Blind never takes one.
-  const hashChallenge = useChallengeHash();
-  const challenge = persist && !endAction ? hashChallenge : null;
   const newRunShown = newRunOpen || challenge !== null;
   const runOrigin: RunOrigin = log.origin ?? { kind: "RANDOM" };
   const [handSheetOpen, setHandSheetOpen] = useState(false);

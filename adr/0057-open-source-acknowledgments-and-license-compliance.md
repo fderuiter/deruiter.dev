@@ -13,7 +13,7 @@ software it depends on.
 ## Context
 
 The repository already gated the lockfile against an SPDX allow-list
-(`scripts/license-audit.ts`, `license-policy.json`). That answers "may we use
+(`scripts/license-audit.ts`, `config/license-policy.json`). That answers "may we use
 this license?" It did not answer three other questions a public project owes
 its dependencies and its visitors:
 

@@ -19,6 +19,8 @@ vi.mock("child_process", () => {
 import {
   isPretextRelated,
   loadIgnoreList,
+  loadRawIgnoreList,
+  DEFAULT_IGNORE_LIST,
   parseIgnoreRules,
   runSecurityAudit,
   collectAdvisoriesForVulnerability,
@@ -412,11 +414,142 @@ describe("Security Audit Script", () => {
     });
   });
 
-  describe("loadIgnoreList", () => {
-    it("parses valid rules from security-audit-ignore.json", () => {
-      const fixedNow = new Date("2026-08-19T12:00:00Z");
-      const list = loadIgnoreList(fixedNow);
-      expect(Array.isArray(list)).toBe(true);
+  describe("loadIgnoreList and loadRawIgnoreList", () => {
+    it("parses valid rules from config/security-audit-ignore.json", () => {
+      const existsSpy = vi.spyOn(fs, "existsSync").mockImplementation((p) => {
+        const normalized = String(p).replace(/\\/g, "/");
+        return normalized.includes("/config/security-audit-ignore.json");
+      });
+      const readSpy = vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify([
+          {
+            advisory: "GHSA-config-valid",
+            package: "foo",
+            severity: "high",
+            expiresAt: "2026-09-01T00:00:00Z",
+            reason: "test config override",
+            owner: "security",
+            followUp: "#100",
+          },
+        ])
+      );
+
+      try {
+        const fixedNow = new Date("2026-08-19T12:00:00Z");
+        const list = loadIgnoreList(fixedNow);
+        expect(list).toHaveLength(1);
+        expect(list[0].advisory).toBe("GHSA-config-valid");
+        expect(list[0].isValid).toBe(true);
+      } finally {
+        existsSpy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+
+    it("prefers config/security-audit-ignore.json when both config and legacy root exist", () => {
+      const existsSpy = vi.spyOn(fs, "existsSync").mockImplementation((p) => {
+        const normalized = String(p).replace(/\\/g, "/");
+        return normalized.endsWith("/security-audit-ignore.json");
+      });
+      const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation((p) => {
+        const normalized = String(p).replace(/\\/g, "/");
+        if (normalized.includes("/config/")) {
+          return JSON.stringify([
+            {
+              advisory: "GHSA-config-precedence",
+              package: "foo",
+              severity: "high",
+              expiresAt: "2026-09-01T00:00:00Z",
+              reason: "config override",
+              owner: "security",
+              followUp: "#100",
+            },
+          ]);
+        }
+        return JSON.stringify([
+          {
+            advisory: "GHSA-legacy-root",
+            package: "bar",
+            severity: "critical",
+            expiresAt: "2026-09-01T00:00:00Z",
+            reason: "legacy override",
+            owner: "security",
+            followUp: "#101",
+          },
+        ]);
+      });
+
+      try {
+        const raw = loadRawIgnoreList();
+        expect(Array.isArray(raw)).toBe(true);
+        expect((raw as Array<{ advisory: string }>)[0].advisory).toBe(
+          "GHSA-config-precedence"
+        );
+      } finally {
+        existsSpy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+
+    it("falls back to root security-audit-ignore.json when config path is absent", () => {
+      const existsSpy = vi.spyOn(fs, "existsSync").mockImplementation((p) => {
+        const normalized = String(p).replace(/\\/g, "/");
+        return (
+          !normalized.includes("/config/") &&
+          normalized.endsWith("/security-audit-ignore.json")
+        );
+      });
+      const readSpy = vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify([
+          {
+            advisory: "GHSA-fallback-root",
+            package: "bar",
+            severity: "critical",
+            expiresAt: "2026-09-01T00:00:00Z",
+            reason: "legacy root test",
+            owner: "security",
+            followUp: "#101",
+          },
+        ])
+      );
+
+      try {
+        const raw = loadRawIgnoreList();
+        expect(Array.isArray(raw)).toBe(true);
+        expect((raw as Array<{ advisory: string }>)[0].advisory).toBe(
+          "GHSA-fallback-root"
+        );
+      } finally {
+        existsSpy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+
+    it("falls back to DEFAULT_IGNORE_LIST when no ignore file exists", () => {
+      const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(false);
+
+      try {
+        const raw = loadRawIgnoreList();
+        expect(raw).toBe(DEFAULT_IGNORE_LIST);
+      } finally {
+        existsSpy.mockRestore();
+      }
+    });
+
+    it("falls back to DEFAULT_IGNORE_LIST and logs once when ignore file contains invalid JSON", () => {
+      const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      const readSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("not-valid-json{");
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      try {
+        const raw = loadRawIgnoreList();
+        expect(raw).toBe(DEFAULT_IGNORE_LIST);
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        existsSpy.mockRestore();
+        readSpy.mockRestore();
+        warnSpy.mockRestore();
+      }
     });
   });
 

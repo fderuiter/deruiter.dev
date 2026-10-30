@@ -38,8 +38,9 @@ function workspace(opts: {
     path.join(dir, "package-lock.json"),
     JSON.stringify({ packages: { "": {}, ...opts.lock } })
   );
+  fs.mkdirSync(path.join(dir, "config"), { recursive: true });
   fs.writeFileSync(
-    path.join(dir, "license-policy.json"),
+    path.join(dir, "config", "license-policy.json"),
     JSON.stringify({
       allowedLicenses: ["MIT", "ISC"],
       exceptions: opts.exceptions ?? [],

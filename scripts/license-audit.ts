@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Lockfile-Native License Audit Engine
- * Zero-dependency SPDX scanner evaluating package-lock.json metadata against license-policy.json.
+ * Zero-dependency SPDX scanner evaluating package-lock.json metadata against config/license-policy.json.
  */
 
 import fs from "fs";
@@ -77,7 +77,7 @@ const STRONG_COPYLEFT = /^(A?GPL|SSPL|OSL|EUPL|CPAL|RPL)/i;
 export const NOTICES_FILE = "public/third-party-notices.txt";
 
 /**
- * Validates exception entries in license-policy.json.
+ * Validates exception entries in config/license-policy.json.
  * Fails closed if mandatory metadata fields are missing, expired, or exceed the 90-day window.
  */
 export function validateExceptions(
@@ -335,13 +335,17 @@ export function runLicenseAudit(options?: {
   const now = options?.now || new Date();
 
   const lockfilePath = path.join(root, "package-lock.json");
-  const policyPath = path.join(root, "license-policy.json");
+  const configPolicyPath = path.join(root, "config", "license-policy.json");
+  const legacyPolicyPath = path.join(root, "license-policy.json");
+  const policyPath = fs.existsSync(configPolicyPath)
+    ? configPolicyPath
+    : legacyPolicyPath;
 
   if (!fs.existsSync(lockfilePath)) {
     throw new Error(`package-lock.json not found at ${lockfilePath}`);
   }
   if (!fs.existsSync(policyPath)) {
-    throw new Error(`license-policy.json not found at ${policyPath}`);
+    throw new Error(`license-policy.json not found at ${configPolicyPath}`);
   }
 
   const lockRaw = fs.readFileSync(lockfilePath, "utf-8");
@@ -426,7 +430,7 @@ export function runLicenseAudit(options?: {
         version,
         licenseExpression: licenseExpr,
         unapprovedLicenses: evalResult.unapprovedTokens,
-        reason: `License '${licenseExpr}' is unapproved by license-policy.json and has no active valid exception.`,
+        reason: `License '${licenseExpr}' is unapproved by config/license-policy.json and has no active valid exception.`,
       });
     }
   }
@@ -488,7 +492,7 @@ if (typeof process.env.VITEST === "undefined" && require.main === module) {
               {
                 id: "license-audit-fix",
                 title:
-                  "Review unapproved dependency licenses and update license-policy.json exceptions",
+                  "Review unapproved dependency licenses and update config/license-policy.json exceptions",
                 command: "npm run audit:licenses",
                 autoFixable: false,
                 scope: "security",
@@ -543,11 +547,11 @@ if (typeof process.env.VITEST === "undefined" && require.main === module) {
 
       if (report.passed) {
         console.log(
-          `\n✅ All lockfile dependency licenses comply with license-policy.json.\n`
+          `\n✅ All lockfile dependency licenses comply with config/license-policy.json.\n`
         );
       } else {
         console.error(
-          `\n❌ License audit failed. Resolve unapproved licenses or update license-policy.json.\n`
+          `\n❌ License audit failed. Resolve unapproved licenses or update config/license-policy.json.\n`
         );
       }
     }

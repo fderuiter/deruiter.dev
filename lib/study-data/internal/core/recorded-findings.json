@@ -809,7 +809,7 @@
         "message": "IDVAR is not empty but IDVARVAL is empty."
       },
       "CORE-000136": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0201, TIG0422",
         "fda": "",
         "message": "IDVARVAL and USUBJID are not completed, but IDVAR equals Sequence Number."
@@ -1199,7 +1199,7 @@
         "message": "USUBJID is not found in DM.USUBJID"
       },
       "CORE-000202": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0419, TIG0574",
         "fda": "",
         "message": "RELTYPE is populated when IDVAR is populated with a 'SEQ' value."
@@ -1811,7 +1811,7 @@
         "message": "First 2 characters of prefixed variable within custom domain do not match the DOMAIN value."
       },
       "CORE-000384": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0374, TIG0538",
         "fda": "",
         "message": "RELREC.RDOMAIN does not represent a dataset present in the study"
@@ -1823,7 +1823,7 @@
         "message": "SUPP--.RDOMAIN does not represent a dataset present in the study"
       },
       "CORE-000484": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0200, TIG0421",
         "fda": "",
         "message": "Unique RELID is NOT present on multiple RELREC records within a subject."
@@ -2531,7 +2531,7 @@
         "message": "There are multiple records per assigned last observation before exposure flag (--LOBXFL)."
       },
       "CORE-000916": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0370, TIG0534",
         "fda": "",
         "message": "Value for IDVAR in RELREC does not represent a variable present in the dataset referenced in RDOMAIN."
@@ -4168,7 +4168,7 @@
   },
   "views": {
     "default": {
-      "inputSha256": "955c8c05973e2b6100c1fc8a81dd8066495a69f2a16caeae1bf1e825868ebb92",
+      "inputSha256": "0f4305f654f039f776b0a4ffd9f2bc0fcc6c9235e5c0828c50d6bdd716c8fa5f",
       "sdtm": {
         "lines": [
           "CORE-000264 MH DEMO-301-0001#1 MHTERM=Hypertension|MHBODSYS=Vascular disorders|MHSOC=Not in dataset",
@@ -4227,85 +4227,35 @@
           "CORE-000761 TS -#1 TSVCDREF=CDISC|$valid_dates=['2014-09-26', '2014-12-19', '2015-03-27', '2015-06-26', '2015-09-25', '2015-12-18', '2016-03-25', '2016-06-24', '2016-09-30', '2016-12-16', '2017-03-31', '2017-06-30', '2017-09-29', '2017-12-22', '2018-03-30', '2018-06-29', '2018-09-28', '2018-12-21', '2019-03-29', '2019-06-28', '2019-09-27', '2019-12-20', '2020-03-27', '2020-06-26', '2020-11-06', '2020-12-18', '2021-03-26', '2021-06-25', '2021-09-24', '2021-12-17', '2022-03-25', '2022-06-24', '2022-09-30', '2022-12-16', '2023-03-31', '2023-06-30', '2023-09-29', '2023-12-15', '2024-03-29', '2024-09-27', '2025-03-28', '2025-09-26', '2026-03-27']",
           "CORE-000761 TS -#1 TSVCDREF=CDISC|$valid_dates=['2014-09-26', '2014-12-19', '2015-03-27', '2015-06-26', '2015-09-25', '2015-12-18', '2016-03-25', '2016-06-24', '2016-09-30', '2016-12-16', '2017-03-31', '2017-06-30', '2017-09-29', '2017-12-22', '2018-03-30', '2018-06-29', '2018-09-28', '2018-12-21', '2019-03-29', '2019-06-28', '2019-09-27', '2019-12-20', '2020-03-27', '2020-06-26', '2020-11-06', '2020-12-18', '2021-03-26', '2021-06-25', '2021-09-24', '2021-12-17', '2022-03-25', '2022-06-24', '2022-09-30', '2022-12-16', '2023-03-31', '2023-06-30', '2023-09-29', '2023-12-15', '2024-03-29', '2024-09-27', '2025-03-28', '2025-09-26', '2026-03-27']",
           "CORE-000767 AE DEMO-301-0003#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
-          "CORE-000767 AE DEMO-301-0006#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
-          "CORE-000767 AE DEMO-301-0007#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
           "CORE-000767 AE DEMO-301-0009#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
-          "CORE-000767 AE DEMO-301-0012#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
-          "CORE-000767 AE DEMO-301-0014#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
           "CORE-000767 AE DEMO-301-0015#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
           "CORE-000767 AE DEMO-301-0016#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
-          "CORE-000767 AE DEMO-301-0018#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
-          "CORE-000767 AE DEMO-301-0022#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
-          "CORE-000767 AE DEMO-301-0025#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
-          "CORE-000767 AE DEMO-301-0027#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
-          "CORE-000767 AE DEMO-301-0030#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
-          "CORE-000767 AE DEMO-301-0031#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
-          "CORE-000767 AE DEMO-301-0032#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
-          "CORE-000767 AE DEMO-301-0033#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
-          "CORE-000767 AE DEMO-301-0034#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Dizziness",
-          "CORE-000767 AE DEMO-301-0035#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Nausea",
-          "CORE-000767 AE DEMO-301-0037#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
-          "CORE-000767 AE DEMO-301-0038#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Fatigue",
-          "CORE-000767 CM DEMO-301-0003#1 RELREC.FAOBJ=Not in dataset|CMDECOD=ATORVASTATIN",
+          "CORE-000767 AE DEMO-301-0040#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0046#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0052#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Nausea",
+          "CORE-000767 AE DEMO-301-0053#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Nausea",
+          "CORE-000767 AE DEMO-301-0062#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0065#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0066#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0067#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Nausea",
+          "CORE-000767 AE DEMO-301-0079#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0083#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
+          "CORE-000767 AE DEMO-301-0089#1 RELREC.FAOBJ=Not in dataset|AEDECOD=Headache",
           "CORE-000767 CM DEMO-301-0003#2 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
-          "CORE-000767 CM DEMO-301-0004#1 RELREC.FAOBJ=Not in dataset|CMDECOD=AMLODIPINE",
-          "CORE-000767 CM DEMO-301-0006#1 RELREC.FAOBJ=Not in dataset|CMDECOD=ACETYLSALICYLIC ACID",
-          "CORE-000767 CM DEMO-301-0007#1 RELREC.FAOBJ=Not in dataset|CMDECOD=METFORMIN",
-          "CORE-000767 CM DEMO-301-0007#2 RELREC.FAOBJ=Not in dataset|CMDECOD=OMEPRAZOLE",
-          "CORE-000767 CM DEMO-301-0008#1 RELREC.FAOBJ=Not in dataset|CMDECOD=RAMIPRIL",
-          "CORE-000767 CM DEMO-301-0009#1 RELREC.FAOBJ=Not in dataset|CMDECOD=METFORMIN",
-          "CORE-000767 CM DEMO-301-0009#2 RELREC.FAOBJ=Not in dataset|CMDECOD=OMEPRAZOLE",
           "CORE-000767 CM DEMO-301-0009#3 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
-          "CORE-000767 CM DEMO-301-0010#1 RELREC.FAOBJ=Not in dataset|CMDECOD=RAMIPRIL",
-          "CORE-000767 CM DEMO-301-0011#1 RELREC.FAOBJ=Not in dataset|CMDECOD=RAMIPRIL",
-          "CORE-000767 CM DEMO-301-0012#1 RELREC.FAOBJ=Not in dataset|CMDECOD=METFORMIN",
-          "CORE-000767 CM DEMO-301-0013#1 RELREC.FAOBJ=Not in dataset|CMDECOD=ATORVASTATIN",
-          "CORE-000767 CM DEMO-301-0014#1 RELREC.FAOBJ=Not in dataset|CMDECOD=METFORMIN",
           "CORE-000767 CM DEMO-301-0015#1 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
-          "CORE-000767 CM DEMO-301-0016#1 RELREC.FAOBJ=Not in dataset|CMDECOD=ATORVASTATIN",
           "CORE-000767 CM DEMO-301-0016#2 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
-          "CORE-000767 CM DEMO-301-0017#1 RELREC.FAOBJ=Not in dataset|CMDECOD=AMLODIPINE",
-          "CORE-000767 CM DEMO-301-0018#1 RELREC.FAOBJ=Not in dataset|CMDECOD=METFORMIN",
-          "CORE-000767 DS DEMO-301-0001#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0001#2 RELREC.FAOBJ=Not in dataset|DSDECOD=SCREEN FAILURE",
-          "CORE-000767 DS DEMO-301-0002#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0002#2 RELREC.FAOBJ=Not in dataset|DSDECOD=RANDOMIZED",
-          "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED",
-          "CORE-000767 DS DEMO-301-0003#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0003#2 RELREC.FAOBJ=Not in dataset|DSDECOD=RANDOMIZED",
-          "CORE-000767 DS DEMO-301-0003#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED",
-          "CORE-000767 DS DEMO-301-0004#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0004#2 RELREC.FAOBJ=Not in dataset|DSDECOD=RANDOMIZED",
-          "CORE-000767 DS DEMO-301-0004#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED",
-          "CORE-000767 DS DEMO-301-0005#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0005#2 RELREC.FAOBJ=Not in dataset|DSDECOD=RANDOMIZED",
-          "CORE-000767 DS DEMO-301-0005#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED",
-          "CORE-000767 DS DEMO-301-0006#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0006#2 RELREC.FAOBJ=Not in dataset|DSDECOD=RANDOMIZED",
-          "CORE-000767 DS DEMO-301-0006#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED",
-          "CORE-000767 DS DEMO-301-0007#1 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0007#2 RELREC.FAOBJ=Not in dataset|DSDECOD=RANDOMIZED",
-          "CORE-000767 DS DEMO-301-0007#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED",
-          "CORE-000767 MH DEMO-301-0001#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0002#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0003#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0003#2 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypercholesterolaemia",
-          "CORE-000767 MH DEMO-301-0004#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0005#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0006#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0007#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0007#2 RELREC.FAOBJ=Not in dataset|MHDECOD=Type 2 diabetes mellitus",
-          "CORE-000767 MH DEMO-301-0007#3 RELREC.FAOBJ=Not in dataset|MHDECOD=Gastrooesophageal reflux disease",
-          "CORE-000767 MH DEMO-301-0007#4 RELREC.FAOBJ=Not in dataset|MHDECOD=Appendicitis",
-          "CORE-000767 MH DEMO-301-0008#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0009#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0009#2 RELREC.FAOBJ=Not in dataset|MHDECOD=Type 2 diabetes mellitus",
-          "CORE-000767 MH DEMO-301-0009#3 RELREC.FAOBJ=Not in dataset|MHDECOD=Gastrooesophageal reflux disease",
-          "CORE-000767 MH DEMO-301-0010#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0011#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0012#1 RELREC.FAOBJ=Not in dataset|MHDECOD=Hypertension",
-          "CORE-000767 MH DEMO-301-0012#2 RELREC.FAOBJ=Not in dataset|MHDECOD=Type 2 diabetes mellitus",
-          "CORE-000767 MH DEMO-301-0012#3 RELREC.FAOBJ=Not in dataset|MHDECOD=Appendicitis",
+          "CORE-000767 CM DEMO-301-0040#1 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0046#3 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0052#2 RELREC.FAOBJ=Not in dataset|CMDECOD=ONDANSETRON",
+          "CORE-000767 CM DEMO-301-0053#2 RELREC.FAOBJ=Not in dataset|CMDECOD=ONDANSETRON",
+          "CORE-000767 CM DEMO-301-0062#1 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0065#1 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0066#3 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0067#1 RELREC.FAOBJ=Not in dataset|CMDECOD=ONDANSETRON",
+          "CORE-000767 CM DEMO-301-0079#3 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0083#2 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
+          "CORE-000767 CM DEMO-301-0089#1 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
           "CORE-000776 MH -#- MHENDY=Not in dataset|MHENDTC=null",
           "CORE-000793 IE -#- IEDTC=2029-12-25|IEDY=Not in dataset",
           "CORE-000929 SUPPDM -#- -",
@@ -4320,10 +4270,8 @@
           "CORE-000701 CM": 76,
           "CORE-000741 TS": 1,
           "CORE-000761 TS": 6,
-          "CORE-000767 AE": 44,
-          "CORE-000767 CM": 99,
-          "CORE-000767 DS": 261,
-          "CORE-000767 MH": 152,
+          "CORE-000767 AE": 15,
+          "CORE-000767 CM": 15,
           "CORE-000776 MH": 1,
           "CORE-000793 IE": 1,
           "CORE-000929 SUPPDM": 1,
@@ -4401,7 +4349,7 @@
       }
     },
     "impossible-date": {
-      "inputSha256": "7d50ec01abfc466275369c53ae0415881f4e04323f35d465c9621d47fc9679a8",
+      "inputSha256": "db0d78e12e773bac5bb64c9139e6139712ecfb9a02aaed7f9e8cdc309940d44d",
       "added": {
         "lines": [
           "CORE-000701 AE DEMO-301-0003#1 EPOCH=null"
@@ -4417,7 +4365,7 @@
       "status": {}
     },
     "partial-end-date": {
-      "inputSha256": "bd421125f0f8bfd32b4a83fef090000cb9bf37d2b3376c4dd9b6907d8c629d07",
+      "inputSha256": "4b2434f8821c60418ab84e3395c4d4ec32b7f5f2c10a3de436bb74de8ebaac0d",
       "added": {
         "lines": [],
         "counts": {}
@@ -4429,7 +4377,7 @@
       "status": {}
     },
     "ae-before-first-dose": {
-      "inputSha256": "4c75c7b000616f9e64865fd09f951e963db75fe44bca198f598616ff807fd126",
+      "inputSha256": "47d8892d21bc521b2f6073858e2bee7653a386cc140cf5a16388c78decc9a1f0",
       "added": {
         "lines": [],
         "counts": {}
@@ -4441,7 +4389,7 @@
       "status": {}
     },
     "missing-baseline": {
-      "inputSha256": "d0cbd16c86c2e025652e2b9b4fbb1108659e5c9998eb3f7feca5e371c9174607",
+      "inputSha256": "0bdb790a9145d2e1f4f7b4e99fd7d504802c6824a0b4afbdc316bf1021e60224",
       "added": {
         "lines": [],
         "counts": {}
@@ -4453,7 +4401,7 @@
       "status": {}
     },
     "no-post-baseline": {
-      "inputSha256": "5b4c5f3f9b5e286d3ca91d677ac14cb734febfdffa850ae49dc18f2cd45250b1",
+      "inputSha256": "b9d43ab7ae60683b8a4ba7a2a58b108220bfde863c2686e7ca8edafc4bdfe921",
       "added": {
         "lines": [],
         "counts": {}
@@ -4465,7 +4413,7 @@
       "status": {}
     },
     "off-codelist-extensible": {
-      "inputSha256": "2bfa668c1b02dc8391856a62e44a4cd0b09fd959f5b22a5143052f385b87706c",
+      "inputSha256": "eb56b130e75531c512ee9ddfb1fd18622019ad643cc6b73f8a301db7de9628fd",
       "added": {
         "lines": [],
         "counts": {}
@@ -4477,7 +4425,7 @@
       "status": {}
     },
     "off-codelist-non-extensible": {
-      "inputSha256": "ef38572cae05832c4682cf98dde0a3fe31ef8196811e020d504d3c2b14961850",
+      "inputSha256": "983435323236368aed0e049fc11217a62ae301071c87ac7e7b7e0d50bbffc432",
       "added": {
         "lines": [],
         "counts": {}
@@ -4489,7 +4437,7 @@
       "status": {}
     },
     "duplicate-record": {
-      "inputSha256": "958b2d95113584db07dc84064ea6d6f636c77c6d79c7453d8a0ea364ffe72c50",
+      "inputSha256": "25843393cd46c98e320e21b22e477c7789b31871560d74e65638a52a78073a60",
       "added": {
         "lines": [],
         "counts": {}
@@ -4501,7 +4449,7 @@
       "status": {}
     },
     "unit-change": {
-      "inputSha256": "b16ff463de77860c8b5f8d0bb7f594bdc8d9dfdd6830809ba636a2d2c668222a",
+      "inputSha256": "15e9ea941fb0f7ba32582e17a3101b44d73806eb51814dd9ba9d7cdd5615e22c",
       "added": {
         "lines": [],
         "counts": {}
@@ -4513,7 +4461,7 @@
       "status": {}
     },
     "lab-retest-same-day": {
-      "inputSha256": "7f33418a01ff202a5e978d3355ef8a7483ebe0d24c70c606dee3ed6a30320086",
+      "inputSha256": "90cc0c12f521a22bb0f33450207e16d0c94eb3517387c971e0a021054609f818",
       "added": {
         "lines": [],
         "counts": {}
@@ -4525,7 +4473,7 @@
       "status": {}
     },
     "unscheduled-visit-in-window": {
-      "inputSha256": "6c3dc0412c3bba7b2ceabe98ee43ad21f694d8d47f7025b451ad5b66ac19c665",
+      "inputSha256": "05357266c1bc9d8b4fe7114df45330cd3cc05385724ef8d4672e183d6c7e862d",
       "added": {
         "lines": [],
         "counts": {}
@@ -4537,7 +4485,7 @@
       "status": {}
     },
     "rescreened-subject": {
-      "inputSha256": "622979b39964929b92b51f628da0c9e96057296cfa56f78d24d20eae2310d1c0",
+      "inputSha256": "f98176c3403c4550bf17b587e00cd67c8506ff7d2807a5e7a4c10bd657888d8a",
       "added": {
         "lines": [
           "CORE-000186 DM -#- SUBJID=0001",
@@ -4694,9 +4642,7 @@
           "CORE-000553 SV DEMO-301-0011#- SVENDY=1.0|SVENDTC=2030-01-21|$val_endy=3|RFSTDTC=2030-01-21",
           "CORE-000726 DM -#- -",
           "CORE-000746 DM -#- -",
-          "CORE-000747 DM -#- -",
-          "CORE-000767 DS DEMO-301-0001#3 RELREC.FAOBJ=Not in dataset|DSDECOD=INFORMED CONSENT OBTAINED",
-          "CORE-000767 DS DEMO-301-0001#4 RELREC.FAOBJ=Not in dataset|DSDECOD=SCREEN FAILURE"
+          "CORE-000747 DM -#- -"
         ],
         "counts": {
           "CORE-000186 DM": 1,
@@ -4715,8 +4661,7 @@
           "CORE-000553 SV": 162,
           "CORE-000726 DM": 1,
           "CORE-000746 DM": 1,
-          "CORE-000747 DM": 1,
-          "CORE-000767 DS": 2
+          "CORE-000747 DM": 1
         }
       },
       "removed": {
@@ -4740,47 +4685,31 @@
       }
     },
     "death-during-treatment": {
-      "inputSha256": "3295d2112eaa87e07b106276f6c489c40f0491d4716bd7b55c837497c475b39a",
+      "inputSha256": "3374df7e730a2292580004d7def2c2c8741fa0f2a068a378535cb32b5bc188d1",
       "added": {
-        "lines": [
-          "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=DEATH"
-        ],
-        "counts": {
-          "CORE-000767 DS": 1
-        }
+        "lines": [],
+        "counts": {}
       },
       "removed": {
-        "lines": [
-          "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED"
-        ],
-        "counts": {
-          "CORE-000767 DS": 1
-        }
+        "lines": [],
+        "counts": {}
       },
       "status": {}
     },
     "withdrawal-before-week-12": {
-      "inputSha256": "f41254e9154e1c87f39bf6247778cab0a48502774b5ed831330658b7ac5e3b98",
+      "inputSha256": "7d423b630a4467532104efa8399e5fce7558765efaca2aa7a898fbc5a28c5efe",
       "added": {
-        "lines": [
-          "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=WITHDRAWAL BY SUBJECT"
-        ],
-        "counts": {
-          "CORE-000767 DS": 1
-        }
+        "lines": [],
+        "counts": {}
       },
       "removed": {
-        "lines": [
-          "CORE-000767 DS DEMO-301-0002#3 RELREC.FAOBJ=Not in dataset|DSDECOD=COMPLETED"
-        ],
-        "counts": {
-          "CORE-000767 DS": 1
-        }
+        "lines": [],
+        "counts": {}
       },
       "status": {}
     },
     "qtcf-outlier": {
-      "inputSha256": "740bc16ca90b51b0bc0e93ce1b2cef6b55f5e2c0a17ae9575d41cd05ba9eac54",
+      "inputSha256": "f9d9b331adb13905a41f710348552562aef7a2772c7cfb2b3923a4cfc6284ed7",
       "added": {
         "lines": [],
         "counts": {}
@@ -4792,7 +4721,7 @@
       "status": {}
     },
     "ecg-missing-rr": {
-      "inputSha256": "a1b7d5a6b802fc85e0781175ddba66903e08f4e530f5d328df483ddd3632c029",
+      "inputSha256": "46773fc3516851495923cb8ea3fd03ab1b2b10d01b6a03996992666c022e65c7",
       "added": {
         "lines": [],
         "counts": {}

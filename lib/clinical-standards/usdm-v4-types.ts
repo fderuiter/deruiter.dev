@@ -7,12 +7,16 @@
  * schedule timelines (scheduled activity instances and timings),
  * biomedical concepts, objectives, endpoints, estimands and the small
  * supporting classes they need (Code, AliasCode, Quantity, Range,
- * ExtensionAttribute). Property names, optionality and `instanceType`
+ * ExtensionAttribute), and the protocol document classes Protocol Studio
+ * writes: conditions and decision instances, parameter dictionaries,
+ * narrative content, abbreviations and governance dates (#3398). Property
+ * names, optionality and `instanceType`
  * discriminators follow the published USDM v4.0.0 API schema
  * (cdisc-org/DDF-RA, `Deliverables/API/USDM_API.json`); the test suite
  * checks documents built from these types against a vendored copy of that
- * schema. Classes this project never emits (amendments, narrative content,
- * products, devices, sites) are left out rather than typed loosely.
+ * schema. Classes this project never emits (amendments, products, devices,
+ * sites) are left out rather than typed loosely, and so are the optional
+ * comment annotations (`notes`) the schema allows on many classes.
  */
 import { CLINICAL_STANDARDS_PROFILE } from "./profile";
 
@@ -447,6 +451,11 @@ export interface UsdmV4StudyVersion extends UsdmV4Base {
   administrableProducts?: UsdmV4AdministrableProduct[];
   biomedicalConcepts?: UsdmV4BiomedicalConcept[];
   bcSurrogates?: UsdmV4BiomedicalConceptSurrogate[];
+  conditions?: UsdmV4Condition[];
+  dictionaries?: UsdmV4SyntaxTemplateDictionary[];
+  abbreviations?: UsdmV4Abbreviation[];
+  narrativeContentItems?: UsdmV4NarrativeContentItem[];
+  dateValues?: UsdmV4GovernanceDate[];
   instanceType: "StudyVersion";
 }
 
@@ -455,6 +464,117 @@ export interface UsdmV4Masking extends UsdmV4Base {
   text: string;
   isMasked: boolean;
   instanceType: "Masking";
+}
+
+/**
+ * A condition the protocol states in words, such as a dosing rule, and the
+ * activities or instances it applies to.
+ */
+export interface UsdmV4Condition extends UsdmV4Named {
+  text: string;
+  dictionaryId?: string | null;
+  contextIds?: string[];
+  appliesToIds?: string[];
+  instanceType: "Condition";
+}
+
+/** One branch of a decision: the condition and the instance it leads to. */
+export interface UsdmV4ConditionAssignment extends UsdmV4Base {
+  condition: string;
+  conditionTargetId: string;
+  instanceType: "ConditionAssignment";
+}
+
+/**
+ * A node on a schedule timeline where the path depends on a condition. The
+ * schema puts it in `ScheduleTimeline.instances` beside scheduled activity
+ * instances; `UsdmV4ScheduleTimeline` types that list as activity instances
+ * only, since every timeline this project reads is linear.
+ */
+export interface UsdmV4ScheduledDecisionInstance extends UsdmV4Named {
+  defaultConditionId?: string | null;
+  epochId?: string | null;
+  conditionAssignments: UsdmV4ConditionAssignment[];
+  instanceType: "ScheduledDecisionInstance";
+}
+
+/** A tag in a syntax template and the model attribute it is filled from. */
+export interface UsdmV4ParameterMap extends UsdmV4Base {
+  tag: string;
+  reference: string;
+  instanceType: "ParameterMap";
+}
+
+/**
+ * The parameters of the syntax templates (objective, endpoint and criterion
+ * texts) that name it through `dictionaryId`.
+ */
+export interface UsdmV4SyntaxTemplateDictionary extends UsdmV4Named {
+  parameterMaps: UsdmV4ParameterMap[];
+  instanceType: "SyntaxTemplateDictionary";
+}
+
+/** The text of one narrative section, kept apart so sections can share it. */
+export interface UsdmV4NarrativeContentItem extends UsdmV4Base {
+  name: string;
+  text: string;
+  instanceType: "NarrativeContentItem";
+}
+
+/** One section of a study definition document, ordered by `previousId` / `nextId`. */
+export interface UsdmV4NarrativeContent extends UsdmV4Base {
+  name: string;
+  sectionNumber?: string | null;
+  sectionTitle?: string | null;
+  displaySectionNumber: boolean;
+  displaySectionTitle: boolean;
+  childIds?: string[];
+  previousId?: string | null;
+  nextId?: string | null;
+  contentItemId?: string | null;
+  instanceType: "NarrativeContent";
+}
+
+/** Where a governance date applies: globally, a region or a country. */
+export interface UsdmV4GeographicScope extends UsdmV4Base {
+  type: UsdmV4Code;
+  code?: UsdmV4AliasCode | null;
+  instanceType: "GeographicScope";
+}
+
+/** A dated governance milestone, such as a protocol approval. */
+export interface UsdmV4GovernanceDate extends UsdmV4Named {
+  type: UsdmV4Code;
+  /** ISO 8601 date. */
+  dateValue: string;
+  geographicScopes: UsdmV4GeographicScope[];
+  instanceType: "GovernanceDate";
+}
+
+/** One version of a study definition document, with its sections. */
+export interface UsdmV4StudyDefinitionDocumentVersion extends UsdmV4Base {
+  version: string;
+  status: UsdmV4Code;
+  dateValues?: UsdmV4GovernanceDate[];
+  contents?: UsdmV4NarrativeContent[];
+  instanceType: "StudyDefinitionDocumentVersion";
+}
+
+/** A document that defines the study, such as the protocol. */
+export interface UsdmV4StudyDefinitionDocument extends UsdmV4Named {
+  language: UsdmV4Code;
+  type: UsdmV4Code;
+  templateName: string;
+  versions?: UsdmV4StudyDefinitionDocumentVersion[];
+  childIds?: string[];
+  instanceType: "StudyDefinitionDocument";
+}
+
+/** An abbreviation used in the study's documents, and what it stands for. */
+export interface UsdmV4Abbreviation extends UsdmV4Base {
+  abbreviatedText: string;
+  expandedText: string;
+  instanceType: "Abbreviation";
 }
 
 /** A role in the study, such as the sponsor or the investigator. */
@@ -476,6 +596,7 @@ export interface UsdmV4Study {
   description?: string | null;
   label?: string | null;
   versions?: UsdmV4StudyVersion[];
+  documentedBy?: UsdmV4StudyDefinitionDocument[];
   instanceType: "Study";
 }
 

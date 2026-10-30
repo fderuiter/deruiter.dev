@@ -26,6 +26,12 @@ provider, never mutates one, and never reports a simulated result as a live
 success. It will not tell you whether a credential is *valid*, only whether
 one is present and correctly shaped.
 
+The setup wizard saves and offers to publish provider values only after the
+provider's offline check succeeds. If required values are missing or a value
+fails that check, it leaves the existing file unchanged. Enter the complete
+set again on the next run, including any optional values you supplied; the
+wizard does not retain rejected input.
+
 ## Clerk (admin authentication)
 
 ### Setup

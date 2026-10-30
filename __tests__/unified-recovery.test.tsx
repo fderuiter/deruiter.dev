@@ -163,4 +163,40 @@ describe("UnifiedErrorLayout JSDOM state and interactivity", () => {
     // Check if the search button becomes the focused element
     expect(document.activeElement).toBe(searchButton);
   });
+
+  it("derives client canonical URL and displays requested invalid path once mounted", async () => {
+    const originalLocation = window.location;
+    vi.stubGlobal("location", {
+      ...originalLocation,
+      href: "https://example.com/missing-test-path",
+      pathname: "/missing-test-path",
+      origin: "https://example.com",
+    });
+
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <AudioProvider>
+          <SearchProvider>
+            <UnifiedErrorLayout
+              badge="TEST_BADGE"
+              title="Test Title"
+              description="Test description text"
+            />
+          </SearchProvider>
+        </AudioProvider>
+      );
+    });
+
+    // Check invalid requested path is rendered on mount
+    expect(container.textContent).toContain("Requested Address");
+    expect(container.textContent).toContain("/missing-test-path");
+
+    // Check canonical link matches client window location href
+    const canonicalLink = document.head.querySelector('link[rel="canonical"]');
+    expect(canonicalLink?.getAttribute("href")).toBe(
+      "https://example.com/missing-test-path"
+    );
+  });
 });
+

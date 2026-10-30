@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import React, {
@@ -6,8 +5,8 @@ import React, {
   useEffect,
   useRef,
   useMemo,
-  useSyncExternalStore,
 } from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { clamp } from "@/lib/game-utils";
@@ -53,18 +52,18 @@ export function UnifiedErrorLayout({
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasTracked = useRef(false);
-  const [invalidPath, setInvalidPath] = useState<string>("");
   const [caseStudies, setCaseStudies] = useState<CaseStudyItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [canonicalUrl, setCanonicalUrl] = useState<string>(
-    `${resolveBaseUrl()}/`
-  );
   const [isGameActivated, setIsGameActivated] = useState(false);
-  const isMounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const isMounted = useIsMounted();
+  const canonicalUrl =
+    isMounted && typeof window !== "undefined"
+      ? window.location.href
+      : `${resolveBaseUrl()}/`;
+  const invalidPath =
+    isMounted && typeof window !== "undefined"
+      ? window.location.pathname || fallbackPath
+      : "";
 
   const handleActivateGame = () => {
     if (!isGameActivated) {
@@ -75,14 +74,10 @@ export function UnifiedErrorLayout({
   const { recordEvent } = useTelemetry();
   const { openSearch } = useSearch();
 
-  // Capture the path and track telemetry safely on-mount
+  // Track telemetry safely on-mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const currentPath = window.location.pathname || fallbackPath;
-      setCanonicalUrl(window.location.href);
-      setTimeout(() => {
-        setInvalidPath(currentPath);
-      }, 0);
 
       if (!hasTracked.current) {
         hasTracked.current = true;

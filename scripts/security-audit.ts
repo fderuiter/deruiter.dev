@@ -375,30 +375,28 @@ export function parseIgnoreRules(
 }
 
 export function loadRawIgnoreList(): unknown {
-  const rootIgnorePath = path.join(process.cwd(), "security-audit-ignore.json");
-  const scriptsIgnorePath = path.join(
-    process.cwd(),
-    "scripts",
-    "security-audit-ignore.json"
-  );
+  const possiblePaths = [
+    path.resolve(process.cwd(), "config/security-audit-ignore.json"),
+    path.resolve(__dirname, "../config/security-audit-ignore.json"),
+    path.resolve(process.cwd(), "security-audit-ignore.json"),
+    path.resolve(__dirname, "../security-audit-ignore.json"),
+    path.resolve(process.cwd(), "scripts/security-audit-ignore.json"),
+    path.resolve(__dirname, "security-audit-ignore.json"),
+  ];
 
-  if (fs.existsSync(rootIgnorePath)) {
-    try {
-      return JSON.parse(fs.readFileSync(rootIgnorePath, "utf8"));
-    } catch (_e) {
-      console.warn(
-        "Failed to parse root security-audit-ignore.json, falling back to default."
-      );
-    }
-  }
-
-  if (fs.existsSync(scriptsIgnorePath)) {
-    try {
-      return JSON.parse(fs.readFileSync(scriptsIgnorePath, "utf8"));
-    } catch (_e) {
-      console.warn(
-        "Failed to parse scripts/security-audit-ignore.json, falling back to default."
-      );
+  const checked = new Set<string>();
+  for (const ignorePath of possiblePaths) {
+    if (checked.has(ignorePath)) continue;
+    checked.add(ignorePath);
+    if (fs.existsSync(ignorePath)) {
+      try {
+        return JSON.parse(fs.readFileSync(ignorePath, "utf8"));
+      } catch (_e) {
+        console.warn(
+          `Failed to parse ${path.relative(process.cwd(), ignorePath) || ignorePath}, falling back to default.`
+        );
+        return DEFAULT_IGNORE_LIST;
+      }
     }
   }
 

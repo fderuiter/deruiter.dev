@@ -7,7 +7,8 @@ import { IconArrowLeft, IconTable } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
-import { getArcadeNeighbors } from "@/lib/arcade";
+import { controlsFromActions, getArcadeNeighbors } from "@/lib/arcade";
+import { TRIAL_AND_ERROR_ACTIONS } from "@/components/trial-and-error/actions";
 import { useTeMotion } from "@/components/trial-and-error/useTeMotion";
 import { usePhone } from "@/components/arcade/mobile";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -86,14 +87,7 @@ export const TrialAndErrorClient: React.FC = () => {
               />
             }
             instructions="Select up to five TLF cards and play the best hand against the Blind. Inspect a card (1 CPU) to reveal and correct its defects for +Mult; an uninspected card can still hide a fatal error that zeroes the hand. Play costs 2 CPU, Discard 1 CPU."
-            controls={[
-              { key: "← →", action: "Move across the hand" },
-              { key: "Space", action: "Select or deselect a card" },
-              { key: "Enter", action: "Play hand (2 CPU)" },
-              { key: "D", action: "Discard selected (1 CPU)" },
-              { key: "I", action: "Inspect card (1 CPU)" },
-              { key: "Esc", action: "Close Inspect" },
-            ]}
+            controls={controlsFromActions(TRIAL_AND_ERROR_ACTIONS)}
             importComponent={CardTableLoader}
             // None of the table's keys is F (arrows, Space, Enter, D, I, R,
             // S, H, T, C, A and ?), so the cabinet's F-for-fullscreen stays on

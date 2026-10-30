@@ -14,6 +14,7 @@ import {
   type Cell,
 } from "../../../components/retro-labyrinth/route-plan";
 import { generateRoguelikeCampaign } from "../../../lib/dungeon/generator";
+import { installSeededRandom } from "./seeded-random";
 
 // Retro Labyrinth on a touch device (ADR 0061, #2032, #2003). The iPad and
 // phone projects set the viewport, so each spec plays at whatever size its
@@ -33,6 +34,10 @@ const MIN_TARGET_PX = 44;
 // The EMP key: "EMP" on the phone's action cluster, which names its keys from
 // the action map (#2919), and a longer name in the tablet's tool grid.
 const EMP_KEY = { name: /^EMP(: fire an EMP burst)?$/ };
+// The seed the room walks give the page's randomness (#3463).
+const WALK_SEED = 3463;
+// Patrol ticks a walk observes before it gives up looking for a route.
+const MAX_OBSERVED_TICKS = 16;
 
 /**
  * Shows the Market key. The phone keeps it in the More sheet (#2919); the
@@ -332,15 +337,9 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
     test.beforeEach(async ({ page }, testInfo) => {
       test.skip(!testInfo.project.use.hasTouch, "touch projects only");
       await page.emulateMedia({ reducedMotion: "reduce" });
-      if (testInfo.title.startsWith("walks every route node")) {
-        // A seeded generator for any Math.random the cabinet reads.
-        await page.addInitScript(() => {
-          let seed = 2032;
-          Math.random = () => {
-            seed = (seed * 1664525 + 1013904223) >>> 0;
-            return seed / 4294967296;
-          };
-        });
+      if (testInfo.title.startsWith("walks ")) {
+        // The same run seed and patrol randomness on every run (#3463).
+        await page.addInitScript(installSeededRandom, WALK_SEED);
       }
       await page.goto(ROUTE);
     });
@@ -1174,24 +1173,29 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       const start = new Date();
       await page.clock.install({ time: start });
       await page.clock.pauseAt(new Date(start.getTime() + 1000));
-      // Four consecutive patrol states, one tick apart, pin down the patrols.
-      const observed = [await readPatrolCells(page)];
-      for (let i = 0; i < 3; i++) {
-        await stepUntilPatrolTicks(page);
-        observed.push(await readPatrolCells(page));
-      }
+      // Consecutive patrol states, one tick apart, pin down the patrols. Four
+      // usually do; when they match more than one state of the room, or the
+      // patrols stand where no route clears it yet, the walk watches another
+      // tick and tries again rather than failing (#3463).
       // Room 1 is the DMZ Gateway since #2048: no route nodes or moving walls,
       // two patrols to walk around.
-      const room = tspSyncRoomToPatrols(
-        generateRoguelikeCampaign()[0],
-        observed
-      );
+      const generated = generateRoguelikeCampaign()[0];
+      const observed = [await readPatrolCells(page)];
+      let room: ReturnType<typeof tspSyncRoomToPatrols> = null;
+      let moves: ReturnType<typeof solveTspRoom> = null;
+      while (observed.length <= MAX_OBSERVED_TICKS) {
+        await stepUntilPatrolTicks(page);
+        observed.push(await readPatrolCells(page));
+        if (observed.length < 4) continue;
+        room = tspSyncRoomToPatrols(generated, observed);
+        moves = room && solveTspRoom(room);
+        if (moves) break;
+      }
       await shoot(page, testInfo, `room-start-${projectSize(page)}`);
       expect(
         room,
-        "the patrols match a state of the generated room"
+        `the patrols match one state of the generated room after ${observed.length} ticks`
       ).not.toBeNull();
-      const moves = solveTspRoom(room!);
       expect(moves, "Room 1 has a clearing route").not.toBeNull();
       for (let i = 0; i < moves!.length; i++) {
         const expected = replayTspMoves(room!, moves!.slice(0, i + 1))!;
@@ -1218,6 +1222,13 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
         floorBadge("Room", "02")
       );
+      // Entering Room 02 saves the run at its first room after Room 01 (#3466).
+      const save = await page.evaluate(() =>
+        JSON.parse(localStorage.getItem("retro_labyrinth_run_v1") ?? "null")
+      );
+      expect(save).toMatchObject({ version: 1, roomIndex: 1 });
+      expect(save.route).toHaveLength(2);
+      expect(save.seed).toMatch(/^LAB-[0-9A-Z]{6}$/);
       await page.getByRole("button", EMP_KEY).tap();
       await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(
         "EMP: "

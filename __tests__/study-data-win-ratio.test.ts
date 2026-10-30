@@ -231,6 +231,37 @@ describe("winStatistics on a hand-worked example", () => {
     expect(r.winOdds.standardError).toBeNull();
   });
 
+  it("clamps small-n net benefit confidence limits to [-1, 1]", () => {
+    // 2 treatment ([20, 20]) vs 2 control ([0, 20]) on QOL (margin 5):
+    // 2 wins, 0 losses, 2 ties across 4 pairs -> estimate = 0.5, SE = 0.5,
+    // unclamped 95% upper Wald limit = 0.5 + 1.95996 * 0.5 ≈ 1.48 > 1.
+    const smallN: readonly WinRatioSubject[] = [
+      { id: "T1", group: "treatment", outcomes: [{ value: 20 }] },
+      { id: "T2", group: "treatment", outcomes: [{ value: 20 }] },
+      { id: "C1", group: "control", outcomes: [{ value: 0 }] },
+      { id: "C2", group: "control", outcomes: [{ value: 20 }] },
+    ];
+    const positive = winStatistics(smallN, { components: [QOL] });
+    expect(positive.netBenefit.estimate).toBe(0.5);
+    expect(positive.netBenefit.standardError).toBeCloseTo(0.5, 14);
+    expect(positive.netBenefit.zStatistic).toBeCloseTo(1, 14);
+    expect(positive.netBenefit.lower).toBeCloseTo(
+      0.5 - NORMAL_QUANTILE_975 * 0.5,
+      14
+    );
+    expect(positive.netBenefit.upper).toBe(1);
+
+    const negative = winStatistics(swapGroups(smallN), { components: [QOL] });
+    expect(negative.netBenefit.estimate).toBe(-0.5);
+    expect(negative.netBenefit.standardError).toBeCloseTo(0.5, 14);
+    expect(negative.netBenefit.zStatistic).toBeCloseTo(-1, 14);
+    expect(negative.netBenefit.lower).toBe(-1);
+    expect(negative.netBenefit.upper).toBeCloseTo(
+      -0.5 + NORMAL_QUANTILE_975 * 0.5,
+      14
+    );
+  });
+
   it("rejects malformed input", () => {
     expect(() =>
       winStatistics(HAND, { components: [DEATH, QOL], alpha: 1 })
@@ -294,20 +325,29 @@ describe("normalQuantile", () => {
   });
 });
 
+const outcomesArbitrary = fc
+  .record({
+    time: fc.integer({ min: 1, max: 60 }),
+    event: fc.boolean(),
+    score: fc.option(fc.integer({ min: -20, max: 20 }), { nil: null }),
+  })
+  .map(({ time, event, score }) => [
+    { value: time, event },
+    { value: score },
+  ]);
+
 const subjectArbitrary = (index: number) =>
   fc
     .record({
       group: fc.constantFrom<"treatment" | "control">("treatment", "control"),
       stratum: fc.constantFrom("A", "B"),
-      time: fc.integer({ min: 1, max: 60 }),
-      event: fc.boolean(),
-      score: fc.option(fc.integer({ min: -20, max: 20 }), { nil: null }),
+      outcomes: outcomesArbitrary,
     })
-    .map(({ group, stratum, time, event, score }): WinRatioSubject => ({
+    .map(({ group, stratum, outcomes }): WinRatioSubject => ({
       id: `S${index}`,
       group,
       stratum,
-      outcomes: [{ value: time, event }, { value: score }],
+      outcomes,
     }));
 
 const datasetArbitrary = fc
@@ -332,6 +372,37 @@ const weightingArbitrary = fc.constantFrom<WinRatioStratumWeighting>(
   "mantel-haenszel",
   "equal"
 );
+
+const smallNArmArbitrary = (group: "treatment" | "control", stratum: string) =>
+  fc
+    .integer({ min: 2, max: 4 })
+    .chain((count) =>
+      fc.tuple(
+        ...Array.from({ length: count }, (_, index) =>
+          outcomesArbitrary.map(
+            (outcomes): WinRatioSubject => ({
+              id: `${stratum}-${group[0].toUpperCase()}${index}`,
+              group,
+              stratum,
+              outcomes,
+            })
+          )
+        )
+      )
+    );
+
+const smallNDatasetArbitrary = fc
+  .constantFrom<readonly string[]>(["A"], ["A", "B"])
+  .chain((strata) =>
+    fc
+      .tuple(
+        ...strata.flatMap((stratum) => [
+          smallNArmArbitrary("treatment", stratum),
+          smallNArmArbitrary("control", stratum),
+        ])
+      )
+      .map((arms) => arms.flat())
+  );
 
 function swapGroups(subjects: readonly WinRatioSubject[]): WinRatioSubject[] {
   return subjects.map((s) => ({
@@ -458,6 +529,28 @@ describe("winStatistics properties", () => {
         const r = winStatistics(subjects, { components });
         expect(r.finkelsteinSchoenfeld.statistic).toBe(r.wins - r.losses);
       })
+    );
+  });
+
+  it("keeps small-n net benefit confidence intervals within [-1, 1]", () => {
+    fc.assert(
+      fc.property(
+        smallNDatasetArbitrary,
+        weightingArbitrary,
+        (subjects, weighting) => {
+          const r = winStatistics(subjects, { components, weighting });
+          expect(r.netBenefit.estimate).not.toBeNull();
+          const estimate = r.netBenefit.estimate ?? 0;
+          expect(estimate).toBeGreaterThanOrEqual(-1);
+          expect(estimate).toBeLessThanOrEqual(1);
+          if (r.netBenefit.lower !== null && r.netBenefit.upper !== null) {
+            expect(r.netBenefit.lower).toBeGreaterThanOrEqual(-1);
+            expect(r.netBenefit.lower).toBeLessThanOrEqual(estimate);
+            expect(r.netBenefit.upper).toBeGreaterThanOrEqual(estimate);
+            expect(r.netBenefit.upper).toBeLessThanOrEqual(1);
+          }
+        }
+      )
     );
   });
 });

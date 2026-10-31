@@ -46,6 +46,14 @@ export const USDM_SDTM_STRESU_EXTENSION_URL =
   "https://deruiter.dev/usdm/extensions/sdtm-stresu";
 
 /**
+ * Extension attribute URL on a study design carrying its randomisation as a
+ * JSON `valueString`: the ratio by arm id, the method, and the stratification
+ * factors with their ADSL `STRATnR` variables and levels.
+ */
+export const USDM_RANDOMISATION_EXTENSION_URL =
+  "https://deruiter.dev/usdm/extensions/randomisation";
+
+/**
  * Reads the `valueString` of the first extension attribute with the given URL
  * on any USDM object, or `undefined` when the object has none.
  */

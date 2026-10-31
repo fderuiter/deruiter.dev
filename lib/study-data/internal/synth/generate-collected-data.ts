@@ -7,6 +7,7 @@ import type {
   CellValue,
   Dataset,
   PipelineOptions,
+  RandomisationDefinition,
   StudyDefinition,
   VariableMeta,
 } from "../../types";
@@ -393,8 +394,12 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
   ],
 };
 
-function dataset(domain: Domain, rows: readonly Row[]): Dataset {
-  const variables = COLUMNS[domain];
+function dataset(
+  domain: Domain,
+  rows: readonly Row[],
+  extra: readonly VariableMeta[] = []
+): Dataset {
+  const variables = [...COLUMNS[domain], ...extra];
   const columns: Record<string, CellValue[]> = {};
   for (const variable of variables) {
     columns[variable.name] = rows.map((row) => row[variable.name] ?? null);
@@ -483,6 +488,42 @@ function ecgValues(
 }
 
 /**
+ * Permuted-block allocation within strata, by the declared ratio. Each
+ * stratum fills its own blocks in randomisation order; a block holds every
+ * arm twice its ratio share, shuffled by a draw keyed to the stratum and the
+ * block's number, so an earlier subject's arm never depends on a later one.
+ */
+function permutedBlocks(
+  seed: number,
+  studyId: string,
+  armIds: readonly string[],
+  randomisation: RandomisationDefinition
+): (stratum: readonly string[]) => number {
+  const template = armIds.flatMap((id, armIndex) =>
+    Array.from({ length: 2 * randomisation.ratio[id] }, () => armIndex)
+  );
+  const filled = new Map<string, number>();
+  return (stratum) => {
+    const key = stratum.join("|");
+    const position = filled.get(key) ?? 0;
+    filled.set(key, position + 1);
+    const blockNumber = Math.floor(position / template.length);
+    const block = [...template];
+    for (let i = block.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(
+        uniformAt(
+          `${seed}|${studyId}|RAND|block|${key}|${blockNumber}|${i}`,
+          0
+        ) *
+          (i + 1)
+      );
+      [block[i], block[j]] = [block[j], block[i]];
+    }
+    return block[position % template.length];
+  };
+}
+
+/**
  * Generates CDASH-shaped source datasets. `nSubjects` counts screened people;
  * only randomized people have RAND and EX records. Every stochastic choice is
  * keyed by study, seed, subject, domain and field, so extending a run preserves
@@ -528,6 +569,19 @@ export function generateCollectedData(
     activityIdsByVisit.set(cell.visitId, ids);
   }
 
+  // With no declared ratio, each subject's arm is an equal-share draw, which
+  // keeps a study without the extension exactly as it was generated.
+  const randomisation = design.randomisation;
+  const strata = randomisation?.strata ?? [];
+  const allocate = randomisation
+    ? permutedBlocks(
+        options.seed,
+        studyId,
+        design.arms.map((arm) => arm.id),
+        randomisation
+      )
+    : null;
+
   for (let number = 1; number <= options.nSubjects; number += 1) {
     const subject = `${studyId}-${String(number).padStart(4, "0")}`;
     const pick = (domain: string, key: string) =>
@@ -565,9 +619,24 @@ export function generateCollectedData(
           : [];
       })
     );
-    const armIndex = randomized
-      ? Math.floor(pick("RAND", "arm") * design.arms.length)
-      : -1;
+    // The stratum is recorded at randomisation. The protocol gives no
+    // prevalence for the levels, so each is equally likely.
+    const stratum = randomized
+      ? strata.map(
+          (factor) =>
+            factor.levels[
+              Math.floor(
+                pick("RAND", `stratum:${factor.adslVariable}`) *
+                  factor.levels.length
+              )
+            ]
+        )
+      : [];
+    const armIndex = !randomized
+      ? -1
+      : allocate
+        ? allocate(stratum)
+        : Math.floor(pick("RAND", "arm") * design.arms.length);
     const arm = randomized ? design.arms[armIndex] : null;
     const discontinued =
       randomized && lastDay > 2 && pick("DS", "early-stop") < 0.11;
@@ -613,6 +682,9 @@ export function generateCollectedData(
         RANDDTC: baselineDate,
         ARMCD: arm.armCode,
         ARM: arm.name,
+        ...Object.fromEntries(
+          strata.map((factor, idx) => [factor.adslVariable, stratum[idx]])
+        ),
       });
       rows.EX.push({
         SRCID: sourceId(studyId, "EX", number, "1"),
@@ -1008,5 +1080,13 @@ export function generateCollectedData(
       "IE",
       "CO",
     ] as const
-  ).map((domain) => dataset(domain, rows[domain]));
+  ).map((domain) =>
+    dataset(
+      domain,
+      rows[domain],
+      domain === "RAND"
+        ? strata.map((factor) => TEXT(factor.adslVariable, factor.factor))
+        : []
+    )
+  );
 }

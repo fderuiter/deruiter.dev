@@ -322,6 +322,32 @@ export interface AnalysisPopulationDefinition {
   readonly text: string;
 }
 
+/**
+ * A stratification factor declared for randomisation: the factor, the ADSL
+ * variable its randomised value is analysed as, and its levels.
+ */
+export interface StratificationFactorDefinition {
+  /** The factor, for example `Surgical risk (STS-PROM)`. */
+  readonly factor: string;
+  /** The ADSL variable for the stratum at randomisation, for example `STRAT1R`. */
+  readonly adslVariable: string;
+  /** The levels, in protocol order. */
+  readonly levels: readonly string[];
+}
+
+/**
+ * How subjects are randomised, read from the study's randomisation extension
+ * (`https://deruiter.dev/usdm/extensions/randomisation`).
+ */
+export interface RandomisationDefinition {
+  /** Allocation ratio by USDM arm id: positive whole numbers, one per arm. */
+  readonly ratio: Readonly<Record<string, number>>;
+  /** The method as the protocol names it, for example `Permuted blocks within strata`. */
+  readonly method: string;
+  /** Stratification factors, in protocol order; empty when unstratified. */
+  readonly strata: readonly StratificationFactorDefinition[];
+}
+
 /** The study design the pipeline reads from the USDM document. */
 export interface StudyDesignDefinition {
   /** Trial phase decode, for example `Phase III Trial`. */
@@ -377,6 +403,11 @@ export interface StudyDesignDefinition {
   readonly estimands: readonly EstimandDefinition[];
   /** Analysis populations. */
   readonly analysisPopulations: readonly AnalysisPopulationDefinition[];
+  /**
+   * Randomisation ratio and strata, when the study declares them. Absent, the
+   * generator allocates subjects to the arms in equal shares.
+   */
+  readonly randomisation?: RandomisationDefinition;
 }
 
 /**

@@ -1904,6 +1904,20 @@
       "licenses": [],
       "notices": []
     },
+    "@isaacs/nonrecursive-glob-match@1.0.3": {
+      "integrity": "sha512-SI7kyKHq4XXDRozw+r9GlRZkia1ZkFrpLW98r2IC2Bpr8YkFGE3fvjzmxCG0x78A++69HmDNrDvSMYBZmHGpKA==",
+      "homepage": null,
+      "repository": null,
+      "author": null,
+      "licenses": [
+        {
+          "kind": "file",
+          "name": "LICENSE.md",
+          "sha": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004"
+        }
+      ],
+      "notices": []
+    },
     "@jridgewell/gen-mapping@0.3.13": {
       "integrity": "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==",
       "homepage": "https://github.com/jridgewell/sourcemaps/tree/main/packages/gen-mapping",
@@ -8488,8 +8502,8 @@
       ],
       "notices": []
     },
-    "glob@13.0.6": {
-      "integrity": "sha512-Wjlyrolmm8uDpm/ogGyXZXb1Z+Ca2B8NbJwqBVg0axK9GbBeoS7yGV6vjXnYdGm6X53iehEuxxbyiKp8QmN4Vw==",
+    "glob@14.0.3": {
+      "integrity": "sha512-A1vjIwC3qpdCso45Iw127gnp7sPhqgY8lUQhDrArIs+GbmfaaVPFuoyy7WyLT9EPZCRZ7j7aLdwUhQmHWesEow==",
       "homepage": "https://github.com/isaacs/node-glob#readme",
       "repository": "git+ssh://git@github.com/isaacs/node-glob.git",
       "author": "Isaac Z. Schlueter",
@@ -10465,8 +10479,8 @@
       ],
       "notices": []
     },
-    "minimatch@10.2.5": {
-      "integrity": "sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==",
+    "minimatch@10.2.6": {
+      "integrity": "sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==",
       "homepage": "https://github.com/isaacs/minimatch#readme",
       "repository": "git+ssh://git@github.com/isaacs/minimatch.git",
       "author": "Isaac Z. Schlueter",
@@ -10479,8 +10493,8 @@
       ],
       "notices": []
     },
-    "minimatch@10.2.6": {
-      "integrity": "sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==",
+    "minimatch@11.0.3": {
+      "integrity": "sha512-iny/40PEGkNJQ5/Pv6z3nm6FbRAby32GeZRjCUJk2WnNDbgPSTcdI+DDvLqsgBdD4cD5sMtMheqPPnehCCa8Nw==",
       "homepage": "https://github.com/isaacs/minimatch#readme",
       "repository": "git+ssh://git@github.com/isaacs/minimatch.git",
       "author": "Isaac Z. Schlueter",
@@ -11021,8 +11035,8 @@
       "licenses": [],
       "notices": []
     },
-    "path-scurry@2.0.2": {
-      "integrity": "sha512-3O/iVVsJAPsOnpwWIeD+d6z/7PmqApyQePUtCndjatj/9I5LylHvt5qluFaBT3I5h3r1ejfR056c+FCv+NnNXg==",
+    "path-scurry@3.0.0": {
+      "integrity": "sha512-1pTbQqH1wIwMi/eleQ5leFTTCkzFsPcgXNjwOA8YGGW/W4/kHT3dssE7Z6NH+zuqNLOzOB0uaD61yl7cAcVhgg==",
       "homepage": "https://github.com/isaacs/path-scurry#readme",
       "repository": "git+https://github.com/isaacs/path-scurry.git",
       "author": "Isaac Z. Schlueter",

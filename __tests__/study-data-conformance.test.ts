@@ -218,6 +218,9 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
     case "eligibility":
       // A criterion not met, recorded for an enrolled subject.
       return set(good, "USUBJID", 0, "DEMO-301-0002");
+    case "relationship":
+      // A relationship that names an AESEQ the subject does not have.
+      return set(good, "IDVARVAL", 0, "999");
     case "lineage":
       return rule.scope.layer === "sdtm"
         ? {

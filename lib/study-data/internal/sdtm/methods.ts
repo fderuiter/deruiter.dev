@@ -63,6 +63,8 @@ export const SDTM_METHODS = {
     "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
   DEATH_FLAG:
     "Y when the subject has a DEATH disposition event; missing otherwise.",
+  RELATED_RECORDS:
+    "Number each subject's AE and CM pairs from 1, in CM order. A pair is a medication whose collected related adverse event number (CMAENO) names one of the subject's tabulated adverse events; both records of the pair share the RELID.",
 } as const;
 
 /** The id of an SDTM derivation method. */

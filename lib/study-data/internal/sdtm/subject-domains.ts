@@ -12,6 +12,7 @@ import { codeAeTerm, codeHistoryTerm } from "./ae-dictionary";
 import { codeMedication } from "./cm-dictionary";
 import { sdtmCodelist } from "./codelists";
 import { labReference } from "./lab-ranges";
+import { deriveRelrec } from "./relrec";
 import { sdtmRequired } from "./required";
 import type { SdtmMethodId } from "./methods";
 import { toStandardUnit } from "./units";
@@ -29,7 +30,8 @@ type SubjectDomain =
   | "LB"
   | "EG"
   | "DS"
-  | "SUPPDM";
+  | "SUPPDM"
+  | "RELREC";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -861,6 +863,28 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       assigned("QEVAL", "Evaluator", "Record Qualifier"),
     ],
   },
+  // Each adverse event and the medication given for it (#3414).
+  RELREC: {
+    label: "Related Records",
+    class: "Relationships",
+    structure: "One record per related record per relationship",
+    keys: ["STUDYID", "RDOMAIN", "USUBJID", "IDVAR", "IDVARVAL", "RELID"],
+    columns: [
+      assigned("STUDYID", "Study Identifier"),
+      assigned("RDOMAIN", "Related Domain Abbreviation"),
+      assigned("USUBJID", "Unique Subject Identifier"),
+      // SDTMIG 3.4 makes the keys of the related record Identifiers.
+      assigned("IDVAR", "Identifying Variable"),
+      assigned("IDVARVAL", "Identifying Variable Value"),
+      assigned("RELTYPE", "Relationship Type", "Record Qualifier"),
+      derived(
+        "RELID",
+        "Relationship Identifier",
+        "RELATED_RECORDS",
+        "Record Qualifier"
+      ),
+    ],
+  },
 };
 
 function rows(dataset: Dataset): Row[] {
@@ -952,7 +976,7 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS and SUPPDM from collected records. */
+/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM and RELREC from collected records. */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -1358,12 +1382,14 @@ export function deriveSubjectDomains(
       )
     )
   );
+  const cmDataset = numbered("CM", cm);
+  const aeDataset = numbered("AE", ae);
   return [
     table("DM", dm),
     table("SV", sv),
     numbered("EX", ex),
-    numbered("CM", cm),
-    numbered("AE", ae),
+    cmDataset,
+    aeDataset,
     numbered("MH", mh),
     numbered("IE", ie),
     numbered("VS", findings("VS")),
@@ -1371,5 +1397,9 @@ export function deriveSubjectDomains(
     numbered("EG", findings("EG")),
     numbered("DS", ds),
     table("SUPPDM", suppdm),
+    table(
+      "RELREC",
+      deriveRelrec(definition.studyId, get("CM"), aeDataset, cmDataset)
+    ),
   ];
 }

@@ -77,7 +77,7 @@ would carry.
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | Spend forecast facts | `gold.fct_spend_forecast` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.12.0 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.13.0 |
 
 ## Retention
 
@@ -153,6 +153,7 @@ would carry.
 | EG | ECG Test Results | One record per ECG observation per replicate per time point or one record per ECG observation per beat per visit per subject | STUDYID, USUBJID, EGSEQ | 17 |
 | DS | Disposition | One record per disposition status or protocol milestone per subject | STUDYID, USUBJID, DSSEQ | 10 |
 | SUPPDM | Supplemental Qualifiers for DM | One record per supplemental qualifier per subject | STUDYID, RDOMAIN, USUBJID, QNAM | 10 |
+| RELREC | Related Records | One record per related record per relationship | STUDYID, RDOMAIN, USUBJID, IDVAR, IDVARVAL, RELID | 7 |
 | ADSL | Subject-Level Analysis Dataset | One record per subject | STUDYID, USUBJID | 26 |
 | ADVS | Vital Signs Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
 | ADLB | Laboratory Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |

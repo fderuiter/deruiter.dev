@@ -46,5 +46,9 @@
   "SUPPDM": {
     "rows": 180,
     "sha256": "7705d715e5a196b136dce72e1ca45dae1d368b51ca0b4d8843ec63b3e5e45239"
+  },
+  "RELREC": {
+    "rows": 30,
+    "sha256": "060958705957cdd20791a1db8b4638c03c85f879ff76e15136f0ed6ea948f8d1"
   }
 }

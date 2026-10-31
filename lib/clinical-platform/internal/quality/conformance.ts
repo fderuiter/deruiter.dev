@@ -31,6 +31,8 @@ const DIMENSIONS: Readonly<Record<Kind, DqDimension>> = {
   unit: "consistency",
   eligibility: "consistency",
   relationship: "consistency",
+  elements: "consistency",
+  comment: "consistency",
   lineage: "consistency",
 };
 
@@ -100,6 +102,19 @@ const TEXT: Readonly<
     name: (d) => `${d} pairs resolve to existing AE and CM records`,
     rationale:
       "A reviewer follows an adverse event to the medication given for it through RELREC; a pair that names a missing record, or relates anything but one AE and one CM, breaks that trail.",
+  },
+  elements: {
+    name: (d, v) =>
+      v === "ETCD"
+        ? `${d} elements follow the subject's arm in TA`
+        : `${d} elements leave no gap between them`,
+    rationale:
+      "Subject elements place every record in the part of the study it happened in; an element outside the subject's planned arm, or a gap or overlap between elements, puts records in the wrong epoch.",
+  },
+  comment: {
+    name: (d) => `${d} comments name an existing record`,
+    rationale:
+      "A reviewer reads a site's comment beside the record it explains; a comment that names a missing record has lost its context.",
   },
   unit: {
     name: (d, v) => `${d}.${v} is the test's standard unit`,

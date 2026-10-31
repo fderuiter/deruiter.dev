@@ -1484,13 +1484,22 @@ export function deriveSubjectDomains(
       exposure
     );
   });
+  // The stratum each subject was randomised in, for a study that declares
+  // strata, from the randomisation record.
+  const strata = definition.design.randomisation?.strata ?? [];
   const suppdm = get("DM").flatMap((record) =>
-    (
-      [
-        ["SCREENFL", "Screening Outcome", record.SCREENFL],
-        ["RANDFL", "Randomized Flag", record.RANDFL],
-      ] as const
-    ).map(([name, label, value]) =>
+    [
+      ["SCREENFL", "Screening Outcome", record.SCREENFL] as const,
+      ["RANDFL", "Randomized Flag", record.RANDFL] as const,
+      ...strata.flatMap((factor) => {
+        const value = randBySubject.get(text(record.USUBJID))?.[
+          factor.adslVariable
+        ];
+        return value == null
+          ? []
+          : [[factor.adslVariable, factor.factor, value] as const];
+      }),
+    ].map(([name, label, value]) =>
       item(
         {
           STUDYID: definition.studyId,

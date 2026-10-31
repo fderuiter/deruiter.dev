@@ -9,6 +9,7 @@
  * document.
  */
 import {
+  USDM_RANDOMISATION_EXTENSION_URL,
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_SDTM_STRESU_EXTENSION_URL,
   USDM_SDTM_TESTCD_EXTENSION_URL,
@@ -27,6 +28,7 @@ import type {
   AssessmentDefinition,
   CodedValue,
   EpochDefinition,
+  RandomisationDefinition,
   ScheduledActivity,
   StudyDefinition,
   VisitDefinition,
@@ -105,6 +107,83 @@ function readSchedule(
       activityId,
     }))
   );
+}
+
+/**
+ * Reads the design's randomisation extension, or `undefined` when it has
+ * none. The ratio must name every arm once with a positive whole number, and
+ * each stratum needs an ADSL `STRATnR` variable and at least one level.
+ */
+function readRandomisation(
+  design: UsdmV4InterventionalStudyDesign,
+  arms: readonly ArmDefinition[]
+): RandomisationDefinition | undefined {
+  const raw = getUsdmV4ExtensionString(
+    design,
+    USDM_RANDOMISATION_EXTENSION_URL
+  );
+  if (raw === undefined) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    fail("randomisation extension is not valid JSON");
+  }
+  const value = (parsed ?? {}) as {
+    ratio?: unknown;
+    method?: unknown;
+    strata?: unknown;
+  };
+  const ratioIn =
+    value.ratio && typeof value.ratio === "object" ? value.ratio : {};
+  const armIds = new Set(arms.map((arm) => arm.id));
+  const ratio: Record<string, number> = {};
+  for (const [armId, share] of Object.entries(ratioIn)) {
+    if (!armIds.has(armId)) {
+      fail(`randomisation ratio names unknown arm ${armId}`);
+    }
+    if (!Number.isInteger(share) || (share as number) < 1) {
+      fail(`randomisation ratio for ${armId} is not a positive whole number`);
+    }
+    ratio[armId] = share as number;
+  }
+  for (const arm of arms) {
+    if (!(arm.id in ratio)) fail(`randomisation ratio omits arm ${arm.id}`);
+  }
+  const strata = (Array.isArray(value.strata) ? value.strata : []).map(
+    (stratum: unknown, idx: number) => {
+      const s = (stratum ?? {}) as {
+        factor?: unknown;
+        adslVariable?: unknown;
+        levels?: unknown;
+      };
+      const levels = Array.isArray(s.levels)
+        ? s.levels.filter((level): level is string => typeof level === "string")
+        : [];
+      if (
+        typeof s.adslVariable !== "string" ||
+        !/^STRAT[1-9]\d?R$/.test(s.adslVariable)
+      ) {
+        fail(`randomisation stratum ${idx + 1} has no ADSL STRATnR variable`);
+      }
+      if (levels.length === 0 || new Set(levels).size !== levels.length) {
+        fail(`randomisation stratum ${s.adslVariable} needs distinct levels`);
+      }
+      return {
+        factor: typeof s.factor === "string" ? s.factor : s.adslVariable,
+        adslVariable: s.adslVariable,
+        levels,
+      };
+    }
+  );
+  if (new Set(strata.map((s) => s.adslVariable)).size !== strata.length) {
+    fail("randomisation strata repeat an ADSL variable");
+  }
+  return {
+    ratio,
+    method: typeof value.method === "string" ? value.method : "",
+    strata,
+  };
 }
 
 /**
@@ -216,6 +295,8 @@ export function readStudyDefinition(
     (product) => product.administrableDoseForm?.standardCode?.code
   )?.administrableDoseForm.standardCode;
 
+  const randomisation = readRandomisation(design, arms);
+
   const planned = design.population?.plannedEnrollmentNumber;
   const plannedEnrollment = planned && "value" in planned ? planned.value : 0;
 
@@ -297,6 +378,7 @@ export function readStudyDefinition(
         name: pop.name,
         text: pop.text,
       })),
+      ...(randomisation ? { randomisation } : {}),
     },
   };
 }

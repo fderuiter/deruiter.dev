@@ -40,6 +40,7 @@ export const HUMAN_BRANCH_PREFIXES = Object.freeze([
   "perf/",
   "dx/",
   "test/",
+  "ci/",
   "dev/",
 ]);
 

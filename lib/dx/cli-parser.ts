@@ -252,7 +252,8 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
   {
     name: "audit:licenses",
     aliases: ["license-audit", "licenses"],
-    summary: "Audit lockfile package SPDX licenses against config/license-policy.json",
+    summary:
+      "Audit lockfile package SPDX licenses against config/license-policy.json",
     description:
       "Parses package-lock.json directly to evaluate SPDX license compliance against config/license-policy.json and active exception bounds.",
     category: "diagnostics",
@@ -484,7 +485,7 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
     name: "branch",
     summary: "Interactive git branch generator with convention validation",
     description:
-      "Creates and checks out new branches matching team conventions (feat/*, fix/*, chore/*, refactor/*, docs/*, perf/*, dx/*).",
+      "Creates and checks out new branches matching team conventions (feat/*, fix/*, chore/*, refactor/*, docs/*, perf/*, dx/*, test/*, ci/*, dev/*).",
     category: "workflow",
     isMutating: true,
     options: [

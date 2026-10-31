@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1250,
+    "total": 1266,
     "runtime": 568,
-    "tooling": 682,
+    "tooling": 698,
     "direct": 80
   },
   "packages": [
@@ -1850,6 +1850,33 @@
       "direct": false,
       "homepage": "https://github.com/vercel/next.js",
       "repository": "https://github.com/vercel/next.js"
+    },
+    {
+      "name": "@nodelib/fs.scandir",
+      "version": "2.1.5",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": null,
+      "repository": "https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.scandir"
+    },
+    {
+      "name": "@nodelib/fs.stat",
+      "version": "2.0.5",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": null,
+      "repository": "https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.stat"
+    },
+    {
+      "name": "@nodelib/fs.walk",
+      "version": "1.2.8",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": null,
+      "repository": "https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.walk"
     },
     {
       "name": "@nolyfill/is-core-module",
@@ -4987,6 +5014,15 @@
       "repository": "https://github.com/juliangruber/brace-expansion"
     },
     {
+      "name": "braces",
+      "version": "3.0.3",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/micromatch/braces",
+      "repository": "https://github.com/micromatch/braces"
+    },
+    {
       "name": "browserslist",
       "version": "4.29.0",
       "license": "MIT",
@@ -6564,6 +6600,15 @@
       "repository": "https://github.com/epoberezkin/fast-deep-equal"
     },
     {
+      "name": "fast-glob",
+      "version": "3.3.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/mrmlnc/fast-glob",
+      "repository": "https://github.com/mrmlnc/fast-glob"
+    },
+    {
       "name": "fast-json-stable-stringify",
       "version": "2.1.0",
       "license": "MIT",
@@ -6645,6 +6690,15 @@
       "repository": "https://github.com/43081j/fast-wrap-ansi"
     },
     {
+      "name": "fastq",
+      "version": "1.20.3",
+      "license": "ISC",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/mcollina/fastq",
+      "repository": "https://github.com/mcollina/fastq"
+    },
+    {
       "name": "fdir",
       "version": "6.5.0",
       "license": "MIT",
@@ -6679,6 +6733,15 @@
       "direct": false,
       "homepage": null,
       "repository": "https://github.com/jaredwray/file-entry-cache"
+    },
+    {
+      "name": "fill-range",
+      "version": "7.1.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/jonschlinkert/fill-range",
+      "repository": "https://github.com/jonschlinkert/fill-range"
     },
     {
       "name": "find-my-way",
@@ -6924,6 +6987,15 @@
       "direct": false,
       "homepage": "https://github.com/isaacs/node-glob",
       "repository": "https://github.com/isaacs/node-glob"
+    },
+    {
+      "name": "glob-parent",
+      "version": "5.1.2",
+      "license": "ISC",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/gulpjs/glob-parent",
+      "repository": "https://github.com/gulpjs/glob-parent"
     },
     {
       "name": "glob-parent",
@@ -7520,6 +7592,15 @@
       "direct": false,
       "homepage": "https://github.com/inspect-js/is-negative-zero",
       "repository": "https://github.com/inspect-js/is-negative-zero"
+    },
+    {
+      "name": "is-number",
+      "version": "7.0.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/jonschlinkert/is-number",
+      "repository": "https://github.com/jonschlinkert/is-number"
     },
     {
       "name": "is-number-object",
@@ -8508,6 +8589,15 @@
       "repository": "https://github.com/markdown-it/mdurl"
     },
     {
+      "name": "merge2",
+      "version": "1.4.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/teambition/merge2",
+      "repository": "https://github.com/teambition/merge2"
+    },
+    {
       "name": "mermaid",
       "version": "12.2.0",
       "license": "MIT",
@@ -8751,6 +8841,15 @@
       "direct": false,
       "homepage": "https://github.com/micromark/micromark/tree/main",
       "repository": "https://github.com/micromark/micromark"
+    },
+    {
+      "name": "micromatch",
+      "version": "4.0.8",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/micromatch/micromatch",
+      "repository": "https://github.com/micromatch/micromatch"
     },
     {
       "name": "minimalistic-assert",
@@ -9361,6 +9460,15 @@
     },
     {
       "name": "picomatch",
+      "version": "2.3.2",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/micromatch/picomatch",
+      "repository": "https://github.com/micromatch/picomatch"
+    },
+    {
+      "name": "picomatch",
       "version": "4.0.4",
       "license": "MIT",
       "scope": "runtime",
@@ -9661,6 +9769,15 @@
       "repository": "https://github.com/ljharb/qs"
     },
     {
+      "name": "queue-microtask",
+      "version": "1.2.3",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/feross/queue-microtask",
+      "repository": "https://github.com/feross/queue-microtask"
+    },
+    {
       "name": "raf",
       "version": "3.4.1",
       "license": "MIT",
@@ -9874,6 +9991,15 @@
       "repository": "https://github.com/tim-kos/node-retry"
     },
     {
+      "name": "reusify",
+      "version": "1.1.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/mcollina/reusify",
+      "repository": "https://github.com/mcollina/reusify"
+    },
+    {
       "name": "rgbcolor",
       "version": "1.0.1",
       "license": "MIT OR SEE LICENSE IN FEEL-FREE.md",
@@ -9935,6 +10061,15 @@
       "direct": false,
       "homepage": "https://github.com/goatandsheep/rc",
       "repository": "https://github.com/goatandsheep/rc"
+    },
+    {
+      "name": "run-parallel",
+      "version": "1.2.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/feross/run-parallel",
+      "repository": "https://github.com/feross/run-parallel"
     },
     {
       "name": "rw",
@@ -10679,6 +10814,15 @@
       "direct": false,
       "homepage": "https://github.com/remusao/tldts",
       "repository": "https://github.com/remusao/tldts"
+    },
+    {
+      "name": "to-regex-range",
+      "version": "5.0.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/micromatch/to-regex-range",
+      "repository": "https://github.com/micromatch/to-regex-range"
     },
     {
       "name": "tough-cookie",

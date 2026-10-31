@@ -6332,6 +6332,16 @@
         "C66734": "CM"
       }
     },
+    "C49569": {
+      "names": [
+        "co",
+        "comment domain",
+        "comments"
+      ],
+      "memberOf": {
+        "C66734": "CO"
+      }
+    },
     "C49572": {
       "names": [
         "demographics",
@@ -6380,6 +6390,16 @@
       ],
       "memberOf": {
         "C66734": "MH"
+      }
+    },
+    "C49616": {
+      "names": [
+        "se",
+        "subject element domain",
+        "subject elements"
+      ],
+      "memberOf": {
+        "C66734": "SE"
       }
     },
     "C49617": {

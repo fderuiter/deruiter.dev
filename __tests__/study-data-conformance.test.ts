@@ -221,6 +221,20 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
     case "relationship":
       // A relationship that names an AESEQ the subject does not have.
       return set(good, "IDVARVAL", 0, "999");
+    case "elements": {
+      if (rule.id === "SD-082")
+        // An element that is not in the subject's arm.
+        return set(good, "ETCD", 0, "XX");
+      // A gap: an element ending before the subject's next one starts.
+      const subjects = good.columns.USUBJID;
+      const row = subjects.findIndex(
+        (subject, index) => subjects[index + 1] === subject
+      );
+      return set(good, "SEENDTC", row, "1999-01-01");
+    }
+    case "comment":
+      // A comment that names a visit the subject does not have.
+      return set(good, "IDVARVAL", 0, "999");
     case "lineage":
       return rule.scope.layer === "sdtm"
         ? {

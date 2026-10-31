@@ -490,6 +490,74 @@
       "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
     },
     {
+      "ruleId": "SD-079",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Drop SE.SESTDTC.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by the same reading of CORE-000355 (domains ALL) used for IE and RELREC; not yet planted for SE."
+    },
+    {
+      "ruleId": "SD-080",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second SE record of one subject the same SESEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading the rule's definition in the CORE v0.17.1 cache (every domain but TS); not yet planted for SE."
+    },
+    {
+      "ruleId": "SD-081",
+      "core": ["CORE-000352", "CORE-000002"],
+      "coverage": "same-defect",
+      "planted": "Set a subject's first SEENDTC to a day before their second element starts, or blank an SESTDTC.",
+      "reason": "CORE-000352 reports an SEENDTC that is not the next element's SESTDTC, and CORE-000002 a null SESTDTC: together the local rule's two checks. Paired by reading the rules' definitions in the CORE v0.17.1 cache; not yet planted."
+    },
+    {
+      "ruleId": "SD-082",
+      "core": [],
+      "coverage": "none",
+      "planted": "Give one SE record an ETCD that is not in the subject's arm in TA.",
+      "reason": "No CORE v0.17.1 rule compares a subject's SE elements with the planned elements of their arm in TA. Its SE element rules check unplanned elements only (CORE-000020, -000095 and -000256, on ETCD = UNPLAN, TAETORD and SEUPDES), and CORE-000097 and -000784 compare SV's EPOCH and TAETORD, which SV does not carry here, with SE. Found by searching the rule cache; not yet planted."
+    },
+    {
+      "ruleId": "SD-083",
+      "core": [],
+      "coverage": "none",
+      "planted": "Set SE.SESTDTC to 2030-13-45 on one record.",
+      "reason": "No CORE finding expected: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date (measured on MH, CM, EG and the other domains). Not yet planted for SE."
+    },
+    {
+      "ruleId": "SD-084",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-085",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Drop CO.COVAL.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by the same reading of CORE-000355 (domains ALL) used for IE and RELREC; not yet planted for CO."
+    },
+    {
+      "ruleId": "SD-086",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second CO record of one subject the same COSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading the rule's definition in the CORE v0.17.1 cache (every domain but TS); not yet planted for CO."
+    },
+    {
+      "ruleId": "SD-087",
+      "core": ["CORE-000206", "CORE-000953"],
+      "coverage": "same-defect",
+      "planted": "Point one CO record at a VISITNUM the subject does not have.",
+      "reason": "CORE-000206 reports an IDVARVAL that is not a value of the IDVAR variable in the RDOMAIN dataset, which is the local rule's check, and CORE-000953 (Part C) an IDVAR that is not a variable of that dataset. Paired by reading the rules' definitions in the CORE v0.17.1 cache; not yet planted."
+    },
+    {
+      "ruleId": "SD-088",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
       "ruleId": "AD-001",
       "core": [],
       "coverage": "none",

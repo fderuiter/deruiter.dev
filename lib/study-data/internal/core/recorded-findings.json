@@ -23,7 +23,7 @@
         "message": "IEORRES is not equal to 'N' when IECAT equals 'INCLUSION'."
       },
       "CORE-000002": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0208",
         "fda": "",
         "message": "SESTDTC is required."
@@ -65,7 +65,7 @@
         "message": "SSTRESC in SS dataset is \"DEAD\", but DTHFL in DM dataset is not \"Y\"."
       },
       "CORE-000009": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0152, SEND124.1, TIG0061, TIG0393",
         "fda": "",
         "message": "ELEMENT variable has a non-null value when ETCD has a value of 'UNPLAN'"
@@ -113,7 +113,7 @@
         "message": "--PRESP should be populated as \"Y\" when --OCCUR is provided."
       },
       "CORE-000017": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0166, TIG0398",
         "fda": "",
         "message": "RDOMAIN has a missing value when IDVARVAL has a non-missing value."
@@ -131,7 +131,7 @@
         "message": "Variable label length should be less than or equal to 40 characters"
       },
       "CORE-000020": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0206, TIG0426",
         "fda": "",
         "message": "TAETORD should be null when ETCD = 'UNPLAN'."
@@ -533,7 +533,7 @@
         "message": "Value for --VAMT is populated, when --TRTV is NULL."
       },
       "CORE-000090": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0164, TIG0397",
         "fda": "",
         "message": "RDOMAIN has a missing value but IDVAR has a non-missing value"
@@ -941,7 +941,7 @@
         "message": "Length of ARMCD is greater than 20"
       },
       "CORE-000158": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0163, TIG0396",
         "fda": "",
         "message": "IDVAR should not be missing when RDOMAIN is not in (empty, DM)."
@@ -1733,7 +1733,7 @@
         "message": "USUBJID is not unique within study"
       },
       "CORE-000352": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0207, SEND126, TIG0427",
         "fda": "",
         "message": "SEENDTC is not equal to SESTDTC of the next element."
@@ -1865,7 +1865,7 @@
         "message": "Missing DSCAT value for Disposition Event."
       },
       "CORE-000527": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0209, TIG0428",
         "fda": "",
         "message": "SEENDTC is null when element is not the last."
@@ -1883,7 +1883,7 @@
         "message": "TAETORD is not an integer"
       },
       "CORE-000535": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0620, CG0662, SEND130, SEND130.1, TIG0066, TIG0661",
         "fda": "",
         "message": "--SEQ is not chronological (based on --STDTC) within USUBJID"
@@ -2555,7 +2555,7 @@
         "message": "--ENDTC falls after RFPENDTC."
       },
       "CORE-000953": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0370, TIG0534",
         "fda": "",
         "message": "Value for IDVAR in CO does not represent a variable present in the dataset referenced in RDOMAIN."
@@ -4164,11 +4164,49 @@
         "CORE-000916",
         "CORE-000484"
       ]
+    },
+    "SD-079": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-080": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-081": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000352",
+        "CORE-000002"
+      ]
+    },
+    "SD-085": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-086": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-087": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000206",
+        "CORE-000953"
+      ]
     }
   },
   "views": {
     "default": {
-      "inputSha256": "0f4305f654f039f776b0a4ffd9f2bc0fcc6c9235e5c0828c50d6bdd716c8fa5f",
+      "inputSha256": "19e622555c27552e3b31f780d45e0a12cfadf3e9f316f0c9eab10fce88921297",
       "sdtm": {
         "lines": [
           "CORE-000264 MH DEMO-301-0001#1 MHTERM=Hypertension|MHBODSYS=Vascular disorders|MHSOC=Not in dataset",
@@ -4349,7 +4387,7 @@
       }
     },
     "impossible-date": {
-      "inputSha256": "db0d78e12e773bac5bb64c9139e6139712ecfb9a02aaed7f9e8cdc309940d44d",
+      "inputSha256": "aaa54ebf7af83c6451f7eecae3f19fbadd29efe19f59fe98812c3c4d5b2a191e",
       "added": {
         "lines": [
           "CORE-000701 AE DEMO-301-0003#1 EPOCH=null"
@@ -4365,7 +4403,7 @@
       "status": {}
     },
     "partial-end-date": {
-      "inputSha256": "4b2434f8821c60418ab84e3395c4d4ec32b7f5f2c10a3de436bb74de8ebaac0d",
+      "inputSha256": "bec55f548af788e8c7b83cd900245490de222b0d2da4f02ae91a93780d935352",
       "added": {
         "lines": [],
         "counts": {}
@@ -4377,7 +4415,7 @@
       "status": {}
     },
     "ae-before-first-dose": {
-      "inputSha256": "47d8892d21bc521b2f6073858e2bee7653a386cc140cf5a16388c78decc9a1f0",
+      "inputSha256": "e787eb1e3e55aad014960a704940756dcb80faf0d297462626da51d266d8bbf1",
       "added": {
         "lines": [],
         "counts": {}
@@ -4389,7 +4427,7 @@
       "status": {}
     },
     "missing-baseline": {
-      "inputSha256": "0bdb790a9145d2e1f4f7b4e99fd7d504802c6824a0b4afbdc316bf1021e60224",
+      "inputSha256": "0d84d417ac35700d04608c354aa16bb54b07d7cda6c64a72ade2aac112c4d6fc",
       "added": {
         "lines": [],
         "counts": {}
@@ -4401,7 +4439,7 @@
       "status": {}
     },
     "no-post-baseline": {
-      "inputSha256": "b9d43ab7ae60683b8a4ba7a2a58b108220bfde863c2686e7ca8edafc4bdfe921",
+      "inputSha256": "7a77bc728524274ad18a05c7d9f9dba152ef9569bf69279d022838883a1419b4",
       "added": {
         "lines": [],
         "counts": {}
@@ -4413,7 +4451,7 @@
       "status": {}
     },
     "off-codelist-extensible": {
-      "inputSha256": "eb56b130e75531c512ee9ddfb1fd18622019ad643cc6b73f8a301db7de9628fd",
+      "inputSha256": "41ca185235e7e638a582d072b7568f3736e320c7e45b85aa89ff37c04c387158",
       "added": {
         "lines": [],
         "counts": {}
@@ -4425,7 +4463,7 @@
       "status": {}
     },
     "off-codelist-non-extensible": {
-      "inputSha256": "983435323236368aed0e049fc11217a62ae301071c87ac7e7b7e0d50bbffc432",
+      "inputSha256": "99cab6b69df291101ff06fb57abf7cfe5e52a7c232782404e7aab858f51f0d44",
       "added": {
         "lines": [],
         "counts": {}
@@ -4437,7 +4475,7 @@
       "status": {}
     },
     "duplicate-record": {
-      "inputSha256": "25843393cd46c98e320e21b22e477c7789b31871560d74e65638a52a78073a60",
+      "inputSha256": "e891da273756438fe4220e58eadc9aebc822c2bc5b5a21a6f764dfbcb917949c",
       "added": {
         "lines": [],
         "counts": {}
@@ -4449,7 +4487,7 @@
       "status": {}
     },
     "unit-change": {
-      "inputSha256": "15e9ea941fb0f7ba32582e17a3101b44d73806eb51814dd9ba9d7cdd5615e22c",
+      "inputSha256": "e1cce20584451e03d2675131fe87695e7a2f81a3679790203c57527ce7986e62",
       "added": {
         "lines": [],
         "counts": {}
@@ -4461,7 +4499,7 @@
       "status": {}
     },
     "lab-retest-same-day": {
-      "inputSha256": "90cc0c12f521a22bb0f33450207e16d0c94eb3517387c971e0a021054609f818",
+      "inputSha256": "7cc5c99ab1b6cfdf7e75113b13e60f15134ac7460d23e1c4bacc2d82cb4618da",
       "added": {
         "lines": [],
         "counts": {}
@@ -4473,7 +4511,7 @@
       "status": {}
     },
     "unscheduled-visit-in-window": {
-      "inputSha256": "05357266c1bc9d8b4fe7114df45330cd3cc05385724ef8d4672e183d6c7e862d",
+      "inputSha256": "2235138dc26a0e4fe5f1cd59d127df54f246d75b30eb097c0b95545674aaaf0f",
       "added": {
         "lines": [],
         "counts": {}
@@ -4485,7 +4523,7 @@
       "status": {}
     },
     "rescreened-subject": {
-      "inputSha256": "f98176c3403c4550bf17b587e00cd67c8506ff7d2807a5e7a4c10bd657888d8a",
+      "inputSha256": "e4d6d2e47f29eb013e1cf90dfc17985309d4e8012cb7759371e273c96085d717",
       "added": {
         "lines": [
           "CORE-000186 DM -#- SUBJID=0001",
@@ -4600,6 +4638,26 @@
           "CORE-000552 DS DEMO-301-0007#3 DSSTDY=99.0|DSSTDTC=2030-04-21|$val_stdy=103|RFSTDTC=2030-01-13",
           "CORE-000552 DS DEMO-301-0008#1 DSSTDY=-17.0|DSSTDTC=2029-12-29|$val_stdy=-11|RFSTDTC=2030-01-15",
           "CORE-000552 DS DEMO-301-0008#2 DSSTDY=1.0|DSSTDTC=2030-01-15|$val_stdy=7|RFSTDTC=2030-01-15",
+          "CORE-000552 SE DEMO-301-0002#1 SESTDY=-17.0|SESTDTC=2029-12-17|$val_stdy=null|RFSTDTC=2030-01-03",
+          "CORE-000552 SE DEMO-301-0002#2 SESTDY=1.0|SESTDTC=2030-01-03|$val_stdy=null|RFSTDTC=2030-01-03",
+          "CORE-000552 SE DEMO-301-0003#1 SESTDY=-17.0|SESTDTC=2029-12-19|$val_stdy=-15|RFSTDTC=2030-01-05",
+          "CORE-000552 SE DEMO-301-0003#2 SESTDY=1.0|SESTDTC=2030-01-05|$val_stdy=3|RFSTDTC=2030-01-05",
+          "CORE-000552 SE DEMO-301-0004#1 SESTDY=-17.0|SESTDTC=2029-12-21|$val_stdy=-15|RFSTDTC=2030-01-07",
+          "CORE-000552 SE DEMO-301-0004#2 SESTDY=1.0|SESTDTC=2030-01-07|$val_stdy=3|RFSTDTC=2030-01-07",
+          "CORE-000552 SE DEMO-301-0005#1 SESTDY=-17.0|SESTDTC=2029-12-23|$val_stdy=-15|RFSTDTC=2030-01-09",
+          "CORE-000552 SE DEMO-301-0005#2 SESTDY=1.0|SESTDTC=2030-01-09|$val_stdy=3|RFSTDTC=2030-01-09",
+          "CORE-000552 SE DEMO-301-0006#1 SESTDY=-17.0|SESTDTC=2029-12-25|$val_stdy=-15|RFSTDTC=2030-01-11",
+          "CORE-000552 SE DEMO-301-0006#2 SESTDY=1.0|SESTDTC=2030-01-11|$val_stdy=3|RFSTDTC=2030-01-11",
+          "CORE-000552 SE DEMO-301-0007#1 SESTDY=-17.0|SESTDTC=2029-12-27|$val_stdy=-15|RFSTDTC=2030-01-13",
+          "CORE-000552 SE DEMO-301-0007#2 SESTDY=1.0|SESTDTC=2030-01-13|$val_stdy=3|RFSTDTC=2030-01-13",
+          "CORE-000552 SE DEMO-301-0008#1 SESTDY=-17.0|SESTDTC=2029-12-29|$val_stdy=-15|RFSTDTC=2030-01-15",
+          "CORE-000552 SE DEMO-301-0008#2 SESTDY=1.0|SESTDTC=2030-01-15|$val_stdy=3|RFSTDTC=2030-01-15",
+          "CORE-000552 SE DEMO-301-0009#1 SESTDY=-17.0|SESTDTC=2029-12-31|$val_stdy=-15|RFSTDTC=2030-01-17",
+          "CORE-000552 SE DEMO-301-0009#2 SESTDY=1.0|SESTDTC=2030-01-17|$val_stdy=3|RFSTDTC=2030-01-17",
+          "CORE-000552 SE DEMO-301-0010#1 SESTDY=-17.0|SESTDTC=2030-01-02|$val_stdy=-15|RFSTDTC=2030-01-19",
+          "CORE-000552 SE DEMO-301-0010#2 SESTDY=1.0|SESTDTC=2030-01-19|$val_stdy=3|RFSTDTC=2030-01-19",
+          "CORE-000552 SE DEMO-301-0011#1 SESTDY=-17.0|SESTDTC=2030-01-04|$val_stdy=-15|RFSTDTC=2030-01-21",
+          "CORE-000552 SE DEMO-301-0011#2 SESTDY=1.0|SESTDTC=2030-01-21|$val_stdy=3|RFSTDTC=2030-01-21",
           "CORE-000552 SV DEMO-301-0002#- SVSTDY=-6.0|SVSTDTC=2029-12-28|$val_stdy=null|RFSTDTC=2030-01-03",
           "CORE-000552 SV DEMO-301-0002#- SVSTDY=1.0|SVSTDTC=2030-01-03|$val_stdy=null|RFSTDTC=2030-01-03",
           "CORE-000552 SV DEMO-301-0003#- SVSTDY=-7.0|SVSTDTC=2029-12-29|$val_stdy=-5|RFSTDTC=2030-01-05",
@@ -4620,6 +4678,26 @@
           "CORE-000552 SV DEMO-301-0010#- SVSTDY=1.0|SVSTDTC=2030-01-19|$val_stdy=3|RFSTDTC=2030-01-19",
           "CORE-000552 SV DEMO-301-0011#- SVSTDY=-16.0|SVSTDTC=2030-01-05|$val_stdy=-14|RFSTDTC=2030-01-21",
           "CORE-000552 SV DEMO-301-0011#- SVSTDY=1.0|SVSTDTC=2030-01-21|$val_stdy=3|RFSTDTC=2030-01-21",
+          "CORE-000553 SE DEMO-301-0002#1 SEENDY=1.0|SEENDTC=2030-01-03|$val_endy=null|RFSTDTC=2030-01-03",
+          "CORE-000553 SE DEMO-301-0002#2 SEENDY=99.0|SEENDTC=2030-04-11|$val_endy=null|RFSTDTC=2030-01-03",
+          "CORE-000553 SE DEMO-301-0003#1 SEENDY=1.0|SEENDTC=2030-01-05|$val_endy=3|RFSTDTC=2030-01-05",
+          "CORE-000553 SE DEMO-301-0003#2 SEENDY=99.0|SEENDTC=2030-04-13|$val_endy=101|RFSTDTC=2030-01-05",
+          "CORE-000553 SE DEMO-301-0004#1 SEENDY=1.0|SEENDTC=2030-01-07|$val_endy=3|RFSTDTC=2030-01-07",
+          "CORE-000553 SE DEMO-301-0004#2 SEENDY=99.0|SEENDTC=2030-04-15|$val_endy=101|RFSTDTC=2030-01-07",
+          "CORE-000553 SE DEMO-301-0005#1 SEENDY=1.0|SEENDTC=2030-01-09|$val_endy=3|RFSTDTC=2030-01-09",
+          "CORE-000553 SE DEMO-301-0005#2 SEENDY=99.0|SEENDTC=2030-04-17|$val_endy=101|RFSTDTC=2030-01-09",
+          "CORE-000553 SE DEMO-301-0006#1 SEENDY=1.0|SEENDTC=2030-01-11|$val_endy=3|RFSTDTC=2030-01-11",
+          "CORE-000553 SE DEMO-301-0006#2 SEENDY=99.0|SEENDTC=2030-04-19|$val_endy=101|RFSTDTC=2030-01-11",
+          "CORE-000553 SE DEMO-301-0007#1 SEENDY=1.0|SEENDTC=2030-01-13|$val_endy=3|RFSTDTC=2030-01-13",
+          "CORE-000553 SE DEMO-301-0007#2 SEENDY=99.0|SEENDTC=2030-04-21|$val_endy=101|RFSTDTC=2030-01-13",
+          "CORE-000553 SE DEMO-301-0008#1 SEENDY=1.0|SEENDTC=2030-01-15|$val_endy=3|RFSTDTC=2030-01-15",
+          "CORE-000553 SE DEMO-301-0008#2 SEENDY=99.0|SEENDTC=2030-04-23|$val_endy=101|RFSTDTC=2030-01-15",
+          "CORE-000553 SE DEMO-301-0009#1 SEENDY=1.0|SEENDTC=2030-01-17|$val_endy=3|RFSTDTC=2030-01-17",
+          "CORE-000553 SE DEMO-301-0009#2 SEENDY=19.0|SEENDTC=2030-02-04|$val_endy=21|RFSTDTC=2030-01-17",
+          "CORE-000553 SE DEMO-301-0010#1 SEENDY=1.0|SEENDTC=2030-01-19|$val_endy=3|RFSTDTC=2030-01-19",
+          "CORE-000553 SE DEMO-301-0010#2 SEENDY=99.0|SEENDTC=2030-04-27|$val_endy=101|RFSTDTC=2030-01-19",
+          "CORE-000553 SE DEMO-301-0011#1 SEENDY=1.0|SEENDTC=2030-01-21|$val_endy=3|RFSTDTC=2030-01-21",
+          "CORE-000553 SE DEMO-301-0011#2 SEENDY=99.0|SEENDTC=2030-04-29|$val_endy=101|RFSTDTC=2030-01-21",
           "CORE-000553 SV DEMO-301-0002#- SVENDY=-6.0|SVENDTC=2029-12-28|$val_endy=null|RFSTDTC=2030-01-03",
           "CORE-000553 SV DEMO-301-0002#- SVENDY=1.0|SVENDTC=2030-01-03|$val_endy=null|RFSTDTC=2030-01-03",
           "CORE-000553 SV DEMO-301-0003#- SVENDY=-7.0|SVENDTC=2029-12-29|$val_endy=-5|RFSTDTC=2030-01-05",
@@ -4657,7 +4735,9 @@
           "CORE-000529 MH": 125,
           "CORE-000529 VS": 648,
           "CORE-000552 DS": 243,
+          "CORE-000552 SE": 162,
           "CORE-000552 SV": 162,
+          "CORE-000553 SE": 162,
           "CORE-000553 SV": 162,
           "CORE-000726 DM": 1,
           "CORE-000746 DM": 1,
@@ -4685,7 +4765,7 @@
       }
     },
     "death-during-treatment": {
-      "inputSha256": "3374df7e730a2292580004d7def2c2c8741fa0f2a068a378535cb32b5bc188d1",
+      "inputSha256": "2548604b074bfd1902cc87b82ecdc9e15a3f3946cd4093559e1ecd204a1e2a51",
       "added": {
         "lines": [],
         "counts": {}
@@ -4697,7 +4777,7 @@
       "status": {}
     },
     "withdrawal-before-week-12": {
-      "inputSha256": "7d423b630a4467532104efa8399e5fce7558765efaca2aa7a898fbc5a28c5efe",
+      "inputSha256": "5a3187186b6b779def6220d76b92d627a1f7ef0dc0e28b1ad37ee714ce06e63d",
       "added": {
         "lines": [],
         "counts": {}
@@ -4709,7 +4789,7 @@
       "status": {}
     },
     "qtcf-outlier": {
-      "inputSha256": "f9d9b331adb13905a41f710348552562aef7a2772c7cfb2b3923a4cfc6284ed7",
+      "inputSha256": "4ff39001b68cfef7be0488dfb8c6306fbb1ea5ca7df1594bd800afc488eb25db",
       "added": {
         "lines": [],
         "counts": {}
@@ -4721,7 +4801,7 @@
       "status": {}
     },
     "ecg-missing-rr": {
-      "inputSha256": "46773fc3516851495923cb8ea3fd03ab1b2b10d01b6a03996992666c022e65c7",
+      "inputSha256": "0e8be3604fc5ae3e35f05d7a5c44154d892bae827d97ffa9375b0131c2b9232e",
       "added": {
         "lines": [],
         "counts": {}

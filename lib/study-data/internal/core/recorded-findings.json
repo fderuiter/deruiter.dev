@@ -563,7 +563,7 @@
         "message": "--DOSTXT value is numeric."
       },
       "CORE-000095": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0211, TIG0430",
         "fda": "",
         "message": "ETCD is not 'UNPLAN', when SEUPDES is not empty"
@@ -1511,7 +1511,7 @@
         "message": "AEOUT is 'FATAL' in AE dataset, but DTHFL in DM dataset is not \"Y\"."
       },
       "CORE-000256": {
-        "status": "SKIPPED",
+        "status": "SUCCESS",
         "cdisc": "CG0210, SEND125.1, TIG0062, TIG0429",
         "fda": "",
         "message": "Missing value for SEUPDES, when ETCD='UNPLAN'"
@@ -4206,7 +4206,7 @@
   },
   "views": {
     "default": {
-      "inputSha256": "19e622555c27552e3b31f780d45e0a12cfadf3e9f316f0c9eab10fce88921297",
+      "inputSha256": "eaf5bf9d4ed93986f0fc511b4fc509066bd3cbd064bd57b966617eb81a7893d7",
       "sdtm": {
         "lines": [
           "CORE-000264 MH DEMO-301-0001#1 MHTERM=Hypertension|MHBODSYS=Vascular disorders|MHSOC=Not in dataset",
@@ -4387,7 +4387,7 @@
       }
     },
     "impossible-date": {
-      "inputSha256": "aaa54ebf7af83c6451f7eecae3f19fbadd29efe19f59fe98812c3c4d5b2a191e",
+      "inputSha256": "55c5497bb63c90a9c40d9cebbb7eda44f32f7d720630c672be5f1f313d7d6ff8",
       "added": {
         "lines": [
           "CORE-000701 AE DEMO-301-0003#1 EPOCH=null"
@@ -4403,7 +4403,7 @@
       "status": {}
     },
     "partial-end-date": {
-      "inputSha256": "bec55f548af788e8c7b83cd900245490de222b0d2da4f02ae91a93780d935352",
+      "inputSha256": "397f607006ff6ec57f14515304ee8902f58fae2e286d9c93c28362252fb9fa22",
       "added": {
         "lines": [],
         "counts": {}
@@ -4415,7 +4415,7 @@
       "status": {}
     },
     "ae-before-first-dose": {
-      "inputSha256": "e787eb1e3e55aad014960a704940756dcb80faf0d297462626da51d266d8bbf1",
+      "inputSha256": "16ded56709d3d6af39b227010772e34eeed685dcbca6a4335436b6f0cac46f70",
       "added": {
         "lines": [],
         "counts": {}
@@ -4427,7 +4427,7 @@
       "status": {}
     },
     "missing-baseline": {
-      "inputSha256": "0d84d417ac35700d04608c354aa16bb54b07d7cda6c64a72ade2aac112c4d6fc",
+      "inputSha256": "fbd247e515030ae875cd09631b8e89331a422eadf6ebe3374297f09f1dce57d7",
       "added": {
         "lines": [],
         "counts": {}
@@ -4439,7 +4439,7 @@
       "status": {}
     },
     "no-post-baseline": {
-      "inputSha256": "7a77bc728524274ad18a05c7d9f9dba152ef9569bf69279d022838883a1419b4",
+      "inputSha256": "644b4dbed48d4a395b21db08d1f754a4d7b48d2d1a324c43169eafe41b66703d",
       "added": {
         "lines": [],
         "counts": {}
@@ -4451,7 +4451,7 @@
       "status": {}
     },
     "off-codelist-extensible": {
-      "inputSha256": "41ca185235e7e638a582d072b7568f3736e320c7e45b85aa89ff37c04c387158",
+      "inputSha256": "87c6079dbe286212609cf645c24aaeb1d7c551db042b692790737b75070bc55e",
       "added": {
         "lines": [],
         "counts": {}
@@ -4463,7 +4463,7 @@
       "status": {}
     },
     "off-codelist-non-extensible": {
-      "inputSha256": "99cab6b69df291101ff06fb57abf7cfe5e52a7c232782404e7aab858f51f0d44",
+      "inputSha256": "5060566251629e75bcdcf0cb1d8ec104efed875894ebfb7d17e2d4988c89782f",
       "added": {
         "lines": [],
         "counts": {}
@@ -4475,7 +4475,7 @@
       "status": {}
     },
     "duplicate-record": {
-      "inputSha256": "e891da273756438fe4220e58eadc9aebc822c2bc5b5a21a6f764dfbcb917949c",
+      "inputSha256": "dc4d74ca8078ca8ee4685b7507c442d1c4bef49f754c012b2e95df4375152be9",
       "added": {
         "lines": [],
         "counts": {}
@@ -4487,7 +4487,7 @@
       "status": {}
     },
     "unit-change": {
-      "inputSha256": "e1cce20584451e03d2675131fe87695e7a2f81a3679790203c57527ce7986e62",
+      "inputSha256": "1fb29147e291daca0abde8e115f254a3c6c2b55ae5874a2fbf2cd2837e8af0bf",
       "added": {
         "lines": [],
         "counts": {}
@@ -4499,7 +4499,7 @@
       "status": {}
     },
     "lab-retest-same-day": {
-      "inputSha256": "7cc5c99ab1b6cfdf7e75113b13e60f15134ac7460d23e1c4bacc2d82cb4618da",
+      "inputSha256": "0b67b4040bf450465093af150c26c51e52bcdc5946213e62ef891a13b8846d4a",
       "added": {
         "lines": [],
         "counts": {}
@@ -4511,7 +4511,7 @@
       "status": {}
     },
     "unscheduled-visit-in-window": {
-      "inputSha256": "2235138dc26a0e4fe5f1cd59d127df54f246d75b30eb097c0b95545674aaaf0f",
+      "inputSha256": "421c998b22d3a0c9debbc80a9cfe94b62f0666da2d41f92c234a96a32845950e",
       "added": {
         "lines": [],
         "counts": {}
@@ -4523,7 +4523,7 @@
       "status": {}
     },
     "rescreened-subject": {
-      "inputSha256": "e4d6d2e47f29eb013e1cf90dfc17985309d4e8012cb7759371e273c96085d717",
+      "inputSha256": "24d3dde1728dcc2e15854f85beb39eb387644da90f03a045f570ed59bcfd1d90",
       "added": {
         "lines": [
           "CORE-000186 DM -#- SUBJID=0001",
@@ -4765,7 +4765,7 @@
       }
     },
     "death-during-treatment": {
-      "inputSha256": "2548604b074bfd1902cc87b82ecdc9e15a3f3946cd4093559e1ecd204a1e2a51",
+      "inputSha256": "a89067a1b11d60d8c701858b23c94fd9e224f31594544e5631bb102590274ec3",
       "added": {
         "lines": [],
         "counts": {}
@@ -4777,7 +4777,7 @@
       "status": {}
     },
     "withdrawal-before-week-12": {
-      "inputSha256": "5a3187186b6b779def6220d76b92d627a1f7ef0dc0e28b1ad37ee714ce06e63d",
+      "inputSha256": "0cefb42c3f806ae79539526cb58b5198b184afbb475a1b4ad33bad011230f79a",
       "added": {
         "lines": [],
         "counts": {}
@@ -4788,8 +4788,44 @@
       },
       "status": {}
     },
+    "randomized-not-dosed": {
+      "inputSha256": "e14ac61f69799ec6e49f8d9a03b850b95a8cb165225048909f8dbbde086cef6c",
+      "added": {
+        "lines": [
+          "CORE-000191 DM DEMO-301-0002#- ARM=Demoxacin 20 mg|RFENDTC=null"
+        ],
+        "counts": {
+          "CORE-000191 DM": 1
+        }
+      },
+      "removed": {
+        "lines": [],
+        "counts": {}
+      },
+      "status": {
+        "CORE-000191": "ISSUE REPORTED"
+      }
+    },
+    "unplanned-treatment": {
+      "inputSha256": "1931bca87b0627a0ceb0f9f92ac9bd55c018b24805bf7cf1cd1c80500bb55fce",
+      "added": {
+        "lines": [
+          "CORE-000192 DM DEMO-301-0002#- ARMNRS=UNPLANNED TREATMENT|RFENDTC=2030-04-11"
+        ],
+        "counts": {
+          "CORE-000192 DM": 1
+        }
+      },
+      "removed": {
+        "lines": [],
+        "counts": {}
+      },
+      "status": {
+        "CORE-000192": "ISSUE REPORTED"
+      }
+    },
     "qtcf-outlier": {
-      "inputSha256": "4ff39001b68cfef7be0488dfb8c6306fbb1ea5ca7df1594bd800afc488eb25db",
+      "inputSha256": "041857307fefd1c5495bde78c2ad9f2e6b0a70ce1ddd614a790f7bd60b1b3705",
       "added": {
         "lines": [],
         "counts": {}
@@ -4801,7 +4837,7 @@
       "status": {}
     },
     "ecg-missing-rr": {
-      "inputSha256": "0e8be3604fc5ae3e35f05d7a5c44154d892bae827d97ffa9375b0131c2b9232e",
+      "inputSha256": "85cca2db4cde7bbfa2c44f18f195d74c4da13dc2e700f0f9182d87980ede7146",
       "added": {
         "lines": [],
         "counts": {}

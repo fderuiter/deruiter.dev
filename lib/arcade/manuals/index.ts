@@ -1,3 +1,9 @@
+/**
+ * Arcade Field Manual Aggregator & Registry
+ *
+ * Aggregates individual game field manuals into the canonical GAME_MANUALS registry.
+ */
+
 import type { FieldManualData } from "./types";
 import { PROOF_MANUAL } from "./proof";
 import { PATROL_MANUAL } from "./patrol";

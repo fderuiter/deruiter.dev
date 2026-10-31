@@ -18,6 +18,7 @@ import type {
   ArsSponsorTermRef,
   ArsTerminologyExtension,
   ArsWhereClause,
+  Dataset,
   StudyDefinition,
   VisitDefinition,
 } from "../../types";
@@ -441,11 +442,50 @@ export function atRiskDays(
   return days.map((time) => ({ time, label: `Day ${time}` }));
 }
 
+/**
+ * The treatments Safety Set subjects received that no arm plans, by name:
+ * ADSL `TRT01A` values on `SAFFL = Y` rows that match no arm. A subject
+ * dosed with one is in the Safety Set, so the outputs grouped by treatment
+ * received need a column for it (#3673).
+ *
+ * @param definition - The study the run was made from.
+ * @param datasets - The run's datasets; only ADSL is read.
+ * @returns The unplanned treatments, sorted, or none when ADSL is absent.
+ */
+export function unplannedTreatments(
+  definition: StudyDefinition,
+  datasets: readonly Dataset[]
+): readonly string[] {
+  const adsl = datasets.find(
+    (dataset) => dataset.name === "ADSL" && dataset.layer === "adam"
+  );
+  if (!adsl) return [];
+  const planned = new Set(definition.design.arms.map((arm) => arm.name));
+  const received = adsl.columns.TRT01A ?? [];
+  const safety = adsl.columns.SAFFL ?? [];
+  return [
+    ...new Set(
+      received.filter(
+        (value, index): value is string =>
+          typeof value === "string" &&
+          value !== "" &&
+          safety[index] === "Y" &&
+          !planned.has(value)
+      )
+    ),
+  ].sort();
+}
+
 function treatmentGrouping(
   definition: StudyDefinition,
-  variable: "TRT01A" | "TRT01P"
+  variable: "TRT01A" | "TRT01P",
+  unplanned: readonly string[] = []
 ): ArsGroupingFactor {
   const actual = variable === "TRT01A";
+  const names = [
+    ...definition.design.arms.map((arm) => arm.name),
+    ...(actual ? unplanned : []),
+  ];
   return {
     id: actual ? IDS.trt01a : IDS.trt01p,
     name: actual ? "Actual treatment" : "Planned treatment",
@@ -455,14 +495,14 @@ function treatmentGrouping(
     groupingDataset: "ADSL",
     groupingVariable: variable,
     dataDriven: false,
-    groups: definition.design.arms.map((arm, index) =>
+    groups: names.map((name, index) =>
       group(
         variable,
         String(index + 1),
-        arm.name,
-        arm.name,
+        name,
+        name,
         index + 1,
-        where("ADSL", variable, "EQ", arm.name)
+        where("ADSL", variable, "EQ", name)
       )
     ),
   };
@@ -801,9 +841,18 @@ const METHODS: readonly ArsAnalysisMethod[] = [
  * comparator arm, Table 14.2.3 (win statistics for the hierarchical
  * composite, each other arm against the comparator, Full Analysis Set).
  * Treatment groups, visits and the days of the number-at-risk table come
- * from the study definition.
+ * from the study definition. A treatment a Safety Set subject received that
+ * no arm plans adds a treatment-received group after the planned arms, so
+ * the groups' N add up to the Safety Set.
+ *
+ * @param definition - The study the run was made from.
+ * @param unplanned - Treatments received that no arm plans, from
+ *   {@link unplannedTreatments}; none by default.
  */
-export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
+export function buildReportingPlan(
+  definition: StudyDefinition,
+  unplanned: readonly string[] = []
+): ReportingPlan {
   const { baseline, post } = reportedVisits(definition);
   const countPct = (
     id: string,
@@ -1044,7 +1093,7 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
       },
     ],
     analysisGroupings: [
-      treatmentGrouping(definition, "TRT01A"),
+      treatmentGrouping(definition, "TRT01A", unplanned),
       treatmentGrouping(definition, "TRT01P"),
       {
         id: IDS.agegr1,

@@ -7,13 +7,20 @@
  * what the bronze EDC and IRT feeds are read from: DM gives the subjects,
  * RAND the randomisations, SV the visits, EX the treatment period and DS the
  * disposition. Its SDTM and ADaM output stays in the gold layer, so nothing
- * flows from gold back into bronze. The portfolio adds only what an
- * operational system knows and the pipeline does not: the site each subject
- * attends, data entry times, queries, kits and deviations.
+ * flows from gold back into bronze. Each subject attends the site DM.SITEID
+ * names, matched to the study's site plan by site number, so `/platform`
+ * and `/study-data` agree on who is where (#2806). The portfolio adds only
+ * what an operational system knows and the pipeline does not: data entry
+ * times, queries, kits and deviations.
  *
  * Pipeline dates are moved by one whole number of days so the first consent
- * falls just after the study's first site activation. Study days, visit
- * order and visit windows are unchanged.
+ * falls a week after the study's first site activation. Study days, visit
+ * order and visit windows are unchanged. A site the pipeline consents a
+ * subject at before the site plan activates it is activated a week before
+ * that first consent instead, with its planned activation moved to the same
+ * day so its start-up milestones still come first. The shift is not moved:
+ * it already puts the study's first consent a week after its first
+ * activation.
  */
 import {
   runPipeline,
@@ -58,6 +65,7 @@ export const PIPELINE_BRONZE_LINEAGE: readonly {
   ["DM.USUBJID", "irt.kits.subjectId", "identity"],
   ["DM.USUBJID", "ctms.deviations.subjectId", "identity"],
   ["DM.USUBJID", "ctms.deviations.deviationId", "concatenate"],
+  ["DM.SITEID", "edc.subjects.siteId", "reference-lookup"],
   ["DM.CONSENTDTC", "edc.subjects.screenedOn", "date-shift"],
   ["SV.SVDTC", "edc.subjects.screenedOn", "date-shift"],
   ["SV.SVDTC", "edc.visits.visitDate", "date-shift"],
@@ -97,6 +105,8 @@ const UNSCHEDULED_VISITNUM = 99;
 /** A subject's pipeline records, with dates on the portfolio calendar. */
 interface PipelineSubject {
   readonly subjectId: string;
+  /** The site number DM.SITEID records. */
+  readonly siteNumber: string | null;
   readonly consentDay: number;
   /** Randomisation day, or `null` for a screen failure. */
   readonly randomizedDay: number | null;
@@ -123,6 +133,8 @@ interface PipelineVisit {
 export interface PipelineStudy {
   readonly simulation: StudySimulation;
   readonly reference: StudyDataRunReference;
+  /** The site plans, with each site active a week before its first consent. */
+  readonly sites: readonly SitePlan[];
 }
 
 function collected(run: PipelineRun, name: string): Dataset {
@@ -178,12 +190,14 @@ function readSubjects(run: PipelineRun): {
     }
   >();
   const ids: string[] = [];
+  const siteNumbers: (string | null)[] = [];
   const consentDays: number[] = [];
   for (let row = 0; row < dm.rowCount; row += 1) {
     const id = text(dm, "USUBJID", row);
     const consent = day(dm, "CONSENTDTC", row);
     if (id === null || consent === null) continue;
     ids.push(id);
+    siteNumbers.push(text(dm, "SITEID", row));
     consentDays.push(consent);
     byId.set(id, {
       randomizedDay: null,
@@ -235,10 +249,11 @@ function readSubjects(run: PipelineRun): {
       status: text(sv, "STATUS", row) ?? "COMPLETED",
     });
   }
-  const subjects = ids.map((subjectId) => {
+  const subjects = ids.map((subjectId, index) => {
     const entry = byId.get(subjectId);
     return {
       subjectId,
+      siteNumber: siteNumbers[index],
       randomizedDay: entry?.randomizedDay ?? null,
       arm: entry?.arm ?? null,
       exposure: entry?.exposure ?? null,
@@ -255,23 +270,26 @@ function shifted(dayNumber: number | null, shift: number): number | null {
 }
 
 /**
- * Picks the site a subject attends: one already active a week before the
- * consent, in proportion to its enrollment target and pace.
+ * The site plans with every site the pipeline consents a subject at active
+ * a week before that site's first consent by the data cut. A site the plan
+ * activates in time keeps its plan.
  */
-function assignSite(
-  rng: Stream,
+function activateForConsents(
   sites: readonly SitePlan[],
-  consentDay: number
-): SitePlan {
-  const open = sites.filter(
-    (site) =>
-      site.activationDay !== null &&
-      site.activationDay + FIRST_CONSENT_LAG <= consentDay
-  );
-  const pool = open.length > 0 ? open : sites.slice(0, 1);
-  return pool[
-    rng.weighted(pool.map((site) => site.plannedEnrollment * site.speed))
-  ];
+  firstConsentBySite: ReadonlyMap<string, number>
+): SitePlan[] {
+  return sites.map((site) => {
+    const firstConsent = firstConsentBySite.get(site.siteNumber);
+    if (firstConsent === undefined) return site;
+    const latest = firstConsent - FIRST_CONSENT_LAG;
+    if (site.activationDay !== null && site.activationDay <= latest)
+      return site;
+    return {
+      ...site,
+      activationDay: latest,
+      plannedActivationDay: Math.min(site.plannedActivationDay, latest),
+    };
+  });
 }
 
 /**
@@ -306,6 +324,18 @@ export function studyFromPipeline(
   const firstOpen =
     activations.length > 0 ? Math.min(...activations) : asOfDay + 1;
   const shift = firstOpen + FIRST_CONSENT_LAG - firstConsent;
+  const firstConsentBySite = new Map<string, number>();
+  subjects.forEach((source, index) => {
+    const consentDay = consentDays[index] + shift;
+    if (source.siteNumber === null || consentDay > asOfDay) return;
+    const prior = firstConsentBySite.get(source.siteNumber);
+    if (prior === undefined || consentDay < prior)
+      firstConsentBySite.set(source.siteNumber, consentDay);
+  });
+  const studySites = activateForConsents(sites, firstConsentBySite);
+  const siteByNumber = new Map(
+    studySites.map((site) => [site.siteNumber, site])
+  );
   const plannedByNum = new Map(
     definition.design.visits.map((visit) => [visit.visitNum, visit.id])
   );
@@ -325,7 +355,12 @@ export function studyFromPipeline(
       screeningClosed = false;
       return;
     }
-    const site = assignSite(rng, sites, consentDay);
+    const site = siteByNumber.get(source.siteNumber ?? "");
+    if (site === undefined) {
+      throw new Error(
+        `${source.subjectId} is at site ${String(source.siteNumber)}, which ${study.id} does not plan.`
+      );
+    }
     const subjectId = source.subjectId;
     const randomizedDay = shifted(source.randomizedDay, shift);
     const finalDay = source.disposition.day + shift;
@@ -424,7 +459,7 @@ export function studyFromPipeline(
     });
   });
 
-  if (!screeningClosed) out.addSiteStock(sites);
+  if (!screeningClosed) out.addSiteStock(studySites);
 
   enrollDays.sort((a, b) => a - b);
   const lastSubjectInDay =
@@ -456,5 +491,6 @@ export function studyFromPipeline(
       dateShiftDays: shift,
       standards: run.manifest.standards,
     },
+    sites: studySites,
   };
 }

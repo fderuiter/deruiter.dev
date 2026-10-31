@@ -42,14 +42,14 @@ metrics.
 | Selection to executed agreement | `selection_to_contract_days` | certified | 1.0.0 | portfolio | 38.0 days |
 | Executed agreement to IRB approval | `contract_to_irb_approval_days` | certified | 1.0.0 | portfolio | 26.0 days |
 | IRB approval to initiation visit | `irb_approval_to_initiation_days` | certified | 1.0.0 | portfolio | 20.0 days |
-| Initiation visit to activation | `initiation_to_activation_days` | certified | 1.0.0 | portfolio | 3.0 days |
-| Activation to first subject in | `activation_to_first_subject_in_days` | certified | 1.0.0 | portfolio | 50.0 days |
+| Initiation visit to activation | `initiation_to_activation_days` | certified | 1.0.0 | portfolio | 3.5 days |
+| Activation to first subject in | `activation_to_first_subject_in_days` | certified | 1.0.0 | portfolio | 48.0 days |
 | Data entry lag (median) | `data_entry_lag_median` | certified | 1.0.0 | portfolio | 2.0 days |
 | Data entry lag (90th percentile) | `data_entry_lag_p90` | certified | 1.0.0 | portfolio | 9.0 days |
 | Data entry lag (mean) | `data_entry_lag_mean` | certified | 1.0.0 | portfolio | 3.5 days |
 | Missed visit rate | `missed_visit_rate` | certified | 1.0.0 | portfolio | 1.9% |
 | Out-of-window visit rate | `out_of_window_visit_rate` | certified | 1.0.0 | portfolio | 3.1% |
-| Query rate per 100 visits | `query_rate_per_100_visits` | certified | 1.0.0 | portfolio | 47.0 queries per 100 visits |
+| Query rate per 100 visits | `query_rate_per_100_visits` | certified | 1.0.0 | portfolio | 47.2 queries per 100 visits |
 | Open queries | `open_query_count` | certified | 1.1.0 | portfolio | 36 queries |
 | Query aging | `query_aging_mean` | certified | 1.1.0 | portfolio | 2.9 days |
 | Query resolution time (median) | `query_resolution_time_median` | certified | 1.1.0 | portfolio | 5.0 days |
@@ -57,14 +57,14 @@ metrics.
 | Open queries aged 8 to 30 days | `open_queries_aged_8_30_days` | certified | 1.0.0 | portfolio | 3 queries |
 | Open queries aged 31 to 60 days | `open_queries_aged_31_60_days` | certified | 1.0.0 | portfolio | 0 queries |
 | Open queries aged over 60 days | `open_queries_aged_over_60_days` | certified | 1.0.0 | portfolio | 0 queries |
-| SDV completion | `sdv_completion` | certified | 1.0.0 | portfolio | 85.3% |
+| SDV completion | `sdv_completion` | certified | 1.0.0 | portfolio | 85.4% |
 | Overdue monitoring visit reports | `monitoring_reports_overdue` | certified | 2.0.0 | portfolio | 2 monitoring visits |
 | Overdue interim monitoring visits | `monitoring_visits_overdue` | certified | 1.0.0 | portfolio | 5 planned visits |
 | Monitoring report cycle time (median) | `monitoring_report_cycle_time_median` | certified | 1.0.0 | portfolio | 14.0 days |
-| Important deviations per 100 subjects | `important_deviation_rate` | certified | 1.0.0 | portfolio | 13.7 deviations per 100 enrolled subjects |
+| Important deviations per 100 subjects | `important_deviation_rate` | certified | 1.0.0 | portfolio | 13.9 deviations per 100 enrolled subjects |
 | Non-important deviations per 100 subjects | `non_important_deviation_rate` | certified | 1.0.0 | portfolio | 13.1 deviations per 100 enrolled subjects |
-| Subjects with an important deviation | `subjects_with_important_deviation` | certified | 1.0.0 | portfolio | 12.9% |
-| Protocol deviations | `protocol_deviation_count` | certified | 1.0.0 | portfolio | 329 deviations |
+| Subjects with an important deviation | `subjects_with_important_deviation` | certified | 1.0.0 | portfolio | 13.0% |
+| Protocol deviations | `protocol_deviation_count` | certified | 1.0.0 | portfolio | 332 deviations |
 | Events sent for adjudication | `cec_events_reported` | certified | 1.0.0 | portfolio | 39 events |
 | Events adjudicated | `cec_events_adjudicated` | certified | 1.0.0 | portfolio | 28 events |
 | Events awaiting adjudication | `cec_adjudication_backlog` | certified | 1.0.0 | portfolio | 11 events |
@@ -72,13 +72,13 @@ metrics.
 | Protocol final to first subject in | `protocol_final_to_fpi_days` | certified | 1.0.0 | study | DEMO-101: 90 days; DEMO-201: 90 days; DEMO-202: 132 days; DEMO-203: 147 days; DEMO-301: 93 days; DEMO-302: 185 days; DEV-401: 114 days; DEV-402: 86 days |
 | First subject in to last subject in | `fpi_to_lpi_days` | certified | 1.0.0 | study | DEMO-101: 128 days; DEMO-201: 457 days; DEMO-202: 527 days; DEMO-203: 442 days; DEMO-301: 176 days; DEV-401: 201 days |
 | Last subject last visit to database lock | `lplv_to_dbl_days` | certified | 1.0.0 | study | DEMO-101: 75 days; DEMO-301: 46 days; DEV-401: 43 days |
-| Budget burn vs plan | `budget_burn_vs_plan` | certified | 1.0.0 | portfolio | 103.6% |
-| Cost per enrolled subject | `cost_per_enrolled_subject` | certified | 1.0.0 | portfolio | $37,839 |
-| Actual spend | `actual_spend` | certified | 1.0.0 | portfolio | $46,465,932 |
+| Budget burn vs plan | `budget_burn_vs_plan` | certified | 1.0.0 | portfolio | 103.7% |
+| Cost per enrolled subject | `cost_per_enrolled_subject` | certified | 1.0.0 | portfolio | $37,872 |
+| Actual spend | `actual_spend` | certified | 1.0.0 | portfolio | $46,506,401 |
 | Budget at completion | `budget_at_completion` | certified | 1.0.0 | portfolio | $67,121,250 |
-| Forecast at completion | `forecast_at_completion` | certified | 1.0.0 | portfolio | $69,930,442 |
-| Variance at completion | `variance_at_completion` | certified | 1.0.0 | portfolio | $2,809,192 |
-| Forecast against budget at completion | `forecast_vs_budget_at_completion` | certified | 1.0.0 | portfolio | 104.2% |
+| Forecast at completion | `forecast_at_completion` | certified | 1.0.0 | portfolio | $69,977,656 |
+| Variance at completion | `variance_at_completion` | certified | 1.0.0 | portfolio | $2,856,406 |
+| Forecast against budget at completion | `forecast_vs_budget_at_completion` | certified | 1.0.0 | portfolio | 104.3% |
 
 ## Enrollment
 

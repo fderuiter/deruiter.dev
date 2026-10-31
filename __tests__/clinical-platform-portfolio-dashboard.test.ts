@@ -340,11 +340,11 @@ describe("budget against forecast at completion (#2912)", () => {
     expect(reports).toHaveLength(4);
     expect(summary).toEqual({
       budgetAtCompletionText: "$67,121,250",
-      actualSpendText: "$46,465,932",
-      forecastAtCompletionText: "$69,930,442",
-      varianceAtCompletion: 2809192,
-      varianceAtCompletionText: "$2,809,192",
-      shareText: "104.2%",
+      actualSpendText: "$46,506,401",
+      forecastAtCompletionText: "$69,977,656",
+      varianceAtCompletion: 2856406,
+      varianceAtCompletionText: "$2,856,406",
+      shareText: "104.3%",
       studyOverruns: [
         {
           name: "DEMO-302",

@@ -53,9 +53,16 @@ import { expectWithinTimingBudget } from "./helpers/timing-budget";
  * says its site rounds them and they barely vary. With the readings left
  * out and the old description put back the hash is the previous golden,
  * e376174f.
+ *
+ * #2806: each DEMO-301 subject attends the site DM.SITEID names instead of
+ * a drawn one, and a site is activated a week before its first consent
+ * when the plan activates it later, so six of DEMO-301's eight sites
+ * activate earlier. The site draws no longer consume the study's stream, so
+ * DEMO-301's queries (220 to 239) and deviations (50 to 53) move with it.
+ * No other study's records change.
  */
 const GOLDEN_SHA256 =
-  "04d93d032cd44a4973d79d125a3ba1a09d15c424d9c494a830c084c7e8c3b441";
+  "4636edbaeacd1060a8eebc1dbedf74b40e3bb9c4edecbf2aa58c014b3ff12851";
 
 /** The fictional controlled list screen failure reasons come from (#2879). */
 const SCREEN_FAILURE_REASONS: readonly string[] = [
@@ -122,8 +129,8 @@ const GOLDEN_SUMMARY = {
     screened: 90,
     enrolled: 81,
     visits: 576,
-    queries: 220,
-    deviations: 50,
+    queries: 239,
+    deviations: 53,
     kits: 366,
     adverseEvents: 0,
     vitalSigns: 0,
@@ -464,6 +471,35 @@ describe("generatePortfolio: DEMO-301 from the Study Data Pipeline", () => {
     for (const [site, country] of recorded) {
       expect(planned.has(String(site))).toBe(true);
       expect(country).toBe(alpha3[planned.get(String(site))!]);
+    }
+  });
+
+  // #2806: the platform and /study-data agree on which subject is at which
+  // site, and a site is active a week before its first consent.
+  it("puts every subject at the site the pipeline's EDC records", () => {
+    const dm = collected(run.datasets, "DM");
+    const siteBySubject = new Map(
+      dm.columns.USUBJID.map((id, row) => [id, String(dm.columns.SITEID[row])])
+    );
+    const sites = new Map(
+      portfolio.sites
+        .filter((s) => s.studyId === "DEMO-301")
+        .map((s) => [s.id, s])
+    );
+    const subjects = portfolio.feeds.edc.subjects.filter(
+      (s) => s.studyId === "DEMO-301"
+    );
+    expect(subjects.length).toBeGreaterThan(0);
+    for (const subject of subjects) {
+      const site = sites.get(subject.siteId);
+      expect(site?.siteNumber, subject.subjectId).toBe(
+        siteBySubject.get(subject.subjectId)
+      );
+      expect(site?.activatedOn, subject.siteId).not.toBeNull();
+      expect(
+        addDays(String(site?.activatedOn), 7) <= subject.screenedOn,
+        `${subject.subjectId} screened on ${subject.screenedOn} at a site activated on ${site?.activatedOn}`
+      ).toBe(true);
     }
   });
 

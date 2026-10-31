@@ -9,6 +9,7 @@ export interface MermaidBlock {
 
 const CORPUS_FILES = [
   "lib/case-studies-data.ts",
+  "lib/case-studies/studies",
   "prisma/seed.ts",
   "ARCHITECTURE.md",
   "docs/explanation/case-study-engineering-notes.md",
@@ -31,13 +32,31 @@ function unescapeHtml(source: string): string {
     .replace(/&amp;/g, "&");
 }
 
+function resolveCorpusFiles(workspaceRoot: string): string[] {
+  const resolved: string[] = [];
+  for (const entry of CORPUS_FILES) {
+    const fullPath = path.resolve(workspaceRoot, entry);
+    if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+      const children = fs
+        .readdirSync(fullPath)
+        .filter((child) => child.endsWith(".ts") || child.endsWith(".md"))
+        .sort()
+        .map((child) => path.join(entry, child).replace(/\\/g, "/"));
+      resolved.push(...children);
+    } else {
+      resolved.push(entry);
+    }
+  }
+  return resolved;
+}
+
 /** Extract every checked-in Mermaid source block used by the static corpus. */
 export function extractAllMermaidBlocks(
   workspaceRoot: string = process.cwd()
 ): MermaidBlock[] {
   const blocks: MermaidBlock[] = [];
 
-  for (const file of CORPUS_FILES) {
+  for (const file of resolveCorpusFiles(workspaceRoot)) {
     const fullPath = path.resolve(workspaceRoot, file);
     if (!fs.existsSync(fullPath)) {
       continue;

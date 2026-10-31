@@ -63,6 +63,16 @@ export const SDTM_METHODS = {
     "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
   DEATH_FLAG:
     "Y when the subject has a DEATH disposition event; missing otherwise.",
+  RELATED_RECORDS:
+    "Number each subject's AE and CM pairs from 1, in CM order. A pair is a medication whose collected related adverse event number (CMAENO) names one of the subject's tabulated adverse events; both records of the pair share the RELID.",
+  SUBJECT_ELEMENT:
+    "The TA elements of the subject's actual arm (ACTARMCD), one for each epoch the subject entered, with TA's ETCD, ELEMENT, TAETORD and EPOCH. Every subject entered the first epoch at informed consent, a dosed subject the second at first exposure, and the third only when they have a record dated after last exposure. A subject never randomized has only the first element, which every arm shares.",
+  ELEMENT_START:
+    "The date the subject entered the element: informed consent (RFICDTC) for the first epoch's element, first exposure (EXSTDTC) for the second and last exposure (EXENDTC) for the third.",
+  ELEMENT_END:
+    "The start of the subject's next element, so that elements leave no gap; for the subject's last element, the end of participation (RFPENDTC).",
+  COMMENT_TARGET:
+    "The record the site attached the comment to, named on the comments form by its collected source ID: RDOMAIN is that record's domain, IDVAR its --SEQ, or VISITNUM for a visit in SV, and IDVARVAL the value. A comment whose record was not tabulated is not written.",
 } as const;
 
 /** The id of an SDTM derivation method. */

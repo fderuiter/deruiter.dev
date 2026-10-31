@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { reportClientError } from "@/lib/client-sentry";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
@@ -12,18 +13,16 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [canonicalUrl, setCanonicalUrl] = useState<string>(
-    `${resolveBaseUrl()}/`
-  );
+  const isMounted = useIsMounted();
+  const canonicalUrl =
+    isMounted && typeof window !== "undefined"
+      ? window.location.href
+      : `${resolveBaseUrl()}/`;
 
   useEffect(() => {
     // Capture the error in external observability system
     reportClientError(error);
     logger.error("Layout compile error:", error, { skipTelemetry: true });
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCanonicalUrl(window.location.href);
-    }
   }, [error]);
 
   return (

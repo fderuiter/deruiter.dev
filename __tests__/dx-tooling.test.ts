@@ -220,6 +220,15 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(invalidBranch.error).toContain("Expected prefixes");
     });
 
+    // ci/ matches the Conventional Commits ci type, for workflow changes.
+    it("accepts ci/ branches, and still rejects near-misses", () => {
+      expect(validateBranchName("ci/core-staleness-main").valid).toBe(true);
+      expect(validateBranchName("ci-core-staleness").valid).toBe(false);
+      expect(validateBranchName("cicd/core-staleness").valid).toBe(false);
+      expect(validateBranchName("ci/Uppercase").valid).toBe(false);
+      expect(validateBranchName("no-prefix").error).toContain("ci/");
+    });
+
     it("accepts test/, dev/ and Jules agent branches, and still rejects near-misses", () => {
       expect(validateBranchName("test/crf-autosave").valid).toBe(true);
       expect(validateBranchName("dev/scratch-spike").valid).toBe(true);

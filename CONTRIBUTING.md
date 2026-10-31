@@ -171,6 +171,7 @@ branches must follow conventional prefixes:
 - `perf/*` - Performance optimizations
 - `chore/*` - Dependencies and repository maintenance
 - `test/*` - Test additions without behavior changes
+- `ci/*` - CI workflow and pipeline changes
 - `dev/*` - Short-lived personal development branches
 - `jules/*` - Reserved for branches opened by the Jules agent
 

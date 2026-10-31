@@ -50,7 +50,7 @@ values.
 
 The security audit CLI evaluates vulnerability severity levels and enforces the following policy:
 
-- **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `security-audit-ignore.json`.
+- **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `config/security-audit-ignore.json`.
 - **Low & Moderate Severities:** Do not block a local run by default, though developers are encouraged to remediate them during routine maintenance.
 - **CI Security Gate:** CI runs `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window also fail the Security Gate.
 
@@ -64,11 +64,11 @@ Automated security checks are enforced across continuous integration and release
 
 ## Vulnerability Override Governance Rules
 
-When a critical, high, or moderate third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `security-audit-ignore.json` (at the root of the repository or in `scripts/security-audit-ignore.json`).
+When a critical, high, or moderate third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `config/security-audit-ignore.json`.
 
 ### Mandatory Override Parameters
 
-All suppression rules in `security-audit-ignore.json` must strictly adhere to the following governance requirements:
+All suppression rules in `config/security-audit-ignore.json` must strictly adhere to the following governance requirements:
 
 1. **Advisory Identifier (`advisory` / `advisoryId` / `cve` / `ghsa` / `id`):** Must specify a valid advisory identifier (e.g., `GHSA-c2qf-rxjj-4v5w` or `CVE-XXXX-XXXX`). Entries missing an advisory ID are invalid and rejected by the audit tool.
 2. **Severity Classification (`severity`):** Specifies the vulnerability severity (`critical`, `high` or `moderate`). If omitted, rules default to Critical severity validation limits (**14 days**) to fail closed.
@@ -96,29 +96,35 @@ During local, CI, or scheduled daily execution, the audit tool validates all act
 
 ## npm Package Overrides
 
-The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports no advisories, and `security-audit-ignore.json` holds no waivers (the fast-uri and js-yaml waivers were replaced by the two pins added on 2026-10-19, #2510).
+The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports no advisories except the one waived below, and `config/security-audit-ignore.json` holds that single waiver (the fast-uri and js-yaml waivers were replaced by the two pins added on 2026-10-19, #2510).
 
-| Override                     | Pinned to                | Pulled in by                                            | Resolves to without the pin | Effect of removing it                                 |
-| ---------------------------- | ------------------------ | ------------------------------------------------------- | --------------------------- | ----------------------------------------------------- |
-| `deepmerge-ts`               | `^8.0.1`                 | `prisma` through `@prisma/config`                       | 7.1.5                       | 3 new high advisories                                 |
-| `browserslist`               | `^4.28.8`                | `@serwist` build tooling                                | 4.28.6                      | 2 new high advisories                                 |
-| `mysql2`                     | `^3.24.3`                | `prisma`                                                | 3.15.3                      | 1 new high and 1 new moderate advisory                |
-| `lodash-es`                  | `^4.18.1`                | `mermaid` through `chevrotain`                          | 4.17.23                     | 5 new high advisories                                 |
-| `qs`                         | `6.16.1`                 | Stryker through `typed-rest-client`                     | 6.15.1                      | 3 new moderate advisories                             |
-| `jsdom`                      | `26.1.0`                 | `isomorphic-dompurify`                                  | a second copy at 30.1.1     | no new advisories; kept for runtime compatibility     |
-| `source-map-js`              | `^1.2.2`                 | `postcss` through Next.js                               | below 1.2.2                 | 1 new high advisory (GHSA-68fv-2mgg-jv7q)             |
-| `katex`                      | `^0.18.11`               | `markdownlint-cli`                                      | below 0.18.11               | 1 new moderate advisory (GHSA-238p-pmpm-9mq7)         |
-| `smol-toml`                  | `^1.9.0`                 | `markdownlint-cli`                                      | below 1.9.0                 | 1 new moderate advisory (GHSA-r4xh-jqrq-34v2)         |
-| `sharp`                      | `^0.35.5`                | `next` (image optimization)                             | 0.35.4                      | 1 new high advisory (GHSA-wq5f-xc86-pv6w)             |
-| `shell-quote`                | `^1.11.0`                | `concurrently`                                          | 1.9.0                       | 1 new critical advisory (GHSA-pqg4-j6r4-53mv)         |
-| `fast-glob`                  | `npm:tinyglobby@^0.2.17` | `eslint-config-next` through `@next/eslint-plugin-next` | 3.3.1                       | 1 new high advisory in `braces` (GHSA-vfj7-8cjw-p6xm) |
-| `fast-uri`                   | `^3.1.9`                 | `ajv` through Stryker and `@prisma/dev`                 | 3.1.8                       | 4 new moderate advisories (#2723)                     |
-| `markdownlint-cli > js-yaml` | `~5.4.3`                 | `markdownlint-cli`                                      | 5.2.3                       | 1 new moderate advisory (GHSA-r3ph-w7gj-g6xm)         |
-| `zod`                        | `$zod`                   | `@serwist/next` and its build plugins                   | 4.6.5                       | 1 new high advisory (GHSA-mrhx-c7xc-m3w5)             |
+| Override                                           | Pinned to                | Pulled in by                                            | Resolves to without the pin | Effect of removing it                                 |
+| -------------------------------------------------- | ------------------------ | ------------------------------------------------------- | --------------------------- | ----------------------------------------------------- |
+| `deepmerge-ts`                                     | `^8.0.1`                 | `prisma` through `@prisma/config`                       | 7.1.5                       | 3 new high advisories                                 |
+| `browserslist`                                     | `^4.28.8`                | `@serwist` build tooling                                | 4.28.6                      | 2 new high advisories                                 |
+| `mysql2`                                           | `^3.24.3`                | `prisma`                                                | 3.15.3                      | 1 new high and 1 new moderate advisory                |
+| `lodash-es`                                        | `^4.18.1`                | `mermaid` through `chevrotain`                          | 4.17.23                     | 5 new high advisories                                 |
+| `qs`                                               | `6.16.1`                 | Stryker through `typed-rest-client`                     | 6.15.1                      | 3 new moderate advisories                             |
+| `jsdom`                                            | `26.1.0`                 | `isomorphic-dompurify`                                  | a second copy at 30.1.1     | no new advisories; kept for runtime compatibility     |
+| `source-map-js`                                    | `^1.2.2`                 | `postcss` through Next.js                               | below 1.2.2                 | 1 new high advisory (GHSA-68fv-2mgg-jv7q)             |
+| `katex`                                            | `^0.18.11`               | `markdownlint-cli`                                      | below 0.18.11               | 1 new moderate advisory (GHSA-238p-pmpm-9mq7)         |
+| `smol-toml`                                        | `^1.9.0`                 | `markdownlint-cli`                                      | below 1.9.0                 | 1 new moderate advisory (GHSA-r4xh-jqrq-34v2)         |
+| `sharp`                                            | `^0.35.5`                | `next` (image optimization)                             | 0.35.4                      | 1 new high advisory (GHSA-wq5f-xc86-pv6w)             |
+| `shell-quote`                                      | `^1.11.0`                | `concurrently`                                          | 1.9.0                       | 1 new critical advisory (GHSA-pqg4-j6r4-53mv)         |
+| `fast-glob`                                        | `npm:tinyglobby@^0.2.17` | `eslint-config-next` through `@next/eslint-plugin-next` | 3.3.1                       | 1 new high advisory in `braces` (GHSA-vfj7-8cjw-p6xm) |
+| `fast-uri`                                         | `^3.1.9`                 | `ajv` through Stryker and `@prisma/dev`                 | 3.1.8                       | 4 new moderate advisories (#2723)                     |
+| `markdownlint-cli > js-yaml`                       | `~5.4.3`                 | `markdownlint-cli`                                      | 5.2.3                       | 1 new moderate advisory (GHSA-r3ph-w7gj-g6xm)         |
+| `zod`                                              | `$zod`                   | `@serwist/next` and its build plugins                   | 4.6.5                       | 1 new high advisory (GHSA-mrhx-c7xc-m3w5)             |
+| `glob`                                             | `^14.0.2`                | `@sentry/bundler-plugins` and `@serwist/build`          | 13.0.6                      | 1 new moderate advisory (GHSA-3g3m-2fjr-6pw4)         |
+| `markdownlint-cli > minimatch`                     | `^11.0.1`                | `markdownlint-cli`                                      | 10.2.6                      | 1 new moderate advisory (GHSA-g3hv-75wg-m249)         |
+| `@typescript-eslint/typescript-estree > minimatch` | `^11.0.1`                | `typescript-eslint` through `eslint-config-next`        | 10.2.5                      | 1 new moderate advisory (GHSA-g3hv-75wg-m249)         |
+| `@stryker-mutator/core > minimatch`                | `^11.0.1`                | Stryker                                                 | 10.2.6                      | 1 new moderate advisory (GHSA-g3hv-75wg-m249)         |
 
 The `fast-glob` override swaps the package for `tinyglobby` rather than pinning a version (#1783). `fast-glob` reaches `braces` through `micromatch`, and GHSA-vfj7-8cjw-p6xm affects every `braces` release with no patched version published, so no pin can clear it. The only consumer is `@next/eslint-plugin-next`, whose single call is `globSync(rootDir, { onlyDirectories: true })` for the `settings.next.rootDir` option; `tinyglobby` exports the same function and option, and builds on `picomatch` without `braces`. One difference matters: `tinyglobby` expands a literal directory pattern to its subdirectories and `fast-glob` does not, so `settings.next.rootDir` must stay unset in `eslint.config.mjs` while the override stands. `__tests__/fast-glob-override.test.ts` checks that contract, that the setting is unset, and that `braces` stays out of the lockfile. Drop the override once `@next/eslint-plugin-next` no longer depends on `fast-glob` or a patched `braces` ships.
 
-The `js-yaml` pin is scoped to `markdownlint-cli` so ESLint keeps its own js-yaml 4. It stops at 5.4.x because js-yaml 5.5 moves to `argparse` 3, which is PSF-2.0 and not in `license-policy.json`. Drop it once `markdownlint-cli` depends on js-yaml 5.4.1 or later.
+The `glob` and `minimatch` pins answer two moderate advisories published on 2026-10-31 (#3670). glob 14 depends on minimatch 11, and the scoped minimatch pins move the minimatch 10 copies whose packages call nothing minimatch 11 removed. Two kinds of caller can't move, so `config/security-audit-ignore.json` waives GHSA-g3hv-75wg-m249 on `minimatch` until 2026-11-30 (#3667): the ESLint plugins bundled by `eslint-config-next` and `@eslint/eslintrc`, which need minimatch 3's CommonJS default export, and `typedoc` 0.28, which calls `Minimatch.matchOne`. Both run only at lint and docs time. #3671 is the upgrade that drops these pins and the waiver.
+
+The `js-yaml` pin is scoped to `markdownlint-cli` so ESLint keeps its own js-yaml 4. It stops at 5.4.x because js-yaml 5.5 moves to `argparse` 3, which is PSF-2.0 and not in `config/license-policy.json`. Drop it once `markdownlint-cli` depends on js-yaml 5.4.1 or later.
 
 The `jsdom` pin is not a vulnerability fix. jsdom 27 and later depend on the ESM-only `@exodus/bytes`, which made serverless functions fail with `ERR_REQUIRE_ESM` (#995). `next.config.ts` keeps those packages out of the server bundle and `__tests__/deploy-config.test.ts` guards that, but lifting the pin also needs a deployed check of the routes that sanitize HTML, so it stays until that check is done.
 

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1248,
-    "runtime": 566,
+    "total": 1249,
+    "runtime": 567,
     "tooling": 682,
     "direct": 80
   },
@@ -1668,6 +1668,15 @@
       "direct": false,
       "homepage": "https://github.com/SBoudrias/Inquirer.js",
       "repository": "https://github.com/SBoudrias/Inquirer.js"
+    },
+    {
+      "name": "@isaacs/nonrecursive-glob-match",
+      "version": "1.0.3",
+      "license": "BlueOak-1.0.0",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": null,
+      "repository": null
     },
     {
       "name": "@jridgewell/gen-mapping",
@@ -6900,7 +6909,7 @@
     },
     {
       "name": "glob",
-      "version": "13.0.6",
+      "version": "14.0.3",
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
@@ -8745,7 +8754,7 @@
     },
     {
       "name": "minimatch",
-      "version": "10.2.5",
+      "version": "10.2.6",
       "license": "BlueOak-1.0.0",
       "scope": "tooling",
       "direct": false,
@@ -8754,7 +8763,7 @@
     },
     {
       "name": "minimatch",
-      "version": "10.2.6",
+      "version": "11.0.3",
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
@@ -9224,7 +9233,7 @@
     },
     {
       "name": "path-scurry",
-      "version": "2.0.2",
+      "version": "3.0.0",
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,

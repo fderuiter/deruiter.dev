@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.12.0"
+version: "2.14.0"
 status: active
 domain: "Study data"
 tags:
@@ -2302,6 +2302,302 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, RDOMAIN, USUBJID, QNAM) identifies one row."
+  - id: RELREC
+    name: RELREC
+    physicalName: "m5/datasets/tabulations/sdtm/relrec.json"
+    physicalType: file
+    logicalType: object
+    description: "Related Records"
+    dataGranularityDescription: "One record per related record per relationship"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: RDOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Related Domain Abbreviation"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: IDVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        classification: confidential
+      - name: IDVARVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable Value"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 5
+        classification: confidential
+      - name: RELTYPE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Relationship Type"
+        required: false
+        classification: confidential
+      - name: RELID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Relationship Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 6
+        classification: confidential
+    quality:
+      - id: RELREC_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - RDOMAIN
+            - USUBJID
+            - IDVAR
+            - IDVARVAL
+            - RELID
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, RDOMAIN, USUBJID, IDVAR, IDVARVAL, RELID) identifies one row."
+  - id: SE
+    name: SE
+    physicalName: "m5/datasets/tabulations/sdtm/se.json"
+    physicalType: file
+    logicalType: object
+    description: "Subject Elements"
+    dataGranularityDescription: "One record per actual Element per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: SESEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        classification: confidential
+      - name: ETCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Element Code"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: ELEMENT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Element"
+        required: false
+        classification: confidential
+      - name: TAETORD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned Order of Element within Arm"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+      - name: SESTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date/Time of Element"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        classification: confidential
+      - name: SEENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "End Date/Time of Element"
+        required: false
+        classification: confidential
+      - name: SESTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Start of Element"
+        required: false
+        classification: confidential
+      - name: SEENDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of End of Element"
+        required: false
+        classification: confidential
+    quality:
+      - id: SE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ETCD
+            - SESTDTC
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ETCD, SESTDTC) identifies one row."
+  - id: CO
+    name: CO
+    physicalName: "m5/datasets/tabulations/sdtm/co.json"
+    physicalType: file
+    logicalType: object
+    description: Comments
+    dataGranularityDescription: "One record per comment per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: RDOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Related Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: COSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: IDVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable"
+        required: false
+        classification: confidential
+      - name: IDVARVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable Value"
+        required: false
+        classification: confidential
+      - name: COVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Comment
+        required: true
+        classification: confidential
+    quality:
+      - id: CO_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - COSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, COSEQ) identifies one row."
   - id: ADSL
     name: ADSL
     physicalName: "m5/datasets/analysis/adam/adsl.json"

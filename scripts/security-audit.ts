@@ -375,30 +375,28 @@ export function parseIgnoreRules(
 }
 
 export function loadRawIgnoreList(): unknown {
-  const rootIgnorePath = path.join(process.cwd(), "security-audit-ignore.json");
-  const scriptsIgnorePath = path.join(
-    process.cwd(),
-    "scripts",
-    "security-audit-ignore.json"
-  );
+  const possiblePaths = [
+    path.resolve(process.cwd(), "config/security-audit-ignore.json"),
+    path.resolve(__dirname, "../config/security-audit-ignore.json"),
+    path.resolve(process.cwd(), "security-audit-ignore.json"),
+    path.resolve(__dirname, "../security-audit-ignore.json"),
+    path.resolve(process.cwd(), "scripts/security-audit-ignore.json"),
+    path.resolve(__dirname, "security-audit-ignore.json"),
+  ];
 
-  if (fs.existsSync(rootIgnorePath)) {
-    try {
-      return JSON.parse(fs.readFileSync(rootIgnorePath, "utf8"));
-    } catch (_e) {
-      console.warn(
-        "Failed to parse root security-audit-ignore.json, falling back to default."
-      );
-    }
-  }
-
-  if (fs.existsSync(scriptsIgnorePath)) {
-    try {
-      return JSON.parse(fs.readFileSync(scriptsIgnorePath, "utf8"));
-    } catch (_e) {
-      console.warn(
-        "Failed to parse scripts/security-audit-ignore.json, falling back to default."
-      );
+  const checked = new Set<string>();
+  for (const ignorePath of possiblePaths) {
+    if (checked.has(ignorePath)) continue;
+    checked.add(ignorePath);
+    if (fs.existsSync(ignorePath)) {
+      try {
+        return JSON.parse(fs.readFileSync(ignorePath, "utf8"));
+      } catch (_e) {
+        console.warn(
+          `Failed to parse ${path.relative(process.cwd(), ignorePath) || ignorePath}, falling back to default.`
+        );
+        return DEFAULT_IGNORE_LIST;
+      }
     }
   }
 
@@ -496,7 +494,8 @@ export function getAdvisoryIdentifiers(adv: Advisory): string[] {
 export function collectAdvisoriesForVulnerability(
   pkgName: string,
   vulnerabilities: Record<string, VulnerabilityInfo>,
-  visited = new Set<string>()
+  visited = new Set<string>(),
+  nested = false
 ): Advisory[] {
   if (visited.has(pkgName)) return [];
   visited.add(pkgName);
@@ -514,14 +513,19 @@ export function collectAdvisoriesForVulnerability(
         const nested = collectAdvisoriesForVulnerability(
           item,
           vulnerabilities,
-          visited
+          visited,
+          true
         );
         advisories.push(...nested);
       }
     }
   }
 
-  if (advisories.length === 0) {
+  // Only the package the walk started from reports itself when it reaches
+  // no advisory. A dependency reached a second time, through another path,
+  // has already contributed its advisories, and a placeholder for it would
+  // block an advisory an ignore rule covers.
+  if (advisories.length === 0 && !nested) {
     advisories.push({
       name: vuln.name || pkgName,
       range: vuln.range,

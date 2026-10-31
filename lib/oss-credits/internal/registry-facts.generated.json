@@ -6032,8 +6032,8 @@
       ],
       "notices": []
     },
-    "baseline-browser-mapping@2.11.25": {
-      "integrity": "sha512-gMmEShwwq7FJqMwvfRwvCl00v4kN+KOfJqXn+f4nrufak5gNHJOksd/60Dvjuz7sI8Y5WiSFBa8FEYr+zoyqCw==",
+    "baseline-browser-mapping@2.11.34": {
+      "integrity": "sha512-Aqr8mA1kIvyJ3UY5YAY7ib8LSo1DmDMbMnVqGPtsKW1LxaFQFwn9Eb3yvq2fUKJsRvaXjnAV7R5osqETapzNiA==",
       "homepage": "https://github.com/web-platform-dx/baseline-browser-mapping#readme",
       "repository": "git+https://github.com/web-platform-dx/baseline-browser-mapping.git",
       "author": null,
@@ -6084,6 +6084,20 @@
     },
     "browserslist@4.29.0": {
       "integrity": "sha512-3GSvyjvDI4Dur1Meg2BekJquu5uF+9R9a1+5M1Mde192eZoXbeXjzgOsgqPS2V8D5wrrip0gR5Hf/GhWQ9ZzaA==",
+      "homepage": "https://github.com/browserslist/browserslist#readme",
+      "repository": "git+https://github.com/browserslist/browserslist.git",
+      "author": "Andrey Sitnik",
+      "licenses": [
+        {
+          "kind": "file",
+          "name": "LICENSE",
+          "sha": "21c2679a63d7699c0e644409e2f17d0adbc7a965003feb06b3ff4b833d21f722"
+        }
+      ],
+      "notices": []
+    },
+    "browserslist@4.29.5": {
+      "integrity": "sha512-khTmKu5NGYTotqcYo8Bew2k4RAE9PuXRSFRXG2lQBrCEQHyeQ/vX6gKMxfokwywBsLiXZMnHsmWMG1pnO8J7uQ==",
       "homepage": "https://github.com/browserslist/browserslist#readme",
       "repository": "git+https://github.com/browserslist/browserslist.git",
       "author": "Andrey Sitnik",
@@ -6156,8 +6170,8 @@
       "licenses": [],
       "notices": []
     },
-    "caniuse-lite@1.0.30001810": {
-      "integrity": "sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg==",
+    "caniuse-lite@1.0.30001820": {
+      "integrity": "sha512-gfWD6MxqVCqAOwmODfZf7DchWvlrA+SRdNX7ceLfg3xRqe5ssjjpF7EgslC/0tiLiNTajdaNN/q8c/5u/7Gz8w==",
       "homepage": "https://github.com/browserslist/caniuse-lite#readme",
       "repository": "git+https://github.com/browserslist/caniuse-lite.git",
       "author": "Ben Briggs",
@@ -7575,8 +7589,8 @@
       ],
       "notices": []
     },
-    "electron-to-chromium@1.5.433": {
-      "integrity": "sha512-5lCAbyZBjtmUt/RAGHRqrL2q0oEFRThDAsZHHDn9XHa89Qw7gMYOeSicBTy+AHfvo0r6vwsZvqNJTQIQy1BLzA==",
+    "electron-to-chromium@1.5.472": {
+      "integrity": "sha512-s4+nfT29b0FKpVKoaIxl2pWsoNcn7A/nMPSrxayw4T3BsmPeV2lF9Y06BsAQeMGhCTQ4nYJ5XST7jkqe4ZEqFw==",
       "homepage": "https://github.com/Kilian/electron-to-chromium#readme",
       "repository": "git+https://github.com/Kilian/electron-to-chromium.git",
       "author": "Kilian Valkhof",
@@ -10727,8 +10741,8 @@
       "licenses": [],
       "notices": []
     },
-    "node-releases@2.0.56": {
-      "integrity": "sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==",
+    "node-releases@2.0.63": {
+      "integrity": "sha512-6li2QanLsAXpIH2R6j77MzRyvOyrvdTqlKtO4CgBdHGNvN99ZZfyxszHc5o5+IZBWD5u6Hzwg83JoGXmqZNG9Q==",
       "homepage": "https://github.com/chicoxyzzy/node-releases#readme",
       "repository": "git+https://github.com/chicoxyzzy/node-releases.git",
       "author": "Sergey Rubanov",
@@ -13176,8 +13190,8 @@
       "licenses": [],
       "notices": []
     },
-    "update-browserslist-db@1.3.3": {
-      "integrity": "sha512-pJ2sYawQS0R/WI928Gj5GlPhTGzbMelq0+4INtSYNDV9ErKJcX6xjGWkoG/VnB3dpUm00zALaqkrUD77pO5TDQ==",
+    "update-browserslist-db@1.3.4": {
+      "integrity": "sha512-t8wonIOdQyOjtPd2VktlBu6QjTVTks6v8bSi7kd0r2Vll8TK1JYDZtRRdbmCHOAMphkZgrzK+L+vXK4pyZ8t4A==",
       "homepage": "https://github.com/browserslist/update-db#readme",
       "repository": "git+https://github.com/browserslist/update-db.git",
       "author": "Andrey Sitnik",

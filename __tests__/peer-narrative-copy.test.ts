@@ -11,7 +11,13 @@ import { LEGACY_SUMMARY_PERSONA_VALUE } from "@/lib/persona";
 const ROOT = process.cwd();
 
 /** Directories whose every .ts/.tsx file renders or feeds public pages. */
-const SCANNED_DIRS = ["app", "components", "hooks", "lib/blog"];
+const SCANNED_DIRS = [
+  "app",
+  "components",
+  "hooks",
+  "lib/blog",
+  "lib/case-studies",
+];
 
 /**
  * Content modules in lib/ that hold page copy. The rest of lib/ is engine and

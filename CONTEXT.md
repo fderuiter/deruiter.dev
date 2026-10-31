@@ -348,6 +348,7 @@ Formal inference rules used to derive logical steps from valid premises:
 - **Interactive CLI Developer Sandbox**: The client-side terminal interface (`commands_json`, `playback_json`, `SandboxTerminal`) rendering realistic command outputs and step-by-step playback workflows directly inside case study pages.
 - **FluentUI Case Study Easter Egg**: A scoped Office Fluent Design System visual override active on `/case-studies/crf-xl` evoking classic Microsoft Excel taskpane aesthetics without compromising global dark-mode layout integrity.
 - **Tracer-Bullet Case Study Rollout**: The phased verification protocol establishing generalized UI contracts and multi-source telemetry first before sequentially integrating, testing, and closing individual case study issues.
+- **Per-Study Content Modules**: The deep-module content architecture (`lib/case-studies/`) decomposing the monolithic fallback dataset into private per-study modules (`lib/case-studies/studies/`), each co-locating editorial narrative, architecture diagrams, and terminal sandbox payloads, exposed through a public package entry point (`lib/case-studies/index.ts`) and preserved under `lib/case-studies-data.ts` as a 100% backward-compatible re-export facade.
 
 ## Blog & Engineering Dispatch Editorial Architecture
 
@@ -585,3 +586,14 @@ When refactoring authored copy, select replacement punctuation based on the gram
 - **Metric Grain**: `portfolio` for a metric that rolls up to one value across every study, or `study` for one defined only per study, such as the days from first patient in to last patient in. A study grain metric is always grouped by study.
 - **Data Cut**: The date a metric is measured as of, such as the age of a query still open. It is the warehouse's `asOf` date for the TypeScript evaluator, and an option of the SQL compiler that writes it into the query as a date literal; it is never the current date.
 - **Metric Gap**: A metric the platform needs but the gold model cannot compute, listed in `METRIC_GAPS` with the data it is missing rather than approximated.
+
+## Arcade Seam Architecture & Laser Loon
+
+- **Arcade Action Map (`ActionMap`)**: A typed, declarative dictionary constructed via `defineActions` in `lib/arcade/input/actions.ts` mapping game actions to hardware keys (`KeyboardEvent.code`), gamepad controls, and touch triggers. It serves as the single source of truth for runtime listeners, cabinet controls lists, and field manual documentation.
+- **Action Context**: A scoped runtime phase (such as `"playing"` or `"card"`) during which a designated subset of action keys is live, preventing input collisions between modal cards and active gameplay.
+- **Action Sink (`ActionSinkProvider`)**: A React context provider that exposes a dispatch channel for touch controls and on-screen buttons to transmit normalized `ActionInput` events (`down`, `up`, `change`) directly into the session hook.
+- **Game Session Seam (`use<Game>Session`)**: The headless, state-and-simulation hook holding physics, score, progression, RNG streams, and action reducers. In accordance with ADR 0062 and dependency-cruiser boundary rules, it never imports browser or device hooks.
+- **Game View Slot (`defineGameViews`)**: The view router dynamically mounting dedicated layouts (`DesktopView`, `TabletView`, `PhoneView`) above which the game session sits, enabling view switches across viewports without dropping the running simulation.
+- **Optic Arsenal**: Laser Loon's selectable laser weapon types (`ruby-laser`, `cyan-pulse`, `aurora-wave`, `ice-cannon`) mapped to numeric optic actions (`optic-ruby` through `optic-cryo`).
+- **Tremolo Blast**: Laser Loon's emergency defensive pulse attack mapped to `tremolo` (`KeyU` / gamepad Y / touch dock tap).
+

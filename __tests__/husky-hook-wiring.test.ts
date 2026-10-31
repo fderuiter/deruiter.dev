@@ -1,13 +1,37 @@
 // @vitest-environment node
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import { spawnSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import {
+  checkGitHygieneConfig,
+  detectHuskyHookStatus,
+} from "../lib/dx/git-guard";
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const readHook = (name: string): string =>
   fs.readFileSync(path.join(workspaceRoot, ".husky", name), "utf8");
+
+function toBashPath(targetPath: string): string {
+  if (process.platform === "win32") {
+    const match = targetPath.match(/^([a-zA-Z]):[\\/](.*)$/);
+    if (match) {
+      const drive = match[1].toLowerCase();
+      const rest = match[2].replace(/\\/g, "/");
+      return `/mnt/${drive}/${rest}`;
+    }
+  }
+  return targetPath;
+}
 
 /**
  * A validator that exists but is invoked by nothing passes every unit test it
@@ -54,12 +78,22 @@ describe("Husky hook wiring", () => {
       fs.writeFileSync(path.join(shimDir, "npm"), "#!/bin/sh\nexit 0\n", {
         mode: 0o755,
       });
+      if (process.platform === "win32") {
+        spawnSync("bash", [
+          "-c",
+          `chmod +x '${toBashPath(path.join(shimDir, "npm"))}'`,
+        ]);
+      }
 
       const env: NodeJS.ProcessEnv = {
         ...process.env,
-        PATH: `${shimDir}:${process.env.PATH ?? ""}`,
-        GIT_DIR: path.join(repo, ".git"),
-        GIT_WORK_TREE: repo,
+        PATH: `${toBashPath(shimDir)}:${process.env.PATH ?? ""}`,
+        GIT_DIR:
+          process.platform === "win32"
+            ? toBashPath(path.join(repo, ".git"))
+            : path.join(repo, ".git"),
+        GIT_WORK_TREE:
+          process.platform === "win32" ? toBashPath(repo) : repo,
       };
       delete env.GIT_INDEX_FILE;
       delete env.GIT_PREFIX;
@@ -70,7 +104,7 @@ describe("Husky hook wiring", () => {
       try {
         return spawnSync(
           "bash",
-          [path.join(workspaceRoot, ".husky/pre-push")],
+          [toBashPath(path.join(workspaceRoot, ".husky/pre-push"))],
           {
             cwd: workspaceRoot,
             input: "",
@@ -99,7 +133,7 @@ describe("Husky hook wiring", () => {
 
     it("rejects stitch/feat/example via direct CLI execution of validate-branch.ts", () => {
       const result = spawnSync(
-        "npx",
+        process.platform === "win32" ? "npx.cmd" : "npx",
         [
           "tsx",
           path.join(workspaceRoot, "scripts/validate-branch.ts"),
@@ -109,6 +143,7 @@ describe("Husky hook wiring", () => {
           cwd: workspaceRoot,
           encoding: "utf-8",
           env: { ...process.env, ALLOW_DANGEROUS_GIT: "0" },
+          shell: process.platform === "win32",
         }
       );
       expect(result.status).toBe(1);
@@ -307,12 +342,13 @@ describe("Husky hook wiring", () => {
       delete env.GIT_PREFIX;
       delete env.VITEST;
       return spawnSync(
-        "npx",
+        process.platform === "win32" ? "npx.cmd" : "npx",
         ["tsx", path.join(workspaceRoot, "scripts/validate-commit.ts")],
         {
           cwd: workspaceRoot,
           encoding: "utf-8",
           env,
+          shell: process.platform === "win32",
         }
       );
     };
@@ -389,7 +425,11 @@ describe("Husky hook wiring", () => {
       spawnSync("git", ["rm", "-f", "config.ts"], { cwd: repo });
     });
 
-    it.each(["café.ts", "tab\tname.ts", "line\nname.ts", " spaced.ts "])(
+    const testFiles =
+      process.platform === "win32"
+        ? ["café.ts", " spaced.ts "]
+        : ["café.ts", "tab\tname.ts", "line\nname.ts", " spaced.ts "];
+    it.each(testFiles)(
       "preserves the exact staged pathname %j",
       (file) => {
         fs.writeFileSync(path.join(repo, file), "const harmless = 1;\n");
@@ -453,6 +493,176 @@ describe("Husky hook wiring", () => {
       });
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("Failed to enumerate staged files");
+    });
+  });
+
+  describe("lifecycle detection and hygiene checks (#3616)", () => {
+    let scratchRepo: string;
+
+    beforeEach(() => {
+      scratchRepo = fs.mkdtempSync(path.join(os.tmpdir(), "husky-detect-"));
+      spawnSync("git", ["init", "-q", scratchRepo]);
+      spawnSync("git", [
+        "-C",
+        scratchRepo,
+        "config",
+        "user.email",
+        "test@example.com",
+      ]);
+      spawnSync("git", ["-C", scratchRepo, "config", "user.name", "Test"]);
+    });
+
+    afterEach(() => {
+      fs.rmSync(scratchRepo, { recursive: true, force: true });
+    });
+
+    it("classifies uninitialized hooks when .husky/_ or core.hooksPath is missing", () => {
+      fs.mkdirSync(path.join(scratchRepo, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "commit-msg"),
+        "#!/bin/sh\nexit 0\n"
+      );
+
+      const status = detectHuskyHookStatus(scratchRepo);
+      expect(status.state).toBe("uninitialized");
+
+      const check = checkGitHygieneConfig(scratchRepo, false);
+      expect(check.status).toBe("fail");
+      expect(check.fixable).toBe(true);
+      expect(check.details?.some((d) => d.includes("uninitialized"))).toBe(
+        true
+      );
+    });
+
+    it("classifies active hooks when core.hooksPath and dispatchers are present", () => {
+      fs.mkdirSync(path.join(scratchRepo, ".husky", "_"), { recursive: true });
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "commit-msg"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "_", "h"),
+        "#!/bin/sh\n"
+      );
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "_", "pre-commit"),
+        "#!/bin/sh\n"
+      );
+      spawnSync("git", [
+        "-C",
+        scratchRepo,
+        "config",
+        "core.hooksPath",
+        ".husky/_",
+      ]);
+
+      const status = detectHuskyHookStatus(scratchRepo);
+      expect(status.state).toBe("active");
+
+      const check = checkGitHygieneConfig(scratchRepo, false);
+      expect(check.status).toBe("pass");
+    });
+
+    it("respects HUSKY=0 and HUSKY=false as intentional disablement", () => {
+      fs.mkdirSync(path.join(scratchRepo, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "commit-msg"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      const origHusky = process.env.HUSKY;
+      try {
+        process.env.HUSKY = "0";
+        expect(detectHuskyHookStatus(scratchRepo).state).toBe("disabled");
+        expect(checkGitHygieneConfig(scratchRepo, false).status).toBe("pass");
+
+        process.env.HUSKY = "false";
+        expect(detectHuskyHookStatus(scratchRepo).state).toBe("disabled");
+        expect(checkGitHygieneConfig(scratchRepo, false).status).toBe("pass");
+      } finally {
+        if (origHusky !== undefined) {
+          process.env.HUSKY = origHusky;
+        } else {
+          delete process.env.HUSKY;
+        }
+      }
+    });
+
+    it("respects custom core.hooksPath without clobbering", () => {
+      fs.mkdirSync(path.join(scratchRepo, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "commit-msg"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      spawnSync("git", [
+        "-C",
+        scratchRepo,
+        "config",
+        "core.hooksPath",
+        "/custom/hooks",
+      ]);
+
+      const status = detectHuskyHookStatus(scratchRepo);
+      expect(status.state).toBe("custom");
+      expect(status.hooksPath).toBe("/custom/hooks");
+
+      const check = checkGitHygieneConfig(scratchRepo, false);
+      expect(check.status).toBe("pass");
+      expect(check.message).toContain("Custom core.hooksPath");
+    });
+
+    it("heals uninitialized hooks when fix is true", () => {
+      const huskyDir = path.join(scratchRepo, "node_modules", "husky");
+      fs.mkdirSync(huskyDir, { recursive: true });
+      fs.mkdirSync(path.join(scratchRepo, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(scratchRepo, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+
+      // Mock husky package entrypoint
+      fs.writeFileSync(
+        path.join(huskyDir, "bin.js"),
+        'const { spawnSync } = require("child_process");\n' +
+          'const fs = require("fs");\n' +
+          'spawnSync("git", ["config", "core.hooksPath", ".husky/_"]);\n' +
+          'fs.mkdirSync(".husky/_", { recursive: true });\n' +
+          'fs.writeFileSync(".husky/_/h", "#!/bin/sh\\n");\n' +
+          'fs.writeFileSync(".husky/_/pre-commit", "#!/bin/sh\\n");\n'
+      );
+
+      const check = checkGitHygieneConfig(scratchRepo, true);
+      expect(check.status).toBe("fixed");
+      expect(
+        fs.existsSync(path.join(scratchRepo, ".husky", "commit-msg"))
+      ).toBe(true);
+      expect(fs.existsSync(path.join(scratchRepo, ".husky", "_", "h"))).toBe(
+        true
+      );
+    });
+
+    it("detects nongit when .husky or git directory is absent", () => {
+      const nonGit = fs.mkdtempSync(path.join(os.tmpdir(), "husky-nongit-"));
+      try {
+        expect(detectHuskyHookStatus(nonGit).state).toBe("nongit");
+      } finally {
+        fs.rmSync(nonGit, { recursive: true, force: true });
+      }
     });
   });
 });

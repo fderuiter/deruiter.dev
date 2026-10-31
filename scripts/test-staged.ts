@@ -141,13 +141,15 @@ export function runStagedTests(cwd: string): void {
     delete testEnv[key];
   }
 
+  const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
   execFileSync(
-    "npx",
+    npxCommand,
     ["vitest", "related", "--run", "--passWithNoTests", ...files],
     {
       cwd,
       stdio: "inherit",
       env: testEnv,
+      shell: process.platform === "win32",
     }
   );
 }

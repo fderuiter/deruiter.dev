@@ -14,6 +14,18 @@ const SCRIPTS = [
   "scripts/lib/setup-checks.sh",
 ];
 
+function toBashPath(targetPath: string): string {
+  if (process.platform === "win32") {
+    const match = targetPath.match(/^([a-zA-Z]):[\\/](.*)$/);
+    if (match) {
+      const drive = match[1].toLowerCase();
+      const rest = match[2].replace(/\\/g, "/");
+      return `/mnt/${drive}/${rest}`;
+    }
+  }
+  return targetPath;
+}
+
 function bash(snippet: string): string {
   return execFileSync(
     "bash",
@@ -25,7 +37,7 @@ function bash(snippet: string): string {
 const hasShellcheck =
   spawnSync("shellcheck", ["--version"], { stdio: "ignore" }).status === 0;
 
-describe("setup shell entrypoint (#982, #985)", () => {
+describe("setup shell entrypoint (#982, #985)", { timeout: 60000 }, () => {
   it.each(SCRIPTS)("%s parses with bash -n", (script) => {
     expect(() =>
       execFileSync("bash", ["-n", script], { cwd: ROOT, stdio: "pipe" })
@@ -40,14 +52,17 @@ describe("setup shell entrypoint (#982, #985)", () => {
     expect(result.stdout).toBe("");
   });
 
-  it("keeps the entrypoints executable", () => {
-    for (const script of [
-      "scripts/setup.sh",
-      "scripts/setup-clerk-wizard.sh",
-    ]) {
-      expect(fs.statSync(path.join(ROOT, script)).mode & 0o111).not.toBe(0);
+  it.skipIf(process.platform === "win32")(
+    "keeps the entrypoints executable",
+    () => {
+      for (const script of [
+        "scripts/setup.sh",
+        "scripts/setup-clerk-wizard.sh",
+      ]) {
+        expect(fs.statSync(path.join(ROOT, script)).mode & 0o111).not.toBe(0);
+      }
     }
-  });
+  );
 
   it("evaluates version ranges exactly like satisfiesVersionRange", () => {
     const cases: [string, string][] = [
@@ -131,6 +146,50 @@ describe("setup shell entrypoint (#982, #985)", () => {
     );
   });
 
+  it("detects husky status via setup_detect_husky_status (#3616)", () => {
+    const scratch = fs.mkdtempSync(
+      path.join(os.tmpdir(), "setup-detect-husky-")
+    );
+    try {
+      spawnSync("git", ["init", "-q", scratch]);
+      fs.mkdirSync(path.join(scratch, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(scratch, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      expect(bash(`setup_detect_husky_status '${scratch}'`)).toBe(
+        "uninitialized"
+      );
+
+      spawnSync("git", ["-C", scratch, "config", "core.hooksPath", ".husky/_"]);
+      fs.mkdirSync(path.join(scratch, ".husky", "_"), { recursive: true });
+      fs.writeFileSync(path.join(scratch, ".husky", "_", "h"), "#!/bin/sh\n");
+      fs.writeFileSync(
+        path.join(scratch, ".husky", "_", "pre-commit"),
+        "#!/bin/sh\n"
+      );
+      expect(bash(`setup_detect_husky_status '${scratch}'`)).toBe("active");
+
+      spawnSync("git", [
+        "-C",
+        scratch,
+        "config",
+        "core.hooksPath",
+        "/custom/hooks",
+      ]);
+      expect(bash(`setup_detect_husky_status '${scratch}'`)).toBe("custom");
+
+      expect(bash(`HUSKY=0 setup_detect_husky_status '${scratch}'`)).toBe(
+        "disabled"
+      );
+      expect(bash(`HUSKY=false setup_detect_husky_status '${scratch}'`)).toBe(
+        "disabled"
+      );
+    } finally {
+      fs.rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
   describe("in a fresh workspace", () => {
     let dir: string;
 
@@ -151,15 +210,28 @@ describe("setup shell entrypoint (#982, #985)", () => {
     });
 
     afterEach(() => {
-      fs.rmSync(dir, { recursive: true, force: true });
+      try {
+        fs.rmSync(dir, {
+          recursive: true,
+          force: true,
+          maxRetries: 3,
+          retryDelay: 100,
+        });
+      } catch {
+        // Ignore busy file locks on Windows cleanup
+      }
     });
 
     const runSetup = (...args: string[]) =>
-      spawnSync("bash", [path.join(dir, "scripts", "setup.sh"), ...args], {
-        cwd: os.tmpdir(),
-        encoding: "utf-8",
-        env: { ...process.env, CI: "" },
-      });
+      spawnSync(
+        "bash",
+        [toBashPath(path.join(dir, "scripts", "setup.sh")), ...args],
+        {
+          cwd: os.tmpdir(),
+          encoding: "utf-8",
+          env: { ...process.env, CI: "" },
+        }
+      );
 
     it("prints help and exits 0", () => {
       const result = runSetup("--help");
@@ -227,16 +299,25 @@ describe("setup shell entrypoint (#982, #985)", () => {
         "#!/bin/sh\nmkdir -p app/generated/prisma\ntouch app/generated/prisma/client.ts\n",
         { mode: 0o755 }
       );
+      if (process.platform === "win32") {
+        spawnSync("bash", [
+          "-c",
+          `chmod +x '${toBashPath(path.join(bin, "tsx"))}' '${toBashPath(path.join(fakeBin, "npx"))}'`,
+        ]);
+      }
       fs.writeFileSync(path.join(dir, "tsconfig.tsbuildinfo"), "stale");
       const result = spawnSync(
         "bash",
-        [path.join(dir, "scripts/setup.sh"), "--non-interactive"],
+        [
+          "-c",
+          `export PATH="${toBashPath(fakeBin)}:$PATH"; "${toBashPath(path.join(dir, "scripts/setup.sh"))}" --non-interactive`,
+        ],
         {
+          cwd: dir,
           encoding: "utf-8",
           env: {
             ...process.env,
             CI: "",
-            PATH: `${fakeBin}:${process.env.PATH}`,
           },
         }
       );
@@ -247,22 +328,146 @@ describe("setup shell entrypoint (#982, #985)", () => {
       expect(fs.existsSync(path.join(dir, "tsconfig.tsbuildinfo"))).toBe(false);
     });
 
-    it("never runs npm ci through a symlinked node_modules", () => {
-      const shared = fs.mkdtempSync(path.join(os.tmpdir(), "dx-shared-nm-"));
-      fs.writeFileSync(path.join(shared, "keep.txt"), "shared install");
-      fs.symlinkSync(shared, path.join(dir, "node_modules"));
-      const result = runSetup("--json", "--non-interactive");
-      expect(fs.readFileSync(path.join(shared, "keep.txt"), "utf-8")).toBe(
-        "shared install"
+    it.skipIf(process.platform === "win32")(
+      "never runs npm ci through a symlinked node_modules",
+      () => {
+        const shared = fs.mkdtempSync(path.join(os.tmpdir(), "dx-shared-nm-"));
+        fs.writeFileSync(path.join(shared, "keep.txt"), "shared install");
+        fs.symlinkSync(shared, path.join(dir, "node_modules"));
+        const result = runSetup("--json", "--non-interactive");
+        expect(fs.readFileSync(path.join(shared, "keep.txt"), "utf-8")).toBe(
+          "shared install"
+        );
+        const summary = JSON.parse(result.stdout);
+        expect(summary.data.stages[2]).toMatchObject({
+          id: "dependencies",
+          status: "failed",
+        });
+        expect(summary.data.stages[2].detail).toContain("symlink");
+        expect(result.status).toBe(1);
+        fs.rmSync(shared, { recursive: true, force: true });
+      }
+    );
+
+    it("repairs uninitialized Husky hooks when dependencies are reused (#3616)", () => {
+      const bin = path.join(dir, "node_modules", ".bin");
+      fs.mkdirSync(bin, { recursive: true });
+      fs.writeFileSync(path.join(dir, "package-lock.json"), "{}");
+      fs.writeFileSync(
+        path.join(dir, "node_modules", ".package-lock.json"),
+        "{}"
       );
-      const summary = JSON.parse(result.stdout);
-      expect(summary.data.stages[2]).toMatchObject({
-        id: "dependencies",
-        status: "failed",
+      const future = new Date(Date.now() + 5000);
+      fs.utimesSync(
+        path.join(dir, "node_modules", ".package-lock.json"),
+        future,
+        future
+      );
+      fs.writeFileSync(path.join(bin, "tsx"), "#!/bin/sh\nexit 0\n", {
+        mode: 0o755,
       });
-      expect(summary.data.stages[2].detail).toContain("symlink");
-      expect(result.status).toBe(1);
-      fs.rmSync(shared, { recursive: true, force: true });
+      fs.mkdirSync(path.join(dir, "app", "generated", "prisma"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(dir, "app", "generated", "prisma", "client.ts"),
+        "// client"
+      );
+
+      spawnSync("git", ["init", "-q", dir]);
+      fs.mkdirSync(path.join(dir, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+
+      fs.writeFileSync(
+        path.join(bin, "husky"),
+        "#!/bin/sh\ngit config core.hooksPath .husky/_\nmkdir -p .husky/_\ntouch .husky/_/h .husky/_/pre-commit\n",
+        { mode: 0o755 }
+      );
+
+      const result = spawnSync(
+        "bash",
+        [toBashPath(path.join(dir, "scripts/setup.sh")), "--non-interactive"],
+        {
+          cwd: dir,
+          encoding: "utf-8",
+          env: { ...process.env, CI: "" },
+        }
+      );
+      expect(result.status).toBe(0);
+      expect(fs.existsSync(path.join(dir, ".husky", "_", "h"))).toBe(true);
+      const hooksPath = spawnSync(
+        "git",
+        ["-C", dir, "config", "--get", "core.hooksPath"],
+        { encoding: "utf-8" }
+      ).stdout.trim();
+      expect(hooksPath).toBe(".husky/_");
+    });
+
+    it("respects HUSKY=0 and custom hooksPath in setup (#3616)", () => {
+      const bin = path.join(dir, "node_modules", ".bin");
+      fs.mkdirSync(bin, { recursive: true });
+      fs.writeFileSync(path.join(dir, "package-lock.json"), "{}");
+      fs.writeFileSync(
+        path.join(dir, "node_modules", ".package-lock.json"),
+        "{}"
+      );
+      const future = new Date(Date.now() + 5000);
+      fs.utimesSync(
+        path.join(dir, "node_modules", ".package-lock.json"),
+        future,
+        future
+      );
+      fs.writeFileSync(path.join(bin, "tsx"), "#!/bin/sh\nexit 0\n", {
+        mode: 0o755,
+      });
+      fs.mkdirSync(path.join(dir, "app", "generated", "prisma"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(dir, "app", "generated", "prisma", "client.ts"),
+        "// client"
+      );
+
+      spawnSync("git", ["init", "-q", dir]);
+      fs.mkdirSync(path.join(dir, ".husky"), { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, ".husky", "pre-commit"),
+        "#!/bin/sh\nexit 0\n"
+      );
+      spawnSync("git", [
+        "-C",
+        dir,
+        "config",
+        "core.hooksPath",
+        "/custom/hooks",
+      ]);
+
+      // Mock husky that would fail if called
+      fs.writeFileSync(
+        path.join(bin, "husky"),
+        "#!/bin/sh\necho 'ERROR: husky called'\nexit 1\n",
+        { mode: 0o755 }
+      );
+
+      const result = spawnSync(
+        "bash",
+        [toBashPath(path.join(dir, "scripts/setup.sh")), "--non-interactive"],
+        {
+          cwd: dir,
+          encoding: "utf-8",
+          env: { ...process.env, CI: "" },
+        }
+      );
+      expect(result.status).toBe(0);
+      const hooksPath = spawnSync(
+        "git",
+        ["-C", dir, "config", "--get", "core.hooksPath"],
+        { encoding: "utf-8" }
+      ).stdout.trim();
+      expect(hooksPath).toBe("/custom/hooks");
     });
   });
 });

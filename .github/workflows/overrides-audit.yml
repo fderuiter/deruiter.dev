@@ -1,0 +1,88 @@
+name: Overrides Audit
+
+# #3671: once a month, re-audit every npm override in package.json. Each pin
+# is removed in a scratch copy, the lockfile regenerated and npm audit run;
+# a pin whose removal adds no vulnerable copy, and that SECURITY.md keeps for
+# no other reason, can go. When one can, open an issue (or comment on the
+# open one) with the report. The audit reads the registry and changes
+# nothing in the repository, so it never fails a build.
+
+on:
+  schedule:
+    - cron: "17 6 3 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: overrides-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: npm Overrides Re-audit
+    # The audit reads main. Dispatched from another branch it would run that
+    # branch's workflow against main's package.json, so it does nothing.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Re-audit the Overrides
+        run: |
+          npm run audit:overrides -- \
+            --summary "$RUNNER_TEMP/overrides.md" \
+            --json "$RUNNER_TEMP/overrides.json"
+
+      - name: Publish Job Summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/overrides.md" ]; then
+            cat "$RUNNER_TEMP/overrides.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Open or Update the Re-audit Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(node -e '
+            const results = require(process.argv[1]);
+            const open = ["no-effect", "no-new-advisory", "error"];
+            console.log(results.filter((r) => open.includes(r.status)).length);
+          ' "$RUNNER_TEMP/overrides.json")"
+          if [ "$count" = "0" ]; then
+            echo "Every override is still needed or kept for a documented reason."
+            exit 0
+          fi
+          title="npm overrides re-audit: pins to drop or check"
+          body="$RUNNER_TEMP/issue.md"
+          {
+            cat "$RUNNER_TEMP/overrides.md"
+            echo
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "Drop each pin marked drop or review in package.json and its SECURITY.md row, or record in SECURITY.md why it stays (#3671)."
+          } > "$body"
+          existing="$(gh issue list --state open --search "\"$title\" in:title" \
+            --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file "$body"
+          else
+            gh issue create --title "$title" --label needs-triage --body-file "$body"
+          fi

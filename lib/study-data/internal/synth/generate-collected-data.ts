@@ -26,9 +26,34 @@ type Domain =
   | "MH"
   | "IE"
   | "DS"
-  | "CO";
+  | "CO"
+  | "CE";
 
 const BASE_DATE = "2030-01-01";
+
+/**
+ * Outcomes a clinical events committee adjudicates, drawn only for a study
+ * that schedules a CE activity (#3417): the share of randomized subjects
+ * with at least one, and the event as the committee records it. The rates
+ * are synthetic and the same in every arm.
+ */
+const DEATH_SHARE = 0.06;
+const ADJUDICATED_EVENTS = [
+  {
+    key: "stroke",
+    share: 0.04,
+    repeatShare: 0,
+    term: "Disabling stroke (modified Rankin Scale 2 or more at 90 days)",
+    decod: "DISABLING STROKE",
+  },
+  {
+    key: "rehosp",
+    share: 0.12,
+    repeatShare: 0.3,
+    term: "Rehospitalisation for valve-related symptoms or worsening heart failure",
+    decod: "REHOSPITALISATION",
+  },
+] as const;
 
 /**
  * The seriousness criteria the EDC asks for once an event is reported
@@ -392,6 +417,15 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("RSRCID", "Source ID of the commented record"),
     TEXT("COVAL", "Comment"),
   ],
+  // The clinical events committee's adjudicated events: the event the
+  // committee confirmed and the date it began.
+  CE: [
+    SRC,
+    SUBJ,
+    TEXT("CETERM", "Adjudicated event"),
+    TEXT("CEDECOD", "Event category"),
+    DATE("CESTDTC", "Event start date"),
+  ],
 };
 
 function dataset(
@@ -553,6 +587,7 @@ export function generateCollectedData(
     IE: [],
     DS: [],
     CO: [],
+    CE: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
   const firstDay = Math.min(...design.visits.map((visit) => visit.targetDay));
@@ -561,6 +596,11 @@ export function generateCollectedData(
   )!;
   const activityById = new Map(
     design.activities.map((activity) => [activity.id, activity])
+  );
+  // A study whose clinical events committee adjudicates outcomes follows
+  // each subject to death and collects the committee's events.
+  const adjudicated = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "CE"
   );
   const activityIdsByVisit = new Map<string, string[]>();
   for (const cell of design.schedule) {
@@ -638,16 +678,33 @@ export function generateCollectedData(
         ? allocate(stratum)
         : Math.floor(pick("RAND", "arm") * design.arms.length);
     const arm = randomized ? design.arms[armIndex] : null;
-    const discontinued =
+    const stopsEarly =
       randomized && lastDay > 2 && pick("DS", "early-stop") < 0.11;
-    const stopDay = discontinued
+    const plannedStopDay = stopsEarly
       ? clamp(
           15 + Math.floor(pick("DS", "stop-day") * Math.max(1, lastDay - 20)),
           2,
           lastDay - 1
         )
       : lastDay;
+    // A death ends follow-up when it comes before the subject would have
+    // left the study; one after it is not observed. Its draws are keyed to
+    // DS, and drawn only in an adjudicated study, so no other study moves.
+    const drawnDeathDay =
+      randomized &&
+      adjudicated &&
+      lastDay > 2 &&
+      pick("DS", "death") < DEATH_SHARE
+        ? 2 + Math.floor(pick("DS", "death-day") * (lastDay - 2))
+        : null;
+    const deathDay =
+      drawnDeathDay !== null && drawnDeathDay <= plannedStopDay
+        ? drawnDeathDay
+        : null;
+    const discontinued = stopsEarly && deathDay === null;
+    const stopDay = deathDay ?? plannedStopDay;
     const stopDate = addDays(baselineDate, offset(stopDay));
+    const deathDate = deathDay === null ? null : stopDate;
     const age = failedEvidence.has("age")
       ? 76 + Math.floor(pick("IE", "age") * 7)
       : 25 + Math.floor(pick("DM", "age") * 51);
@@ -713,9 +770,11 @@ export function generateCollectedData(
       DSSTDTC: finalDate,
       DSDECOD: screenFailure
         ? "SCREEN FAILURE"
-        : discontinued
-          ? "ADVERSE EVENT"
-          : "COMPLETED",
+        : deathDate !== null
+          ? "DEATH"
+          : discontinued
+            ? "ADVERSE EVENT"
+            : "COMPLETED",
       DSSCAT: "DISPOSITION EVENT",
     });
 
@@ -746,6 +805,12 @@ export function generateCollectedData(
       );
       const actualDay = actualOffset >= 0 ? actualOffset + 1 : actualOffset;
       const visitDate = missed ? null : addDays(baselineDate, actualOffset);
+      // Nothing is collected after a death.
+      if (
+        deathDate !== null &&
+        (visitDate !== null ? visitDate > deathDate : visit.targetDay > stopDay)
+      )
+        continue;
       if (visit.targetDay === firstDay && visitDate) screeningDate = visitDate;
       rows.SV.push({
         SRCID: sourceId(studyId, "SV", number, visitKey),
@@ -865,10 +930,14 @@ export function generateCollectedData(
       }
     }
 
-    if (randomized && pick("SV", "unscheduled") < 0.08) {
-      const day =
-        2 +
-        Math.floor(pick("SV", "unscheduled-day") * Math.max(1, lastDay - 2));
+    const unscheduledDay =
+      2 + Math.floor(pick("SV", "unscheduled-day") * Math.max(1, lastDay - 2));
+    if (
+      randomized &&
+      pick("SV", "unscheduled") < 0.08 &&
+      (deathDay === null || unscheduledDay <= deathDay)
+    ) {
+      const day = unscheduledDay;
       rows.SV.push({
         SRCID: sourceId(studyId, "SV", number, "unscheduled"),
         USUBJID: subject,
@@ -915,7 +984,11 @@ export function generateCollectedData(
           AEBODSYS: term.soc,
           AEDECOD: term.pt,
           AESTDTC: partial ? fullStart.slice(0, 7) : fullStart,
-          AEENDTC: discontinued ? stopDate : addDays(fullStart, 3),
+          AEENDTC: discontinued
+            ? stopDate
+            : deathDate !== null && addDays(fullStart, 3) > deathDate
+              ? deathDate
+              : addDays(fullStart, 3),
           AESER: serious ? "Y" : "N",
           AEREL: predose ? "NOT RELATED" : "RELATED",
           AEACN: discontinued ? "DRUG WITHDRAWN" : "DOSE NOT CHANGED",
@@ -935,6 +1008,35 @@ export function generateCollectedData(
             USUBJID: subject,
             RSRCID: sourceId(studyId, "DS", number, "final"),
             COVAL: `Study treatment stopped because of ${term.pt.toLowerCase()}.`,
+          });
+      }
+
+      // The committee's adjudicated events fall between the procedure and
+      // the end of follow-up, the death included. Their draws are keyed to
+      // CE, so no other domain's draws move.
+      if (adjudicated) {
+        const events = ADJUDICATED_EVENTS.flatMap((event) => {
+          if (pick("CE", event.key) >= event.share) return [];
+          const count =
+            pick("CE", `${event.key}:again`) < event.repeatShare ? 2 : 1;
+          return Array.from({ length: count }, (_, index) => ({
+            event,
+            key: `${event.key}:${index + 1}`,
+            day:
+              2 +
+              Math.floor(
+                pick("CE", `${event.key}:${index + 1}:day`) *
+                  Math.max(1, stopDay - 1)
+              ),
+          }));
+        }).sort((a, b) => a.day - b.day || a.key.localeCompare(b.key));
+        for (const { event, key, day } of events)
+          rows.CE.push({
+            SRCID: sourceId(studyId, "CE", number, key),
+            USUBJID: subject,
+            CETERM: event.term,
+            CEDECOD: event.decod,
+            CESTDTC: addDays(baselineDate, offset(day)),
           });
       }
 
@@ -1079,6 +1181,8 @@ export function generateCollectedData(
       "MH",
       "IE",
       "CO",
+      // Collected only in a study that adjudicates outcomes.
+      ...(adjudicated ? (["CE"] as const) : []),
     ] as const
   ).map((domain) =>
     dataset(

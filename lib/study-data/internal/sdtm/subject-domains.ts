@@ -35,7 +35,8 @@ type SubjectDomain =
   | "SUPPDM"
   | "RELREC"
   | "SE"
-  | "CO";
+  | "CO"
+  | "CE";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -950,6 +951,39 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     ],
   },
   // The comments a site recorded against a subject's records (#2711).
+  CE: {
+    label: "Clinical Events",
+    class: "Events",
+    structure: "One record per event per subject",
+    keys: ["STUDYID", "USUBJID", "CEDECOD", "CESTDTC"],
+    columns: [
+      ...COMMON,
+      SEQ("CE"),
+      collected("CETERM", "Reported Term for the Clinical Event", "CE.CETERM"),
+      collected(
+        "CEDECOD",
+        "Dictionary-Derived Term",
+        "CE.CEDECOD",
+        "Synonym Qualifier"
+      ),
+      assigned("CECAT", "Category for Clinical Event", "Grouping Qualifier"),
+      EPOCH,
+      collected(
+        "CESTDTC",
+        "Start Date/Time of Clinical Event",
+        "CE.CESTDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "CESTDY",
+        "Study Day of Start of Clinical Event",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+    ],
+  },
   CO: {
     label: "Comments",
     class: "Special Purpose",
@@ -1072,7 +1106,10 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM, RELREC, SE and CO from collected records. */
+/**
+ * Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM, RELREC, SE and CO
+ * from collected records, and CE when the study collects adjudicated events.
+ */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -1551,6 +1588,24 @@ export function deriveSubjectDomains(
   const lbDataset = numbered("LB", findings("LB"));
   const egDataset = numbered("EG", findings("EG"));
   const dsDataset = numbered("DS", ds);
+  // The clinical events committee's adjudicated events, in a study that
+  // collects them.
+  const ce = get("CE").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    return item(
+      {
+        ...common(record.USUBJID, "CE"),
+        CETERM: record.CETERM,
+        CEDECOD: record.CEDECOD,
+        CECAT: "CLINICAL EVENTS COMMITTEE ADJUDICATED",
+        CESTDTC: record.CESTDTC,
+        CESTDY: day(record.CESTDTC, exposure?.EXSTDTC ?? null),
+        EPOCH: epochAt(record.CESTDTC, exposure),
+      },
+      record,
+      exposure
+    );
+  });
   return [
     table("DM", dm),
     svDataset,
@@ -1584,5 +1639,6 @@ export function deriveSubjectDomains(
         dsDataset,
       ])
     ),
+    ...(source.has("CE") ? [numbered("CE", ce)] : []),
   ];
 }

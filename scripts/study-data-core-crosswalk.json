@@ -558,6 +558,12 @@
       "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
     },
     {
+      "ruleId": "SD-089",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
       "ruleId": "AD-001",
       "core": [],
       "coverage": "none",

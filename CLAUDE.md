@@ -21,3 +21,7 @@ Single-context repo using root `CONTEXT.md` and relevant ADRs in root `adr/`. Se
 ### Writing
 
 Edit prose with the `humanizer` skill (`.claude/skills/humanizer/`), this site's version of blader/humanizer with its voice and claim rules built in. See `docs/agents/writing.md`.
+
+### Skill folders
+
+Canonical skills sit in `.agents/skills/`; five are bridged into `.claude/skills/` with symlinks. See `docs/agents/skill-folders.md`.

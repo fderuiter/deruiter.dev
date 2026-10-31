@@ -1,6 +1,9 @@
 /** Versioned, data-defined subset of SDTMIG and ADaMIG conformance checks. */
 import { STANDARD_CODELISTS } from "@/lib/clinical-standards";
-import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "@/lib/clinical-standards";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/clinical-standards";
 import type { CellValue, Dataset, FindingSeverity } from "../../types";
 
 /** The ids of every collected source record in the run. */
@@ -124,7 +127,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.7.0";
+export const CONFORMANCE_RULES_VERSION = "1.9.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -159,6 +162,9 @@ export interface ConformanceRule {
     | "duplicate"
     | "unit"
     | "eligibility"
+    | "relationship"
+    | "elements"
+    | "comment"
     | "lineage";
   readonly variable?: string;
   readonly check: (
@@ -726,6 +732,247 @@ function eligibilityRule(id: string): ConformanceRule {
   };
 }
 
+/**
+ * Every RELREC row names an existing record of its domain by its --SEQ, and
+ * each relationship pairs exactly one AE record with one CM record of the
+ * same subject (#3414).
+ */
+function relatedRecordsRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain: "RELREC" },
+    citation: SDTM_CITATION,
+    kind: "relationship",
+    variable: "IDVARVAL",
+    check(dataset, datasets) {
+      const issues: RuleIssue[] = [];
+      const keys = new Map<string, Set<string>>();
+      for (const domain of ["AE", "CM"] as const) {
+        const target = datasets.find(
+          (item) => item.layer === "sdtm" && item.name === domain
+        );
+        const seen = new Set<string>();
+        if (target)
+          for (let row = 0; row < target.rowCount; row += 1)
+            seen.add(
+              `${at(target, "USUBJID", row)}|${at(target, `${domain}SEQ`, row)}`
+            );
+        keys.set(domain, seen);
+      }
+      const pairs = new Map<string, string[]>();
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const domain = String(at(dataset, "RDOMAIN", row));
+        const subject = String(at(dataset, "USUBJID", row));
+        const seq = at(dataset, "IDVARVAL", row);
+        const known = keys.get(domain);
+        if (!known || at(dataset, "IDVAR", row) !== `${domain}SEQ`)
+          issues.push({
+            row,
+            variable: "IDVAR",
+            message: `RELREC links ${domain} by ${String(at(dataset, "IDVAR", row))}; only AE and CM records by their --SEQ are related.`,
+          });
+        else if (!known.has(`${subject}|${seq}`))
+          issues.push({
+            row,
+            message: `RELREC names ${domain}SEQ ${String(seq)} for ${subject}, which is not a record in ${domain}.`,
+          });
+        const relationship = `${subject}|${String(at(dataset, "RELID", row))}`;
+        pairs.set(relationship, [...(pairs.get(relationship) ?? []), domain]);
+      }
+      for (const [relationship, domains] of pairs)
+        if (
+          domains.length !== 2 ||
+          !domains.includes("AE") ||
+          !domains.includes("CM")
+        )
+          issues.push({
+            variable: "RELID",
+            message: `Relationship ${relationship.replace("|", " ")} relates ${domains.join(", ")} rather than one AE and one CM record.`,
+          });
+      return issues;
+    },
+  };
+}
+
+/** Each subject's SE rows, as row indexes in SESEQ order. */
+function elementsBySubject(dataset: Dataset): Map<string, number[]> {
+  const bySubject = new Map<string, number[]>();
+  for (let row = 0; row < dataset.rowCount; row += 1) {
+    const subject = String(at(dataset, "USUBJID", row));
+    bySubject.set(subject, [...(bySubject.get(subject) ?? []), row]);
+  }
+  for (const rows of bySubject.values())
+    rows.sort(
+      (a, b) =>
+        (number(at(dataset, "SESEQ", a)) ?? 0) -
+        (number(at(dataset, "SESEQ", b)) ?? 0)
+    );
+  return bySubject;
+}
+
+/**
+ * Elements leave no gap: each SE row ends when the subject's next element
+ * starts, and every element has a start (#2711).
+ */
+function elementContinuityRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain: "SE" },
+    citation: SDTM_CITATION,
+    kind: "elements",
+    variable: "SEENDTC",
+    check(dataset) {
+      const issues: RuleIssue[] = [];
+      for (const [subject, rows] of elementsBySubject(dataset))
+        rows.forEach((row, index) => {
+          if (at(dataset, "SESTDTC", row) === null)
+            issues.push({
+              row,
+              variable: "SESTDTC",
+              message: `Element ${String(at(dataset, "ETCD", row))} of ${subject} has no start.`,
+            });
+          const next = rows[index + 1];
+          if (
+            next !== undefined &&
+            at(dataset, "SEENDTC", row) !== at(dataset, "SESTDTC", next)
+          )
+            issues.push({
+              row,
+              variable: "SEENDTC",
+              message: `SEENDTC ${String(at(dataset, "SEENDTC", row))} of ${subject} is not the start of their next element, ${String(at(dataset, "SESTDTC", next))}.`,
+            });
+        });
+      return issues;
+    },
+  };
+}
+
+/**
+ * Each SE row is a planned element of the subject's actual arm in TA, in
+ * TA's order, with TA's description, order and epoch. A subject with no
+ * actual arm may have only elements every arm shares (#2711).
+ */
+function elementPlanRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain: "SE" },
+    citation: SDTM_CITATION,
+    kind: "elements",
+    variable: "ETCD",
+    check(dataset, datasets) {
+      const find = (name: string) =>
+        datasets.find((item) => item.layer === "sdtm" && item.name === name);
+      const ta = find("TA");
+      const dm = find("DM");
+      if (!ta) return [{ message: "TA is required to validate SE." }];
+      const planned = (row: number) =>
+        ["ETCD", "ELEMENT", "TAETORD", "EPOCH"]
+          .map((name) => String(at(ta, name, row)))
+          .join("|");
+      const byArm = new Map<string, Set<string>>();
+      for (let row = 0; row < ta.rowCount; row += 1) {
+        const arm = String(at(ta, "ARMCD", row));
+        byArm.set(arm, (byArm.get(arm) ?? new Set()).add(planned(row)));
+      }
+      const arms = [...byArm.values()];
+      const shared = new Set(
+        [...(arms[0] ?? [])].filter((element) =>
+          arms.every((elements) => elements.has(element))
+        )
+      );
+      const armOf = new Map<string, CellValue>();
+      if (dm)
+        for (let row = 0; row < dm.rowCount; row += 1)
+          armOf.set(String(at(dm, "USUBJID", row)), at(dm, "ACTARMCD", row));
+      const issues: RuleIssue[] = [];
+      for (const [subject, rows] of elementsBySubject(dataset)) {
+        const arm = armOf.get(subject);
+        const allowed =
+          typeof arm === "string" ? (byArm.get(arm) ?? new Set()) : shared;
+        let order = 0;
+        for (const row of rows) {
+          const element = ["ETCD", "ELEMENT", "TAETORD", "EPOCH"]
+            .map((name) => String(at(dataset, name, row)))
+            .join("|");
+          const taetord = number(at(dataset, "TAETORD", row)) ?? 0;
+          if (!allowed.has(element) || taetord <= order)
+            issues.push({
+              row,
+              variable: "ETCD",
+              message: `Element ${String(at(dataset, "ETCD", row))} of ${subject} is not the next planned element of ${typeof arm === "string" ? `arm ${arm}` : "every arm"} in TA.`,
+            });
+          order = Math.max(order, taetord);
+        }
+      }
+      return issues;
+    },
+  };
+}
+
+/**
+ * Every CO row names an existing record of the same subject: by --SEQ, or
+ * by VISITNUM for a visit in SV (#2711).
+ */
+function commentTargetRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain: "CO" },
+    citation: SDTM_CITATION,
+    kind: "comment",
+    variable: "IDVARVAL",
+    check(dataset, datasets) {
+      const keys = new Map<string, Set<string> | null>();
+      const keysOf = (domain: string, idvar: string) => {
+        const cacheKey = `${domain}|${idvar}`;
+        if (!keys.has(cacheKey)) {
+          const target = datasets.find(
+            (item) => item.layer === "sdtm" && item.name === domain
+          );
+          keys.set(
+            cacheKey,
+            target && Array.isArray(target.columns?.[idvar])
+              ? new Set(
+                  Array.from(
+                    { length: target.rowCount },
+                    (_, row) =>
+                      `${String(at(target, "USUBJID", row))}|${String(at(target, idvar, row))}`
+                  )
+                )
+              : null
+          );
+        }
+        return keys.get(cacheKey)!;
+      };
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const domain = string(at(dataset, "RDOMAIN", row));
+        const idvar = string(at(dataset, "IDVAR", row));
+        // A comment on the subject as a whole names no record.
+        if (domain === null && idvar === null) continue;
+        const known = domain && idvar ? keysOf(domain, idvar) : null;
+        const subject = String(at(dataset, "USUBJID", row));
+        const value = String(at(dataset, "IDVARVAL", row));
+        if (!known)
+          issues.push({
+            row,
+            variable: "IDVAR",
+            message: `CO names ${String(domain)} by ${String(idvar)}, which is not a variable of a tabulated ${String(domain)}.`,
+          });
+        else if (!known.has(`${subject}|${value}`))
+          issues.push({
+            row,
+            message: `CO names ${String(domain)} ${String(idvar)} ${value} for ${subject}, which is not a record in ${String(domain)}.`,
+          });
+      }
+      return issues;
+    },
+  };
+}
+
 /** Local rule ids model a documented subset; they are not official CORE ids. */
 export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   required("SD-001", "DM", ["STUDYID", "USUBJID", "RFSTDTC", "ARMCD"]),
@@ -876,6 +1123,19 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   dateRule("SD-073", "IE", "IEDTC"),
   eligibilityRule("SD-074"),
   sourceLineageRule("SD-075", "IE"),
+  required("SD-076", "RELREC", ["STUDYID", "RDOMAIN", "IDVAR", "RELID"]),
+  relatedRecordsRule("SD-077"),
+  sourceLineageRule("SD-078", "RELREC"),
+  required("SD-079", "SE", ["STUDYID", "USUBJID", "SESEQ", "ETCD", "SESTDTC"]),
+  unique("SD-080", "SE", "SESEQ"),
+  elementContinuityRule("SD-081"),
+  elementPlanRule("SD-082"),
+  dateRule("SD-083", "SE", "SESTDTC"),
+  sourceLineageRule("SD-084", "SE"),
+  required("SD-085", "CO", ["STUDYID", "USUBJID", "COSEQ", "COVAL"]),
+  unique("SD-086", "CO", "COSEQ"),
+  commentTargetRule("SD-087"),
+  sourceLineageRule("SD-088", "CO"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

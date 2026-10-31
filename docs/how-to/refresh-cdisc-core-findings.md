@@ -29,7 +29,9 @@ Two checks tell you the file no longer matches the code:
   and fails when it differs from the committed one. It runs on pull
   requests that touch `lib/study-data/**`, `lib/crf/**`,
   `lib/clinical-standards/**` or its own scripts,
-  on `main`, and weekly.
+  on `main`, and weekly. On `main` it catches two PRs that each matched
+  the file on their own branch but not once both were merged (#3189): the
+  failed run's summary names the refresh, which a fix PR commits.
 
 Any change to the generator, a scenario, a domain or the Define-XML moves
 the fingerprints, so a PR that changes study data output refreshes this file

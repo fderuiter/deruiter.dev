@@ -218,15 +218,42 @@
         "keys": ["STUDYID", "RDOMAIN", "USUBJID", "QNAM"],
         "records": 180,
         "file": "suppdm.xpt"
+      },
+      {
+        "name": "RELREC",
+        "label": "Related Records",
+        "class": "Relationships",
+        "structure": "One record per related record per relationship",
+        "keys": ["STUDYID", "RDOMAIN", "USUBJID", "IDVAR", "IDVARVAL", "RELID"],
+        "records": 30,
+        "file": "relrec.xpt"
+      },
+      {
+        "name": "SE",
+        "label": "Subject Elements",
+        "class": "Special Purpose",
+        "structure": "One record per actual Element per subject",
+        "keys": ["STUDYID", "USUBJID", "ETCD", "SESTDTC"],
+        "records": 231,
+        "file": "se.xpt"
+      },
+      {
+        "name": "CO",
+        "label": "Comments",
+        "class": "Special Purpose",
+        "structure": "One record per comment per subject",
+        "keys": ["STUDYID", "USUBJID", "COSEQ"],
+        "records": 26,
+        "file": "co.xpt"
       }
     ],
     "conformance": {
       "status": "warning",
-      "rulesVersion": "1.7.0",
+      "rulesVersion": "1.9.0",
       "terminologyVersion": "2026-09-25",
       "scopeNotice": "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.",
       "coreUrl": "https://www.cdisc.org/core",
-      "rulesChecked": 75,
+      "rulesChecked": 88,
       "issues": [
         {
           "ruleId": "SD-031",
@@ -342,7 +369,9 @@
           "VS.VSDY",
           "LB.LBDY",
           "EG.EGDY",
-          "DS.DSSTDY"
+          "DS.DSSTDY",
+          "SE.SESTDY",
+          "SE.SEENDY"
         ]
       },
       {
@@ -357,7 +386,9 @@
           "VS.VSSEQ",
           "LB.LBSEQ",
           "EG.EGSEQ",
-          "DS.DSSEQ"
+          "DS.DSSEQ",
+          "SE.SESEQ",
+          "CO.COSEQ"
         ]
       },
       {
@@ -483,6 +514,31 @@
           "LB.LBSTNRLO",
           "LB.LBSTNRHI"
         ]
+      },
+      {
+        "id": "RELATED_RECORDS",
+        "text": "Number each subject's AE and CM pairs from 1, in CM order. A pair is a medication whose collected related adverse event number (CMAENO) names one of the subject's tabulated adverse events; both records of the pair share the RELID.",
+        "variables": ["RELREC.RELID"]
+      },
+      {
+        "id": "SUBJECT_ELEMENT",
+        "text": "The TA elements of the subject's actual arm (ACTARMCD), one for each epoch the subject entered, with TA's ETCD, ELEMENT, TAETORD and EPOCH. Every subject entered the first epoch at informed consent, a dosed subject the second at first exposure, and the third only when they have a record dated after last exposure. A subject never randomized has only the first element, which every arm shares.",
+        "variables": ["SE.ETCD", "SE.ELEMENT", "SE.TAETORD", "SE.EPOCH"]
+      },
+      {
+        "id": "ELEMENT_START",
+        "text": "The date the subject entered the element: informed consent (RFICDTC) for the first epoch's element, first exposure (EXSTDTC) for the second and last exposure (EXENDTC) for the third.",
+        "variables": ["SE.SESTDTC"]
+      },
+      {
+        "id": "ELEMENT_END",
+        "text": "The start of the subject's next element, so that elements leave no gap; for the subject's last element, the end of participation (RFPENDTC).",
+        "variables": ["SE.SEENDTC"]
+      },
+      {
+        "id": "COMMENT_TARGET",
+        "text": "The record the site attached the comment to, named on the comments form by its collected source ID: RDOMAIN is that record's domain, IDVAR its --SEQ, or VISITNUM for a visit in SV, and IDVARVAL the value. A comment whose record was not tabulated is not written.",
+        "variables": ["CO.RDOMAIN", "CO.IDVAR", "CO.IDVARVAL"]
       }
     ]
   },
@@ -632,7 +688,7 @@
     ],
     "conformance": {
       "status": "warning",
-      "rulesVersion": "1.7.0",
+      "rulesVersion": "1.9.0",
       "terminologyVersion": "2026-09-25",
       "scopeNotice": "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.",
       "coreUrl": "https://www.cdisc.org/core",

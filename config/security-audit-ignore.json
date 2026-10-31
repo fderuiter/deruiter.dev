@@ -1,0 +1,12 @@
+[
+  {
+    "advisory": "GHSA-g3hv-75wg-m249",
+    "package": "minimatch",
+    "severity": "moderate",
+    "createdAt": "2026-10-31",
+    "expiresAt": "2026-11-30",
+    "reason": "No fixed minimatch fits two kinds of caller. minimatch 3.1.5 is required by the latest @eslint/eslintrc, eslint-plugin-import, eslint-plugin-jsx-a11y and eslint-plugin-react, which call its CommonJS default export, and typedoc 0.28 calls Minimatch.matchOne, which minimatch 11 removed, so its minimatch 10 copy stays too. Both run only at lint and docs time on the repository's own globs and never ship in the built site. The other minimatch 10 copies and every glob 13 copy are overridden to fixed releases in package.json.",
+    "owner": "fderuiter",
+    "followUp": "https://github.com/fderuiter/deruiter.dev/issues/3667"
+  }
+]

@@ -534,7 +534,7 @@ export function handleAuditLicensesCommand(parsed: ParsedCliArgs): void {
               {
                 id: "license-audit-fix",
                 title:
-                  "Review unapproved dependency licenses and update license-policy.json exceptions",
+                  "Review unapproved dependency licenses and update config/license-policy.json exceptions",
                 command: "npm run audit:licenses",
                 autoFixable: false,
                 scope: "security",
@@ -546,7 +546,7 @@ export function handleAuditLicensesCommand(parsed: ParsedCliArgs): void {
     console.log(
       formatHeader(
         "DX License Compliance Sentinel",
-        "SPDX • license-policy.json"
+        "SPDX • config/license-policy.json"
       )
     );
     console.log(`Packages Scanned: ${report.totalPackagesScanned}`);
@@ -580,11 +580,11 @@ export function handleAuditLicensesCommand(parsed: ParsedCliArgs): void {
 
     if (report.passed) {
       console.log(
-        `\n${colors.brightGreen}✅ All lockfile dependency licenses comply with license-policy.json.${colors.reset}\n`
+        `\n${colors.brightGreen}✅ All lockfile dependency licenses comply with config/license-policy.json.${colors.reset}\n`
       );
     } else {
       console.error(
-        `\n${colors.brightRed}❌ License audit failed. Resolve unapproved licenses or update license-policy.json.${colors.reset}\n`
+        `\n${colors.brightRed}❌ License audit failed. Resolve unapproved licenses or update config/license-policy.json.${colors.reset}\n`
       );
     }
   }
@@ -1030,7 +1030,7 @@ async function handleBranchCommand(parsed: ParsedCliArgs): Promise<void> {
 
   console.log(formatHeader("DX Git Branch Generator"));
   console.log(
-    `Allowed prefixes: ${colors.cyan}feat/, fix/, chore/, refactor/, docs/, perf/, dx/, test/, dev/${colors.reset}\n`
+    `Allowed prefixes: ${colors.cyan}feat/, fix/, chore/, refactor/, docs/, perf/, dx/, test/, ci/, dev/${colors.reset}\n`
   );
 
   const question = (q: string): Promise<string> =>

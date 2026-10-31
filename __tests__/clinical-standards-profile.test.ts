@@ -77,8 +77,8 @@ describe("clinical standards profile", () => {
     const offenders = ["lib", "components", "app", "hooks", "types"]
       .flatMap((dir) => sourceFiles(resolve(ROOT, dir)))
       .flatMap((file) => {
-        const path = relative(ROOT, file);
-        if (exempt.has(path)) return [];
+        const path = relative(ROOT, file).replace(/\\/g, "/");
+        if (exempt.has(path) || path.startsWith("lib/case-studies/")) return [];
         return readFileSync(file, "utf8")
           .split("\n")
           .flatMap((line, index) =>

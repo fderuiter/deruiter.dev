@@ -45,6 +45,9 @@ an audit if the two disagree.
   QR decoder and Sortify document classification deep dives.
 - [Case study engineering notes](case-study-engineering-notes.md), the
   engineering notes behind several case studies.
+- [Modularizing case studies data research (#3488)](research-3488-case-studies-modularization.md),
+  the architectural research and scanner integration analysis for modularizing
+  `lib/case-studies-data.ts`.
 
 ## Planning
 

@@ -15,11 +15,11 @@ export const SDTM_METHODS = {
   RANDOMIZATION:
     "Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS.",
   EXPOSURE_ARM:
-    "The randomized arm code and arm, for every randomized subject, each of whom is dosed with that arm's treatment; missing for subjects never randomized, whose reason is in ARMNRS.",
+    "The code and name of the planned arm whose treatment the subject received (EXTRT on their exposure record). Missing, with the reason in ARMNRS, for a subject never dosed or dosed with a treatment no arm plans.",
   ARM_NULL_REASON:
-    "SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject.",
+    "Why ARMCD or ACTARMCD is missing, as an Arm Null Reason (C142179) term: SCREEN FAILURE for a subject never randomized or dosed, NOT ASSIGNED for one dosed without being randomized, ASSIGNED, NOT TREATED for one randomized and never dosed, and UNPLANNED TREATMENT for one dosed with a treatment no arm plans. Missing when both arms are known.",
   UNPLANNED_ARM:
-    "Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned.",
+    "The treatment a subject received (EXTRT) when no planned arm names it, so ACTARMCD is missing with ARMNRS = UNPLANNED TREATMENT; missing for every other subject.",
   ACTUAL_ELEMENT_FROM_TA_TE:
     "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch, and so does a medication started before informed consent.",
   PLANNED_VISIT:
@@ -66,7 +66,9 @@ export const SDTM_METHODS = {
   RELATED_RECORDS:
     "Number each subject's AE and CM pairs from 1, in CM order. A pair is a medication whose collected related adverse event number (CMAENO) names one of the subject's tabulated adverse events; both records of the pair share the RELID.",
   SUBJECT_ELEMENT:
-    "The TA elements of the subject's actual arm (ACTARMCD), one for each epoch the subject entered, with TA's ETCD, ELEMENT, TAETORD and EPOCH. Every subject entered the first epoch at informed consent, a dosed subject the second at first exposure, and the third only when they have a record dated after last exposure. A subject never randomized has only the first element, which every arm shares.",
+    "The TA elements of the subject's actual arm (ACTARMCD), one for each epoch the subject entered, with TA's ETCD, ELEMENT, TAETORD and EPOCH. Every subject entered the first epoch at informed consent, a dosed subject the second at first exposure, and the third only when they have a record dated after last exposure. A subject never randomized has only the first element, which every arm shares. A subject dosed with a treatment no arm plans has an unplanned element for the second epoch (ETCD = UNPLAN, with no ELEMENT or TAETORD), and the elements every arm shares for the others.",
+  UNPLANNED_ELEMENT:
+    "For an unplanned element (ETCD = UNPLAN), the treatment the subject received in it, as DM.ACTARMUD records it; missing for every planned element.",
   ELEMENT_START:
     "The date the subject entered the element: informed consent (RFICDTC) for the first epoch's element, first exposure (EXSTDTC) for the second and last exposure (EXENDTC) for the third.",
   ELEMENT_END:

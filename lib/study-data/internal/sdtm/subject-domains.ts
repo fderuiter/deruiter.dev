@@ -941,6 +941,12 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
+      derived(
+        "SEUPDES",
+        "Description of Unplanned Element",
+        "UNPLANNED_ELEMENT",
+        "Synonym Qualifier"
+      ),
     ],
   },
   // The comments a site recorded against a subject's records (#2711).
@@ -1161,10 +1167,25 @@ export function deriveSubjectDomains(
     DOMAIN: domain,
     USUBJID: subject,
   });
+  // The actual arm is the planned arm whose treatment the subject received
+  // (#2813), so it comes from exposure rather than randomization.
+  const armByTreatment = new Map(
+    definition.design.arms.map((arm) => [arm.name, arm])
+  );
+  const actualArmOf = (subject: string | null) => {
+    const ex = exBySubject.get(subject);
+    const treatment = text(ex?.EXTRT ?? null);
+    const arm = treatment === null ? undefined : armByTreatment.get(treatment);
+    return {
+      arm,
+      unplannedTreatment: ex && !arm ? (treatment ?? undefined) : undefined,
+    };
+  };
   const dm = get("DM").map((record) => {
     const subject = text(record.USUBJID);
     const rand = randBySubject.get(subject);
     const ex = exBySubject.get(subject);
+    const actual = actualArmOf(subject);
     const death = deathBySubject.get(subject);
     const lastContact = lastContactBySubject.get(subject);
     return item(
@@ -1184,14 +1205,23 @@ export function deriveSubjectDomains(
         AGEU: "YEARS",
         SEX: record.SEX,
         RACE: record.RACE,
-        // A subject is left unrandomized only when screening fails, so an
-        // arm is missing only for a screen failure (#2802).
+        // A subject is left unrandomized only when screening fails (#2802).
+        // A randomized subject has no actual arm when never dosed, or when
+        // dosed with a treatment no arm plans (#2813).
         ARMCD: rand?.ARMCD ?? null,
         ARM: rand?.ARM ?? null,
-        ACTARMCD: rand?.ARMCD ?? null,
-        ACTARM: rand?.ARM ?? null,
-        ARMNRS: rand ? null : "SCREEN FAILURE",
-        ACTARMUD: null,
+        ACTARMCD: actual.arm?.armCode ?? null,
+        ACTARM: actual.arm?.name ?? null,
+        ARMNRS: !rand
+          ? ex
+            ? "NOT ASSIGNED"
+            : "SCREEN FAILURE"
+          : !ex
+            ? "ASSIGNED, NOT TREATED"
+            : actual.unplannedTreatment !== undefined
+              ? "UNPLANNED TREATMENT"
+              : null,
+        ACTARMUD: actual.unplannedTreatment ?? null,
         COUNTRY: record.COUNTRY,
       },
       record,
@@ -1485,11 +1515,16 @@ export function deriveSubjectDomains(
     [...bySubjectFirst("DM").values()].map((record) => {
       const subject = text(record.USUBJID);
       const lastContact = lastContactBySubject.get(subject);
+      const actual = actualArmOf(subject);
       return {
         subject: subject ?? "",
         demographics: record,
         randomization: randBySubject.get(subject),
         exposure: exBySubject.get(subject),
+        ...(actual.arm ? { actualArm: actual.arm.armCode } : {}),
+        ...(actual.unplannedTreatment !== undefined
+          ? { unplannedTreatment: actual.unplannedTreatment }
+          : {}),
         ...(lastContact ? { lastContact } : {}),
       };
     }),

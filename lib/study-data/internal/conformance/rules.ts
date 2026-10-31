@@ -127,7 +127,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.9.0";
+export const CONFORMANCE_RULES_VERSION = "1.9.1";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -852,7 +852,9 @@ function elementContinuityRule(id: string): ConformanceRule {
 /**
  * Each SE row is a planned element of the subject's actual arm in TA, in
  * TA's order, with TA's description, order and epoch. A subject with no
- * actual arm may have only elements every arm shares (#2711).
+ * actual arm may have only elements every arm shares (#2711). An unplanned
+ * element (ETCD = UNPLAN) has no TAETORD and describes itself in SEUPDES
+ * (#2813).
  */
 function elementPlanRule(id: string): ConformanceRule {
   return {
@@ -894,6 +896,18 @@ function elementPlanRule(id: string): ConformanceRule {
           typeof arm === "string" ? (byArm.get(arm) ?? new Set()) : shared;
         let order = 0;
         for (const row of rows) {
+          if (at(dataset, "ETCD", row) === "UNPLAN") {
+            if (
+              at(dataset, "TAETORD", row) !== null ||
+              !string(at(dataset, "SEUPDES", row))
+            )
+              issues.push({
+                row,
+                variable: "ETCD",
+                message: `Unplanned element of ${subject} needs SEUPDES and no TAETORD.`,
+              });
+            continue;
+          }
           const element = ["ETCD", "ELEMENT", "TAETORD", "EPOCH"]
             .map((name) => String(at(dataset, name, row)))
             .join("|");

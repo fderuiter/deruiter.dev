@@ -551,6 +551,73 @@ const RULES: readonly ScenarioRule[] = [
       endParticipation(view, earlyStop(view)!, "WITHDRAWAL BY SUBJECT"),
   },
   {
+    id: "randomized-not-dosed",
+    title: "Randomized, never dosed",
+    description:
+      "A subject is randomized and withdraws the same day, before the first dose: no exposure record and no later visit.",
+    expected: {
+      findings: [],
+      derivation:
+        "DM keeps the randomized arm in ARMCD and ARM, leaves ACTARMCD and ACTARM missing with ARMNRS = ASSIGNED, NOT TREATED, and SE holds only the screening element. ADSL keeps TRT01P as the randomized arm, with SAFFL = N and ITTFL = N, since the Full Analysis Set needs a dose (ADR 0069). CDISC CORE reports RFENDTC missing although ARM is set (CORE-000191): RFENDTC is last exposure, as RFXENDTC is, and filling it would break CORE-000192, which wants RFENDTC blank whenever ARMNRS is set.",
+    },
+    // A subject with no adverse event or medication for one, so nothing
+    // dated after the dose that never happened is left behind.
+    eligible: (view) =>
+      completed(view) &&
+      view.rows("EX").length > 0 &&
+      isFullDate(view.rows("RAND")[0]?.RANDDTC ?? null) &&
+      view.rows("AE").length === 0 &&
+      !view.rows("CM").some((row) => row.CMAENO),
+    apply(view) {
+      const randomized = String(view.rows("RAND")[0]!.RANDDTC);
+      const kept = (field: string) => (row: Row) =>
+        isFullDate(row[field]) ? row[field] <= randomized : false;
+      return {
+        EX: [],
+        DS: view.rows("DS").map((row) =>
+          row.DSSCAT === "DISPOSITION EVENT"
+            ? {
+                ...row,
+                DSDECOD: "WITHDRAWAL BY SUBJECT",
+                DSSTDTC: randomized,
+              }
+            : row
+        ),
+        SV: view
+          .rows("SV")
+          .filter((row) =>
+            isFullDate(row.SVDTC)
+              ? row.SVDTC <= randomized
+              : typeof row.PLANDY === "number" && row.PLANDY <= 1
+          ),
+        VS: view.rows("VS").filter(kept("VSDTC")),
+        LB: view.rows("LB").filter(kept("LBDTC")),
+        EG: view.rows("EG").filter(kept("EGDTC")),
+        // Rescue medication starts on treatment, so it goes too.
+        CM: view
+          .rows("CM")
+          .filter(
+            (row) => !isFullDate(row.CMSTDTC) || row.CMSTDTC <= randomized
+          ),
+      };
+    },
+  },
+  {
+    id: "unplanned-treatment",
+    title: "Unplanned treatment",
+    description:
+      "A subject is dispensed Demoxacin 40 mg, a dose no arm of the protocol plans, for the whole treatment period.",
+    expected: {
+      findings: [],
+      derivation:
+        "DM keeps the randomized arm in ARMCD and ARM, leaves ACTARMCD and ACTARM missing with ARMNRS = UNPLANNED TREATMENT and ACTARMUD = the treatment received, and SE records the treatment period as an unplanned element (ETCD = UNPLAN). ADSL keeps TRT01P as the randomized arm and sets TRT01A to the treatment received. The safety tables have a column only for each planned treatment, so they leave the subject out (#3673). CDISC CORE reports RFENDTC set although ARMNRS is (CORE-000192), a rule written for screen failures; an assigned, treated subject needs RFENDTC under CORE-000191.",
+    },
+    eligible: (view) => completed(view) && view.rows("EX").length > 0,
+    apply: (view) => ({
+      EX: view.rows("EX").map((row) => ({ ...row, EXTRT: "Demoxacin 40 mg" })),
+    }),
+  },
+  {
     id: "qtcf-outlier",
     title: "QTcF outlier on treatment",
     description:

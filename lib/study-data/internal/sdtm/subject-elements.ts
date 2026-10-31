@@ -27,6 +27,13 @@ export interface SubjectElementInput {
   readonly randomization?: Row;
   /** The exposure record; absent for a subject never dosed. */
   readonly exposure?: Row;
+  /** The arm the subject was treated as (DM.ACTARMCD), if any. */
+  readonly actualArm?: string;
+  /**
+   * The treatment a dosed subject received when no arm plans it
+   * (DM.ACTARMUD). Their treatment period is an unplanned element.
+   */
+  readonly unplannedTreatment?: string;
   /** The subject's latest complete date and the record it is on. */
   readonly lastContact?: { readonly date: string; readonly record: Row };
 }
@@ -90,7 +97,7 @@ export function deriveSubjectElements(
   const entries: SubjectElementEntry[] = [];
   for (const input of subjects) {
     const { demographics, randomization, exposure, lastContact } = input;
-    const arm = text(randomization?.ARMCD) ?? "";
+    const arm = input.actualArm ?? "";
     const lastDose = fullDate(exposure?.EXENDTC);
     // Each epoch the subject entered: when, and the record that says so.
     const entered: { start: CellValue; record: Row | undefined }[] = [
@@ -102,7 +109,15 @@ export function deriveSubjectElements(
         entered.push({ start: exposure.EXENDTC ?? null, record: exposure });
     }
     entered.forEach(({ start, record }, index) => {
-      const element = planned.get(`${arm}|${epochs[index]}`);
+      // An unplanned treatment period has no planned element: ETCD UNPLAN,
+      // no ELEMENT or TAETORD, and SEUPDES saying what happened
+      // (SDTMIG 3.4, SE assumption 4). Other periods fall back to the
+      // element every arm shares in that epoch.
+      const unplanned = index === 1 ? input.unplannedTreatment : undefined;
+      const element: Row | undefined = unplanned
+        ? { ETCD: "UNPLAN", ELEMENT: null, TAETORD: null, EPOCH: epochs[index] }
+        : (planned.get(`${arm}|${epochs[index]}`) ??
+          planned.get(`|${epochs[index]}`));
       if (!element) return;
       const next = entered[index + 1];
       const end = next ? next.start : (lastContact?.date ?? null);
@@ -126,6 +141,7 @@ export function deriveSubjectElements(
           SEENDTC: end,
           SESTDY: studyDay(start, input),
           SEENDY: studyDay(end, input),
+          SEUPDES: unplanned ?? null,
         },
         sourceIds: [...new Set(sources)],
       });

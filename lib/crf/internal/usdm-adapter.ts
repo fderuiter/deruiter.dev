@@ -922,7 +922,7 @@ export function importStudyFromUsdm(
   ].forEach(registerCodelistCandidate);
 
   rawConcepts.forEach((bc) => {
-    const bcObj = bc as unknown as Record<string, unknown>;
+    const bcObj = asRecord(bc) ?? {};
     registerCodelistCandidate(
       bcObj.codeList || bcObj.valueSet || bcObj.codelist
     );
@@ -950,7 +950,7 @@ export function importStudyFromUsdm(
   rawActivities.forEach((act) => {
     (act.sections || []).forEach((sec) => {
       (sec.fields || []).forEach((fld) => {
-        const fldObj = fld as unknown as Record<string, unknown>;
+        const fldObj = asRecord(fld) ?? {};
         registerCodelistCandidate(
           fldObj.codeList || fldObj.valueSet || fldObj.codelist
         );
@@ -973,7 +973,7 @@ export function importStudyFromUsdm(
 
   rawConcepts.forEach((bc) => {
     const props = (bc.properties || {}) as Record<string, unknown>;
-    const bcObj = bc as unknown as Record<string, unknown>;
+    const bcObj = asRecord(bc) ?? {};
     const id =
       props.codelistId ||
       props.codeListId ||
@@ -987,7 +987,7 @@ export function importStudyFromUsdm(
   rawActivities.forEach((act) => {
     (act.sections || []).forEach((sec) => {
       (sec.fields || []).forEach((fld) => {
-        const fldObj = fld as unknown as Record<string, unknown>;
+        const fldObj = asRecord(fld) ?? {};
         const id = fld.codelistId || fldObj.codeListId || fldObj.valueSetId;
         if (id) allReferencedCodelistIds.add(String(id));
       });
@@ -1010,7 +1010,7 @@ export function importStudyFromUsdm(
   );
 
   // Map windowBefore and windowAfter visit tolerances to constrain study schedule rules
-  const primaryDesignObj = primaryDesign as unknown as Record<string, unknown>;
+  const primaryDesignObj = asRecord(primaryDesign) ?? {};
   const explicitRules: EditCheckRule[] = [
     ...normalizeImportedRules(doc.rules),
     ...normalizeImportedRules(studyObj.rules),

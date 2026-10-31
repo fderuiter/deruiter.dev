@@ -88,14 +88,14 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     selection_to_contract_days: 38,
     contract_to_irb_approval_days: 26,
     irb_approval_to_initiation_days: 20,
-    initiation_to_activation_days: 3,
-    activation_to_first_subject_in_days: 50,
+    initiation_to_activation_days: 3.5,
+    activation_to_first_subject_in_days: 48,
     data_entry_lag_median: 2,
     data_entry_lag_p90: 9,
-    data_entry_lag_mean: 3.48151595745,
+    data_entry_lag_mean: 3.4852393617,
     missed_visit_rate: 0.0194124498512,
     out_of_window_visit_rate: 0.0314108486208,
-    query_rate_per_100_visits: 46.9710967401,
+    query_rate_per_100_visits: 47.2218556157,
     open_query_count: 36,
     query_aging_mean: 2.91666666667,
     query_resolution_time_median: 5,
@@ -105,16 +105,16 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     open_queries_aged_8_30_days: 3,
     open_queries_aged_31_60_days: 0,
     open_queries_aged_over_60_days: 0,
-    sdv_completion: 0.853482293855,
+    sdv_completion: 0.854189433022,
     monitoring_reports_overdue: 2,
     monitoring_visits_overdue: 5,
     monitoring_report_cycle_time_median: 14,
-    important_deviation_rate: 13.680781759,
+    important_deviation_rate: 13.9250814332,
     non_important_deviation_rate: 13.1107491857,
-    subjects_with_important_deviation: 0.128664495114,
-    // Every deviation (#2759): the 168 important and 161 not important that
+    subjects_with_important_deviation: 0.130293159609,
+    // Every deviation (#2759): the 171 important and 161 not important that
     // the two deviation rates count per 100 enrolled subjects.
-    protocol_deviation_count: 329,
+    protocol_deviation_count: 332,
     // #2881: only DEV-402 sends events to a committee; 28 of its 39 had
     // been adjudicated by the data cut, and 11 still wait.
     cec_events_reported: 39,
@@ -141,12 +141,12 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
       "DEV-401": 201,
     },
     lplv_to_dbl_days: { "DEMO-101": 75, "DEMO-301": 46, "DEV-401": 43 },
-    budget_burn_vs_plan: 1.03643410472,
-    cost_per_enrolled_subject: 37838.7068404,
+    budget_burn_vs_plan: 1.03733677578,
+    cost_per_enrolled_subject: 37871.6620521,
     // #2912: forecast at completion. Only DEMO-302 is forecast to overrun:
     // its CRO, the over-budget vendor the generator plants, runs about 30%
     // over budget and is forecast to stay there for the quarters to come.
-    actual_spend: 46465932,
+    actual_spend: 46506401,
     budget_at_completion: {
       "DEMO-101": 1225000,
       "DEMO-201": 8900000,
@@ -163,7 +163,7 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
       "DEMO-201": 8245247,
       "DEMO-202": 4013154,
       "DEMO-203": 8569157,
-      "DEMO-301": 2075506,
+      "DEMO-301": 2122720,
       "DEMO-302": 34588681,
       "DEV-401": 1912580,
       "DEV-402": 9383684,
@@ -173,12 +173,12 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
       "DEMO-201": -654753,
       "DEMO-202": -139346,
       "DEMO-203": -310843,
-      "DEMO-301": -129494,
+      "DEMO-301": -82280,
       "DEMO-302": 4628681,
       "DEV-401": -191170,
       "DEV-402": -311316,
     },
-    forecast_vs_budget_at_completion: 1.04185249828,
+    forecast_vs_budget_at_completion: 1.04255591188,
   };
 
 describe("the metric registry", () => {

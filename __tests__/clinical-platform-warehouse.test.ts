@@ -64,9 +64,14 @@ import {
  * #2957: `silver.edc_vital_sign` and `gold.fct_vital_sign` are new. With
  * those two tables left out the hash is the previous golden, 140be786, so
  * no other value moved.
+ *
+ * #2806: DEMO-301's subjects attend the sites DM.SITEID names, and six of
+ * its sites activate earlier, a week before their first consent. Its
+ * queries (+19), deviations (+3), monitoring visits (+5) and KRI snapshots
+ * (+12) move with it; no other study's rows change.
  */
 const GOLDEN_SHA256 =
-  "0b41b9c26ec953c98636fbfccfb02ec7fe0366db74e2ccd3c694173e96a5d797";
+  "81bb95dd8ea8a85c3fc8bb8b0ce5d2e68e2190896e803e0f5c112cd87fc6154d";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -76,13 +81,13 @@ const GOLDEN_ROW_COUNTS = {
   "silver.vendor": 7,
   "silver.edc_subject": 1808,
   "silver.edc_visit": 7727,
-  "silver.edc_query": 3559,
+  "silver.edc_query": 3578,
   "silver.edc_adverse_event": 2084,
   "silver.edc_vital_sign": 27836,
   "silver.ctms_milestone": 72,
   "silver.ctms_monitoring_plan": 8,
-  "silver.ctms_monitoring_visit": 1123,
-  "silver.ctms_deviation": 329,
+  "silver.ctms_monitoring_visit": 1128,
+  "silver.ctms_deviation": 332,
   "silver.ctms_site_staff": 129,
   "silver.irt_randomization": 1098,
   "silver.irt_kit": 3342,
@@ -99,17 +104,17 @@ const GOLDEN_ROW_COUNTS = {
   "gold.dim_monitoring_plan": 8,
   "gold.fct_enrollment": 3727,
   "gold.fct_visit": 7727,
-  "gold.fct_query": 3559,
-  "gold.fct_deviation": 329,
+  "gold.fct_query": 3578,
+  "gold.fct_deviation": 332,
   "gold.fct_cec_adjudication": 39,
   "gold.fct_adverse_event": 2084,
   "gold.fct_vital_sign": 6959,
-  "gold.fct_monitoring_visit": 1123,
-  "gold.fct_planned_monitoring_visit": 1077,
+  "gold.fct_monitoring_visit": 1128,
+  "gold.fct_planned_monitoring_visit": 1082,
   "gold.fct_milestone": 72,
   "gold.fct_spend": 1089,
   "gold.fct_spend_forecast": 48,
-  "gold.fct_kri_snapshot": 7944,
+  "gold.fct_kri_snapshot": 7956,
 };
 
 const portfolio = generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED });

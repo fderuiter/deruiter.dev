@@ -312,16 +312,16 @@ describe("operations dashboard numbers (#2630)", () => {
     expect(values.enrollment_vs_plan).toBeCloseTo(0.788189987163, 11);
     expect(values.screen_failure_rate).toBeCloseTo(0.313966480447, 11);
     expect(values.open_query_count).toBe(36);
-    expect(values.sdv_completion).toBeCloseTo(0.853482293855, 11);
-    expect(values.important_deviation_rate).toBeCloseTo(13.680781759, 8);
+    expect(values.sdv_completion).toBeCloseTo(0.854189433022, 11);
+    expect(values.important_deviation_rate).toBeCloseTo(13.925081433, 8);
     expect(portfolio.glance.rows[0].cells.map((c) => c.text)).toEqual([
       "1,808",
       "1,228",
       "78.8%",
       "31.4%",
       "36",
-      "85.3%",
-      "13.7",
+      "85.4%",
+      "13.9",
     ]);
   });
 

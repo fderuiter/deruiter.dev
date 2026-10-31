@@ -198,13 +198,13 @@ describe("budget against forecast at completion (#2912)", () => {
     const figures = within(section()).getAllByRole("definition");
     expect(figures.map((f) => f.textContent)).toEqual([
       "$67,121,250",
-      "$46,465,932",
-      "$69,930,442",
-      "$2,809,192",
+      "$46,506,401",
+      "$69,977,656",
+      "$2,856,406",
     ]);
     expect(within(section()).getByText("Forecast overrun")).toBeTruthy();
     expect(section().textContent).toContain(
-      "The forecast is 104.2% of the budget at completion. Forecast to overrun: DEMO-302, by $4,628,681 (115.4% of budget). Vendors forecast to overrun across their studies: Quillfeather Clinical Research, by $4,935,420 (129.4% of budget)."
+      "The forecast is 104.3% of the budget at completion. Forecast to overrun: DEMO-302, by $4,628,681 (115.4% of budget). Vendors forecast to overrun across their studies: Quillfeather Clinical Research, by $4,935,420 (129.4% of budget)."
     );
   });
 
@@ -579,8 +579,7 @@ describe("the risk heatmap (#2914)", () => {
 
   it("lists what needs attention, at risk first, with each reason", () => {
     view();
-    const list = screen
-      .getByRole("heading", { name: "What needs attention" })
+    const list = screen.getByRole("heading", { name: "What needs attention" })
       .nextElementSibling as HTMLElement;
     const items = within(list)
       .getAllByRole("listitem")
@@ -592,8 +591,9 @@ describe("the risk heatmap (#2914)", () => {
       "▲DEV-402 schedule, at risk",
       "◆DEMO-302 quality, watch",
     ]);
-    const quality = dashboard.risk.rows.find((r) => r.studyId === "DEMO-302")!
-      .quality;
+    const quality = dashboard.risk.rows.find(
+      (r) => r.studyId === "DEMO-302"
+    )!.quality;
     expect(items[4]).toContain(quality.reason);
     expect(
       within(list)

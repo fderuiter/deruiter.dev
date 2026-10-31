@@ -104,7 +104,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
 
   for (const blueprint of studyBlueprints()) {
     const startDay = toDay(blueprint.startOn);
-    const plans = planSites(seed, blueprint, startDay, asOfDay, takenNames);
+    let plans = planSites(seed, blueprint, startDay, asOfDay, takenNames);
     const behind = blueprint.id === BEHIND_PLAN_STUDY_ID;
     let sim: StudySimulation;
     if (blueprint.studyDefinition !== null) {
@@ -117,6 +117,8 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
         asOfDay
       );
       sim = fromRun.simulation;
+      // A site the pipeline consents a subject at is active in time (#2806).
+      plans = [...fromRun.sites];
       studyDataRuns.push(fromRun.reference);
     } else {
       sim = simulateStudy(

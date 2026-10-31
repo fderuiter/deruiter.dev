@@ -71,3 +71,12 @@ exit 0
   `docs/`, `test/`, `dev/`, ...). The harness default `claude/*` is
   rejected by `.husky/pre-push`. Cloud sessions push as `dx/<slug>`
   instead; the guard's error message says so.
+- In a `git worktree`, the hooks are silently skipped. `core.hooksPath`
+  points at `.husky/_`, which Husky generates in the main checkout only,
+  so a new worktree doesn't have it. Link it from the main checkout before
+  the first commit, and the worktree runs every hook again. `.gitignore`
+  covers the link, so it is never staged:
+
+  ```bash
+  ln -sfn "$(git rev-parse --path-format=absolute --git-common-dir)/../.husky/_" .husky/_
+  ```

@@ -57,6 +57,7 @@
     "start": "next start",
     "lint": "eslint --no-warn-ignored --max-warnings=0",
     "lint:boundaries": "depcruise lib app components __tests__ hooks scripts",
+    "pretypecheck": "prisma generate",
     "typecheck": "next typegen && node node_modules/@typescript/native/bin/tsc --noEmit --checkers 2",
     "typecheck:budget": "next typegen && tsx scripts/typecheck-budget.ts",
     "check": "npm run typecheck && npm run lint && npm run lint:boundaries",

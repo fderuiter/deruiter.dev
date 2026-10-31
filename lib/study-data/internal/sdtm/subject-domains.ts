@@ -11,10 +11,12 @@ import { terminologyCodelist } from "@/lib/clinical-standards";
 import { codeAeTerm, codeHistoryTerm } from "./ae-dictionary";
 import { codeMedication } from "./cm-dictionary";
 import { sdtmCodelist } from "./codelists";
+import { deriveComments } from "./comments";
 import { labReference } from "./lab-ranges";
 import { deriveRelrec } from "./relrec";
 import { sdtmRequired } from "./required";
 import type { SdtmMethodId } from "./methods";
+import { deriveSubjectElements } from "./subject-elements";
 import { toStandardUnit } from "./units";
 
 type Row = Record<string, CellValue>;
@@ -31,7 +33,9 @@ type SubjectDomain =
   | "EG"
   | "DS"
   | "SUPPDM"
-  | "RELREC";
+  | "RELREC"
+  | "SE"
+  | "CO";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -885,6 +889,92 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       ),
     ],
   },
+  // The elements each subject passed through (#2711).
+  SE: {
+    label: "Subject Elements",
+    class: "Special Purpose",
+    structure: "One record per actual Element per subject",
+    keys: ["STUDYID", "USUBJID", "ETCD", "SESTDTC"],
+    columns: [
+      ...COMMON,
+      SEQ("SE"),
+      derived("ETCD", "Element Code", "SUBJECT_ELEMENT", "Topic"),
+      derived(
+        "ELEMENT",
+        "Description of Element",
+        "SUBJECT_ELEMENT",
+        "Synonym Qualifier"
+      ),
+      derived(
+        "TAETORD",
+        "Planned Order of Element within Arm",
+        "SUBJECT_ELEMENT",
+        "Timing",
+        "integer"
+      ),
+      derived("EPOCH", "Epoch", "SUBJECT_ELEMENT", "Timing"),
+      derived(
+        "SESTDTC",
+        "Start Date/Time of Element",
+        "ELEMENT_START",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "SEENDTC",
+        "End Date/Time of Element",
+        "ELEMENT_END",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "SESTDY",
+        "Study Day of Start of Element",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "SEENDY",
+        "Study Day of End of Element",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+    ],
+  },
+  // The comments a site recorded against a subject's records (#2711).
+  CO: {
+    label: "Comments",
+    class: "Special Purpose",
+    structure: "One record per comment per subject",
+    keys: ["STUDYID", "USUBJID", "COSEQ"],
+    columns: [
+      assigned("STUDYID", "Study Identifier"),
+      assigned("DOMAIN", "Domain Abbreviation"),
+      derived(
+        "RDOMAIN",
+        "Related Domain Abbreviation",
+        "COMMENT_TARGET",
+        "Record Qualifier"
+      ),
+      assigned("USUBJID", "Unique Subject Identifier"),
+      SEQ("CO"),
+      derived(
+        "IDVAR",
+        "Identifying Variable",
+        "COMMENT_TARGET",
+        "Record Qualifier"
+      ),
+      derived(
+        "IDVARVAL",
+        "Identifying Variable Value",
+        "COMMENT_TARGET",
+        "Record Qualifier"
+      ),
+      collected("COVAL", "Comment", "CO.COVAL", "Topic"),
+    ],
+  },
 };
 
 function rows(dataset: Dataset): Row[] {
@@ -976,7 +1066,7 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM and RELREC from collected records. */
+/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM, RELREC, SE and CO from collected records. */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -988,6 +1078,12 @@ export function deriveSubjectDomains(
   const get = (name: string) => source.get(name) ?? [];
   const bySubject = (name: string) =>
     new Map(get(name).map((row) => [text(row.USUBJID), row]));
+  const bySubjectFirst = (name: string) => {
+    const first = new Map<string | null, Row>();
+    for (const row of get(name))
+      if (!first.has(text(row.USUBJID))) first.set(text(row.USUBJID), row);
+    return first;
+  };
   const randBySubject = bySubject("RAND");
   const exBySubject = bySubject("EX");
   const deathBySubject = new Map(
@@ -1382,24 +1478,67 @@ export function deriveSubjectDomains(
       )
     )
   );
+  // One element sequence per subject, from their first consent: a second
+  // DM record for the same subject is DM's defect, which SD-035 reports.
+  const se = deriveSubjectElements(
+    definition.studyId,
+    [...bySubjectFirst("DM").values()].map((record) => {
+      const subject = text(record.USUBJID);
+      const lastContact = lastContactBySubject.get(subject);
+      return {
+        subject: subject ?? "",
+        demographics: record,
+        randomization: randBySubject.get(subject),
+        exposure: exBySubject.get(subject),
+        ...(lastContact ? { lastContact } : {}),
+      };
+    }),
+    ta,
+    sortedEpochs,
+    (date, input) => day(date, input.exposure?.EXSTDTC ?? null)
+  );
+  const svDataset = table("SV", sv);
+  const exDataset = numbered("EX", ex);
   const cmDataset = numbered("CM", cm);
   const aeDataset = numbered("AE", ae);
+  const mhDataset = numbered("MH", mh);
+  const ieDataset = numbered("IE", ie);
+  const vsDataset = numbered("VS", findings("VS"));
+  const lbDataset = numbered("LB", findings("LB"));
+  const egDataset = numbered("EG", findings("EG"));
+  const dsDataset = numbered("DS", ds);
   return [
     table("DM", dm),
-    table("SV", sv),
-    numbered("EX", ex),
+    svDataset,
+    exDataset,
     cmDataset,
     aeDataset,
-    numbered("MH", mh),
-    numbered("IE", ie),
-    numbered("VS", findings("VS")),
-    numbered("LB", findings("LB")),
-    numbered("EG", findings("EG")),
-    numbered("DS", ds),
+    mhDataset,
+    ieDataset,
+    vsDataset,
+    lbDataset,
+    egDataset,
+    dsDataset,
     table("SUPPDM", suppdm),
     table(
       "RELREC",
       deriveRelrec(definition.studyId, get("CM"), aeDataset, cmDataset)
+    ),
+    numbered("SE", se),
+    numbered(
+      "CO",
+      deriveComments(definition.studyId, get("CO"), [
+        svDataset,
+        exDataset,
+        cmDataset,
+        aeDataset,
+        mhDataset,
+        ieDataset,
+        vsDataset,
+        lbDataset,
+        egDataset,
+        dsDataset,
+      ])
     ),
   ];
 }

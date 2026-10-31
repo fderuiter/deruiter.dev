@@ -44,6 +44,8 @@ const REQUIRED: Readonly<Record<string, ReadonlySet<string>>> = {
   ]),
   // SDTMIG 3.4 RELREC: STUDYID, RDOMAIN, IDVAR and RELID are Required.
   RELREC: new Set(["STUDYID", "RDOMAIN", "IDVAR", "RELID"]),
+  SE: new Set(["STUDYID", "DOMAIN", "USUBJID", "SESEQ", "ETCD", "SESTDTC"]),
+  CO: new Set(["STUDYID", "DOMAIN", "USUBJID", "COSEQ", "COVAL"]),
   VS: new Set(["STUDYID", "DOMAIN", "USUBJID", "VSSEQ", "VSTESTCD", "VSTEST"]),
   LB: new Set(["STUDYID", "DOMAIN", "USUBJID", "LBSEQ", "LBTESTCD", "LBTEST"]),
   EG: new Set(["STUDYID", "DOMAIN", "USUBJID", "EGSEQ", "EGTESTCD", "EGTEST"]),

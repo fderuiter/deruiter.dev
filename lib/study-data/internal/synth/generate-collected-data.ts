@@ -24,7 +24,8 @@ type Domain =
   | "CM"
   | "MH"
   | "IE"
-  | "DS";
+  | "DS"
+  | "CO";
 
 const BASE_DATE = "2030-01-01";
 
@@ -151,6 +152,16 @@ const FAILED_CRITERION_EVIDENCE = {
 } as const satisfies Readonly<Record<string, string>>;
 type Evidence =
   (typeof FAILED_CRITERION_EVIDENCE)[keyof typeof FAILED_CRITERION_EVIDENCE];
+
+/**
+ * Why a site says a subject missed a visit, as free text on the comments
+ * form. Illustrative wording, drawn evenly.
+ */
+const MISSED_VISIT_REASONS = [
+  "Subject was unwell and could not attend.",
+  "Subject was travelling and could not attend.",
+  "Site could not schedule the visit within its window.",
+] as const;
 
 /** Medications taken for an adverse event, keyed by its preferred term. */
 const AE_TREATMENTS: Readonly<
@@ -372,6 +383,14 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("DSDECOD", "Disposition event"),
     TEXT("DSSCAT", "Disposition category"),
   ],
+  // The general comments form: free text a site attaches to another
+  // record, which RSRCID names by its collected source ID.
+  CO: [
+    SRC,
+    SUBJ,
+    TEXT("RSRCID", "Source ID of the commented record"),
+    TEXT("COVAL", "Comment"),
+  ],
 };
 
 function dataset(domain: Domain, rows: readonly Row[]): Dataset {
@@ -492,6 +511,7 @@ export function generateCollectedData(
     MH: [],
     IE: [],
     DS: [],
+    CO: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
   const firstDay = Math.min(...design.visits.map((visit) => visit.targetDay));
@@ -665,6 +685,20 @@ export function generateCollectedData(
         SVDTC: visitDate,
         STATUS: missed ? "MISSED" : outOfWindow ? "OUT OF WINDOW" : "COMPLETED",
       });
+      // A missed visit carries the site's reason on the comments form. Its
+      // draw is keyed to CO, so no other domain's draws move.
+      if (missed)
+        rows.CO.push({
+          SRCID: sourceId(studyId, "CO", number, `SV:${visitKey}`),
+          USUBJID: subject,
+          RSRCID: sourceId(studyId, "SV", number, visitKey),
+          COVAL:
+            MISSED_VISIT_REASONS[
+              Math.floor(
+                pick("CO", `${visitKey}:reason`) * MISSED_VISIT_REASONS.length
+              )
+            ],
+        });
       if (!visitDate) continue;
 
       const fraction = clamp(
@@ -821,6 +855,15 @@ export function generateCollectedData(
             ])
           ),
         });
+        // The site explains an early stop on the comments form, against
+        // the subject's final disposition record.
+        if (discontinued)
+          rows.CO.push({
+            SRCID: sourceId(studyId, "CO", number, "DS:final"),
+            USUBJID: subject,
+            RSRCID: sourceId(studyId, "DS", number, "final"),
+            COVAL: `Study treatment stopped because of ${term.pt.toLowerCase()}.`,
+          });
       }
 
       // Medications are keyed by their own draws, so adding them leaves
@@ -963,6 +1006,7 @@ export function generateCollectedData(
       "DS",
       "MH",
       "IE",
+      "CO",
     ] as const
   ).map((domain) => dataset(domain, rows[domain]));
 }

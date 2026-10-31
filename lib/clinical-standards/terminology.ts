@@ -148,6 +148,7 @@ const CODELISTS = [
   cdisc("DOMAIN", "SDTM Domain Abbreviation", "SDTM", "C66734", true, [
     term("AE", "C49562"),
     term("CM", "C49568"),
+    term("CO", "C49569"),
     term("DM", "C49572"),
     term("DS", "C49576"),
     term("EG", "C49626"),
@@ -155,6 +156,7 @@ const CODELISTS = [
     term("IE", "C61536"),
     term("LB", "C49592"),
     term("MH", "C49603"),
+    term("SE", "C49616"),
     term("SV", "C49617"),
     term("TA", "C49618"),
     term("TE", "C49619"),

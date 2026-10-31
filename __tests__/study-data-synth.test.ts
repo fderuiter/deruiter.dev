@@ -35,8 +35,14 @@ describe("seeded synthetic collection", () => {
       .update(JSON.stringify(datasets))
       .digest("hex");
     expect(digest).toBe(
-      "c35ce8134d140b95fbb520c4d4bd7f798910c6af868c77cd1935322a5ac9806c"
+      "6b0cfcd8caffe117bc22392c84ab9bd09c5a380027296a710b1e3a4b98c9c6b7"
     );
+    // The comments form (#2711) is a new domain with its own draws, so
+    // every other collected dataset hashes as it did before.
+    const beforeComments = datasets.filter((dataset) => dataset.name !== "CO");
+    expect(
+      createHash("sha256").update(JSON.stringify(beforeComments)).digest("hex")
+    ).toBe("c35ce8134d140b95fbb520c4d4bd7f798910c6af868c77cd1935322a5ac9806c");
     // Eligibility (#2964) changed only screen failures: their IE records and
     // the screening age, blood pressure or creatinine that shows the
     // criterion they did not meet. Every enrolled subject's records hash as
@@ -48,7 +54,7 @@ describe("seeded synthetic collection", () => {
         (_, index) => dm.columns.SCREENFL[index] === "FAIL"
       )
     );
-    const enrolledOnly = datasets
+    const enrolledOnly = beforeComments
       .filter((dataset) => dataset.name !== "IE")
       .map((dataset) => {
         const keep = dataset.columns.USUBJID.map(

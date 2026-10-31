@@ -412,6 +412,58 @@ describe("Security Audit Script", () => {
 
       expect(matchAdvisoryRule(rule, advisories[0], "@lhci/cli")).toBe(true);
     });
+
+    // npm lists the packages a vulnerable package reaches through, and two
+    // of them often share one vulnerable dependency (eslint reaches
+    // minimatch through several plugins). The second path finds it already
+    // visited; that must not add a placeholder advisory, which no ignore
+    // rule can match and which would block an advisory the rules cover.
+    it("collects a shared dependency's advisory once, without placeholders", () => {
+      const advisory = {
+        source: 1244012,
+        name: "minimatch",
+        url: "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+        title: "minimatch has potential denial of service",
+        severity: "moderate",
+      } as Advisory;
+      const vulnerabilities: Record<string, VulnerabilityInfo> = {
+        eslint: {
+          name: "eslint",
+          severity: "moderate",
+          via: ["plugin-a", "plugin-b"],
+        },
+        "plugin-a": {
+          name: "plugin-a",
+          severity: "moderate",
+          via: ["minimatch", "eslint"],
+        },
+        "plugin-b": {
+          name: "plugin-b",
+          severity: "moderate",
+          via: ["minimatch"],
+        },
+        minimatch: { name: "minimatch", severity: "moderate", via: [advisory] },
+      };
+
+      const advisories = collectAdvisoriesForVulnerability(
+        "eslint",
+        vulnerabilities
+      );
+      expect(advisories).toEqual([advisory]);
+
+      // A package that reaches no advisory at all still reports itself.
+      expect(
+        collectAdvisoriesForVulnerability("orphan", {
+          orphan: { name: "orphan", severity: "moderate", via: [] },
+        })
+      ).toEqual([{ name: "orphan", range: undefined, severity: "moderate" }]);
+      // So does one whose chain leads only to packages npm did not report.
+      expect(
+        collectAdvisoriesForVulnerability("wrapper", {
+          wrapper: { name: "wrapper", severity: "moderate", via: ["gone"] },
+        })
+      ).toEqual([{ name: "wrapper", range: undefined, severity: "moderate" }]);
+    });
   });
 
   describe("loadIgnoreList and loadRawIgnoreList", () => {
@@ -538,7 +590,9 @@ describe("Security Audit Script", () => {
 
     it("falls back to DEFAULT_IGNORE_LIST and logs once when ignore file contains invalid JSON", () => {
       const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(true);
-      const readSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("not-valid-json{");
+      const readSpy = vi
+        .spyOn(fs, "readFileSync")
+        .mockReturnValue("not-valid-json{");
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       try {

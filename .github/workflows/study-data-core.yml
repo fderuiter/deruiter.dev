@@ -20,6 +20,12 @@ name: Study Data CDISC CORE
 # export (`study-data-core.ts export-crf`), reconciled against the
 # allowlist's crf-usdm entries and recorded under `crf` in the same file.
 #
+# #3189: the check runs on main pushes too. Two PRs can each match the
+# recorded findings on their own branch and make main stale once both are
+# squash-merged, because the ruleset does not require branches to be up to
+# date. A stale file fails the job and its summary names the refresh steps;
+# the job never commits.
+#
 # #3090: both exports build on lib/clinical-standards (the standards profile,
 # the USDM v4 schema and the shared terminology), so a change there runs CORE
 # too. Other shared helpers are left out; a change to them that moves an
@@ -137,7 +143,25 @@ jobs:
           file=lib/study-data/internal/core/recorded-findings.json
           if ! git diff --quiet -- "$file"; then
             git diff --stat -- "$file"
-            echo "::error file=$file::The recorded CDISC CORE findings are stale. Download the study-data-core-recorded-findings artifact from this run and commit it as $file (docs/how-to/refresh-cdisc-core-findings.md)."
+            if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+              where="main is stale: a merge changed the output CORE was run on. Open a fix PR that commits"
+            else
+              where="Commit"
+            fi
+            echo "::error file=$file::The recorded CDISC CORE findings are stale. $where the study-data-core-recorded-findings artifact from this run as $file (docs/how-to/refresh-cdisc-core-findings.md)."
+            {
+              echo "## The recorded CDISC CORE findings are stale"
+              echo
+              echo "$where the \`study-data-core-recorded-findings\` artifact from this run as \`$file\`, or refresh it locally with CORE $CORE_TAG, which ends with:"
+              echo
+              echo '```bash'
+              echo 'npx tsx scripts/study-data-core.ts record "$work/in" "$work/reports" \'
+              echo "  --core-tag $CORE_TAG --core-commit $CORE_COMMIT \\"
+              echo '  --crf-inputs "$work/crf-in" --crf-reports "$work/crf-reports"'
+              echo '```'
+              echo
+              echo "The full steps are in docs/how-to/refresh-cdisc-core-findings.md."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           echo "The recorded CDISC CORE findings match this run."

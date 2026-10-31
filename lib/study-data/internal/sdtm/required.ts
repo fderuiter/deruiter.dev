@@ -46,6 +46,7 @@ const REQUIRED: Readonly<Record<string, ReadonlySet<string>>> = {
   RELREC: new Set(["STUDYID", "RDOMAIN", "IDVAR", "RELID"]),
   SE: new Set(["STUDYID", "DOMAIN", "USUBJID", "SESEQ", "ETCD", "SESTDTC"]),
   CO: new Set(["STUDYID", "DOMAIN", "USUBJID", "COSEQ", "COVAL"]),
+  CE: new Set(["STUDYID", "DOMAIN", "USUBJID", "CESEQ", "CETERM"]),
   VS: new Set(["STUDYID", "DOMAIN", "USUBJID", "VSSEQ", "VSTESTCD", "VSTEST"]),
   LB: new Set(["STUDYID", "DOMAIN", "USUBJID", "LBSEQ", "LBTESTCD", "LBTEST"]),
   EG: new Set(["STUDYID", "DOMAIN", "USUBJID", "EGSEQ", "EGTESTCD", "EGTEST"]),

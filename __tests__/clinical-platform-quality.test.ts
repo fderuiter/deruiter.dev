@@ -286,11 +286,21 @@ describe("scorecards", () => {
       12
     );
     expect(baseline.byDimension.map((s) => s.key)).toEqual(DQ_DIMENSIONS);
+    // A rule whose dataset the run lacks checks nothing and is not scored:
+    // DEMO-301 collects no adjudicated events, so SD-089 (CE lineage,
+    // #3417) is the one rule that does not apply.
+    const checked = (ids: readonly string[]) =>
+      ids.filter(
+        (id) => baseline.results.find((r) => r.ruleId === id)?.passRate !== null
+      );
+    expect(
+      baseline.results.filter((r) => r.passRate === null).map((r) => r.ruleId)
+    ).toEqual(["SD-089"]);
     for (const score of baseline.byDimension) {
       const ids = DATA_QUALITY_RULES.filter(
         (r) => r.dimension === score.key
       ).map((r) => r.id);
-      expect(score.rules).toBe(ids.length);
+      expect(score.rules).toBe(checked(ids).length);
       expect(score.score).toBeCloseTo(mean(ids), 12);
     }
   });

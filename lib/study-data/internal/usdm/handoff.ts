@@ -41,6 +41,7 @@ export const HANDOFF_GENERATED_DOMAINS = Object.freeze([
   "EG",
   "AE",
   "DS",
+  "CE",
 ] as const);
 
 /** Domains whose assessments are generated per test code. */

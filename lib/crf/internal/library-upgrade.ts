@@ -24,6 +24,15 @@
  * Scope is known personal-library lineage only. Blocks inserted without a
  * lineage record, and library entries whose earlier versions were not kept,
  * are reported rather than guessed at.
+ *
+ * Merged values are JSON until they are checked (#3676). Each merged field,
+ * rule, section and codelist must match its CRF schema in
+ * `universal-schema.ts` before it enters the study. The check reads the value
+ * and keeps it as it is: parsing would add schema defaults and reorder keys,
+ * so an upgraded study would no longer match its library byte for byte. A
+ * value that does not match is a defect in the library or in the merge, and
+ * the upgrade is refused as `unavailable`, naming the value and what is
+ * wrong with it, rather than writing it into the study.
  */
 
 import type {
@@ -43,6 +52,12 @@ import {
 } from "./personal-library";
 import { generateCdashVariableName, generateEngineId } from "./precision-date";
 import { cloneDeep } from "../../utils";
+import {
+  CodelistDefinitionSchema,
+  EditCheckRuleSchema,
+  UniversalCrfFieldSchema,
+  UniversalCrfSectionSchema,
+} from "./universal-schema";
 
 /** The kind of block element a change belongs to. */
 export type LibraryUpgradeScope = "section" | "field" | "rule" | "codelist";
@@ -159,6 +174,65 @@ export type ApplyLibraryUpgradeResult =
   | { status: "unavailable"; message: string };
 
 type Json = Record<string, unknown>;
+
+/** What a schema reports about a value, or null when the value matches. */
+function schemaProblem(
+  schema: { safeParse(value: unknown): { success: boolean; error?: unknown } },
+  value: unknown,
+  required: readonly string[] = []
+): string | null {
+  // A key the schema defaults is still required by the study type.
+  const missing = required.filter(
+    (key) => !value || typeof value !== "object" || !(key in value)
+  );
+  if (missing.length > 0) return `${missing.join(", ")} missing`;
+  const result = schema.safeParse(value);
+  if (result.success) return null;
+  const issues =
+    (result.error as { issues?: { path: unknown[]; message: string }[] })
+      ?.issues ?? [];
+  const first = issues[0];
+  return first
+    ? `${first.path.join(".") || "value"}: ${first.message}`
+    : "does not match the schema";
+}
+
+const SECTION_METADATA_SCHEMA = UniversalCrfSectionSchema.omit({
+  id: true,
+  fields: true,
+});
+
+/** A merged field that matches the CRF field schema. */
+function isCrfField(value: unknown): value is CRFField {
+  return (
+    schemaProblem(UniversalCrfFieldSchema, value, [
+      "columnSpan",
+      "required",
+    ]) === null
+  );
+}
+
+/** A merged rule that matches the edit check schema. */
+function isEditCheckRule(value: unknown): value is EditCheckRule {
+  return (
+    schemaProblem(EditCheckRuleSchema, value, [
+      "description",
+      "logicalOperator",
+    ]) === null
+  );
+}
+
+/** Merged section properties that match the section schema. */
+function isSectionMetadata(
+  value: unknown
+): value is Omit<CRFSection, "id" | "fields"> {
+  return schemaProblem(SECTION_METADATA_SCHEMA, value) === null;
+}
+
+/** A merged codelist that matches the codelist schema. */
+function isCodelist(value: unknown): value is CodelistDefinition {
+  return schemaProblem(CodelistDefinitionSchema, value, ["options"]) === null;
+}
 
 interface BlockElement {
   id: string;
@@ -1130,7 +1204,60 @@ export function applyLibraryUpgrade(
     if (value) mergedCodelists.set(id, value);
   }
 
-  // 2. Translate back into the study namespace.
+  // 2. Check every merged value against its CRF schema before it enters
+  // the study (#3676). The values stay as merged; see the module comment.
+  const invalid = (
+    kind: string,
+    id: string,
+    schema: Parameters<typeof schemaProblem>[0],
+    value: unknown,
+    required: readonly string[] = []
+  ): ApplyLibraryUpgradeResult => ({
+    status: "unavailable",
+    message: `The merged library ${kind} "${id}" is not a valid CRF ${kind} (${schemaProblem(schema, value, required)}), so the upgrade was not applied.`,
+  });
+  if (!isSectionMetadata(mergedSection)) {
+    return invalid(
+      "section",
+      String(mergedSection.title ?? use.sectionId),
+      SECTION_METADATA_SCHEMA,
+      mergedSection
+    );
+  }
+  const checkedFields = new Map<string, CRFField>();
+  for (const [libraryId, value] of mergedFields) {
+    const field = { ...cloneDeep(value), id: libraryId };
+    if (!isCrfField(field)) {
+      return invalid("field", libraryId, UniversalCrfFieldSchema, field, [
+        "columnSpan",
+        "required",
+      ]);
+    }
+    checkedFields.set(libraryId, field);
+  }
+  const checkedRules = new Map<string, EditCheckRule>();
+  for (const [libraryId, value] of mergedRules) {
+    // A library rule is stored without its id, which the study assigns.
+    const rule = { ...cloneDeep(value), id: libraryId };
+    if (!isEditCheckRule(rule)) {
+      return invalid("rule", libraryId, EditCheckRuleSchema, rule, [
+        "description",
+        "logicalOperator",
+      ]);
+    }
+    checkedRules.set(libraryId, rule);
+  }
+  const checkedCodelists = new Map<string, CodelistDefinition>();
+  for (const [id, value] of mergedCodelists) {
+    if (!isCodelist(value)) {
+      return invalid("codelist", id, CodelistDefinitionSchema, value, [
+        "options",
+      ]);
+    }
+    checkedCodelists.set(id, value);
+  }
+
+  // 3. Translate back into the study namespace.
   const form = study.forms[block.formIndex];
   const nextIdMap: Record<string, string> = {};
 
@@ -1184,8 +1311,7 @@ export function applyLibraryUpgrade(
     return chosen;
   };
 
-  const toStudyField = (libraryId: string, value: Json): CRFField => {
-    const field = { ...cloneDeep(value), id: libraryId } as unknown as CRFField;
+  const toStudyField = (field: CRFField): CRFField => {
     const visit = (target: CRFField) => {
       const libId = target.id;
       const studyId = use.idMap[libId] || generateEngineId("fld");
@@ -1199,8 +1325,8 @@ export function applyLibraryUpgrade(
   };
 
   const studyFields = new Map<string, CRFField>();
-  for (const [libraryId, value] of mergedFields) {
-    studyFields.set(libraryId, toStudyField(libraryId, value));
+  for (const [libraryId, field] of checkedFields) {
+    studyFields.set(libraryId, toStudyField(field));
   }
 
   // Formulas follow every rename between the library and study namespaces.
@@ -1253,8 +1379,7 @@ export function applyLibraryUpgrade(
 
   const toStudyRef = (id: string) => nextIdMap[id] || use.idMap[id] || id;
   const studyRules = new Map<string, EditCheckRule>();
-  for (const [libraryId, value] of mergedRules) {
-    const rule = { ...cloneDeep(value) } as unknown as EditCheckRule;
+  for (const [libraryId, rule] of checkedRules) {
     const studyId = use.idMap[libraryId] || generateEngineId("rule");
     nextIdMap[libraryId] = studyId;
     rule.id = studyId;
@@ -1292,10 +1417,10 @@ export function applyLibraryUpgrade(
   }
 
   const nextSection: CRFSection = {
-    ...(mergedSection as unknown as Omit<CRFSection, "id" | "fields">),
+    ...mergedSection,
     id: block.section.id,
     fields: ordered,
-  } as CRFSection;
+  };
 
   const nextForms = study.forms.map((candidate, index) =>
     index === block.formIndex
@@ -1326,15 +1451,13 @@ export function applyLibraryUpgrade(
       nextCodelists.push(codelist);
       continue;
     }
-    const merged = mergedCodelists.get(codelist.id);
+    const merged = checkedCodelists.get(codelist.id);
     placedCodelists.add(codelist.id);
-    if (merged) nextCodelists.push(merged as unknown as CodelistDefinition);
+    if (merged) nextCodelists.push(merged);
     else if (referencedCodelists.has(codelist.id)) nextCodelists.push(codelist);
   }
-  for (const [id, merged] of mergedCodelists) {
-    if (!placedCodelists.has(id)) {
-      nextCodelists.push(merged as unknown as CodelistDefinition);
-    }
+  for (const [id, merged] of checkedCodelists) {
+    if (!placedCodelists.has(id)) nextCodelists.push(merged);
   }
 
   const resolutionRecord: Record<string, LibraryConflictChoice> = {};

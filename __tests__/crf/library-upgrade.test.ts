@@ -337,6 +337,90 @@ describe("[#681] Personal-library three-way upgrade", () => {
     });
   });
 
+  describe("merged values are checked before they enter the study (#3676)", () => {
+    function upgradeWith(
+      edit: (section: PersonalLibraryEntry["section"]) => void,
+      changes: Partial<Pick<PersonalLibraryEntry, "rules" | "codelists">> = {}
+    ) {
+      const inserted = insert();
+      const entries = publish(edit, changes);
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      return applyLibraryUpgrade(
+        inserted.study,
+        preview,
+        entries,
+        {},
+        new Date("2026-03-01T00:00:00.000Z")
+      );
+    }
+
+    it("refuses a merged field that is not a CRF field", () => {
+      const result = upgradeWith((s) => {
+        s.fields[1].dataType = "not_a_type" as CRFField["dataType"];
+      });
+      expect(result).toEqual({
+        status: "unavailable",
+        message: expect.stringMatching(
+          /^The merged library field "fld_weight" is not a valid CRF field \(dataType: /
+        ),
+      });
+    });
+
+    it("refuses a merged field that lost a property the study type requires", () => {
+      const result = upgradeWith((s) => {
+        delete (s.fields[1] as Partial<CRFField>).columnSpan;
+      });
+      expect(result).toEqual({
+        status: "unavailable",
+        message: expect.stringContaining("(columnSpan missing)"),
+      });
+    });
+
+    it("refuses a merged rule that is not an edit check", () => {
+      const result = upgradeWith(() => {}, {
+        rules: [
+          {
+            ...entry.rules[0],
+            actionType: "explode" as EditCheckRule["actionType"],
+          },
+        ],
+      });
+      expect(result).toEqual({
+        status: "unavailable",
+        message: expect.stringMatching(
+          /^The merged library rule "rule_wt" is not a valid CRF rule \(actionType: /
+        ),
+      });
+    });
+
+    it("refuses a merged codelist with an empty option code", () => {
+      const result = upgradeWith(() => {}, {
+        codelists: [
+          {
+            ...UNIT_CODELIST,
+            options: [{ code: "", label: "kg", order: 1 }],
+          },
+        ],
+      });
+      expect(result).toEqual({
+        status: "unavailable",
+        message: expect.stringMatching(
+          /^The merged library codelist "cl_unit" is not a valid CRF codelist \(options\.0\.code: /
+        ),
+      });
+    });
+
+    it("refuses merged section properties without a title", () => {
+      const result = upgradeWith((s) => {
+        s.title = "";
+      });
+      expect(result).toEqual({
+        status: "unavailable",
+        message: expect.stringContaining("is not a valid CRF section (title: "),
+      });
+    });
+  });
+
   describe("nonconflicting upgrade", () => {
     it("takes library changes, keeps customizations and applies in one result", () => {
       const inserted = insert();

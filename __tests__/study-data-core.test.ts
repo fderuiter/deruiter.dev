@@ -621,6 +621,49 @@ describe("study-data-core.yml (#2603)", () => {
     }
   });
 
+  // #3189: two PRs can each match the recorded findings on their own branch
+  // and still make main stale once both are squash-merged, because the
+  // ruleset does not require branches to be up to date. The check therefore
+  // also runs on every main push the exports can change on, and a failure
+  // names the command that refreshes the file.
+  it("checks the recorded findings on main as on pull requests", () => {
+    const triggers = workflow.slice(
+      workflow.indexOf("\non:\n"),
+      workflow.indexOf("\nconcurrency:")
+    );
+    const push = triggers.slice(
+      triggers.indexOf("  push:"),
+      triggers.indexOf("  pull_request:")
+    );
+    const pullRequest = triggers.slice(
+      triggers.indexOf("  pull_request:"),
+      triggers.indexOf("  schedule:")
+    );
+    expect(push).toContain("branches: [main]");
+    const paths = (block: string) =>
+      [...block.matchAll(/- "(.*)"/g)].map((match) => match[1]).sort();
+    expect(paths(push).length).toBeGreaterThan(0);
+    expect(paths(push)).toEqual(paths(pullRequest));
+    // No step is limited to pull requests, so main runs the whole check.
+    expect(workflow).not.toMatch(/github\.event_name/);
+    const check = workflow.slice(
+      workflow.indexOf("- name: Check the Recorded Findings Are Current"),
+      workflow.indexOf("- name: Publish Job Summary")
+    );
+    expect(check).toContain("study-data-core.ts record");
+    expect(check).toContain('git diff --quiet -- "$file"');
+  });
+
+  it("names the refresh command when the recorded findings are stale", () => {
+    const check = workflow.slice(
+      workflow.indexOf("- name: Check the Recorded Findings Are Current"),
+      workflow.indexOf("- name: Publish Job Summary")
+    );
+    expect(check).toContain('>> "$GITHUB_STEP_SUMMARY"');
+    expect(check).toContain("npx tsx scripts/study-data-core.ts record");
+    expect(check).toContain("docs/how-to/refresh-cdisc-core-findings.md");
+  });
+
   it("reconciles, publishes the summary and uploads the reports", () => {
     expect(workflow).toContain(
       "npx --no-install tsx scripts/study-data-core.ts reconcile"

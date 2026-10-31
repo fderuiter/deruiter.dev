@@ -13,7 +13,7 @@ release as one versioned GitHub Release.
 ## The Flow
 
 1. Branch from `main` with an allowed prefix (`feat/`, `fix/`, `chore/`,
-   `docs/`, `dx/`, `refactor/`, `perf/`, `test/`, `dev/`, or `jules/`, which
+   `docs/`, `dx/`, `refactor/`, `perf/`, `test/`, `ci/`, `dev/`, or `jules/`, which
    is reserved for the Jules agent), commit with Conventional Commits, and
    open a pull request into `main`.
 2. CI (`.github/workflows/ci.yml`) runs on the PR. Merge only when

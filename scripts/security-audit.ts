@@ -494,7 +494,8 @@ export function getAdvisoryIdentifiers(adv: Advisory): string[] {
 export function collectAdvisoriesForVulnerability(
   pkgName: string,
   vulnerabilities: Record<string, VulnerabilityInfo>,
-  visited = new Set<string>()
+  visited = new Set<string>(),
+  nested = false
 ): Advisory[] {
   if (visited.has(pkgName)) return [];
   visited.add(pkgName);
@@ -512,14 +513,19 @@ export function collectAdvisoriesForVulnerability(
         const nested = collectAdvisoriesForVulnerability(
           item,
           vulnerabilities,
-          visited
+          visited,
+          true
         );
         advisories.push(...nested);
       }
     }
   }
 
-  if (advisories.length === 0) {
+  // Only the package the walk started from reports itself when it reaches
+  // no advisory. A dependency reached a second time, through another path,
+  // has already contributed its advisories, and a placeholder for it would
+  // block an advisory an ignore rule covers.
+  if (advisories.length === 0 && !nested) {
     advisories.push({
       name: vuln.name || pkgName,
       range: vuln.range,

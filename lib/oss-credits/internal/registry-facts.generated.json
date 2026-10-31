@@ -2175,6 +2175,30 @@
       ],
       "notices": []
     },
+    "@nodelib/fs.scandir@2.1.5": {
+      "integrity": "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==",
+      "homepage": null,
+      "repository": "https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.scandir",
+      "author": null,
+      "licenses": [],
+      "notices": []
+    },
+    "@nodelib/fs.stat@2.0.5": {
+      "integrity": "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A==",
+      "homepage": null,
+      "repository": "https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.stat",
+      "author": null,
+      "licenses": [],
+      "notices": []
+    },
+    "@nodelib/fs.walk@1.2.8": {
+      "integrity": "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==",
+      "homepage": null,
+      "repository": "https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.walk",
+      "author": null,
+      "licenses": [],
+      "notices": []
+    },
     "@nolyfill/is-core-module@1.0.39": {
       "integrity": "sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==",
       "homepage": "https://github.com/SukkaW/nolyfill#readme",
@@ -6082,6 +6106,14 @@
       ],
       "notices": []
     },
+    "braces@3.0.3": {
+      "integrity": "sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==",
+      "homepage": "https://github.com/micromatch/braces",
+      "repository": "git+https://github.com/micromatch/braces.git",
+      "author": "Jon Schlinkert",
+      "licenses": [],
+      "notices": []
+    },
     "browserslist@4.29.0": {
       "integrity": "sha512-3GSvyjvDI4Dur1Meg2BekJquu5uF+9R9a1+5M1Mde192eZoXbeXjzgOsgqPS2V8D5wrrip0gR5Hf/GhWQ9ZzaA==",
       "homepage": "https://github.com/browserslist/browserslist#readme",
@@ -8085,6 +8117,14 @@
       ],
       "notices": []
     },
+    "fast-glob@3.3.1": {
+      "integrity": "sha512-kNFPyjhh5cKjrUltxs+wFx+ZkbRaxxmZ+X0ZU31SOsxCEtP9VPgtq2teZw1DebupL5GmDaNQ6yKMMVcM41iqDg==",
+      "homepage": "https://github.com/mrmlnc/fast-glob#readme",
+      "repository": "git+https://github.com/mrmlnc/fast-glob.git",
+      "author": "Denis Malinochkin",
+      "licenses": [],
+      "notices": []
+    },
     "fast-json-stable-stringify@2.1.0": {
       "integrity": "sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==",
       "homepage": "https://github.com/epoberezkin/fast-json-stable-stringify",
@@ -8181,6 +8221,14 @@
       "licenses": [],
       "notices": []
     },
+    "fastq@1.20.3": {
+      "integrity": "sha512-XKv5nnLs6nLF71NgiKJLIZFLkPyIEuOselLG7ujZnGrRfQK8HpvY+WqKhAJUAdLomwVHErVS4LfxFlPq0/FTAw==",
+      "homepage": "https://github.com/mcollina/fastq#readme",
+      "repository": "git+https://github.com/mcollina/fastq.git",
+      "author": "Matteo Collina",
+      "licenses": [],
+      "notices": []
+    },
     "fdir@6.5.0": {
       "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
       "homepage": "https://github.com/thecodrr/fdir#readme",
@@ -8222,6 +8270,14 @@
       "homepage": null,
       "repository": "https://github.com/jaredwray/file-entry-cache.git",
       "author": "Jared Wray",
+      "licenses": [],
+      "notices": []
+    },
+    "fill-range@7.1.1": {
+      "integrity": "sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==",
+      "homepage": "https://github.com/jonschlinkert/fill-range",
+      "repository": "git+https://github.com/jonschlinkert/fill-range.git",
+      "author": "Jon Schlinkert",
       "licenses": [],
       "notices": []
     },
@@ -8491,6 +8547,14 @@
           "sha": "858a63872e40ca764098e48cfcec054efaa1330dfa6c7d5c0b3fdcb3a44a9d95"
         }
       ],
+      "notices": []
+    },
+    "glob-parent@5.1.2": {
+      "integrity": "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==",
+      "homepage": "https://github.com/gulpjs/glob-parent#readme",
+      "repository": "git+https://github.com/gulpjs/glob-parent.git",
+      "author": "Gulp Team",
+      "licenses": [],
       "notices": []
     },
     "glob-parent@6.0.2": {
@@ -9168,6 +9232,14 @@
       "homepage": "https://github.com/inspect-js/is-number-object#readme",
       "repository": "git://github.com/inspect-js/is-number-object.git",
       "author": "Jordan Harband",
+      "licenses": [],
+      "notices": []
+    },
+    "is-number@7.0.0": {
+      "integrity": "sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==",
+      "homepage": "https://github.com/jonschlinkert/is-number",
+      "repository": "git+https://github.com/jonschlinkert/is-number.git",
+      "author": "Jon Schlinkert",
       "licenses": [],
       "notices": []
     },
@@ -10251,6 +10323,14 @@
       "licenses": [],
       "notices": []
     },
+    "merge2@1.4.1": {
+      "integrity": "sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==",
+      "homepage": "https://github.com/teambition/merge2",
+      "repository": "git+ssh://git@github.com/teambition/merge2.git",
+      "author": null,
+      "licenses": [],
+      "notices": []
+    },
     "mermaid@12.2.0": {
       "integrity": "sha512-w7nr/SFrLO7BaVTs3dQTvYSV6nYSBj0Yy9DjBhsIJtAcHqRzXSq4Pg32ujHZ/AdWsAMNEvvhbm5dt9E2tOiHzw==",
       "homepage": "https://github.com/mermaid-js/mermaid#readme",
@@ -10476,6 +10556,14 @@
       "homepage": "https://github.com/micromark/micromark/tree/main#readme",
       "repository": "git+https://github.com/micromark/micromark.git#main",
       "author": "Titus Wormer",
+      "licenses": [],
+      "notices": []
+    },
+    "micromatch@4.0.8": {
+      "integrity": "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==",
+      "homepage": "https://github.com/micromatch/micromatch",
+      "repository": "git+https://github.com/micromatch/micromatch.git",
+      "author": "Jon Schlinkert",
       "licenses": [],
       "notices": []
     },
@@ -11183,6 +11271,14 @@
       ],
       "notices": []
     },
+    "picomatch@2.3.2": {
+      "integrity": "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA==",
+      "homepage": "https://github.com/micromatch/picomatch",
+      "repository": "git+https://github.com/micromatch/picomatch.git",
+      "author": "Jon Schlinkert",
+      "licenses": [],
+      "notices": []
+    },
     "picomatch@4.0.4": {
       "integrity": "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==",
       "homepage": "https://github.com/micromatch/picomatch",
@@ -11559,6 +11655,14 @@
       "licenses": [],
       "notices": []
     },
+    "queue-microtask@1.2.3": {
+      "integrity": "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==",
+      "homepage": "https://github.com/feross/queue-microtask",
+      "repository": "git://github.com/feross/queue-microtask.git",
+      "author": "Feross Aboukhadijeh",
+      "licenses": [],
+      "notices": []
+    },
     "raf@3.4.1": {
       "integrity": "sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==",
       "homepage": "https://github.com/chrisdickinson/raf#readme",
@@ -11822,6 +11926,14 @@
       ],
       "notices": []
     },
+    "reusify@1.1.0": {
+      "integrity": "sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==",
+      "homepage": "https://github.com/mcollina/reusify#readme",
+      "repository": "git+https://github.com/mcollina/reusify.git",
+      "author": "Matteo Collina",
+      "licenses": [],
+      "notices": []
+    },
     "rgbcolor@1.0.1": {
       "integrity": "sha512-9aZLIrhRaD97sgVhtJOW6ckOEh6/GnvQtdVNfdZ6s67+3/XwLS9lBcQYzEEhYVeUowN7pRzMLsyGhK2i/xvWbw==",
       "homepage": "https://github.com/yetzt/node-rgbcolor#readme",
@@ -11911,6 +12023,14 @@
       "homepage": "https://github.com/goatandsheep/rc#readme",
       "repository": "git+https://github.com/goatandsheep/rc.git",
       "author": "Kemal Ahmed",
+      "licenses": [],
+      "notices": []
+    },
+    "run-parallel@1.2.0": {
+      "integrity": "sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==",
+      "homepage": "https://github.com/feross/run-parallel",
+      "repository": "git://github.com/feross/run-parallel.git",
+      "author": "Feross Aboukhadijeh",
       "licenses": [],
       "notices": []
     },
@@ -12823,6 +12943,14 @@
           "sha": "c64182d48160db948b6aa97a984f1a32974ce4d2053900361264cd33853796cb"
         }
       ],
+      "notices": []
+    },
+    "to-regex-range@5.0.1": {
+      "integrity": "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==",
+      "homepage": "https://github.com/micromatch/to-regex-range",
+      "repository": "git+https://github.com/micromatch/to-regex-range.git",
+      "author": "Jon Schlinkert",
+      "licenses": [],
       "notices": []
     },
     "tough-cookie@5.1.2": {

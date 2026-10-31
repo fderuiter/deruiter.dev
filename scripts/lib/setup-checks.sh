@@ -224,6 +224,46 @@ setup_json_escape() {
   local text="$1"
   text="${text//\\/\\\\}"
   text="${text//\"/\\\"}"
+  text="${text//$'\r'/}"
   text="${text//$'\n'/ }"
   printf '%s' "$text"
+}
+
+# setup_detect_husky_status ROOT prints active, uninitialized, disabled, custom, readonly, or nongit.
+setup_detect_husky_status() {
+  local root="${1:-.}"
+  if command -v wslpath >/dev/null 2>&1 && [[ "$root" =~ ^[a-zA-Z]: ]]; then
+    root="$(wslpath -u "$root")"
+  fi
+  if [[ "${HUSKY:-}" == "0" || "${HUSKY:-}" == "false" ]]; then
+    echo "disabled"
+    return 0
+  fi
+  if ! git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "nongit"
+    return 0
+  fi
+  if [[ ! -d "$root/.husky" ]]; then
+    echo "nongit"
+    return 0
+  fi
+  local hooks_path
+  hooks_path=$(git -C "$root" config --get core.hooksPath 2>/dev/null || true)
+  if [[ -n "$hooks_path" && "$hooks_path" != ".husky/_" && "$hooks_path" != ".husky/_/" ]]; then
+    echo "custom"
+    return 0
+  fi
+  if [[ -f "$root/.husky/_/h" && -f "$root/.husky/_/pre-commit" ]]; then
+    if [[ "$hooks_path" == ".husky/_" || "$hooks_path" == ".husky/_/" ]]; then
+      echo "active"
+      return 0
+    fi
+  fi
+  local git_dir
+  git_dir=$(git -C "$root" rev-parse --git-dir 2>/dev/null || true)
+  if [[ ! -w "$root" || ( -n "$git_dir" && ! -w "$git_dir" ) ]]; then
+    echo "readonly"
+    return 0
+  fi
+  echo "uninitialized"
 }

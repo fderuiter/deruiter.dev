@@ -53,6 +53,13 @@ checksum verification. An `npm ci` failure may also come from a lifecycle
 script or network failure, so inspect the original output before changing the
 lockfile.
 
+When setup reuses an existing installation or symlinked `node_modules` where
+the `prepare` lifecycle was skipped (for example after `npm ci --ignore-scripts`),
+it inspects Git hook status. If hooks are uninitialized and the checkout is
+writable, setup initializes Husky hooks (`.husky/_` and `core.hooksPath`).
+Intentional opt-outs (`HUSKY=0`), custom `core.hooksPath` configurations,
+read-only checkouts, and non-git environments are respected and left untouched.
+
 Each stage reports one status: `completed`, `skipped`, `failed`, `manual`
 (a person must finish it, for example a missing secret or a refused
 production target) or `cancelled`. Stage outcomes, never values, are saved to

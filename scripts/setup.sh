@@ -250,6 +250,51 @@ if [[ "$DEPS_STATUS" != failed && ! -f app/generated/prisma/client.ts ]] && (( !
     DEPS_STATUS=failed; DEPS_DETAIL="Prisma client generation failed."
   fi
 fi
+
+# Detect and heal uninitialized Husky Git hooks if dependencies were reused or
+# prepare was skipped (#3616).
+if [[ "$DEPS_STATUS" != failed ]]; then
+  HOOK_STATUS="$(setup_detect_husky_status ".")"
+  case "$HOOK_STATUS" in
+    active)
+      wizard_ok "Git hygiene hooks are active."
+      ;;
+    disabled)
+      wizard_note "HUSKY=${HUSKY:-0} set; skipping Git hook initialization."
+      ;;
+    custom)
+      HOOK_PATH="$(git config --get core.hooksPath 2>/dev/null || echo "custom")"
+      wizard_warn "Custom core.hooksPath is set ($HOOK_PATH); preserving user hooks."
+      ;;
+    readonly)
+      wizard_warn "Repository is read-only; skipping Git hook initialization."
+      ;;
+    uninitialized)
+      if ((DRY_RUN)); then
+        wizard_note "Dry run: would initialize Husky Git hooks."
+      else
+        wizard_say "Initializing Husky Git hooks..."
+        HOOK_INIT_OK=0
+        if [[ -f node_modules/.bin/husky ]]; then
+          if node_modules/.bin/husky >&"$WIZARD_FD" 2>&1; then
+            HOOK_INIT_OK=1
+          fi
+        elif command -v npx >/dev/null 2>&1; then
+          if npx --no-install husky >&"$WIZARD_FD" 2>&1; then
+            HOOK_INIT_OK=1
+          fi
+        fi
+        if ((HOOK_INIT_OK)); then
+          wizard_ok "Git hygiene hooks initialized."
+        else
+          wizard_warn "Husky hook initialization failed; run npx husky manually."
+        fi
+      fi
+      ;;
+    nongit)
+      ;;
+  esac
+fi
 record dependencies "$DEPS_STATUS" "$DEPS_DETAIL"
 [[ "$DEPS_STATUS" == failed ]] && stop 1
 

@@ -1,3 +1,4 @@
+import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import type { DiagnosticCheckResult } from "./doctor";
@@ -163,6 +164,92 @@ export function validateBranchName(branch: string): {
   return { valid: true };
 }
 
+export type HuskyLifecycleState =
+  "active" | "uninitialized" | "disabled" | "custom" | "readonly" | "nongit";
+
+export interface HuskyStatusResult {
+  state: HuskyLifecycleState;
+  detail?: string;
+  hooksPath?: string;
+}
+
+/**
+ * Detects the current operational lifecycle state of Husky git hooks.
+ */
+export function detectHuskyHookStatus(root: string): HuskyStatusResult {
+  const envHusky = process.env.HUSKY;
+  if (envHusky === "0" || envHusky === "false") {
+    return {
+      state: "disabled",
+      detail: `HUSKY=${envHusky} is set in environment; hooks are intentionally bypassed.`,
+    };
+  }
+
+  const gitCheck = spawnSync(
+    "git",
+    ["-C", root, "rev-parse", "--is-inside-work-tree"],
+    { encoding: "utf-8" }
+  );
+  if (gitCheck.status !== 0) {
+    return { state: "nongit", detail: "Not inside a Git worktree." };
+  }
+
+  const huskyDir = path.join(root, ".husky");
+  if (!fs.existsSync(huskyDir)) {
+    return { state: "nongit", detail: ".husky directory does not exist." };
+  }
+
+  const hooksPathCheck = spawnSync(
+    "git",
+    ["-C", root, "config", "--get", "core.hooksPath"],
+    { encoding: "utf-8" }
+  );
+  const hooksPath = hooksPathCheck.stdout ? hooksPathCheck.stdout.trim() : "";
+
+  if (hooksPath && hooksPath !== ".husky/_" && hooksPath !== ".husky/_/") {
+    return {
+      state: "custom",
+      hooksPath,
+      detail: `Custom core.hooksPath is configured: ${hooksPath}`,
+    };
+  }
+
+  const dispatcherH = path.join(huskyDir, "_", "h");
+  const preCommitDispatcher = path.join(huskyDir, "_", "pre-commit");
+
+  if (
+    fs.existsSync(dispatcherH) &&
+    fs.existsSync(preCommitDispatcher) &&
+    (hooksPath === ".husky/_" || hooksPath === ".husky/_/")
+  ) {
+    return { state: "active" };
+  }
+
+  try {
+    fs.accessSync(root, fs.constants.W_OK);
+    const gitDirResult = spawnSync(
+      "git",
+      ["-C", root, "rev-parse", "--git-dir"],
+      { encoding: "utf-8" }
+    );
+    if (gitDirResult.status === 0 && gitDirResult.stdout.trim()) {
+      const gitDir = path.resolve(root, gitDirResult.stdout.trim());
+      fs.accessSync(gitDir, fs.constants.W_OK);
+    }
+  } catch {
+    return {
+      state: "readonly",
+      detail: "Repository or git directory is read-only.",
+    };
+  }
+
+  return {
+    state: "uninitialized",
+    detail:
+      "Husky hook dispatchers (.husky/_) or core.hooksPath are uninitialized.",
+  };
+}
+
 /**
  * Diagnostic check for Husky git hooks and commit hygiene policy.
  */
@@ -188,6 +275,20 @@ export function checkGitHygieneConfig(
     issues.push(".husky/commit-msg hook not found.");
   }
 
+  const hookStatus = detectHuskyHookStatus(root);
+
+  if (hookStatus.state === "uninitialized") {
+    issues.push(
+      hookStatus.detail ??
+        "Husky hook dispatchers (.husky/_) are uninitialized or core.hooksPath is unset."
+    );
+  } else if (hookStatus.state === "readonly") {
+    issues.push(
+      hookStatus.detail ??
+        "Repository is read-only; Git hooks cannot be verified or updated."
+    );
+  }
+
   if (issues.length > 0) {
     if (fix) {
       if (!fs.existsSync(huskyDir)) fs.mkdirSync(huskyDir, { recursive: true });
@@ -198,6 +299,28 @@ export function checkGitHygieneConfig(
           { encoding: "utf-8", mode: 0o755 }
         );
       }
+      if (hookStatus.state === "uninitialized") {
+        const huskyPkgBin = path.join(root, "node_modules", "husky", "bin.js");
+        const huskyBin = path.join(root, "node_modules", ".bin", "husky");
+        if (fs.existsSync(huskyPkgBin)) {
+          spawnSync(process.execPath, [huskyPkgBin], {
+            cwd: root,
+            encoding: "utf-8",
+          });
+        } else if (fs.existsSync(huskyBin)) {
+          spawnSync(huskyBin, [], {
+            cwd: root,
+            encoding: "utf-8",
+            shell: true,
+          });
+        } else {
+          spawnSync("npx", ["--no-install", "husky"], {
+            cwd: root,
+            encoding: "utf-8",
+            shell: true,
+          });
+        }
+      }
       return {
         id: "git-hygiene-config",
         name: "Git Hooks & Commit Hygiene Standards",
@@ -205,7 +328,8 @@ export function checkGitHygieneConfig(
         status: "fixed",
         message:
           "Installed and configured Husky git hooks for Conventional Commits.",
-        fixedMessage: "Created .husky/commit-msg hook.",
+        fixedMessage:
+          "Created commit-msg hook and initialized Husky core.hooksPath.",
       };
     }
 
@@ -214,9 +338,33 @@ export function checkGitHygieneConfig(
       name: "Git Hooks & Commit Hygiene Standards",
       category: "quality",
       status: "fail",
-      message: "Git hygiene hooks are incomplete.",
+      message: "Git hygiene hooks are incomplete or uninitialized.",
       details: issues,
       fixable: true,
+    };
+  }
+
+  if (hookStatus.state === "disabled") {
+    return {
+      id: "git-hygiene-config",
+      name: "Git Hooks & Commit Hygiene Standards",
+      category: "quality",
+      status: "pass",
+      message:
+        hookStatus.detail ??
+        "Husky hooks are intentionally disabled via environment (HUSKY).",
+    };
+  }
+
+  if (hookStatus.state === "custom") {
+    return {
+      id: "git-hygiene-config",
+      name: "Git Hooks & Commit Hygiene Standards",
+      category: "quality",
+      status: "pass",
+      message:
+        hookStatus.detail ??
+        "Custom core.hooksPath configured; preserving user hooks.",
     };
   }
 

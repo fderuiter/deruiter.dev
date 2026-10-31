@@ -59,3 +59,8 @@ commitments.
 - [UI/UX improvement backlog](planning/ui-ux-backlog.md)
 - [Design system tokens and editorial palette](planning/ui-ux-design-tokens.md)
 - [UI/UX GitHub ticket proposal](planning/ui-ux-ticket-proposal.md)
+
+## Developer Tooling & Infrastructure Research
+
+- [Husky Hook Initialization Research](husky-hook-initialization-research.md), technical specifications and lifecycle detection research for Husky v9 hooks and setup automation (#3616).
+

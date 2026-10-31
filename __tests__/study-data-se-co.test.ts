@@ -150,6 +150,7 @@ describe("SDTM SE", () => {
       "SEENDTC",
       "SESTDY",
       "SEENDY",
+      "SEUPDES",
     ]);
     const meta = new Map(
       se.variables.map((variable) => [variable.name, variable])

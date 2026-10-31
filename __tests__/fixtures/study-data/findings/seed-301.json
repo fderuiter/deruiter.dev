@@ -163,6 +163,14 @@
       "added": [],
       "removed": []
     },
+    "randomized-not-dosed": {
+      "added": [],
+      "removed": []
+    },
+    "unplanned-treatment": {
+      "added": [],
+      "removed": []
+    },
     "qtcf-outlier": {
       "added": ["AD-014 adam ADEG DEMO-301-0002#19 CRIT1FL"],
       "removed": []

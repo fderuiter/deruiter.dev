@@ -359,6 +359,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     // 2.12.0 (#2807): SITEID and COUNTRY in ADaM ADSL.
     // 2.13.0 (#3414): the SDTM RELREC dataset.
     // 2.14.0 (#2711): the SDTM SE and CO datasets.
-    version: "2.14.0",
+    // 2.15.0 (#2813): SEUPDES in SDTM SE, for unplanned elements.
+    version: "2.15.0",
   },
 };

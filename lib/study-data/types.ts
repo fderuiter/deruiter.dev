@@ -411,6 +411,8 @@ export type ScenarioId =
   | "rescreened-subject"
   | "death-during-treatment"
   | "withdrawal-before-week-12"
+  | "randomized-not-dosed"
+  | "unplanned-treatment"
   | "qtcf-outlier"
   | "ecg-missing-rr";
 

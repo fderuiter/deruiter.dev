@@ -114,6 +114,8 @@ describe("messy-data scenarios: the library", () => {
       "rescreened-subject",
       "death-during-treatment",
       "withdrawal-before-week-12",
+      "randomized-not-dosed",
+      "unplanned-treatment",
       "qtcf-outlier",
       "ecg-missing-rr",
     ]);
@@ -515,6 +517,91 @@ describe("messy-data scenarios: derivations, early end of participation", () => 
       expect(row.ANL01FL).toBeNull();
       expect(String(row.ADT) <= String(withdrawal.DSSTDTC)).toBe(true);
     }
+  });
+});
+
+// #2813: the actual arm comes from exposure, not from randomization.
+describe("messy-data scenarios: derivations, actual arm", () => {
+  it("randomized-not-dosed: no actual arm, ASSIGNED, NOT TREATED, out of the analysis sets", () => {
+    const run = withScenarios(["randomized-not-dosed"]);
+    const subject = targetOf(run, "randomized-not-dosed");
+    expect(subjectRows(run, "sdtm", "EX", subject)).toEqual([]);
+    const dm = subjectRows(run, "sdtm", "DM", subject)[0]!;
+    const randomization = subjectRows(run, "collected", "RAND", subject)[0]!;
+    expect(dm).toMatchObject({
+      ARMCD: randomization.ARMCD,
+      ARM: randomization.ARM,
+      ACTARMCD: null,
+      ACTARM: null,
+      ARMNRS: "ASSIGNED, NOT TREATED",
+      ACTARMUD: null,
+      RFSTDTC: null,
+      RFXSTDTC: null,
+    });
+    // Withdrawn on the day of randomization, before any later visit.
+    const withdrawal = subjectRows(run, "sdtm", "DS", subject).find(
+      (row) => row.DSCAT === "DISPOSITION EVENT"
+    )!;
+    expect(withdrawal).toMatchObject({
+      DSDECOD: "WITHDRAWAL BY SUBJECT",
+      DSSTDTC: randomization.RANDDTC,
+    });
+    for (const row of subjectRows(run, "sdtm", "SV", subject))
+      if (typeof row.SVSTDTC === "string")
+        expect(row.SVSTDTC <= String(randomization.RANDDTC)).toBe(true);
+    // Only the screening element: the subject never reached treatment.
+    expect(
+      subjectRows(run, "sdtm", "SE", subject).map((row) => row.ETCD)
+    ).toEqual(["SCRN"]);
+    const adsl = subjectRows(run, "adam", "ADSL", subject)[0]!;
+    expect(adsl).toMatchObject({
+      TRT01P: randomization.ARM,
+      TRT01A: null,
+      SAFFL: "N",
+      ITTFL: "N",
+      EOSSTT: "DISCONTINUED",
+      DCSREAS: "WITHDRAWAL BY SUBJECT",
+    });
+  });
+
+  it("unplanned-treatment: no actual arm, UNPLANNED TREATMENT, an unplanned element", () => {
+    const run = withScenarios(["unplanned-treatment"]);
+    const subject = targetOf(run, "unplanned-treatment");
+    const exposure = subjectRows(run, "sdtm", "EX", subject)[0]!;
+    const planned = new Set(DEMO_301_STUDY.design.arms.map((arm) => arm.name));
+    expect(planned.has(String(exposure.EXTRT))).toBe(false);
+    const dm = subjectRows(run, "sdtm", "DM", subject)[0]!;
+    expect(dm).toMatchObject({
+      ACTARMCD: null,
+      ACTARM: null,
+      ARMNRS: "UNPLANNED TREATMENT",
+      ACTARMUD: exposure.EXTRT,
+    });
+    expect(dm.ARMCD).not.toBeNull();
+    const elements = subjectRows(run, "sdtm", "SE", subject);
+    expect(elements[1]).toMatchObject({
+      ETCD: "UNPLAN",
+      ELEMENT: null,
+      TAETORD: null,
+      EPOCH: "TREATMENT",
+      SEUPDES: exposure.EXTRT,
+      SESTDTC: exposure.EXSTDTC,
+    });
+    const adsl = subjectRows(run, "adam", "ADSL", subject)[0]!;
+    expect(adsl).toMatchObject({
+      TRT01P: dm.ARM,
+      TRT01A: exposure.EXTRT,
+      SAFFL: "Y",
+    });
+  });
+
+  it("keeps every other randomized subject's actual arm as randomized", () => {
+    const dm = rows(dataset(baseline, "sdtm", "DM"));
+    for (const row of dm)
+      if (row.ARMCD !== null) {
+        expect(row.ACTARMCD).toBe(row.ARMCD);
+        expect(row.ARMNRS).toBeNull();
+      } else expect(row.ARMNRS).toBe("SCREEN FAILURE");
   });
 });
 

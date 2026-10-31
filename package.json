@@ -77,6 +77,7 @@
     "test:e2e:phone": "playwright test --project=\"Phone*\"",
     "audit:a11y": "playwright test __tests__/e2e/accessibility.spec.ts --project=chromium",
     "audit:licenses": "tsx scripts/license-audit.ts",
+    "audit:overrides": "tsx scripts/overrides-audit.ts",
     "oss:credits": "tsx scripts/oss-credits.ts",
     "deps:fix": "tsx scripts/deps-fix.ts",
     "audit:security": "tsx scripts/security-audit.ts",

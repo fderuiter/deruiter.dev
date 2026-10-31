@@ -1030,7 +1030,7 @@ async function handleBranchCommand(parsed: ParsedCliArgs): Promise<void> {
 
   console.log(formatHeader("DX Git Branch Generator"));
   console.log(
-    `Allowed prefixes: ${colors.cyan}feat/, fix/, chore/, refactor/, docs/, perf/, dx/, test/, dev/${colors.reset}\n`
+    `Allowed prefixes: ${colors.cyan}feat/, fix/, chore/, refactor/, docs/, perf/, dx/, test/, ci/, dev/${colors.reset}\n`
   );
 
   const question = (q: string): Promise<string> =>

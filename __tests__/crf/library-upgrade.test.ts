@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, beforeEach } from "vitest";
 import fc from "fast-check";
 import {
@@ -777,6 +778,557 @@ describe("[#681] Personal-library three-way upgrade", () => {
       expect(
         byVar(result.study, inserted.use.sectionId, "LOCALX")
       ).toBeDefined();
+    });
+  });
+
+  // #3485: branches the cases above leave untaken.
+  describe("less common upgrades (#3485)", () => {
+    const at = new Date("2026-03-01T00:00:00.000Z");
+    const kinds = (preview: LibraryUpgradePreview) =>
+      Object.fromEntries(preview.changes.map((c) => [c.id, c.kind]));
+
+    it("calls a change both sides made alike converged, and applies it", () => {
+      const inserted = insert();
+      const study: StudyProtocol = structuredClone(inserted.study);
+      byVar(study, inserted.use.sectionId, "WEIGHT")!.label = "Body weight";
+      const entries = publish((s) => {
+        s.fields[1].label = "Body weight";
+      });
+      const preview = ready(study, inserted.use.id, entries);
+      expect(kinds(preview)["field:fld_weight:label"]).toBe("converged");
+      expect(preview.counts.converged).toBe(1);
+      const change = preview.changes.find(
+        (c) => c.id === "field:fld_weight:label"
+      )!;
+      expect(change.summary).toBe(
+        "The study and the library made the same change to label of Body weight (WEIGHT)."
+      );
+      const result = applyLibraryUpgrade(study, preview, entries, {}, at);
+      expect(result.status).toBe("applied");
+    });
+
+    it("takes a library removal of an untouched field and drops its codelist", () => {
+      const inserted = insert();
+      const entries = publish(
+        (s) => {
+          s.fields.splice(2, 1);
+        },
+        { codelists: [] }
+      );
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      expect(kinds(preview)["field:fld_unit"]).toBe("incoming");
+      expect(
+        preview.changes.find((c) => c.id === "field:fld_unit")!.summary
+      ).toBe("The library removes Unit (WTUNIT).");
+      expect(kinds(preview)["codelist:cl_unit"]).toBe("incoming");
+      const result = applyLibraryUpgrade(
+        inserted.study,
+        preview,
+        entries,
+        {},
+        at
+      );
+      if (result.status !== "applied") throw new Error(result.status);
+      expect(
+        byVar(result.study, inserted.use.sectionId, "WTUNIT")
+      ).toBeUndefined();
+      // Nothing refers to the codelist any more, so it goes too.
+      expect(result.study.codelists.map((c) => c.id)).not.toContain("cl_unit");
+    });
+
+    it("records a field removed on both sides as converged", () => {
+      const inserted = insert();
+      const study: StudyProtocol = structuredClone(inserted.study);
+      const section = blockSection(study, inserted.use.sectionId);
+      section.fields = section.fields.filter(
+        (f) => f.id !== inserted.use.idMap.fld_unit
+      );
+      const entries = publish((s) => {
+        s.fields.splice(2, 1);
+      });
+      const preview = ready(study, inserted.use.id, entries);
+      expect(kinds(preview)["field:fld_unit"]).toBe("converged");
+      expect(
+        preview.changes.find((c) => c.id === "field:fld_unit")!.summary
+      ).toBe("Unit (WTUNIT) was removed in both the study and the library.");
+    });
+
+    it("adds a calculated field, a repeating table and a grouped rule from the library", () => {
+      const inserted = insert();
+      const heightVar = inserted.use.variableMap.HEIGHT;
+      const entries = publish(
+        (s) => {
+          s.fields.push(
+            field({
+              id: "fld_bmi",
+              variableName: "BMI",
+              label: "BMI",
+              dataType: "calculated" as CRFField["dataType"],
+              calculationFormula: "WEIGHT / ((HEIGHT/100) * (HEIGHT/100))",
+            }),
+            field({
+              id: "fld_table",
+              variableName: "READS",
+              label: "Repeat readings",
+              dataType: "repeating_table" as CRFField["dataType"],
+              repeatingColumns: [
+                field({ id: "fld_read_time", variableName: "RDTIM" }),
+              ],
+            })
+          );
+        },
+        {
+          rules: [
+            ...entry.rules,
+            {
+              id: "rule_grouped",
+              name: "Grouped check",
+              description: "",
+              triggerFieldIds: ["fld_height", "fld_weight"],
+              actionType: "raise_query",
+              targetFieldId: "fld_weight",
+              conditions: [
+                {
+                  fieldId: "fld_weight",
+                  operator: "gt",
+                  value: 0,
+                  compareFieldId: "fld_height",
+                },
+              ],
+              conditionGroups: [
+                {
+                  id: "grp",
+                  logicalOperator: "OR",
+                  conditions: [
+                    {
+                      fieldId: "fld_height",
+                      operator: "lt",
+                      value: 50,
+                      compareFieldId: "fld_weight",
+                    },
+                  ],
+                },
+              ],
+              logicalOperator: "AND",
+            },
+          ],
+        }
+      );
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      expect(kinds(preview)).toMatchObject({
+        "field:fld_bmi": "incoming",
+        "field:fld_table": "incoming",
+        "rule:rule_grouped": "incoming",
+      });
+      const result = applyLibraryUpgrade(
+        inserted.study,
+        preview,
+        entries,
+        {},
+        at
+      );
+      if (result.status !== "applied")
+        throw new Error(
+          `${result.status}: ${"message" in result ? result.message : ""}`
+        );
+      const sectionId = inserted.use.sectionId;
+      const bmi = byVar(result.study, sectionId, "BMI")!;
+      // The formula follows the study's rename of HEIGHT.
+      expect(bmi.calculationFormula).toBe(
+        `WEIGHT / ((${heightVar}/100) * (${heightVar}/100))`
+      );
+      const table = byVar(result.study, sectionId, "READS")!;
+      expect(table.repeatingColumns?.map((c) => c.variableName)).toEqual([
+        "RDTIM",
+      ]);
+      expect(table.repeatingColumns?.[0].id).not.toBe("fld_read_time");
+      const grouped = result.study.forms[0].rules.find(
+        (r) => r.id === result.use.idMap.rule_grouped
+      )!;
+      const heightId = result.use.idMap.fld_height;
+      const weightId = result.use.idMap.fld_weight;
+      expect(grouped.triggerFieldIds).toEqual([heightId, weightId]);
+      expect(grouped.conditions[0].compareFieldId).toBe(heightId);
+      expect(grouped.conditionGroups?.[0].conditions[0]).toMatchObject({
+        fieldId: heightId,
+        compareFieldId: weightId,
+      });
+    });
+
+    it("calls a field removed on one side and changed on the other a conflict", () => {
+      const inserted = insert();
+      const study: StudyProtocol = structuredClone(inserted.study);
+      const section = blockSection(study, inserted.use.sectionId);
+      section.fields = section.fields.filter(
+        (f) => f.id !== inserted.use.idMap.fld_unit
+      );
+      const entries = publish((s) => {
+        s.fields[2].label = "Weight unit";
+      });
+      const preview = ready(study, inserted.use.id, entries);
+      const change = preview.changes.find((c) => c.id === "field:fld_unit")!;
+      expect(change).toMatchObject({ kind: "conflict", action: "remove" });
+      expect(change.summary).toBe(
+        "Weight unit (WTUNIT) was removed on one side and changed on the other."
+      );
+      // Taking the library's side brings the field back.
+      const result = applyLibraryUpgrade(
+        study,
+        preview,
+        entries,
+        { "field:fld_unit": "incoming" },
+        at
+      );
+      if (result.status !== "applied") throw new Error(result.status);
+      expect(byVar(result.study, inserted.use.sectionId, "WTUNIT")?.label).toBe(
+        "Weight unit"
+      );
+    });
+
+    it("adds a new library codelist and keeps a removed one the study still uses", () => {
+      const inserted = insert();
+      const study: StudyProtocol = structuredClone(inserted.study);
+      // A field outside the block still uses the unit codelist.
+      study.forms[1].sections[0].fields.push(
+        field({
+          id: "fld_other_unit",
+          variableName: "OTUNIT",
+          codelistId: "cl_unit",
+        })
+      );
+      const route: CodelistDefinition = {
+        id: "cl_route",
+        name: "Route",
+        options: [{ code: "PO", label: "Oral", order: 1 }],
+      };
+      const entries = publish(
+        (s) => {
+          s.fields[2].codelistId = "cl_route";
+        },
+        { codelists: [route] }
+      );
+      const preview = ready(study, inserted.use.id, entries);
+      expect(
+        preview.changes.find((c) => c.id === "codelist:cl_route")
+      ).toMatchObject({
+        kind: "incoming",
+        action: "add",
+        label: "Route",
+      });
+      const result = applyLibraryUpgrade(study, preview, entries, {}, at);
+      if (result.status !== "applied")
+        throw new Error(
+          `${result.status}: ${"message" in result ? result.message : ""}`
+        );
+      const ids = result.study.codelists.map((c) => c.id);
+      expect(ids).toContain("cl_route");
+      expect(ids).toContain("cl_unit");
+    });
+
+    it("upgrades a block that holds a repeating table and a grouped rule", () => {
+      const src = sourceStudy();
+      src.forms[0].sections[0].fields.push(
+        field({
+          id: "fld_table",
+          variableName: "READS",
+          label: "Readings",
+          dataType: "repeating_table" as CRFField["dataType"],
+          repeatingColumns: [
+            field({
+              id: "fld_read_time",
+              variableName: "RDTIM",
+              label: "Time",
+            }),
+          ],
+        })
+      );
+      src.forms[0].rules.push({
+        id: "rule_grouped",
+        name: "Grouped check",
+        description: "",
+        triggerFieldIds: ["fld_height"],
+        actionType: "raise_query",
+        targetFieldId: "fld_weight",
+        conditions: [
+          {
+            fieldId: "fld_weight",
+            operator: "gt",
+            value: 0,
+            compareFieldId: "fld_height",
+          },
+        ],
+        conditionGroups: [
+          {
+            id: "grp",
+            logicalOperator: "OR",
+            conditions: [
+              {
+                fieldId: "fld_height",
+                operator: "lt",
+                value: 50,
+                compareFieldId: "fld_weight",
+              },
+            ],
+          },
+        ],
+        logicalOperator: "AND",
+      } as EditCheckRule);
+      const rich = captureLibraryEntry({
+        study: src,
+        form: src.forms[0],
+        sectionId: "sec_anthro",
+        name: "Anthropometrics with readings",
+        now: new Date("2026-02-01T00:00:00.000Z"),
+      });
+      upsertLibraryEntry(rich, storage);
+      const inserted = insertLibraryEntryWithLineage(
+        rich,
+        targetStudy(),
+        "form_vs",
+        new Date("2026-02-02T00:00:00.000Z")
+      );
+      const section = structuredClone(rich.section);
+      section.fields[0].label = "Standing height";
+      const updated = updateLibraryEntry(rich.id, { section }, storage);
+      if (updated.status !== "updated") throw new Error("update failed");
+      const entries = listLibraryEntries(storage);
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      // Renamed at insertion, the column and rule are not customizations.
+      expect(preview.changes.map((c) => `${c.id} ${c.kind}`)).toEqual([
+        "field:fld_height:label incoming",
+      ]);
+      const result = applyLibraryUpgrade(
+        inserted.study,
+        preview,
+        entries,
+        {},
+        at
+      );
+      if (result.status !== "applied") throw new Error(result.status);
+      const grouped = result.study.forms[0].rules.find(
+        (r) => r.id === result.use.idMap.rule_grouped
+      )!;
+      expect(grouped.conditionGroups?.[0].conditions[0].compareFieldId).toBe(
+        result.use.idMap.fld_weight
+      );
+    });
+
+    it("upgrades into a sparse study whose forms carry no rules or sections", () => {
+      const target = targetStudy();
+      const sparse = fromAny<StudyProtocol, unknown>({
+        ...target,
+        forms: [
+          { ...target.forms[0], rules: undefined },
+          { ...target.forms[1], sections: undefined, rules: undefined },
+        ],
+        codelists: undefined,
+      });
+      const inserted = insertLibraryEntryWithLineage(
+        entry,
+        sparse,
+        "form_vs",
+        new Date("2026-02-02T00:00:00.000Z")
+      );
+      const entries = publish((s) => {
+        s.fields[0].label = "Standing height";
+      });
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      const result = applyLibraryUpgrade(
+        inserted.study,
+        preview,
+        entries,
+        {},
+        at
+      );
+      expect(result.status).toBe("applied");
+    });
+
+    it("refuses to apply once the use or its entry is gone", () => {
+      const inserted = insert();
+      const entries = publish((s) => {
+        s.fields[0].label = "Standing height";
+      });
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      expect(
+        applyLibraryUpgrade(
+          { ...inserted.study, libraryUses: undefined },
+          preview,
+          entries,
+          {},
+          at
+        )
+      ).toEqual({
+        status: "unavailable",
+        message: "This library block is no longer recorded in the study.",
+      });
+      const gone = applyLibraryUpgrade(inserted.study, preview, [], {}, at);
+      expect(gone.status).toBe("unavailable");
+      expect("message" in gone ? gone.message : "").toMatch(
+        /no longer in your personal library/
+      );
+    });
+
+    it("labels an unnamed library rule and codelist by their ids in the preview", () => {
+      const inserted = insert();
+      const entries = publish(() => {}, {
+        rules: [{ ...entry.rules[0], name: "", queryMessage: "Too heavy" }],
+        codelists: [
+          { ...UNIT_CODELIST, name: "", options: [UNIT_CODELIST.options[0]] },
+        ],
+      });
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      const byId = new Map(preview.changes.map((c) => [c.id, c]));
+      expect(byId.get("rule:rule_wt:name")?.label).toBe("rule_wt");
+      expect(byId.get("codelist:cl_unit:options")?.label).toBe("cl_unit");
+    });
+
+    it("finds an outside rule that reads a changed field through a condition group", () => {
+      const inserted = insert();
+      const study: StudyProtocol = structuredClone(inserted.study);
+      const weightId = inserted.use.idMap.fld_weight;
+      study.forms[1].rules.push(
+        fromAny<EditCheckRule, unknown>({
+          id: "rule_grouped_external",
+          name: "",
+          description: "",
+          triggerFieldIds: undefined,
+          actionType: "raise_query",
+          targetFieldId: "fld_none",
+          conditions: [],
+          conditionGroups: [
+            {
+              id: "g",
+              logicalOperator: "AND",
+              conditions: [{ fieldId: weightId, operator: "gt", value: 1 }],
+            },
+          ],
+          logicalOperator: "AND",
+        })
+      );
+      const entries = publish((s) => {
+        s.fields[1].unit = "kg";
+      });
+      const preview = ready(study, inserted.use.id, entries);
+      expect(preview.affectedReferences).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: "rule",
+            elementId: "rule_grouped_external",
+            label: "rule_grouped_external",
+          }),
+        ])
+      );
+    });
+
+    it("keeps a local rule in the block's form and maps a customized formula back", () => {
+      const inserted = insert();
+      const heightVar = inserted.use.variableMap.HEIGHT;
+      const study: StudyProtocol = structuredClone(inserted.study);
+      study.forms[0].rules.push({
+        id: "rule_local",
+        name: "Local check",
+        description: "",
+        triggerFieldIds: [],
+        actionType: "raise_query",
+        targetFieldId: inserted.use.idMap.fld_weight,
+        conditions: [],
+        logicalOperator: "AND",
+      } as EditCheckRule);
+      // The author gives Weight a formula naming the study's renamed HEIGHT.
+      byVar(study, inserted.use.sectionId, "WEIGHT")!.calculationFormula =
+        `${heightVar} * 0`;
+      const entries = publish((s) => {
+        s.fields[0].label = "Standing height";
+      });
+      const preview = ready(study, inserted.use.id, entries);
+      const formula = preview.changes.find(
+        (c) => c.id === "field:fld_weight:calculationFormula"
+      )!;
+      // Compared in the library's names, the customization reads HEIGHT.
+      expect(formula.kind).toBe("local");
+      expect(formula.current).toContain("HEIGHT * 0");
+      const result = applyLibraryUpgrade(study, preview, entries, {}, at);
+      if (result.status !== "applied") throw new Error(result.status);
+      expect(result.study.forms[0].rules.map((r) => r.id)).toContain(
+        "rule_local"
+      );
+    });
+
+    it("renames a new library field whose variable the study already uses, and places it by its anchor", () => {
+      const inserted = insert();
+      const entries = publish((s) => {
+        // Inserted after Height, and named like a variable outside the block.
+        s.fields.splice(
+          1,
+          0,
+          field({ id: "fld_existing", variableName: "HEIGHT", label: "Again" })
+        );
+      });
+      const preview = ready(inserted.study, inserted.use.id, entries);
+      const result = applyLibraryUpgrade(
+        inserted.study,
+        preview,
+        entries,
+        {},
+        at
+      );
+      if (result.status !== "applied") throw new Error(result.status);
+      const fields = blockSection(result.study, inserted.use.sectionId).fields;
+      const added = fields.find((f) => f.label === "Again")!;
+      expect(added.variableName).not.toBe("HEIGHT");
+      expect(fields.indexOf(added)).toBe(1);
+    });
+
+    it("upgrades one block and leaves the study's other library uses alone", () => {
+      const first = insert();
+      const second = insertLibraryEntryWithLineage(
+        entry,
+        first.study,
+        "form_other",
+        new Date("2026-02-03T00:00:00.000Z")
+      );
+      const entries = publish((s) => {
+        s.fields[0].label = "Standing height";
+      });
+      const preview = ready(second.study, first.use.id, entries);
+      const result = applyLibraryUpgrade(
+        second.study,
+        preview,
+        entries,
+        {},
+        at
+      );
+      if (result.status !== "applied") throw new Error(result.status);
+      const uses = result.study.libraryUses ?? [];
+      expect(uses.map((use) => [use.id, use.entryVersion])).toEqual([
+        [first.use.id, 2],
+        [second.use.id, 1],
+      ]);
+    });
+
+    it("lists a calculation outside the block that reads a changed field", () => {
+      const inserted = insert();
+      const study: StudyProtocol = structuredClone(inserted.study);
+      study.forms[1].sections[0].fields.push(
+        field({
+          id: "fld_dose",
+          variableName: "DOSE",
+          calculationFormula: "WEIGHT * 2",
+        })
+      );
+      const entries = publish((s) => {
+        s.fields[1].unit = "kg";
+      });
+      const preview = ready(study, inserted.use.id, entries);
+      expect(preview.affectedReferences).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            changeId: "field:fld_weight:unit",
+            kind: "calculation",
+            elementId: "fld_dose",
+          }),
+        ])
+      );
     });
   });
 

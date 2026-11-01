@@ -17,6 +17,7 @@ import {
   importStudyFromUsdm,
   extractCodelistFromUsdmObject,
   diffUniversalCrfStudies,
+  compareStudyToBaseline,
   type StudyProtocol,
 } from "@/lib/crf";
 import {
@@ -2294,6 +2295,54 @@ describe("Arcade run tags", () => {
           if (next.kind === "view") expect(tags.assists).toBe(before.assists);
         }
       })
+    );
+  });
+});
+
+// #3485: the study baseline diff, by property. The module only compares (it
+// has no "apply"), so the round trip is stated as symmetry: comparing y
+// against x mirrors comparing x against y.
+describe("study baseline diff properties (#3485)", () => {
+  const meta = { id: "base", versionTag: "v1", label: "Baseline" };
+  const PROPERTY_SEED = 3485;
+  const keys = (
+    current: StudyProtocol,
+    baseline: StudyProtocol,
+    type: "added" | "removed" | "modified"
+  ) =>
+    compareStudyToBaseline(current, baseline, meta)
+      .entries.filter((entry) => entry.changeType === type)
+      .map((entry) => `${entry.category}:${entry.id}`)
+      .sort();
+
+  it("finds nothing between a study and itself", () => {
+    fc.assert(
+      fc.property(studyProtocolArbitrary, (study) => {
+        const result = compareStudyToBaseline(
+          study,
+          structuredClone(study),
+          meta
+        );
+        expect(result.entries).toEqual([]);
+        expect(result.summary.hasChanges).toBe(false);
+      }),
+      { seed: PROPERTY_SEED, numRuns: 60 }
+    );
+  });
+
+  it("mirrors additions and removals when the two studies swap", () => {
+    fc.assert(
+      fc.property(
+        studyProtocolArbitrary,
+        studyProtocolArbitrary,
+        (x, other) => {
+          const y = { ...other, id: x.id };
+          expect(keys(y, x, "added")).toEqual(keys(x, y, "removed"));
+          expect(keys(y, x, "removed")).toEqual(keys(x, y, "added"));
+          expect(keys(y, x, "modified")).toEqual(keys(x, y, "modified"));
+        }
+      ),
+      { seed: PROPERTY_SEED, numRuns: 60 }
     );
   });
 });

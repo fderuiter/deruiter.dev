@@ -142,6 +142,38 @@ describe("a legacy study's forms", () => {
   });
 });
 
+describe("a legacy form's rules and sections", () => {
+  it("keeps a form whose rules lack ids, and leaves those rules to the import's review", () => {
+    // The rule importer gives an unidentified rule an id and preserves an
+    // unreadable one for review (#540), so the form must reach it.
+    const study = importStudyFromUsdm(
+      JSON.stringify({
+        study: {
+          id: "legacy_rules",
+          name: "Legacy rules",
+          studyDesigns: [{ id: "d1", name: "Design" }],
+          forms: [
+            {
+              id: "form_a",
+              name: "Form A",
+              domain: "VS",
+              sections: [{ title: "No id", fields: [] }],
+              rules: [{ name: "No id" }, "not a rule"],
+            },
+          ],
+        },
+      })
+    );
+    expect(study.forms.map((form) => form.id)).toEqual(["form_a"]);
+    const rules = study.forms[0].rules;
+    expect(rules.length).toBeGreaterThan(0);
+    for (const rule of rules) {
+      expect(typeof rule.id).toBe("string");
+      expect(rule.unsupportedExpression).toBeDefined();
+    }
+  });
+});
+
 describe("the casts this replaced", () => {
   it.each(["library-upgrade.ts", "usdm-adapter.ts"])(
     "leaves no `as unknown as` in %s",

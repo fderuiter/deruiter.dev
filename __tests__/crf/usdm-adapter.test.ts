@@ -529,3 +529,378 @@ describe("Graph-Extended Schema & USDM Bidirectional Adapter", () => {
     });
   });
 });
+
+// #3485: branches the cases above leave untaken: compact export, sparse
+// studies, fields that take their names from a concept, and every shape an
+// imported rule can arrive in.
+describe("USDM adapter, less common shapes (#3485)", () => {
+  const sparse = (overrides: Partial<StudyProtocol> = {}): StudyProtocol =>
+    ({
+      id: "sparse_01",
+      protocolNumber: "",
+      studyName: "",
+      phase: "Phase I",
+      sponsor: "Synthetic Sponsor",
+      therapeuticArea: "General Medicine",
+      version: "1.0",
+      lastModified: "2026-01-01",
+      forms: [],
+      visits: undefined,
+      codelists: undefined,
+      ...overrides,
+    }) as unknown as StudyProtocol;
+
+  it("writes compact JSON on request", () => {
+    const pretty = exportStudyToUsdm(ONCOLOGY_RECIST_PRESET);
+    const compact = exportStudyToUsdm(ONCOLOGY_RECIST_PRESET, false);
+    expect(compact).not.toContain("\n");
+    expect(JSON.parse(compact)).toEqual(JSON.parse(pretty));
+  });
+
+  it("exports a study with no visits, codelists, name or protocol number", () => {
+    const doc = exportStudyToUsdmObject(sparse());
+    const json = JSON.stringify(doc);
+    expect(json).toContain("sparse_01");
+    expect(() => importStudyFromUsdm(json)).not.toThrow();
+  });
+
+  it("fills a field's missing name, label and type from its concept", () => {
+    const study = sparse({
+      forms: [
+        {
+          id: "f_vs",
+          name: "Vitals",
+          domain: "VS",
+          description: "",
+          version: "1.0",
+          rules: [],
+          sections: [
+            {
+              id: "s1",
+              title: "Vitals",
+              fields: [
+                {
+                  id: "fld_hr",
+                  conceptId: "bc_hr",
+                  variableName: "",
+                  label: "",
+                  dataType: "" as never,
+                  columnSpan: 6,
+                  required: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      biomedicalConcepts: [
+        {
+          id: "bc_hr",
+          name: "Heart Rate",
+          conceptId: "C49677",
+          variableName: "PULSE",
+          dataType: "number",
+          label: "Pulse rate",
+          unit: "beats/min",
+        },
+      ] as StudyProtocol["biomedicalConcepts"],
+    });
+    const imported = importStudyFromUsdm(exportStudyToUsdm(study));
+    const field = imported.forms[0].sections[0].fields[0];
+    expect(field.variableName).toBe("PULSE");
+    expect(field.label).toBe("Pulse rate");
+    expect(field.dataType).toBe("number");
+  });
+
+  describe("imported rules", () => {
+    const importRules = (rules: unknown[]) =>
+      importStudyFromUsdm(
+        JSON.stringify({
+          study: {
+            id: "legacy_rules",
+            name: "Legacy rules",
+            studyDesigns: [{ id: "d1", name: "Design" }],
+            forms: [
+              {
+                id: "f1",
+                name: "Form",
+                domain: "VS",
+                sections: [{ id: "s1", title: "S", fields: [] }],
+                rules,
+              },
+            ],
+          },
+        })
+      ).forms[0].rules;
+
+    it("keeps a rule whose conditions it understands", () => {
+      const [rule] = importRules([
+        {
+          id: "r1",
+          name: "Plain",
+          description: "d",
+          triggerFieldIds: ["a"],
+          actionType: "require_field",
+          targetFieldId: "b",
+          conditions: [{ fieldId: "a", operator: "gt", value: 1 }],
+          logicalOperator: "OR",
+          queryMessage: "m",
+          formulaExpression: "a + 1",
+        },
+      ]);
+      expect(rule).toMatchObject({
+        id: "r1",
+        logicalOperator: "OR",
+        queryMessage: "m",
+        formulaExpression: "a + 1",
+      });
+      expect(rule.unsupportedExpression).toBeUndefined();
+    });
+
+    it("keeps a rule that has only condition groups", () => {
+      const [rule] = importRules([
+        {
+          id: "r2",
+          name: "Grouped",
+          conditionGroups: [
+            {
+              id: "g",
+              logicalOperator: "OR",
+              conditions: [{ fieldId: "a", operator: "eq", value: "x" }],
+            },
+          ],
+          groupLogicalOperator: "OR",
+        },
+      ]);
+      expect(rule.conditionGroups).toHaveLength(1);
+      expect(rule.groupLogicalOperator).toBe("OR");
+      expect(rule.unsupportedExpression).toBeUndefined();
+    });
+
+    it("preserves a malformed or empty rule for review instead of firing it", () => {
+      const rules = importRules([
+        { id: "r3", conditions: [{ field: "a" }] },
+        { id: "r4", conditionGroups: [{ logicalOperator: "XOR" }] },
+        { name: "No expression at all" },
+        "not a rule",
+      ]);
+      expect(rules.length).toBeGreaterThanOrEqual(3);
+      for (const rule of rules) {
+        expect(rule.unsupportedExpression).toBeDefined();
+        expect(rule.conditions).toEqual([]);
+        expect(typeof rule.id).toBe("string");
+        expect(typeof rule.name).toBe("string");
+      }
+    });
+  });
+});
+
+describe("USDM adapter, legacy documents (#3485)", () => {
+  const legacy = {
+    study: {
+      id: "legacy_full",
+      name: "Legacy",
+      studyDesigns: [
+        {
+          id: "d1",
+          name: "Design",
+          encounters: [{ id: "e1", name: "Visit 1" }],
+          biomedicalConcepts: [
+            {
+              id: "bc_sex",
+              name: "Sex",
+              label: "Sex at birth",
+              variableName: "SEX",
+              dataType: "single_select",
+              properties: {
+                codelistId: "cl_sex_local",
+                options: [{ code: "M", label: "Male", order: 1 }],
+              },
+            },
+          ],
+          activities: [
+            {
+              id: "a1",
+              name: "Demographics",
+              sections: [
+                {
+                  id: "s1",
+                  title: "S",
+                  fields: [
+                    { id: "f_sex", conceptId: "bc_sex" },
+                    {
+                      id: "f_eth",
+                      variableName: "ETH",
+                      label: "Ethnicity",
+                      codelistId: "cl_eth",
+                      customOptions: [
+                        { code: "H", label: "Hispanic", order: 1 },
+                      ],
+                    },
+                    {
+                      id: "f_std",
+                      variableName: "SEX2",
+                      label: "Sex",
+                      codeListId: "C66731",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  it("fills missing visit timing, form domain and field names, and gathers every codelist", () => {
+    const study = importStudyFromUsdm(JSON.stringify(legacy));
+    expect(study.visits[0]).toMatchObject({
+      visitType: "Scheduled",
+      targetDay: 0,
+      windowBefore: 0,
+      windowAfter: 0,
+    });
+    const form = study.forms[0];
+    expect(form.domain).toBe("GENERAL");
+    expect(form.sections[0].fields[0]).toMatchObject({
+      variableName: "SEX",
+      label: "Sex at birth",
+      dataType: "single_select",
+    });
+    const codelists = (study.codelists ?? []).map((cl) => cl.id);
+    expect(codelists).toEqual(
+      expect.arrayContaining(["cl_sex_local", "cl_eth"])
+    );
+  });
+
+  it("asks which design to read when a legacy document holds several", () => {
+    const two = structuredClone(legacy);
+    two.study.studyDesigns.push({ ...two.study.studyDesigns[0], id: "d2" });
+    expect(() => importStudyFromUsdm(JSON.stringify(two))).toThrow(
+      /2 designs; choose one of d1, d2/
+    );
+    expect(() =>
+      importStudyFromUsdm(JSON.stringify(two), {
+        selection: { studyDesignId: "d9" },
+      } as never)
+    ).toThrow(/no study design d9/);
+    expect(
+      importStudyFromUsdm(JSON.stringify(two), {
+        selection: { studyDesignId: "d2" },
+      } as never).forms
+    ).toHaveLength(1);
+  });
+
+  it("diffs a full study against a sparse one in both directions", () => {
+    const full = exportStudyToUsdm(ONCOLOGY_RECIST_PRESET);
+    const sparse = JSON.stringify(legacy);
+    const forward = diffUsdmProtocols(full, sparse);
+    const backward = diffUsdmProtocols(sparse, full);
+    expect(forward).toBeDefined();
+    expect(backward).toBeDefined();
+    expect(JSON.stringify(forward)).not.toBe(JSON.stringify(backward));
+  });
+});
+
+describe("diffUsdmProtocols, one change at a time (#3485)", () => {
+  const base = (): StudyProtocol => structuredClone(ONCOLOGY_RECIST_PRESET);
+  const cases: [string, (study: StudyProtocol) => void][] = [
+    [
+      "an epoch added",
+      (s) => {
+        s.epochs = [
+          ...(s.epochs ?? []),
+          { id: "ep_new", name: "Extension", sequenceNumber: 9 },
+        ];
+      },
+    ],
+    [
+      "a cohort removed",
+      (s) => {
+        s.cohorts = [];
+      },
+    ],
+    [
+      "a concept's unit changed",
+      (s) => {
+        s.biomedicalConcepts![0] = {
+          ...s.biomedicalConcepts![0],
+          unit: "furlong",
+        };
+      },
+    ],
+    [
+      "a concept removed",
+      (s) => {
+        s.biomedicalConcepts = s.biomedicalConcepts!.slice(1);
+      },
+    ],
+    [
+      "a visit's window changed",
+      (s) => {
+        s.visits[0] = {
+          ...s.visits[0],
+          windowAfter: (s.visits[0].windowAfter ?? 0) + 5,
+        };
+      },
+    ],
+    [
+      "a visit's arm assignments changed",
+      (s) => {
+        s.visits[0] = { ...s.visits[0], armFormAssignments: { arm_x: [] } };
+      },
+    ],
+    [
+      "a form added",
+      (s) => {
+        s.forms = [
+          ...s.forms,
+          { ...s.forms[0], id: "form_extra", name: "Extra" },
+        ];
+      },
+    ],
+  ];
+
+  it.each(cases)(
+    "reports %s, and nothing between identical studies",
+    (_label, change) => {
+      const before = exportStudyToUsdmObject(base());
+      const changedStudy = base();
+      change(changedStudy);
+      const after = exportStudyToUsdmObject(changedStudy);
+      expect(diffUsdmProtocols(before, before).hasChanges).toBe(false);
+      expect(diffUsdmProtocols(before, after).hasChanges).toBe(true);
+    }
+  );
+});
+
+describe("a plain USDM v4 document missing ids (#3485)", () => {
+  it("falls back to generated ids and default timing instead of failing", async () => {
+    const { TAVR_SAVR_USDM } = await import("@/lib/study-workspace");
+    const doc = structuredClone(TAVR_SAVR_USDM) as unknown as {
+      study: { versions: Record<string, unknown>[] };
+    };
+    const version = doc.study.versions[0] as Record<string, unknown> & {
+      studyDesigns: Record<string, unknown[]>[];
+      biomedicalConcepts: Record<string, unknown>[];
+    };
+    const design = version.studyDesigns[0];
+    const strip = (items: unknown[] | undefined) => {
+      const first = items?.[0] as Record<string, unknown> | undefined;
+      if (first) delete first.id;
+    };
+    strip(design.arms);
+    strip(design.epochs);
+    strip(design.encounters);
+    strip(design.activities);
+    strip(version.biomedicalConcepts);
+    const study = importStudyFromUsdm(JSON.stringify(doc));
+    expect(study.arms?.[0].id).toBe("arm_1");
+    expect(study.epochs?.[0].id).toBe("epoch_1");
+    expect(study.visits[0].id).toBe("encounter_1");
+    // The stripped encounter has no timeline entry, so it takes the defaults.
+    expect(study.visits[0]).toMatchObject({ windowBefore: 0, windowAfter: 0 });
+    expect(study.forms.map((form) => form.id)).toContain("activity_1");
+  });
+});

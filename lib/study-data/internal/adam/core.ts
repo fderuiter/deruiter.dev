@@ -154,6 +154,9 @@ const BDS_VARIABLES: readonly VariableMeta[] = [
   ...SOURCE,
 ];
 
+/** The SDTM findings domains with a BDS analysis dataset. */
+type BdsDomain = "VS" | "LB" | "EG" | "QS";
+
 interface OriginRow {
   row: AnalysisRow;
   lineage: readonly string[];
@@ -181,7 +184,7 @@ function groupBySubject(
 function baseline(
   records: readonly OriginRow[],
   firstDose: string | null,
-  domain: "VS" | "LB" | "EG",
+  domain: BdsDomain,
   param: string
 ): OriginRow | null {
   if (!firstDose) return null;
@@ -435,7 +438,7 @@ function qtcfRecords(records: readonly OriginRow[]): OriginRow[] {
 }
 
 function deriveBdsDomain(
-  domain: "VS" | "LB" | "EG",
+  domain: BdsDomain,
   definition: StudyDefinition,
   sdtm: readonly Dataset[],
   adsl: Dataset
@@ -485,7 +488,8 @@ function deriveBdsDomain(
             ? { PARAMTYP: derivedRows.has(record) ? "DERIVED" : null }
             : {}),
           AVAL: number(record[`${domain}STRESN`]),
-          AVALU: record[`${domain}STRESU`],
+          // Questionnaire scores have no unit, so ADQS has no AVALU.
+          ...(domain === "QS" ? {} : { AVALU: record[`${domain}STRESU`] }),
           ADT: observedDate,
           ADY: day,
           AVISIT: visit?.name ?? "UNSCHEDULED",
@@ -644,13 +648,16 @@ function deriveBdsDomain(
                 ]
               : [variable]
         )
-      : BDS_VARIABLES;
+      : domain === "QS"
+        ? BDS_VARIABLES.filter((variable) => variable.name !== "AVALU")
+        : BDS_VARIABLES;
   return table(
     name,
     {
       VS: "Vital Signs Analysis",
       LB: "Laboratory Analysis",
       EG: "ECG Analysis",
+      QS: "Questionnaire Analysis",
     }[domain],
     {
       class: "BDS",
@@ -658,7 +665,9 @@ function deriveBdsDomain(
         "One or more records per subject per parameter per analysis visit",
       codelists: {
         PARAMCD: `${name}.PARAMCD`,
-        AVALU: domain === "VS" ? "VSRESU" : "UNIT",
+        ...(domain === "QS"
+          ? {}
+          : { AVALU: domain === "VS" ? "VSRESU" : "UNIT" }),
       },
     },
     variables.map((variable) => {
@@ -685,7 +694,10 @@ function deriveBdsDomain(
   );
 }
 
-/** Derive subject-level and findings analysis datasets from existing SDTM rows. */
+/**
+ * Derive subject-level and findings analysis datasets from existing SDTM
+ * rows: ADSL, ADVS, ADLB and ADEG, and ADQS when the study collected QS.
+ */
 export function deriveAdamCore(
   definition: StudyDefinition,
   sdtm: readonly Dataset[]
@@ -696,5 +708,8 @@ export function deriveAdamCore(
     deriveBdsDomain("VS", definition, sdtm, adsl),
     deriveBdsDomain("LB", definition, sdtm, adsl),
     deriveBdsDomain("EG", definition, sdtm, adsl),
+    ...(sdtm.some((dataset) => dataset.name === "QS")
+      ? [deriveBdsDomain("QS", definition, sdtm, adsl)]
+      : []),
   ];
 }

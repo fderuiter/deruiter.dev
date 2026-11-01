@@ -15,8 +15,14 @@ import {
   sourceLineage,
   string,
   table,
+  withMethods,
   type AnalysisRow,
 } from "./shared";
+import {
+  DEMO_301_HIERARCHY,
+  type HierarchySpec,
+  type TimeToEventSource,
+} from "./hierarchy";
 
 interface SourceRecord {
   readonly row: AnalysisRow;
@@ -742,17 +748,76 @@ function firstInWindow(
     : censoredAtContact(contact);
 }
 
+/** The first clinical event on or after first exposure, or censored. */
+function firstClinicalEvent(
+  candidates: readonly SourceRecord[],
+  firstDose: string,
+  contact: Contact | null,
+  description: string
+): TimeToEvent {
+  const first = candidates
+    .filter(({ row }) => {
+      const start = date(row.CESTDTC);
+      return Boolean(start && start >= firstDose);
+    })
+    .sort(
+      (a, b) =>
+        date(a.row.CESTDTC)!.localeCompare(date(b.row.CESTDTC)!) ||
+        (number(a.row.CESEQ) ?? 0) - (number(b.row.CESEQ) ?? 0)
+    )[0];
+  if (!first) return censoredAtContact(contact);
+  return {
+    date: date(first.row.CESTDTC),
+    censor: 0,
+    description,
+    censorDescription: null,
+    sourceDomain: "CE",
+    sourceVariable: "CESTDTC",
+    sourceSequence: number(first.row.CESEQ),
+    sourceValue: number(first.row.CESEQ),
+    lineage: first.lineage,
+  };
+}
+
 /**
- * Time to death, to the first serious TEAE and to the first rescue
- * medication: the event components of the DEMO-301 hierarchical composite.
+ * An outcome later than the follow-up horizon, censored at the horizon's
+ * last day and sourced to last known contact, as a censor at the end of
+ * the on-treatment period is.
+ */
+function withinHorizon(
+  outcome: TimeToEvent,
+  firstDose: string,
+  horizonDays: number | null,
+  contact: Contact | null
+): TimeToEvent {
+  if (horizonDays === null || !outcome.date) return outcome;
+  if (daysBetween(firstDose, outcome.date) + 1 <= horizonDays) return outcome;
+  return censoredAtContact(
+    contact,
+    addDays(firstDose, horizonDays - 1),
+    `End of ${horizonDays}-day follow-up`
+  );
+}
+
+/** The subject records each time-to-event source reads. */
+interface HierarchySources {
+  readonly dm: SourceRecord | undefined;
+  readonly adae: readonly SourceRecord[];
+  readonly adcm: readonly SourceRecord[];
+  readonly ce: readonly SourceRecord[];
+}
+
+/**
+ * The event components of a study's hierarchical composite, as its spec
+ * names them: for DEMO-301, time to death, to the first serious TEAE and
+ * to the first rescue medication.
  */
 function hierarchyParameters(
+  spec: HierarchySpec,
   subjectRow: AnalysisRow,
   firstDose: string,
   contact: Contact | null,
-  dm: SourceRecord | undefined,
-  adae: readonly SourceRecord[],
-  adcm: readonly SourceRecord[]
+  sources: HierarchySources
 ): readonly {
   readonly paramcd: string;
   readonly param: string;
@@ -763,70 +828,84 @@ function hierarchyParameters(
     date(subjectRow.TRTEDT) ?? contact?.date ?? null,
     contact?.date ?? null
   );
-  return [
-    {
-      paramcd: "TTDTH",
-      param: "Time to Death from Any Cause",
-      outcome: death
-        ? {
-            date: death,
-            censor: 0,
-            description: "Death",
-            censorDescription: null,
-            sourceDomain: "DM",
-            sourceVariable: "DTHDTC",
-            sourceSequence: null,
-            sourceValue: null,
-            lineage: dm?.lineage ?? contact?.lineage ?? [],
+  const outcomeOf = (source: TimeToEventSource): TimeToEvent => {
+    switch (source.kind) {
+      case "death":
+        return death
+          ? {
+              date: death,
+              censor: 0,
+              description: "Death",
+              censorDescription: null,
+              sourceDomain: "DM",
+              sourceVariable: "DTHDTC",
+              sourceSequence: null,
+              sourceValue: null,
+              lineage: sources.dm?.lineage ?? contact?.lineage ?? [],
+            }
+          : censoredAtContact(contact);
+      case "serious-teae":
+        return firstInWindow(
+          sources.adae.filter(
+            ({ row }) => row.TRTEMFL === "Y" && row.AESER === "Y"
+          ),
+          firstDose,
+          windowEnd,
+          contact,
+          {
+            description: "First serious treatment-emergent adverse event",
+            domain: "AE",
+            variable: "AESTDTC",
           }
-        : censoredAtContact(contact),
-    },
-    {
-      paramcd: "TTSAE",
-      param: "Time to First Serious TEAE",
-      outcome: firstInWindow(
-        adae.filter(({ row }) => row.TRTEMFL === "Y" && row.AESER === "Y"),
-        firstDose,
-        windowEnd,
-        contact,
-        {
-          description: "First serious treatment-emergent adverse event",
-          domain: "AE",
-          variable: "AESTDTC",
-        }
-      ),
-    },
-    {
-      paramcd: "TTRESC",
-      param: "Time to First Rescue Medication",
-      outcome: firstInWindow(
-        adcm.filter(({ row }) => row.RESCUEFL === "Y"),
-        firstDose,
-        windowEnd,
-        contact,
-        {
-          description: "First rescue medication on treatment",
-          domain: "CM",
-          variable: "CMSTDTC",
-        }
-      ),
-    },
-  ];
+        );
+      case "rescue-medication":
+        return firstInWindow(
+          sources.adcm.filter(({ row }) => row.RESCUEFL === "Y"),
+          firstDose,
+          windowEnd,
+          contact,
+          {
+            description: "First rescue medication on treatment",
+            domain: "CM",
+            variable: "CMSTDTC",
+          }
+        );
+      case "clinical-event":
+        return firstClinicalEvent(
+          sources.ce.filter(({ row }) => row.CEDECOD === source.decod),
+          firstDose,
+          contact,
+          source.description
+        );
+    }
+  };
+  return spec.timeToEvent.map(({ paramcd, param, source }) => ({
+    paramcd,
+    param,
+    outcome: withinHorizon(
+      outcomeOf(source),
+      firstDose,
+      spec.horizonDays,
+      contact
+    ),
+  }));
 }
 
 /**
  * Derive the time-to-event parameters for each dosed subject: TTADISC for
- * the Kaplan-Meier figure, and TTDTH, TTSAE and TTRESC for the
- * hierarchical composite.
+ * the Kaplan-Meier figure, and the parameters the study's hierarchical
+ * composite reads, TTDTH, TTSAE and TTRESC for DEMO-301.
  */
 export function deriveAdtte(
   definition: StudyDefinition,
   sdtm: readonly Dataset[],
   adsl: Dataset,
   adae: Dataset,
-  adcm: Dataset
+  adcm: Dataset,
+  spec: HierarchySpec = DEMO_301_HIERARCHY
 ): { readonly dataset: Dataset; readonly findings: readonly Finding[] } {
   const get = (name: string) => sdtm.find((dataset) => dataset.name === name);
+  const ceRows = bySubject(get("CE"));
   const sv = bySubject(get("SV"));
   const ds = bySubject(get("DS"));
   const dm = bySubject(get("DM"));
@@ -964,14 +1043,12 @@ export function deriveAdtte(
       SRCVAL: sourceValue,
     });
     lineage.push(sourceLinks);
-    hierarchyParameters(
-      subjectRow,
-      start,
-      contact,
-      dm.get(subject)?.[0],
-      adaeRows.get(subject) ?? [],
-      adcmRows.get(subject) ?? []
-    ).forEach(({ paramcd, param, outcome }, index) => {
+    hierarchyParameters(spec, subjectRow, start, contact, {
+      dm: dm.get(subject)?.[0],
+      adae: adaeRows.get(subject) ?? [],
+      adcm: adcmRows.get(subject) ?? [],
+      ce: ceRows.get(subject) ?? [],
+    }).forEach(({ paramcd, param, outcome }, index) => {
       const outcomeDate =
         outcome.date && outcome.date < start ? start : outcome.date;
       output.push({
@@ -1011,7 +1088,10 @@ export function deriveAdtte(
         structure: "One record per subject per parameter",
         codelists: { PARAMCD: "ADTTE.PARAMCD" },
       },
-      ADTTE_VARIABLES,
+      withMethods(ADTTE_VARIABLES, {
+        ADTTE_EVENT: spec.methods.event,
+        ADTTE_CENSOR: spec.methods.censor,
+      }),
       output,
       lineage
     ),

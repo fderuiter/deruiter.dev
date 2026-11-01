@@ -22,6 +22,7 @@ import type {
   StudyDefinition,
   VisitDefinition,
 } from "../../types";
+import { DEMO_301_HIERARCHY } from "../adam/hierarchy";
 
 /** An analysis before it is run: everything but its results. */
 export type AnalysisSpec = Omit<ArsAnalysis, "results" | "rawDecimals"> & {
@@ -144,39 +145,19 @@ export const IDS = {
 /**
  * The DEMO-301 hierarchical composite, most important component first, as
  * the analysis compares it: the ADHCE parameter, which values are better,
- * and the margin within which two values tie.
+ * and the margin within which two values tie. Read from the DEMO-301
+ * hierarchy spec, which ADHCE is derived from.
  */
-export const HCE_HIERARCHY = [
-  {
-    paramcd: "HCEDTH",
-    label: "Death from any cause",
-    kind: "time-to-event",
-    better: "higher",
-    rule: "a later death, or no death, is better",
-  },
-  {
-    paramcd: "HCESAE",
-    label: "First serious TEAE",
-    kind: "time-to-event",
-    better: "higher",
-    rule: "a later first serious TEAE, or none, is better",
-  },
-  {
-    paramcd: "HCERESC",
-    label: "First rescue medication",
-    kind: "time-to-event",
-    better: "higher",
-    rule: "later first rescue medication, or none, is better",
-  },
-  {
-    paramcd: "HCESBP",
-    label: "SBP change from baseline at Week 12",
-    kind: "continuous",
-    better: "lower",
-    margin: 5,
-    rule: "a larger fall is better, and differences of 5 mmHg or less tie",
-  },
-] as const;
+export const HCE_HIERARCHY = DEMO_301_HIERARCHY.components.map(
+  ({ paramcd, label, kind, better, margin, rule }) => ({
+    paramcd,
+    label,
+    kind,
+    better,
+    ...(margin === undefined ? {} : { margin }),
+    rule,
+  })
+);
 
 /** Decimals the win ratio, win odds and their limits are shown with. */
 export const WIN_RATIO_DECIMALS = 2;

@@ -1442,19 +1442,19 @@ const isString = (value: unknown) => typeof value === "string";
 const isNumber = (value: unknown) => typeof value === "number";
 const isBoolean = (value: unknown) => typeof value === "boolean";
 const ENCOUNTER_TYPES = new Set(["Scheduled", "Unscheduled", "Common"]);
-/** An array whose every item is an object with a string id. */
-const isIdentifiedRecords = (value: unknown) =>
-  Array.isArray(value) && value.every((item) => isString(asRecord(item)?.id));
-/** CRF sections: identified, with a title and an array of fields. */
+/** An array whose every item is an object. */
+const isRecords = (value: unknown) =>
+  Array.isArray(value) && value.every((item) => asRecord(item) !== undefined);
+/**
+ * CRF sections: objects, each with an array of field objects when it has
+ * fields. Ids and titles are not required here: the form mapping fills what
+ * is missing, as it did before these guards (#3485).
+ */
 const isCrfSectionsShape = (value: unknown) =>
-  isIdentifiedRecords(value) &&
-  (value as unknown[]).every((item) => {
-    const section = asRecord(item)!;
-    return (
-      optionalOf(section, "title", isString) &&
-      optionalOf(section, "fields", isIdentifiedRecords)
-    );
-  });
+  isRecords(value) &&
+  (value as unknown[]).every((item) =>
+    optionalOf(asRecord(item)!, "fields", isRecords)
+  );
 
 function isUsdmEncounter(value: unknown): value is UsdmEncounter {
   const record = asRecord(value);
@@ -1493,7 +1493,10 @@ function isUsdmActivity(value: unknown): value is UsdmActivity {
     optionalOf(record, "description", isString) &&
     optionalOf(record, "version", isString) &&
     optionalOf(record, "sections", isCrfSectionsShape) &&
-    optionalOf(record, "rules", isIdentifiedRecords) &&
+    // Each rule goes through normalizeImportedRule, which gives a rule
+    // without an id one and preserves an unreadable rule for review, so
+    // only the array itself is checked.
+    optionalOf(record, "rules", Array.isArray) &&
     optionalOf(record, "isLogForm", isBoolean)
   );
 }

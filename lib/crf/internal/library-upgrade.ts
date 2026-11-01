@@ -30,9 +30,16 @@
  * `universal-schema.ts` before it enters the study. The check reads the value
  * and keeps it as it is: parsing would add schema defaults and reorder keys,
  * so an upgraded study would no longer match its library byte for byte. A
- * value that does not match is a defect in the library or in the merge, and
- * the upgrade is refused as `unavailable`, naming the value and what is
- * wrong with it, rather than writing it into the study.
+ * value of the wrong type or outside an enumeration is a defect in the
+ * library or in the merge, and the upgrade is refused as `unavailable`,
+ * naming the value and what is wrong with it, rather than writing it into
+ * the study.
+ *
+ * The schemas' lengths and ranges are not part of the check (#3485): an
+ * empty rule name, a rule with no triggers or a nine-character variable
+ * name is something the editor lets an author save, and its own checks
+ * flag. Refusing the upgrade for it would block the author from a library
+ * update over a gap the editor already reports.
  */
 
 import type {
@@ -175,7 +182,16 @@ export type ApplyLibraryUpgradeResult =
 
 type Json = Record<string, unknown>;
 
-/** What a schema reports about a value, or null when the value matches. */
+/**
+ * Issues about a value's length, size or range rather than its type: the
+ * conformance limits the editor reports, which the upgrade does not enforce.
+ */
+const CONFORMANCE_ISSUES = new Set(["too_small", "too_big"]);
+
+/**
+ * What a schema reports about a value's types, or null when they match.
+ * Length and range issues are left to the editor (see the module comment).
+ */
 function schemaProblem(
   schema: { safeParse(value: unknown): { success: boolean; error?: unknown } },
   value: unknown,
@@ -188,13 +204,15 @@ function schemaProblem(
   if (missing.length > 0) return `${missing.join(", ")} missing`;
   const result = schema.safeParse(value);
   if (result.success) return null;
-  const issues =
-    (result.error as { issues?: { path: unknown[]; message: string }[] })
-      ?.issues ?? [];
+  const issues = (
+    (
+      result.error as {
+        issues?: { code?: string; path: unknown[]; message: string }[];
+      }
+    )?.issues ?? []
+  ).filter((issue) => !CONFORMANCE_ISSUES.has(issue.code ?? ""));
   const first = issues[0];
-  return first
-    ? `${first.path.join(".") || "value"}: ${first.message}`
-    : "does not match the schema";
+  return first ? `${first.path.join(".") || "value"}: ${first.message}` : null;
 }
 
 const SECTION_METADATA_SCHEMA = UniversalCrfSectionSchema.omit({

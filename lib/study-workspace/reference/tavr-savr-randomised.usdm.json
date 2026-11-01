@@ -1553,6 +1553,42 @@
             },
             "extensionAttributes": [],
             "instanceType": "BiomedicalConcept"
+          },
+          {
+            "id": "bc_rct_vsfsos",
+            "name": "VSFS Overall Summary Score",
+            "label": "VSFS Overall Summary Score",
+            "synonyms": ["VSFSOS"],
+            "reference": "https://deruiter.dev/crf-studio/biomedical-concepts/bc_rct_vsfsos",
+            "properties": [],
+            "code": {
+              "id": "bc_rct_vsfsos__code",
+              "standardCode": {
+                "id": "bc_rct_vsfsos__code_std",
+                "code": "bc_rct_vsfsos",
+                "codeSystem": "https://deruiter.dev/crf-studio",
+                "codeSystemVersion": "1.0",
+                "decode": "VSFS Overall Summary Score",
+                "instanceType": "Code"
+              },
+              "standardCodeAliases": [],
+              "instanceType": "AliasCode"
+            },
+            "extensionAttributes": [
+              {
+                "id": "bc_rct_vsfsos__ext_sdtm_testcd",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-testcd",
+                "valueString": "VSFSOS",
+                "instanceType": "ExtensionAttribute"
+              },
+              {
+                "id": "bc_rct_vsfsos__ext_sdtm_cat",
+                "url": "https://deruiter.dev/usdm/extensions/sdtm-cat",
+                "valueString": "VSFS",
+                "instanceType": "ExtensionAttribute"
+              }
+            ],
+            "instanceType": "BiomedicalConcept"
           }
         ],
         "studyDesigns": [
@@ -2053,7 +2089,7 @@
                 "description": "Fictional 0-100 patient-reported questionnaire on symptoms, physical limitation and quality of life (QSCAT VSFS, overall summary QSTESTCD VSFSOS).",
                 "childIds": [],
                 "definedProcedures": [],
-                "biomedicalConceptIds": [],
+                "biomedicalConceptIds": ["bc_rct_vsfsos"],
                 "bcCategoryIds": [],
                 "bcSurrogateIds": [],
                 "timelineId": null,

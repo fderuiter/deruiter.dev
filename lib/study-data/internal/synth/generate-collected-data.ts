@@ -3,6 +3,7 @@ import { uniformAt } from "@/lib/utils/prng";
 import { AE_DICTIONARY, HISTORY_DICTIONARY } from "../sdtm/ae-dictionary";
 import { CM_DICTIONARY } from "../sdtm/cm-dictionary";
 import { criterionTestCode } from "../sdtm/trial-design";
+import { QUESTIONNAIRE_SCORES } from "./questionnaires";
 import type {
   CellValue,
   Dataset,
@@ -27,7 +28,8 @@ type Domain =
   | "IE"
   | "DS"
   | "CO"
-  | "CE";
+  | "CE"
+  | "QS";
 
 const BASE_DATE = "2030-01-01";
 
@@ -426,6 +428,18 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("CEDECOD", "Event category"),
     DATE("CESTDTC", "Event start date"),
   ],
+  // Questionnaire scores, one per scored test per visit the questionnaire
+  // is scheduled at.
+  QS: [
+    SRC,
+    SUBJ,
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("QSDTC", "Questionnaire date"),
+    TEXT("QSTESTCD", "Questionnaire test code"),
+    TEXT("QSCAT", "Questionnaire"),
+    NUM("QSORRES", "Score"),
+  ],
 };
 
 function dataset(
@@ -588,6 +602,7 @@ export function generateCollectedData(
     DS: [],
     CO: [],
     CE: [],
+    QS: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
   const firstDay = Math.min(...design.visits.map((visit) => visit.targetDay));
@@ -601,6 +616,10 @@ export function generateCollectedData(
   // each subject to death and collects the committee's events.
   const adjudicated = design.schedule.some(
     (cell) => activityById.get(cell.activityId)?.domain === "CE"
+  );
+  // A study that schedules a questionnaire collects its scores.
+  const collectsQs = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "QS"
   );
   const activityIdsByVisit = new Map<string, string[]>();
   for (const cell of design.schedule) {
@@ -871,6 +890,41 @@ export function generateCollectedData(
               EGTESTCD: assessment.testCode,
               EGORRES: value,
               EGORRESU: assessment.unit ?? null,
+            });
+          }
+          continue;
+        }
+        if (activity.domain === "QS") {
+          // A score starts from the subject's baseline and improves as they
+          // recover from the procedure. Its draws are keyed to QS, so no
+          // other domain's draws move.
+          for (const assessment of activity.assessments) {
+            const score = QUESTIONNAIRE_SCORES[assessment.testCode];
+            if (!score) continue;
+            const key = `${visitKey}:${assessment.testCode}`;
+            const baseline =
+              score.baseline +
+              (pick("QS", `${assessment.testCode}:baseline`) - 0.5) *
+                2 *
+                score.spread;
+            const recovered =
+              visit.targetDay <= 1
+                ? 0
+                : Math.min(1, (visit.targetDay - 1) / score.recoveryDays);
+            const noise = (pick("QS", key) - 0.5) * 2 * score.noise;
+            rows.QS.push({
+              SRCID: sourceId(studyId, "QS", number, key),
+              USUBJID: subject,
+              VISITNUM: visit.visitNum,
+              VISIT: visit.name,
+              QSDTC: visitDate,
+              QSTESTCD: assessment.testCode,
+              QSCAT: assessment.category ?? score.category,
+              QSORRES: clamp(
+                Math.round(baseline + score.gain * recovered + noise),
+                score.min,
+                score.max
+              ),
             });
           }
           continue;
@@ -1183,6 +1237,7 @@ export function generateCollectedData(
       "CO",
       // Collected only in a study that adjudicates outcomes.
       ...(adjudicated ? (["CE"] as const) : []),
+      ...(collectsQs ? (["QS"] as const) : []),
     ] as const
   ).map((domain) =>
     dataset(

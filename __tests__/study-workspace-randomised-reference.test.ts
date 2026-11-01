@@ -143,12 +143,13 @@ describe("the randomised TAVR versus SAVR reference study", () => {
     expect([...ids(TAVR_SAVR_USDM)].filter((id) => single.has(id))).toEqual([]);
   });
 
-  it("reports the questionnaire domain as not yet tabulated, and tabulates adjudication (#3417)", () => {
-    const untabulated = prepareStudyHandoff(TAVR_SAVR_USDM)
-      .report.activities.filter((activity) => !activity.tabulated)
-      .map((activity) => activity.domain);
-    expect(untabulated).toEqual(expect.arrayContaining(["QS"]));
-    expect(untabulated).not.toContain("CE");
+  it("tabulates the adjudication (#3417) and questionnaire (#3418) domains", () => {
+    const { report } = prepareStudyHandoff(TAVR_SAVR_USDM);
+    expect(report.notTabulatedDomains).not.toContain("CE");
+    expect(report.notTabulatedDomains).not.toContain("QS");
+    expect(report.tabulatedDomains).toEqual(
+      expect.arrayContaining(["CE", "QS"])
+    );
   });
 
   it("opens in CRF Studio with both arms' shared visits", () => {

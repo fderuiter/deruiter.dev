@@ -1151,6 +1151,7 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   commentTargetRule("SD-087"),
   sourceLineageRule("SD-088", "CO"),
   sourceLineageRule("SD-089", "CE"),
+  sourceLineageRule("SD-090", "QS"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

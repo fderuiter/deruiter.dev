@@ -10,6 +10,7 @@
  */
 import {
   USDM_RANDOMISATION_EXTENSION_URL,
+  USDM_SDTM_CAT_EXTENSION_URL,
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_SDTM_STRESU_EXTENSION_URL,
   USDM_SDTM_TESTCD_EXTENSION_URL,
@@ -63,12 +64,14 @@ function assessment(bc: UsdmV4BiomedicalConcept): AssessmentDefinition {
     getUsdmV4ExtensionString(bc, USDM_SDTM_TESTCD_EXTENSION_URL) ??
     fail(`biomedical concept ${bc.id} has no SDTM test code extension`);
   const unit = getUsdmV4ExtensionString(bc, USDM_SDTM_STRESU_EXTENSION_URL);
+  const category = getUsdmV4ExtensionString(bc, USDM_SDTM_CAT_EXTENSION_URL);
   return {
     conceptId: bc.id,
     nciCode: bc.code?.standardCode?.code ?? "",
     testCode,
     testName: bc.name,
     ...(unit === undefined ? {} : { unit }),
+    ...(category === undefined ? {} : { category }),
   };
 }
 

@@ -10,6 +10,7 @@
  * run starts. The input document is never mutated.
  */
 import {
+  USDM_SDTM_CAT_EXTENSION_URL,
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_SDTM_STRESU_EXTENSION_URL,
   USDM_SDTM_TESTCD_EXTENSION_URL,
@@ -26,6 +27,7 @@ import {
 import { getUsdmV4EncounterSchedule } from "@/lib/clinical-standards";
 import { DEMO_301_STUDY, STANDARD_VERSIONS } from "../../presets";
 import type { AssessmentDefinition, StudyDefinition } from "../../types";
+import { QUESTIONNAIRE_SCORES } from "../synth/questionnaires";
 import {
   StudyDefinitionError,
   readStudyDefinition,
@@ -42,10 +44,11 @@ export const HANDOFF_GENERATED_DOMAINS = Object.freeze([
   "AE",
   "DS",
   "CE",
+  "QS",
 ] as const);
 
 /** Domains whose assessments are generated per test code. */
-const TESTED_DOMAINS = new Set(["VS", "LB", "EG"]);
+const TESTED_DOMAINS = new Set(["VS", "LB", "EG", "QS"]);
 
 /**
  * Extension URL CRF Studio uses to carry a field's full concept definition,
@@ -68,8 +71,10 @@ export type HandoffSkipReason =
 export interface HandoffTest {
   readonly conceptId: string;
   readonly testCode: string;
-  /** The unit the synthetic values are generated in. */
-  readonly unit: string;
+  /** The unit the synthetic values are generated in; absent for a score. */
+  readonly unit?: string;
+  /** The category (`--CAT`), for a questionnaire score. */
+  readonly category?: string;
   /** The unit the source study collects, when it names a different one. */
   readonly sourceUnit?: string;
 }
@@ -258,9 +263,14 @@ function planActivity(
       });
       continue;
     }
+    // A questionnaire score is modelled without a unit; every other test
+    // needs one.
+    const score = domain === "QS" ? QUESTIONNAIRE_SCORES[testCode] : undefined;
     const model = MODELLED_TESTS.get(`${domain}:${testCode}`);
-    if (!model?.unit || seen.has(testCode)) {
-      if (!model?.unit) {
+    const modelled =
+      domain === "QS" ? score !== undefined : Boolean(model?.unit);
+    if (!modelled || seen.has(testCode)) {
+      if (!modelled) {
         skippedConcepts.push({
           conceptId,
           name: concept.name,
@@ -274,11 +284,22 @@ function planActivity(
     const sourceUnit =
       getUsdmV4ExtensionString(concept, USDM_SDTM_STRESU_EXTENSION_URL) ??
       crfConcept(concept).unit;
+    if (score) {
+      tests.push({
+        conceptId,
+        testCode,
+        category:
+          getUsdmV4ExtensionString(concept, USDM_SDTM_CAT_EXTENSION_URL) ??
+          score.category,
+      });
+      continue;
+    }
+    const unit = model!.unit!;
     tests.push({
       conceptId,
       testCode,
-      unit: model.unit,
-      ...(sourceUnit && sourceUnit !== model.unit ? { sourceUnit } : {}),
+      unit,
+      ...(sourceUnit && sourceUnit !== unit ? { sourceUnit } : {}),
     });
   }
   if (tests.length === 0) {
@@ -300,7 +321,8 @@ function withExtensions(
   const kept = list(concept.extensionAttributes).filter(
     (attr) =>
       attr.url !== USDM_SDTM_TESTCD_EXTENSION_URL &&
-      attr.url !== USDM_SDTM_STRESU_EXTENSION_URL
+      attr.url !== USDM_SDTM_STRESU_EXTENSION_URL &&
+      attr.url !== USDM_SDTM_CAT_EXTENSION_URL
   );
   return {
     ...concept,
@@ -311,11 +333,24 @@ function withExtensions(
         USDM_SDTM_TESTCD_EXTENSION_URL,
         test.testCode
       ),
-      ext(
-        `${concept.id}_handoff_stresu`,
-        USDM_SDTM_STRESU_EXTENSION_URL,
-        test.unit
-      ),
+      ...(test.unit === undefined
+        ? []
+        : [
+            ext(
+              `${concept.id}_handoff_stresu`,
+              USDM_SDTM_STRESU_EXTENSION_URL,
+              test.unit
+            ),
+          ]),
+      ...(test.category === undefined
+        ? []
+        : [
+            ext(
+              `${concept.id}_handoff_cat`,
+              USDM_SDTM_CAT_EXTENSION_URL,
+              test.category
+            ),
+          ]),
     ],
   };
 }

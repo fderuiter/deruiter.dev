@@ -224,6 +224,8 @@ export interface AssessmentDefinition {
   readonly testName: string;
   /** Standard result unit (`--STRESU`), when the test has one. */
   readonly unit?: string;
+  /** Category (`--CAT`), for example the questionnaire a QS score belongs to. */
+  readonly category?: string;
 }
 
 /** One activity in the schedule of activities. */

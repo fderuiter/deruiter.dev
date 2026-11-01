@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect } from "vitest";
 import {
   StudyProtocol,
@@ -535,7 +536,7 @@ describe("Graph-Extended Schema & USDM Bidirectional Adapter", () => {
 // imported rule can arrive in.
 describe("USDM adapter, less common shapes (#3485)", () => {
   const sparse = (overrides: Partial<StudyProtocol> = {}): StudyProtocol =>
-    ({
+    fromAny<StudyProtocol, unknown>({
       id: "sparse_01",
       protocolNumber: "",
       studyName: "",
@@ -548,7 +549,7 @@ describe("USDM adapter, less common shapes (#3485)", () => {
       visits: undefined,
       codelists: undefined,
       ...overrides,
-    }) as unknown as StudyProtocol;
+    });
 
   it("writes compact JSON on request", () => {
     const pretty = exportStudyToUsdm(ONCOLOGY_RECIST_PRESET);

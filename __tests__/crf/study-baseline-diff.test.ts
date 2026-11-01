@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect } from "vitest";
 import {
   compareStudyToBaseline,
@@ -534,24 +535,24 @@ describe("compareStudyToBaseline, less common shapes (#3485)", () => {
   });
 
   it("compares sparse studies whose collections are missing", () => {
-    const sparse = {
+    const sparse = fromAny<StudyProtocol, unknown>({
       ...buildStudy(),
       forms: [
-        {
+        fromAny<CRFForm, unknown>({
           ...buildForm(),
           sections: undefined,
           rules: undefined,
-        } as unknown as CRFForm,
-        {
+        }),
+        fromAny<CRFForm, unknown>({
           ...buildForm({ id: "form-empty", name: "Empty" }),
           sections: [
             { ...buildSection({ id: "sec-empty" }), fields: undefined },
           ],
-        } as unknown as CRFForm,
+        }),
       ],
       visits: undefined,
       codelists: undefined,
-    } as unknown as StudyProtocol;
+    });
     expect(
       compareStudyToBaseline(sparse, sparse, baselineMeta).entries
     ).toEqual([]);
@@ -722,10 +723,10 @@ describe("compareStudyToBaseline, less common shapes (#3485)", () => {
   it("pairs objects across studies by OID, NCI code and name, and relabels references", () => {
     const baseline = buildStudy({
       forms: [
-        {
+        fromAny<CRFForm, unknown>({
           ...buildForm({ id: "form-a" }),
           oid: "F.VS",
-        } as unknown as CRFForm,
+        }),
       ],
       codelists: [buildCodelist({ id: "cl-a", nciCodelistCode: "C66731" })],
       visits: [
@@ -741,10 +742,10 @@ describe("compareStudyToBaseline, less common shapes (#3485)", () => {
     const current = buildStudy({
       id: "study-2",
       forms: [
-        {
+        fromAny<CRFForm, unknown>({
           ...buildForm({ id: "form-b", name: "Renamed vitals" }),
           oid: "F.VS",
-        } as unknown as CRFForm,
+        }),
       ],
       codelists: [
         buildCodelist({

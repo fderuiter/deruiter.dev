@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, beforeEach } from "vitest";
 import fc from "fast-check";
 import {
@@ -1114,14 +1115,14 @@ describe("[#681] Personal-library three-way upgrade", () => {
 
     it("upgrades into a sparse study whose forms carry no rules or sections", () => {
       const target = targetStudy();
-      const sparse = {
+      const sparse = fromAny<StudyProtocol, unknown>({
         ...target,
         forms: [
           { ...target.forms[0], rules: undefined },
           { ...target.forms[1], sections: undefined, rules: undefined },
         ],
         codelists: undefined,
-      } as unknown as StudyProtocol;
+      });
       const inserted = insertLibraryEntryWithLineage(
         entry,
         sparse,
@@ -1185,23 +1186,25 @@ describe("[#681] Personal-library three-way upgrade", () => {
       const inserted = insert();
       const study: StudyProtocol = structuredClone(inserted.study);
       const weightId = inserted.use.idMap.fld_weight;
-      study.forms[1].rules.push({
-        id: "rule_grouped_external",
-        name: "",
-        description: "",
-        triggerFieldIds: undefined,
-        actionType: "raise_query",
-        targetFieldId: "fld_none",
-        conditions: [],
-        conditionGroups: [
-          {
-            id: "g",
-            logicalOperator: "AND",
-            conditions: [{ fieldId: weightId, operator: "gt", value: 1 }],
-          },
-        ],
-        logicalOperator: "AND",
-      } as unknown as EditCheckRule);
+      study.forms[1].rules.push(
+        fromAny<EditCheckRule, unknown>({
+          id: "rule_grouped_external",
+          name: "",
+          description: "",
+          triggerFieldIds: undefined,
+          actionType: "raise_query",
+          targetFieldId: "fld_none",
+          conditions: [],
+          conditionGroups: [
+            {
+              id: "g",
+              logicalOperator: "AND",
+              conditions: [{ fieldId: weightId, operator: "gt", value: 1 }],
+            },
+          ],
+          logicalOperator: "AND",
+        })
+      );
       const entries = publish((s) => {
         s.fields[1].unit = "kg";
       });

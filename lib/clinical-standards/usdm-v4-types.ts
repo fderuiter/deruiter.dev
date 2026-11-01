@@ -46,6 +46,13 @@ export const USDM_SDTM_STRESU_EXTENSION_URL =
   "https://deruiter.dev/usdm/extensions/sdtm-stresu";
 
 /**
+ * Extension attribute URL carrying the category a biomedical concept's test
+ * is grouped under (`--CAT`, for example the questionnaire `VSFS` in QS).
+ */
+export const USDM_SDTM_CAT_EXTENSION_URL =
+  "https://deruiter.dev/usdm/extensions/sdtm-cat";
+
+/**
  * Extension attribute URL on a study design carrying its randomisation as a
  * JSON `valueString`: the ratio by arm id, the method, and the stratification
  * factors with their ADSL `STRATnR` variables and levels.

@@ -354,6 +354,36 @@ describe("[#681] Personal-library three-way upgrade", () => {
       );
     }
 
+    it("applies a rule the editor can leave unnamed and without triggers", () => {
+      // The rule editor lets an author clear a rule's name, and a new rule
+      // starts with no trigger fields when its form has none. Those are
+      // authoring gaps for the editor's checks to flag, not a corrupt
+      // library value, so the upgrade carries them through.
+      const result = upgradeWith(() => {}, {
+        rules: [{ ...entry.rules[0], name: "", triggerFieldIds: [] }],
+      });
+      expect(result.status).toBe("applied");
+    });
+
+    it("applies values outside the CRF conformance limits", () => {
+      const result = upgradeWith(
+        (s) => {
+          s.fields[1].label = "";
+          s.fields[1].variableName = "WEIGHTKGS1";
+          s.fields[1].columnSpan = 13;
+        },
+        {
+          codelists: [
+            {
+              ...UNIT_CODELIST,
+              options: [{ code: "", label: "kg", order: 1 }],
+            },
+          ],
+        }
+      );
+      expect(result.status).toBe("applied");
+    });
+
     it("refuses a merged field that is not a CRF field", () => {
       const result = upgradeWith((s) => {
         s.fields[1].dataType = "not_a_type" as CRFField["dataType"];
@@ -393,12 +423,12 @@ describe("[#681] Personal-library three-way upgrade", () => {
       });
     });
 
-    it("refuses a merged codelist with an empty option code", () => {
+    it("refuses a merged codelist whose option code is not text", () => {
       const result = upgradeWith(() => {}, {
         codelists: [
           {
             ...UNIT_CODELIST,
-            options: [{ code: "", label: "kg", order: 1 }],
+            options: [{ code: 7 as unknown as string, label: "kg", order: 1 }],
           },
         ],
       });
@@ -412,7 +442,7 @@ describe("[#681] Personal-library three-way upgrade", () => {
 
     it("refuses merged section properties without a title", () => {
       const result = upgradeWith((s) => {
-        s.title = "";
+        delete (s as Partial<typeof s>).title;
       });
       expect(result).toEqual({
         status: "unavailable",

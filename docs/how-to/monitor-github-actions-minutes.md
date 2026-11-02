@@ -90,12 +90,13 @@ a gate or lowering a threshold:
   configuration or the lockfile forces a full run, and
   `mutation-weekly.yml` runs every mutant weekly (#1772). The same workflow
   mutates the game engines (Trial & Error scoring and validation, the Duck
-  engine) in a separate `mutation-engines` job, bounded at 45 minutes, with
+  engine) in a separate `mutation-engines` job, bounded at 75 minutes, with
   a break per file in `config/stryker/stryker.engines.config.mjs`; PRs never run it
   (#2529). The Garmin engine runs the same way in its own
   `mutation-garmin` job, bounded at 90 minutes, with its breaks in
   `config/stryker/stryker.garmin.config.mjs` (#2564). The study data SDTM, ADaM and TLF
-  derivations run in `mutation-study-data`, bounded at 150 minutes, with
+  derivations run in `mutation-study-data`, one job per layer (`sdtm`, `adam`,
+  `tlf`, set by `STRYKER_STUDY_DATA_LAYER`), each bounded at 150 minutes, with
   their breaks in `config/stryker/stryker.study-data.config.mjs` (#2607).
 - `study-data-core.yml` is a separate workflow, not a gate in `ci.yml`. It
   runs the CDISC Rules Engine (CORE) on the Study Data Pipeline's seed-301

@@ -17,8 +17,17 @@ import engineConfig from "./stryker.engines.config.mjs";
  * holds only data, so Stryker finds nothing in it to mutate.
  * `scripts/run-mutation-tests.ts` fails the run when any file drops below
  * its floor. Raise a floor as survivors get killed; never lower one.
+ *
+ * The weekly run shards the scope by layer, one job per entry of
+ * `STUDY_DATA_LAYERS`, because the whole scope outgrew one job's bound: the
+ * 2026-10-26 run took 126 of its 150 minutes over 2,243 mutants, 555 of them
+ * timeouts, and by 2026-11-02 it had grown to 2,688 mutants and was
+ * cancelled. `STRYKER_STUDY_DATA_LAYER` (`sdtm`, `adam` or `tlf`) narrows the
+ * mutated files, the floors and the report and incremental file names to one
+ * layer. Unset, the scope is the whole set, as `npm run test:mutation --
+ * --study-data` runs it locally.
  */
-export const fileBreaks = {
+const ALL_FILE_BREAKS = {
   "lib/study-data/internal/sdtm/subject-domains.ts": 83,
   "lib/study-data/internal/sdtm/trial-design.ts": 78,
   "lib/study-data/internal/adam/core.ts": 91,
@@ -34,9 +43,29 @@ export const fileBreaks = {
   "lib/study-data/internal/tlf/row-ids.ts": 61,
 };
 
+/** The layers the weekly run shards the scope by, one job each. */
+export const STUDY_DATA_LAYERS = ["sdtm", "adam", "tlf"];
+
+const layer = process.env.STRYKER_STUDY_DATA_LAYER ?? "";
+if (layer !== "" && !STUDY_DATA_LAYERS.includes(layer)) {
+  throw new Error(
+    `STRYKER_STUDY_DATA_LAYER must be one of ${STUDY_DATA_LAYERS.join(", ")}, not "${layer}".`
+  );
+}
+const suffix = layer === "" ? "" : `-${layer}`;
+
+/** Each mutated file's floor, for the layer named, or for every layer. */
+export const fileBreaks =
+  layer === ""
+    ? ALL_FILE_BREAKS
+    : Object.fromEntries(
+        Object.entries(ALL_FILE_BREAKS).filter(([file]) =>
+          file.startsWith(`lib/study-data/internal/${layer}/`)
+        )
+      );
+
 /** Where the JSON report the per-file check reads is written. */
-export const ENGINES_JSON_REPORT =
-  ".stryker-tmp/study-data-mutation-report.json";
+export const ENGINES_JSON_REPORT = `.stryker-tmp/study-data${suffix}-mutation-report.json`;
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 const config = {
@@ -46,12 +75,12 @@ const config = {
     related: false,
   },
   htmlReporter: {
-    fileName: ".stryker-tmp/study-data-mutation-report.html",
+    fileName: `.stryker-tmp/study-data${suffix}-mutation-report.html`,
   },
   jsonReporter: {
     fileName: ENGINES_JSON_REPORT,
   },
-  incrementalFile: "reports/stryker-study-data-incremental.json",
+  incrementalFile: `reports/stryker-study-data${suffix}-incremental.json`,
   mutate: Object.keys(fileBreaks),
   thresholds: {
     high: 90,

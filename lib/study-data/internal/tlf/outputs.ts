@@ -25,6 +25,7 @@ import { buildKmFigure } from "./km-figure";
 import { writeKmFigureHtml, writeKmFigureSvg } from "./km-svg";
 import {
   buildReportingPlan,
+  unplannedTreatments,
   TERMINOLOGY_EXTENSIONS,
   type ReportingPlan,
 } from "./plan";
@@ -276,7 +277,10 @@ export function buildTlfOutputs(
       `The run is of ${run.manifest.studyId}, not ${definition.studyId}.`
     );
   }
-  const plan = buildReportingPlan(definition);
+  const plan = buildReportingPlan(
+    definition,
+    unplannedTreatments(definition, run.datasets)
+  );
   const evaluation = evaluateAnalyses(run.datasets, plan);
   const tables = buildTables(definition, plan, evaluation.analyses);
   const figures = [buildKmFigure(definition, plan, evaluation.analyses)];

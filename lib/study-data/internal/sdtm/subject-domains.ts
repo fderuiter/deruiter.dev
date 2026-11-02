@@ -35,7 +35,9 @@ type SubjectDomain =
   | "SUPPDM"
   | "RELREC"
   | "SE"
-  | "CO";
+  | "CO"
+  | "CE"
+  | "QS";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -950,6 +952,93 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     ],
   },
   // The comments a site recorded against a subject's records (#2711).
+  CE: {
+    label: "Clinical Events",
+    class: "Events",
+    structure: "One record per event per subject",
+    keys: ["STUDYID", "USUBJID", "CEDECOD", "CESTDTC"],
+    columns: [
+      ...COMMON,
+      SEQ("CE"),
+      collected("CETERM", "Reported Term for the Clinical Event", "CE.CETERM"),
+      collected(
+        "CEDECOD",
+        "Dictionary-Derived Term",
+        "CE.CEDECOD",
+        "Synonym Qualifier"
+      ),
+      assigned("CECAT", "Category for Clinical Event", "Grouping Qualifier"),
+      EPOCH,
+      collected(
+        "CESTDTC",
+        "Start Date/Time of Clinical Event",
+        "CE.CESTDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "CESTDY",
+        "Study Day of Start of Clinical Event",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+    ],
+  },
+  QS: {
+    label: "Questionnaires",
+    class: "Findings",
+    structure:
+      "One record per questionnaire per question per time point per visit per subject",
+    keys: ["STUDYID", "USUBJID", "QSSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("QS"),
+      collected("QSTESTCD", "Question Short Name", "QS.QSTESTCD"),
+      derived(
+        "QSTEST",
+        "Question Name",
+        "USDM_ASSESSMENT",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "QSCAT",
+        "Category of Question",
+        "QS.QSCAT",
+        "Grouping Qualifier"
+      ),
+      derived(
+        "QSORRES",
+        "Finding in Original Units",
+        "TEXT_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "QSSTRESC",
+        "Character Result/Finding in Std Format",
+        "STANDARD_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "QSSTRESN",
+        "Numeric Finding in Standard Units",
+        "STANDARD_RESULT",
+        "Result Qualifier",
+        "float"
+      ),
+      derived(
+        "QSLOBXFL",
+        "Last Observation Before Exposure Flag",
+        "LAST_PRE_DOSE",
+        "Record Qualifier"
+      ),
+      VISITNUM,
+      VISIT,
+      EPOCH,
+      collected("QSDTC", "Date/Time of Finding", "QS.QSDTC", "Timing", "date"),
+      derived("QSDY", "Study Day of Finding", "STUDY_DAY", "Timing", "integer"),
+    ],
+  },
   CO: {
     label: "Comments",
     class: "Special Purpose",
@@ -1072,7 +1161,11 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM, RELREC, SE and CO from collected records. */
+/**
+ * Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS, SUPPDM, RELREC, SE and CO
+ * from collected records, CE when the study collects adjudicated events, and
+ * QS when it collects questionnaire scores.
+ */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -1402,6 +1495,26 @@ export function deriveSubjectDomains(
       )
     )
   );
+  // Each subject's last record of each test on or before first exposure,
+  // by source ID: the record a --LOBXFL flag marks.
+  const lastBeforeExposure = (
+    records: readonly Row[],
+    dateField: string,
+    codeField: string
+  ) => {
+    const baseline = new Map<string, { date: string; source: string }>();
+    for (const record of records) {
+      const exposure = exBySubject.get(text(record.USUBJID));
+      const observed = isoDate(record[dateField]);
+      const firstDose = isoDate(exposure?.EXSTDTC ?? null);
+      if (!observed || !firstDose || observed > firstDose) continue;
+      const key = `${record.USUBJID}|${record[codeField]}`;
+      const prior = baseline.get(key);
+      if (!prior || observed >= prior.date)
+        baseline.set(key, { date: observed, source: text(record.SRCID)! });
+    }
+    return baseline;
+  };
   const findings = (name: "VS" | "LB" | "EG") => {
     const dates = {
       date: `${name}DTC`,
@@ -1410,17 +1523,7 @@ export function deriveSubjectDomains(
       unit: `${name}ORRESU`,
     };
     const records = get(name);
-    const baseline = new Map<string, { date: string; source: string }>();
-    for (const record of records) {
-      const exposure = exBySubject.get(text(record.USUBJID));
-      const observed = isoDate(record[dates.date]);
-      const firstDose = isoDate(exposure?.EXSTDTC ?? null);
-      if (!observed || !firstDose || observed > firstDose) continue;
-      const key = `${record.USUBJID}|${record[dates.code]}`;
-      const prior = baseline.get(key);
-      if (!prior || observed >= prior.date)
-        baseline.set(key, { date: observed, source: text(record.SRCID)! });
-    }
+    const baseline = lastBeforeExposure(records, dates.date, dates.code);
     return records.map((record) => {
       const exposure = exBySubject.get(text(record.USUBJID));
       const assessment = assessmentByCode.get(text(record[dates.code]) ?? "");
@@ -1468,6 +1571,34 @@ export function deriveSubjectDomains(
       return item(row, record, exposure);
     });
   };
+  // Questionnaire scores: unitless, so the standard result is the score.
+  const qsRecords = get("QS");
+  const qsBaseline = lastBeforeExposure(qsRecords, "QSDTC", "QSTESTCD");
+  const qs = qsRecords.map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    const result = num(record.QSORRES);
+    const key = `${record.USUBJID}|${record.QSTESTCD}`;
+    return item(
+      {
+        ...common(record.USUBJID, "QS"),
+        QSTESTCD: record.QSTESTCD,
+        QSTEST:
+          assessmentByCode.get(text(record.QSTESTCD) ?? "")?.testName ?? null,
+        QSCAT: record.QSCAT,
+        QSORRES: result === null ? null : String(result),
+        QSSTRESC: result === null ? null : String(result),
+        QSSTRESN: result,
+        QSLOBXFL:
+          qsBaseline.get(key)?.source === text(record.SRCID) ? "Y" : null,
+        ...visit(record),
+        QSDTC: record.QSDTC,
+        QSDY: day(record.QSDTC, exposure?.EXSTDTC ?? null),
+        EPOCH: epochAt(record.QSDTC, exposure),
+      },
+      record,
+      exposure
+    );
+  });
   const ds = get("DS").map((record) => {
     const exposure = exBySubject.get(text(record.USUBJID));
     return item(
@@ -1484,13 +1615,22 @@ export function deriveSubjectDomains(
       exposure
     );
   });
+  // The stratum each subject was randomised in, for a study that declares
+  // strata, from the randomisation record.
+  const strata = definition.design.randomisation?.strata ?? [];
   const suppdm = get("DM").flatMap((record) =>
-    (
-      [
-        ["SCREENFL", "Screening Outcome", record.SCREENFL],
-        ["RANDFL", "Randomized Flag", record.RANDFL],
-      ] as const
-    ).map(([name, label, value]) =>
+    [
+      ["SCREENFL", "Screening Outcome", record.SCREENFL] as const,
+      ["RANDFL", "Randomized Flag", record.RANDFL] as const,
+      ...strata.flatMap((factor) => {
+        const value = randBySubject.get(text(record.USUBJID))?.[
+          factor.adslVariable
+        ];
+        return value == null
+          ? []
+          : [[factor.adslVariable, factor.factor, value] as const];
+      }),
+    ].map(([name, label, value]) =>
       item(
         {
           STUDYID: definition.studyId,
@@ -1542,6 +1682,24 @@ export function deriveSubjectDomains(
   const lbDataset = numbered("LB", findings("LB"));
   const egDataset = numbered("EG", findings("EG"));
   const dsDataset = numbered("DS", ds);
+  // The clinical events committee's adjudicated events, in a study that
+  // collects them.
+  const ce = get("CE").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    return item(
+      {
+        ...common(record.USUBJID, "CE"),
+        CETERM: record.CETERM,
+        CEDECOD: record.CEDECOD,
+        CECAT: "CLINICAL EVENTS COMMITTEE ADJUDICATED",
+        CESTDTC: record.CESTDTC,
+        CESTDY: day(record.CESTDTC, exposure?.EXSTDTC ?? null),
+        EPOCH: epochAt(record.CESTDTC, exposure),
+      },
+      record,
+      exposure
+    );
+  });
   return [
     table("DM", dm),
     svDataset,
@@ -1575,5 +1733,7 @@ export function deriveSubjectDomains(
         dsDataset,
       ])
     ),
+    ...(source.has("CE") ? [numbered("CE", ce)] : []),
+    ...(source.has("QS") ? [numbered("QS", qs)] : []),
   ];
 }

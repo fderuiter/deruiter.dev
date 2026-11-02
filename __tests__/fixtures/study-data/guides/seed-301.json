@@ -1075,6 +1075,34 @@
           }
         ]
       }
-    ]
+    ],
+    "winRatio": {
+      "estimand": [
+        "Demoxacin 10 mg against Placebo on the hierarchical composite, in the Full Analysis Set, summarised by the win ratio of Demoxacin 10 mg over Placebo, with the net benefit and the win odds alongside.",
+        "Demoxacin 20 mg against Placebo on the hierarchical composite, in the Full Analysis Set, summarised by the win ratio of Demoxacin 20 mg over Placebo, with the net benefit and the win odds alongside."
+      ],
+      "hierarchy": [
+        "Death from any cause: a later death, or no death, is better",
+        "First serious TEAE: a later first serious TEAE, or none, is better",
+        "First rescue medication: later first rescue medication, or none, is better",
+        "SBP change from baseline at Week 12: a larger fall is better, and differences of 5 mmHg or less tie"
+      ],
+      "strata": [],
+      "pairing": "Every treatment subject is paired with every control subject. Each pair is compared on the components in priority order and decided on the first component on which one member is better; a pair tied on a component goes on to the next. For each component: the pairs the treatment member won on it, the pairs the control member won on it, and the pairs still tied after it. A missing value ties with every value on that component. Times to an event follow the Gehan rule: a pair is decided only when the earlier time is an event, so a censored time ties with any later time. Continuous values tie when they differ by the component's margin or less.",
+      "statistics": "Pairs every treatment subject with every control subject and decides each pair on the components of the hierarchy in priority order, as the component method describes. Wins W and losses L are the pairs the treatment and the control member won; ties T are the pairs tied on every component, and P = W + L + T. The win ratio is W/L, the net benefit (W - L)/P and the win odds (W + T/2)/(L + T/2). Their variances are the U-statistic variances of Dong et al. (2016), as the WINS R package computes them. The win ratio and win odds limits are formed on the log scale and the net benefit limits on the natural scale, with the normal quantile for a two-sided 95% interval. The win ratio p-value is two-sided, from the z statistic of log(W/L). The Finkelstein-Schoenfeld test scores every pair of subjects in the pooled sample, sums the treatment subjects' scores and refers the sum to its permutation variance. The win ratio and win odds are shown to 2 decimals and the net benefit to 3; a statistic is not estimable (NE) when a count it divides by is 0.",
+      "limitations": [
+        "The statistics depend on follow-up. Under the Gehan rule a pair is compared on a time to an event only over the follow-up both subjects share, so a study with longer or shorter follow-up, or a different censoring pattern, gives different wins and losses for the same treatment effect. Censoring is assumed unrelated to outcome; the inverse-probability-of-censoring weighted statistics of Dong et al. are not computed here.",
+        "The first component that decides a pair dominates. A component counts only for the pairs tied on every component above it, so the result can rest almost entirely on one component. The pairs decided on each component in Table 14.2.3 show where the result comes from.",
+        "There is no inference on a single component. The wins and losses on each component describe where pairs were decided; they carry no confidence interval or test, and they are not the effect on that component, since which pairs reach a component depends on the components above it."
+      ],
+      "references": [
+        "Pocock SJ, Ariti CA, Collier TJ, Wang D. The win ratio: a new approach to the analysis of composite endpoints in clinical trials based on clinical priorities. Eur Heart J. 2012;33(2):176-182.",
+        "Finkelstein DM, Schoenfeld DA. Combining mortality and longitudinal measures in clinical trials. Stat Med. 1999;18(11):1341-1354.",
+        "Bebu I, Lachin JM. Large sample inference for a win ratio analysis of a composite outcome based on prioritized components. Biostatistics. 2016;17(1):178-187.",
+        "Dong G, Li D, Ballerstedt S, Vandemeulebroecke M. A generalized analytic solution to the win ratio to analyze a composite endpoint considering the clinical importance order among components. Pharm Stat. 2016;15(5):430-437.",
+        "Dong G, Qiu J, Wang D, Vandemeulebroecke M. The stratified win ratio. J Biopharm Stat. 2018;28(4):778-796.",
+        "Dong G, Mao L, Huang B, Gamalo-Siebers M, Wang J, Yu G, Hoaglin DC. The inverse-probability-of-censoring weighting (IPCW) adjusted win ratio statistic: an unbiased estimator in the presence of independent censoring. J Biopharm Stat. 2020;30(5):882-899."
+      ]
+    }
   }
 }

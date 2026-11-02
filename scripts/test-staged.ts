@@ -52,6 +52,37 @@ export const NON_IMPORTABLE_COVERAGE: Array<{
   },
 ];
 
+/**
+ * Tests the pre-commit hook leaves to `npm test` and CI.
+ *
+ * `study-data-core-recorded.test.ts` fails whenever a change moves the
+ * recorded CDISC CORE fingerprints, until the file is refreshed. The refresh
+ * comes from the CI artifact of the pushed change, or a 25-minute local CORE
+ * run, so failing the commit made the CI path unreachable without bypassing
+ * the hook (#3664). CI keeps it required: a stale file cannot merge.
+ */
+export const CI_ONLY_TESTS: readonly string[] = [
+  "__tests__/study-data-core-recorded.test.ts",
+];
+
+/**
+ * The `vitest` arguments for a staged run over `files`, leaving out
+ * `CI_ONLY_TESTS`.
+ *
+ * @param files - Repository-relative paths the related tests are found from.
+ * @returns Arguments for `npx`.
+ */
+export function stagedVitestArgs(files: readonly string[]): string[] {
+  return [
+    "vitest",
+    "related",
+    "--run",
+    "--passWithNoTests",
+    ...CI_ONLY_TESTS.flatMap((test) => ["--exclude", test]),
+    ...files,
+  ];
+}
+
 /** Returns staged files (added/copied/modified/renamed). */
 export function getStagedFiles(cwd: string): string[] {
   const output = execFileSync(
@@ -127,6 +158,10 @@ export function runStagedTests(cwd: string): void {
     );
   }
 
+  console.log(
+    `Leaving ${CI_ONLY_TESTS.join(", ")} to npm test and CI (docs/how-to/refresh-cdisc-core-findings.md).`
+  );
+
   // Git hooks export checkout-local variables. Keep them while reading the
   // staged index above, then remove them from the test process: tests that
   // initialize a temporary repository must not modify this checkout's Git
@@ -142,16 +177,12 @@ export function runStagedTests(cwd: string): void {
   }
 
   const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
-  execFileSync(
-    npxCommand,
-    ["vitest", "related", "--run", "--passWithNoTests", ...files],
-    {
-      cwd,
-      stdio: "inherit",
-      env: testEnv,
-      shell: process.platform === "win32",
-    }
-  );
+  execFileSync(npxCommand, stagedVitestArgs(files), {
+    cwd,
+    stdio: "inherit",
+    env: testEnv,
+    shell: process.platform === "win32",
+  });
 }
 
 if (require.main === module) {

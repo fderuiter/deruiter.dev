@@ -12,50 +12,10 @@ import {
   sourceLineage,
   string,
   table,
+  withMethods,
   type AnalysisRow,
 } from "./shared";
-
-/** One component of the DEMO-301 hierarchy and where its value comes from. */
-interface HierarchyComponentSource {
-  readonly paramcd: string;
-  readonly param: string;
-  readonly unit: string;
-  readonly from:
-    | { readonly dataset: "ADTTE"; readonly paramcd: string }
-    | {
-        readonly dataset: "ADVS";
-        readonly paramcd: string;
-        readonly visit: string;
-      };
-}
-
-/** The DEMO-301 hierarchy, most important component first. */
-const COMPONENTS: readonly HierarchyComponentSource[] = [
-  {
-    paramcd: "HCEDTH",
-    param: "Death from Any Cause (days)",
-    unit: "DAYS",
-    from: { dataset: "ADTTE", paramcd: "TTDTH" },
-  },
-  {
-    paramcd: "HCESAE",
-    param: "First Serious TEAE (days)",
-    unit: "DAYS",
-    from: { dataset: "ADTTE", paramcd: "TTSAE" },
-  },
-  {
-    paramcd: "HCERESC",
-    param: "First Rescue Medication (days)",
-    unit: "DAYS",
-    from: { dataset: "ADTTE", paramcd: "TTRESC" },
-  },
-  {
-    paramcd: "HCESBP",
-    param: "SBP Change from Baseline at Week 12 (mmHg)",
-    unit: "mmHg",
-    from: { dataset: "ADVS", paramcd: "SYSBP", visit: "WEEK 12" },
-  },
-];
+import { DEMO_301_HIERARCHY, type HierarchySpec } from "./hierarchy";
 
 const ADHCE_VARIABLES: readonly VariableMeta[] = [
   column(
@@ -136,34 +96,48 @@ function tenths(value: number | null): number | null {
   return value === null ? null : Math.round(value * 10) / 10;
 }
 
-/** Derive ADHCE from ADSL, ADTTE and ADVS. */
+/**
+ * Derive ADHCE from ADSL, ADTTE and the findings datasets the study's
+ * hierarchy spec reads: ADVS for DEMO-301, ADQS for the device study.
+ */
 export function deriveAdhce(
   adsl: Dataset,
   adtte: Dataset,
-  advs: Dataset
+  findings: readonly Dataset[],
+  spec: HierarchySpec = DEMO_301_HIERARCHY
 ): Dataset {
   const tte = index(adtte, () => true);
-  const vs = index(
-    advs,
-    (row) =>
-      row.ANL01FL === "Y" &&
-      row.DTYPE === null &&
-      COMPONENTS.some(
-        ({ from }) =>
-          from.dataset === "ADVS" &&
-          row.PARAMCD === from.paramcd &&
-          row.AVISIT === from.visit
-      )
+  const continuous = new Map(
+    (["ADVS", "ADQS"] as const).map((name) => {
+      const dataset = findings.find((each) => each.name === name);
+      const found = dataset
+        ? index(
+            dataset,
+            (row) =>
+              row.ANL01FL === "Y" &&
+              row.DTYPE === null &&
+              spec.components.some(
+                ({ from }) =>
+                  from.dataset === name &&
+                  row.PARAMCD === from.paramcd &&
+                  row.AVISIT === from.visit
+              )
+          )
+        : new Map<string, SourceRow>();
+      return [name, found] as const;
+    })
   );
   const output: AnalysisRow[] = [];
   const lineage: (readonly string[])[] = [];
   for (const [at, subject] of rows(adsl).entries()) {
     if (subject.ITTFL !== "Y") continue;
     const id = string(subject.USUBJID);
-    COMPONENTS.forEach((component, priority) => {
-      const source = (component.from.dataset === "ADTTE" ? tte : vs).get(
-        `${id}|${component.from.paramcd}`
-      );
+    spec.components.forEach((component, priority) => {
+      const source = (
+        component.from.dataset === "ADTTE"
+          ? tte
+          : continuous.get(component.from.dataset)!
+      ).get(`${id}|${component.from.paramcd}`);
       const value =
         component.from.dataset === "ADTTE"
           ? number(source?.row.AVAL)
@@ -200,7 +174,7 @@ export function deriveAdhce(
       structure: "One record per subject per hierarchy component",
       codelists: { PARAMCD: "ADHCE.PARAMCD" },
     },
-    ADHCE_VARIABLES,
+    withMethods(ADHCE_VARIABLES, { ADHCE_COMPONENT: spec.methods.component }),
     output,
     lineage
   );

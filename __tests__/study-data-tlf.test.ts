@@ -1055,6 +1055,79 @@ describe("where clauses", () => {
   });
 });
 
+describe("a treatment received that no arm plans (#3673)", () => {
+  const unplanned = runPipeline(DEMO_301_STUDY, {
+    seed: 301,
+    nSubjects: 90,
+    scenarios: ["unplanned-treatment"],
+  });
+  const built = buildTlfOutputs(DEMO_301_STUDY, unplanned);
+  const adsl = unplanned.datasets.find(
+    (dataset) => dataset.layer === "adam" && dataset.name === "ADSL"
+  )!;
+  const safety = adsl.columns.SAFFL.filter((flag) => flag === "Y").length;
+  const arms = DEMO_301_STUDY.design.arms.map((arm) => arm.name);
+  // The tables whose columns are treatment received.
+  const byReceived = (tables: readonly TlfTable[]) =>
+    tables.filter(
+      (table) =>
+        table.columns.length > 0 &&
+        table.columns.every(
+          (column) => column.groupingId === "AnlsGrouping_TRT01A"
+        )
+    );
+
+  it("gives the unplanned treatment its own column after the planned arms", () => {
+    for (const table of byReceived(built.tables)) {
+      expect(table.columns.map((column) => column.label)).toEqual([
+        ...arms,
+        "Demoxacin 40 mg",
+      ]);
+      expect(table.columns.at(-1)?.bigN).toBe(1);
+    }
+  });
+
+  it("adds up the safety columns' N to the Safety Set", () => {
+    const safetyTables = byReceived(built.tables).filter(
+      (table) => table.population === "Safety Set"
+    );
+    expect(safetyTables.length).toBeGreaterThan(0);
+    for (const table of safetyTables) {
+      expect(table.columns.reduce((sum, column) => sum + column.bigN, 0)).toBe(
+        safety
+      );
+    }
+    const [figure] = built.figures;
+    expect(figure.curves.map((curve) => curve.label)).toEqual([
+      ...arms,
+      "Demoxacin 40 mg",
+    ]);
+    expect(figure.curves.reduce((sum, curve) => sum + curve.bigN, 0)).toBe(
+      safety
+    );
+  });
+
+  it("leaves the planned-treatment grouping to the planned arms", () => {
+    const planned = built.reportingEvent.analysisGroupings.find(
+      (factor) => factor.groupingVariable === "TRT01P"
+    )!;
+    expect(planned.groups.map((group) => group.name)).toEqual(arms);
+  });
+
+  it("reproduces the reporting event it wrote", () => {
+    expect(
+      checkReportingEvent(built.reportingEvent, unplanned, DEMO_301_STUDY)
+    ).toEqual([]);
+  });
+
+  it("adds no column to a run where every treatment is planned", () => {
+    expect(byReceived(outputs.tables).length).toBeGreaterThan(1);
+    for (const table of byReceived(outputs.tables)) {
+      expect(table.columns.map((column) => column.label)).toEqual(arms);
+    }
+  });
+});
+
 describe("checkReportingEvent (#2932)", () => {
   const event = outputs.reportingEvent;
   const ruleIds = (findings: readonly { ruleId: string }[]) =>

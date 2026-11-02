@@ -122,6 +122,7 @@ export type CodelistId =
   | "ADVS.PARAMCD"
   | "ADLB.PARAMCD"
   | "ADEG.PARAMCD"
+  | "ADQS.PARAMCD"
   | "ADTTE.PARAMCD"
   | "ADHCE.PARAMCD";
 
@@ -288,7 +289,7 @@ const CODELISTS = [
     extensible: false,
     terms: [{ value: "<40" }, { value: "40-64" }, { value: "65+" }],
   },
-  ...(["ADVS", "ADLB", "ADEG", "ADTTE", "ADHCE"] as const).map(
+  ...(["ADVS", "ADLB", "ADEG", "ADQS", "ADTTE", "ADHCE"] as const).map(
     (
       dataset
     ): TerminologyCodelist & { readonly id: `${typeof dataset}.PARAMCD` } => ({

@@ -5,9 +5,11 @@ import fs from "node:fs";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
 import {
+  CI_ONLY_TESTS,
   NON_IMPORTABLE_COVERAGE,
   getStagedTestableFiles,
   resolveNonImportableTests,
+  stagedVitestArgs,
 } from "../scripts/test-staged";
 
 const workspaceRoot = path.resolve(__dirname, "..");
@@ -208,6 +210,84 @@ describe("Pre-commit test scope for non-importable paths", () => {
         "lib/sentry-policy.ts",
       ])
     ).toEqual([]);
+  });
+
+  it("leaves the recorded CORE findings check to npm test and CI (#3664)", () => {
+    expect(CI_ONLY_TESTS).toEqual([
+      "__tests__/study-data-core-recorded.test.ts",
+    ]);
+    expect(stagedVitestArgs(["lib/study-data/index.ts"])).toEqual([
+      "vitest",
+      "related",
+      "--run",
+      "--passWithNoTests",
+      "--exclude",
+      "__tests__/study-data-core-recorded.test.ts",
+      "lib/study-data/index.ts",
+    ]);
+  });
+
+  it("keeps every CI-only test in the suite npm test and CI run", () => {
+    const config = fs.readFileSync(
+      path.join(workspaceRoot, "vitest.config.mts"),
+      "utf8"
+    );
+    for (const test of CI_ONLY_TESTS) {
+      expect(fs.existsSync(path.join(workspaceRoot, test))).toBe(true);
+      expect(config).not.toContain(path.basename(test));
+    }
+    const ci = fs.readFileSync(
+      path.join(workspaceRoot, ".github/workflows/ci.yml"),
+      "utf8"
+    );
+    expect(ci).not.toMatch(/test:staged|test-staged/u);
+  });
+
+  it("passes the CI-only exclusions with a staged study-data change", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-only-"));
+    const bin = path.join(root, "bin");
+    const repo = path.join(root, "repo");
+    fs.mkdirSync(bin);
+    fs.mkdirSync(path.join(repo, "lib/study-data"), { recursive: true });
+    const env = { ...process.env };
+    for (const key of execFileSync("git", ["rev-parse", "--local-env-vars"], {
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n"))
+      delete env[key];
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: repo, env });
+      fs.writeFileSync(path.join(repo, "lib/study-data/index.ts"), "");
+      execFileSync("git", ["add", "."], { cwd: repo, env });
+      fs.writeFileSync(
+        path.join(bin, "npx"),
+        '#!/bin/sh\nprintf "%s\n" "$@" > "$ARGS_FILE"\n',
+        { mode: 0o755 }
+      );
+      const argsFile = path.join(root, "args");
+      execFileSync(
+        process.execPath,
+        [
+          path.join(workspaceRoot, "node_modules/tsx/dist/cli.mjs"),
+          path.join(workspaceRoot, "scripts/test-staged.ts"),
+        ],
+        {
+          cwd: repo,
+          env: {
+            ...env,
+            PATH: `${bin}:${env.PATH ?? ""}`,
+            ARGS_FILE: argsFile,
+          },
+          stdio: "pipe",
+        }
+      );
+      expect(fs.readFileSync(argsFile, "utf8").trim().split("\n")).toEqual(
+        stagedVitestArgs(["lib/study-data/index.ts"])
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("keeps the selection bounded well below the full suite", () => {

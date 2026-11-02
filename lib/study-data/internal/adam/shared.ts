@@ -67,6 +67,24 @@ export function column(
   };
 }
 
+/**
+ * Variables with some methods replaced, for a study whose derivation a
+ * different method describes. Variables citing no replaced method are
+ * returned as they are.
+ */
+export function withMethods(
+  variables: readonly VariableMeta[],
+  replacements: Readonly<Partial<Record<AdamMethodId, AdamMethodId>>>
+): readonly VariableMeta[] {
+  return variables.map((variable) => {
+    const method = variable.method as AdamMethodId | undefined;
+    const replacement = method ? replacements[method] : undefined;
+    return replacement && replacement !== method
+      ? { ...variable, method: replacement }
+      : variable;
+  });
+}
+
 /** Codelists of ADaM variables that every dataset shares. */
 const ADAM_CODELISTS: Readonly<Record<string, CodelistId>> = {
   SAFFL: "NY",

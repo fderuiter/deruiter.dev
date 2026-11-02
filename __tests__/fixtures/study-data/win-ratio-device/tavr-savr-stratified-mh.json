@@ -1,0 +1,86 @@
+{
+  "name": "tavr-savr-stratified-mh",
+  "generator": "scripts/r/win-ratio-reference.R",
+  "input": "tavr-savr-input.json",
+  "reference": {
+    "r": "R version 4.3.3 (2024-02-29)",
+    "wins": "1.5.1",
+    "method": "WINS::win.stat, method = 'unadjusted', stratum.weight = 'MH-type', a missing value tied by a custom win.strategy; Finkelstein-Schoenfeld and per-stratum counts in this script"
+  },
+  "settings": {
+    "weighting": "MH-type",
+    "alpha": 0.050000000000000003,
+    "sided": "two-sided"
+  },
+  "expected": {
+    "per_endpoint": [
+      {
+        "wins": 412,
+        "losses": 55
+      },
+      {
+        "wins": 203,
+        "losses": 399
+      },
+      {
+        "wins": 562,
+        "losses": 584
+      },
+      {
+        "wins": 678,
+        "losses": 661
+      }
+    ],
+    "strata": [
+      {
+        "stratum": 1,
+        "treatment": 54,
+        "control": 55,
+        "pairs": 2970,
+        "wins": 875,
+        "losses": 906,
+        "ties": 1189
+      },
+      {
+        "stratum": 2,
+        "treatment": 53,
+        "control": 54,
+        "pairs": 2862,
+        "wins": 980,
+        "losses": 793,
+        "ties": 1089
+      }
+    ],
+    "win_ratio": {
+      "WR": 1.0930640913081651,
+      "WR_L": 0.71717679310655558,
+      "WR_U": 1.665961753352255
+    },
+    "net_benefit": {
+      "NB": 0.027099728780401067,
+      "NB_L": -0.10132484975504241,
+      "NB_U": 0.15552430731584455
+    },
+    "win_odds": {
+      "WO": 1.055709160706533,
+      "WO_L": 0.81657507315776889,
+      "WO_U": 1.3648736884530857
+    },
+    "z": {
+      "zstat_WR": 0.41385797356315296,
+      "zstat_NB": 0.41358510190267622,
+      "zstat_WO": 0.41368639152338849
+    },
+    "p": {
+      "pvalue_WR": 0.67897812371988375,
+      "pvalue_NB": 0.67917798578733901,
+      "pvalue_WO": 0.67910379460352122
+    },
+    "finkelstein_schoenfeld": {
+      "statistic": 156,
+      "variance": 149340.60807682411,
+      "z": 0.40367851977581193,
+      "p_two_sided": 0.6864491372178434
+    }
+  }
+}

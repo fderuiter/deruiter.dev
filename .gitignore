@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# Husky's generated hooks; a git worktree links them from the main checkout
+/.husky/_
+
 # testing
 /coverage
 /playwright-report

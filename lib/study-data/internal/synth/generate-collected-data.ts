@@ -3,10 +3,12 @@ import { uniformAt } from "@/lib/utils/prng";
 import { AE_DICTIONARY, HISTORY_DICTIONARY } from "../sdtm/ae-dictionary";
 import { CM_DICTIONARY } from "../sdtm/cm-dictionary";
 import { criterionTestCode } from "../sdtm/trial-design";
+import { QUESTIONNAIRE_SCORES } from "./questionnaires";
 import type {
   CellValue,
   Dataset,
   PipelineOptions,
+  RandomisationDefinition,
   StudyDefinition,
   VariableMeta,
 } from "../../types";
@@ -25,9 +27,35 @@ type Domain =
   | "MH"
   | "IE"
   | "DS"
-  | "CO";
+  | "CO"
+  | "CE"
+  | "QS";
 
 const BASE_DATE = "2030-01-01";
+
+/**
+ * Outcomes a clinical events committee adjudicates, drawn only for a study
+ * that schedules a CE activity (#3417): the share of randomized subjects
+ * with at least one, and the event as the committee records it. The rates
+ * are synthetic and the same in every arm.
+ */
+const DEATH_SHARE = 0.06;
+const ADJUDICATED_EVENTS = [
+  {
+    key: "stroke",
+    share: 0.04,
+    repeatShare: 0,
+    term: "Disabling stroke (modified Rankin Scale 2 or more at 90 days)",
+    decod: "DISABLING STROKE",
+  },
+  {
+    key: "rehosp",
+    share: 0.12,
+    repeatShare: 0.3,
+    term: "Rehospitalisation for valve-related symptoms or worsening heart failure",
+    decod: "REHOSPITALISATION",
+  },
+] as const;
 
 /**
  * The seriousness criteria the EDC asks for once an event is reported
@@ -391,10 +419,35 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("RSRCID", "Source ID of the commented record"),
     TEXT("COVAL", "Comment"),
   ],
+  // The clinical events committee's adjudicated events: the event the
+  // committee confirmed and the date it began.
+  CE: [
+    SRC,
+    SUBJ,
+    TEXT("CETERM", "Adjudicated event"),
+    TEXT("CEDECOD", "Event category"),
+    DATE("CESTDTC", "Event start date"),
+  ],
+  // Questionnaire scores, one per scored test per visit the questionnaire
+  // is scheduled at.
+  QS: [
+    SRC,
+    SUBJ,
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("QSDTC", "Questionnaire date"),
+    TEXT("QSTESTCD", "Questionnaire test code"),
+    TEXT("QSCAT", "Questionnaire"),
+    NUM("QSORRES", "Score"),
+  ],
 };
 
-function dataset(domain: Domain, rows: readonly Row[]): Dataset {
-  const variables = COLUMNS[domain];
+function dataset(
+  domain: Domain,
+  rows: readonly Row[],
+  extra: readonly VariableMeta[] = []
+): Dataset {
+  const variables = [...COLUMNS[domain], ...extra];
   const columns: Record<string, CellValue[]> = {};
   for (const variable of variables) {
     columns[variable.name] = rows.map((row) => row[variable.name] ?? null);
@@ -483,6 +536,42 @@ function ecgValues(
 }
 
 /**
+ * Permuted-block allocation within strata, by the declared ratio. Each
+ * stratum fills its own blocks in randomisation order; a block holds every
+ * arm twice its ratio share, shuffled by a draw keyed to the stratum and the
+ * block's number, so an earlier subject's arm never depends on a later one.
+ */
+function permutedBlocks(
+  seed: number,
+  studyId: string,
+  armIds: readonly string[],
+  randomisation: RandomisationDefinition
+): (stratum: readonly string[]) => number {
+  const template = armIds.flatMap((id, armIndex) =>
+    Array.from({ length: 2 * randomisation.ratio[id] }, () => armIndex)
+  );
+  const filled = new Map<string, number>();
+  return (stratum) => {
+    const key = stratum.join("|");
+    const position = filled.get(key) ?? 0;
+    filled.set(key, position + 1);
+    const blockNumber = Math.floor(position / template.length);
+    const block = [...template];
+    for (let i = block.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(
+        uniformAt(
+          `${seed}|${studyId}|RAND|block|${key}|${blockNumber}|${i}`,
+          0
+        ) *
+          (i + 1)
+      );
+      [block[i], block[j]] = [block[j], block[i]];
+    }
+    return block[position % template.length];
+  };
+}
+
+/**
  * Generates CDASH-shaped source datasets. `nSubjects` counts screened people;
  * only randomized people have RAND and EX records. Every stochastic choice is
  * keyed by study, seed, subject, domain and field, so extending a run preserves
@@ -512,6 +601,8 @@ export function generateCollectedData(
     IE: [],
     DS: [],
     CO: [],
+    CE: [],
+    QS: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
   const firstDay = Math.min(...design.visits.map((visit) => visit.targetDay));
@@ -521,12 +612,34 @@ export function generateCollectedData(
   const activityById = new Map(
     design.activities.map((activity) => [activity.id, activity])
   );
+  // A study whose clinical events committee adjudicates outcomes follows
+  // each subject to death and collects the committee's events.
+  const adjudicated = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "CE"
+  );
+  // A study that schedules a questionnaire collects its scores.
+  const collectsQs = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "QS"
+  );
   const activityIdsByVisit = new Map<string, string[]>();
   for (const cell of design.schedule) {
     const ids = activityIdsByVisit.get(cell.visitId) ?? [];
     ids.push(cell.activityId);
     activityIdsByVisit.set(cell.visitId, ids);
   }
+
+  // With no declared ratio, each subject's arm is an equal-share draw, which
+  // keeps a study without the extension exactly as it was generated.
+  const randomisation = design.randomisation;
+  const strata = randomisation?.strata ?? [];
+  const allocate = randomisation
+    ? permutedBlocks(
+        options.seed,
+        studyId,
+        design.arms.map((arm) => arm.id),
+        randomisation
+      )
+    : null;
 
   for (let number = 1; number <= options.nSubjects; number += 1) {
     const subject = `${studyId}-${String(number).padStart(4, "0")}`;
@@ -565,20 +678,52 @@ export function generateCollectedData(
           : [];
       })
     );
-    const armIndex = randomized
-      ? Math.floor(pick("RAND", "arm") * design.arms.length)
-      : -1;
+    // The stratum is recorded at randomisation. The protocol gives no
+    // prevalence for the levels, so each is equally likely.
+    const stratum = randomized
+      ? strata.map(
+          (factor) =>
+            factor.levels[
+              Math.floor(
+                pick("RAND", `stratum:${factor.adslVariable}`) *
+                  factor.levels.length
+              )
+            ]
+        )
+      : [];
+    const armIndex = !randomized
+      ? -1
+      : allocate
+        ? allocate(stratum)
+        : Math.floor(pick("RAND", "arm") * design.arms.length);
     const arm = randomized ? design.arms[armIndex] : null;
-    const discontinued =
+    const stopsEarly =
       randomized && lastDay > 2 && pick("DS", "early-stop") < 0.11;
-    const stopDay = discontinued
+    const plannedStopDay = stopsEarly
       ? clamp(
           15 + Math.floor(pick("DS", "stop-day") * Math.max(1, lastDay - 20)),
           2,
           lastDay - 1
         )
       : lastDay;
+    // A death ends follow-up when it comes before the subject would have
+    // left the study; one after it is not observed. Its draws are keyed to
+    // DS, and drawn only in an adjudicated study, so no other study moves.
+    const drawnDeathDay =
+      randomized &&
+      adjudicated &&
+      lastDay > 2 &&
+      pick("DS", "death") < DEATH_SHARE
+        ? 2 + Math.floor(pick("DS", "death-day") * (lastDay - 2))
+        : null;
+    const deathDay =
+      drawnDeathDay !== null && drawnDeathDay <= plannedStopDay
+        ? drawnDeathDay
+        : null;
+    const discontinued = stopsEarly && deathDay === null;
+    const stopDay = deathDay ?? plannedStopDay;
     const stopDate = addDays(baselineDate, offset(stopDay));
+    const deathDate = deathDay === null ? null : stopDate;
     const age = failedEvidence.has("age")
       ? 76 + Math.floor(pick("IE", "age") * 7)
       : 25 + Math.floor(pick("DM", "age") * 51);
@@ -613,6 +758,9 @@ export function generateCollectedData(
         RANDDTC: baselineDate,
         ARMCD: arm.armCode,
         ARM: arm.name,
+        ...Object.fromEntries(
+          strata.map((factor, idx) => [factor.adslVariable, stratum[idx]])
+        ),
       });
       rows.EX.push({
         SRCID: sourceId(studyId, "EX", number, "1"),
@@ -641,9 +789,11 @@ export function generateCollectedData(
       DSSTDTC: finalDate,
       DSDECOD: screenFailure
         ? "SCREEN FAILURE"
-        : discontinued
-          ? "ADVERSE EVENT"
-          : "COMPLETED",
+        : deathDate !== null
+          ? "DEATH"
+          : discontinued
+            ? "ADVERSE EVENT"
+            : "COMPLETED",
       DSSCAT: "DISPOSITION EVENT",
     });
 
@@ -674,6 +824,12 @@ export function generateCollectedData(
       );
       const actualDay = actualOffset >= 0 ? actualOffset + 1 : actualOffset;
       const visitDate = missed ? null : addDays(baselineDate, actualOffset);
+      // Nothing is collected after a death.
+      if (
+        deathDate !== null &&
+        (visitDate !== null ? visitDate > deathDate : visit.targetDay > stopDay)
+      )
+        continue;
       if (visit.targetDay === firstDay && visitDate) screeningDate = visitDate;
       rows.SV.push({
         SRCID: sourceId(studyId, "SV", number, visitKey),
@@ -738,6 +894,41 @@ export function generateCollectedData(
           }
           continue;
         }
+        if (activity.domain === "QS") {
+          // A score starts from the subject's baseline and improves as they
+          // recover from the procedure. Its draws are keyed to QS, so no
+          // other domain's draws move.
+          for (const assessment of activity.assessments) {
+            const score = QUESTIONNAIRE_SCORES[assessment.testCode];
+            if (!score) continue;
+            const key = `${visitKey}:${assessment.testCode}`;
+            const baseline =
+              score.baseline +
+              (pick("QS", `${assessment.testCode}:baseline`) - 0.5) *
+                2 *
+                score.spread;
+            const recovered =
+              visit.targetDay <= 1
+                ? 0
+                : Math.min(1, (visit.targetDay - 1) / score.recoveryDays);
+            const noise = (pick("QS", key) - 0.5) * 2 * score.noise;
+            rows.QS.push({
+              SRCID: sourceId(studyId, "QS", number, key),
+              USUBJID: subject,
+              VISITNUM: visit.visitNum,
+              VISIT: visit.name,
+              QSDTC: visitDate,
+              QSTESTCD: assessment.testCode,
+              QSCAT: assessment.category ?? score.category,
+              QSORRES: clamp(
+                Math.round(baseline + score.gain * recovered + noise),
+                score.min,
+                score.max
+              ),
+            });
+          }
+          continue;
+        }
         if (activity.domain !== "VS" && activity.domain !== "LB") continue;
         for (const assessment of activity.assessments) {
           const key = `${visitKey}:${assessment.testCode}`;
@@ -793,10 +984,14 @@ export function generateCollectedData(
       }
     }
 
-    if (randomized && pick("SV", "unscheduled") < 0.08) {
-      const day =
-        2 +
-        Math.floor(pick("SV", "unscheduled-day") * Math.max(1, lastDay - 2));
+    const unscheduledDay =
+      2 + Math.floor(pick("SV", "unscheduled-day") * Math.max(1, lastDay - 2));
+    if (
+      randomized &&
+      pick("SV", "unscheduled") < 0.08 &&
+      (deathDay === null || unscheduledDay <= deathDay)
+    ) {
+      const day = unscheduledDay;
       rows.SV.push({
         SRCID: sourceId(studyId, "SV", number, "unscheduled"),
         USUBJID: subject,
@@ -843,7 +1038,11 @@ export function generateCollectedData(
           AEBODSYS: term.soc,
           AEDECOD: term.pt,
           AESTDTC: partial ? fullStart.slice(0, 7) : fullStart,
-          AEENDTC: discontinued ? stopDate : addDays(fullStart, 3),
+          AEENDTC: discontinued
+            ? stopDate
+            : deathDate !== null && addDays(fullStart, 3) > deathDate
+              ? deathDate
+              : addDays(fullStart, 3),
           AESER: serious ? "Y" : "N",
           AEREL: predose ? "NOT RELATED" : "RELATED",
           AEACN: discontinued ? "DRUG WITHDRAWN" : "DOSE NOT CHANGED",
@@ -863,6 +1062,35 @@ export function generateCollectedData(
             USUBJID: subject,
             RSRCID: sourceId(studyId, "DS", number, "final"),
             COVAL: `Study treatment stopped because of ${term.pt.toLowerCase()}.`,
+          });
+      }
+
+      // The committee's adjudicated events fall between the procedure and
+      // the end of follow-up, the death included. Their draws are keyed to
+      // CE, so no other domain's draws move.
+      if (adjudicated) {
+        const events = ADJUDICATED_EVENTS.flatMap((event) => {
+          if (pick("CE", event.key) >= event.share) return [];
+          const count =
+            pick("CE", `${event.key}:again`) < event.repeatShare ? 2 : 1;
+          return Array.from({ length: count }, (_, index) => ({
+            event,
+            key: `${event.key}:${index + 1}`,
+            day:
+              2 +
+              Math.floor(
+                pick("CE", `${event.key}:${index + 1}:day`) *
+                  Math.max(1, stopDay - 1)
+              ),
+          }));
+        }).sort((a, b) => a.day - b.day || a.key.localeCompare(b.key));
+        for (const { event, key, day } of events)
+          rows.CE.push({
+            SRCID: sourceId(studyId, "CE", number, key),
+            USUBJID: subject,
+            CETERM: event.term,
+            CEDECOD: event.decod,
+            CESTDTC: addDays(baselineDate, offset(day)),
           });
       }
 
@@ -1007,6 +1235,17 @@ export function generateCollectedData(
       "MH",
       "IE",
       "CO",
+      // Collected only in a study that adjudicates outcomes.
+      ...(adjudicated ? (["CE"] as const) : []),
+      ...(collectsQs ? (["QS"] as const) : []),
     ] as const
-  ).map((domain) => dataset(domain, rows[domain]));
+  ).map((domain) =>
+    dataset(
+      domain,
+      rows[domain],
+      domain === "RAND"
+        ? strata.map((factor) => TEXT(factor.adslVariable, factor.factor))
+        : []
+    )
+  );
 }

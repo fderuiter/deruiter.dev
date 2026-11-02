@@ -10,11 +10,13 @@ import {
   buildReviewerGuides,
   buildStudyDataPackage,
   buildTlfOutputs,
+  prepareStudyHandoff,
   renderReviewerGuideHtml,
   runPipeline,
   writeReviewerGuideDocument,
   type PipelineRun,
 } from "@/lib/study-data";
+import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
 
 const run = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
 const { reportingEvent } = buildTlfOutputs(DEMO_301_STUDY, run);
@@ -362,5 +364,95 @@ describe("reviewer guides", () => {
     const readme = text(file("README.txt")!.bytes);
     expect(readme).toContain(CSDRG_PATH);
     expect(readme).toContain(ADRG_PATH);
+  });
+});
+
+describe("the win ratio method note (#3422)", () => {
+  const note = guides.adrg.winRatio!;
+
+  it("appears in the ADRG only, and only with the reporting event", () => {
+    expect(note).toBeDefined();
+    expect(guides.csdrg.winRatio).toBeUndefined();
+    expect(buildReviewerGuides(run).adrg.winRatio).toBeUndefined();
+  });
+
+  it("states the estimand of each comparison and the hierarchy in order", () => {
+    expect(note.estimand).toEqual([
+      expect.stringMatching(
+        /^Demoxacin 10 mg against Placebo .* Full Analysis Set/
+      ),
+      expect.stringMatching(
+        /^Demoxacin 20 mg against Placebo .* Full Analysis Set/
+      ),
+    ]);
+    expect(note.hierarchy.map((item) => item.split(":")[0])).toEqual([
+      "Death from any cause",
+      "First serious TEAE",
+      "First rescue medication",
+      "SBP change from baseline at Week 12",
+    ]);
+    expect(note.strata).toEqual([]);
+  });
+
+  it("takes the pairing and statistics from the ARS methods", () => {
+    const method = (id: string) =>
+      reportingEvent.methods.find((each) => each.id === id)?.description;
+    expect(note.pairing).toBe(method("Mth_WinComp"));
+    expect(note.statistics).toBe(method("Mth_WinStat"));
+  });
+
+  it("lists the three limitations", () => {
+    expect(note.limitations).toHaveLength(3);
+    expect(note.limitations[0]).toMatch(
+      /^The statistics depend on follow-up\./
+    );
+    expect(note.limitations[1]).toMatch(
+      /^The first component that decides a pair dominates\./
+    );
+    expect(note.limitations[2]).toMatch(
+      /^There is no inference on a single component\./
+    );
+  });
+
+  it("cites Bebu and Lachin, Dong et al. on IPCW and Finkelstein and Schoenfeld", () => {
+    const references = note.references.join("\n");
+    expect(references).toContain("Bebu I, Lachin JM.");
+    expect(references).toContain("inverse-probability-of-censoring weighting");
+    expect(references).toContain("Finkelstein DM, Schoenfeld DA.");
+  });
+
+  it("makes no conformance or validation claim", () => {
+    const prose = JSON.stringify(note);
+    expect(prose).not.toMatch(/complian|conform|validat|certif/i);
+  });
+
+  it("renders as section 8 of the ADRG", () => {
+    const html = renderReviewerGuideHtml(guides.adrg);
+    expect(html).toContain(">8. Method note: win ratio</h3>");
+    expect(html).toContain("<h4>Limitations</h4>");
+    expect(html.indexOf("7. Analysis outputs")).toBeLessThan(
+      html.indexOf("8. Method note: win ratio")
+    );
+    expect(renderReviewerGuideHtml(guides.csdrg)).not.toContain("Method note");
+  });
+
+  it("names the device study's strata and hierarchy", () => {
+    const device = prepareStudyHandoff(TAVR_SAVR_USDM).definition;
+    const deviceRun = runPipeline(device, { seed: 3424, nSubjects: 60 });
+    const deviceNote = buildReviewerGuides(
+      deviceRun,
+      buildTlfOutputs(device, deviceRun).reportingEvent
+    ).adrg.winRatio!;
+    expect(deviceNote.strata).toEqual([
+      "STS-PROM below 4%",
+      "STS-PROM 4% or above",
+    ]);
+    expect(deviceNote.hierarchy.at(-1)).toContain(
+      "differences of 5 points or less tie"
+    );
+    expect(deviceNote.pairing).toContain("randomised in the same stratum");
+    expect(deviceNote.estimand).toEqual([
+      expect.stringMatching(/^TAVR System against Surgical AVR/),
+    ]);
   });
 });

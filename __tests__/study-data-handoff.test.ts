@@ -185,18 +185,18 @@ describe("prepareStudyHandoff", () => {
         {
           id: "act_vs_domain",
           url: USDM_SDTM_DOMAIN_EXTENSION_URL,
-          valueString: "QS",
+          valueString: "DI",
           instanceType: "ExtensionAttribute",
         },
       ];
     });
     const { definition, report } = prepareStudyHandoff(doc);
     expect(report.activities.find((a) => a.id === "act_vs")).toMatchObject({
-      domain: "QS",
+      domain: "DI",
       tabulated: false,
       reason: "domain-not-generated",
     });
-    expect(report.notTabulatedDomains).toEqual(["QS"]);
+    expect(report.notTabulatedDomains).toEqual(["DI"]);
     expect(report.tabulatedDomains).not.toContain("VS");
     expect(definition.design.activities.map((a) => a.id)).not.toContain(
       "act_vs"

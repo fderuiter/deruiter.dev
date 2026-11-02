@@ -154,6 +154,9 @@ const BDS_VARIABLES: readonly VariableMeta[] = [
   ...SOURCE,
 ];
 
+/** The SDTM findings domains with a BDS analysis dataset. */
+type BdsDomain = "VS" | "LB" | "EG" | "QS";
+
 interface OriginRow {
   row: AnalysisRow;
   lineage: readonly string[];
@@ -181,7 +184,7 @@ function groupBySubject(
 function baseline(
   records: readonly OriginRow[],
   firstDose: string | null,
-  domain: "VS" | "LB" | "EG",
+  domain: BdsDomain,
   param: string
 ): OriginRow | null {
   if (!firstDose) return null;
@@ -230,6 +233,14 @@ export function deriveAdsl(
   const ex = groupBySubject(records(byName.get("EX")));
   const ds = groupBySubject(records(byName.get("DS")));
   const vs = groupBySubject(records(byName.get("VS")));
+  // The stratum each subject was randomised in, for a study that declares
+  // strata: SUPPDM carries it under the factor's ADSL variable name.
+  const strata = definition.design.randomisation?.strata ?? [];
+  const stratumRecords = groupBySubject(
+    records(byName.get("SUPPDM")).filter(({ row }) =>
+      strata.some((factor) => factor.adslVariable === row.QNAM)
+    )
+  );
   const armNumber = new Map(
     definition.design.arms.map((arm, index) => [arm.armCode, index + 1])
   );
@@ -279,6 +290,14 @@ export function deriveAdsl(
       ({ row }) => row.DSCAT === "DISPOSITION EVENT"
     );
     const reason = string(disposition?.row.DSDECOD);
+    const stratumOf = stratumRecords.get(subject) ?? [];
+    const stratumValues = Object.fromEntries(
+      strata.map((factor) => [
+        factor.adslVariable,
+        stratumOf.find(({ row }) => row.QNAM === factor.adslVariable)?.row
+          .QVAL ?? null,
+      ])
+    );
     const age = number(source.AGE);
     const ageGroup =
       age === null ? null : age < 40 ? "<40" : age < 65 ? "40-64" : "65+";
@@ -298,6 +317,7 @@ export function deriveAdsl(
       ITTFL: firstDose && randomized ? "Y" : "N",
       EFFFL:
         firstDose && randomized && systolicBaseline && postbaseline ? "Y" : "N",
+      ...stratumValues,
       AGE: age,
       AGEGR1: ageGroup,
       AGEGR1N: ageGroupNumber,
@@ -330,6 +350,7 @@ export function deriveAdsl(
         ...(disposition?.lineage ?? []),
         ...(systolicBaseline?.lineage ?? []),
         ...(diastolicBaseline?.lineage ?? []),
+        ...stratumOf.flatMap((record) => record.lineage),
       ]),
     ]);
   }
@@ -337,7 +358,25 @@ export function deriveAdsl(
     "ADSL",
     "Subject-Level Analysis Dataset",
     { class: "ADSL", structure: "One record per subject" },
-    ADSL_VARIABLES,
+    strata.length === 0
+      ? ADSL_VARIABLES
+      : ADSL_VARIABLES.flatMap((variable) =>
+          variable.name === "EFFFL"
+            ? [
+                variable,
+                ...strata.map((factor, index) =>
+                  column(
+                    factor.adslVariable,
+                    `Randomization Stratum ${index + 1}`,
+                    "text",
+                    "Predecessor",
+                    undefined,
+                    "SUPPDM.QVAL"
+                  )
+                ),
+              ]
+            : [variable]
+        ),
     data,
     lineage,
     ["STUDYID", "USUBJID"]
@@ -435,7 +474,7 @@ function qtcfRecords(records: readonly OriginRow[]): OriginRow[] {
 }
 
 function deriveBdsDomain(
-  domain: "VS" | "LB" | "EG",
+  domain: BdsDomain,
   definition: StudyDefinition,
   sdtm: readonly Dataset[],
   adsl: Dataset
@@ -485,7 +524,8 @@ function deriveBdsDomain(
             ? { PARAMTYP: derivedRows.has(record) ? "DERIVED" : null }
             : {}),
           AVAL: number(record[`${domain}STRESN`]),
-          AVALU: record[`${domain}STRESU`],
+          // Questionnaire scores have no unit, so ADQS has no AVALU.
+          ...(domain === "QS" ? {} : { AVALU: record[`${domain}STRESU`] }),
           ADT: observedDate,
           ADY: day,
           AVISIT: visit?.name ?? "UNSCHEDULED",
@@ -644,13 +684,16 @@ function deriveBdsDomain(
                 ]
               : [variable]
         )
-      : BDS_VARIABLES;
+      : domain === "QS"
+        ? BDS_VARIABLES.filter((variable) => variable.name !== "AVALU")
+        : BDS_VARIABLES;
   return table(
     name,
     {
       VS: "Vital Signs Analysis",
       LB: "Laboratory Analysis",
       EG: "ECG Analysis",
+      QS: "Questionnaire Analysis",
     }[domain],
     {
       class: "BDS",
@@ -658,7 +701,9 @@ function deriveBdsDomain(
         "One or more records per subject per parameter per analysis visit",
       codelists: {
         PARAMCD: `${name}.PARAMCD`,
-        AVALU: domain === "VS" ? "VSRESU" : "UNIT",
+        ...(domain === "QS"
+          ? {}
+          : { AVALU: domain === "VS" ? "VSRESU" : "UNIT" }),
       },
     },
     variables.map((variable) => {
@@ -685,7 +730,10 @@ function deriveBdsDomain(
   );
 }
 
-/** Derive subject-level and findings analysis datasets from existing SDTM rows. */
+/**
+ * Derive subject-level and findings analysis datasets from existing SDTM
+ * rows: ADSL, ADVS, ADLB and ADEG, and ADQS when the study collected QS.
+ */
 export function deriveAdamCore(
   definition: StudyDefinition,
   sdtm: readonly Dataset[]
@@ -696,5 +744,8 @@ export function deriveAdamCore(
     deriveBdsDomain("VS", definition, sdtm, adsl),
     deriveBdsDomain("LB", definition, sdtm, adsl),
     deriveBdsDomain("EG", definition, sdtm, adsl),
+    ...(sdtm.some((dataset) => dataset.name === "QS")
+      ? [deriveBdsDomain("QS", definition, sdtm, adsl)]
+      : []),
   ];
 }

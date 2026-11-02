@@ -1,3 +1,5 @@
+import { HIERARCHY_SPECS } from "../adam/hierarchy";
+
 /**
  * Value-level metadata specs: the datasets whose result variables differ by
  * parameter, the variable that names the parameter, and the variables the
@@ -23,7 +25,21 @@ export interface ValueLevelSpec {
   >;
 }
 
-/** Value-level metadata for the VS, LB, EG, ADVS, ADLB, ADEG and ADHCE parameters. */
+/**
+ * The ADHCE components of every hierarchy spec, with the method that
+ * derives each one's AVAL. A component two specs share keeps one method.
+ */
+const ADHCE_DERIVED = Object.fromEntries(
+  HIERARCHY_SPECS.flatMap((spec) => spec.components).map((component) => [
+    component.paramcd,
+    { variables: ["AVAL"], method: component.method },
+  ])
+);
+
+/**
+ * Value-level metadata for the VS, LB, EG, ADVS, ADLB, ADEG, ADQS and
+ * ADHCE parameters.
+ */
 export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
   Object.freeze({
     VS: {
@@ -40,6 +56,7 @@ export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
     },
     ADVS: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
     ADLB: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
+    ADQS: { by: "PARAMCD", variables: ["AVAL"] },
     ADEG: {
       by: "PARAMCD",
       variables: ["AVAL", "AVALU"],
@@ -48,11 +65,6 @@ export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
     ADHCE: {
       by: "PARAMCD",
       variables: ["AVAL", "AVALU"],
-      derived: {
-        HCEDTH: { variables: ["AVAL"], method: "ADHCE_TTE" },
-        HCESAE: { variables: ["AVAL"], method: "ADHCE_TTE" },
-        HCERESC: { variables: ["AVAL"], method: "ADHCE_TTE" },
-        HCESBP: { variables: ["AVAL"], method: "ADHCE_SBP" },
-      },
+      derived: ADHCE_DERIVED,
     },
   });

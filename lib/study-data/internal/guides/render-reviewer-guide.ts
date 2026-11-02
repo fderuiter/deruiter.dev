@@ -147,6 +147,39 @@ export function renderReviewerGuideHtml(guide: ReviewerGuide): string {
       "</section>"
     );
   }
+  if (guide.winRatio) {
+    const note = guide.winRatio;
+    const list = (items: readonly string[], ordered = false) =>
+      [
+        ordered ? "<ol>" : "<ul>",
+        ...items.map((item) => `<li>${escapeHtml(item)}</li>`),
+        ordered ? "</ol>" : "</ul>",
+      ].join("\n");
+    parts.push(
+      `<section aria-labelledby="${id("win-ratio")}">`,
+      `<h3 id="${id("win-ratio")}">8. Method note: win ratio</h3>`,
+      `<h4>Estimand</h4>`,
+      list(note.estimand),
+      `<h4>Hierarchy</h4>`,
+      `<p>A pair is decided on the first component, in this order, on which one subject is better.</p>`,
+      list(note.hierarchy, true),
+      ...(note.strata.length === 0
+        ? []
+        : [
+            `<p>Pairs are formed within each randomisation stratum:</p>`,
+            list(note.strata),
+          ]),
+      `<h4>Pairing</h4>`,
+      `<p>${escapeHtml(note.pairing)}</p>`,
+      `<h4>Statistics</h4>`,
+      `<p>${escapeHtml(note.statistics)}</p>`,
+      `<h4>Limitations</h4>`,
+      list(note.limitations),
+      `<h4>References</h4>`,
+      list(note.references),
+      "</section>"
+    );
+  }
   parts.push("</article>");
   return `${parts.join("\n")}\n`;
 }

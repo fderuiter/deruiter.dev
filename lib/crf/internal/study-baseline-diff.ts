@@ -257,26 +257,31 @@ function relabelReferences(study: StudyProtocol): StudyProtocol {
   return walk(study, false) as StudyProtocol;
 }
 
-function diffKeys<T extends Record<string, unknown>>(
-  oldObj: T,
-  newObj: T,
+/**
+ * The keys whose values differ between two versions of one entity, in the
+ * order given. Values are compared by their deterministic JSON form, so a
+ * key present on one side and missing on the other counts as changed.
+ *
+ * @param before - The entity as it was.
+ * @param after - The entity as it is.
+ * @param keys - The keys to compare.
+ * @returns The keys that changed.
+ */
+export function diffFields<T>(
+  before: T,
+  after: T,
   keys: readonly (keyof T & string)[]
-): string[] {
-  const changed: string[] = [];
-  for (const key of keys) {
-    if (!valuesEqual(oldObj[key], newObj[key])) changed.push(key);
-  }
-  return changed;
+): (keyof T & string)[] {
+  return keys.filter((key) => !valuesEqual(before[key], after[key]));
 }
 
-function pickChanged<T extends Record<string, unknown>>(
-  obj: T,
-  keys: readonly string[]
+/** The values of the given keys, for a diff entry's old or new value. */
+function pickFields<T>(
+  entity: T,
+  keys: readonly (keyof T & string)[]
 ): Partial<T> {
   const picked: Partial<T> = {};
-  for (const key of keys) {
-    picked[key as keyof T] = obj[key as keyof T];
-  }
+  for (const key of keys) picked[key] = entity[key];
   return picked;
 }
 
@@ -552,11 +557,7 @@ function diffRuleList(
 
   for (const { oldItem: oldRule, newItem: newRule } of matched) {
     const id = newRule.id;
-    const changed = diffKeys(
-      oldRule as unknown as Record<string, unknown>,
-      newRule as unknown as Record<string, unknown>,
-      RULE_STRUCTURAL_KEYS
-    );
+    const changed = diffFields(oldRule, newRule, RULE_STRUCTURAL_KEYS);
     if (changed.length) {
       entries.push({
         id,
@@ -565,14 +566,8 @@ function diffRuleList(
         label: newRule.name || id,
         breadcrumb: [...breadcrumbPrefix, newRule.name || id],
         changedFields: changed,
-        oldValue: pickChanged(
-          oldRule as unknown as Record<string, unknown>,
-          changed
-        ),
-        newValue: pickChanged(
-          newRule as unknown as Record<string, unknown>,
-          changed
-        ),
+        oldValue: pickFields(oldRule, changed),
+        newValue: pickFields(newRule, changed),
         formId: form?.id,
         navigationMode: "rules",
       });
@@ -709,26 +704,27 @@ function diffFieldsWithinForm(
 
   for (const { oldItem: oldOcc, newItem: newOcc } of matched) {
     const id = newOcc.id;
-    const changed = diffKeys(
-      oldOcc.field as unknown as Record<string, unknown>,
-      newOcc.field as unknown as Record<string, unknown>,
+    const fieldChanges = diffFields(
+      oldOcc.field,
+      newOcc.field,
       FIELD_STRUCTURAL_KEYS
     );
     // Section ids mean nothing across studies, so compare titles there.
     const moved = crossStudy
       ? norm(oldOcc.sectionTitle) !== norm(newOcc.sectionTitle)
       : oldOcc.sectionId !== newOcc.sectionId;
-    if (moved) changed.push("section");
+    // A move is reported as a change to "section", which is not a field key.
+    const changed: string[] = moved
+      ? [...fieldChanges, "section"]
+      : [...fieldChanges];
 
     if (changed.length) {
-      const oldValue = pickChanged(
-        oldOcc.field as unknown as Record<string, unknown>,
-        changed.filter((k) => k !== "section")
-      );
-      const newValue = pickChanged(
-        newOcc.field as unknown as Record<string, unknown>,
-        changed.filter((k) => k !== "section")
-      );
+      const oldValue: Record<string, unknown> = {
+        ...pickFields(oldOcc.field, fieldChanges),
+      };
+      const newValue: Record<string, unknown> = {
+        ...pickFields(newOcc.field, fieldChanges),
+      };
       if (moved) {
         oldValue.section = oldOcc.sectionTitle;
         newValue.section = newOcc.sectionTitle;
@@ -821,11 +817,7 @@ function diffSectionsWithinForm(
 
   for (const { oldItem: oldSection, newItem: newSection } of matched) {
     const id = newSection.id;
-    const changed = diffKeys(
-      oldSection as unknown as Record<string, unknown>,
-      newSection as unknown as Record<string, unknown>,
-      SECTION_SCALAR_KEYS
-    );
+    const changed = diffFields(oldSection, newSection, SECTION_SCALAR_KEYS);
     if (changed.length) {
       entries.push({
         id,
@@ -834,14 +826,8 @@ function diffSectionsWithinForm(
         label: newSection.title,
         breadcrumb: [form.name, newSection.title],
         changedFields: changed,
-        oldValue: pickChanged(
-          oldSection as unknown as Record<string, unknown>,
-          changed
-        ),
-        newValue: pickChanged(
-          newSection as unknown as Record<string, unknown>,
-          changed
-        ),
+        oldValue: pickFields(oldSection, changed),
+        newValue: pickFields(newSection, changed),
         formId: form.id,
         sectionId: id,
         navigationMode: "designer",
@@ -863,7 +849,9 @@ function diffForms(
     baseline.forms,
     current.forms,
     (form) => {
-      const oid = (form as unknown as { oid?: string }).oid;
+      // Imported forms can carry an OID that CRFForm does not declare.
+      const oid =
+        "oid" in form && typeof form.oid === "string" ? form.oid : undefined;
       return [
         oid ? `oid:${oid.toUpperCase()}` : "",
         form.domain && form.name
@@ -884,9 +872,7 @@ function diffForms(
       changeType: "removed",
       label: form.name,
       breadcrumb: [form.name],
-      oldValue: pickChanged(form as unknown as Record<string, unknown>, [
-        ...FORM_SCALAR_KEYS,
-      ]),
+      oldValue: pickFields(form, FORM_SCALAR_KEYS),
       affectedUses: uses ? Array.from(uses) : undefined,
       formId: id,
       navigationMode: "designer",
@@ -901,9 +887,7 @@ function diffForms(
       changeType: "added",
       label: form.name,
       breadcrumb: [form.name],
-      newValue: pickChanged(form as unknown as Record<string, unknown>, [
-        ...FORM_SCALAR_KEYS,
-      ]),
+      newValue: pickFields(form, FORM_SCALAR_KEYS),
       formId: id,
       navigationMode: "designer",
     });
@@ -911,11 +895,7 @@ function diffForms(
 
   for (const { oldItem: oldForm, newItem: newForm } of matched) {
     const id = newForm.id;
-    const changed = diffKeys(
-      oldForm as unknown as Record<string, unknown>,
-      newForm as unknown as Record<string, unknown>,
-      FORM_SCALAR_KEYS
-    );
+    const changed = diffFields(oldForm, newForm, FORM_SCALAR_KEYS);
     if (changed.length) {
       entries.push({
         id,
@@ -924,14 +904,8 @@ function diffForms(
         label: newForm.name,
         breadcrumb: [newForm.name],
         changedFields: changed,
-        oldValue: pickChanged(
-          oldForm as unknown as Record<string, unknown>,
-          changed
-        ),
-        newValue: pickChanged(
-          newForm as unknown as Record<string, unknown>,
-          changed
-        ),
+        oldValue: pickFields(oldForm, changed),
+        newValue: pickFields(newForm, changed),
         formId: id,
         navigationMode: "designer",
       });
@@ -1011,11 +985,7 @@ function diffCodelists(
 
   for (const { oldItem: oldCodelist, newItem: newCodelist } of matched) {
     const id = newCodelist.id;
-    const changed = diffKeys(
-      oldCodelist as unknown as Record<string, unknown>,
-      newCodelist as unknown as Record<string, unknown>,
-      CODELIST_SCALAR_KEYS
-    );
+    const changed = diffFields(oldCodelist, newCodelist, CODELIST_SCALAR_KEYS);
     if (!valuesEqual(oldCodelist.options, newCodelist.options)) {
       changed.push("options");
     }
@@ -1027,14 +997,8 @@ function diffCodelists(
         label: newCodelist.name,
         breadcrumb: ["Codelists", newCodelist.name],
         changedFields: changed,
-        oldValue: pickChanged(
-          oldCodelist as unknown as Record<string, unknown>,
-          changed
-        ),
-        newValue: pickChanged(
-          newCodelist as unknown as Record<string, unknown>,
-          changed
-        ),
+        oldValue: pickFields(oldCodelist, changed),
+        newValue: pickFields(newCodelist, changed),
       });
     }
   }
@@ -1092,11 +1056,7 @@ function diffScheduleEntity<T extends { id: string; name: string }>(
 
   for (const { oldItem, newItem } of matched) {
     const id = newItem.id;
-    const changed = diffKeys(
-      oldItem as unknown as Record<string, unknown>,
-      newItem as unknown as Record<string, unknown>,
-      scalarKeys as readonly string[]
-    );
+    const changed = diffFields(oldItem, newItem, scalarKeys);
     if (changed.length) {
       entries.push({
         id,
@@ -1105,14 +1065,8 @@ function diffScheduleEntity<T extends { id: string; name: string }>(
         label: newItem.name,
         breadcrumb: ["Schedule", breadcrumbLabel, newItem.name],
         changedFields: changed,
-        oldValue: pickChanged(
-          oldItem as unknown as Record<string, unknown>,
-          changed
-        ),
-        newValue: pickChanged(
-          newItem as unknown as Record<string, unknown>,
-          changed
-        ),
+        oldValue: pickFields(oldItem, changed),
+        newValue: pickFields(newItem, changed),
         visitId: breadcrumbLabel === "Visits" ? id : undefined,
         navigationMode: "matrix",
       });

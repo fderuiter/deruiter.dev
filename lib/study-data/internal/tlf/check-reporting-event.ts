@@ -15,7 +15,7 @@ import type {
   StudyDefinition,
 } from "../../types";
 import { evaluateAnalyses } from "./evaluate";
-import { buildReportingPlan } from "./plan";
+import { buildReportingPlan, unplannedTreatments } from "./plan";
 import { indexAdamRows, resolveResultRows } from "./row-ids";
 
 const ARS_CITATION =
@@ -90,7 +90,13 @@ export function checkReportingEvent(
     return findings;
   }
   const evaluation = definition
-    ? evaluateAnalyses(run.datasets, buildReportingPlan(definition))
+    ? evaluateAnalyses(
+        run.datasets,
+        buildReportingPlan(
+          definition,
+          unplannedTreatments(definition, run.datasets)
+        )
+      )
     : undefined;
   const reproduced = new Map(
     (evaluation?.analyses ?? []).flatMap((analysis) =>

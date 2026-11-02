@@ -23,7 +23,11 @@ Two checks tell you the file no longer matches the code:
   fingerprints the SDTM Dataset-JSON and Define-XML of every view, and the
   USDM export of every CRF Studio preset, and fails when one differs from
   the fingerprint recorded with the findings. It needs
-  no Python, so it fails fast, locally and in `ci.yml`.
+  no Python, so it fails fast in `npm test` and in `ci.yml`. The
+  pre-commit hook leaves it out (`CI_ONLY_TESTS` in
+  `scripts/test-staged.ts`, #3664), so you can commit the change that
+  moves the fingerprints and refresh the file afterwards. CI stays red, and
+  auto-merge holds the PR, until you do.
 - The `Study Data CDISC CORE` workflow (`.github/workflows/study-data-core.yml`)
   runs CORE over every view and every preset export, regenerates the file
   and fails when it differs from the committed one. It runs on pull
@@ -35,7 +39,7 @@ Two checks tell you the file no longer matches the code:
 
 Any change to the generator, a scenario, a domain or the Define-XML moves
 the fingerprints, so a PR that changes study data output refreshes this file
-in the same PR. So does a PR that changes what CRF Studio's USDM export
+in the same PR, from the CI artifact or locally (below). So does a PR that changes what CRF Studio's USDM export
 writes for any preset: the adapter, a preset, or the domain templates.
 
 ## Refresh from CI (no local setup)
@@ -86,6 +90,11 @@ npx tsx scripts/study-data-core.ts record "$work/in" "$work/reports" \
   --core-tag "$CORE_TAG" --core-commit "$CORE_COMMIT" \
   --crf-inputs "$work/crf-in" --crf-reports "$work/crf-reports"
 ```
+
+To look a rule up in CORE's rule cache (`resources/cache/rules.pkl`),
+read forward from its id: each rule's CORE id comes before its text, and
+the text runs up to the next id. Text read backwards from an id belongs to
+the previous rule.
 
 `reconcile` exits non-zero when a default-view finding is not explained by
 the allowlist, and `reconcile-crf` does the same for the preset exports.

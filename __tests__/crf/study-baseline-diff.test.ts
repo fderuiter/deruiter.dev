@@ -1,6 +1,12 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect } from "vitest";
-import { compareStudyToBaseline } from "@/lib/crf";
+import {
+  compareStudyToBaseline,
+  describeBaselineDiffCategory,
+  describeBaselineDiffChangeType,
+  type BaselineDiffCategory,
+} from "@/lib/crf";
 import type {
   StudyProtocol,
   CRFForm,
@@ -487,6 +493,289 @@ describe("compareStudyToBaseline (#676)", () => {
       result.summary.addedCount +
         result.summary.removedCount +
         result.summary.modifiedCount
+    );
+  });
+});
+
+// #3485: branches the cases above leave untaken: sparse studies, unnamed and
+// formula-bearing rules, unlabelled fields, schedule entities other than
+// visits, and the cross-study pairing and relabelling paths.
+describe("compareStudyToBaseline, less common shapes (#3485)", () => {
+  const ids = (study: StudyProtocol, current: StudyProtocol) =>
+    compareStudyToBaseline(current, study, baselineMeta).entries.map(
+      (entry) => `${entry.category}:${entry.changeType}:${entry.id}`
+    );
+
+  it("labels every category and change type", () => {
+    const categories: BaselineDiffCategory[] = [
+      "study_metadata",
+      "form",
+      "section",
+      "field",
+      "rule",
+      "formula",
+      "codelist",
+      "schedule",
+    ];
+    expect(categories.map(describeBaselineDiffCategory)).toEqual([
+      "Study Metadata",
+      "Forms",
+      "Sections",
+      "Fields",
+      "Edit Check Rules",
+      "Formulas",
+      "Codelists",
+      "Schedule Relationships",
+    ]);
+    expect(
+      (["added", "removed", "modified"] as const).map(
+        describeBaselineDiffChangeType
+      )
+    ).toEqual(["Added", "Removed", "Modified"]);
+  });
+
+  it("compares sparse studies whose collections are missing", () => {
+    const sparse = fromAny<StudyProtocol, unknown>({
+      ...buildStudy(),
+      forms: [
+        fromAny<CRFForm, unknown>({
+          ...buildForm(),
+          sections: undefined,
+          rules: undefined,
+        }),
+        fromAny<CRFForm, unknown>({
+          ...buildForm({ id: "form-empty", name: "Empty" }),
+          sections: [
+            { ...buildSection({ id: "sec-empty" }), fields: undefined },
+          ],
+        }),
+      ],
+      visits: undefined,
+      codelists: undefined,
+    });
+    expect(
+      compareStudyToBaseline(sparse, sparse, baselineMeta).entries
+    ).toEqual([]);
+    const full = buildStudy();
+    const removed = ids(full, sparse);
+    expect(removed).toEqual(
+      expect.arrayContaining([
+        "codelist:removed:cl-sex",
+        "schedule:removed:v-screen",
+      ])
+    );
+  });
+
+  it("names an unnamed rule by its id, and reports formulas with it", () => {
+    const formulaRule = buildRule({
+      id: "rule-calc",
+      name: "",
+      actionType: "set_value",
+      triggerFieldIds: [],
+      targetFieldId: "",
+      conditions: [],
+      formulaExpression: "WEIGHT / 2",
+    });
+    const before = buildStudy({
+      forms: [buildForm({ rules: [buildRule(), formulaRule] })],
+    });
+    const removed = compareStudyToBaseline(
+      buildStudy({ forms: [buildForm({ rules: [buildRule()] })] }),
+      before,
+      baselineMeta
+    ).entries;
+    expect(removed.map((entry) => [entry.id, entry.label])).toEqual([
+      ["rule-calc", "rule-calc"],
+      ["formula:rule:rule-calc", "rule-calc: Formula"],
+    ]);
+    // The rule references no field, so it lists no affected uses.
+    expect(removed[0].affectedUses).toBeUndefined();
+
+    const added = compareStudyToBaseline(
+      before,
+      buildStudy({ forms: [buildForm({ rules: [buildRule()] })] }),
+      baselineMeta
+    ).entries;
+    expect(added.map((entry) => `${entry.changeType}:${entry.id}`)).toEqual([
+      "added:rule-calc",
+      "added:formula:rule:rule-calc",
+    ]);
+
+    const edited = compareStudyToBaseline(
+      buildStudy({
+        forms: [
+          buildForm({
+            rules: [
+              buildRule(),
+              { ...formulaRule, formulaExpression: "WEIGHT / 3" },
+            ],
+          }),
+        ],
+      }),
+      before,
+      baselineMeta
+    ).entries;
+    expect(edited).toEqual([
+      expect.objectContaining({
+        id: "formula:rule:rule-calc",
+        category: "formula",
+        changeType: "modified",
+        oldValue: "WEIGHT / 2",
+        newValue: "WEIGHT / 3",
+      }),
+    ]);
+  });
+
+  it("indexes every field a removed rule refers to, study-level rules included", () => {
+    const grouped = buildRule({
+      id: "rule-grouped",
+      name: "Grouped check",
+      conditions: [
+        {
+          fieldId: "f-systolic",
+          operator: "gt",
+          value: 1,
+          compareFieldId: "f-other",
+        },
+      ],
+      conditionGroups: [
+        {
+          id: "g1",
+          logicalOperator: "OR",
+          conditions: [
+            {
+              fieldId: "f-diastolic",
+              operator: "lt",
+              value: 1,
+              compareFieldId: "f-third",
+            },
+          ],
+        },
+      ],
+    });
+    const before = buildStudy({
+      forms: [buildForm({ rules: [buildRule(), grouped] })],
+      rules: [buildRule({ id: "rule-study", name: "Study-level" })],
+    });
+    const after = buildStudy({
+      forms: [buildForm({ rules: [buildRule()] })],
+      rules: [buildRule({ id: "rule-study", name: "Study-level" })],
+    });
+    const [entry] = compareStudyToBaseline(after, before, baselineMeta).entries;
+    expect(entry).toMatchObject({ id: "rule-grouped", changeType: "removed" });
+    for (const fieldId of ["f-systolic", "f-other", "f-diastolic", "f-third"])
+      expect(entry.affectedUses?.[0]).toContain(fieldId);
+  });
+
+  it("labels an unlabelled field by its variable and reports its formula", () => {
+    const calculated = buildField({
+      id: "f-bmi",
+      variableName: "BMI",
+      label: "",
+      calculationFormula: "WEIGHT / HEIGHT",
+    });
+    const withBmi = buildStudy({
+      forms: [
+        buildForm({
+          sections: [buildSection({ fields: [buildField(), calculated] })],
+        }),
+      ],
+    });
+    const removed = compareStudyToBaseline(
+      buildStudy(),
+      withBmi,
+      baselineMeta
+    ).entries;
+    expect(removed.map((entry) => [entry.id, entry.label])).toEqual([
+      ["f-bmi", "BMI"],
+      ["formula:field:f-bmi", ": Formula"],
+    ]);
+    const added = compareStudyToBaseline(
+      withBmi,
+      buildStudy(),
+      baselineMeta
+    ).entries;
+    expect(added.map((entry) => `${entry.changeType}:${entry.id}`)).toEqual([
+      "added:f-bmi",
+      "added:formula:field:f-bmi",
+    ]);
+  });
+
+  it("reports arms, epochs and cohorts without a visit to jump to", () => {
+    const arm = { id: "arm-a", name: "Arm A", type: "Experimental" };
+    const epoch = { id: "ep-1", name: "Treatment", sequenceNumber: 1 };
+    const before = buildStudy({ arms: [arm], epochs: [epoch] });
+    const after = buildStudy({
+      arms: [{ ...arm, type: "Placebo Comparator" }],
+      epochs: [],
+      cohorts: [{ id: "co-1", name: "Cohort 1" } as never],
+    });
+    const entries = compareStudyToBaseline(after, before, baselineMeta).entries;
+    expect(
+      entries.map((entry) => [entry.changeType, entry.id, entry.visitId])
+    ).toEqual([
+      ["modified", "arm-a", undefined],
+      ["removed", "ep-1", undefined],
+      ["added", "co-1", undefined],
+    ]);
+  });
+
+  it("pairs objects across studies by OID, NCI code and name, and relabels references", () => {
+    const baseline = buildStudy({
+      forms: [
+        fromAny<CRFForm, unknown>({
+          ...buildForm({ id: "form-a" }),
+          oid: "F.VS",
+        }),
+      ],
+      codelists: [buildCodelist({ id: "cl-a", nciCodelistCode: "C66731" })],
+      visits: [
+        buildVisit({
+          id: "v-a",
+          assignedFormIds: ["form-a"],
+          armFormAssignments: { "arm-a": ["form-a"] },
+        } as Partial<StudyVisit>),
+      ],
+      arms: [{ id: "arm-a", name: "Arm", type: "Experimental" }],
+      epochs: [{ id: "ep-a", name: "Treatment", sequenceNumber: 1 }],
+    });
+    const current = buildStudy({
+      id: "study-2",
+      forms: [
+        fromAny<CRFForm, unknown>({
+          ...buildForm({ id: "form-b", name: "Renamed vitals" }),
+          oid: "F.VS",
+        }),
+      ],
+      codelists: [
+        buildCodelist({
+          id: "cl-b",
+          name: "Gender",
+          nciCodelistCode: "C66731",
+        }),
+      ],
+      visits: [
+        buildVisit({
+          id: "v-b",
+          assignedFormIds: ["form-b"],
+          armFormAssignments: { "arm-b": ["form-b"] },
+        } as Partial<StudyVisit>),
+      ],
+      arms: [{ id: "arm-b", name: "Arm", type: "Experimental" }],
+      epochs: [{ id: "ep-b", name: "Treatment", sequenceNumber: 1 }],
+    });
+    const entries = compareStudyToBaseline(
+      current,
+      baseline,
+      baselineMeta
+    ).entries;
+    // Different ids pair by OID, NCI code and visit OID, so nothing is
+    // reported as added or removed; the renames are modifications.
+    expect(entries.filter((entry) => entry.changeType !== "modified")).toEqual(
+      []
+    );
+    expect(entries.map((entry) => entry.category)).toEqual(
+      expect.arrayContaining(["form", "codelist"])
     );
   });
 });

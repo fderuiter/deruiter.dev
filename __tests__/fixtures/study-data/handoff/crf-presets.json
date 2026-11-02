@@ -303,9 +303,35 @@
         "name": "PHQ-9 Depression Inventory",
         "domain": "QS",
         "tabulated": false,
-        "reason": "domain-not-generated",
+        "reason": "no-modelled-tests",
         "tests": [],
-        "skippedConcepts": []
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_qs_qseval1",
+            "name": "1. Little interest or pleasure in doing things",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qseval2",
+            "name": "2. Feeling down, depressed, or hopeless",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qseval3",
+            "name": "3. Trouble falling or staying asleep, or sleeping too much",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qseval4",
+            "name": "4. Feeling tired or having little energy",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qsstresn",
+            "name": "PHQ-9 Total Score",
+            "reason": "no-test-code"
+          }
+        ]
       },
       {
         "id": "form_ecg_cardio",
@@ -437,9 +463,40 @@
         "name": "Mini-Mental State Examination (MMSE)",
         "domain": "QS",
         "tabulated": false,
-        "reason": "domain-not-generated",
+        "reason": "no-modelled-tests",
         "tests": [],
-        "skippedConcepts": []
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_qs_qs_ornt",
+            "name": "Orientation to Time & Place (0 - 10 points)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qs_reg",
+            "name": "Immediate Registration (0 - 3 points)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qs_attn",
+            "name": "Attention & Calculation - Serial 7s (0 - 5 points)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qs_rec",
+            "name": "Delayed Recall of 3 Objects (0 - 3 points)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qs_lang",
+            "name": "Language & Visual Construction (0 - 9 points)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_qs_qs_total",
+            "name": "Total MMSE Score (Max 30)",
+            "reason": "no-test-code"
+          }
+        ]
       },
       {
         "id": "form_ae_cns",

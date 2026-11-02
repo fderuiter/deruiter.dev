@@ -184,10 +184,11 @@ function distinctSubjects(records: readonly RecordContext[]): number {
 /** An analysis spec without the fields that extend the ARS class. */
 function arsShape(
   spec: AnalysisSpec
-): Omit<AnalysisSpec, "precisionVariable" | "comparison"> {
+): Omit<AnalysisSpec, "precisionVariable" | "comparison" | "hierarchy"> {
   const {
     precisionVariable: _precisionVariable,
     comparison: _comparison,
+    hierarchy: _hierarchy,
     ...shape
   } = spec;
   return shape;

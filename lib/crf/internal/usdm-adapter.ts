@@ -844,7 +844,7 @@ export function importStudyFromUsdm(
   const rawActivities: UsdmActivity[] =
     primaryDesign.activities ||
     studyObj.activities ||
-    (studyObj.forms as unknown as UsdmActivity[]) ||
+    legacyFormActivities(studyObj.forms) ||
     [];
   const forms: CRFForm[] = rawActivities.map((act) => {
     const sections: CRFSection[] = (act.sections || []).map((sec) => ({
@@ -922,7 +922,7 @@ export function importStudyFromUsdm(
   ].forEach(registerCodelistCandidate);
 
   rawConcepts.forEach((bc) => {
-    const bcObj = bc as unknown as Record<string, unknown>;
+    const bcObj = asRecord(bc) ?? {};
     registerCodelistCandidate(
       bcObj.codeList || bcObj.valueSet || bcObj.codelist
     );
@@ -950,7 +950,7 @@ export function importStudyFromUsdm(
   rawActivities.forEach((act) => {
     (act.sections || []).forEach((sec) => {
       (sec.fields || []).forEach((fld) => {
-        const fldObj = fld as unknown as Record<string, unknown>;
+        const fldObj = asRecord(fld) ?? {};
         registerCodelistCandidate(
           fldObj.codeList || fldObj.valueSet || fldObj.codelist
         );
@@ -973,7 +973,7 @@ export function importStudyFromUsdm(
 
   rawConcepts.forEach((bc) => {
     const props = (bc.properties || {}) as Record<string, unknown>;
-    const bcObj = bc as unknown as Record<string, unknown>;
+    const bcObj = asRecord(bc) ?? {};
     const id =
       props.codelistId ||
       props.codeListId ||
@@ -987,7 +987,7 @@ export function importStudyFromUsdm(
   rawActivities.forEach((act) => {
     (act.sections || []).forEach((sec) => {
       (sec.fields || []).forEach((fld) => {
-        const fldObj = fld as unknown as Record<string, unknown>;
+        const fldObj = asRecord(fld) ?? {};
         const id = fld.codelistId || fldObj.codeListId || fldObj.valueSetId;
         if (id) allReferencedCodelistIds.add(String(id));
       });
@@ -1010,7 +1010,7 @@ export function importStudyFromUsdm(
   );
 
   // Map windowBefore and windowAfter visit tolerances to constrain study schedule rules
-  const primaryDesignObj = primaryDesign as unknown as Record<string, unknown>;
+  const primaryDesignObj = asRecord(primaryDesign) ?? {};
   const explicitRules: EditCheckRule[] = [
     ...normalizeImportedRules(doc.rules),
     ...normalizeImportedRules(studyObj.rules),
@@ -1417,6 +1417,133 @@ function asArray(value: unknown): unknown[] {
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+/*
+ * Type guards for the objects CRF Studio writes into its own USDM extensions
+ * and for a legacy study's `forms` (#3676). Each checks the value as it is and
+ * keeps it unchanged. An extension that does not match its shape is ignored,
+ * and the plain USDM is read instead, as for a document CRF Studio did not
+ * write. A legacy form that does not match is skipped.
+ *
+ * The guards check structure, not conformance. A field whose variable name is
+ * too long is still a field: the import's pre-flight conformance gate reports
+ * it and offers to fix it, so dropping it here would hide what the gate is
+ * for.
+ */
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+const optionalOf = (
+  record: Record<string, unknown>,
+  key: string,
+  guard: (value: unknown) => boolean
+) => record[key] === undefined || guard(record[key]);
+const isString = (value: unknown) => typeof value === "string";
+const isNumber = (value: unknown) => typeof value === "number";
+const isBoolean = (value: unknown) => typeof value === "boolean";
+const ENCOUNTER_TYPES = new Set(["Scheduled", "Unscheduled", "Common"]);
+/** An array whose every item is an object. */
+const isRecords = (value: unknown) =>
+  Array.isArray(value) && value.every((item) => asRecord(item) !== undefined);
+/**
+ * CRF sections: objects, each with an array of field objects when it has
+ * fields. Ids and titles are not required here: the form mapping fills what
+ * is missing, as it did before these guards (#3485).
+ */
+const isCrfSectionsShape = (value: unknown) =>
+  isRecords(value) &&
+  (value as unknown[]).every((item) =>
+    optionalOf(asRecord(item)!, "fields", isRecords)
+  );
+
+function isUsdmEncounter(value: unknown): value is UsdmEncounter {
+  const record = asRecord(value);
+  return (
+    record !== undefined &&
+    isString(record.id) &&
+    isString(record.name) &&
+    ENCOUNTER_TYPES.has(String(record.type)) &&
+    isNumber(record.targetDay) &&
+    isNumber(record.windowBefore) &&
+    isNumber(record.windowAfter) &&
+    optionalOf(record, "oid", isString) &&
+    optionalOf(record, "timepointDays", isNumber) &&
+    optionalOf(record, "epochId", isString) &&
+    optionalOf(record, "armIds", isStringArray) &&
+    optionalOf(record, "assignedFormIds", isStringArray) &&
+    optionalOf(
+      record,
+      "armFormAssignments",
+      (assignments) =>
+        asRecord(assignments) !== undefined &&
+        Object.values(asRecord(assignments)!).every(isStringArray)
+    ) &&
+    optionalOf(record, "isRepeating", isBoolean) &&
+    optionalOf(record, "repeatMax", isNumber)
+  );
+}
+
+function isUsdmActivity(value: unknown): value is UsdmActivity {
+  const record = asRecord(value);
+  return (
+    record !== undefined &&
+    isString(record.id) &&
+    isString(record.name) &&
+    isString(record.domain) &&
+    optionalOf(record, "description", isString) &&
+    optionalOf(record, "version", isString) &&
+    optionalOf(record, "sections", isCrfSectionsShape) &&
+    // Each rule goes through normalizeImportedRule, which gives a rule
+    // without an id one and preserves an unreadable rule for review, so
+    // only the array itself is checked.
+    optionalOf(record, "rules", Array.isArray) &&
+    optionalOf(record, "isLogForm", isBoolean)
+  );
+}
+
+function isUsdmBiomedicalConcept(
+  value: unknown
+): value is UsdmBiomedicalConcept {
+  const record = asRecord(value);
+  return (
+    record !== undefined &&
+    isString(record.id) &&
+    isString(record.name) &&
+    [
+      "conceptId",
+      "code",
+      "domain",
+      "variableName",
+      "dataType",
+      "label",
+      "unit",
+    ].every((key) => optionalOf(record, key, isString)) &&
+    optionalOf(record, "synonyms", isStringArray) &&
+    optionalOf(
+      record,
+      "properties",
+      (properties) =>
+        Array.isArray(properties) || asRecord(properties) !== undefined
+    )
+  );
+}
+
+/**
+ * A legacy study's `forms` read as activities: CRF forms, which carry what an
+ * activity does, with a missing domain read as GENERAL as the import does.
+ * Undefined when the study has no `forms` array.
+ */
+function legacyFormActivities(forms: unknown): UsdmActivity[] | undefined {
+  if (!Array.isArray(forms)) return undefined;
+  return forms.flatMap((form) => {
+    const record = asRecord(form);
+    if (!record) return [];
+    const activity = {
+      ...record,
+      domain: asString(record.domain) ?? "GENERAL",
+    };
+    return isUsdmActivity(activity) ? [activity] : [];
+  });
 }
 
 function findExtension(
@@ -2637,9 +2764,8 @@ function lowerUsdmV4ToLegacy(
       const id = asString(enc.id) ?? `encounter_${idx + 1}`;
       const ext = readCrfExtension(enc, "encounter");
       const name = nativeName(enc, id);
-      if (ext) {
-        return { id, ...ext, name } as unknown as UsdmEncounter;
-      }
+      const extended = ext && { id, ...ext, name };
+      if (isUsdmEncounter(extended)) return extended;
       const sched = timelineSchedule.get(id);
       return withoutUndefined({
         id,
@@ -2672,13 +2798,8 @@ function lowerUsdmV4ToLegacy(
     .map((act, idx) => {
       const id = asString(act.id) ?? `activity_${idx + 1}`;
       const ext = readCrfExtension(act, "activity");
-      if (ext) {
-        return {
-          id,
-          name: nativeName(act, id),
-          ...ext,
-        } as unknown as UsdmActivity;
-      }
+      const extended = ext && { id, name: nativeName(act, id), ...ext };
+      if (isUsdmActivity(extended)) return extended;
       return withoutUndefined({
         id,
         name: nativeName(act, id),
@@ -2691,7 +2812,7 @@ function lowerUsdmV4ToLegacy(
   const biomedicalConcepts: UsdmBiomedicalConcept[] = conceptList.map(
     (bc, idx) => {
       const ext = readCrfExtension(bc, "biomedical-concept");
-      if (ext) return ext as unknown as UsdmBiomedicalConcept;
+      if (isUsdmBiomedicalConcept(ext)) return ext;
       const id = asString(bc.id) ?? `bc_${idx + 1}`;
       const std = asRecord(asRecord(bc.code)?.standardCode);
       const item = plainConceptItem(bc, id);

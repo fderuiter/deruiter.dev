@@ -91,7 +91,9 @@ describe("/study-data with a study handed over from CRF Studio", () => {
     expect(panel.textContent).toMatch(/Tabulated\s*DM, EX, VS, AE/);
     expect(panel.textContent).toMatch(/Not tabulated\s*CM, QS/);
     expect(panel.textContent).toMatch(
-      /Mini-Mental State Examination \(MMSE\) \(QS\) is not tabulated: the generator does not produce this domain/
+      // QS is generated (#3418), but not the MMSE: its concepts carry no
+      // test the generator models.
+      /Mini-Mental State Examination \(MMSE\) \(QS\) is not tabulated: none of its tests is one the generator models/
     );
     // The preset names its arms, so nothing is assumed about them.
     expect(panel.textContent).not.toMatch(/one arm, Study treatment/);

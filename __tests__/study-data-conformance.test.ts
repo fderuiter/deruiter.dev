@@ -5,17 +5,25 @@ import {
   CONFORMANCE_RULES,
   DEMO_301_STUDY,
   MESSY_DATA_SCENARIOS,
+  prepareStudyHandoff,
   runConformance,
   runPipeline,
   type ConformanceRule,
   type Dataset,
   type VariableMeta,
 } from "@/lib/study-data";
+import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
 
 const datasets = runPipeline(DEMO_301_STUDY, {
   seed: 301,
   nSubjects: 90,
 }).datasets;
+// Domains DEMO-301 does not collect, such as the adjudicated clinical
+// events (CE, #3417), come from the device study.
+const deviceDatasets = runPipeline(
+  prepareStudyHandoff(TAVR_SAVR_USDM).definition,
+  { seed: 3417, nSubjects: 120 }
+).datasets;
 function mini(
   name: string,
   layer: "sdtm" | "adam",
@@ -61,11 +69,14 @@ function baseFor(rule: ConformanceRule): {
   context: readonly Dataset[];
 } {
   if (rule.kind === "lineage") {
-    const good = datasets.find(
-      (item) =>
-        item.layer === rule.scope.layer && item.name === rule.scope.domain
-    )!;
-    return { good, context: datasets };
+    for (const pool of [datasets, deviceDatasets]) {
+      const good = pool.find(
+        (item) =>
+          item.layer === rule.scope.layer && item.name === rule.scope.domain
+      );
+      if (good) return { good, context: pool };
+    }
+    throw new Error(`No ${rule.scope.domain} dataset to check ${rule.id}.`);
   }
   if (rule.scope.layer === "sdtm") {
     const domain = datasets.find(

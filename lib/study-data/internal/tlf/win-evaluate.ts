@@ -29,11 +29,12 @@ import type {
 } from "../../types";
 import { formatPValue } from "./km-evaluate";
 import {
-  HCE_HIERARCHY,
   IDS,
   NET_BENEFIT_DECIMALS,
   WIN_RATIO_DECIMALS,
+  stratumLabel,
   type AnalysisSpec,
+  type HceComparison,
 } from "./plan";
 import type { RowSetRegistry } from "./row-sets";
 import { formatDecimal } from "./stats";
@@ -44,7 +45,11 @@ const NOT_ESTIMABLE = "NE";
 
 /** Whether the win-ratio evaluator, not the table engine, runs a method. */
 export function isWinRatioMethod(methodId: string): boolean {
-  return methodId === IDS.winComp || methodId === IDS.winStat;
+  return (
+    methodId === IDS.winComp ||
+    methodId === IDS.winStat ||
+    methodId === IDS.winStrata
+  );
 }
 
 /** What the win-ratio evaluator needs from the engine for one analysis. */
@@ -61,16 +66,16 @@ export interface WinRatioInput {
   readonly registry: RowSetRegistry;
 }
 
-/** The hierarchy the engine compares on, from the plan. */
-const HCE_COMPONENTS: readonly WinRatioComponent[] = HCE_HIERARCHY.map(
-  (component) => ({
+/** The components the engine compares on, from the analysis's hierarchy. */
+function componentsOf(hierarchy: HceComparison): WinRatioComponent[] {
+  return hierarchy.components.map((component) => ({
     id: component.paramcd,
     label: component.label,
     kind: component.kind,
     better: component.better,
-    ...("margin" in component ? { margin: component.margin } : {}),
-  })
-);
+    ...(component.margin === undefined ? {} : { margin: component.margin }),
+  }));
+}
 
 interface Side {
   readonly population: readonly RecordContext[];
@@ -96,7 +101,9 @@ function subjectsOf(
   side: Side,
   group: WinRatioSubject["group"],
   dataset: string,
-  variable: string
+  variable: string,
+  hierarchy: HceComparison,
+  components: readonly WinRatioComponent[]
 ): WinRatioSubject[] {
   const bySubject = new Map<string, RecordContext[]>();
   for (const record of side.records) {
@@ -109,7 +116,10 @@ function subjectsOf(
     return {
       id,
       group,
-      outcomes: HCE_COMPONENTS.map((component) => {
+      ...(hierarchy.strata.length === 0
+        ? {}
+        : { stratum: stratumOf(subject, hierarchy) }),
+      outcomes: components.map((component) => {
         const record = records.find(
           (item) => recordValue(item, dataset, "PARAMCD") === component.id
         );
@@ -127,6 +137,16 @@ function subjectsOf(
       }),
     };
   });
+}
+
+/** The label of the stratum an ADSL record's subject was randomised in. */
+function stratumOf(subject: RecordContext, hierarchy: HceComparison): string {
+  return stratumLabel(
+    hierarchy.strata.map((factor) => {
+      const value = recordValue(subject, "ADSL", factor.adslVariable);
+      return value === null ? null : String(value);
+    })
+  );
 }
 
 function count(value: number): {
@@ -192,6 +212,13 @@ export function evaluateWinRatio(input: WinRatioInput): ArsOperationResult[] {
   if (!isWinRatioMethod(spec.methodId)) {
     throw new RangeError(`${spec.methodId} is not a win-ratio method.`);
   }
+  const hierarchy = spec.hierarchy;
+  if (!hierarchy) {
+    throw new RangeError(
+      `${spec.id} does not say which hierarchy it compares.`
+    );
+  }
+  const components = componentsOf(hierarchy);
   const factor = input.factors.find(
     (item) => item.id === comparison.groupingId
   );
@@ -234,12 +261,29 @@ export function evaluateWinRatio(input: WinRatioInput): ArsOperationResult[] {
     ].filter((reference) => reference !== null);
 
   const subjects = [
-    ...subjectsOf(treatment, "treatment", spec.dataset, spec.variable),
-    ...subjectsOf(control, "control", spec.dataset, spec.variable),
+    ...subjectsOf(
+      treatment,
+      "treatment",
+      spec.dataset,
+      spec.variable,
+      hierarchy,
+      components
+    ),
+    ...subjectsOf(
+      control,
+      "control",
+      spec.dataset,
+      spec.variable,
+      hierarchy,
+      components
+    ),
   ];
   const result: WinRatioResult | null =
     treatment.population.length > 0 && control.population.length > 0
-      ? winStatistics(subjects, { components: HCE_COMPONENTS })
+      ? winStatistics(subjects, {
+          components,
+          weighting: hierarchy.weighting,
+        })
       : null;
 
   const results: ArsOperationResult[] = [];
@@ -264,7 +308,7 @@ export function evaluateWinRatio(input: WinRatioInput): ArsOperationResult[] {
     if (!componentFactor) {
       throw new RangeError(`${spec.id} needs a grouping by component.`);
     }
-    HCE_COMPONENTS.forEach((component, position) => {
+    components.forEach((component, position) => {
       const group = componentFactor.groups.find(
         (item) =>
           // The group whose clause selects this component's records.
@@ -276,7 +320,7 @@ export function evaluateWinRatio(input: WinRatioInput): ArsOperationResult[] {
         );
       }
       const upTo = new Set(
-        HCE_COMPONENTS.slice(0, position + 1).map((item) => item.id)
+        components.slice(0, position + 1).map((item) => item.id)
       );
       const recordsUpTo = (subjectIds: ReadonlySet<string> | null) =>
         both.filter(
@@ -302,6 +346,57 @@ export function evaluateWinRatio(input: WinRatioInput): ArsOperationResult[] {
         ...count(decided?.tiesAfter ?? 0),
       });
     });
+    return results;
+  }
+
+  if (spec.methodId === IDS.winStrata) {
+    const stratumFactor = input.factors.find(
+      (item) => item.id === IDS.hceStratum
+    );
+    if (!stratumFactor) {
+      throw new RangeError(`${spec.id} needs a grouping by stratum.`);
+    }
+    for (const group of stratumFactor.groups) {
+      const inStratum = both.filter((record) =>
+        matchesWhereClause(record, group)
+      );
+      const stratumPopulation = [
+        ...treatment.population,
+        ...control.population,
+      ].filter((record) => matchesWhereClause(record, group));
+      const counted = result?.strata.find(
+        (stratum) => stratum.stratum === group.name
+      );
+      const groups = [{ groupingId: stratumFactor.id, groupId: group.id }];
+      const stratumRows = [
+        registry.reference(
+          adsl,
+          stratumPopulation.map((record) => record.rowIndex),
+          "population"
+        ),
+        registry.reference(
+          data,
+          inStratum.map((record) => record.rowIndex),
+          "analysis"
+        ),
+      ].filter((reference) => reference !== null);
+      push(groups, stratumRows, {
+        operationId: IDS.winStrataPairs,
+        ...count(counted?.pairs ?? 0),
+      });
+      push(groups, stratumRows, {
+        operationId: IDS.winStrataWins,
+        ...count(counted?.wins ?? 0),
+      });
+      push(groups, stratumRows, {
+        operationId: IDS.winStrataLosses,
+        ...count(counted?.losses ?? 0),
+      });
+      push(groups, stratumRows, {
+        operationId: IDS.winStrataTies,
+        ...count(counted?.ties ?? 0),
+      });
+    }
     return results;
   }
 

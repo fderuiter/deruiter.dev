@@ -11,6 +11,7 @@ import {
   type WinRatioResult,
   type WinRatioStratumWeighting,
   type WinRatioSubject,
+  type WinRatioVariance,
 } from "@/lib/study-data";
 
 const DEATH: WinRatioComponent = {
@@ -331,10 +332,7 @@ const outcomesArbitrary = fc
     event: fc.boolean(),
     score: fc.option(fc.integer({ min: -20, max: 20 }), { nil: null }),
   })
-  .map(({ time, event, score }) => [
-    { value: time, event },
-    { value: score },
-  ]);
+  .map(({ time, event, score }) => [{ value: time, event }, { value: score }]);
 
 const subjectArbitrary = (index: number) =>
   fc
@@ -374,22 +372,18 @@ const weightingArbitrary = fc.constantFrom<WinRatioStratumWeighting>(
 );
 
 const smallNArmArbitrary = (group: "treatment" | "control", stratum: string) =>
-  fc
-    .integer({ min: 2, max: 4 })
-    .chain((count) =>
-      fc.tuple(
-        ...Array.from({ length: count }, (_, index) =>
-          outcomesArbitrary.map(
-            (outcomes): WinRatioSubject => ({
-              id: `${stratum}-${group[0].toUpperCase()}${index}`,
-              group,
-              stratum,
-              outcomes,
-            })
-          )
-        )
+  fc.integer({ min: 2, max: 4 }).chain((count) =>
+    fc.tuple(
+      ...Array.from({ length: count }, (_, index) =>
+        outcomesArbitrary.map((outcomes): WinRatioSubject => ({
+          id: `${stratum}-${group[0].toUpperCase()}${index}`,
+          group,
+          stratum,
+          outcomes,
+        }))
       )
-    );
+    )
+  );
 
 const smallNDatasetArbitrary = fc
   .constantFrom<readonly string[]>(["A"], ["A", "B"])
@@ -596,6 +590,17 @@ interface ReferenceFixture {
       readonly z: number;
       readonly p_two_sided: number;
     };
+    /** The unrestricted variance (#3576); null for a stratified fixture. */
+    readonly bebu_lachin?: {
+      readonly wins: number;
+      readonly losses: number;
+      readonly WR: number;
+      readonly WR_L: number;
+      readonly WR_U: number;
+      readonly se_log_wr: number;
+      readonly z: number;
+      readonly p_two_sided: number;
+    } | null;
   };
 }
 
@@ -627,7 +632,10 @@ function expectClose(actual: number | null, expected: number): void {
   );
 }
 
-function runFixture(fixture: ReferenceFixture): WinRatioResult {
+function runFixture(
+  fixture: ReferenceFixture,
+  winRatioVariance?: WinRatioVariance
+): WinRatioResult {
   const components: WinRatioComponent[] = fixture.components.map(
     (c, index) => ({
       id: `EP${index + 1}`,
@@ -655,6 +663,7 @@ function runFixture(fixture: ReferenceFixture): WinRatioResult {
     weighting: WEIGHTING[fixture.settings.weighting],
     alpha: fixture.settings.alpha,
     sided: fixture.settings.sided,
+    ...(winRatioVariance ? { winRatioVariance } : {}),
   });
 }
 
@@ -718,4 +727,79 @@ describe("parity with R (WINS win.stat and a separate Finkelstein-Schoenfeld)", 
       });
     }
   );
+});
+
+describe("the unrestricted win ratio variance (Bebu and Lachin 2016, #3576)", () => {
+  const unstratified = fixtures.filter(
+    (fixture) => fixture.expected.bebu_lachin
+  );
+
+  it("has reference values for every unstratified fixture", () => {
+    expect(unstratified.map((fixture) => fixture.name)).toEqual(
+      fixtures
+        .filter((fixture) => fixture.settings.weighting === "unstratified")
+        .map((fixture) => fixture.name)
+    );
+    expect(unstratified.length).toBeGreaterThan(0);
+  });
+
+  describe.each(unstratified.map((f) => [f.name, f] as const))(
+    "%s",
+    (_, fixture) => {
+      const expected = fixture.expected.bebu_lachin!;
+      const result = runFixture(fixture, "unrestricted");
+
+      it("matches the reference win ratio, limits and test", () => {
+        expect(result.wins).toBe(expected.wins);
+        expect(result.losses).toBe(expected.losses);
+        expectClose(result.winRatio.estimate, expected.WR);
+        expectClose(result.winRatio.lower, expected.WR_L);
+        expectClose(result.winRatio.upper, expected.WR_U);
+        expectClose(result.winRatio.standardError, expected.se_log_wr);
+        expectClose(result.winRatio.zStatistic, expected.z);
+        expectClose(result.winRatio.pValue, expected.p_two_sided);
+        expect(result.settings.winRatioVariance).toBe("unrestricted");
+      });
+
+      it("leaves every other statistic as the default computes it", () => {
+        const restricted = runFixture(fixture);
+        expect(restricted.settings.winRatioVariance).toBe("restricted");
+        expect(result.netBenefit).toEqual(restricted.netBenefit);
+        expect(result.winOdds).toEqual(restricted.winOdds);
+        expect(result.finkelsteinSchoenfeld).toEqual(
+          restricted.finkelsteinSchoenfeld
+        );
+        expect(result.winRatio.estimate).toBe(restricted.winRatio.estimate);
+      });
+    }
+  );
+
+  it("is refused for a stratified comparison", () => {
+    const stratified = fixtures.find(
+      (fixture) => fixture.settings.weighting !== "unstratified"
+    )!;
+    expect(() => runFixture(stratified, "unrestricted")).toThrow(
+      /defined for an unstratified comparison/
+    );
+  });
+
+  it("is not estimable without a win or a loss", () => {
+    const result = winStatistics(
+      [
+        { id: "T1", group: "treatment", outcomes: [{ value: 9 }] },
+        { id: "T2", group: "treatment", outcomes: [{ value: 8 }] },
+        { id: "C1", group: "control", outcomes: [{ value: 1 }] },
+        { id: "C2", group: "control", outcomes: [{ value: 2 }] },
+      ],
+      {
+        components: [
+          { id: "X", label: "X", kind: "continuous", better: "higher" },
+        ],
+        winRatioVariance: "unrestricted",
+      }
+    );
+    expect(result.losses).toBe(0);
+    expect(result.winRatio.standardError).toBeNull();
+    expect(result.winRatio.lower).toBeNull();
+  });
 });

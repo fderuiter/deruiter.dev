@@ -110,6 +110,36 @@ fs_test <- function(data, components, stratified) {
        p_two_sided = 2 * pnorm(-abs(z)))
 }
 
+# Bebu and Lachin (2016), "Large sample inference for a win ratio analysis
+# of a composite outcome based on prioritized components", Biostatistics
+# 17(1):178-187: the large-sample variance of the win ratio from each
+# subject's wins and losses, unrestricted (centred on the estimate, not on
+# the null). This follows WinRatio 1.0's winratio() term for term, applied to
+# the pairs this script decides with fs_better, so ties, margins and
+# horizons follow the same rules as the rest of the fixture. Defined for an
+# unstratified comparison only. On 2026-11-02, fed the same win-loss matrix,
+# it reproduced WinRatio 1.0's interval and z exactly (#3576).
+bebu_lachin <- function(data, components, alpha) {
+  trt <- which(data$arm == 1)
+  con <- which(data$arm == 2)
+  m <- outer(trt, con, Vectorize(function(a, b) fs_better(a, b, components, data)))
+  n1 <- length(trt)
+  n0 <- length(con)
+  n <- n1 + n0
+  wins <- sum(m > 0)
+  losses <- sum(m < 0)
+  wr <- wins / losses
+  v <- (sum(((rowSums(m > 0) - rowSums(m < 0) * wr) / n0)^2) * (n0 / n)^2 / n +
+        sum(((colSums(m > 0) - colSums(m < 0) * wr) / n1)^2) * (n1 / n)^2 / n) /
+    (losses / n^2)^2
+  se <- sqrt(v / wr^2 / n)
+  q <- qnorm(1 - alpha / 2)
+  z <- log(wr) / se
+  list(wins = wins, losses = losses, WR = wr, WR_L = wr * exp(-q * se),
+       WR_U = wr * exp(q * se), se_log_wr = se, z = z,
+       p_two_sided = 2 * pnorm(-abs(z)))
+}
+
 run_fixture <- function(name, data, components, weighting, alpha = 0.05) {
   ep_type <- vapply(components, function(c) c$kind, "")
   horizon <- min(vapply(components, function(c) if (c$kind == "tte") c$horizon else Inf, 0))
@@ -132,6 +162,14 @@ run_fixture <- function(name, data, components, weighting, alpha = 0.05) {
     con <- res$summary_ep[[paste0("Con_Endpoint", k)]]
     list(wins = sum(trt$Count), losses = sum(con$Count))
   })
+  unrestricted <- if (stratified) NULL else bebu_lachin(data, components, alpha)
+  if (!is.null(unrestricted)) {
+    # The pair-by-pair decisions must agree with WINS before anything is written.
+    stopifnot(
+      unrestricted$wins == sum(vapply(per_endpoint, function(e) e$wins, 0)),
+      unrestricted$losses == sum(vapply(per_endpoint, function(e) e$losses, 0))
+    )
+  }
   list(
     name = name,
     generator = "scripts/r/win-ratio-reference.R",
@@ -160,7 +198,9 @@ run_fixture <- function(name, data, components, weighting, alpha = 0.05) {
       win_odds = as.list(res$Win_statistic$Win_Odds),
       z = as.list(res$z_statistic[1, ]),
       p = as.list(res$p_value[1, ]),
-      finkelstein_schoenfeld = fs
+      finkelstein_schoenfeld = fs,
+      # The unrestricted variance (#3576), for unstratified fixtures only.
+      bebu_lachin = unrestricted
     )
   )
 }

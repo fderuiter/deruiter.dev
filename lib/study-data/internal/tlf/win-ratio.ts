@@ -27,6 +27,7 @@ import type {
   WinRatioStratumWeighting,
   WinRatioSubject,
   WinRatioSubjectResult,
+  WinRatioVariance,
   WinStatisticEstimate,
 } from "../../types";
 import { chiSquareSurvival } from "./km";
@@ -326,6 +327,37 @@ function crossProducts(
   return { kk, ll, kl };
 }
 
+/**
+ * The large-sample variance of log(win ratio) of Bebu and Lachin (2016),
+ * from each subject's wins and losses: the delta-method variance of W/L,
+ * with each treatment subject's term `w_i - l_i WR` over the controls and
+ * each control subject's over the treatment subjects, as the WinRatio R
+ * package computes it. `null` when there is no win or no loss, or a group
+ * has fewer than two subjects.
+ */
+function bebuLachinLogVariance(
+  rows: readonly { readonly k: number; readonly l: number }[],
+  columns: readonly { readonly k: number; readonly l: number }[],
+  wins: number,
+  losses: number
+): number | null {
+  const nt = rows.length;
+  const nc = columns.length;
+  if (wins === 0 || losses === 0 || nt < 2 || nc < 2) return null;
+  const n = nt + nc;
+  const ratio = wins / losses;
+  const lossRate = losses / (n * n);
+  const term = (
+    sums: readonly { readonly k: number; readonly l: number }[],
+    others: number
+  ) =>
+    (sums.reduce((sum, { k, l }) => sum + ((k - l * ratio) / others) ** 2, 0) *
+      (others / n) ** 2) /
+    n;
+  const v = (term(rows, nc) + term(columns, nt)) / (lossRate * lossRate);
+  return v / (ratio * ratio * n);
+}
+
 function logScaleEstimate(
   estimate: number,
   variance: number,
@@ -378,8 +410,15 @@ export function winStatistics(
     options.weighting ?? "unstratified";
   const alpha = options.alpha ?? WIN_RATIO_DEFAULT_ALPHA;
   const sided = options.sided ?? "two-sided";
+  const winRatioVariance: WinRatioVariance =
+    options.winRatioVariance ?? "restricted";
   if (!(alpha > 0 && alpha < 1)) {
     throw new RangeError(`alpha must be in (0, 1), got ${alpha}.`);
+  }
+  if (winRatioVariance === "unrestricted" && weighting !== "unstratified") {
+    throw new RangeError(
+      `The unrestricted win ratio variance is defined for an unstratified comparison, not "${weighting}" weighting.`
+    );
   }
   checkComponents(components);
   checkSubjects(subjects, components);
@@ -421,6 +460,7 @@ export function winStatistics(
     readonly losses: number;
     readonly pairs: number;
     readonly variance: number | null;
+    readonly unrestrictedLogVariance: number | null;
     readonly fsStatistic: number;
     readonly fsVariance: number;
   }
@@ -475,6 +515,10 @@ export function winStatistics(
         (pairs * byColumn.kl) / (nt - 1) / nc;
       variance = sigmaWin + sigmaLoss - 2 * sigmaCross;
     }
+    const unrestrictedLogVariance =
+      winRatioVariance === "unrestricted"
+        ? bebuLachinLogVariance(rows, columns, wins, losses)
+        : null;
 
     // Finkelstein-Schoenfeld: score every pair in the pooled stratum.
     const pooled = [...work.treatment, ...work.control];
@@ -507,6 +551,7 @@ export function winStatistics(
       losses,
       pairs,
       variance,
+      unrestrictedLogVariance,
       fsStatistic,
       fsVariance,
     });
@@ -559,18 +604,27 @@ export function winStatistics(
 
   const winRatioValue =
     weightedLosses > 0 ? weightedWins / weightedLosses : NaN;
+  const unrestricted =
+    winRatioVariance === "unrestricted"
+      ? (totals[0]?.unrestrictedLogVariance ?? null)
+      : null;
+  const notEstimable = {
+    ...NOT_ESTIMABLE,
+    estimate: Number.isFinite(winRatioValue) ? winRatioValue : null,
+  };
   const winRatio =
-    weightedVariance === null || weightedTheta === 0
-      ? {
-          ...NOT_ESTIMABLE,
-          estimate: Number.isFinite(winRatioValue) ? winRatioValue : null,
-        }
-      : logScaleEstimate(
-          winRatioValue,
-          weightedVariance / (weightedTheta * weightedTheta),
-          quantile,
-          sided
-        );
+    winRatioVariance === "unrestricted"
+      ? unrestricted === null
+        ? notEstimable
+        : logScaleEstimate(winRatioValue, unrestricted, quantile, sided)
+      : weightedVariance === null || weightedTheta === 0
+        ? notEstimable
+        : logScaleEstimate(
+            winRatioValue,
+            weightedVariance / (weightedTheta * weightedTheta),
+            quantile,
+            sided
+          );
 
   const winOddsValue = (pWin + pTie / 2) / (pLoss + pTie / 2);
   const winOdds =
@@ -669,6 +723,6 @@ export function winStatistics(
     netBenefit,
     winOdds,
     finkelsteinSchoenfeld,
-    settings: { weighting, alpha, sided },
+    settings: { weighting, alpha, sided, winRatioVariance },
   };
 }

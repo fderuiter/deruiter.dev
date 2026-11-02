@@ -1303,6 +1303,16 @@ export interface WinRatioSubject {
 export type WinRatioStratumWeighting =
   "unstratified" | "mantel-haenszel" | "equal";
 
+/**
+ * The variance the win ratio's limits and test use. `"restricted"` is the
+ * U-statistic variance of Dong et al. (2016) as the WINS R package computes
+ * it, with the win and loss indicators centred on their pooled mean.
+ * `"unrestricted"` is the large-sample variance of Bebu and Lachin (2016),
+ * centred on the estimated win ratio, as the WinRatio R package computes it;
+ * it is defined for an unstratified comparison only.
+ */
+export type WinRatioVariance = "restricted" | "unrestricted";
+
 /** Options for `winStatistics`. */
 export interface WinRatioOptions {
   /** The components, most important first. */
@@ -1313,6 +1323,11 @@ export interface WinRatioOptions {
   readonly alpha?: number;
   /** Sidedness of the p-values. Defaults to `"two-sided"`. */
   readonly sided?: "two-sided" | "one-sided";
+  /**
+   * The win ratio's variance. Defaults to `"restricted"`. The net benefit,
+   * the win odds and the Finkelstein-Schoenfeld test do not depend on it.
+   */
+  readonly winRatioVariance?: WinRatioVariance;
 }
 
 /** A win statistic with its limits and test, `null` where not estimable. */
@@ -1424,6 +1439,7 @@ export interface WinRatioResult {
     readonly weighting: WinRatioStratumWeighting;
     readonly alpha: number;
     readonly sided: "two-sided" | "one-sided";
+    readonly winRatioVariance: WinRatioVariance;
   };
 }
 

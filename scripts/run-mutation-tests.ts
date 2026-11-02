@@ -17,7 +17,8 @@
  *                  config/stryker/stryker.garmin.config.mjs the same way.
  *   --study-data   Run the weekly study data derivation scope (#2607) from
  *                  config/stryker/stryker.study-data.config.mjs the same way. Pass one
- *                  scope at most.
+ *                  scope at most. Set STRYKER_STUDY_DATA_LAYER to sdtm, adam or
+ *                  tlf to run one layer, as each weekly job does.
  * With no flags it runs every mutant, as before. The score threshold in
  * config/stryker/stryker.config.mjs applies identically in every mode.
  */

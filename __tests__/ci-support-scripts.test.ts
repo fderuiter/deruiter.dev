@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { execFileSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -220,6 +221,74 @@ describe("CI support scripts (#1767)", () => {
       expect(new Set(reports).size).toBe(scopes.length);
       const incremental = scopes.map((scope) => scope.default.incrementalFile);
       expect(new Set(incremental).size).toBe(scopes.length);
+    });
+  });
+
+  describe("weekly study data mutation shards", () => {
+    const config = path.join(
+      process.cwd(),
+      "config/stryker/stryker.study-data.config.mjs"
+    );
+    /** The config as a fresh process loads it with one layer named. */
+    const load = (layer: string) =>
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          [
+            "--input-type=module",
+            "-e",
+            `const m = await import(${JSON.stringify(
+              `file://${config}`
+            )}); console.log(JSON.stringify({ layers: m.STUDY_DATA_LAYERS, files: Object.keys(m.fileBreaks), mutate: m.default.mutate, report: m.ENGINES_JSON_REPORT, incremental: m.default.incrementalFile }));`,
+          ],
+          {
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "pipe"],
+            env: { ...process.env, STRYKER_STUDY_DATA_LAYER: layer },
+          }
+        )
+      ) as {
+        layers: string[];
+        files: string[];
+        mutate: string[];
+        report: string;
+        incremental: string;
+      };
+
+    it("splits every floor between the layers, once each (#2607)", () => {
+      const all = load("");
+      const shards = all.layers.map(load);
+      const sharded = shards.flatMap((shard) => shard.files);
+      expect(sharded.sort()).toEqual([...all.files].sort());
+      all.layers.forEach((layer, index) => {
+        const shard = shards[index];
+        expect(shard.files.length, layer).toBeGreaterThan(0);
+        expect(shard.mutate).toEqual(shard.files);
+        for (const file of shard.files) {
+          expect(file).toMatch(
+            new RegExp(`^lib/study-data/internal/${layer}/`)
+          );
+        }
+      });
+      const reports = [all, ...shards].map((shard) => shard.report);
+      expect(new Set(reports).size).toBe(reports.length);
+      const incremental = [all, ...shards].map((shard) => shard.incremental);
+      expect(new Set(incremental).size).toBe(incremental.length);
+    });
+
+    it("runs one weekly job per layer", () => {
+      const weekly = fs.readFileSync(
+        path.join(process.cwd(), ".github/workflows/mutation-weekly.yml"),
+        "utf8"
+      );
+      const { layers } = load("");
+      expect(weekly).toContain(`layer: [${layers.join(", ")}]`);
+      expect(weekly).toContain("STRYKER_STUDY_DATA_LAYER: ${{ matrix.layer }}");
+      expect(weekly).toContain("fail-fast: false");
+    });
+
+    it("refuses a layer it does not know", () => {
+      expect(() => load("bogus")).toThrow(/must be one of sdtm, adam, tlf/);
     });
   });
 

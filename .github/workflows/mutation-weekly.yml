@@ -59,11 +59,13 @@ jobs:
   # its scope and runtime. Its own config holds a break per file. A full
   # local run on 4 cores took about 23 minutes (Duck's 2,980 mutants are
   # most of it), so the bound leaves room for a slower runner. The Garmin
-  # engine runs in mutation-garmin below (#2564).
+  # engine runs in mutation-garmin below (#2564). Hosted runs took 19 to 31
+  # minutes until 2026-10-26; on 2026-10-27 and 2026-11-02 the same 2,420
+  # mutants were 91% done at the old 45-minute bound, so it is 75.
   mutation-engines:
     name: Mutation Gate (Game Engines)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
 
     steps:
       - name: Checkout Code
@@ -118,11 +120,21 @@ jobs:
 
   # #2607: about 1,900 mutants took 119 minutes on a loaded 4-core
   # container (the Garmin scope's 79 minutes there took 65 on a hosted
-  # runner), so this job gets the longest bound.
+  # runner). The scope grew to 2,688 mutants by 2026-11-02 and outran one
+  # 150-minute job, so it runs as one job per layer, each with the whole
+  # bound (config/stryker/stryker.study-data.config.mjs). Each job holds its
+  # layer's files to their floors, so every floor is still checked weekly.
   mutation-study-data:
-    name: Mutation Gate (Study Data Derivations)
+    name: Mutation Gate (Study Data Derivations, ${{ matrix.layer }})
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        # STUDY_DATA_LAYERS in config/stryker/stryker.study-data.config.mjs.
+        layer: [sdtm, adam, tlf]
+    env:
+      STRYKER_STUDY_DATA_LAYER: ${{ matrix.layer }}
 
     steps:
       - name: Checkout Code

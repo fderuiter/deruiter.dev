@@ -217,6 +217,58 @@ rec_components <- list(
 rec <- make_fixture(5, 40, 40, c("A"), rec_components)
 write_fixture(run_fixture("recovery-earlier-better", rec, rec_components, "unstratified"))
 
+# IPCW sensitivity reference values (#3578). WINS 1.5.1's win.stat takes
+# method = "ipcw": an inverse-probability-of-censoring weighted adjustment
+# with the Kaplan-Meier estimator of the censoring distribution (Dong et al.,
+# "The inverse-probability-of-censoring weighting (IPCW) adjusted win ratio
+# statistic", J Biopharm Stat 2020). WINS applies it only when every
+# endpoint is a time to an event and larger is better, and refuses
+# "ipcw_tau" otherwise, so the run uses the cv fixture's subjects with its
+# two time-to-event endpoints, death then hospitalisation, beside the
+# unadjusted result on the same hierarchy.
+#
+# NO TEST READS THIS FILE YET: the engine has no IPCW option, so the fixture
+# carries "consumed_by": null. A test that compares the engine with it, when
+# one exists, sets that field to its path.
+ipcw_components <- cv_components[1:2]
+ipcw_data <- cv[, c("arm", "id", "stratum", "Delta_1", "Delta_2", "Y_1", "Y_2")]
+ipcw_run <- function(method) {
+  res <- win.stat(
+    data = ipcw_data, ep_type = c("tte", "tte"), arm.name = c(1, 2),
+    priority = 1:2, tau = c(0, 0), np_direction = c("larger", "larger"),
+    horizon = 365, alpha = 0.05, digit = 10, pvalue = "two-sided",
+    stratum.weight = "unstratified", method = method, summary.print = FALSE
+  )
+  list(
+    win_ratio = as.list(res$Win_statistic$Win_Ratio),
+    net_benefit = as.list(res$Win_statistic$Net_Benefit),
+    win_odds = as.list(res$Win_statistic$Win_Odds),
+    z = as.list(res$z_statistic[1, ]),
+    p = as.list(res$p_value[1, ])
+  )
+}
+ipcw_dir <- file.path(out_dir, "sensitivity")
+dir.create(ipcw_dir, recursive = TRUE, showWarnings = FALSE)
+ipcw_fixture <- list(
+  name = "cv-tte-ipcw",
+  generator = "scripts/r/win-ratio-reference.R",
+  consumed_by = NULL,
+  reference = list(
+    r = R.version.string,
+    wins = as.character(packageVersion("WINS")),
+    method = "WINS::win.stat, method = 'ipcw' (Kaplan-Meier IPCW) and 'unadjusted', on the cv fixture's subjects and its two time-to-event endpoints"
+  ),
+  source_fixture = "cv-unstratified",
+  settings = list(weighting = "unstratified", alpha = 0.05, sided = "two-sided", horizon = 365),
+  components = lapply(ipcw_components, function(c) list(
+    kind = c$kind, better = c$better, margin = c$margin, horizon = c$horizon
+  )),
+  expected = list(unadjusted = ipcw_run("unadjusted"), ipcw = ipcw_run("ipcw"))
+)
+ipcw_path <- file.path(ipcw_dir, "cv-tte-ipcw.json")
+write(toJSON(ipcw_fixture, auto_unbox = TRUE, digits = I(17), pretty = TRUE, null = "null", na = "null"), ipcw_path)
+message("wrote ", ipcw_path)
+
 # Fixture 5: the seeded TAVR versus SAVR study (#3424). The subjects are
 # the study's Full Analysis Set as ADSL and ADHCE record them, written by
 # scripts/win-ratio-device-input.ts: death, disabling stroke and

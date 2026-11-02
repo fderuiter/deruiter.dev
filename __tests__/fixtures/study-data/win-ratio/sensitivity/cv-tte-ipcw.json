@@ -1,0 +1,87 @@
+{
+  "name": "cv-tte-ipcw",
+  "generator": "scripts/r/win-ratio-reference.R",
+  "consumed_by": null,
+  "reference": {
+    "r": "R version 4.3.3 (2024-02-29)",
+    "wins": "1.5.1",
+    "method": "WINS::win.stat, method = 'ipcw' (Kaplan-Meier IPCW) and 'unadjusted', on the cv fixture's subjects and its two time-to-event endpoints"
+  },
+  "source_fixture": "cv-unstratified",
+  "settings": {
+    "weighting": "unstratified",
+    "alpha": 0.050000000000000003,
+    "sided": "two-sided",
+    "horizon": 365
+  },
+  "components": [
+    {
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": 365
+    },
+    {
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": 365
+    }
+  ],
+  "expected": {
+    "unadjusted": {
+      "win_ratio": {
+        "WR": 1.3431372549019609,
+        "WR_L": 0.82660512713581114,
+        "WR_U": 2.18244192575541
+      },
+      "net_benefit": {
+        "NB": 0.1076923076923077,
+        "NB_L": -0.07079888083397548,
+        "NB_U": 0.28618349621859085
+      },
+      "win_odds": {
+        "WO": 1.2413793103448278,
+        "WO_L": 0.86869840952758148,
+        "WO_U": 1.7739443001746078
+      },
+      "z": {
+        "zstat_WR": 1.1911043559601926,
+        "zstat_NB": 1.1825404168780465,
+        "zstat_WO": 1.1871440509887707
+      },
+      "p": {
+        "pvalue_WR": 0.2336126200564268,
+        "pvalue_NB": 0.23699133845245157,
+        "pvalue_WO": 0.2351708051891539
+      }
+    },
+    "ipcw": {
+      "win_ratio": {
+        "WR": 1.4077578783063349,
+        "WR_L": 0.87508234945031205,
+        "WR_U": 2.2646808556685221
+      },
+      "net_benefit": {
+        "NB": 0.16014183033331536,
+        "NB_L": -0.064648129648966629,
+        "NB_U": 0.38493179031559732
+      },
+      "win_odds": {
+        "WO": 1.381354462258481,
+        "WO_L": 0.88116057273188209,
+        "WO_U": 2.165485167459964
+      },
+      "z": {
+        "zstat_WR": 1.4098741533403401,
+        "zstat_NB": 1.3962910972374456,
+        "zstat_WO": 1.4084143452444051
+      },
+      "p": {
+        "pvalue_WR": 0.15857684582890097,
+        "pvalue_NB": 0.16262685363341367,
+        "pvalue_WO": 0.15900841389546305
+      }
+    }
+  }
+}

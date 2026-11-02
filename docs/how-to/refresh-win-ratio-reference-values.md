@@ -100,4 +100,13 @@ pass. Commit the lockfile and the fixtures together.
 | `recovery-earlier-better` | time to recovery (earlier is better, 2-day margin, 60-day horizon) | margins on event times |
 | `win-ratio-device/tavr-savr-stratified-mh` | death, disabling stroke, rehospitalisation (times to event), VSFS change (5-point margin) | the seeded device study's Full Analysis Set, two surgical-risk strata, Mantel-Haenszel-type weights, a missing 1-year score tied by a custom `win.strategy`, and pair-by-pair stratum counts |
 
+`win-ratio/sensitivity/cv-tte-ipcw.json` holds IPCW sensitivity values
+(#3578): WINS's `win.stat` with `method = "ipcw"`, the Kaplan-Meier IPCW
+adjustment, beside the unadjusted result, on the `cv` subjects with their two
+time-to-event endpoints. WINS applies IPCW only when every endpoint is a time
+to an event and larger is better. The engine has no IPCW option yet, so no
+test reads this file, and its `consumed_by` field is `null` until one does.
+It sits in its own folder so the parity test, which reads every file in
+`win-ratio/`, leaves it out.
+
 The data are synthetic and say nothing about any treatment.

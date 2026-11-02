@@ -160,6 +160,8 @@ export default defineConfig({
         "lib/case-studies/types.ts",
         "lib/case-studies/index.ts",
         "lib/proof/index.ts",
+        "lib/arcade/manuals/types.ts",
+        "lib/arcade/manuals/index.ts",
       ],
       thresholds: coverageThresholdsDeferred
         ? undefined

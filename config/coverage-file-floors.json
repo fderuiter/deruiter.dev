@@ -1,0 +1,58 @@
+{
+  "$comment": "#3486 (G1 of #2513): every file under lib/ and hooks/ meets the floor on its own, so a well-covered folder cannot hide a weak file. The baseline lists the files below the floor when this check landed (merged CI coverage on main a32dd8d, 2026-11-02), each at its measured coverage. A baseline file may not fall below its recorded numbers; once it reaches the floor, remove its entry. Never add an entry for a new file. scripts/check-coverage-file-floors.ts enforces this in CI.",
+  "include": ["lib/", "hooks/"],
+  "floor": {
+    "statements": 60,
+    "branches": 50
+  },
+  "baseline": {
+    "hooks/useCrfService.ts": {
+      "statements": 91.3,
+      "branches": 41.66
+    },
+    "hooks/useGarminService.ts": {
+      "statements": 86.95,
+      "branches": 25
+    },
+    "lib/crf/presets/loader.ts": {
+      "statements": 50,
+      "branches": 100
+    },
+    "lib/db.ts": {
+      "statements": 51.21,
+      "branches": 27.77
+    },
+    "lib/dx/bundle-guard.ts": {
+      "statements": 45.45,
+      "branches": 39.34
+    },
+    "lib/dx/setup/prompts.ts": {
+      "statements": 11.11,
+      "branches": 13.33
+    },
+    "lib/neuro/mesh-generator.ts": {
+      "statements": 57.14,
+      "branches": 64.7
+    },
+    "lib/neuro/roi-analytics-worker.ts": {
+      "statements": 47.5,
+      "branches": 55
+    },
+    "lib/og-arcade-showcase.tsx": {
+      "statements": 38.46,
+      "branches": 0
+    },
+    "lib/retro-labyrinth/engine.ts": {
+      "statements": 53.38,
+      "branches": 45.37
+    },
+    "lib/services/crf-evaluator/lint-formula/handler.ts": {
+      "statements": 60,
+      "branches": 0
+    },
+    "lib/study-director-world/internal/handlers.ts": {
+      "statements": 92.3,
+      "branches": 38.88
+    }
+  }
+}

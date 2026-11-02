@@ -83,8 +83,13 @@ a gate or lowering a threshold:
 - `unit-gate` runs Vitest with coverage in three shards (`npm run
   test:ci:shard`), each with Chromium for the Mermaid corpus suite (#954).
   `unit-coverage` merges their blobs (`npm run test:ci:merge`) and enforces
-  the `vitest.config.mts` thresholds on the combined result. Property fuzzing
-  runs inside this suite.
+  the `vitest.config.mts` thresholds on the combined result. It then holds
+  every file under `lib/` and `hooks/` to a floor of its own, 60% statements
+  and 50% branches, with `scripts/check-coverage-file-floors.ts` (#3486). The
+  files below that floor when the check landed are listed in
+  `config/coverage-file-floors.json` at their coverage then; none may slip,
+  and an entry goes once its file reaches the floor. Property fuzzing runs
+  inside this suite.
 - `mutation-gate` runs Stryker. PRs and `main` pushes run incrementally
   against the newest report a `main` push saved; a PR that changes Stryker's
   configuration or the lockfile forces a full run, and

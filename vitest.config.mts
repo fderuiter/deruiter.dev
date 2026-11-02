@@ -120,7 +120,9 @@ export default defineConfig({
     maxWorkers: Math.max(1, Math.floor(os.cpus().length / 2)),
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html", "lcov"],
+      // json-summary feeds the per-file floor check (#3486,
+      // scripts/check-coverage-file-floors.ts).
+      reporter: ["text", "json", "json-summary", "html", "lcov"],
       exclude: [
         "**/node_modules/**",
         "**/e2e/**",
@@ -182,6 +184,16 @@ export default defineConfig({
               functions: 99,
               lines: 96,
             },
+            // #3486: set just below the merged CI coverage on main
+            // (a32dd8d, 2026-11-02: 96.62/88.49/99.94/97.89
+            // statements/branches/functions/lines). Raise as coverage
+            // grows; never lower.
+            "lib/clinical-platform/**": {
+              statements: 96,
+              branches: 88,
+              functions: 99,
+              lines: 97,
+            },
             "hooks/**": {
               lines: 80,
               functions: 80,
@@ -204,6 +216,16 @@ export default defineConfig({
               branches: 78,
               lines: 84,
               functions: 78,
+            },
+            // #3486: the study data viewers, measured as above at
+            // 82.68/74.06/81.90/84.54. They sit below the components/**
+            // aggregate, which other folders carry; this floor stops them
+            // sliding further. Raise as coverage grows; never lower.
+            "components/study-data/**": {
+              statements: 82,
+              branches: 74,
+              functions: 81,
+              lines: 84,
             },
             "app/**": {
               statements: 88,

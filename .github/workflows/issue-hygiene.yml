@@ -3,7 +3,9 @@ name: Issue Hygiene
 # Report-first hygiene for new and edited issues. An open issue without an
 # "acceptance" section gets the `needs-info` label and one comment that points
 # at docs/how-to/issue-governance.md. The job never closes, reopens,
-# prioritises or touches release holds.
+# prioritises or touches release holds. Structural issues (`type:epic`,
+# `type:initiative`, `type:portfolio`) are skipped: the governance doc gives
+# them an objective and a checklist instead, and no triage state.
 #
 # Until the repository variable ISSUE_HYGIENE_APPLY is "true", the job only
 # logs what it would do. Issue titles and bodies are untrusted: the body is
@@ -42,10 +44,15 @@ jobs:
         run: |
           set -euo pipefail
           marker='<!-- issue-hygiene:acceptance -->'
-          json=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body,state,comments)
+          json=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body,state,comments,labels)
 
           if [ "$(jq -r .state <<<"$json")" != "OPEN" ]; then
             echo "Issue #$ISSUE_NUMBER is not open. No action."
+            exit 0
+          fi
+
+          if jq -e '[.labels[].name] | any(. == "type:epic" or . == "type:initiative" or . == "type:portfolio")' <<<"$json" >/dev/null; then
+            echo "Issue #$ISSUE_NUMBER is a structural issue. No action."
             exit 0
           fi
 

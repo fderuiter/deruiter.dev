@@ -21,6 +21,7 @@ import type {
   StandardId,
 } from "../../types";
 import { ADAM_METHODS } from "../adam/specs";
+import { IDS } from "../tlf/plan";
 import { SDTM_METHODS } from "../sdtm/methods";
 import { MESSY_DATA_SCENARIOS } from "../synth/scenarios";
 
@@ -85,6 +86,26 @@ export interface ReviewerGuideOutput {
   readonly analyses: readonly ReviewerGuideAnalysis[];
 }
 
+/**
+ * A reviewer's note on the win ratio analysis of a hierarchical composite:
+ * what it estimates, the hierarchy, how pairs are formed and decided, the
+ * statistics, and what the analysis cannot tell a reader.
+ */
+export interface ReviewerGuideWinRatioNote {
+  /** The comparisons, each as the effect of one arm against the comparator. */
+  readonly estimand: readonly string[];
+  /** The components, most important first, each with its comparison rule. */
+  readonly hierarchy: readonly string[];
+  /** The randomisation strata pairs are formed within; empty when unstratified. */
+  readonly strata: readonly string[];
+  /** How pairs are formed and decided, from the ARS pairing method. */
+  readonly pairing: string;
+  /** The statistics and their variances, from the ARS win statistics method. */
+  readonly statistics: string;
+  readonly limitations: readonly string[];
+  readonly references: readonly string[];
+}
+
 /** One generated reviewer guide. */
 export interface ReviewerGuide {
   readonly kind: ReviewerGuideKind;
@@ -116,6 +137,11 @@ export interface ReviewerGuide {
    * passed to {@link buildReviewerGuides}.
    */
   readonly outputs?: readonly ReviewerGuideOutput[];
+  /**
+   * The win ratio method note. ADRG only, and only when the reporting event
+   * passed to {@link buildReviewerGuides} has win ratio analyses.
+   */
+  readonly winRatio?: ReviewerGuideWinRatioNote;
 }
 
 /** Both guides of a run. */
@@ -325,6 +351,67 @@ function outputIndex(event: ArsReportingEvent): ReviewerGuideOutput[] {
   });
 }
 
+/**
+ * What the win ratio cannot tell a reader, whatever the data: the three
+ * limitations #3422 names.
+ */
+const WIN_RATIO_LIMITATIONS: readonly string[] = [
+  "The statistics depend on follow-up. Under the Gehan rule a pair is compared on a time to an event only over the follow-up both subjects share, so a study with longer or shorter follow-up, or a different censoring pattern, gives different wins and losses for the same treatment effect. Censoring is assumed unrelated to outcome; the inverse-probability-of-censoring weighted statistics of Dong et al. are not computed here.",
+  "The first component that decides a pair dominates. A component counts only for the pairs tied on every component above it, so the result can rest almost entirely on one component. The pairs decided on each component in Table 14.2.3 show where the result comes from.",
+  "There is no inference on a single component. The wins and losses on each component describe where pairs were decided; they carry no confidence interval or test, and they are not the effect on that component, since which pairs reach a component depends on the components above it.",
+];
+
+const WIN_RATIO_REFERENCES: readonly string[] = [
+  "Pocock SJ, Ariti CA, Collier TJ, Wang D. The win ratio: a new approach to the analysis of composite endpoints in clinical trials based on clinical priorities. Eur Heart J. 2012;33(2):176-182.",
+  "Finkelstein DM, Schoenfeld DA. Combining mortality and longitudinal measures in clinical trials. Stat Med. 1999;18(11):1341-1354.",
+  "Bebu I, Lachin JM. Large sample inference for a win ratio analysis of a composite outcome based on prioritized components. Biostatistics. 2016;17(1):178-187.",
+  "Dong G, Li D, Ballerstedt S, Vandemeulebroecke M. A generalized analytic solution to the win ratio to analyze a composite endpoint considering the clinical importance order among components. Pharm Stat. 2016;15(5):430-437.",
+  "Dong G, Qiu J, Wang D, Vandemeulebroecke M. The stratified win ratio. J Biopharm Stat. 2018;28(4):778-796.",
+  "Dong G, Mao L, Huang B, Gamalo-Siebers M, Wang J, Yu G, Hoaglin DC. The inverse-probability-of-censoring weighting (IPCW) adjusted win ratio statistic: an unbiased estimator in the presence of independent censoring. J Biopharm Stat. 2020;30(5):882-899.",
+];
+
+/** The comparison an analysis names after its last colon, `A vs B`. */
+function comparisonOf(name: string): string {
+  return name.slice(name.lastIndexOf(":") + 1).trim();
+}
+
+/**
+ * The win ratio note, read from the reporting event: the comparisons of the
+ * win statistics analyses, the hierarchy and strata of their groupings and
+ * the text of their methods. Null when the event has no such analysis.
+ */
+function winRatioNote(
+  event: ArsReportingEvent
+): ReviewerGuideWinRatioNote | null {
+  const analyses = event.analyses.filter(
+    (analysis) => analysis.methodId === IDS.winStat
+  );
+  const pairing = event.methods.find((method) => method.id === IDS.winComp);
+  const statistics = event.methods.find((method) => method.id === IDS.winStat);
+  if (analyses.length === 0 || !pairing || !statistics) return null;
+  const sets = new Map(event.analysisSets.map((set) => [set.id, set.name]));
+  const grouping = (id: string) =>
+    event.analysisGroupings.find((factor) => factor.id === id);
+  const groupLabels = (id: string) =>
+    [...(grouping(id)?.groups ?? [])]
+      .sort((a, b) => a.order - b.order)
+      .map((group) => group.label ?? group.name);
+  return {
+    estimand: analyses.map((analysis) => {
+      const [treatment, control] = comparisonOf(analysis.name).split(" vs ");
+      const population =
+        sets.get(analysis.analysisSetId) ?? analysis.analysisSetId;
+      return `${treatment} against ${control} on the hierarchical composite, in the ${population}, summarised by the win ratio of ${treatment} over ${control}, with the net benefit and the win odds alongside.`;
+    }),
+    hierarchy: groupLabels(IDS.hceComponent),
+    strata: groupLabels(IDS.hceStratum),
+    pairing: pairing.description ?? "",
+    statistics: statistics.description ?? "",
+    limitations: WIN_RATIO_LIMITATIONS,
+    references: WIN_RATIO_REFERENCES,
+  };
+}
+
 function buildGuide(
   kind: ReviewerGuideKind,
   run: PipelineRun,
@@ -335,6 +422,8 @@ function buildGuide(
   const datasets = run.datasets.filter((dataset) => dataset.layer === layer);
   const names = new Set(datasets.map((dataset) => dataset.name));
   const stages = new Set(LAYER_STAGES[kind]);
+  const winRatio =
+    kind === "adrg" && reportingEvent ? winRatioNote(reportingEvent) : null;
   return {
     kind,
     title: `${TITLES[kind]}: ${manifest.studyId}`,
@@ -373,6 +462,7 @@ function buildGuide(
     ...(kind === "adrg" && reportingEvent
       ? { outputs: outputIndex(reportingEvent) }
       : {}),
+    ...(winRatio ? { winRatio } : {}),
   };
 }
 

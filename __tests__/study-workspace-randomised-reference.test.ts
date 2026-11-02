@@ -84,7 +84,7 @@ describe("the randomised TAVR versus SAVR reference study", () => {
       (endpoint) => endpoint.level.decode === "Primary Endpoint"
     );
     expect(primary.map((endpoint) => endpoint.id)).toEqual(["ep_rct_hce"]);
-    expect(primary[0].text).toMatch(/less than 5 points counting as a tie/);
+    expect(primary[0].text).toMatch(/5 points or less counting as a tie/);
     const components = (design.objectives ?? []).find(
       (objective) => objective.id === "obj_rct_components"
     );

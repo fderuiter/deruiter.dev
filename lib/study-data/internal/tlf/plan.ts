@@ -19,10 +19,13 @@ import type {
   ArsTerminologyExtension,
   ArsWhereClause,
   Dataset,
+  StratificationFactorDefinition,
   StudyDefinition,
   VisitDefinition,
+  WinRatioComponentKind,
+  WinRatioStratumWeighting,
 } from "../../types";
-import { DEMO_301_HIERARCHY } from "../adam/hierarchy";
+import { hierarchyFor } from "../adam/hierarchy";
 
 /** An analysis before it is run: everything but its results. */
 export type AnalysisSpec = Omit<ArsAnalysis, "results" | "rawDecimals"> & {
@@ -44,6 +47,12 @@ export type AnalysisSpec = Omit<ArsAnalysis, "results" | "rawDecimals"> & {
     readonly treatmentGroupId: string;
     readonly controlGroupId: string;
   };
+  /**
+   * For a win-ratio analysis, the hierarchy it compares on and how it
+   * combines strata. ARS 1.0 describes these only in the method text, so
+   * they are left out of the reporting event.
+   */
+  readonly hierarchy?: HceComparison;
 };
 
 /** Everything the engine needs to run the analyses. */
@@ -140,24 +149,103 @@ export const IDS = {
   winOddsUcl: "Mth_WinStat_WO_UCL",
   fsZ: "Mth_WinStat_FS_Z",
   fsP: "Mth_WinStat_FS_PVAL",
+  hceStratum: "AnlsGrouping_HCE_STRATUM",
+  winStrata: "Mth_WinStrata",
+  winStrataPairs: "Mth_WinStrata_PAIRS",
+  winStrataWins: "Mth_WinStrata_WINS",
+  winStrataLosses: "Mth_WinStrata_LOSSES",
+  winStrataTies: "Mth_WinStrata_TIES",
 } as const;
 
+/** One component of a hierarchical composite, as the analysis compares it. */
+export interface HceComparisonComponent {
+  /** The ADHCE parameter. */
+  readonly paramcd: string;
+  readonly label: string;
+  readonly kind: WinRatioComponentKind;
+  readonly better: "higher" | "lower";
+  /** The difference within which two values tie. */
+  readonly margin?: number;
+  /** The comparison rule, in words. */
+  readonly rule: string;
+}
+
+/** A study's hierarchical composite, as its win-ratio analyses compare it. */
+export interface HceComparison {
+  /** The components, most important first. */
+  readonly components: readonly HceComparisonComponent[];
+  /** How strata are combined. */
+  readonly weighting: WinRatioStratumWeighting;
+  /**
+   * The randomisation strata pairs are formed within, read from ADSL;
+   * empty when the analysis is unstratified.
+   */
+  readonly strata: readonly StratificationFactorDefinition[];
+}
+
 /**
- * The DEMO-301 hierarchical composite, most important component first, as
- * the analysis compares it: the ADHCE parameter, which values are better,
- * and the margin within which two values tie. Read from the DEMO-301
- * hierarchy spec, which ADHCE is derived from.
+ * The hierarchical composite a study's win-ratio analyses compare on: the
+ * components of its hierarchy spec, which ADHCE is derived from, and, when
+ * the spec is stratified, the study's randomisation strata.
  */
-export const HCE_HIERARCHY = DEMO_301_HIERARCHY.components.map(
-  ({ paramcd, label, kind, better, margin, rule }) => ({
-    paramcd,
-    label,
-    kind,
-    better,
-    ...(margin === undefined ? {} : { margin }),
-    rule,
-  })
-);
+export function hceComparison(definition: StudyDefinition): HceComparison {
+  const spec = hierarchyFor(definition);
+  return {
+    components: spec.components.map(
+      ({ paramcd, label, kind, better, margin, rule }) => ({
+        paramcd,
+        label,
+        kind,
+        better,
+        ...(margin === undefined ? {} : { margin }),
+        rule,
+      })
+    ),
+    weighting: spec.weighting,
+    strata:
+      spec.weighting === "unstratified"
+        ? []
+        : (definition.design.randomisation?.strata ?? []),
+  };
+}
+
+/**
+ * The strata of a stratified comparison: every combination of the factors'
+ * levels, in protocol order, with its label and the ADSL clause that
+ * selects it. Empty when the comparison is unstratified.
+ */
+export function hceStrata(comparison: HceComparison): readonly {
+  readonly label: string;
+  readonly clause: ArsWhereClause;
+}[] {
+  if (comparison.strata.length === 0) return [];
+  const combinations = comparison.strata.reduce<
+    readonly (readonly { variable: string; level: string }[])[]
+  >(
+    (partial, factor) =>
+      partial.flatMap((prefix) =>
+        factor.levels.map((level) => [
+          ...prefix,
+          { variable: factor.adslVariable, level },
+        ])
+      ),
+    [[]]
+  );
+  return combinations.map((levels) => {
+    const clauses = levels.map(({ variable, level }) =>
+      where("ADSL", variable, "EQ", level)
+    );
+    return {
+      label: stratumLabel(levels.map(({ level }) => level)),
+      clause: clauses.length === 1 ? clauses[0] : and(...clauses),
+    };
+  });
+}
+
+/** The label of the stratum a subject's factor levels put it in. */
+export function stratumLabel(levels: readonly (string | null)[]): string {
+  return levels.map((level) => level ?? "Missing").join(" / ");
+}
 
 /** Decimals the win ratio, win odds and their limits are shown with. */
 export const WIN_RATIO_DECIMALS = 2;
@@ -187,11 +275,13 @@ export function winRatioIds(armCode: string): {
   readonly subset: string;
   readonly components: string;
   readonly overall: string;
+  readonly strata: string;
 } {
   return {
     subset: `Dss_HCE_${armCode}`,
     components: `An_14_2_3_COMP_${armCode}`,
     overall: `An_14_2_3_WIN_${armCode}`,
+    strata: `An_14_2_3_STRAT_${armCode}`,
   };
 }
 
@@ -814,6 +904,60 @@ const METHODS: readonly ArsAnalysisMethod[] = [
 ];
 
 /**
+ * The methods of a plan whose win statistics are stratified: the pairing
+ * and win statistics methods say that pairs are formed within a stratum and
+ * how the strata are combined, and a method counts the pairs of each
+ * stratum.
+ */
+function stratifiedMethods(comparison: HceComparison): ArsAnalysisMethod[] {
+  const factors = comparison.strata
+    .map((factor) => `${factor.factor} (ADSL.${factor.adslVariable})`)
+    .join(" and ");
+  const weights =
+    comparison.weighting === "mantel-haenszel"
+      ? "Mantel-Haenszel-type weights, each stratum's pair counts weighted by 1 over its number of subjects, normalised to sum to 1 (Dong et al. 2018)"
+      : "equal weights";
+  const within = `Every treatment subject is paired with every control subject randomised in the same stratum of ${factors}; subjects of different strata are never paired.`;
+  return [
+    ...METHODS.map((method) => {
+      if (method.id === IDS.winComp) {
+        return {
+          ...method,
+          description: method.description.replace(
+            "Every treatment subject is paired with every control subject.",
+            within
+          ),
+        };
+      }
+      if (method.id === IDS.winStat) {
+        return {
+          ...method,
+          description: `${within} The counts and the win ratio, net benefit and win odds combine the strata with ${weights}, as the WINS R package computes them; their variances are the stratified U-statistic variances of Dong et al. (2018). The Finkelstein-Schoenfeld test scores every pair of subjects within each stratum and sums the scores and permutation variances over strata. The limits and p-values are formed as for the unstratified analysis: log scale for the win ratio and win odds, natural scale for the net benefit, two-sided at 95%. The win ratio and win odds are shown to ${WIN_RATIO_DECIMALS} decimals and the net benefit to ${NET_BENEFIT_DECIMALS}; a statistic is not estimable (NE) when a count it divides by is 0.`,
+        };
+      }
+      return method;
+    }),
+    {
+      id: IDS.winStrata,
+      name: "Pairs of each stratum",
+      label: "Pairs, wins, losses and ties within each randomisation stratum",
+      description: `${within} For each stratum: the treatment-control pairs, the pairs the treatment member won, the pairs the control member won and the pairs tied on every component, unweighted. The strata's counts sum to the unweighted totals.`,
+      operations: [
+        count(
+          IDS.winStrataPairs,
+          "Pairs",
+          "Treatment-control pairs in the stratum",
+          1
+        ),
+        count(IDS.winStrataWins, "Wins", "Pairs the treatment member won", 2),
+        count(IDS.winStrataLosses, "Losses", "Pairs the control member won", 3),
+        count(IDS.winStrataTies, "Ties", "Pairs tied on every component", 4),
+      ],
+    },
+  ];
+}
+
+/**
  * The reporting plan for a study: Table 14.1.1 (demographics, Safety Set),
  * Table 14.2.1 (systolic blood pressure change from baseline, Full Analysis
  * Set), Table 14.3.1 (TEAEs by system organ class and preferred term,
@@ -952,6 +1096,8 @@ export function buildReportingPlan(
   const compared = comparisons(definition);
   const arms = definition.design.arms;
   const trt01pGroup = (index: number) => `Grp_TRT01P_${index + 1}`;
+  const hce = hceComparison(definition);
+  const strata = hceStrata(hce);
   const winRatio = compared
     ? {
         groupings: [
@@ -963,7 +1109,7 @@ export function buildReportingPlan(
             groupingDataset: "ADHCE",
             groupingVariable: "PARAMCD",
             dataDriven: false,
-            groups: HCE_HIERARCHY.map((component, index) =>
+            groups: hce.components.map((component, index) =>
               group(
                 "HCE",
                 component.paramcd,
@@ -974,6 +1120,28 @@ export function buildReportingPlan(
               )
             ),
           },
+          ...(strata.length === 0
+            ? []
+            : [
+                {
+                  id: IDS.hceStratum,
+                  name: "Randomisation stratum",
+                  label: `Stratum at randomisation (${hce.strata.map((factor) => `ADSL.${factor.adslVariable}`).join(", ")})`,
+                  groupingDataset: "ADSL",
+                  groupingVariable: hce.strata[0].adslVariable,
+                  dataDriven: false,
+                  groups: strata.map((stratum, index) =>
+                    group(
+                      "STRATUM",
+                      String(index + 1),
+                      stratum.label,
+                      stratum.label,
+                      index + 1,
+                      stratum.clause
+                    )
+                  ),
+                },
+              ]),
         ] satisfies ArsGroupingFactor[],
         subsets: compared.treatments.map((treatment, index): ArsDataSubset => ({
           id: winRatioIds(arms[treatment].armCode).subset,
@@ -1007,6 +1175,7 @@ export function buildReportingPlan(
               analysisSetId: IDS.fas,
               dataSubsetId: ids.subset,
               comparison,
+              hierarchy: hce,
             };
             return [
               {
@@ -1047,6 +1216,28 @@ export function buildReportingPlan(
                   },
                 ],
               },
+              ...(strata.length === 0
+                ? []
+                : [
+                    {
+                      ...common,
+                      id: ids.strata,
+                      name: `Hierarchical composite, pairs by randomisation stratum: ${versus}`,
+                      methodId: IDS.winStrata,
+                      orderedGroupings: [
+                        {
+                          order: 1,
+                          groupingId: IDS.trt01p,
+                          resultsByGroup: false,
+                        },
+                        {
+                          order: 2,
+                          groupingId: IDS.hceStratum,
+                          resultsByGroup: true,
+                        },
+                      ],
+                    },
+                  ]),
             ];
           }),
         ],
@@ -1200,7 +1391,7 @@ export function buildReportingPlan(
       },
       ...winRatio.subsets,
     ],
-    methods: METHODS,
+    methods: strata.length === 0 ? METHODS : stratifiedMethods(hce),
     analyses: [
       bigN(
         IDS.demogN,

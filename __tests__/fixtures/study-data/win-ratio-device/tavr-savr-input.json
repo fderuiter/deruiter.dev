@@ -1,0 +1,1780 @@
+{
+  "name": "tavr-savr-stratified-mh",
+  "generator": "scripts/win-ratio-device-input.ts",
+  "study": "DEV-2026-VALVE-RCT",
+  "run": {
+    "seed": 3424,
+    "nSubjects": 240
+  },
+  "treatment": "TAVR System",
+  "control": "Surgical AVR",
+  "stratification": {
+    "variable": "STRAT1R",
+    "levels": ["STS-PROM below 4%", "STS-PROM 4% or above"]
+  },
+  "settings": {
+    "weighting": "MH-type",
+    "alpha": 0.05,
+    "sided": "two-sided"
+  },
+  "components": [
+    {
+      "paramcd": "HCEDTH",
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": null
+    },
+    {
+      "paramcd": "HCESTRK",
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": null
+    },
+    {
+      "paramcd": "HCEREHOS",
+      "kind": "tte",
+      "better": "larger",
+      "margin": 0,
+      "horizon": null
+    },
+    {
+      "paramcd": "HCEVSFS",
+      "kind": "continuous",
+      "better": "larger",
+      "margin": 5,
+      "horizon": null
+    }
+  ],
+  "subjects": [
+    {
+      "id": 1,
+      "usubjid": "DEV-2026-VALVE-RCT-0001",
+      "arm": 2,
+      "stratum": 2,
+      "values": [351, 351, 351, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 2,
+      "usubjid": "DEV-2026-VALVE-RCT-0002",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 3,
+      "usubjid": "DEV-2026-VALVE-RCT-0003",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 4,
+      "usubjid": "DEV-2026-VALVE-RCT-0005",
+      "arm": 1,
+      "stratum": 1,
+      "values": [335, 335, 335, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 5,
+      "usubjid": "DEV-2026-VALVE-RCT-0006",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 6,
+      "usubjid": "DEV-2026-VALVE-RCT-0007",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 7,
+      "usubjid": "DEV-2026-VALVE-RCT-0008",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 115, 23],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 8,
+      "usubjid": "DEV-2026-VALVE-RCT-0009",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 258, 365, 14],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 9,
+      "usubjid": "DEV-2026-VALVE-RCT-0010",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 180, 365, null],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 10,
+      "usubjid": "DEV-2026-VALVE-RCT-0012",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 11,
+      "usubjid": "DEV-2026-VALVE-RCT-0013",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 12,
+      "usubjid": "DEV-2026-VALVE-RCT-0014",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 30],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 13,
+      "usubjid": "DEV-2026-VALVE-RCT-0015",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 14,
+      "usubjid": "DEV-2026-VALVE-RCT-0016",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 20],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 15,
+      "usubjid": "DEV-2026-VALVE-RCT-0017",
+      "arm": 1,
+      "stratum": 1,
+      "values": [149, 149, 149, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 16,
+      "usubjid": "DEV-2026-VALVE-RCT-0018",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 17,
+      "usubjid": "DEV-2026-VALVE-RCT-0019",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 25],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 18,
+      "usubjid": "DEV-2026-VALVE-RCT-0020",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 276, 365, 23],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 19,
+      "usubjid": "DEV-2026-VALVE-RCT-0021",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 288, 365, 20],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 20,
+      "usubjid": "DEV-2026-VALVE-RCT-0023",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 20],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 21,
+      "usubjid": "DEV-2026-VALVE-RCT-0024",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 22,
+      "usubjid": "DEV-2026-VALVE-RCT-0025",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 23,
+      "usubjid": "DEV-2026-VALVE-RCT-0026",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 24,
+      "usubjid": "DEV-2026-VALVE-RCT-0027",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 25,
+      "usubjid": "DEV-2026-VALVE-RCT-0028",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 330, 365, 21],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 26,
+      "usubjid": "DEV-2026-VALVE-RCT-0029",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 27,
+      "usubjid": "DEV-2026-VALVE-RCT-0030",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 20],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 28,
+      "usubjid": "DEV-2026-VALVE-RCT-0031",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 29,
+      "usubjid": "DEV-2026-VALVE-RCT-0033",
+      "arm": 2,
+      "stratum": 1,
+      "values": [233, 233, 233, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 30,
+      "usubjid": "DEV-2026-VALVE-RCT-0035",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 27],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 31,
+      "usubjid": "DEV-2026-VALVE-RCT-0036",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 32,
+      "usubjid": "DEV-2026-VALVE-RCT-0037",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 33,
+      "usubjid": "DEV-2026-VALVE-RCT-0038",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 137, 13],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 34,
+      "usubjid": "DEV-2026-VALVE-RCT-0039",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 35,
+      "usubjid": "DEV-2026-VALVE-RCT-0040",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 36,
+      "usubjid": "DEV-2026-VALVE-RCT-0041",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 37,
+      "usubjid": "DEV-2026-VALVE-RCT-0042",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 49, 22],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 38,
+      "usubjid": "DEV-2026-VALVE-RCT-0043",
+      "arm": 2,
+      "stratum": 2,
+      "values": [75, 75, 75, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 39,
+      "usubjid": "DEV-2026-VALVE-RCT-0044",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 40,
+      "usubjid": "DEV-2026-VALVE-RCT-0045",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 41,
+      "usubjid": "DEV-2026-VALVE-RCT-0046",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 42,
+      "usubjid": "DEV-2026-VALVE-RCT-0047",
+      "arm": 1,
+      "stratum": 1,
+      "values": [343, 343, 343, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 43,
+      "usubjid": "DEV-2026-VALVE-RCT-0048",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 10],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 44,
+      "usubjid": "DEV-2026-VALVE-RCT-0049",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 45,
+      "usubjid": "DEV-2026-VALVE-RCT-0050",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 210, 28],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 46,
+      "usubjid": "DEV-2026-VALVE-RCT-0051",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 47,
+      "usubjid": "DEV-2026-VALVE-RCT-0052",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 14],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 48,
+      "usubjid": "DEV-2026-VALVE-RCT-0054",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 49,
+      "usubjid": "DEV-2026-VALVE-RCT-0055",
+      "arm": 2,
+      "stratum": 1,
+      "values": [358, 358, 358, 19],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 50,
+      "usubjid": "DEV-2026-VALVE-RCT-0057",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 51,
+      "usubjid": "DEV-2026-VALVE-RCT-0058",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 52,
+      "usubjid": "DEV-2026-VALVE-RCT-0059",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 53,
+      "usubjid": "DEV-2026-VALVE-RCT-0060",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 54,
+      "usubjid": "DEV-2026-VALVE-RCT-0061",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 354, 15],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 55,
+      "usubjid": "DEV-2026-VALVE-RCT-0062",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 56,
+      "usubjid": "DEV-2026-VALVE-RCT-0063",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 219, 365, 21],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 57,
+      "usubjid": "DEV-2026-VALVE-RCT-0064",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 58,
+      "usubjid": "DEV-2026-VALVE-RCT-0065",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 211, 27],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 59,
+      "usubjid": "DEV-2026-VALVE-RCT-0066",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 60,
+      "usubjid": "DEV-2026-VALVE-RCT-0067",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 61,
+      "usubjid": "DEV-2026-VALVE-RCT-0068",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 62,
+      "usubjid": "DEV-2026-VALVE-RCT-0069",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 63,
+      "usubjid": "DEV-2026-VALVE-RCT-0070",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 64,
+      "usubjid": "DEV-2026-VALVE-RCT-0071",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 191, 13],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 65,
+      "usubjid": "DEV-2026-VALVE-RCT-0072",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 27],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 66,
+      "usubjid": "DEV-2026-VALVE-RCT-0073",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 10],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 67,
+      "usubjid": "DEV-2026-VALVE-RCT-0074",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 68,
+      "usubjid": "DEV-2026-VALVE-RCT-0076",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 69,
+      "usubjid": "DEV-2026-VALVE-RCT-0077",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 70,
+      "usubjid": "DEV-2026-VALVE-RCT-0078",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 71,
+      "usubjid": "DEV-2026-VALVE-RCT-0080",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 10],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 72,
+      "usubjid": "DEV-2026-VALVE-RCT-0081",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 73,
+      "usubjid": "DEV-2026-VALVE-RCT-0082",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 74,
+      "usubjid": "DEV-2026-VALVE-RCT-0085",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 75,
+      "usubjid": "DEV-2026-VALVE-RCT-0086",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 25],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 76,
+      "usubjid": "DEV-2026-VALVE-RCT-0088",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 25],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 77,
+      "usubjid": "DEV-2026-VALVE-RCT-0089",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 78,
+      "usubjid": "DEV-2026-VALVE-RCT-0090",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 79,
+      "usubjid": "DEV-2026-VALVE-RCT-0091",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 80,
+      "usubjid": "DEV-2026-VALVE-RCT-0092",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 81,
+      "usubjid": "DEV-2026-VALVE-RCT-0093",
+      "arm": 1,
+      "stratum": 1,
+      "values": [347, 347, 347, 28],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 82,
+      "usubjid": "DEV-2026-VALVE-RCT-0094",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 83,
+      "usubjid": "DEV-2026-VALVE-RCT-0095",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 84,
+      "usubjid": "DEV-2026-VALVE-RCT-0098",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 85,
+      "usubjid": "DEV-2026-VALVE-RCT-0099",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 86,
+      "usubjid": "DEV-2026-VALVE-RCT-0100",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 360, 30],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 87,
+      "usubjid": "DEV-2026-VALVE-RCT-0101",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 88,
+      "usubjid": "DEV-2026-VALVE-RCT-0102",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 89,
+      "usubjid": "DEV-2026-VALVE-RCT-0103",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 90,
+      "usubjid": "DEV-2026-VALVE-RCT-0104",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 28],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 91,
+      "usubjid": "DEV-2026-VALVE-RCT-0105",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 92,
+      "usubjid": "DEV-2026-VALVE-RCT-0106",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 93,
+      "usubjid": "DEV-2026-VALVE-RCT-0107",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 220, 365, 23],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 94,
+      "usubjid": "DEV-2026-VALVE-RCT-0108",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 335, 21],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 95,
+      "usubjid": "DEV-2026-VALVE-RCT-0109",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 96,
+      "usubjid": "DEV-2026-VALVE-RCT-0110",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 14],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 97,
+      "usubjid": "DEV-2026-VALVE-RCT-0111",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 98,
+      "usubjid": "DEV-2026-VALVE-RCT-0112",
+      "arm": 2,
+      "stratum": 1,
+      "values": [181, 181, 181, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 99,
+      "usubjid": "DEV-2026-VALVE-RCT-0113",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 163, 18],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 100,
+      "usubjid": "DEV-2026-VALVE-RCT-0114",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 101,
+      "usubjid": "DEV-2026-VALVE-RCT-0115",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 102,
+      "usubjid": "DEV-2026-VALVE-RCT-0116",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 115, 18],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 103,
+      "usubjid": "DEV-2026-VALVE-RCT-0117",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 104,
+      "usubjid": "DEV-2026-VALVE-RCT-0118",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 105,
+      "usubjid": "DEV-2026-VALVE-RCT-0119",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 106,
+      "usubjid": "DEV-2026-VALVE-RCT-0120",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 107,
+      "usubjid": "DEV-2026-VALVE-RCT-0122",
+      "arm": 2,
+      "stratum": 2,
+      "values": [84, 84, 84, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 108,
+      "usubjid": "DEV-2026-VALVE-RCT-0123",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 109,
+      "usubjid": "DEV-2026-VALVE-RCT-0124",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 110,
+      "usubjid": "DEV-2026-VALVE-RCT-0125",
+      "arm": 1,
+      "stratum": 1,
+      "values": [338, 338, 338, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 111,
+      "usubjid": "DEV-2026-VALVE-RCT-0126",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 112,
+      "usubjid": "DEV-2026-VALVE-RCT-0128",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 113,
+      "usubjid": "DEV-2026-VALVE-RCT-0129",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 114,
+      "usubjid": "DEV-2026-VALVE-RCT-0130",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 127, 18],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 115,
+      "usubjid": "DEV-2026-VALVE-RCT-0131",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 116,
+      "usubjid": "DEV-2026-VALVE-RCT-0132",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 25],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 117,
+      "usubjid": "DEV-2026-VALVE-RCT-0133",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 16],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 118,
+      "usubjid": "DEV-2026-VALVE-RCT-0134",
+      "arm": 2,
+      "stratum": 2,
+      "values": [348, 348, 348, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 119,
+      "usubjid": "DEV-2026-VALVE-RCT-0135",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 120,
+      "usubjid": "DEV-2026-VALVE-RCT-0136",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 121,
+      "usubjid": "DEV-2026-VALVE-RCT-0137",
+      "arm": 2,
+      "stratum": 1,
+      "values": [351, 351, 351, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 122,
+      "usubjid": "DEV-2026-VALVE-RCT-0138",
+      "arm": 2,
+      "stratum": 2,
+      "values": [156, 156, 156, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 123,
+      "usubjid": "DEV-2026-VALVE-RCT-0139",
+      "arm": 1,
+      "stratum": 2,
+      "values": [354, 354, 49, 16],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 124,
+      "usubjid": "DEV-2026-VALVE-RCT-0140",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 125,
+      "usubjid": "DEV-2026-VALVE-RCT-0141",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 126,
+      "usubjid": "DEV-2026-VALVE-RCT-0142",
+      "arm": 1,
+      "stratum": 1,
+      "values": [342, 342, 342, 20],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 127,
+      "usubjid": "DEV-2026-VALVE-RCT-0143",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 128,
+      "usubjid": "DEV-2026-VALVE-RCT-0145",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 129,
+      "usubjid": "DEV-2026-VALVE-RCT-0146",
+      "arm": 2,
+      "stratum": 1,
+      "values": [357, 357, 357, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 130,
+      "usubjid": "DEV-2026-VALVE-RCT-0148",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 131,
+      "usubjid": "DEV-2026-VALVE-RCT-0149",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 132,
+      "usubjid": "DEV-2026-VALVE-RCT-0150",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 133,
+      "usubjid": "DEV-2026-VALVE-RCT-0151",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 134,
+      "usubjid": "DEV-2026-VALVE-RCT-0152",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 135,
+      "usubjid": "DEV-2026-VALVE-RCT-0153",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 136,
+      "usubjid": "DEV-2026-VALVE-RCT-0154",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 137,
+      "usubjid": "DEV-2026-VALVE-RCT-0155",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 51, 365, 18],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 138,
+      "usubjid": "DEV-2026-VALVE-RCT-0156",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 139,
+      "usubjid": "DEV-2026-VALVE-RCT-0157",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 86, 21],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 140,
+      "usubjid": "DEV-2026-VALVE-RCT-0158",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 197, 16],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 141,
+      "usubjid": "DEV-2026-VALVE-RCT-0159",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 142,
+      "usubjid": "DEV-2026-VALVE-RCT-0160",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 143,
+      "usubjid": "DEV-2026-VALVE-RCT-0161",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 144,
+      "usubjid": "DEV-2026-VALVE-RCT-0162",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 145,
+      "usubjid": "DEV-2026-VALVE-RCT-0163",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 62, 26],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 146,
+      "usubjid": "DEV-2026-VALVE-RCT-0164",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 147,
+      "usubjid": "DEV-2026-VALVE-RCT-0165",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 189, 24],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 148,
+      "usubjid": "DEV-2026-VALVE-RCT-0166",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 149,
+      "usubjid": "DEV-2026-VALVE-RCT-0167",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 150,
+      "usubjid": "DEV-2026-VALVE-RCT-0168",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 98, 19],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 151,
+      "usubjid": "DEV-2026-VALVE-RCT-0169",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 113, 365, 13],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 152,
+      "usubjid": "DEV-2026-VALVE-RCT-0170",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 153,
+      "usubjid": "DEV-2026-VALVE-RCT-0171",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 30],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 154,
+      "usubjid": "DEV-2026-VALVE-RCT-0172",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 236, 365, 20],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 155,
+      "usubjid": "DEV-2026-VALVE-RCT-0174",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 223, 20],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 156,
+      "usubjid": "DEV-2026-VALVE-RCT-0175",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 29],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 157,
+      "usubjid": "DEV-2026-VALVE-RCT-0176",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 158,
+      "usubjid": "DEV-2026-VALVE-RCT-0177",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 159,
+      "usubjid": "DEV-2026-VALVE-RCT-0178",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 160,
+      "usubjid": "DEV-2026-VALVE-RCT-0179",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 161,
+      "usubjid": "DEV-2026-VALVE-RCT-0180",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 162,
+      "usubjid": "DEV-2026-VALVE-RCT-0181",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 163,
+      "usubjid": "DEV-2026-VALVE-RCT-0182",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 164,
+      "usubjid": "DEV-2026-VALVE-RCT-0183",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, null],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 165,
+      "usubjid": "DEV-2026-VALVE-RCT-0184",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 166,
+      "usubjid": "DEV-2026-VALVE-RCT-0185",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 167,
+      "usubjid": "DEV-2026-VALVE-RCT-0186",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 250, 365, 24],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 168,
+      "usubjid": "DEV-2026-VALVE-RCT-0187",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 169,
+      "usubjid": "DEV-2026-VALVE-RCT-0188",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 14],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 170,
+      "usubjid": "DEV-2026-VALVE-RCT-0189",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 14],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 171,
+      "usubjid": "DEV-2026-VALVE-RCT-0190",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 172,
+      "usubjid": "DEV-2026-VALVE-RCT-0191",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 173,
+      "usubjid": "DEV-2026-VALVE-RCT-0192",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 25],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 174,
+      "usubjid": "DEV-2026-VALVE-RCT-0193",
+      "arm": 2,
+      "stratum": 2,
+      "values": [179, 179, 179, null],
+      "events": [1, 0, 0, null]
+    },
+    {
+      "id": 175,
+      "usubjid": "DEV-2026-VALVE-RCT-0194",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 176,
+      "usubjid": "DEV-2026-VALVE-RCT-0195",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 176, 25],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 177,
+      "usubjid": "DEV-2026-VALVE-RCT-0196",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 178,
+      "usubjid": "DEV-2026-VALVE-RCT-0197",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 179,
+      "usubjid": "DEV-2026-VALVE-RCT-0198",
+      "arm": 1,
+      "stratum": 1,
+      "values": [337, 337, 337, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 180,
+      "usubjid": "DEV-2026-VALVE-RCT-0200",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 16, 15],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 181,
+      "usubjid": "DEV-2026-VALVE-RCT-0201",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 12],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 182,
+      "usubjid": "DEV-2026-VALVE-RCT-0202",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 11],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 183,
+      "usubjid": "DEV-2026-VALVE-RCT-0204",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 66, 21],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 184,
+      "usubjid": "DEV-2026-VALVE-RCT-0205",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 185,
+      "usubjid": "DEV-2026-VALVE-RCT-0206",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 186,
+      "usubjid": "DEV-2026-VALVE-RCT-0207",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 35, 19],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 187,
+      "usubjid": "DEV-2026-VALVE-RCT-0208",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 29],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 188,
+      "usubjid": "DEV-2026-VALVE-RCT-0209",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 27],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 189,
+      "usubjid": "DEV-2026-VALVE-RCT-0210",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 190,
+      "usubjid": "DEV-2026-VALVE-RCT-0211",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 191,
+      "usubjid": "DEV-2026-VALVE-RCT-0212",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 17],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 192,
+      "usubjid": "DEV-2026-VALVE-RCT-0213",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 300, 11],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 193,
+      "usubjid": "DEV-2026-VALVE-RCT-0214",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 27],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 194,
+      "usubjid": "DEV-2026-VALVE-RCT-0215",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 335, 365, 17],
+      "events": [0, 1, 0, null]
+    },
+    {
+      "id": 195,
+      "usubjid": "DEV-2026-VALVE-RCT-0216",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 196,
+      "usubjid": "DEV-2026-VALVE-RCT-0217",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 13],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 197,
+      "usubjid": "DEV-2026-VALVE-RCT-0218",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 27],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 198,
+      "usubjid": "DEV-2026-VALVE-RCT-0219",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 199,
+      "usubjid": "DEV-2026-VALVE-RCT-0220",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 24],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 200,
+      "usubjid": "DEV-2026-VALVE-RCT-0221",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 28],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 201,
+      "usubjid": "DEV-2026-VALVE-RCT-0222",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 29],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 202,
+      "usubjid": "DEV-2026-VALVE-RCT-0223",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 203,
+      "usubjid": "DEV-2026-VALVE-RCT-0224",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 204,
+      "usubjid": "DEV-2026-VALVE-RCT-0225",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 205,
+      "usubjid": "DEV-2026-VALVE-RCT-0226",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 206,
+      "usubjid": "DEV-2026-VALVE-RCT-0227",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 365, 22],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 207,
+      "usubjid": "DEV-2026-VALVE-RCT-0228",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 28],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 208,
+      "usubjid": "DEV-2026-VALVE-RCT-0229",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 18],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 209,
+      "usubjid": "DEV-2026-VALVE-RCT-0230",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 26],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 210,
+      "usubjid": "DEV-2026-VALVE-RCT-0231",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 23],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 211,
+      "usubjid": "DEV-2026-VALVE-RCT-0232",
+      "arm": 1,
+      "stratum": 2,
+      "values": [365, 365, 365, 21],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 212,
+      "usubjid": "DEV-2026-VALVE-RCT-0233",
+      "arm": 2,
+      "stratum": 2,
+      "values": [365, 365, 21, 23],
+      "events": [0, 0, 1, null]
+    },
+    {
+      "id": 213,
+      "usubjid": "DEV-2026-VALVE-RCT-0235",
+      "arm": 1,
+      "stratum": 1,
+      "values": [365, 365, 365, 19],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 214,
+      "usubjid": "DEV-2026-VALVE-RCT-0237",
+      "arm": 2,
+      "stratum": 1,
+      "values": [358, 358, 358, 20],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 215,
+      "usubjid": "DEV-2026-VALVE-RCT-0238",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 16],
+      "events": [0, 0, 0, null]
+    },
+    {
+      "id": 216,
+      "usubjid": "DEV-2026-VALVE-RCT-0240",
+      "arm": 2,
+      "stratum": 1,
+      "values": [365, 365, 365, 15],
+      "events": [0, 0, 0, null]
+    }
+  ]
+}

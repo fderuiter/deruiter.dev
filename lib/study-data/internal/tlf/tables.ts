@@ -16,7 +16,8 @@ import type {
 import { ResultIndex } from "./evaluate";
 import {
   AGE_GROUPS,
-  HCE_HIERARCHY,
+  hceComparison,
+  hceStrata,
   IDS,
   SEX_GROUPS,
   SUMMARY_OPERATIONS,
@@ -373,6 +374,8 @@ function winStatistics(
   if (!compared) return null;
   const arms = definition.design.arms;
   const control = arms[compared.control];
+  const hce = hceComparison(definition);
+  const strata = hceStrata(hce);
   const fas = builder.columns(IDS.cfbN, IDS.trt01p);
   const columns = compared.treatments.map((treatment, position) => ({
     ...fas[treatment],
@@ -387,7 +390,7 @@ function winStatistics(
     label: string,
     cell: (analyses: ReturnType<typeof winRatioIds>) => TlfCell
   ): TlfRow => ({ id, label, cells: ids.map(cell) });
-  const sections: TlfSection[] = HCE_HIERARCHY.map((component, position) => {
+  const sections: TlfSection[] = hce.components.map((component, position) => {
     const id = `s${position + 1}`;
     const groups = [
       { groupingId: IDS.hceComponent, groupId: `Grp_HCE_${component.paramcd}` },
@@ -457,7 +460,34 @@ function winStatistics(
       ),
     ],
   });
+  strata.forEach((stratum, position) => {
+    const id = `s${sections.length + 1}`;
+    const groups = [
+      { groupingId: IDS.hceStratum, groupId: `Grp_STRATUM_${position + 1}` },
+    ];
+    sections.push({
+      id,
+      label: `Stratum: ${stratum.label}`,
+      rows: [
+        row(`${id}r1`, "Pairs compared", (analyses) =>
+          builder.value(analyses.strata, IDS.winStrataPairs, groups)
+        ),
+        row(`${id}r2`, "Wins", (analyses) =>
+          builder.value(analyses.strata, IDS.winStrataWins, groups)
+        ),
+        row(`${id}r3`, "Losses", (analyses) =>
+          builder.value(analyses.strata, IDS.winStrataLosses, groups)
+        ),
+        row(`${id}r4`, "Ties", (analyses) =>
+          builder.value(analyses.strata, IDS.winStrataTies, groups)
+        ),
+      ],
+    });
+  });
   const controlN = builder.columns(IDS.cfbN, IDS.trt01p)[compared.control];
+  const factors = hce.strata
+    .map((factor) => `${factor.factor} (${factor.adslVariable})`)
+    .join(" and ");
   return {
     outputId: "Out_14_2_3",
     displayId: "Disp_14_2_3",
@@ -469,10 +499,14 @@ function winStatistics(
     columns,
     sections,
     footnotes: [
-      `N is the number of subjects in the Full Analysis Set (ITTFL = Y) in the arm, by planned treatment (TRT01P). Each arm is compared with ${control.name} (N=${controlN.bigN}): every subject of the arm is paired with every subject of ${control.name}.`,
-      `A pair is decided on the first component, in the order shown, on which one subject is better: ${HCE_HIERARCHY.map((component) => `${component.label} (${component.rule})`).join("; ")}. Wins are pairs decided in favour of the subject of the arm, losses pairs decided in favour of the ${control.name} subject.`,
+      strata.length === 0
+        ? `N is the number of subjects in the Full Analysis Set (ITTFL = Y) in the arm, by planned treatment (TRT01P). Each arm is compared with ${control.name} (N=${controlN.bigN}): every subject of the arm is paired with every subject of ${control.name}.`
+        : `N is the number of subjects in the Full Analysis Set (ITTFL = Y) in the arm, by planned treatment (TRT01P). Each arm is compared with ${control.name} (N=${controlN.bigN}): every subject of the arm is paired with every subject of ${control.name} randomised in the same stratum of ${factors}.`,
+      `A pair is decided on the first component, in the order shown, on which one subject is better: ${hce.components.map((component) => `${component.label} (${component.rule})`).join("; ")}. Wins are pairs decided in favour of the subject of the arm, losses pairs decided in favour of the ${control.name} subject.`,
       "Times to an event follow the Gehan rule: a pair is decided only when the earlier time is an event, so a censored time ties with any later time. A missing value ties with every value on that component.",
-      "Win ratio: wins over losses. Net benefit: wins less losses over pairs. Win odds: wins plus half the ties over losses plus half the ties. Confidence intervals use the U-statistic variances of Dong et al. (2016), on the log scale for the win ratio and win odds. Both p-values are two-sided.",
+      strata.length === 0
+        ? "Win ratio: wins over losses. Net benefit: wins less losses over pairs. Win odds: wins plus half the ties over losses plus half the ties. Confidence intervals use the U-statistic variances of Dong et al. (2016), on the log scale for the win ratio and win odds. Both p-values are two-sided."
+        : `Pairs, wins, losses and ties are counted within each stratum; the strata's counts sum to the counts for all components. The win ratio, net benefit and win odds combine the strata with ${hce.weighting === "mantel-haenszel" ? "Mantel-Haenszel-type weights, each stratum's counts weighted by 1 over its number of subjects" : "equal weights"}: win ratio, weighted wins over weighted losses; net benefit, weighted wins less weighted losses over weighted pairs; win odds, weighted wins plus half the weighted ties over weighted losses plus half the weighted ties. Confidence intervals use the stratified U-statistic variances of Dong et al. (2018), on the log scale for the win ratio and win odds. The Finkelstein-Schoenfeld test sums the scores and variances of the strata. Both p-values are two-sided.`,
       "NE: not estimable.",
       "Source: ADSL, ADHCE.",
     ],

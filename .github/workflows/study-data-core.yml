@@ -46,13 +46,11 @@ on:
       - "lib/clinical-standards/**"
       - "scripts/study-data-core*"
       - ".github/workflows/study-data-core.yml"
+  # Every pull request, with no paths filter: the ruleset requires this
+  # check, and a required check that never starts blocks the merge. The
+  # `scope` job skips CORE when nothing it reads changed; GitHub counts a
+  # skipped required job as passing.
   pull_request:
-    paths:
-      - "lib/study-data/**"
-      - "lib/crf/**"
-      - "lib/clinical-standards/**"
-      - "scripts/study-data-core*"
-      - ".github/workflows/study-data-core.yml"
   schedule:
     - cron: "17 6 * * 1"
   workflow_dispatch:
@@ -70,8 +68,56 @@ env:
   CORE_COMMIT: 2a90a3872a7e3b07c15abe84744026c94a7a04b0
 
 jobs:
+  # Decides whether CORE runs. On a pull request, CORE runs when the PR
+  # changes a path the push trigger lists; every other event runs it. Any
+  # doubt (an unexpected checkout, a failed diff) runs CORE rather than
+  # skipping it, so this job can never wave a relevant change through.
+  scope:
+    name: CDISC CORE scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The pull_request merge commit and both parents, as ci.yml's
+          # run policy diffs it (scripts/ci-run-policy.mjs).
+          fetch-depth: 2
+
+      - name: Decide Whether CORE Runs
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -u
+          run=true
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            parents="$(git rev-list --parents -n 1 HEAD 2>/dev/null || true)"
+            set -- $parents
+            if [ "$#" -eq 3 ] && [ "$3" = "$PR_HEAD_SHA" ] &&
+              changed="$(git diff --name-only --no-renames HEAD^1 HEAD)"; then
+              # The same paths as the push trigger above.
+              if printf '%s\n' "$changed" | grep -qE '^(lib/study-data/|lib/crf/|lib/clinical-standards/|scripts/study-data-core|\.github/workflows/study-data-core\.yml$)'; then
+                echo "The PR changes a path CORE reads."
+              else
+                run=false
+                echo "The PR changes nothing CORE reads, so CORE is skipped."
+              fi
+            else
+              echo "::warning::Could not read the PR's changed files; running CORE."
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
   core:
     name: CDISC CORE (SDTMIG 3.4, USDM 4.0)
+    needs: scope
+    # A failed scope job skips nothing: only an explicit "false"
+    # skips CORE.
+    if: ${{ !cancelled() && needs.scope.outputs.run != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
 

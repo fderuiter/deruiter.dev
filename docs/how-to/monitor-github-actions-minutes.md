@@ -98,14 +98,17 @@ a gate or lowering a threshold:
   derivations run in `mutation-study-data`, one job per layer (`sdtm`, `adam`,
   `tlf`, set by `STRYKER_STUDY_DATA_LAYER`), each bounded at 150 minutes, with
   their breaks in `config/stryker/stryker.study-data.config.mjs` (#2607).
-- `study-data-core.yml` is a separate workflow, not a gate in `ci.yml`. It
+- `study-data-core.yml` is a separate workflow, not a gate in `ci.yml`, and
+  its CORE job is the ruleset's second required check. It
   runs the CDISC Rules Engine (CORE) on the Study Data Pipeline's seed-301
   SDTM and the USDM fixture, and fails on any finding that
   `scripts/study-data-core-allowlist.json` does not explain (#2603). It
   also runs CORE over all 16 "Inject an issue" scenarios and fails when the
-  committed findings are stale (#2992), four views at a time. It runs only
-  on changes to `lib/study-data/**` or its own files, and weekly, bounded
-  at 45 minutes.
+  committed findings are stale (#2992), four views at a time. It starts on
+  every pull request, but a `scope` job of a few seconds skips CORE unless
+  the pull request changes `lib/study-data/**`, `lib/crf/**`,
+  `lib/clinical-standards/**` or its own files. It also runs on those
+  changes to `main` and weekly, bounded at 45 minutes.
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

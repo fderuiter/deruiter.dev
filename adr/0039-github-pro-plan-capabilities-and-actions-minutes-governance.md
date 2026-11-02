@@ -341,3 +341,23 @@ on `ubuntu-latest` with `timeout-minutes`, third-party actions are pinned by
 SHA and container images by digest, and the concurrency group still matches `cancel-closed-pr-ci.yml`.
 [Monitor GitHub Actions Minutes](../docs/how-to/monitor-github-actions-minutes.md)
 lists the current jobs and which pull requests run which gates.
+
+## Amendment 2026-11-02: CDISC CORE as a Second Required Check
+
+Fred made the CDISC CORE job a required check on 2026-11-02. The ruleset
+**`main v2`** (ID `26374165`) requires `Merge Gate (Required Checks Summary)`
+and `CDISC CORE (SDTMIG 3.4, USDM 4.0)`. It replaces the ruleset `main`, which
+is disabled, and changes nothing else. So the 2026-10-02 invariant that Merge
+Gate is the single required check now reads: Merge Gate and the CORE job are
+the only required checks, and both fail closed.
+
+CORE stays a separate workflow, because it reads only `lib/study-data`,
+`lib/crf`, `lib/clinical-standards` and its own files, and installs its own
+engine. A required check must report on every pull request, so
+`study-data-core.yml` drops its `pull_request` paths filter. A `scope` job of
+a few seconds diffs the merge commit as `scripts/ci-run-policy.mjs` does. It
+runs CORE when the pull request changes one of those paths and skips it
+otherwise, and GitHub counts a skipped required job as passing. Any doubt,
+such as an unexpected checkout or a failed diff, runs CORE rather than
+skipping it. The weekly train still checks Merge Gate on `main`; CORE also
+runs on `main` pushes that change its paths.

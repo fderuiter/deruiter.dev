@@ -117,20 +117,31 @@ In the Vercel dashboard for the `portfolio` project:
 
 ### Main Branch Protection
 
-Since 2026-10-20, `main` is governed by the repository ruleset **`main`**
-(ID `25476036`, targeting the default branch). It replaced the classic branch
+Since 2026-11-02, `main` is governed by the repository ruleset **`main v2`**
+(ID `26374165`, targeting the default branch). It is the 2026-10-20 ruleset
+**`main`** (ID `25476036`, now disabled) with one more required check, and it
+has the same rules otherwise. The first ruleset replaced the classic branch
 protection rule, which was deleted, so
 `gh api repos/fderuiter/deruiter.dev/branches/main/protection` now returns
 `404 Branch not protected`. That is expected.
 
 - Pull requests are required. No approving reviewer is required for this
   solo repository, and review threads must be resolved before merging.
-- The only required check is **Merge Gate (Required Checks Summary)**,
-  bound to the GitHub Actions app (integration ID `15368`). It summarizes
-  every CI job; a pending or failed summary blocks merging. Do not add the
-  individual jobs: the matrix jobs report under their literal
-  `${{ matrix.shard }}` names when skipped, and the browser gates do not run
-  on drafts or docs-only pull requests, so those checks would never report.
+- Two checks are required, both bound to the GitHub Actions app
+  (integration ID `15368`):
+  - **Merge Gate (Required Checks Summary)** summarizes every `ci.yml` job;
+    a pending or failed summary blocks merging. Do not add the individual
+    jobs: the matrix jobs report under their literal `${{ matrix.shard }}`
+    names when skipped, and the browser gates do not run on drafts or
+    docs-only pull requests, so those checks would never report.
+  - **CDISC CORE (SDTMIG 3.4, USDM 4.0)** is the job in
+    `study-data-core.yml`. It starts on every pull request: its `scope` job
+    runs CORE when the pull request changes `lib/study-data/**`,
+    `lib/crf/**`, `lib/clinical-standards/**`, `scripts/study-data-core*` or
+    the workflow, and skips it otherwise, which the ruleset counts as
+    passing. A `pull_request` paths filter on this workflow would leave the
+    check unreported on every other pull request and block it, so keep the
+    trigger unfiltered and change the paths in the `scope` job.
 - Squash is the only allowed merge method. Linear history is required, and
   force pushes and deletion of `main` are blocked. GitHub automatically
   deletes merged feature branches.
@@ -148,11 +159,11 @@ Audit these settings monthly and whenever the CI workflow or Merge Gate name
 changes. Use **Settings → Rules → Rulesets → main**, or:
 
 ```bash
-gh api repos/fderuiter/deruiter.dev/rulesets/25476036 \
+gh api repos/fderuiter/deruiter.dev/rulesets/26374165 \
   --jq '{enforcement, bypass: .bypass_actors, rules: [.rules[] | {type, parameters}]}'
 ```
 
-Compare the configured check name and integration ID with a recent
+Compare the configured check names and integration ID with a recent
 successful PR's check runs. Do not use `gh pr merge --admin` to bypass pending
 CI. When using `gh pr merge --auto --squash`, verify that the PR remains open
 with auto merge enabled while Merge Gate is pending, then confirm it merges
@@ -164,7 +175,7 @@ pending-CI verification.
 
 CI runs on GitHub's shared free queue and can be slow. The repository owner
 may merge a pull request before Merge Gate finishes, and nobody else can.
-The `main` ruleset lists the repository admin role as a bypass actor in
+The `main v2` ruleset lists the repository admin role as a bypass actor in
 pull-request mode, so on a pull request the owner sees **Merge without
 waiting for requirements to be met (bypass rules)**. Everyone else, and
 auto-merge, still waits for Merge Gate. The bypass never allows a direct push

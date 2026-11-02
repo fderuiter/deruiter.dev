@@ -233,6 +233,14 @@ export function deriveAdsl(
   const ex = groupBySubject(records(byName.get("EX")));
   const ds = groupBySubject(records(byName.get("DS")));
   const vs = groupBySubject(records(byName.get("VS")));
+  // The stratum each subject was randomised in, for a study that declares
+  // strata: SUPPDM carries it under the factor's ADSL variable name.
+  const strata = definition.design.randomisation?.strata ?? [];
+  const stratumRecords = groupBySubject(
+    records(byName.get("SUPPDM")).filter(({ row }) =>
+      strata.some((factor) => factor.adslVariable === row.QNAM)
+    )
+  );
   const armNumber = new Map(
     definition.design.arms.map((arm, index) => [arm.armCode, index + 1])
   );
@@ -282,6 +290,14 @@ export function deriveAdsl(
       ({ row }) => row.DSCAT === "DISPOSITION EVENT"
     );
     const reason = string(disposition?.row.DSDECOD);
+    const stratumOf = stratumRecords.get(subject) ?? [];
+    const stratumValues = Object.fromEntries(
+      strata.map((factor) => [
+        factor.adslVariable,
+        stratumOf.find(({ row }) => row.QNAM === factor.adslVariable)?.row
+          .QVAL ?? null,
+      ])
+    );
     const age = number(source.AGE);
     const ageGroup =
       age === null ? null : age < 40 ? "<40" : age < 65 ? "40-64" : "65+";
@@ -301,6 +317,7 @@ export function deriveAdsl(
       ITTFL: firstDose && randomized ? "Y" : "N",
       EFFFL:
         firstDose && randomized && systolicBaseline && postbaseline ? "Y" : "N",
+      ...stratumValues,
       AGE: age,
       AGEGR1: ageGroup,
       AGEGR1N: ageGroupNumber,
@@ -333,6 +350,7 @@ export function deriveAdsl(
         ...(disposition?.lineage ?? []),
         ...(systolicBaseline?.lineage ?? []),
         ...(diastolicBaseline?.lineage ?? []),
+        ...stratumOf.flatMap((record) => record.lineage),
       ]),
     ]);
   }
@@ -340,7 +358,25 @@ export function deriveAdsl(
     "ADSL",
     "Subject-Level Analysis Dataset",
     { class: "ADSL", structure: "One record per subject" },
-    ADSL_VARIABLES,
+    strata.length === 0
+      ? ADSL_VARIABLES
+      : ADSL_VARIABLES.flatMap((variable) =>
+          variable.name === "EFFFL"
+            ? [
+                variable,
+                ...strata.map((factor, index) =>
+                  column(
+                    factor.adslVariable,
+                    `Randomization Stratum ${index + 1}`,
+                    "text",
+                    "Predecessor",
+                    undefined,
+                    "SUPPDM.QVAL"
+                  )
+                ),
+              ]
+            : [variable]
+        ),
     data,
     lineage,
     ["STUDYID", "USUBJID"]

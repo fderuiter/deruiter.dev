@@ -2375,7 +2375,7 @@
                     "name": "Hierarchical composite at 1 year",
                     "label": null,
                     "description": null,
-                    "text": "Hierarchical composite over 1 year, compared between every TAVR and every SAVR participant within a surgical-risk stratum, decided at the first level that separates the pair: (1) all-cause death, later is better; (2) disabling stroke, later is better; (3) first valve-related or heart-failure rehospitalisation, later is better; (4) change from baseline in the Valve Symptom and Function Score overall summary at 1 year, higher is better, a difference of less than 5 points counting as a tie. Event levels are compared over the follow-up both participants share; a pair missing the 1-year score for either participant is tied at level 4. Events are adjudicated by the clinical events committee.",
+                    "text": "Hierarchical composite over 1 year, compared between every TAVR and every SAVR participant within a surgical-risk stratum, decided at the first level that separates the pair: (1) all-cause death, later is better; (2) disabling stroke, later is better; (3) first valve-related or heart-failure rehospitalisation, later is better; (4) change from baseline in the Valve Symptom and Function Score overall summary at 1 year, higher is better, a difference of 5 points or less counting as a tie. Event levels are compared over the follow-up both participants share; a pair missing the 1-year score for either participant is tied at level 4. Events are adjudicated by the clinical events committee.",
                     "purpose": "Efficacy",
                     "level": {
                       "id": "ep_rct_hce__level",

@@ -7,7 +7,7 @@
  * that defines none of them gets the DEMO-301 spec, as every study did
  * before specs were per study (#3420).
  */
-import type { StudyDefinition } from "../../types";
+import type { StudyDefinition, WinRatioStratumWeighting } from "../../types";
 import type { AdamMethodId } from "./specs";
 
 /** Where a time-to-event parameter finds its event. */
@@ -78,6 +78,12 @@ export interface HierarchySpec {
    * from first exposure, or `null` for none.
    */
   readonly horizonDays: number | null;
+  /**
+   * How the win statistics combine strata. Anything but `"unstratified"`
+   * pairs subjects only within the stratum they were randomised in, from
+   * the study's randomisation strata.
+   */
+  readonly weighting: WinRatioStratumWeighting;
   /** ADTTE parameters after TTADISC, in ASEQ order. */
   readonly timeToEvent: readonly TimeToEventParameter[];
   /** ADHCE components, most important first. */
@@ -95,6 +101,7 @@ export const DEMO_301_HIERARCHY: HierarchySpec = {
   id: "DEMO-301",
   endpointIds: [],
   horizonDays: null,
+  weighting: "unstratified",
   timeToEvent: [
     {
       paramcd: "TTDTH",
@@ -180,6 +187,7 @@ export const VALVE_1Y_HIERARCHY: HierarchySpec = {
     "ep_rct_vsfs",
   ],
   horizonDays: 365,
+  weighting: "mantel-haenszel",
   timeToEvent: [
     {
       paramcd: "TTDTH",
@@ -253,7 +261,7 @@ export const VALVE_1Y_HIERARCHY: HierarchySpec = {
       kind: "continuous",
       better: "higher",
       margin: 5,
-      rule: "a larger improvement is better, and differences of less than 5 points tie",
+      rule: "a larger improvement is better, and differences of 5 points or less tie",
     },
   ],
   methods: {

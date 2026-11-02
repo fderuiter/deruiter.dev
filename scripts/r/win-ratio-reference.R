@@ -10,6 +10,8 @@
 #
 # Usage, from the repository root:
 #   Rscript scripts/r/win-ratio-reference.R
+# The device fixture (#3424) also needs its input, written first by
+#   npx tsx scripts/win-ratio-device-input.ts
 # Requires R >= 4.3 and the packages WINS (>= 1.5.1) and jsonlite.
 
 suppressPackageStartupMessages({
@@ -60,8 +62,10 @@ fs_better <- function(a, b, components, data) {
     ya <- data[[paste0("Y_", k)]][a]
     yb <- data[[paste0("Y_", k)]][b]
     m <- if (comp$kind == "binary") 0 else comp$margin
+    # A missing value ties with every value on that component.
+    if (is.na(ya) || is.na(yb)) next
     if (comp$kind == "tte") {
-      h <- comp$horizon
+      h <- if (is.null(comp$horizon)) Inf else comp$horizon
       ea <- data[[paste0("Delta_", k)]][a] == 1
       eb <- data[[paste0("Delta_", k)]][b] == 1
       if (ya > h) { ya <- h; ea <- FALSE }
@@ -212,3 +216,122 @@ rec_components <- list(
 )
 rec <- make_fixture(5, 40, 40, c("A"), rec_components)
 write_fixture(run_fixture("recovery-earlier-better", rec, rec_components, "unstratified"))
+
+# Fixture 5: the seeded TAVR versus SAVR study (#3424). The subjects are
+# the study's Full Analysis Set as ADSL and ADHCE record them, written by
+# scripts/win-ratio-device-input.ts: death, disabling stroke and
+# rehospitalisation as times to an event, then the 1-year VSFS change with
+# a 5-point margin, stratified by surgical risk with MH-type weights.
+#
+# A subject without a 1-year score ties with everyone on that component.
+# WINS removes any subject with a missing value instead, so the missing
+# scores are passed as a sentinel and a strategy that ties any pair
+# holding it; every other comparison is WINS's default strategy.
+MISSING <- -1e6
+tie_missing <- function(trt_con, priority, tau, np_direction, ...) {
+  for (l in priority) {
+    yt <- paste0("Y_", l, "_trt")
+    yc <- paste0("Y_", l, "_con")
+    gone <- trt_con[, yt] == MISSING | trt_con[, yc] == MISSING
+    trt_con[gone, yt] <- 0
+    trt_con[gone, yc] <- 0
+  }
+  WINS:::win.strategy.default(trt_con = trt_con, priority = priority,
+                              tau = tau, np_direction = np_direction)
+}
+
+# Pairs, wins, losses and ties of each stratum, counted pair by pair with
+# fs_better, independently of WINS.
+stratum_counts <- function(data, components) {
+  lapply(sort(unique(data$stratum)), function(k) {
+    trt <- which(data$stratum == k & data$arm == 1)
+    con <- which(data$stratum == k & data$arm == 2)
+    wins <- 0
+    losses <- 0
+    for (a in trt) for (b in con) {
+      s <- fs_better(a, b, components, data)
+      if (s > 0) wins <- wins + 1
+      if (s < 0) losses <- losses + 1
+    }
+    pairs <- length(trt) * length(con)
+    list(stratum = k, treatment = length(trt), control = length(con),
+         pairs = pairs, wins = wins, losses = losses,
+         ties = pairs - wins - losses)
+  })
+}
+
+device_dir <- file.path("__tests__", "fixtures", "study-data", "win-ratio-device")
+device_input <- file.path(device_dir, "tavr-savr-input.json")
+if (file.exists(device_input)) {
+  input <- fromJSON(device_input, simplifyVector = FALSE)
+  components <- lapply(input$components, function(c) list(
+    kind = c$kind, better = c$better, margin = c$margin, horizon = NULL
+  ))
+  data <- data.frame(
+    id = vapply(input$subjects, function(s) s$id, 0),
+    arm = vapply(input$subjects, function(s) s$arm, 0),
+    stratum = vapply(input$subjects, function(s) s$stratum, 0)
+  )
+  for (k in seq_along(components)) {
+    data[[paste0("Y_", k)]] <- vapply(input$subjects, function(s) {
+      v <- s$values[[k]]
+      if (is.null(v)) NA_real_ else v
+    }, 0)
+    if (components[[k]]$kind == "tte") {
+      data[[paste0("Delta_", k)]] <- vapply(input$subjects, function(s) s$events[[k]], 0)
+    }
+  }
+  wins_data <- data[, c("arm", "id", "stratum",
+                        grep("^Delta_", names(data), value = TRUE),
+                        grep("^Y_", names(data), value = TRUE))]
+  for (k in seq_along(components)) {
+    col <- paste0("Y_", k)
+    wins_data[[col]][is.na(wins_data[[col]])] <- MISSING
+  }
+  res <- win.stat(
+    data = wins_data, ep_type = vapply(components, function(c) c$kind, ""),
+    arm.name = c(1, 2), priority = seq_along(components),
+    tau = vapply(components, function(c) c$margin, 0),
+    np_direction = vapply(components, function(c) c$better, ""),
+    horizon = Inf, alpha = input$settings$alpha, digit = 10,
+    pvalue = "two-sided", stratum.weight = input$settings$weighting,
+    method = "unadjusted", win.strategy = tie_missing, summary.print = FALSE
+  )
+  per_endpoint <- lapply(seq_along(components), function(k) {
+    trt <- res$summary_ep[[paste0("Trt_Endpoint", k)]]
+    con <- res$summary_ep[[paste0("Con_Endpoint", k)]]
+    list(wins = sum(trt$Count), losses = sum(con$Count))
+  })
+  strata <- stratum_counts(data, components)
+  # The pair-by-pair counts and WINS must agree before anything is written.
+  stopifnot(
+    sum(vapply(strata, function(s) s$wins, 0)) ==
+      sum(vapply(per_endpoint, function(e) e$wins, 0)),
+    sum(vapply(strata, function(s) s$losses, 0)) ==
+      sum(vapply(per_endpoint, function(e) e$losses, 0))
+  )
+  fixture <- list(
+    name = input$name,
+    generator = "scripts/r/win-ratio-reference.R",
+    input = "tavr-savr-input.json",
+    reference = list(
+      r = R.version.string,
+      wins = as.character(packageVersion("WINS")),
+      method = "WINS::win.stat, method = 'unadjusted', stratum.weight = 'MH-type', a missing value tied by a custom win.strategy; Finkelstein-Schoenfeld and per-stratum counts in this script"
+    ),
+    settings = input$settings,
+    expected = list(
+      per_endpoint = per_endpoint,
+      strata = strata,
+      win_ratio = as.list(res$Win_statistic$Win_Ratio),
+      net_benefit = as.list(res$Win_statistic$Net_Benefit),
+      win_odds = as.list(res$Win_statistic$Win_Odds),
+      z = as.list(res$z_statistic[1, ]),
+      p = as.list(res$p_value[1, ]),
+      finkelstein_schoenfeld = fs_test(data, components, TRUE)
+    )
+  )
+  path <- file.path(device_dir, "tavr-savr-stratified-mh.json")
+  write(toJSON(fixture, auto_unbox = TRUE, digits = I(17), pretty = TRUE, null = "null", na = "null"), path)
+  message("wrote ", path)
+}

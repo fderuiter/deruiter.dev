@@ -142,6 +142,7 @@ export type {
   ReviewerGuideIssue,
   ReviewerGuideKind,
   ReviewerGuideOutput,
+  ReviewerGuideWinRatioNote,
   ReviewerGuides,
 } from "./internal/guides/reviewer-guides";
 export {

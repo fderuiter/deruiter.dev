@@ -603,22 +603,62 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).toContain("name: study-data-core-recorded-findings");
   });
 
+  const triggers = () =>
+    workflow.slice(
+      workflow.indexOf("\non:\n"),
+      workflow.indexOf("\nconcurrency:")
+    );
+  const pushPaths = () => {
+    const push = triggers().slice(
+      triggers().indexOf("  push:"),
+      triggers().indexOf("  pull_request:")
+    );
+    return [...push.matchAll(/- "(.*)"/g)].map((match) => match[1]);
+  };
+  /** The path prefixes the scope job's pattern matches, as push globs. */
+  const scopePaths = () => {
+    const pattern = /grep -qE '\^\((.*)\)'/.exec(workflow)?.[1] ?? "";
+    return pattern
+      .split("|")
+      .map((entry) =>
+        entry.endsWith("$")
+          ? entry.slice(0, -1).replace(/\\\./g, ".")
+          : entry.endsWith("/")
+            ? `${entry}**`
+            : `${entry}*`
+      );
+  };
+
   // #3090: lib/clinical-standards holds the profile, USDM schema and CT both
   // exports build on, so a change there must run CORE on the PR and on main.
   it("runs on every module the validated exports are built from", () => {
-    const filters = [...workflow.matchAll(/paths:\n((?:\s+- ".*"\n)+)/g)].map(
-      (match) => match[1]
-    );
-    expect(filters).toHaveLength(2);
-    for (const filter of filters) {
+    for (const paths of [pushPaths(), scopePaths()]) {
       for (const dir of [
         "lib/study-data",
         "lib/crf",
         "lib/clinical-standards",
       ]) {
-        expect(filter).toContain(`- "${dir}/**"`);
+        expect(paths).toContain(`${dir}/**`);
       }
     }
+  });
+
+  // The ruleset requires this check (ADR 0039, amendment 2026-11-02). A
+  // required check that never starts blocks the merge, so pull requests are
+  // not path-filtered: the scope job skips CORE instead, and a skipped
+  // required job counts as passing.
+  it("reports the required check on every pull request", () => {
+    const pullRequest = triggers().slice(
+      triggers().indexOf("  pull_request:"),
+      triggers().indexOf("  schedule:")
+    );
+    expect(pullRequest).not.toMatch(/paths/);
+    expect(workflow).toContain("name: CDISC CORE (SDTMIG 3.4, USDM 4.0)");
+    expect(workflow).toContain("needs: scope");
+    // Only an explicit "false" from the scope job skips CORE.
+    expect(workflow).toContain(
+      "if: ${{ !cancelled() && needs.scope.outputs.run != 'false' }}"
+    );
   });
 
   // #3189: two PRs can each match the recorded findings on their own branch
@@ -627,25 +667,17 @@ describe("study-data-core.yml (#2603)", () => {
   // also runs on every main push the exports can change on, and a failure
   // names the command that refreshes the file.
   it("checks the recorded findings on main as on pull requests", () => {
-    const triggers = workflow.slice(
-      workflow.indexOf("\non:\n"),
-      workflow.indexOf("\nconcurrency:")
-    );
-    const push = triggers.slice(
-      triggers.indexOf("  push:"),
-      triggers.indexOf("  pull_request:")
-    );
-    const pullRequest = triggers.slice(
-      triggers.indexOf("  pull_request:"),
-      triggers.indexOf("  schedule:")
+    const push = triggers().slice(
+      triggers().indexOf("  push:"),
+      triggers().indexOf("  pull_request:")
     );
     expect(push).toContain("branches: [main]");
-    const paths = (block: string) =>
-      [...block.matchAll(/- "(.*)"/g)].map((match) => match[1]).sort();
-    expect(paths(push).length).toBeGreaterThan(0);
-    expect(paths(push)).toEqual(paths(pullRequest));
-    // No step is limited to pull requests, so main runs the whole check.
-    expect(workflow).not.toMatch(/github\.event_name/);
+    expect(pushPaths().length).toBeGreaterThan(0);
+    // A pull request runs CORE on exactly the paths a main push does.
+    expect(scopePaths().sort()).toEqual(pushPaths().sort());
+    // No CORE step is limited to pull requests, so main runs the whole check.
+    const core = workflow.slice(workflow.indexOf("\n  core:\n"));
+    expect(core).not.toMatch(/github\.event_name/);
     const check = workflow.slice(
       workflow.indexOf("- name: Check the Recorded Findings Are Current"),
       workflow.indexOf("- name: Publish Job Summary")

@@ -83,3 +83,6 @@ app/theme.css
 # local media storage persistence
 /.media-storage/
 .env*.local
+
+# renv project library for the win-ratio R reference (#3574)
+/scripts/r/renv/library/

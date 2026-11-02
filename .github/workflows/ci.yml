@@ -337,6 +337,11 @@ jobs:
       - name: Merge Shards and Enforce Coverage Thresholds
         run: npm run test:ci:merge
 
+      # #3486: every file under lib/ and hooks/ meets a floor of its own,
+      # or its recorded baseline (config/coverage-file-floors.json).
+      - name: Enforce the Per-File Coverage Floor
+        run: npx --no-install tsx scripts/check-coverage-file-floors.ts coverage/coverage-summary.json
+
   # #1768 / #1772: Stryker on its own runner. Pull requests and main pushes
   # run incrementally against the newest report a main push saved; a manual
   # dispatch runs every mutant, and so does a PR that changes Stryker's own

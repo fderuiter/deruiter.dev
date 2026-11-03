@@ -613,7 +613,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                         {dom.description}
                       </p>
 
-                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-1 border-t border-zinc-850">
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-1 border-t border-zinc-800">
                         <span>{dom.variableCount} Standard Vars</span>
                         <span className="uppercase text-[9px] text-zinc-400">
                           {dom.category}
@@ -734,7 +734,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                   <p className="text-[11px] text-zinc-400 font-sans leading-normal">
                     Automated formula evaluating weight (kg) over height (m²).
                   </p>
-                  <code className="text-[10px] text-brand-cyan block bg-zinc-950 p-1.5 rounded border border-zinc-850">
+                  <code className="text-[10px] text-brand-cyan block bg-zinc-950 p-1.5 rounded border border-zinc-800">
                     round(WEIGHT / ((HEIGHT/100)^2), 1)
                   </code>
                 </div>
@@ -753,7 +753,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                     Blood pressure hemodynamic calculation from Systolic and
                     Diastolic.
                   </p>
-                  <code className="text-[10px] text-purple-400 block bg-zinc-950 p-1.5 rounded border border-zinc-850">
+                  <code className="text-[10px] text-purple-400 block bg-zinc-950 p-1.5 rounded border border-zinc-800">
                     round((2 * DIABP + SYSBP) / 3, 1)
                   </code>
                 </div>
@@ -772,7 +772,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                     Compliance percentage from dispensed and returned unit
                     pills.
                   </p>
-                  <code className="text-[10px] text-amber-400 block bg-zinc-950 p-1.5 rounded border border-zinc-850">
+                  <code className="text-[10px] text-amber-400 block bg-zinc-950 p-1.5 rounded border border-zinc-800">
                     round(((DISP - RET) / DISP) * 100, 1)
                   </code>
                 </div>
@@ -792,7 +792,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                   .map((rule, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between text-xs py-1 border-b border-zinc-850 last:border-0"
+                      className="flex items-center justify-between text-xs py-1 border-b border-zinc-800 last:border-0"
                     >
                       <span className="text-brand-cyan font-bold">
                         [{rule.domain}] {rule.name}

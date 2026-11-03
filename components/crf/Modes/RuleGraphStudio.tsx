@@ -261,7 +261,7 @@ export const RuleGraphStudio: React.FC<RuleGraphStudioProps> = ({ study }) => {
                   </div>
 
                   {rule.queryMessage && (
-                    <p className="text-[11px] text-zinc-400 font-sans mt-2.5 pt-2 border-t border-zinc-850">
+                    <p className="text-[11px] text-zinc-400 font-sans mt-2.5 pt-2 border-t border-zinc-800">
                       Query Message: &quot;{rule.queryMessage}&quot;
                     </p>
                   )}
@@ -419,7 +419,7 @@ export const RuleGraphStudio: React.FC<RuleGraphStudioProps> = ({ study }) => {
           </div>
 
           {/* Sample Variables Mock Grid */}
-          <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-850 space-y-2">
+          <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-2">
             <div className="text-[10px] font-mono text-zinc-400 font-semibold uppercase">
               Mock Variable Input Test Values:
             </div>

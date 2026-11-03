@@ -293,7 +293,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
               {/* 4-Metric Grid */}
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase">
                     Total Fields
                   </div>
@@ -301,7 +301,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     {healthMetrics.totalFields}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase">
                     Mandatory
                   </div>
@@ -309,7 +309,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     {healthMetrics.mandatoryFields}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase">
                     Codelists
                   </div>
@@ -317,7 +317,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     {healthMetrics.codelistsAttached}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase">
                     SDV Verified
                   </div>
@@ -330,7 +330,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               </div>
 
               {/* Form Metadata Settings */}
-              <div className="space-y-2.5 pt-2 border-t border-zinc-850">
+              <div className="space-y-2.5 pt-2 border-t border-zinc-800">
                 <div>
                   <label
                     htmlFor="crf-inspector-form-name"

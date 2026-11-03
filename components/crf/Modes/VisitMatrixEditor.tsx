@@ -814,7 +814,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                           isAssigned
                             ? "bg-brand-cyan/10 border-brand-cyan/40 text-white"
-                            : "bg-zinc-950 border-zinc-850 text-zinc-400 hover:bg-zinc-900"
+                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-900"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -864,7 +864,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 <th
                   scope="col"
                   role="columnheader"
-                  className="p-3.5 sm:p-4 text-xs font-mono font-bold text-zinc-400 w-60 sm:w-64 uppercase tracking-wider sticky left-0 bg-zinc-950 z-30 border-r border-zinc-850"
+                  className="p-3.5 sm:p-4 text-xs font-mono font-bold text-zinc-400 w-60 sm:w-64 uppercase tracking-wider sticky left-0 bg-zinc-950 z-30 border-r border-zinc-800"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span>Forms ({study.forms.length})</span>
@@ -968,12 +968,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 <tr
                   key={form.id}
                   role="row"
-                  className="hover:bg-zinc-850/40 transition-colors"
+                  className="hover:bg-zinc-800/40 transition-colors"
                 >
                   <th
                     scope="row"
                     role="rowheader"
-                    className="p-3 sm:p-3.5 pl-3 sm:pl-4 sticky left-0 bg-zinc-950/95 z-10 border-r border-zinc-850 font-normal text-left"
+                    className="p-3 sm:p-3.5 pl-3 sm:pl-4 sticky left-0 bg-zinc-950/95 z-10 border-r border-zinc-800 font-normal text-left"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">

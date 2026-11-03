@@ -283,7 +283,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 px-4 pt-3 border-b border-zinc-850 bg-zinc-950">
+        <div className="flex items-center gap-1 px-4 pt-3 border-b border-zinc-800 bg-zinc-950">
           <button
             type="button"
             onClick={() => {
@@ -344,7 +344,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
           {activeTab === "list" ? (
             <div className="space-y-4">
               {/* Summary toolbar */}
-              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 pb-2 border-b border-zinc-850">
+              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 pb-2 border-b border-zinc-800">
                 <span>
                   {baselines.length === 0
                     ? "No saved baselines in local storage."
@@ -355,14 +355,14 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                     <button
                       type="button"
                       onClick={handleExportAll}
-                      className="flex items-center gap-1 px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-200 rounded text-[11px] transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] transition-colors"
                       title="Export all baselines as JSON bundle"
                     >
                       <IconDownload className="w-3 h-3 text-brand-cyan" />
                       <span>Export All</span>
                     </button>
                   )}
-                  <label className="flex items-center gap-1 px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-200 rounded text-[11px] cursor-pointer transition-colors">
+                  <label className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] cursor-pointer transition-colors">
                     <IconUpload className="w-3 h-3 text-brand-cyan" />
                     <span>Import</span>
                     <input
@@ -458,7 +458,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                       </div>
 
                       {/* Metadata row */}
-                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-2 border-t border-zinc-850/80 flex-wrap gap-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-2 border-t border-zinc-800/80 flex-wrap gap-2">
                         <div className="flex items-center gap-3">
                           <span>
                             Created:{" "}
@@ -481,17 +481,17 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400">
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
                             {base.provenance?.totalForms ??
                               base.study.forms.length}{" "}
                             forms
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400">
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
                             {base.provenance?.totalVisits ??
                               base.study.visits.length}{" "}
                             visits
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400">
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
                             {base.provenance?.totalFields ?? "—"} fields
                           </span>
                         </div>
@@ -516,16 +516,16 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                   {study.studyName || "Untitled Study Protocol"}
                 </div>
                 <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px] font-mono text-zinc-400">
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-850">
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
                     {studyStats.formsCount} Forms
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-850">
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
                     {studyStats.visitsCount} Visits
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-850">
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
                     {studyStats.fieldsCount} Fields
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-850">
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
                     {studyStats.rulesCount} Rules
                   </span>
                 </div>
@@ -628,7 +628,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab("list")}
-                  className="px-3.5 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 font-mono text-xs transition-colors"
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs transition-colors"
                 >
                   Cancel
                 </button>
@@ -697,7 +697,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setBaselinePendingRestore(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 font-mono text-xs transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs transition-colors"
               >
                 Cancel
               </button>

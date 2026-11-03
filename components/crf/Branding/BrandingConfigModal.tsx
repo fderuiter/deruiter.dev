@@ -475,7 +475,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
         <button
           type="button"
           onClick={handleSaveDefault}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-300 hover:text-white text-xs font-mono transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-mono transition-all"
         >
           {savedSuccess ? (
             <IconCheck className="w-3.5 h-3.5 text-emerald-400" />

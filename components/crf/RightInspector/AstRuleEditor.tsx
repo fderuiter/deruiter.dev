@@ -398,7 +398,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
         />
 
         {/* Bottom Status Bar inside Editor */}
-        <div className="px-2.5 py-1 bg-zinc-900/80 border-t border-zinc-850 flex items-center justify-between text-[10px] font-mono select-none">
+        <div className="px-2.5 py-1 bg-zinc-900/80 border-t border-zinc-800 flex items-center justify-between text-[10px] font-mono select-none">
           <div className="flex items-center gap-2">
             {errorCount > 0 ? (
               <span className="text-rose-400 flex items-center gap-1 font-semibold">
@@ -476,7 +476,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
       {/* Live Sample Evaluation Tester Box (#671) */}
       {showTester && (
         <div className="p-3 rounded-xl bg-zinc-950 border border-emerald-900/40 space-y-2.5 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
             <span className="text-[11px] font-mono font-bold text-emerald-400 flex items-center gap-1.5">
               <IconPlayerPlay className="w-3.5 h-3.5" />
               Live Evaluation Preview
@@ -563,7 +563,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
           {/* Step-by-Step Clinical Derivation Breakdown */}
           {derivationExplanation?.steps &&
             derivationExplanation.steps.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-zinc-850">
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800">
                 <span className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider">
                   Derivation Steps ({derivationExplanation.steps.length})
                 </span>
@@ -656,7 +656,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                   className={`px-1.5 py-0.5 rounded border text-[10px] font-mono transition-colors flex items-center gap-1 ${
                     isNumeric
                       ? "bg-zinc-900 hover:bg-brand-cyan/20 border-zinc-800 text-zinc-300 hover:text-brand-cyan hover:border-brand-cyan/40"
-                      : "bg-zinc-950 hover:bg-amber-500/10 border-zinc-850 text-zinc-500 hover:text-amber-300 hover:border-amber-500/40"
+                      : "bg-zinc-950 hover:bg-amber-500/10 border-zinc-800 text-zinc-500 hover:text-amber-300 hover:border-amber-500/40"
                   }`}
                   title={`${f.label} (${f.dataType})`}
                 >

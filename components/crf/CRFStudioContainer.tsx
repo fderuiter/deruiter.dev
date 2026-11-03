@@ -694,7 +694,7 @@ export const CRFStudioContainer: React.FC = () => {
               <aside
                 aria-label="Study navigator"
                 data-tour="navigator"
-                className="hidden md:flex w-60 lg:w-64 2xl:w-72 bg-zinc-950 border-r border-zinc-850 flex-col shrink-0 transition-all"
+                className="hidden md:flex w-60 lg:w-64 2xl:w-72 bg-zinc-950 border-r border-zinc-800 flex-col shrink-0 transition-all"
               >
                 <StudySpine
                   study={study}
@@ -1081,7 +1081,7 @@ export const CRFStudioContainer: React.FC = () => {
             tabIndex={-1}
             className="fixed bottom-0 inset-x-0 z-50 max-h-[75vh] bg-zinc-950 border-t border-zinc-800 rounded-t-3xl p-4 overflow-y-auto md:hidden shadow-2xl space-y-3 animate-in slide-in-from-bottom duration-200"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-850">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
               <div className="flex items-center gap-2">
                 <IconSparkles className="w-4 h-4 text-brand-cyan" />
                 <span
@@ -1214,7 +1214,7 @@ export const CRFStudioContainer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => editor.cancelStudyReplacement()}
-                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-850 transition-colors"
+                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 aria-label="Cancel study replacement"
               >
                 <IconX className="w-4 h-4" />
@@ -1308,7 +1308,7 @@ export const CRFStudioContainer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => editor.cancelImpactDeletion()}
-                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-850 transition-colors"
+                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 aria-label="Cancel deletion"
               >
                 <IconX className="w-4 h-4" />
@@ -1316,7 +1316,7 @@ export const CRFStudioContainer: React.FC = () => {
             </div>
 
             {/* References Blast Radius Details */}
-            <div className="bg-zinc-950/80 rounded-xl p-3 border border-zinc-850 space-y-2 max-h-52 overflow-y-auto">
+            <div className="bg-zinc-950/80 rounded-xl p-3 border border-zinc-800 space-y-2 max-h-52 overflow-y-auto">
               <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold flex items-center justify-between">
                 <span>
                   Active References (

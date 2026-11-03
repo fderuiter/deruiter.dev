@@ -526,7 +526,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       </div>
 
       {/* 3-Tier Missing Data Engine */}
-      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850 space-y-2.5">
+      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
         <div className="flex items-center justify-between">
           <label className="text-[11px] font-mono text-zinc-300 font-bold uppercase">
             3-Tier Missing Data Engine
@@ -607,7 +607,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       {(field.dataType === "precision_date" ||
         field.dataType === "date" ||
         field.dataType === "partial_date") && (
-        <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850 space-y-2.5">
+        <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
           <div className="text-[11px] font-mono text-zinc-300 font-bold uppercase flex items-center justify-between">
             <span>Precision Date Controls</span>
             <span className="text-[10px] text-brand-cyan">ISO 8601</span>
@@ -660,7 +660,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       )}
 
       {/* Clinical Governance & Null Flavors */}
-      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850 space-y-2.5">
+      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
         <div className="text-[11px] font-mono text-zinc-300 font-bold uppercase">
           Clinical Governance &amp; Null Flavors
         </div>
@@ -725,7 +725,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       {(field.dataType === "number" ||
         field.dataType === "integer" ||
         field.dataType === "calculated") && (
-        <div className="space-y-3 pt-2 border-t border-zinc-850">
+        <div className="space-y-3 pt-2 border-t border-zinc-800">
           <div className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">
             Numeric Boundaries &amp; Units
           </div>
@@ -786,7 +786,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
       {/* RICH QUESTION OPTIONS BUILDER (Radio, Single Select, Multi Select) */}
       {isCodelistField && (
-        <div className="space-y-3 pt-3 border-t border-zinc-850">
+        <div className="space-y-3 pt-3 border-t border-zinc-800">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono text-white font-bold uppercase flex items-center gap-1.5">
               <IconListDetails className="w-3.5 h-3.5 text-brand-cyan" />
@@ -824,7 +824,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
           {/* STANDARD CODELIST SELECTOR */}
           {optionMode === "standard" && (
-            <div className="space-y-2 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-850">
+            <div className="space-y-2 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800">
               <label className="block text-[10px] font-mono text-zinc-400">
                 Select Controlled Codelist Library
               </label>
@@ -888,7 +888,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                     <button
                       key={tpl.name}
                       onClick={() => handleApplyTemplate(tpl)}
-                      className="px-2 py-1 rounded-md bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-brand-cyan/40 text-[10px] font-sans text-zinc-300 hover:text-white transition-all flex items-center gap-1"
+                      className="px-2 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-brand-cyan/40 text-[10px] font-sans text-zinc-300 hover:text-white transition-all flex items-center gap-1"
                       title={`Load ${tpl.options.length} options for ${tpl.name}`}
                     >
                       <span>{tpl.name}</span>
@@ -901,7 +901,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               </div>
 
               {/* Bulk Text Import Drawer */}
-              <div className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-850 space-y-2">
+              <div className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setIsBulkOpen(!isBulkOpen)}
@@ -1063,7 +1063,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
       {/* Dynamic AST Formula Builder for Calculated Fields */}
       {field.dataType === "calculated" && (
-        <div className="pt-2 border-t border-zinc-850">
+        <div className="pt-2 border-t border-zinc-800">
           <AstRuleEditor
             formula={field.calculationFormula || ""}
             onChange={(newFormula) =>
@@ -1077,7 +1077,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
       {/* VAS scale labels */}
       {field.dataType === "vas_scale" && (
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-850">
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800">
           <div>
             <label className="block text-[10px] font-mono text-zinc-500 mb-1">
               Min Label (0mm)

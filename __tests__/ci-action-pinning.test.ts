@@ -69,4 +69,9 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     expect(content).toContain('"version-update:semver-major"');
     expect(content).toMatch(/npm-minor-and-patch:[\s\S]*"minor"[\s\S]*"patch"/);
   });
+
+  it("skips only markdownlint-cli 0.50.0, whose re2js and argparse fail the audits (SECURITY.md)", () => {
+    const content = fs.readFileSync(dependabotPath, "utf8");
+    expect(content).toMatch(/- dependency-name: "markdownlint-cli"\n\s+versions: \["0\.50\.0"\]/);
+  });
 });

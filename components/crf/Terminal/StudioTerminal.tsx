@@ -259,7 +259,7 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
             <pre
               className={`p-2 rounded-lg text-[11px] whitespace-pre-wrap font-mono ${
                 item.success
-                  ? "bg-zinc-900/60 text-zinc-300 border border-zinc-850"
+                  ? "bg-zinc-900/60 text-zinc-300 border border-zinc-800"
                   : "bg-red-950/30 text-red-300 border border-red-900/40"
               }`}
             >
@@ -271,7 +271,7 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
       </div>
 
       {/* Command Input Prompt Bar */}
-      <div className="px-3 py-2 bg-zinc-900 border-t border-zinc-850 flex items-center gap-2 shrink-0">
+      <div className="px-3 py-2 bg-zinc-900 border-t border-zinc-800 flex items-center gap-2 shrink-0">
         <span className="text-brand-cyan font-bold text-xs select-none">
           crf&gt;
         </span>

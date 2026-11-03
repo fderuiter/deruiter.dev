@@ -633,7 +633,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   return (
     <header
       ref={headerObserverRef}
-      className="border-b border-zinc-850 bg-zinc-950/95 sticky top-0 z-30 backdrop-blur-xl"
+      className="border-b border-zinc-800 bg-zinc-950/95 sticky top-0 z-30 backdrop-blur-xl"
     >
       {/* TIER 1: Brand, Protocol Selector & Global Actions Bar */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-zinc-900/80 gap-3">

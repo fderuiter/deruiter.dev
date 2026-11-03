@@ -278,7 +278,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "spine"
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border border-transparent"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
           }`}
           title="Study Spine (Longitudinal Timeline)"
         >
@@ -301,7 +301,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "forms"
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border border-transparent"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
           }`}
           title="Protocol Forms & Global Library"
         >
@@ -324,7 +324,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "palette"
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border border-transparent"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
           }`}
           title="Widget Palette"
         >
@@ -368,12 +368,12 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               return (
                 <div
                   key={epoch.id}
-                  className="rounded-xl border border-zinc-850 bg-zinc-900/30 overflow-hidden"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/30 overflow-hidden"
                 >
                   {/* Epoch Header */}
                   <div
                     onClick={() => toggleEpochCollapse(epoch.id)}
-                    className="flex items-center justify-between px-2.5 py-2 bg-zinc-900/60 hover:bg-zinc-850/60 cursor-pointer border-b border-zinc-850/60 transition-colors"
+                    className="flex items-center justify-between px-2.5 py-2 bg-zinc-900/60 hover:bg-zinc-800/60 cursor-pointer border-b border-zinc-800/60 transition-colors"
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       {isEpochCollapsed ? (
@@ -499,7 +499,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
 
                               {/* Assigned Forms Sub-Tree */}
                               {!isVisitCollapsed && (
-                                <div className="border-t border-zinc-850/60 p-1.5 bg-zinc-950/80 space-y-1">
+                                <div className="border-t border-zinc-800/60 p-1.5 bg-zinc-950/80 space-y-1">
                                   {assignedForms.length === 0 ? (
                                     <p className="text-[10px] text-zinc-500 font-mono italic px-2 py-1">
                                       Drop a form template here to assign.
@@ -627,7 +627,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                     className={`group relative p-2 rounded-xl border cursor-pointer transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
                       isActive
                         ? "bg-brand-cyan/10 border-brand-cyan/50 shadow-sm"
-                        : "bg-zinc-950/60 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-900/60"
+                        : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/60"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -651,7 +651,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                             {form.name}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-zinc-850 text-zinc-400 border border-zinc-750">
+                            <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-750">
                               {form.domain || "CRF"}
                             </span>
                             <span className="text-[10px] text-zinc-500 font-mono">
@@ -827,7 +827,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               <button
                 type="button"
                 onClick={() => setFormPendingDeletion(null)}
-                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-850 transition-colors"
+                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 aria-label="Cancel"
               >
                 <IconX className="w-4 h-4" />
@@ -835,7 +835,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             </div>
 
             {/* Affected Assignments Preview */}
-            <div className="bg-zinc-950/80 rounded-xl p-3 border border-zinc-850 space-y-2 max-h-48 overflow-y-auto">
+            <div className="bg-zinc-950/80 rounded-xl p-3 border border-zinc-800 space-y-2 max-h-48 overflow-y-auto">
               <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
                 Affected Visits ({formDeletionPreview.affectedVisits.length})
               </div>
@@ -857,7 +857,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               </ul>
 
               {formDeletionPreview.affectedArms.length > 0 && (
-                <div className="pt-2 border-t border-zinc-850 space-y-1">
+                <div className="pt-2 border-t border-zinc-800 space-y-1">
                   <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
                     Affected Arms ({formDeletionPreview.affectedArms.length})
                   </div>

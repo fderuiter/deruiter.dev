@@ -150,7 +150,7 @@ function DiffEntryRow({
       </div>
 
       {(entry.oldValue !== undefined || entry.newValue !== undefined) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono pt-1 border-t border-zinc-850/80">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono pt-1 border-t border-zinc-800/80">
           <div className="min-w-0">
             <span className="text-zinc-500">Old: </span>
             <span className="text-rose-300 break-words">
@@ -167,7 +167,7 @@ function DiffEntryRow({
       )}
 
       {entry.affectedUses && entry.affectedUses.length > 0 && (
-        <p className="text-[11px] text-amber-300/90 pt-1 border-t border-zinc-850/80">
+        <p className="text-[11px] text-amber-300/90 pt-1 border-t border-zinc-800/80">
           Still referenced by: {entry.affectedUses.join("; ")}
         </p>
       )}
@@ -361,7 +361,7 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
         </div>
 
         {/* Baseline picker & Export Toolbar */}
-        <div className="px-4 sm:px-5 py-3 border-b border-zinc-850 bg-zinc-950 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex min-w-0 items-center gap-3 flex-wrap">
             <div
               role="group"
@@ -511,7 +511,7 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
 
         {/* Category filter tabs + summary */}
         {comparison && (
-          <div className="px-4 sm:px-5 py-2.5 border-b border-zinc-850 bg-zinc-950 flex items-center gap-2 flex-wrap overflow-x-auto">
+          <div className="px-4 sm:px-5 py-2.5 border-b border-zinc-800 bg-zinc-950 flex items-center gap-2 flex-wrap overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveCategoryFilter("all")}

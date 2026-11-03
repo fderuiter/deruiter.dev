@@ -12,6 +12,8 @@ import {
   STUDIO_HEADER_MENUS,
   STUDIO_MODE_ORDER,
   STUDIO_STAGES,
+  StudioMenuItemSpec,
+  StudioMenuSpec,
   nextStepFor,
   stageOfMode,
 } from "@/components/crf/studio-stages";
@@ -233,6 +235,17 @@ describe("STUDIO_HEADER_MENUS schema", () => {
     for (const item of allItems) {
       expect(item.label.length).toBeGreaterThan(0);
       expect(item.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ensures every menu item conforms to StudioMenuItemSpec and each menu to StudioMenuSpec", () => {
+    for (const menu of STUDIO_HEADER_MENUS) {
+      const typedMenu: StudioMenuSpec = menu;
+      expect(typedMenu.id).toBeDefined();
+      for (const item of typedMenu.items) {
+        const typedItem: StudioMenuItemSpec = item;
+        expect(typedItem.id).toBeDefined();
+      }
     }
   });
 });

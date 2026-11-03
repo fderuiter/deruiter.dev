@@ -46,6 +46,8 @@ import {
   STUDIO_MODE_ORDER,
   STUDIO_STAGES,
   StudioMenuId,
+  StudioMenuItemSpec,
+  StudioMenuSpec,
   modeShortcut,
   nextStepFor,
 } from "./studio-stages";
@@ -359,10 +361,13 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   };
 
   const focusFirstItem = (menuId: StudioMenuId) => {
-    const menu = STUDIO_HEADER_MENUS.find((m) => m.id === menuId);
+    const menu: StudioMenuSpec | undefined = STUDIO_HEADER_MENUS.find(
+      (m: StudioMenuSpec) => m.id === menuId
+    );
     if (!menu) return;
     for (const item of menu.items) {
-      const meta = getActionMeta(item.id);
+      const spec: StudioMenuItemSpec = item;
+      const meta = getActionMeta(spec.id);
       if (!meta.disabled) {
         menuItemRefs.current[`${menuId}-${item.id}`]?.focus();
         return;

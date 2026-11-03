@@ -486,7 +486,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             label="Copy Code"
             copiedLabel="Copied!"
             successMessage="Export code copied to clipboard"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-200 text-xs font-mono transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-mono transition-all cursor-pointer"
           />
           <button
             onClick={handleDownload}
@@ -807,11 +807,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-850">
+                <tbody className="divide-y divide-zinc-800">
                   {specFields.map(({ field, form }) => (
                     <tr
                       key={`${form.id}_${field.id}`}
-                      className="hover:bg-zinc-850/40"
+                      className="hover:bg-zinc-800/40"
                     >
                       <td className="p-3 font-bold text-brand-cyan">
                         {form.domain}

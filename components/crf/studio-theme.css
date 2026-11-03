@@ -46,6 +46,11 @@
   --crf-shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
+/* Defensive dark-mode fallback for any legacy or dynamic border-zinc-850 references (#3053) */
+[data-studio-theme="dark"] .border-zinc-850 {
+  border-color: var(--crf-border) !important;
+}
+
 /* Scoped Studio Light Mode Cascades */
 [data-studio-theme="light"] {
   color-scheme: light;
@@ -74,7 +79,9 @@
 [data-studio-theme="light"] .bg-zinc-800\/60,
 [data-studio-theme="light"] .bg-zinc-800\/80,
 [data-studio-theme="light"] .bg-zinc-800\/50,
-[data-studio-theme="light"] .hover\:bg-zinc-800:hover {
+[data-studio-theme="light"] .hover\:bg-zinc-800:hover,
+[data-studio-theme="light"] .hover\:bg-zinc-800\/60:hover,
+[data-studio-theme="light"] .hover\:bg-zinc-800\/40:hover {
   background-color: var(--crf-surface-3) !important;
 }
 
@@ -90,6 +97,7 @@
 [data-studio-theme="light"] .border-zinc-850,
 [data-studio-theme="light"] .border-zinc-800,
 [data-studio-theme="light"] .border-zinc-800\/80,
+[data-studio-theme="light"] .border-zinc-800\/60,
 [data-studio-theme="light"] .border-zinc-800\/50,
 [data-studio-theme="light"] .border-zinc-700,
 [data-studio-theme="light"] .border-zinc-700\/80 {

@@ -1191,7 +1191,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                       className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border ${
                                         isSelectedNf
                                           ? "bg-brand-cyan text-black border-brand-cyan font-extrabold"
-                                          : "bg-zinc-950 text-zinc-400 border-zinc-850 hover:text-zinc-200"
+                                          : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
                                       }`}
                                       title={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
                                     >
@@ -1858,7 +1858,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   <tr
                     key={subj}
                     role="row"
-                    className="hover:bg-zinc-850/40 transition-colors"
+                    className="hover:bg-zinc-800/40 transition-colors"
                   >
                     <th
                       scope="row"
@@ -2032,9 +2032,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-850">
+              <tbody className="divide-y divide-zinc-800">
                 {auditLog.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-zinc-850/30">
+                  <tr key={entry.id} className="hover:bg-zinc-800/30">
                     <td className="p-2.5 text-zinc-500 whitespace-nowrap">
                       {entry.timestamp.slice(0, 19)}
                     </td>

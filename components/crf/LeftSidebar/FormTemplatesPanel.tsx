@@ -88,7 +88,7 @@ export function FormTemplatesPanel() {
   };
 
   return (
-    <div className="space-y-2 pt-2 border-t border-zinc-850">
+    <div className="space-y-2 pt-2 border-t border-zinc-800">
       <div className="flex items-center justify-between gap-2 px-1">
         <span className="flex min-w-0 items-center gap-1 text-[11px] font-mono font-semibold uppercase tracking-wider text-amber-400">
           <IconBookmark className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -132,7 +132,7 @@ export function FormTemplatesPanel() {
           {templates.map((template) => (
             <li
               key={template.id}
-              className="rounded-xl border border-zinc-850 bg-zinc-900/60 p-2"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">

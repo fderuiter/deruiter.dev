@@ -936,7 +936,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-zinc-850/60">
+          <tbody className="divide-y divide-zinc-800/60">
             {rows.map((row, rIdx) => {
               const isRowSelected = row.field.id === selectedFieldId;
 
@@ -948,7 +948,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                   }`}
                 >
                   {/* Row index */}
-                  <td className="py-2 px-3 text-center text-zinc-600 border-r border-zinc-850 text-[10px] font-mono">
+                  <td className="py-2 px-3 text-center text-zinc-600 border-r border-zinc-800 text-[10px] font-mono">
                     {rIdx + 1}
                   </td>
 
@@ -967,7 +967,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                         key={col.key}
                         onClick={() => handleCellClick(rIdx, cIdx)}
                         onDoubleClick={() => handleCellDoubleClick(rIdx, cIdx)}
-                        className={`py-1.5 px-3 border-r border-zinc-850/80 relative cursor-pointer select-none transition-all ${
+                        className={`py-1.5 px-3 border-r border-zinc-800/80 relative cursor-pointer select-none transition-all ${
                           isCellActive
                             ? "ring-2 ring-brand-cyan ring-inset bg-zinc-900/80 z-1"
                             : ""
@@ -1043,7 +1043,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                             className={`inline-block text-[10px] px-1.5 py-0.2 rounded ${
                               cellVal === "true"
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                                : "bg-zinc-850 text-zinc-500 border border-zinc-800"
+                                : "bg-zinc-800 text-zinc-500 border border-zinc-800"
                             }`}
                           >
                             {cellVal === "true" ? "Required" : "Optional"}
@@ -1182,7 +1182,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-850">
+                  <tbody className="divide-y divide-zinc-800">
                     {pendingBatchUpdates.map((upd, idx) => (
                       <tr
                         key={idx}
@@ -1190,16 +1190,16 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                           upd.isValid ? "hover:bg-zinc-900/40" : "bg-rose-500/5"
                         }
                       >
-                        <td className="p-2 border-r border-zinc-850 font-bold text-brand-cyan">
+                        <td className="p-2 border-r border-zinc-800 font-bold text-brand-cyan">
                           {upd.fieldVar}
                         </td>
-                        <td className="p-2 border-r border-zinc-850 text-zinc-400">
+                        <td className="p-2 border-r border-zinc-800 text-zinc-400">
                           {upd.colLabel}
                         </td>
-                        <td className="p-2 border-r border-zinc-850 text-zinc-500">
+                        <td className="p-2 border-r border-zinc-800 text-zinc-500">
                           {upd.oldValue || "—"}
                         </td>
-                        <td className="p-2 border-r border-zinc-850 font-semibold text-zinc-200">
+                        <td className="p-2 border-r border-zinc-800 font-semibold text-zinc-200">
                           {upd.newValue}
                         </td>
                         <td className="p-2">
@@ -1226,7 +1226,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
               <button
                 type="button"
                 onClick={() => setPasteModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 text-xs font-mono transition-all"
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-all"
               >
                 Cancel
               </button>

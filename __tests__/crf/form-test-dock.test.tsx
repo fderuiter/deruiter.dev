@@ -12,6 +12,7 @@ import {
   type ConditionalFieldValues,
 } from "@/lib/crf";
 import type { CRFField, CRFForm, EditCheckRule } from "@/lib/crf";
+import { STUDIO_HEADER_MENUS } from "@/components/crf/studio-stages";
 
 /**
  * #541 — the dock's user-facing contract.
@@ -333,9 +334,11 @@ describe("[#541] Studio wiring", () => {
     expect(escapeBlock).toContain("setIsTestDockOpen(false)");
   });
 
-  it("offers a visible toggle in the studio header", () => {
-    expect(headerSource).toContain("onToggleTestDock");
-    expect(headerSource).toContain("aria-pressed={isTestDockOpen}");
+  it("offers a toggle that reports its state in the header's Check menu (#3394)", () => {
+    const check = STUDIO_HEADER_MENUS.find((menu) => menu.id === "check");
+    expect(check?.items.map((item) => item.id)).toContain("toggle-test-dock");
+    expect(headerSource).toContain("checked: isTestDockOpen");
+    expect(headerSource).toContain("run: onToggleTestDock");
     expect(containerSource).toContain("onToggleTestDock={");
   });
 });

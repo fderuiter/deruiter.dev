@@ -18,15 +18,10 @@ import {
   IconArrowForwardUp,
   IconBug,
   IconCheck,
-  IconPalette,
   IconBookmark,
   IconFileSpreadsheet,
-  IconDotsVertical,
   IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
   IconLayoutSidebarRightCollapse,
-  IconLayoutSidebarRightExpand,
-  IconX,
   IconHelp,
   IconPlayerPlay,
   IconLink,
@@ -46,6 +41,11 @@ import {
   modeShortcut,
   nextStepFor,
 } from "./studio-stages";
+import {
+  StudioActionsDrawer,
+  StudioHeaderMenus,
+  type StudioMenuActions,
+} from "./StudioHeaderMenus";
 import { safeSetRawItem } from "@/lib/safe-storage";
 import {
   STUDY_DATA_HANDOFF_PATH,
@@ -117,7 +117,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onCopyShareLink,
 }) => {
   const router = useRouter();
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isSendingToPipeline, setIsSendingToPipeline] = useState(false);
 
   // Hands the study's USDM export to /study-data in this tab, the same
@@ -150,12 +149,132 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   >(() => getStudyPresetsSync());
   const branding = getStudyBranding(study);
   const { totalIssues } = useDebouncedDiagnostics(study);
+  const issueLabel = totalIssues > 0 ? `${totalIssues} Issues` : "Verified";
 
   const currentPreset = presets.find(
     (p) => p.study.protocolNumber === study.protocolNumber
   );
 
   const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const simulateProtocol = () => {
+    safeSetRawItem("crf_active_protocol", JSON.stringify(study), {
+      retainInMemory: false,
+    });
+    router.push("/arcade/clinical-chaos");
+  };
+
+  // Every menu item's handler, keyed by the ids in STUDIO_HEADER_MENUS. An
+  // item without `run` renders disabled: its handler was not passed, or (the
+  // pane toggles) it only applies to the Canvas mode.
+  const menuActions: StudioMenuActions = {
+    undo: {
+      icon: <IconArrowBackUp className="w-3.5 h-3.5" />,
+      run: canUndo ? onUndo : undefined,
+    },
+    redo: {
+      icon: <IconArrowForwardUp className="w-3.5 h-3.5" />,
+      run: canRedo ? onRedo : undefined,
+    },
+    find: {
+      icon: <IconSearch className="w-3.5 h-3.5" />,
+      run: onOpenOmnibar,
+    },
+    "add-form": {
+      icon: <IconSparkles className="w-3.5 h-3.5 text-amber-400" />,
+      run: onOpenFormCatalog,
+    },
+    "library-upgrades": {
+      icon: <IconBooks className="w-3.5 h-3.5 text-brand-cyan" />,
+      run: onOpenLibraryUpgrades,
+    },
+    baselines: {
+      icon: <IconBookmark className="w-3.5 h-3.5 text-brand-cyan" />,
+      run: onOpenBaselines,
+    },
+    "compare-baseline": {
+      icon: <IconGitCompare className="w-3.5 h-3.5 text-brand-cyan" />,
+      run: onOpenCompareBaseline,
+    },
+    branding: {
+      icon: (
+        <span
+          className="block w-3.5 h-3.5 rounded-full border border-zinc-700"
+          style={{ backgroundColor: branding.primaryColor }}
+        />
+      ),
+      run: onOpenBranding,
+    },
+    "toggle-theme": {
+      icon:
+        theme === "light" ? (
+          <IconMoon className="w-3.5 h-3.5 text-amber-500" />
+        ) : (
+          <IconSun className="w-3.5 h-3.5 text-amber-400" />
+        ),
+      label:
+        theme === "light"
+          ? "Switch to Dark Studio Mode"
+          : "Switch to Clinical Light Mode",
+      run: onToggleTheme,
+    },
+    "toggle-sidebar": {
+      icon: (
+        <IconLayoutSidebarLeftCollapse className="w-3.5 h-3.5 text-brand-cyan" />
+      ),
+      checked: isLeftSidebarOpen,
+      run: activeMode === "designer" ? onToggleLeftSidebar : undefined,
+    },
+    "toggle-inspector": {
+      icon: (
+        <IconLayoutSidebarRightCollapse className="w-3.5 h-3.5 text-brand-cyan" />
+      ),
+      checked: isRightInspectorOpen,
+      run: activeMode === "designer" ? onToggleRightInspector : undefined,
+    },
+    "toggle-terminal": {
+      icon: <IconTerminal2 className="w-3.5 h-3.5 text-brand-cyan" />,
+      checked: isTerminalOpen,
+      run: onToggleTerminal,
+    },
+    guide: {
+      icon: <IconHelp className="w-3.5 h-3.5 text-brand-cyan" />,
+      run: onOpenWizard,
+    },
+    tour: {
+      icon: <IconPlayerPlay className="w-3.5 h-3.5 text-brand-cyan" />,
+      run: onStartSpotlightTour,
+    },
+    diagnostics: {
+      icon:
+        totalIssues > 0 ? (
+          <IconBug className="w-3.5 h-3.5 text-amber-400" />
+        ) : (
+          <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+        ),
+      badge: issueLabel,
+      run: onOpenDiagnostics,
+    },
+    "toggle-test-dock": {
+      icon: <IconFlask2 className="w-3.5 h-3.5 text-brand-cyan" />,
+      checked: isTestDockOpen,
+      run: onToggleTestDock,
+    },
+    simulate: {
+      icon: (
+        <IconPlayerPlay className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+      ),
+      run: simulateProtocol,
+    },
+    "export-doc": {
+      icon: <IconFileSpreadsheet className="w-3.5 h-3.5 text-blue-400" />,
+      run: onOpenExportDocument,
+    },
+    "copy-link": {
+      icon: <IconLink className="w-3.5 h-3.5 text-brand-cyan" />,
+      run: onCopyShareLink,
+    },
+  };
 
   const handleModeKeyDown = (
     event: React.KeyboardEvent<HTMLButtonElement>,
@@ -273,8 +392,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     >
       {/* TIER 1: Brand, Protocol Selector & Global Actions Bar */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-zinc-900/80 gap-3">
-        {/* Left Side: Brand, Protocol Selector & Study Badges */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink">
+        {/* Left Side: Brand, Protocol Selector & Menus */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse shrink-0" />
             <span className="font-mono text-xs sm:text-sm font-extrabold text-white tracking-wider uppercase truncate">
@@ -303,32 +422,31 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 hidden sm:inline-flex shrink-0 whitespace-nowrap">
             {study.phase}
           </span>
+
+          <StudioHeaderMenus
+            actions={menuActions}
+            hasIssues={totalIssues > 0}
+            checkBadge={
+              <span className="inline-flex items-center gap-1 text-[10px]">
+                {totalIssues > 0 ? (
+                  <IconBug
+                    aria-hidden="true"
+                    className="w-3 h-3 text-amber-400"
+                  />
+                ) : (
+                  <IconCheck
+                    aria-hidden="true"
+                    className="w-3 h-3 text-emerald-400"
+                  />
+                )}
+                {issueLabel}
+              </span>
+            }
+          />
         </div>
 
-        {/* Right Side: Undo/Redo, Diagnostics, Theme & Global Action Buttons */}
+        {/* Right Side: Find, the pipeline handoff and the phone actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Undo / Redo */}
-          <div className="hidden sm:flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 shrink-0">
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="p-1 text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan outline-none"
-              title="Undo (⌘Z)"
-              aria-label="Undo"
-            >
-              <IconArrowBackUp className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="p-1 text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan outline-none"
-              title="Redo (⌘⇧Z)"
-              aria-label="Redo"
-            >
-              <IconArrowForwardUp className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
           {/* Study Omnibar Trigger (#544) */}
           {onOpenOmnibar && (
             <button
@@ -347,52 +465,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             </button>
           )}
 
-          {/* Theme Toggle (Dark / Light) */}
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors hidden sm:inline-flex items-center gap-1 text-[11px] font-mono shrink-0"
-              title={
-                theme === "light"
-                  ? "Switch to Dark Studio Mode"
-                  : "Switch to Clinical Light Mode"
-              }
-              aria-label={
-                theme === "light"
-                  ? "Switch to Dark Studio Mode"
-                  : "Switch to Clinical Light Mode"
-              }
-            >
-              {theme === "light" ? (
-                <IconMoon className="w-3.5 h-3.5 text-amber-500" />
-              ) : (
-                <IconSun className="w-3.5 h-3.5 text-amber-400" />
-              )}
-            </button>
-          )}
-
-          {/* Conformance Diagnostics Badge */}
-          <button
-            onClick={onOpenDiagnostics}
-            data-tour="conformance"
-            className={`hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border shrink-0 ${
-              totalIssues > 0
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
-            }`}
-            title="Open CDISC Conformance Diagnostics"
-          >
-            {totalIssues > 0 ? (
-              <IconBug className="w-3.5 h-3.5 text-amber-400" />
-            ) : (
-              <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-            )}
-            <span className="hidden md:inline">
-              {totalIssues > 0 ? `${totalIssues} Issues` : "Verified"}
-            </span>
-          </button>
-
-          {/* The clinical journey's next step for this study (#2927) */}
+          {/* The clinical journey's next step for this study (#2927); #3395
+              leaves the next-step button as the only stage primary. */}
           <button
             type="button"
             onClick={sendToPipeline}
@@ -404,380 +478,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             <span>Run Pipeline</span>
           </button>
 
-          {/* Form catalog: every ready-made form and block (#2927 item 11) */}
-          <button
-            onClick={onOpenFormCatalog}
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shrink-0 whitespace-nowrap shadow-xs"
-            title="Add a ready-made form or block: CDASH domains, forms from the example studies, your templates and smart blocks"
-          >
-            <IconSparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden sm:inline">+ Add form</span>
-            <span className="sm:hidden">+ Form</span>
-          </button>
-
-          {/* Simulation Button (Shown on 2xl or via More menu) */}
-          <button
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                safeSetRawItem("crf_active_protocol", JSON.stringify(study), {
-                  retainInMemory: false,
-                });
-                router.push("/arcade/clinical-chaos");
-              }
-            }}
-            className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-emerald-500/40 transition-all shadow-xs shrink-0 whitespace-nowrap"
-            title="Launch Live Conformance Engine Simulation with Active Protocol Pre-Loaded"
-          >
-            <IconPlayerPlay className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400 shrink-0" />
-            <span>Simulate Protocol</span>
-          </button>
-
-          {/* Word / PDF Export Modal Trigger (Shown on 2xl or via More menu) */}
-          <button
-            onClick={onOpenExportDocument}
-            className="hidden 2xl:inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-blue-500/40 transition-all shadow-xs shrink-0 whitespace-nowrap"
-            title="Export Word (.docx) Protocol Books & PDF Blank/Annotated CRFs"
-          >
-            <IconFileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-            <span>Docx / PDF</span>
-          </button>
-
-          {/* Study Baselines & History Trigger */}
-          {onOpenBaselines && (
-            <button
-              onClick={onOpenBaselines}
-              className="hidden 2xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shadow-xs shrink-0 whitespace-nowrap"
-              title="Save Study Baseline Snapshots and Restore into New Drafts"
-            >
-              <IconBookmark className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
-              <span>Baselines</span>
-            </button>
-          )}
-
-          {/* Compare Against Baseline Trigger */}
-          {onOpenCompareBaseline && (
-            <button
-              onClick={onOpenCompareBaseline}
-              className="hidden 2xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shadow-xs shrink-0 whitespace-nowrap"
-              title="Compare the current draft against a saved baseline snapshot"
-            >
-              <IconGitCompare className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
-              <span>Compare</span>
-            </button>
-          )}
-
-          {/* More Actions Trigger Button */}
-          <div className="relative">
-            <button
-              onClick={() => setIsMoreMenuOpen((prev) => !prev)}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 shrink-0"
-              title="More Actions & Tools"
-              aria-label="More Studio Actions"
-              aria-expanded={isMoreMenuOpen}
-            >
-              <IconDotsVertical className="w-4 h-4" />
-              {totalIssues > 0 && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              )}
-            </button>
-
-            {/* Popover Menu */}
-            {isMoreMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs 2xl:hidden"
-                  onClick={() => setIsMoreMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-5rem))] max-h-[75dvh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 z-50 2xl:hidden space-y-1 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 px-1">
-                    <span className="text-xs font-bold font-mono text-zinc-300 uppercase">
-                      Studio Actions
-                    </span>
-                    <button
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className="p-1 text-zinc-500 hover:text-white rounded"
-                    >
-                      <IconX className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="sm:hidden grid grid-cols-2 gap-2 pb-2 border-b border-zinc-800">
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onUndo();
-                      }}
-                      disabled={!canUndo}
-                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 disabled:opacity-40 active:scale-[0.98]"
-                    >
-                      Undo
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onRedo();
-                      }}
-                      disabled={!canRedo}
-                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 disabled:opacity-40 active:scale-[0.98]"
-                    >
-                      Redo
-                    </button>
-                    {onToggleTheme && (
-                      <button
-                        onClick={() => {
-                          setIsMoreMenuOpen(false);
-                          onToggleTheme();
-                        }}
-                        className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
-                      >
-                        {theme === "light" ? "Dark mode" : "Light mode"}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenDiagnostics();
-                      }}
-                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
-                    >
-                      Diagnostics
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenFormCatalog();
-                      }}
-                      className="col-span-2 rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
-                    >
-                      Add form
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenDiagnostics();
-                    }}
-                    className="hidden sm:block lg:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
-                  >
-                    Conformance diagnostics
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenFormCatalog();
-                    }}
-                    className="hidden sm:block xl:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
-                  >
-                    Add form
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      void sendToPipeline();
-                    }}
-                    disabled={isSendingToPipeline}
-                    className="xl:hidden w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-amber-950/40 hover:bg-amber-900/40 text-amber-200 border border-amber-800/40 transition-colors disabled:opacity-60"
-                  >
-                    <IconArrowRight className="w-4 h-4 text-amber-400" />
-                    <div className="flex-1">
-                      <div className="font-bold">Run Pipeline</div>
-                      <div className="text-[10px] text-amber-400/80">
-                        Tabulate this study into SDTM, ADaM and tables
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      if (typeof window !== "undefined") {
-                        safeSetRawItem(
-                          "crf_active_protocol",
-                          JSON.stringify(study),
-                          { retainInMemory: false }
-                        );
-                        router.push("/arcade/clinical-chaos");
-                      }
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-200 border border-emerald-800/40 transition-colors"
-                  >
-                    <IconPlayerPlay className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                    <div className="flex-1">
-                      <div className="font-bold">Simulate Protocol</div>
-                      <div className="text-[10px] text-emerald-400/70">
-                        Launch in Clinical Chaos Arcade
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenExportDocument();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-blue-950/40 hover:bg-blue-900/40 text-blue-200 border border-blue-800/40 transition-colors"
-                  >
-                    <IconFileSpreadsheet className="w-4 h-4 text-blue-400" />
-                    <div className="flex-1">
-                      <div className="font-bold">Docx / PDF Books</div>
-                      <div className="text-[10px] text-blue-400/70">
-                        Export Word &amp; blank PDFs
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenBranding();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: branding.primaryColor }}
-                    />
-                    <IconPalette className="w-4 h-4 text-brand-cyan" />
-                    <div className="flex-1">
-                      <div className="font-bold">Organization Branding</div>
-                      <div className="text-[10px] text-zinc-500">
-                        Logos, colors &amp; header profiles
-                      </div>
-                    </div>
-                  </button>
-
-                  {onOpenBaselines && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenBaselines();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconBookmark className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Study Baselines</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Save snapshots &amp; restore into new drafts
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onOpenCompareBaseline && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenCompareBaseline();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconGitCompare className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">
-                          Compare Against Baseline
-                        </div>
-                        <div className="text-[10px] text-zinc-500">
-                          Review changes since a saved snapshot
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onOpenLibraryUpgrades && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenLibraryUpgrades();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconBooks className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Library Block Upgrades</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Preview &amp; apply newer library versions
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onCopyShareLink && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onCopyShareLink();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconLink className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Copy View Link</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Navigation URL only: does not include study content
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenWizard();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                  >
-                    <IconHelp className="w-4 h-4 text-brand-cyan" />
-                    <div className="flex-1">
-                      <div className="font-bold">Interactive Guide</div>
-                      <div className="text-[10px] text-zinc-500">
-                        How CRF Studio works
-                      </div>
-                    </div>
-                  </button>
-
-                  {onStartSpotlightTour && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onStartSpotlightTour();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-brand-cyan/10 hover:bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/20 transition-colors"
-                    >
-                      <IconPlayerPlay className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Spotlight UI Tour</div>
-                        <div className="text-[10px] text-brand-cyan/70">
-                          Interactive walkthrough
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onToggleTerminal && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onToggleTerminal();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-brand-cyan transition-colors"
-                    >
-                      <IconTerminal2 className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">CLI Terminal Drawer</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Interactive command interface
-                        </div>
-                      </div>
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          <StudioActionsDrawer
+            actions={menuActions}
+            hasIssues={totalIssues > 0}
+          />
         </div>
       </div>
 
@@ -898,72 +602,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           {nextStep.label}
           <IconArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
-
-        {/* Right Side: In-Studio Terminal Toggle & Workspace Sidebar Toggles */}
-        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-          {/* Form Test Dock Toggle (#541) */}
-          {onToggleTestDock && (
-            <button
-              onClick={onToggleTestDock}
-              aria-pressed={isTestDockOpen}
-              className={`p-1.5 rounded-lg border transition-colors inline-flex items-center gap-1.5 text-[11px] font-mono shrink-0 ${
-                isTestDockOpen
-                  ? "bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40"
-                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800"
-              }`}
-              title="Toggle Form Test Dock (⌘\\)"
-            >
-              <IconFlask2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline font-bold">Test</span>
-            </button>
-          )}
-
-          {/* Terminal / CLI Drawer Toggle */}
-          {onToggleTerminal && (
-            <button
-              onClick={onToggleTerminal}
-              className={`p-1.5 rounded-lg border transition-colors inline-flex items-center gap-1.5 text-[11px] font-mono shrink-0 ${
-                isTerminalOpen
-                  ? "bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40"
-                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800"
-              }`}
-              title="Toggle Interactive In-Studio Terminal (⌘J or `)"
-            >
-              <IconTerminal2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline font-bold">Terminal</span>
-            </button>
-          )}
-
-          {/* Left Sidebar Toggle Button */}
-          {activeMode === "designer" && onToggleLeftSidebar && (
-            <button
-              onClick={onToggleLeftSidebar}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 transition-colors hidden md:inline-flex items-center gap-1 text-[11px] font-mono shrink-0"
-              title="Toggle Left Forms Navigator (⌘B)"
-            >
-              {isLeftSidebarOpen ? (
-                <IconLayoutSidebarLeftCollapse className="w-3.5 h-3.5 text-brand-cyan" />
-              ) : (
-                <IconLayoutSidebarLeftExpand className="w-3.5 h-3.5 text-zinc-400" />
-              )}
-            </button>
-          )}
-
-          {/* Right Inspector Toggle Button */}
-          {activeMode === "designer" && onToggleRightInspector && (
-            <button
-              onClick={onToggleRightInspector}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 transition-colors hidden md:inline-flex items-center gap-1 text-[11px] font-mono shrink-0"
-              title="Toggle Property Inspector (⌘I)"
-            >
-              {isRightInspectorOpen ? (
-                <IconLayoutSidebarRightCollapse className="w-3.5 h-3.5 text-brand-cyan" />
-              ) : (
-                <IconLayoutSidebarRightExpand className="w-3.5 h-3.5 text-zinc-400" />
-              )}
-            </button>
-          )}
-        </div>
       </div>
     </header>
   );

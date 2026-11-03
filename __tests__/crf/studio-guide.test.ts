@@ -14,6 +14,8 @@ describe("CRF Studio guide and tour (#1208)", () => {
   const tour = read("components/crf/Wizard/SpotlightTourOverlay.tsx");
   const container = read("components/crf/CRFStudioContainer.tsx");
   const header = read("components/crf/StudioHeader.tsx");
+  // The conformance step points at the Check menu trigger (#3394).
+  const menus = read("components/crf/StudioHeaderMenus.tsx");
 
   it("gives every tour step a target that the studio renders", () => {
     const targets = [...tour.matchAll(/target: "([a-z-]+)"/g)].map(
@@ -21,7 +23,9 @@ describe("CRF Studio guide and tour (#1208)", () => {
     );
     expect(targets.length).toBe(5);
     for (const target of targets) {
-      expect(container + header).toContain(`data-tour="${target}"`);
+      expect(container + header + menus).toMatch(
+        new RegExp(`data-tour=(\\{[^}]*)?"${target}"`)
+      );
     }
   });
 

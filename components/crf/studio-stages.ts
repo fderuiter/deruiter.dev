@@ -61,3 +61,172 @@ export function nextStepFor(mode: StudioMode): StudioNextStep {
     ? { kind: "mode", mode: next.modes[0], label }
     : { kind: "pipeline", label };
 }
+
+/**
+ * Secondary studio header actions grouped into four high-leverage application
+ * menus (#3394): Edit, View, Check, and Share.
+ */
+export type StudioMenuId = "edit" | "view" | "check" | "share";
+
+export interface StudioMenuItemSpec {
+  readonly id: string;
+  readonly label: string;
+  readonly description: string;
+  readonly shortcut?: string;
+  readonly dividerBefore?: boolean;
+  readonly isDanger?: boolean;
+}
+
+export interface StudioMenuSpec {
+  readonly id: StudioMenuId;
+  readonly label: string;
+  readonly description: string;
+  readonly items: readonly StudioMenuItemSpec[];
+}
+
+export const STUDIO_HEADER_MENUS: readonly StudioMenuSpec[] = [
+  {
+    id: "edit",
+    label: "Edit",
+    description: "Study history, forms, baselines, and organization profile",
+    items: [
+      {
+        id: "undo",
+        label: "Undo",
+        description: "Revert the last change made in this session",
+        shortcut: "⌘Z",
+      },
+      {
+        id: "redo",
+        label: "Redo",
+        description: "Reapply the change that was undone",
+        shortcut: "⌘⇧Z",
+      },
+      {
+        id: "add-form",
+        label: "Add Form / CDASH Catalog",
+        description:
+          "Scaffolds CDASH domains, ready-made forms, or custom blocks",
+        dividerBefore: true,
+      },
+      {
+        id: "library-upgrades",
+        label: "Library Block Upgrades",
+        description:
+          "Preview and apply newer library versions for existing forms",
+      },
+      {
+        id: "baselines",
+        label: "Study Baselines",
+        description: "Save snapshots and restore revisions into new drafts",
+        dividerBefore: true,
+      },
+      {
+        id: "branding",
+        label: "Organization Branding",
+        description: "Logos, brand accent colors, and export header profiles",
+      },
+    ],
+  },
+  {
+    id: "view",
+    label: "View",
+    description: "Studio layout, panes, theme, and interactive walkthroughs",
+    items: [
+      {
+        id: "toggle-sidebar",
+        label: "Left Forms Navigator",
+        description: "Toggle study forms and domain navigator (Canvas mode)",
+        shortcut: "⌘B",
+      },
+      {
+        id: "toggle-inspector",
+        label: "Right Property Inspector",
+        description:
+          "Toggle field and form property inspector (Canvas mode)",
+        shortcut: "⌘I",
+      },
+      {
+        id: "toggle-test-dock",
+        label: "Form Test Dock",
+        description:
+          "Interactive test dock with synthetic scenario records",
+        shortcut: "⌘\\",
+        dividerBefore: true,
+      },
+      {
+        id: "toggle-terminal",
+        label: "CLI Terminal Drawer",
+        description: "Direct readline console for protocol manipulation",
+        shortcut: "⌘J",
+      },
+      {
+        id: "toggle-theme",
+        label: "Switch Studio Theme",
+        description: "Toggle between Dark Studio and Clinical Light modes",
+        dividerBefore: true,
+      },
+      {
+        id: "guide",
+        label: "Interactive Guide",
+        description: "How CRF Studio works and architectural principles",
+        dividerBefore: true,
+      },
+      {
+        id: "tour",
+        label: "Spotlight UI Tour",
+        description: "Interactive walkthrough of studio controls",
+      },
+    ],
+  },
+  {
+    id: "check",
+    label: "Check",
+    description: "Validation diagnostics, baseline comparison, and simulation",
+    items: [
+      {
+        id: "diagnostics",
+        label: "CDISC Conformance Diagnostics",
+        description: "Evaluate 4-tier CDASH rules and AST logic checks",
+      },
+      {
+        id: "compare-baseline",
+        label: "Compare Against Baseline",
+        description:
+          "Review visual and structural diffs against a saved snapshot",
+      },
+      {
+        id: "simulate",
+        label: "Simulate in Clinical Chaos",
+        description:
+          "Launch Live Conformance Engine Simulation with Active Protocol Pre-Loaded",
+        dividerBefore: true,
+      },
+    ],
+  },
+  {
+    id: "share",
+    label: "Share",
+    description: "Pipeline tabulation, document exports, and view sharing",
+    items: [
+      {
+        id: "pipeline",
+        label: "Run Study Data Pipeline",
+        description:
+          "Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables",
+      },
+      {
+        id: "export-doc",
+        label: "Docx / PDF Books",
+        description: "Export Word protocol books and blank/annotated CRFs",
+      },
+      {
+        id: "copy-link",
+        label: "Copy View Link",
+        description: "Navigation URL only: does not include study content",
+        dividerBefore: true,
+      },
+    ],
+  },
+];
+

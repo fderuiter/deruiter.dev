@@ -38,14 +38,18 @@ import {
   IconBooks,
   IconSearch,
   IconArrowRight,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { getStudyBranding } from "@/lib/crf";
 import {
+  STUDIO_HEADER_MENUS,
   STUDIO_MODE_ORDER,
   STUDIO_STAGES,
+  StudioMenuId,
   modeShortcut,
   nextStepFor,
 } from "./studio-stages";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { safeSetRawItem } from "@/lib/safe-storage";
 import {
   STUDY_DATA_HANDOFF_PATH,
@@ -117,8 +121,21 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onCopyShareLink,
 }) => {
   const router = useRouter();
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<StudioMenuId | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSendingToPipeline, setIsSendingToPipeline] = useState(false);
+
+  const menuTriggerRefs = React.useRef<Record<string, HTMLButtonElement | null>>(
+    {}
+  );
+  const menuItemRefs = React.useRef<Record<string, HTMLButtonElement | null>>(
+    {}
+  );
+  const mobileTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const mobileDrawerRef = useFocusTrap<HTMLDivElement>(isMobileMenuOpen, {
+    onEscape: () => setIsMobileMenuOpen(false),
+    returnFocusTo: mobileTriggerRef,
+  });
 
   // Hands the study's USDM export to /study-data in this tab, the same
   // handoff the Exports USDM tab offers. When the browser cannot store it,
@@ -156,6 +173,353 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   );
 
   const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const executeAction = (actionFn?: () => void) => {
+    setActiveMenu(null);
+    setIsMobileMenuOpen(false);
+    actionFn?.();
+  };
+
+  const getActionMeta = (itemId: string) => {
+    switch (itemId) {
+      case "undo":
+        return {
+          icon: <IconArrowBackUp className="w-3.5 h-3.5" />,
+          disabled: !canUndo,
+          action: () => executeAction(onUndo),
+        };
+      case "redo":
+        return {
+          icon: <IconArrowForwardUp className="w-3.5 h-3.5" />,
+          disabled: !canRedo,
+          action: () => executeAction(onRedo),
+        };
+      case "add-form":
+        return {
+          icon: <IconSparkles className="w-3.5 h-3.5 text-amber-400" />,
+          disabled: false,
+          action: () => executeAction(onOpenFormCatalog),
+        };
+      case "library-upgrades":
+        return {
+          icon: <IconBooks className="w-3.5 h-3.5 text-brand-cyan" />,
+          disabled: !onOpenLibraryUpgrades,
+          action: () => executeAction(onOpenLibraryUpgrades),
+        };
+      case "baselines":
+        return {
+          icon: <IconBookmark className="w-3.5 h-3.5 text-brand-cyan" />,
+          disabled: !onOpenBaselines,
+          action: () => executeAction(onOpenBaselines),
+        };
+      case "branding":
+        return {
+          icon: <IconPalette className="w-3.5 h-3.5 text-brand-cyan" />,
+          badge: (
+            <span
+              className="w-2 h-2 rounded-full shrink-0 inline-block"
+              style={{ backgroundColor: branding.primaryColor }}
+            />
+          ),
+          disabled: false,
+          action: () => executeAction(onOpenBranding),
+        };
+      case "toggle-sidebar":
+        return {
+          icon: isLeftSidebarOpen ? (
+            <IconLayoutSidebarLeftCollapse className="w-3.5 h-3.5 text-brand-cyan" />
+          ) : (
+            <IconLayoutSidebarLeftExpand className="w-3.5 h-3.5 text-zinc-400" />
+          ),
+          badge: isLeftSidebarOpen ? "Visible" : "Hidden",
+          disabled: !onToggleLeftSidebar || activeMode !== "designer",
+          action: () => executeAction(onToggleLeftSidebar),
+        };
+      case "toggle-inspector":
+        return {
+          icon: isRightInspectorOpen ? (
+            <IconLayoutSidebarRightCollapse className="w-3.5 h-3.5 text-brand-cyan" />
+          ) : (
+            <IconLayoutSidebarRightExpand className="w-3.5 h-3.5 text-zinc-400" />
+          ),
+          badge: isRightInspectorOpen ? "Visible" : "Hidden",
+          disabled: !onToggleRightInspector || activeMode !== "designer",
+          action: () => executeAction(onToggleRightInspector),
+        };
+      case "toggle-test-dock":
+        return {
+          icon: <IconFlask2 className="w-3.5 h-3.5 text-brand-cyan" />,
+          badge: isTestDockOpen ? "Open" : "Closed",
+          disabled: !onToggleTestDock,
+          action: () => executeAction(onToggleTestDock),
+        };
+      case "toggle-terminal":
+        return {
+          icon: <IconTerminal2 className="w-3.5 h-3.5 text-brand-cyan" />,
+          badge: isTerminalOpen ? "Open" : "Closed",
+          disabled: !onToggleTerminal,
+          action: () => executeAction(onToggleTerminal),
+        };
+      case "toggle-theme":
+        return {
+          icon:
+            theme === "light" ? (
+              <IconMoon className="w-3.5 h-3.5 text-amber-500" />
+            ) : (
+              <IconSun className="w-3.5 h-3.5 text-amber-400" />
+            ),
+          badge: theme === "light" ? "Light" : "Dark",
+          disabled: !onToggleTheme,
+          action: () => executeAction(onToggleTheme),
+        };
+      case "guide":
+        return {
+          icon: <IconHelp className="w-3.5 h-3.5 text-brand-cyan" />,
+          disabled: false,
+          action: () => executeAction(onOpenWizard),
+        };
+      case "tour":
+        return {
+          icon: <IconPlayerPlay className="w-3.5 h-3.5 text-brand-cyan" />,
+          disabled: !onStartSpotlightTour,
+          action: () => executeAction(onStartSpotlightTour),
+        };
+      case "diagnostics":
+        return {
+          icon:
+            totalIssues > 0 ? (
+              <IconBug className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+            ),
+          badge: totalIssues > 0 ? `${totalIssues} Issues` : "Verified",
+          disabled: false,
+          action: () => executeAction(onOpenDiagnostics),
+        };
+      case "compare-baseline":
+        return {
+          icon: <IconGitCompare className="w-3.5 h-3.5 text-brand-cyan" />,
+          disabled: !onOpenCompareBaseline,
+          action: () => executeAction(onOpenCompareBaseline),
+        };
+      case "simulate":
+        return {
+          icon: (
+            <IconPlayerPlay className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+          ),
+          disabled: false,
+          action: () =>
+            executeAction(() => {
+              if (typeof window !== "undefined") {
+                safeSetRawItem("crf_active_protocol", JSON.stringify(study), {
+                  retainInMemory: false,
+                });
+                router.push("/arcade/clinical-chaos");
+              }
+            }),
+        };
+      case "pipeline":
+        return {
+          icon: <IconArrowRight className="w-3.5 h-3.5 text-amber-400" />,
+          disabled: isSendingToPipeline,
+          action: () =>
+            executeAction(() => {
+              void sendToPipeline();
+            }),
+        };
+      case "export-doc":
+        return {
+          icon: <IconFileSpreadsheet className="w-3.5 h-3.5 text-blue-400" />,
+          disabled: false,
+          action: () => executeAction(onOpenExportDocument),
+        };
+      case "copy-link":
+        return {
+          icon: <IconLink className="w-3.5 h-3.5 text-brand-cyan" />,
+          disabled: !onCopyShareLink,
+          action: () => executeAction(onCopyShareLink),
+        };
+      default:
+        return {
+          icon: null,
+          disabled: true,
+          action: () => {},
+        };
+    }
+  };
+
+  const getDropdownAlignmentClass = (menuId: StudioMenuId) => {
+    if (menuId === "share") {
+      return "left-0 md:left-auto md:right-0";
+    }
+    if (menuId === "check") {
+      return "left-0 md:left-auto md:right-0 xl:right-auto xl:left-0";
+    }
+    return "left-0";
+  };
+
+  const focusFirstItem = (menuId: StudioMenuId) => {
+    const menu = STUDIO_HEADER_MENUS.find((m) => m.id === menuId);
+    if (!menu) return;
+    for (const item of menu.items) {
+      const meta = getActionMeta(item.id);
+      if (!meta.disabled) {
+        menuItemRefs.current[`${menuId}-${item.id}`]?.focus();
+        return;
+      }
+    }
+  };
+
+  const focusLastItem = (menuId: StudioMenuId) => {
+    const menu = STUDIO_HEADER_MENUS.find((m) => m.id === menuId);
+    if (!menu) return;
+    for (let i = menu.items.length - 1; i >= 0; i--) {
+      const item = menu.items[i];
+      const meta = getActionMeta(item.id);
+      if (!meta.disabled) {
+        menuItemRefs.current[`${menuId}-${item.id}`]?.focus();
+        return;
+      }
+    }
+  };
+
+  const handleMenuTriggerKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    menuId: StudioMenuId,
+    index: number
+  ) => {
+    const menuIds = STUDIO_HEADER_MENUS.map((m) => m.id);
+    if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setActiveMenu(menuId);
+      focusFirstItem(menuId);
+      if (typeof window !== "undefined") {
+        requestAnimationFrame(() => {
+          focusFirstItem(menuId);
+        });
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveMenu(menuId);
+      focusLastItem(menuId);
+      if (typeof window !== "undefined") {
+        requestAnimationFrame(() => {
+          focusLastItem(menuId);
+        });
+      }
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextIndex = (index + 1) % menuIds.length;
+      const nextMenuId = menuIds[nextIndex];
+      if (activeMenu !== null) {
+        setActiveMenu(nextMenuId);
+      }
+      menuTriggerRefs.current[nextMenuId]?.focus();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevIndex = (index - 1 + menuIds.length) % menuIds.length;
+      const prevMenuId = menuIds[prevIndex];
+      if (activeMenu !== null) {
+        setActiveMenu(prevMenuId);
+      }
+      menuTriggerRefs.current[prevMenuId]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      const firstMenuId = menuIds[0];
+      if (activeMenu !== null) {
+        setActiveMenu(firstMenuId);
+      }
+      menuTriggerRefs.current[firstMenuId]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      const lastMenuId = menuIds[menuIds.length - 1];
+      if (activeMenu !== null) {
+        setActiveMenu(lastMenuId);
+      }
+      menuTriggerRefs.current[lastMenuId]?.focus();
+    } else if (e.key === "Escape") {
+      if (activeMenu !== null) {
+        e.preventDefault();
+        setActiveMenu(null);
+        menuTriggerRefs.current[menuId]?.focus();
+      }
+    }
+  };
+
+  const handleMenuItemKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    menuId: StudioMenuId,
+    itemId: string
+  ) => {
+    const menu = STUDIO_HEADER_MENUS.find((m) => m.id === menuId);
+    if (!menu) return;
+    const enabledItems = menu.items.filter((i) => !getActionMeta(i.id).disabled);
+    if (enabledItems.length === 0) return;
+    const foundIndex = enabledItems.findIndex((i) => i.id === itemId);
+    const currentIndex = foundIndex >= 0 ? foundIndex : 0;
+    const menuIds = STUDIO_HEADER_MENUS.map((m) => m.id);
+    const currentMenuIndex = menuIds.indexOf(menuId);
+
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const meta = getActionMeta(itemId);
+      if (!meta.disabled) {
+        meta.action();
+        menuTriggerRefs.current[menuId]?.focus();
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = (currentIndex + 1) % enabledItems.length;
+      menuItemRefs.current[`${menuId}-${enabledItems[nextIndex].id}`]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex =
+        (currentIndex - 1 + enabledItems.length) % enabledItems.length;
+      menuItemRefs.current[`${menuId}-${enabledItems[prevIndex].id}`]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      menuItemRefs.current[`${menuId}-${enabledItems[0].id}`]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      menuItemRefs.current[
+        `${menuId}-${enabledItems[enabledItems.length - 1].id}`
+      ]?.focus();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setActiveMenu(null);
+      menuTriggerRefs.current[menuId]?.focus();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextMenuIndex = (currentMenuIndex + 1) % menuIds.length;
+      const nextMenuId = menuIds[nextMenuIndex];
+      setActiveMenu(nextMenuId);
+      menuTriggerRefs.current[nextMenuId]?.focus();
+      focusFirstItem(nextMenuId);
+      if (typeof window !== "undefined") {
+        requestAnimationFrame(() => {
+          focusFirstItem(nextMenuId);
+        });
+      }
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevMenuIndex =
+        (currentMenuIndex - 1 + menuIds.length) % menuIds.length;
+      const prevMenuId = menuIds[prevMenuIndex];
+      setActiveMenu(prevMenuId);
+      menuTriggerRefs.current[prevMenuId]?.focus();
+      focusFirstItem(prevMenuId);
+      if (typeof window !== "undefined") {
+        requestAnimationFrame(() => {
+          focusFirstItem(prevMenuId);
+        });
+      }
+    } else if (e.key === "Tab") {
+      setActiveMenu(null);
+    }
+  };
 
   const handleModeKeyDown = (
     event: React.KeyboardEvent<HTMLButtonElement>,
@@ -273,8 +637,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     >
       {/* TIER 1: Brand, Protocol Selector & Global Actions Bar */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-zinc-900/80 gap-3">
-        {/* Left Side: Brand, Protocol Selector & Study Badges */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink">
+        {/* Left Side: Brand, Protocol Selector & Menus */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse shrink-0" />
             <span className="font-mono text-xs sm:text-sm font-extrabold text-white tracking-wider uppercase truncate">
@@ -285,7 +649,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <div className="h-3.5 w-px bg-zinc-800 hidden sm:block shrink-0" />
 
           {/* Protocol Preset Selector */}
-          <div className="hidden sm:flex items-center min-w-0 sm:max-w-[240px] md:max-w-[280px] shrink">
+          <div className="hidden sm:flex items-center min-w-0 sm:max-w-[180px] md:max-w-[220px] shrink">
             <select
               onChange={(e) => onSelectPreset(e.target.value)}
               value={currentPreset?.id || "custom"}
@@ -303,32 +667,153 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 hidden sm:inline-flex shrink-0 whitespace-nowrap">
             {study.phase}
           </span>
+
+          {/* Transparent click-outside backdrop when activeMenu is open */}
+          {activeMenu !== null && (
+            <div
+              className="fixed inset-0 z-40 bg-transparent"
+              onClick={() => setActiveMenu(null)}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Desktop Secondary Action Menus: Edit, View, Check, Share */}
+          <nav
+            role="menubar"
+            aria-label="Studio Menus"
+            className="hidden md:flex items-center gap-0.5 shrink-0 relative z-50 ml-1"
+          >
+            {STUDIO_HEADER_MENUS.map((menu, menuIndex) => {
+              const isOpen = activeMenu === menu.id;
+              return (
+                <div key={menu.id} className="relative">
+                  <button
+                    ref={(el) => {
+                      menuTriggerRefs.current[menu.id] = el;
+                    }}
+                    id={`menu-trigger-${menu.id}`}
+                    type="button"
+                    role="button"
+                    aria-haspopup="menu"
+                    aria-expanded={isOpen}
+                    aria-controls={`menu-panel-${menu.id}`}
+                    onClick={() =>
+                      setActiveMenu((prev) => (prev === menu.id ? null : menu.id))
+                    }
+                    onKeyDown={(e) =>
+                      handleMenuTriggerKeyDown(e, menu.id, menuIndex)
+                    }
+                    className={`px-2.5 py-1 text-xs font-mono font-medium rounded-lg transition-colors inline-flex items-center gap-1 outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
+                      isOpen
+                        ? "bg-zinc-800 text-white font-semibold shadow-xs"
+                        : "text-zinc-300 hover:text-white hover:bg-zinc-900"
+                    }`}
+                  >
+                    <span>{menu.label}</span>
+                    <IconChevronDown
+                      className={`w-3 h-3 text-zinc-400 transition-transform ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  <div
+                    id={`menu-panel-${menu.id}`}
+                    role="menu"
+                    aria-label={`${menu.label} Menu`}
+                    aria-labelledby={`menu-trigger-${menu.id}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setActiveMenu(null);
+                        menuTriggerRefs.current[menu.id]?.focus();
+                      }
+                    }}
+                    className={`absolute ${getDropdownAlignmentClass(
+                      menu.id
+                    )} top-full mt-1.5 w-72 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-50 ${
+                      isOpen
+                        ? "block animate-in fade-in zoom-in-95 duration-100"
+                        : "hidden"
+                    }`}
+                  >
+                    <div className="px-2 py-1 mb-1 border-b border-zinc-800/80">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                        {menu.description}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      {menu.items.map((item) => {
+                        const meta = getActionMeta(item.id);
+                        return (
+                          <React.Fragment key={item.id}>
+                            {item.dividerBefore && (
+                              <div
+                                role="separator"
+                                className="my-1 border-t border-zinc-800/80"
+                              />
+                            )}
+                            <button
+                              ref={(el) => {
+                                menuItemRefs.current[
+                                  `${menu.id}-${item.id}`
+                                ] = el;
+                              }}
+                              type="button"
+                              role="menuitem"
+                              aria-label={item.label}
+                              disabled={meta.disabled}
+                              onClick={meta.action}
+                              onKeyDown={(e) =>
+                                handleMenuItemKeyDown(e, menu.id, item.id)
+                              }
+                              title={item.description}
+                              className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs font-mono rounded-lg text-left transition-colors outline-none focus-visible:ring-1 focus-visible:ring-brand-cyan ${
+                                meta.disabled
+                                  ? "text-zinc-600 opacity-40 cursor-not-allowed"
+                                  : "text-zinc-200 hover:text-white hover:bg-zinc-800 focus:bg-zinc-800"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="shrink-0">{meta.icon}</span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold truncate">
+                                    {item.label}
+                                  </div>
+                                  <div className="text-[10px] text-zinc-500 truncate">
+                                    {item.id === "simulate"
+                                      ? "Simulate Protocol in Clinical Chaos"
+                                      : item.description}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {meta.badge && (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400">
+                                    {meta.badge}
+                                  </span>
+                                )}
+                                {item.shortcut && (
+                                  <kbd className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-800">
+                                    {item.shortcut}
+                                  </kbd>
+                                )}
+                              </div>
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Right Side: Undo/Redo, Diagnostics, Theme & Global Action Buttons */}
+        {/* Right Side: Omnibar, Diagnostics, Theme & Mobile Actions Trigger */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Undo / Redo */}
-          <div className="hidden sm:flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 shrink-0">
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="p-1 text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan outline-none"
-              title="Undo (⌘Z)"
-              aria-label="Undo"
-            >
-              <IconArrowBackUp className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="p-1 text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan outline-none"
-              title="Redo (⌘⇧Z)"
-              aria-label="Redo"
-            >
-              <IconArrowForwardUp className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
           {/* Study Omnibar Trigger (#544) */}
           {onOpenOmnibar && (
             <button
@@ -375,7 +860,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <button
             onClick={onOpenDiagnostics}
             data-tour="conformance"
-            className={`hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border shrink-0 ${
+            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border shrink-0 ${
               totalIssues > 0
                 ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
                 : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
@@ -392,88 +877,15 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             </span>
           </button>
 
-          {/* The clinical journey's next step for this study (#2927) */}
-          <button
-            type="button"
-            onClick={sendToPipeline}
-            disabled={isSendingToPipeline}
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 font-mono text-xs font-bold rounded-lg border border-amber-500/50 transition-all shrink-0 whitespace-nowrap shadow-xs disabled:opacity-60"
-            title="Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables"
-          >
-            <IconArrowRight className="w-3.5 h-3.5 shrink-0" />
-            <span>Run Pipeline</span>
-          </button>
-
-          {/* Form catalog: every ready-made form and block (#2927 item 11) */}
-          <button
-            onClick={onOpenFormCatalog}
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shrink-0 whitespace-nowrap shadow-xs"
-            title="Add a ready-made form or block: CDASH domains, forms from the example studies, your templates and smart blocks"
-          >
-            <IconSparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden sm:inline">+ Add form</span>
-            <span className="sm:hidden">+ Form</span>
-          </button>
-
-          {/* Simulation Button (Shown on 2xl or via More menu) */}
-          <button
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                safeSetRawItem("crf_active_protocol", JSON.stringify(study), {
-                  retainInMemory: false,
-                });
-                router.push("/arcade/clinical-chaos");
-              }
-            }}
-            className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-emerald-500/40 transition-all shadow-xs shrink-0 whitespace-nowrap"
-            title="Launch Live Conformance Engine Simulation with Active Protocol Pre-Loaded"
-          >
-            <IconPlayerPlay className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400 shrink-0" />
-            <span>Simulate Protocol</span>
-          </button>
-
-          {/* Word / PDF Export Modal Trigger (Shown on 2xl or via More menu) */}
-          <button
-            onClick={onOpenExportDocument}
-            className="hidden 2xl:inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-blue-500/40 transition-all shadow-xs shrink-0 whitespace-nowrap"
-            title="Export Word (.docx) Protocol Books & PDF Blank/Annotated CRFs"
-          >
-            <IconFileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-            <span>Docx / PDF</span>
-          </button>
-
-          {/* Study Baselines & History Trigger */}
-          {onOpenBaselines && (
+          {/* Mobile Actions Drawer Trigger Button (replaces unorganized 17-item dump) */}
+          <div className="relative md:hidden">
             <button
-              onClick={onOpenBaselines}
-              className="hidden 2xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shadow-xs shrink-0 whitespace-nowrap"
-              title="Save Study Baseline Snapshots and Restore into New Drafts"
-            >
-              <IconBookmark className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
-              <span>Baselines</span>
-            </button>
-          )}
-
-          {/* Compare Against Baseline Trigger */}
-          {onOpenCompareBaseline && (
-            <button
-              onClick={onOpenCompareBaseline}
-              className="hidden 2xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shadow-xs shrink-0 whitespace-nowrap"
-              title="Compare the current draft against a saved baseline snapshot"
-            >
-              <IconGitCompare className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
-              <span>Compare</span>
-            </button>
-          )}
-
-          {/* More Actions Trigger Button */}
-          <div className="relative">
-            <button
-              onClick={() => setIsMoreMenuOpen((prev) => !prev)}
+              ref={mobileTriggerRef}
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
               className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 shrink-0"
               title="More Actions & Tools"
               aria-label="More Studio Actions"
-              aria-expanded={isMoreMenuOpen}
+              aria-expanded={isMobileMenuOpen}
             >
               <IconDotsVertical className="w-4 h-4" />
               {totalIssues > 0 && (
@@ -481,299 +893,81 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               )}
             </button>
 
-            {/* Popover Menu */}
-            {isMoreMenuOpen && (
+            {/* Mobile Menu Popover */}
+            {isMobileMenuOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs 2xl:hidden"
-                  onClick={() => setIsMoreMenuOpen(false)}
+                  className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-hidden="true"
                 />
-                <div className="absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-5rem))] max-h-[75dvh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 z-50 2xl:hidden space-y-1 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 px-1">
+                <div
+                  ref={mobileDrawerRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Studio Actions"
+                  tabIndex={-1}
+                  className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[75dvh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 z-50 md:hidden space-y-3 animate-in fade-in zoom-in-95 duration-150 outline-none"
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-zinc-800 px-1">
                     <span className="text-xs font-bold font-mono text-zinc-300 uppercase">
                       Studio Actions
                     </span>
                     <button
-                      onClick={() => setIsMoreMenuOpen(false)}
+                      onClick={() => setIsMobileMenuOpen(false)}
                       className="p-1 text-zinc-500 hover:text-white rounded"
+                      aria-label="Close Studio Actions"
                     >
                       <IconX className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  <div className="sm:hidden grid grid-cols-2 gap-2 pb-2 border-b border-zinc-800">
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onUndo();
-                      }}
-                      disabled={!canUndo}
-                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 disabled:opacity-40 active:scale-[0.98]"
-                    >
-                      Undo
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onRedo();
-                      }}
-                      disabled={!canRedo}
-                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 disabled:opacity-40 active:scale-[0.98]"
-                    >
-                      Redo
-                    </button>
-                    {onToggleTheme && (
-                      <button
-                        onClick={() => {
-                          setIsMoreMenuOpen(false);
-                          onToggleTheme();
-                        }}
-                        className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
-                      >
-                        {theme === "light" ? "Dark mode" : "Light mode"}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenDiagnostics();
-                      }}
-                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
-                    >
-                      Diagnostics
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenFormCatalog();
-                      }}
-                      className="col-span-2 rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
-                    >
-                      Add form
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenDiagnostics();
-                    }}
-                    className="hidden sm:block lg:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
-                  >
-                    Conformance diagnostics
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenFormCatalog();
-                    }}
-                    className="hidden sm:block xl:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
-                  >
-                    Add form
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      void sendToPipeline();
-                    }}
-                    disabled={isSendingToPipeline}
-                    className="xl:hidden w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-amber-950/40 hover:bg-amber-900/40 text-amber-200 border border-amber-800/40 transition-colors disabled:opacity-60"
-                  >
-                    <IconArrowRight className="w-4 h-4 text-amber-400" />
-                    <div className="flex-1">
-                      <div className="font-bold">Run Pipeline</div>
-                      <div className="text-[10px] text-amber-400/80">
-                        Tabulate this study into SDTM, ADaM and tables
+                  {STUDIO_HEADER_MENUS.map((menu) => (
+                    <div key={menu.id} className="space-y-1">
+                      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 px-1">
+                        {menu.label}
+                      </div>
+                      <div className="space-y-0.5">
+                        {menu.items.map((item) => {
+                          const meta = getActionMeta(item.id);
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              aria-label={item.label}
+                              disabled={meta.disabled}
+                              onClick={meta.action}
+                              title={item.description}
+                              className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs font-mono rounded-lg text-left transition-colors ${
+                                meta.disabled
+                                  ? "text-zinc-600 opacity-40 cursor-not-allowed"
+                                  : "text-zinc-200 hover:text-white hover:bg-zinc-800 active:scale-[0.98]"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="shrink-0">{meta.icon}</span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold truncate">
+                                    {item.label}
+                                  </div>
+                                  <div className="text-[10px] text-zinc-500 truncate">
+                                    {item.id === "simulate"
+                                      ? "Simulate Protocol in Clinical Chaos"
+                                      : item.description}
+                                  </div>
+                                </div>
+                              </div>
+                              {item.shortcut && (
+                                <kbd className="text-[9px] font-mono text-zinc-500 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-800 shrink-0">
+                                  {item.shortcut}
+                                </kbd>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      if (typeof window !== "undefined") {
-                        safeSetRawItem(
-                          "crf_active_protocol",
-                          JSON.stringify(study),
-                          { retainInMemory: false }
-                        );
-                        router.push("/arcade/clinical-chaos");
-                      }
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-200 border border-emerald-800/40 transition-colors"
-                  >
-                    <IconPlayerPlay className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                    <div className="flex-1">
-                      <div className="font-bold">Simulate Protocol</div>
-                      <div className="text-[10px] text-emerald-400/70">
-                        Launch in Clinical Chaos Arcade
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenExportDocument();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-blue-950/40 hover:bg-blue-900/40 text-blue-200 border border-blue-800/40 transition-colors"
-                  >
-                    <IconFileSpreadsheet className="w-4 h-4 text-blue-400" />
-                    <div className="flex-1">
-                      <div className="font-bold">Docx / PDF Books</div>
-                      <div className="text-[10px] text-blue-400/70">
-                        Export Word &amp; blank PDFs
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenBranding();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: branding.primaryColor }}
-                    />
-                    <IconPalette className="w-4 h-4 text-brand-cyan" />
-                    <div className="flex-1">
-                      <div className="font-bold">Organization Branding</div>
-                      <div className="text-[10px] text-zinc-500">
-                        Logos, colors &amp; header profiles
-                      </div>
-                    </div>
-                  </button>
-
-                  {onOpenBaselines && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenBaselines();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconBookmark className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Study Baselines</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Save snapshots &amp; restore into new drafts
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onOpenCompareBaseline && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenCompareBaseline();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconGitCompare className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">
-                          Compare Against Baseline
-                        </div>
-                        <div className="text-[10px] text-zinc-500">
-                          Review changes since a saved snapshot
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onOpenLibraryUpgrades && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onOpenLibraryUpgrades();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconBooks className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Library Block Upgrades</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Preview &amp; apply newer library versions
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onCopyShareLink && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onCopyShareLink();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                    >
-                      <IconLink className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Copy View Link</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Navigation URL only: does not include study content
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      onOpenWizard();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
-                  >
-                    <IconHelp className="w-4 h-4 text-brand-cyan" />
-                    <div className="flex-1">
-                      <div className="font-bold">Interactive Guide</div>
-                      <div className="text-[10px] text-zinc-500">
-                        How CRF Studio works
-                      </div>
-                    </div>
-                  </button>
-
-                  {onStartSpotlightTour && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onStartSpotlightTour();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-brand-cyan/10 hover:bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/20 transition-colors"
-                    >
-                      <IconPlayerPlay className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">Spotlight UI Tour</div>
-                        <div className="text-[10px] text-brand-cyan/70">
-                          Interactive walkthrough
-                        </div>
-                      </div>
-                    </button>
-                  )}
-
-                  {onToggleTerminal && (
-                    <button
-                      onClick={() => {
-                        setIsMoreMenuOpen(false);
-                        onToggleTerminal();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-brand-cyan transition-colors"
-                    >
-                      <IconTerminal2 className="w-4 h-4 text-brand-cyan" />
-                      <div className="flex-1">
-                        <div className="font-bold">CLI Terminal Drawer</div>
-                        <div className="text-[10px] text-zinc-500">
-                          Interactive command interface
-                        </div>
-                      </div>
-                    </button>
-                  )}
+                  ))}
                 </div>
               </>
             )}

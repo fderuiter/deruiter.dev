@@ -5,10 +5,40 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { WorkflowWizardModal } from "@/components/crf/Wizard/WorkflowWizardModal";
 import { fromAny, fromPartial } from "@total-typescript/shoehorn";
+import { DEMO_301_STUDY, runPipeline } from "@/lib/study-data";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
+
+describe("DEMO-301 eligibility regression (#3019)", () => {
+  it("randomizes only subjects with eligible screening and baseline systolic", () => {
+    const { datasets } = runPipeline(DEMO_301_STUDY, {
+      seed: 301,
+      nSubjects: 90,
+    });
+    const rand = datasets.find(
+      (data) => data.layer === "collected" && data.name === "RAND"
+    )!;
+    const vs = datasets.find(
+      (data) => data.layer === "sdtm" && data.name === "VS"
+    )!;
+    const randomized = new Set(rand.columns.USUBJID);
+    const results = vs.columns.VSSTRESN.filter(
+      (_, index) =>
+        randomized.has(vs.columns.USUBJID[index]) &&
+        vs.columns.VSTESTCD[index] === "SYSBP" &&
+        ["SCREENING", "BASELINE"].includes(String(vs.columns.VISIT[index]))
+    );
+    expect(randomized.size).toBe(81);
+    expect(results).toHaveLength(randomized.size * 2);
+    expect(
+      results.every(
+        (value) => typeof value === "number" && value >= 140 && value <= 159
+      )
+    ).toBe(true);
+  });
+});
 
 import {
   evaluateAst,

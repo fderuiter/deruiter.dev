@@ -360,6 +360,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     // 2.13.0 (#3414): the SDTM RELREC dataset.
     // 2.14.0 (#2711): the SDTM SE and CO datasets.
     // 2.15.0 (#2813): SEUPDES in SDTM SE, for unplanned elements.
-    version: "2.15.0",
+    // 2.15.1 (#3019): randomized DEMO-301 subjects meet eligibility criteria.
+    version: "2.15.1",
   },
 };

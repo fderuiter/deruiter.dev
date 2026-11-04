@@ -115,6 +115,16 @@ describe("reading the randomisation extension", () => {
 });
 
 describe("allocating the device study", () => {
+  it("preserves collected device-study data when DEMO-301 eligibility changes (#3019)", () => {
+    const datasets = runPipeline(device, {
+      seed: 301,
+      nSubjects: 90,
+    }).datasets.filter((dataset) => dataset.layer === "collected");
+    expect(
+      createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
+    ).toBe("7659e8d333cf8700e8f415e1732ebc9b8328299209b1a598a11680698b57168a");
+  });
+
   const { datasets, rand } = allocation(device, 240);
 
   it("fills each stratum in balanced blocks of four", () => {
@@ -180,15 +190,15 @@ describe("allocating the device study", () => {
 });
 
 describe("a study without the extension", () => {
-  it("generates DEMO-301 byte for byte as before", () => {
-    // Every layer, collected to ADaM, hashed as it was on main before #3416.
+  it("pins DEMO-301 output without randomisation strata", () => {
+    // Every layer, collected to ADaM, regenerated for eligibility (#3019).
     const { datasets } = runPipeline(DEMO_301_STUDY, {
       seed: 301,
       nSubjects: 90,
     });
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("29e9f35df2f6de37fc9c48dc6c3ba17dfa63b085d4a0f3c6fd22d19f4f2c1574");
+    ).toBe("59ad1b6938b5a4c68d795501e383b32a490dd363ea9a2ebaff2af9ab648fd446");
     expect(rows(find(datasets, "SUPPDM")).map((row) => row.QNAM)).not.toContain(
       "STRAT1R"
     );

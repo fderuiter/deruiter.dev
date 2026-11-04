@@ -599,7 +599,7 @@ describe("Table 14.1.1, demographics", () => {
     ]);
     expect(
       row(demog, "Baseline systolic blood pressure (mmHg)", "Mean")
-    ).toEqual(["141.30", "142.27", "143.05"]);
+    ).toEqual(["148.82", "149.70", "150.51"]);
   });
 
   it("links a percentage to the treatment group's ADSL rows and the counted subjects", () => {
@@ -763,7 +763,7 @@ describe("Table 14.2.1, change from baseline in SYSBP", () => {
     expect(row(cfb, "Week 2, change from baseline", "Mean")).toEqual([
       "0.46",
       "-0.73",
-      "-2.68",
+      "-2.69",
     ]);
   });
 

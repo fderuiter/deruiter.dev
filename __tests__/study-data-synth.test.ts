@@ -35,19 +35,16 @@ describe("seeded synthetic collection", () => {
       .update(JSON.stringify(datasets))
       .digest("hex");
     expect(digest).toBe(
-      "6b0cfcd8caffe117bc22392c84ab9bd09c5a380027296a710b1e3a4b98c9c6b7"
+      "5be96e4d9db47d2adbb096943e6e76d07a8734e4b8aa26aec57d96f2018a4c46"
     );
-    // The comments form (#2711) is a new domain with its own draws, so
-    // every other collected dataset hashes as it did before.
+    // Also pin the datasets without the independently drawn comments form.
     const beforeComments = datasets.filter((dataset) => dataset.name !== "CO");
     expect(
       createHash("sha256").update(JSON.stringify(beforeComments)).digest("hex")
-    ).toBe("c35ce8134d140b95fbb520c4d4bd7f798910c6af868c77cd1935322a5ac9806c");
-    // Eligibility (#2964) changed only screen failures: their IE records and
-    // the screening age, blood pressure or creatinine that shows the
-    // criterion they did not meet. Every enrolled subject's records hash as
-    // they did before. (Earlier domains made the same check by leaving out
-    // the new domain; see git history for those values.)
+    ).toBe("5f8dfee0d496056532e61331cb08e9a3e25ed1c228471ad997faf36b51552b20");
+    // #3019 changes randomized subjects' VS and screening LB values to
+    // agree with eligibility. Pin their regenerated records separately
+    // from screen failures and the independently drawn IE and CO domains.
     const dm = datasets.find((dataset) => dataset.name === "DM")!;
     const failed = new Set(
       dm.columns.USUBJID.filter(
@@ -73,7 +70,17 @@ describe("seeded synthetic collection", () => {
       });
     expect(
       createHash("sha256").update(JSON.stringify(enrolledOnly)).digest("hex")
-    ).toBe("f2f6140dea5bb6aa85caf8a1d0e4682060275a43344ae68efdc42ac5494182d9");
+    ).toBe("355097e6c8e88686d61357e8c7d04fcce2756878232db577ef2cfb2885e955b2");
+    // All collected domains other than VS and LB retain their pre-#3019 hash.
+    expect(
+      createHash("sha256")
+        .update(
+          JSON.stringify(
+            datasets.filter((data) => !["VS", "LB"].includes(data.name))
+          )
+        )
+        .digest("hex")
+    ).toBe("352497657c17e69cdee416e899fb5c1a23539b082b201fb31cc7b11854a6cf93");
   });
 
   it("collects consistent 12-lead ECG intervals at the ECG visits (#2941)", () => {

@@ -15,7 +15,7 @@ import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
  * baseline, 30 days, 6 months and 1 year, and names its overall summary
  * score through a biomedical concept. The handoff tabulates the QS activity
  * because the generator models that score, and SDTM QS is emitted only when
- * collected, so DEMO-301 is generated exactly as before.
+ * collected, so DEMO-301 retains no QS dataset.
  */
 
 type Cell = string | number | null;
@@ -136,14 +136,14 @@ describe("the VSFS scores", () => {
 });
 
 describe("a study without a questionnaire", () => {
-  it("generates DEMO-301 byte for byte as before, with no QS", () => {
+  it("pins regenerated DEMO-301 output without QS (#3019)", () => {
     const { datasets } = runPipeline(DEMO_301_STUDY, {
       seed: 301,
       nSubjects: 90,
     });
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("29e9f35df2f6de37fc9c48dc6c3ba17dfa63b085d4a0f3c6fd22d19f4f2c1574");
+    ).toBe("59ad1b6938b5a4c68d795501e383b32a490dd363ea9a2ebaff2af9ab648fd446");
     expect(datasets.some((dataset) => dataset.name === "QS")).toBe(false);
   });
 });

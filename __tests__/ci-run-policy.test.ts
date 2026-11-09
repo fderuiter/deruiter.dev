@@ -12,6 +12,7 @@ import {
   formatOutputs,
   isBotBranch,
   isNonCodePath,
+  readLiveDraft,
 } from "../scripts/ci-run-policy.mjs";
 import { validateBranchName } from "../lib/dx/git-guard";
 
@@ -381,6 +382,117 @@ describe("CI run policy (#1773)", () => {
       });
       expect(draft.arcadeDeviceGrep).toBe("");
       expect(computeRunPolicy({ eventName: "push" }).arcadeDeviceGrep).toBe("");
+    });
+  });
+  /**
+   * #3185: a push run queued after "Ready for review" used to cancel the
+   * ready run, keep `draft: true` from its own payload and fail Merge Gate
+   * on a ready PR (#2559, #2810). The policy now reads the live PR.
+   */
+  describe("live draft state (#3185)", () => {
+    const options = {
+      apiUrl: "https://api.github.com",
+      repository: "owner/repo",
+      prNumber: "42",
+      token: "test-token",
+    };
+
+    const respond = (status: number, body: unknown) =>
+      (async () =>
+        new Response(JSON.stringify(body), { status })) as typeof fetch;
+
+    it("asks the pulls endpoint for the PR, with the token", async () => {
+      const calls: Array<{ url: string; auth: string | null }> = [];
+      const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+        calls.push({
+          url: String(url),
+          auth: new Headers(init?.headers).get("authorization"),
+        });
+        return new Response(JSON.stringify({ draft: false }), { status: 200 });
+      }) as typeof fetch;
+      await expect(readLiveDraft({ ...options, fetchImpl })).resolves.toBe(
+        false
+      );
+      expect(calls).toEqual([
+        {
+          url: "https://api.github.com/repos/owner/repo/pulls/42",
+          auth: "Bearer test-token",
+        },
+      ]);
+    });
+
+    it("returns the PR's current flag, whatever the payload said", async () => {
+      await expect(
+        readLiveDraft({ ...options, fetchImpl: respond(200, { draft: true }) })
+      ).resolves.toBe(true);
+      await expect(
+        readLiveDraft({ ...options, fetchImpl: respond(200, { draft: false }) })
+      ).resolves.toBe(false);
+    });
+
+    it.each([
+      ["a non-2xx status", respond(404, { message: "Not Found" })],
+      ["a body without a boolean draft", respond(200, { draft: "false" })],
+      [
+        "a network error",
+        (async () => {
+          throw new TypeError("fetch failed");
+        }) as typeof fetch,
+      ],
+    ])(
+      "returns null on %s, so the payload's flag is kept",
+      async (_, fetchImpl) => {
+        await expect(
+          readLiveDraft({ ...options, fetchImpl })
+        ).resolves.toBeNull();
+      }
+    );
+
+    it.each([
+      ["no token", { token: undefined }],
+      ["no repository", { repository: undefined }],
+      ["a non-numeric PR number", { prNumber: "42/../../x" }],
+    ])("does not call the API with %s", async (_, override) => {
+      let called = false;
+      const fetchImpl = (async () => {
+        called = true;
+        return new Response("{}", { status: 200 });
+      }) as typeof fetch;
+      await expect(
+        readLiveDraft({ ...options, ...override, fetchImpl })
+      ).resolves.toBeNull();
+      expect(called).toBe(false);
+    });
+
+    it("gives the changes job the PR number, a token and read access to pull requests", () => {
+      const ci = fs.readFileSync(
+        path.resolve(process.cwd(), ".github/workflows/ci.yml"),
+        "utf-8"
+      );
+      const start = ci.indexOf("\n  changes:\n");
+      const end = ci.indexOf("\n  static-gate:\n");
+      expect(start).toBeGreaterThan(-1);
+      const job = ci.slice(start, end);
+      expect(job).toMatch(
+        /^ {4}permissions:\n {6}contents: read\n {6}pull-requests: read$/m
+      );
+      expect(job).toContain(
+        "PR_NUMBER: ${{ github.event.pull_request.number }}"
+      );
+      expect(job).toContain("GITHUB_TOKEN: ${{ github.token }}");
+    });
+
+    it("keeps one concurrency group per PR, so the newest run still supersedes", () => {
+      // Splitting the group by event action would leave the stale push run
+      // alive beside the ready run, and would stop cancel-closed-pr-ci.yml,
+      // which joins this exact group, from cancelling a closed PR's runs.
+      const ci = fs.readFileSync(
+        path.resolve(process.cwd(), ".github/workflows/ci.yml"),
+        "utf-8"
+      );
+      expect(ci).toContain(
+        "  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}\n  cancel-in-progress: true"
+      );
     });
   });
 });

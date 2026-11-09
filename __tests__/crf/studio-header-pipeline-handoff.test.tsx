@@ -77,11 +77,12 @@ const study = getOncologyPresetSync();
 const PIPELINE_TITLE =
   "Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables";
 
+// The handoff is the next-step button in the last stage (#3395).
 function renderHeader(onChangeMode = vi.fn()) {
   render(
     <StudioHeader
       study={study}
-      activeMode="designer"
+      activeMode="acrf"
       canUndo={false}
       canRedo={false}
       onUndo={vi.fn()}

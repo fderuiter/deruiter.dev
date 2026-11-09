@@ -87,7 +87,7 @@ export default function StudyDataPage() {
           >
             CRF Studio
           </IntentLink>{" "}
-          and press Run Pipeline.
+          and, in its Verify and ship stage, press Run the pipeline.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 font-mono text-xs">
           <span className="border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-amber-300">

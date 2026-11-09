@@ -42,4 +42,32 @@ describe("Neon backup workflow", () => {
     expect(new Set(secrets)).toEqual(new Set(["NEON_BACKUP_DATABASE_URL"]));
     expect(workflow).toContain("permissions:\n  contents: read");
   });
+  // #3612: the schedule is not evidence of a backup. GitHub can delay or drop
+  // a scheduled run and the train never checks for one, so the runbook must
+  // not promise a restore point per release and must say how to check.
+  describe("runbook", () => {
+    const doc = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        "docs",
+        "how-to",
+        "back-up-the-production-database.md"
+      ),
+      "utf8"
+    );
+
+    it("does not promise every release a restore point", () => {
+      expect(doc).not.toMatch(/each release has a restore point/i);
+      expect(workflow).not.toMatch(/every release has a restore point/i);
+    });
+
+    it("says how to check for a successful backup before a release", () => {
+      expect(doc).toContain("## Check backup readiness before a release");
+      expect(doc).toContain("--workflow neon-backup.yml");
+      expect(doc).toContain('startswith("neon-backup-")');
+      expect(doc).toContain(
+        "**If the latest run failed or there is no recent artifact:**"
+      );
+    });
+  });
 });

@@ -35,7 +35,10 @@ name: CI Pipeline
 # browser gates, and draft PRs (#2541) and bot-branch PRs (stitch/, jules/)
 # run only static-gate and security-gate, until marked ready or until a
 # maintainer applies the `ci:full` label respectively. Merge Gate fails on a draft and on
-# an unpromoted bot PR, so neither can merge on partial checks.
+# an unpromoted bot PR, so neither can merge on partial checks. #3185: the
+# draft flag is read from the live PR, not the event payload, so a push run
+# queued after "Ready for review" cannot cancel the ready run and then fail
+# Merge Gate on a stale `draft: true`.
 #
 # `merge-gate` is the single job branch protection (#732) should require: a
 # job skipped via `if:` or skipped because a `needs:` predecessor failed
@@ -93,6 +96,10 @@ jobs:
     name: Change Detection & Run Policy
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # #3185: pull-requests read lets the policy read the live draft flag.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       app_changed: ${{ steps.policy.outputs.app_changed }}
       bot_pr: ${{ steps.policy.outputs.bot_pr }}
@@ -123,6 +130,8 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REF: ${{ github.head_ref }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ github.token }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
 
@@ -882,7 +891,8 @@ jobs:
       - name: Evaluate required job results
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          # #3185: the live draft flag `changes` read, not the payload's.
+          PR_DRAFT: ${{ needs.changes.outputs.draft }}
           APP_CHANGED: ${{ needs.changes.outputs.app_changed }}
           BOT_PR: ${{ needs.changes.outputs.bot_pr }}
           PROMOTED: ${{ needs.changes.outputs.promoted }}
@@ -929,7 +939,7 @@ jobs:
               check_required "static-gate" "${RESULT_STATIC_GATE}"
               check_required "security-gate" "${RESULT_SECURITY_GATE}"
               if [ "${PR_DRAFT}" = "true" ]; then
-                echo "::error::draft PR: Merge Gate fails until the PR is marked ready for review, which re-runs CI with every gate."
+                echo "::error::PR is a draft; mark it ready for review to run every gate. This is not a test failure: a draft runs only the static and security gates."
                 fail=1
               fi
               if [ "${BOT_PR}" = "true" ] && [ "${PROMOTED}" != "true" ]; then

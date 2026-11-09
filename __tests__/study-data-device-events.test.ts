@@ -13,8 +13,8 @@ import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
  * Device deaths and adjudicated clinical events (#3417). The TAVR versus SAVR
  * study schedules a clinical events committee (CE) activity, so the
  * generator draws deaths, which end follow-up, and the committee's disabling
- * strokes and rehospitalisations. A study with no CE activity is generated
- * exactly as before.
+ * strokes and rehospitalisations. DEMO-301 retains its event model without
+ * deaths or CE records.
  */
 
 type Cell = string | number | null;
@@ -160,14 +160,14 @@ describe("adjudicated clinical events", () => {
 });
 
 describe("a study with no CE activity", () => {
-  it("generates DEMO-301 byte for byte as before, with no deaths or CE", () => {
+  it("pins regenerated DEMO-301 output without deaths or CE (#3019)", () => {
     const { datasets } = runPipeline(DEMO_301_STUDY, {
       seed: 301,
       nSubjects: 90,
     });
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("29e9f35df2f6de37fc9c48dc6c3ba17dfa63b085d4a0f3c6fd22d19f4f2c1574");
+    ).toBe("59ad1b6938b5a4c68d795501e383b32a490dd363ea9a2ebaff2af9ab648fd446");
     expect(datasets.some((dataset) => dataset.name === "CE")).toBe(false);
   });
 });

@@ -19,7 +19,7 @@ import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
  * rehospitalisation, then the change in the VSFS overall summary score at
  * 1 year, each time censored at 365 days. ADTTE, ADQS and ADHCE follow the
  * study's own hierarchy spec, selected by its endpoint ids, while DEMO-301
- * keeps its spec and its ADaM output byte for byte.
+ * keeps its own hierarchy and pinned ADaM output.
  */
 
 type Row = Record<string, CellValue>;
@@ -560,7 +560,7 @@ describe("the seeded device study", () => {
 });
 
 describe("DEMO-301", () => {
-  it("keeps its hierarchy and its ADaM output byte for byte", () => {
+  it("pins its hierarchy and regenerated ADaM output (#3019)", () => {
     const run = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
     const adam = run.datasets.filter((dataset) => dataset.layer === "adam");
     expect(adam.map((dataset) => dataset.name)).toEqual([
@@ -573,9 +573,9 @@ describe("DEMO-301", () => {
       "ADTTE",
       "ADHCE",
     ]);
-    // The hash of main before #3420.
+    // Regenerated after #3019 corrected the randomized subjects' eligibility.
     expect(
       createHash("sha256").update(JSON.stringify(adam)).digest("hex")
-    ).toBe("62cc311a81ddc64b9b697d2d7355cc325f2f5cf1a181de7a3658c3205d330d94");
+    ).toBe("c09acfd28e7bd42befef53bd0c7803242e74a069557b282ff45ba2cf3068cc7f");
   });
 });

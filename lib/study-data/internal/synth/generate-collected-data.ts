@@ -609,6 +609,9 @@ export function generateCollectedData(
   const screeningVisit = design.visits.find(
     (visit) => visit.targetDay === firstDay
   )!;
+  const eligibilityIds = new Set(
+    design.eligibilityCriteria.map((criterion) => criterion.id)
+  );
   const activityById = new Map(
     design.activities.map((activity) => [activity.id, activity])
   );
@@ -797,7 +800,13 @@ export function generateCollectedData(
       DSSCAT: "DISPOSITION EVENT",
     });
 
-    const baselineSbp = 142 + (pick("VS", "baseline-sbp") - 0.5) * 12;
+    // DEMO-301 requires 140–159 at screening and baseline. Both visits
+    // have zero treatment effect; allow for their +/-4 mmHg measurement
+    // noise without clipping observations at the eligibility boundaries.
+    const baselineSbp =
+      randomized && eligibilityIds.has("ec_inc_bp")
+        ? 144 + pick("VS", "baseline-sbp") * 11
+        : 142 + (pick("VS", "baseline-sbp") - 0.5) * 12;
     const qtcBaseline = 405 + (pick("EG", "baseline-qtc") - 0.5) * 30;
     let screeningDate = addDays(baselineDate, offset(firstDay));
     for (const visit of design.visits) {
@@ -933,8 +942,18 @@ export function generateCollectedData(
         for (const assessment of activity.assessments) {
           const key = `${visitKey}:${assessment.testCode}`;
           const noise = (pick(activity.domain, `${key}:noise`) - 0.5) * 2;
+          // Normal screening creatinine keeps randomized DEMO-301 subjects
+          // above the renal exclusion threshold. Later abnormalities and
+          // the explicit renal screen-failure evidence remain available.
           const abnormal =
-            activity.domain === "LB" && pick("LB", `${key}:abnormal`) < 0.025;
+            activity.domain === "LB" &&
+            !(
+              randomized &&
+              eligibilityIds.has("ec_exc_renal") &&
+              visit.id === screeningVisit.id &&
+              assessment.testCode === "CREAT"
+            ) &&
+            pick("LB", `${key}:abnormal`) < 0.025;
           let value = measuredValue(
             assessment.testCode,
             Math.max(0, armIndex),

@@ -289,7 +289,7 @@
           "ruleId": "SD-032",
           "dataset": "LB",
           "severity": "warning",
-          "count": 68,
+          "count": 66,
           "message": "Synthetic laboratory result is outside the reference range.",
           "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules 2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
           "expected": true,

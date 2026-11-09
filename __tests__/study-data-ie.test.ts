@@ -4,6 +4,7 @@
  * keyed to TI. Each failed criterion is visible in the subject's own
  * screening data, and an enrolled subject has no IE record.
  */
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   DEMO_301_STUDY,
@@ -16,8 +17,12 @@ type Row = Record<string, CellValue>;
 
 const run = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
 
-function find(layer: string, name: string): Dataset {
-  return run.datasets.find(
+function find(
+  layer: string,
+  name: string,
+  datasets: readonly Dataset[] = run.datasets
+): Dataset {
+  return datasets.find(
     (dataset) => dataset.layer === layer && dataset.name === name
   )!;
 }
@@ -54,6 +59,30 @@ function screening(findings: Row[], prefix: string, subject: CellValue) {
   return Number(row?.[`${prefix}STRESN`]);
 }
 
+/** One required eligibility measurement, with no missing or duplicate result. */
+function eligibilityResult(
+  findings: Row[],
+  prefix: "VS" | "LB",
+  subject: CellValue,
+  visit: "SCREENING" | "BASELINE"
+): number {
+  const matches = findings.filter(
+    (item) =>
+      item.USUBJID === subject &&
+      item.VISIT === visit &&
+      item[`${prefix}TESTCD`] === (prefix === "VS" ? "SYSBP" : "CREAT")
+  );
+  const context = `${subject} ${visit} ${prefix}`;
+  expect(matches, context).toHaveLength(1);
+  const value = matches[0][`${prefix}STRESN`];
+  expect(typeof value, context).toBe("number");
+  expect(Number.isFinite(value), context).toBe(true);
+  expect(matches[0][`${prefix}STRESU`], context).toBe(
+    prefix === "VS" ? "mmHg" : "umol/L"
+  );
+  return Number(value);
+}
+
 /** CKD-EPI 2021 eGFR, creatinine in umol/L. */
 function egfr(creatinine: number, age: number, sex: CellValue): number {
   const scr = creatinine / 88.4;
@@ -69,7 +98,83 @@ function egfr(creatinine: number, age: number, sex: CellValue): number {
   );
 }
 
+function expectEligibleSystolic(findings: Row[], subject: CellValue): void {
+  for (const visit of ["SCREENING", "BASELINE"] as const) {
+    const systolic = eligibilityResult(findings, "VS", subject, visit);
+    expect(systolic, `${subject} ${visit}`).toBeGreaterThanOrEqual(140);
+    expect(systolic, `${subject} ${visit}`).toBeLessThanOrEqual(159);
+  }
+}
+
+function expectEligibleScreening(subject: Row, findings: Row[]): void {
+  const age = Number(subject.AGE);
+  expect(age, String(subject.USUBJID)).toBeGreaterThanOrEqual(18);
+  expect(age, String(subject.USUBJID)).toBeLessThanOrEqual(75);
+  const creatinine = eligibilityResult(
+    findings,
+    "LB",
+    subject.USUBJID,
+    "SCREENING"
+  );
+  expect(
+    egfr(creatinine, age, subject.SEX),
+    String(subject.USUBJID)
+  ).toBeGreaterThanOrEqual(45);
+}
+
 describe("SDTM IE (#2964)", () => {
+  it("keeps randomized subjects' screening and baseline systolic within INC02 (#3019)", () => {
+    const randomized = rows(find("collected", "RAND"));
+    expect(randomized).toHaveLength(81);
+    for (const { USUBJID } of randomized) {
+      expectEligibleSystolic(vs, USUBJID);
+    }
+  });
+
+  it("keeps randomized subjects within the age and renal screening criteria (#3019)", () => {
+    for (const { USUBJID } of rows(find("collected", "RAND"))) {
+      const subject = dm.find((item) => item.USUBJID === USUBJID)!;
+      expectEligibleScreening(subject, lb);
+    }
+  });
+
+  it("meets eligibility for randomized subjects across seeds and cohort sizes (#3019)", () => {
+    fc.assert(
+      fc.property(
+        fc.nat(0xffffffff),
+        fc.integer({ min: 1, max: 90 }),
+        (seed, nSubjects) => {
+          const { datasets } = runPipeline(DEMO_301_STUDY, { seed, nSubjects });
+          const demographics = rows(find("sdtm", "DM", datasets));
+          const vitalSigns = rows(find("sdtm", "VS", datasets));
+          const laboratory = rows(find("sdtm", "LB", datasets));
+          const eligibility = rows(find("sdtm", "IE", datasets));
+          for (const { USUBJID } of rows(find("collected", "RAND", datasets))) {
+            const subject = demographics.find(
+              (row) => row.USUBJID === USUBJID
+            )!;
+            expectEligibleSystolic(vitalSigns, USUBJID);
+            expectEligibleScreening(subject, laboratory);
+            expect(eligibility.some((row) => row.USUBJID === USUBJID)).toBe(
+              false
+            );
+          }
+        }
+      ),
+      {
+        seed: 3019,
+        numRuns: 25,
+        examples: [
+          [301, 90],
+          [7, 90],
+          [999, 90],
+          [0, 1],
+          [0xffffffff, 90],
+        ],
+      }
+    );
+  }, 60_000);
+
   it("records at least one criterion for every screen failure and none for enrolled subjects", () => {
     expect(screenFailures.length).toBeGreaterThan(0);
     expect(new Set(ie.map((row) => row.USUBJID))).toEqual(

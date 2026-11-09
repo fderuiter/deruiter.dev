@@ -315,25 +315,25 @@ describe("DEMO-301", () => {
       )
     );
 
-  it("keeps its run and its table output byte for byte", () => {
+  it("pins its regenerated run and table output (#3019)", () => {
     const run = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
     const tlf = buildTlfOutputs(DEMO_301_STUDY, run);
     const hash = (value: unknown) =>
       createHash("sha256")
         .update(typeof value === "string" ? value : JSON.stringify(value))
         .digest("hex");
-    // The hashes of main before #3424.
+    // Regenerated after #3019 corrected the randomized subjects' eligibility.
     expect(hash(run)).toBe(
-      "c0a66d6850127e6c8387cf038416b1524de99262df5604d2b06c87a6cef15dcd"
+      "cc81515ad5be5e9899ed212a5225ce0018b95b9a4efc33cfc0dac7d1e3b09e58"
     );
     expect(hash(tlf)).toBe(
-      "75f113c9d0d06d6b0db48775786647e9d5dd041d58eba9937196801aa028a4c6"
+      "72c657df75694fa900f3068b0134116156f2ff94ad777fdcff62fc94082be603"
     );
     expect(hash(tlf.tables.map(writeTableHtml).join(""))).toBe(
-      "00bfef862284cfa6a528c414fe6a23ed87c4c8c5e9dd33cd433f7e705a9a29f5"
+      "1710ab8f72ec44d052bfa5b9452c946fb7612fb4e227cb25d5c304a5b4a42751"
     );
     expect(hash(tlf.tables.map(writeTableRtf).join(""))).toBe(
-      "8cc21abedbd1d0147c8440f0bc4f519a1877d3ca3758aa97c94bef3b118714f5"
+      "5b8e012d0dbdda09e1c64722f5d064367aa72477dced7f275ab78f7727148273"
     );
     const adsl = run.datasets.find((dataset) => dataset.name === "ADSL")!;
     expect(rows(adsl)[0]).not.toHaveProperty("STRAT1R");

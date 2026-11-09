@@ -48,7 +48,7 @@ describe("breadcrumb trails (#1848, #2952)", () => {
   it("names the menu group, then the page by its menu entry", () => {
     expect(getBreadcrumbTrail("/crf")).toEqual([
       { label: "Clinical", href: "/clinical" },
-      { label: "CRF Studio" },
+      { label: "Case report form designer (CRF Studio)" },
     ]);
     expect(getBreadcrumbTrail("/simulator")).toEqual([
       { label: "Labs", href: "/labs" },

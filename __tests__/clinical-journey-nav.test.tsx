@@ -166,7 +166,9 @@ describe("clinical journey navigation", () => {
     expect(details?.className).not.toContain("sm:block");
     // The step names stay whole for assistive technology.
     const current = document.querySelector('[aria-current="step"]');
-    expect(current?.textContent).toBe("1. Collect: CRF Studio");
+    expect(current?.textContent).toBe(
+      "1. Collect: Case report form designer (CRF Studio)"
+    );
     expect(
       screen.getByRole("link", { name: "Next step: Protocol Drift →" })
     ).toBeTruthy();
@@ -197,7 +199,9 @@ describe("clinical journey highlight", () => {
       "/crf",
     ]);
     expect(
-      screen.getByRole("link", { name: "Start the journey at CRF Studio" })
+      screen.getByRole("link", {
+        name: "Start the journey at Case report form designer (CRF Studio)",
+      })
     ).toBeTruthy();
   });
 

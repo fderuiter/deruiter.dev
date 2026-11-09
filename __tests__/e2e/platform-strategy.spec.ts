@@ -6,7 +6,10 @@ for (const width of [320, 375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/platform/strategy");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Platform strategy toolkit" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Vendor scoring (Platform Strategy)",
+      })
     ).toBeVisible();
     await expect(async () => {
       await page

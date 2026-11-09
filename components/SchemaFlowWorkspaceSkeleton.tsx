@@ -164,7 +164,7 @@ export function SchemaFlowWorkspaceSkeleton() {
           </div>
 
           <div className="border-t border-zinc-900 bg-zinc-950 px-4 py-3 flex items-center gap-2">
-            <span className="text-zinc-700 font-mono text-[10px]">
+            <span className="text-zinc-400 font-mono text-[10px]">
               ~ tactic-cli $
             </span>
             <div className="h-3 w-32 bg-zinc-900 rounded" />

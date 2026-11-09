@@ -405,9 +405,9 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
       {/* Physical merchandise entry point */}
       <div className="mt-10 p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
         <div className="min-w-0">
-          <h4 className="text-sm font-bold font-mono text-white">
+          <h3 className="text-sm font-bold font-mono text-white">
             Physical merch and swag
-          </h4>
+          </h3>
           <p className="text-xs text-zinc-400 font-mono mt-1 leading-relaxed break-words">
             Want a printed flag instead of a vector file? Stickers, shirts and
             prints are planned at base cost, with no artist markup.
@@ -423,10 +423,10 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
             <IconCreativeCommons className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-sm font-bold font-mono text-white flex items-center gap-2">
+            <h3 className="text-sm font-bold font-mono text-white flex items-center gap-2">
               <span>Creative Commons CC0 Public Domain Dedication</span>
               <IconShieldCheck className="w-4 h-4 text-emerald-400" />
-            </h4>
+            </h3>
             <p className="text-xs text-zinc-400 font-mono mt-1 leading-relaxed">
               Free for commercial print, screen printing, vinyl plotting,
               merchandise, digital publications, and software development. No

@@ -73,7 +73,7 @@ export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
   {
     id: "collect",
     stage: "Collect",
-    title: "CRF Studio",
+    title: "Case report form designer (CRF Studio)",
     href: "/crf",
     purpose:
       "Design the case report forms a protocol needs and enter data the way a site would.",

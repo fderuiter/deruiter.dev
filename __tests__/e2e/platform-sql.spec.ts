@@ -66,7 +66,10 @@ for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/platform/sql");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Query the warehouse" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Query workbench (SQL Workbench)",
+      })
     ).toBeVisible();
     // A table's contract open in the schema browser, so it is checked too.
     await page.locator("summary", { hasText: "gold.fct_enrollment" }).click();

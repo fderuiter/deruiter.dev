@@ -584,6 +584,19 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).toContain("-c scripts/study-data-core-constraints.txt");
   });
 
+  // #3706: CORE v0.17.1 refuses any Python but 3.12, and ubuntu-latest moved
+  // to 3.14, so the job pins the interpreter and builds the venv from it.
+  it("builds the CORE venv on a pinned Python 3.12, not the image's python3", () => {
+    expect(workflow).toMatch(
+      /uses: actions\/setup-python@[0-9a-f]{40} # v\d+\.\d+\.\d+\n\s+with:\n\s+python-version: "3\.12"\n/
+    );
+    expect(workflow).toContain(
+      "PYTHON: ${{ steps.python.outputs.python-path }}"
+    );
+    expect(workflow).toContain('"$PYTHON" -m venv "$RUNNER_TEMP/core-venv"');
+    expect(workflow).not.toMatch(/^\s*python3 /m);
+  });
+
   it("runs on study data changes and weekly, bounded, and outside ci.yml", () => {
     expect(workflow).toContain('- "lib/study-data/**"');
     expect(workflow).toMatch(/schedule:\n\s+- cron:/);

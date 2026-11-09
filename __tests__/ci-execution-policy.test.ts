@@ -451,7 +451,8 @@ describe("CI Execution Policy", () => {
       }
       expect(envMapping).toMatchObject({
         EVENT_NAME: "github.event_name",
-        PR_DRAFT: "github.event.pull_request.draft",
+        // #3185: the live flag `changes` read, never the stale payload.
+        PR_DRAFT: "needs.changes.outputs.draft",
         APP_CHANGED: "needs.changes.outputs.app_changed",
         BOT_PR: "needs.changes.outputs.bot_pr",
         PROMOTED: "needs.changes.outputs.promoted",
@@ -604,7 +605,12 @@ describe("CI Execution Policy", () => {
           draft: "true",
         });
         expect(outcome.status).toBe(1);
-        expect(outcome.stdout).toContain("draft PR");
+        // #3185: the message names the draft state, so a draft's red Merge
+        // Gate is not read as a failing test.
+        expect(outcome.stdout).toContain(
+          "PR is a draft; mark it ready for review to run every gate."
+        );
+        expect(outcome.stdout).toContain("This is not a test failure");
       });
 
       it("fails on a draft even if every gate somehow succeeded", () => {

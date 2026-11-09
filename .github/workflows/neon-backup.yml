@@ -2,9 +2,12 @@ name: Neon Backup
 
 # #3036: Neon's free plan keeps only six hours of point-in-time history and no
 # snapshots, so an incident noticed the next morning is unrecoverable. This
-# takes a weekly logical backup of the production database a couple of hours
-# before Sunday's release train, so every release has a restore point taken
-# before its migrations run.
+# takes a weekly logical backup of the production database, scheduled a
+# couple of hours before Sunday's release train. The train does not check
+# that it succeeded, and GitHub can delay or drop a scheduled run, so a
+# release has a restore point only when a run succeeded (#3612; see
+# "Check backup readiness before a release" in
+# docs/how-to/back-up-the-production-database.md).
 #
 # The dump is encrypted with age before it leaves the runner. Artifacts of a
 # public repository can be downloaded by any signed-in GitHub user, so only

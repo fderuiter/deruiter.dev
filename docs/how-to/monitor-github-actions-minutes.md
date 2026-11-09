@@ -74,7 +74,9 @@ a gate or lowering a threshold:
 - `changes` (Change Detection & Run Policy) runs
   `scripts/ci-run-policy.mjs` first, with no install. It decides whether the
   PR changes code, whether it is a draft, and whether it comes from a bot
-  branch (#1773).
+  branch (#1773). It reads the draft flag from the live pull request, not
+  from the event payload, so a push run that GitHub queues after "Ready for
+  review" still runs every gate (#3185).
 - `static-gate` (migration replay, schema drift, docs drift, `lint:docs`,
   typecheck, lint, and `npm run verify -- --skip-benchmark-evidence`) runs on
   every trigger with the Postgres service. It caches `tsconfig.tsbuildinfo`
@@ -156,7 +158,7 @@ a gate or lowering a threshold:
 | --- | --- | --- |
 | Code change, ready for review | Every gate | Green when every gate passes |
 | Docs-only change | Every gate except `build`, `heavy-gate`, `bench-gate`, `heavy-gate-report`, `device-gate` | Green when the rest pass |
-| Draft | Static and security gates only (#2541) | Red until marked ready, which re-runs everything |
+| Draft | Static and security gates only (#2541) | Red ("PR is a draft; mark it ready for review to run every gate") until marked ready, which re-runs everything |
 | Bot branch (`stitch/`, `jules/`) without `ci:full` | Static and security gates only | Red: "bot PR: full suite runs when marked ready" |
 | Bot branch with the `ci:full` label | Every gate the change needs | Green when they pass |
 

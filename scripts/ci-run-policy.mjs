@@ -14,6 +14,9 @@
  * Merge Gate stays the single required check and reads the same outputs, so
  * a skipped gate is only ever accepted where this policy says it may be.
  *
+ * The draft flag comes from the pull request as it is when this job runs,
+ * not from the event payload (#3185). See `readLiveDraft()`.
+ *
  * The bot branch prefixes live here and nowhere else.
  * `__tests__/ci-run-policy.test.ts` ties them to `validateBranchName()` in
  * `lib/dx/git-guard.ts`, so a prefix added to the guard has to be classified
@@ -288,6 +291,59 @@ export function computeRunPolicy(input) {
 }
 
 /**
+ * Reads the pull request's draft flag from the REST API (#3185).
+ *
+ * The event payload records the flag as it was when the event fired. A push
+ * to a draft followed seconds later by "Ready for review" starts two runs in
+ * the same concurrency group, and GitHub does not always queue them in the
+ * order they happened. When the push run is queued last it cancels the ready
+ * run, keeps `draft: true` from its payload, skips the unit and browser gates
+ * and fails Merge Gate on a PR that is ready (#2559, #2810). Asking the API
+ * instead means whichever run survives sees the PR as it is now.
+ *
+ * Returns null when the flag cannot be read (no token, a network error, a
+ * non-2xx status or an unexpected body), and the caller keeps the payload's
+ * value. Merge Gate still fails a real draft either way.
+ *
+ * @param {object} options
+ * @param {string | undefined} options.apiUrl `GITHUB_API_URL`.
+ * @param {string | undefined} options.repository `owner/name`.
+ * @param {string | undefined} options.prNumber The pull request number.
+ * @param {string | undefined} options.token A token that can read the PR.
+ * @param {typeof fetch} [options.fetchImpl] Injected for tests.
+ * @returns {Promise<boolean | null>}
+ */
+export async function readLiveDraft({
+  apiUrl,
+  repository,
+  prNumber,
+  token,
+  fetchImpl = globalThis.fetch,
+}) {
+  if (!apiUrl || !repository || !/^\d+$/.test(prNumber ?? "") || !token) {
+    return null;
+  }
+  try {
+    const response = await fetchImpl(
+      `${apiUrl}/repos/${repository}/pulls/${prNumber}`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        signal: AbortSignal.timeout(10_000),
+      }
+    );
+    if (!response.ok) return null;
+    const body = await response.json();
+    return typeof body?.draft === "boolean" ? body.draft : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Formats a policy as `key=value` lines for `$GITHUB_OUTPUT`.
  *
  * @param {RunPolicy} policy
@@ -342,7 +398,7 @@ function readChangedFiles(prHeadSha) {
   }
 }
 
-function main() {
+async function main() {
   const eventName = process.env.EVENT_NAME ?? "";
   let labels = [];
   try {
@@ -354,14 +410,31 @@ function main() {
     eventName === "pull_request"
       ? readChangedFiles(process.env.PR_HEAD_SHA)
       : [];
+  const payloadDraft = process.env.PR_DRAFT === "true";
+  const liveDraft =
+    eventName === "pull_request"
+      ? await readLiveDraft({
+          apiUrl: process.env.GITHUB_API_URL,
+          repository: process.env.GITHUB_REPOSITORY,
+          prNumber: process.env.PR_NUMBER,
+          token: process.env.GITHUB_TOKEN,
+        })
+      : null;
   const policy = computeRunPolicy({
     eventName,
     headRef: process.env.HEAD_REF,
-    draft: process.env.PR_DRAFT === "true",
+    draft: liveDraft ?? payloadDraft,
     labels: Array.isArray(labels) ? labels.map(String) : [],
     changedFiles,
   });
 
+  if (eventName === "pull_request") {
+    console.log(
+      liveDraft === null
+        ? `Draft state: ${payloadDraft} (event payload; the live PR could not be read)`
+        : `Draft state: ${liveDraft} (live PR; the event payload said ${payloadDraft})`
+    );
+  }
   console.log(`Run policy: ${policy.reason}`);
   console.log(
     `Arcade device specs: ${policy.arcadeDeviceGrep ? `--grep "${policy.arcadeDeviceGrep}"` : "none"}`
@@ -391,5 +464,5 @@ function main() {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  main();
+  await main();
 }

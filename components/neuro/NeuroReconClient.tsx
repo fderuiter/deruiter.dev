@@ -82,7 +82,7 @@ const Brain3DViewerSkeleton: React.FC = () => {
           <p className="text-sm font-bold font-mono text-zinc-300">
             NeuroRecon 3D Viewer
           </p>
-          <p className="text-[11px] font-mono text-brand-cyan/60">
+          <p className="text-[11px] font-mono text-brand-cyan">
             Loading heavy WebGL visualizer and 3D brain mesh...
           </p>
         </div>

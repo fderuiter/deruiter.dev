@@ -38,20 +38,6 @@
     },
     {
       "target": "sdtm",
-      "coreId": "CORE-000929",
-      "dataset": "SUPPDM",
-      "category": "core-limitation",
-      "reason": "Engine execution error: the evaluation dataset fails to build for SUPPDM."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "SUPPDM",
-      "category": "core-limitation",
-      "reason": "Engine execution error: the evaluation dataset fails to build for SUPPDM."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-001080",
       "dataset": "TS",
       "category": "core-limitation",

@@ -372,6 +372,18 @@ function isMandatory(dataset: Dataset, variable: VariableMeta): boolean {
 }
 
 /**
+ * The SDTM domain an ItemGroupDef belongs to. A supplemental qualifier dataset
+ * (`SUPPDM`, `SUPPAE`) names its parent domain, as Define-XML 2.1 requires, so
+ * a rule that looks up the parent finds the supplemental group (#3717).
+ *
+ * @param name - The dataset name.
+ * @returns The parent domain for a SUPP dataset, otherwise the name itself.
+ */
+function tabulationDomain(name: string): string {
+  return name.startsWith("SUPP") ? name.slice("SUPP".length) : name;
+}
+
+/**
  * Builds the Define-XML 2.1 document model for the SDTM or ADaM datasets of
  * a pipeline run.
  *
@@ -504,7 +516,7 @@ export function buildDefine(
       purpose: layer === "sdtm" ? "Tabulation" : "Analysis",
       repeating: !trialDesign && !subjectLevel,
       isReferenceData: trialDesign,
-      ...(layer === "sdtm" ? { domain: dataset.name } : {}),
+      ...(layer === "sdtm" ? { domain: tabulationDomain(dataset.name) } : {}),
       standardOid: guideOid,
       leaf: {
         id: leafId(dataset.name),

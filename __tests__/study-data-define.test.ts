@@ -415,6 +415,26 @@ describe.each(LAYERS)("%s define/data parity", (layer) => {
   });
 });
 
+describe("supplemental qualifier groups name their parent domain (#3717)", () => {
+  it("gives SUPPDM the parent domain DM, and DM its own", () => {
+    const groups = all(docs.sdtm, ODM_NS, "ItemGroupDef");
+    const named = (name: string) =>
+      groups.find((group) => attr(group, "Name") === name)!;
+    expect(attr(named("SUPPDM"), "Domain")).toBe("DM");
+    expect(attr(named("DM"), "Domain")).toBe("DM");
+    expect(attr(named("SUPPDM"), "OID")).toBe(itemGroupOid("SUPPDM"));
+  });
+
+  it("gives IDVAR and IDVARVAL the Identifier role the IG states (CORE-001081)", () => {
+    const supp = run.datasets.find((dataset) => dataset.name === "SUPPDM")!;
+    for (const name of ["IDVAR", "IDVARVAL"]) {
+      expect(
+        supp.variables.find((variable) => variable.name === name)?.role
+      ).toBe("Identifier");
+    }
+  });
+});
+
 describe("checkDefineParity (#2931)", () => {
   const ruleIds = (findings: readonly { ruleId: string }[]) =>
     findings.map((finding) => finding.ruleId);

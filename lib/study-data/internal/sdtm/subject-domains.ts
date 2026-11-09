@@ -855,8 +855,8 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       assigned("STUDYID", "Study Identifier"),
       assigned("RDOMAIN", "Related Domain Abbreviation"),
       assigned("USUBJID", "Unique Subject Identifier"),
-      assigned("IDVAR", "Identifying Variable", "Record Qualifier"),
-      assigned("IDVARVAL", "Identifying Variable Value", "Record Qualifier"),
+      assigned("IDVAR", "Identifying Variable"),
+      assigned("IDVARVAL", "Identifying Variable Value"),
       assigned("QNAM", "Qualifier Variable Name", "Topic"),
       assigned("QLABEL", "Qualifier Variable Label", "Synonym Qualifier"),
       collected(

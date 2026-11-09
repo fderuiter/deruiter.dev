@@ -52,6 +52,10 @@ import {
   storeStudyHandoff,
 } from "@/components/study-data/handoff-storage";
 
+/** Tooltip of the last stage's next-step button, the pipeline handoff. */
+const PIPELINE_HANDOFF_TITLE =
+  "Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables";
+
 interface StudioHeaderProps {
   study: StudyProtocol;
   activeMode: StudioMode;
@@ -445,7 +449,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           />
         </div>
 
-        {/* Right Side: Find, the pipeline handoff and the phone actions */}
+        {/* Right Side: Find and the phone actions. The pipeline handoff is the
+            next-step button in the last stage (#3395). */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Study Omnibar Trigger (#544) */}
           {onOpenOmnibar && (
@@ -464,19 +469,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               </kbd>
             </button>
           )}
-
-          {/* The clinical journey's next step for this study (#2927); #3395
-              leaves the next-step button as the only stage primary. */}
-          <button
-            type="button"
-            onClick={sendToPipeline}
-            disabled={isSendingToPipeline}
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 font-mono text-xs font-bold rounded-lg border border-amber-500/50 transition-all shrink-0 whitespace-nowrap shadow-xs disabled:opacity-60"
-            title="Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables"
-          >
-            <IconArrowRight className="w-3.5 h-3.5 shrink-0" />
-            <span>Run Pipeline</span>
-          </button>
 
           <StudioActionsDrawer
             actions={menuActions}
@@ -586,9 +578,14 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           ))}
         </nav>
 
-        {/* The one step to take next, so the stages read as a path. */}
+        {/* The one step to take next, so the stages read as a path. It is
+            each stage's only primary action, at every width (#3395); in the
+            last stage it hands the study to the pipeline. */}
         <button
           type="button"
+          title={
+            nextStep.kind === "pipeline" ? PIPELINE_HANDOFF_TITLE : undefined
+          }
           onClick={() =>
             nextStep.kind === "mode"
               ? onChangeMode(nextStep.mode)

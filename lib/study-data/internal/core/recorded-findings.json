@@ -2543,7 +2543,7 @@
         "message": "A subject has a record in EX but is not assigned to a treatment while participating in an interventional study"
       },
       "CORE-000929": {
-        "status": "EXECUTION ERROR",
+        "status": "SUCCESS",
         "cdisc": "CG0001, SEND16, TIG0090, TIG0289",
         "fda": "",
         "message": "DOMAIN Code is not a published DOMAIN Code in CDISC Controlled Terminology."
@@ -2585,7 +2585,7 @@
         "message": "TSVALCD is not a valid code in the CDISC CT version identified in TSVCDVER."
       },
       "CORE-001081": {
-        "status": "EXECUTION ERROR",
+        "status": "SUCCESS",
         "cdisc": "CG0010",
         "fda": "",
         "message": "Variable role specified in the define-xml does not match the variable role in the IG (for domains) or in the model (for custom domains)."
@@ -3864,14 +3864,6 @@
         "category": "core-limitation",
         "reason": "The rule compares --DECOD with FAOBJ on any record that RELREC relates, as though the relationship were to a Findings About record. The study has no FA domain: RELREC relates adverse events to the medications given for them, so FAOBJ is absent and every related AE and CM record is reported."
       },
-      "CORE-000929 SUPPDM": {
-        "category": "core-limitation",
-        "reason": "Engine execution error: the evaluation dataset fails to build for SUPPDM."
-      },
-      "CORE-001081 SUPPDM": {
-        "category": "core-limitation",
-        "reason": "Engine execution error: the evaluation dataset fails to build for SUPPDM."
-      },
       "CORE-001080 TS": {
         "category": "core-limitation",
         "reason": "Engine execution error (unknown exception) on TS."
@@ -4206,7 +4198,7 @@
   },
   "views": {
     "default": {
-      "inputSha256": "008778e34c5683f2c98ea3fec77d9a984de1b93856133cda944ea3756a51f35e",
+      "inputSha256": "2728c5e7ae2add330942997fbf1f49b2d9db14f2025ace4dfa8375c63d959fbe",
       "sdtm": {
         "lines": [
           "CORE-000264 MH DEMO-301-0001#1 MHTERM=Hypertension|MHBODSYS=Vascular disorders|MHSOC=Not in dataset",
@@ -4296,9 +4288,7 @@
           "CORE-000767 CM DEMO-301-0089#1 RELREC.FAOBJ=Not in dataset|CMDECOD=PARACETAMOL",
           "CORE-000776 MH -#- MHENDY=Not in dataset|MHENDTC=null",
           "CORE-000793 IE -#- IEDTC=2029-12-25|IEDY=Not in dataset",
-          "CORE-000929 SUPPDM -#- -",
-          "CORE-001080 TS -#- -",
-          "CORE-001081 SUPPDM -#- -"
+          "CORE-001080 TS -#- -"
         ],
         "counts": {
           "CORE-000264 MH": 152,
@@ -4312,9 +4302,7 @@
           "CORE-000767 CM": 15,
           "CORE-000776 MH": 1,
           "CORE-000793 IE": 1,
-          "CORE-000929 SUPPDM": 1,
-          "CORE-001080 TS": 1,
-          "CORE-001081 SUPPDM": 1
+          "CORE-001080 TS": 1
         }
       },
       "usdm": {
@@ -4387,7 +4375,7 @@
       }
     },
     "impossible-date": {
-      "inputSha256": "e12e4f355c8f5d9c1cd6d05f12165086e7c1745acebb8d9f3eedfb2f95a850b4",
+      "inputSha256": "c800aee5970f207e8c379f8fa3f0da3564a5254a815c295ccc63cd40f3830784",
       "added": {
         "lines": [
           "CORE-000701 AE DEMO-301-0003#1 EPOCH=null"
@@ -4403,7 +4391,7 @@
       "status": {}
     },
     "partial-end-date": {
-      "inputSha256": "1fcfb39c185613bf3cb595db7bb25aff397c2dcad552beb0c404c2e4d854f5e4",
+      "inputSha256": "d2e72c4554ccd542e33701753374b723715f93f79b672013aa878d882067491a",
       "added": {
         "lines": [],
         "counts": {}
@@ -4415,7 +4403,7 @@
       "status": {}
     },
     "ae-before-first-dose": {
-      "inputSha256": "1182add6fbdf8c0f5eb54acb87fffc21b40ac84c18b9021d3a02811472aa04de",
+      "inputSha256": "8b480bea46049d6255597db6022ade2ef03b66028613379447edde540631099b",
       "added": {
         "lines": [],
         "counts": {}
@@ -4427,7 +4415,7 @@
       "status": {}
     },
     "missing-baseline": {
-      "inputSha256": "dc4a24547602c6a47d1293143464af3fe980304472da1a3dcfbcfbb5ac164892",
+      "inputSha256": "9788372d0f5dd66b3ed434b08d184442f8e490c12a026321da80f4df2036983c",
       "added": {
         "lines": [],
         "counts": {}
@@ -4439,7 +4427,7 @@
       "status": {}
     },
     "no-post-baseline": {
-      "inputSha256": "12e07e0b73359c28c8b9b313e8c483078bdd90125d32f11fd8305e40382ff0b3",
+      "inputSha256": "eb97d313ae6fdc3cbfd7f73939c1df5638a7dadb36a125206ff3e80aa3e15ad9",
       "added": {
         "lines": [],
         "counts": {}
@@ -4451,7 +4439,7 @@
       "status": {}
     },
     "off-codelist-extensible": {
-      "inputSha256": "6078b7278126e6296affa1f85bb8b319c047f2f6dfe2e2a9086434bf51b7902f",
+      "inputSha256": "634f176026f0de1b460d382a1084178524fb976d88cc53246066b924d6be1d5a",
       "added": {
         "lines": [],
         "counts": {}
@@ -4463,7 +4451,7 @@
       "status": {}
     },
     "off-codelist-non-extensible": {
-      "inputSha256": "7501e7a3023f399c56d0a3e3378cc1ec4536d14e0900bca48e895067664bedad",
+      "inputSha256": "31590d64065ef29622e80ae3a90056de15bd9952e6c4e174c0f64175eb4a5cc4",
       "added": {
         "lines": [],
         "counts": {}
@@ -4475,7 +4463,7 @@
       "status": {}
     },
     "duplicate-record": {
-      "inputSha256": "e70ba072639e678366b1314e072f568ab2556484af75e0bc7a6b59693212fc52",
+      "inputSha256": "607cb5cb6cae7c26bdad1035dac284d6d577f4be8f4003a5b5d0ff06c95292af",
       "added": {
         "lines": [],
         "counts": {}
@@ -4487,7 +4475,7 @@
       "status": {}
     },
     "unit-change": {
-      "inputSha256": "88b2ae8540c1ffd5601fedf51d59bc6a4c049758333d965651ca86495b81adaa",
+      "inputSha256": "e16b88b5d12be32745eb8f93ac14cd4ee350a0d1051b20adf825911a4231bfb3",
       "added": {
         "lines": [],
         "counts": {}
@@ -4499,7 +4487,7 @@
       "status": {}
     },
     "lab-retest-same-day": {
-      "inputSha256": "29a9c6189f1f24db32ac7b8406d61ce09d112e5e511c27c8c7109570e2762aa2",
+      "inputSha256": "0c716659a33b7d6bbed04f42563aa00f4680b3ddfb7316b0ac210fee185dd82e",
       "added": {
         "lines": [],
         "counts": {}
@@ -4511,7 +4499,7 @@
       "status": {}
     },
     "unscheduled-visit-in-window": {
-      "inputSha256": "ffb57542df778c7163f0e9ba6000c1879c6898c07affcdfd0f0abfd26ee5dd71",
+      "inputSha256": "3573d5913a00f52d83ecce9ec4da70ca2bb941a029a75fafe70a40eacd30a63f",
       "added": {
         "lines": [],
         "counts": {}
@@ -4523,7 +4511,7 @@
       "status": {}
     },
     "rescreened-subject": {
-      "inputSha256": "501f68b428517d9342cb321b60fce8197412f9377e06666c9b9e3a4845bc4356",
+      "inputSha256": "a1020c33b68619b2559ce8829e023cb1c96a3747621552dc5fd5264c7308c9ca",
       "added": {
         "lines": [
           "CORE-000186 DM -#- SUBJID=0001",
@@ -4765,7 +4753,7 @@
       }
     },
     "death-during-treatment": {
-      "inputSha256": "269e5a10b86c1ba84af83134dbf2004dbf1cad7a913595b51f0eefc85b07c494",
+      "inputSha256": "46c280357006c98c63a86a6b6a39143d7ecfe02ece0f08a64343706871603154",
       "added": {
         "lines": [],
         "counts": {}
@@ -4777,7 +4765,7 @@
       "status": {}
     },
     "withdrawal-before-week-12": {
-      "inputSha256": "d0baeb99f32c40cfd0b046465c6938f4e2e824cc76a32bdf761b2a329a53dc2d",
+      "inputSha256": "67199b3c6518befd8dce8e0685a9389b656c6acbdbd17794b6f1f6ae18aa36e4",
       "added": {
         "lines": [],
         "counts": {}
@@ -4789,7 +4777,7 @@
       "status": {}
     },
     "randomized-not-dosed": {
-      "inputSha256": "0672b4fe4ab963f953c299ac9d18f9b59ce117aeb74aa2782b536ab03fe96da3",
+      "inputSha256": "87c717c2ad871e377ee32dd074205117cc41685702b323f1cb8058a06a1e9821",
       "added": {
         "lines": [
           "CORE-000191 DM DEMO-301-0002#- ARM=Demoxacin 20 mg|RFENDTC=null"
@@ -4807,7 +4795,7 @@
       }
     },
     "unplanned-treatment": {
-      "inputSha256": "c2924c9ad308a5c1a1cf246974bb864a6b31a2cd4283f35ea5a56ad8f1b5536b",
+      "inputSha256": "5945152d17e62a25e6695f8d3c58609fd3d52d03547fd9f354349d2227c812e3",
       "added": {
         "lines": [
           "CORE-000192 DM DEMO-301-0002#- ARMNRS=UNPLANNED TREATMENT|RFENDTC=2030-04-11"
@@ -4825,7 +4813,7 @@
       }
     },
     "qtcf-outlier": {
-      "inputSha256": "561a551199bed26d3c284b8b22699d61b5d5b1cc2ee6c5dfc8a6e4532bef1b03",
+      "inputSha256": "7027f3483958ace05c0e56669c679bb0317a71a448f666b4152ac6c0f8ab0ac6",
       "added": {
         "lines": [],
         "counts": {}
@@ -4837,7 +4825,7 @@
       "status": {}
     },
     "ecg-missing-rr": {
-      "inputSha256": "22420aa733153f4b9c5cce983e3149c556c7bf412bb3cd917013f818d0302ff3",
+      "inputSha256": "510ce46b0098db9ea345aee070024c3e60f5e75a0a3d5184ce20b00d97f9c6d3",
       "added": {
         "lines": [],
         "counts": {}

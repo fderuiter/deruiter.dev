@@ -56,7 +56,10 @@ for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/platform/governance");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Govern the data" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Data rules and catalog (Data Governance)",
+      })
     ).toBeVisible();
     // A product's and a metric's details open, so both are checked too.
     await entry(page, "silver.edc_visit").locator("summary").click();

@@ -21,4 +21,4 @@ The category roles map onto the repository's `type:*` labels:
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
-The full label set, including priority, area and execution labels, is defined in [`docs/how-to/issue-governance.md`](../how-to/issue-governance.md). Structural labels (`type:epic`, `type:initiative`, `type:portfolio`) take no triage state.
+The full label set, including priority, area and execution labels, is defined in [`docs/how-to/issue-governance.md`](../how-to/issue-governance.md). Containers take no triage state: structural issues (`type:epic`, `type:initiative`, `type:portfolio`) and any feature or docs issue with child issues. Only the children carry a triage label. See [Containers take no triage state](../how-to/issue-governance.md#containers-take-no-triage-state).

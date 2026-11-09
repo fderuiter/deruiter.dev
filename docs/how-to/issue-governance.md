@@ -40,7 +40,7 @@ Do not use the plain `epic` or `p1` labels. They are retired in favor of `type:e
 
 ## 3. Triage states
 
-Every work item has exactly one triage state:
+Every work item has exactly one triage state, except a container (see [Containers take no triage state](#containers-take-no-triage-state)):
 
 | Label | Meaning |
 |---|---|
@@ -53,6 +53,16 @@ Every work item has exactly one triage state:
 Lifecycle: `needs-triage` moves to `needs-info`, `ready-for-agent`, `ready-for-human` or `wontfix`. A claimed item moves to `status:in-progress` before a branch is cut.
 
 Execution state is separate from triage state. `status:blocked` marks an unresolved "Blocked by #N". `status:in-progress` marks a claim. `needs-decision` and `status:on-hold` are set by a person or by a thread that records why. Automation never clears them.
+
+### Containers take no triage state
+
+A container is an issue whose work is done by its child issues: an epic, initiative or portfolio, or a feature or docs issue with native sub-issues. Agents and people pick up the children, never the container, so only the children carry `ready-for-agent`, `ready-for-human` or `needs-info`. A container carries none of the triage states.
+
+A container keeps its `type:*`, priority and `area:*` labels. It also takes `status:blocked` while an open "Blocked by #N" holds it, like any other issue.
+
+For example, epic #3140 carries `type:epic` and a priority. Its child tasks, such as #3142 and #3143, carry the triage state `ready-for-agent`. When a feature issue gains sub-issues, remove its triage label in the same edit. That was done on #2381, #2382 and #3041 on 2026-10-29.
+
+The issue hygiene check skips only `type:epic`, `type:initiative` and `type:portfolio`. A feature or docs container still needs an acceptance section, or the check marks it `needs-info`.
 
 ## 4. Definition of Ready
 

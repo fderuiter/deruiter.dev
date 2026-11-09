@@ -626,7 +626,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           </div>
         )}
         {field.allowNullFlavor && (
-          <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-muted border-t border-zinc-850/60 mt-1">
+          <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-muted border-t border-zinc-800/60 mt-1">
             <span>Null Flavors:</span>
             <div className="flex gap-1">
               {(["ND", "NA", "UNK"] as const).map((nf) => (
@@ -644,7 +644,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
       {/* CDASH SDTM Annotation Tag */}
       {field.cdashMetadata && (
-        <div className="mt-2.5 pt-2 border-t border-zinc-850 flex items-center justify-between text-[10px] font-mono text-muted">
+        <div className="mt-2.5 pt-2 border-t border-zinc-800 flex items-center justify-between text-[10px] font-mono text-muted">
           <span>SDTM: {field.cdashMetadata.acrfAnnotation}</span>
           <span className="text-muted">Core: {field.cdashMetadata.core}</span>
         </div>

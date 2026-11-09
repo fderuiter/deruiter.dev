@@ -282,7 +282,7 @@ export const SlashPaletteModal: React.FC<SlashPaletteModalProps> = ({
                 className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all shrink-0 ${
                   activeCategory === tab.id
                     ? "bg-brand-cyan text-black font-semibold shadow-sm"
-                    : "bg-zinc-850 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                    : "bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
                 }`}
               >
                 {tab.label}
@@ -318,7 +318,7 @@ export const SlashPaletteModal: React.FC<SlashPaletteModalProps> = ({
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 group ${
                     isSelected
-                      ? "bg-zinc-850 border-brand-cyan/60 shadow-md text-white"
+                      ? "bg-zinc-800 border-brand-cyan/60 shadow-md text-white"
                       : "bg-zinc-900/50 border-zinc-800/80 hover:bg-zinc-900 text-zinc-300"
                   }`}
                 >

@@ -182,7 +182,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
       className={`p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4 shadow-xl ${className}`}
     >
       {/* Top Header & Rule Evaluation Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-850">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
         <div className="flex items-center gap-2 min-w-0">
           <span className="p-1.5 rounded-lg bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan shrink-0">
             <IconSparkles className="w-4 h-4" />
@@ -451,7 +451,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
                 className={`p-2.5 rounded-xl border text-xs font-mono cursor-pointer transition-all ${
                   isActive
                     ? "bg-zinc-900 border-brand-cyan ring-1 ring-brand-cyan/40 shadow-md"
-                    : "bg-zinc-950/70 border-zinc-850 hover:border-zinc-700"
+                    : "bg-zinc-950/70 border-zinc-800 hover:border-zinc-700"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">

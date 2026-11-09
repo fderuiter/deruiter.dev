@@ -109,6 +109,7 @@ Formal inference rules used to derive logical steps from valid premises:
 - **2-Tier Resilient Studio Header**: An architectural header structure separating study-level branding and utility controls (Tier 1) from 6-mode segmented navigation and workspace visibility toggles (Tier 2), preventing text and control collisions across all viewport widths.
 - **Executive Form Health Dashboard**: An interactive telemetry summary in the Inspector presenting CDASH conformance score, total variable counts, SDV readiness, and domain settings when no individual field is selected.
 - **Progressive Micro-Toolbar**: A contextual, floating action bar on clinical canvas cards that selectively surfaces column width steppers, inline label editors, and deletion controls only during active hover or focus states.
+- **Studio Scoped Theming**: The container-level theme isolation pattern applied to interactive workspaces (such as CRF Studio via `[data-studio-theme="light"]` / `[data-studio-theme="dark"]`) using CSS custom property cascades and standard palette utilities without altering the document root or leaking light mode tokens into the global dark-mode frame.
 
 ## Mobile Touch & Responsive Architecture
 

@@ -290,7 +290,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           <button
             type="button"
             onClick={onOpenBranding}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-brand-cyan text-xs font-mono transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-brand-cyan text-xs font-mono transition-colors"
           >
             <IconPalette className="w-3.5 h-3.5" />
             <span>Customize Branding</span>
@@ -448,7 +448,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-200 font-mono text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-mono text-xs transition-colors"
           >
             <IconPrinter className="w-4 h-4" />
             <span>Print / Preview</span>

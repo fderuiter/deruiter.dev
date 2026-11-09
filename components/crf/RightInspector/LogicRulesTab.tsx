@@ -367,7 +367,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                 </div>
 
                 {isEditing && (
-                  <div className="pt-3 border-t border-zinc-850 space-y-3">
+                  <div className="pt-3 border-t border-zinc-800 space-y-3">
                     <div>
                       <label className="block text-[10px] font-mono text-zinc-500 mb-1">
                         Rule Name
@@ -462,7 +462,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
 
                     {/* Derived Calculation Formula if Action is set_value */}
                     {rule.actionType === "set_value" && (
-                      <div className="pt-2 border-t border-zinc-850">
+                      <div className="pt-2 border-t border-zinc-800">
                         <AstRuleEditor
                           formula={rule.formulaExpression || ""}
                           onChange={(newFormula) =>
@@ -479,7 +479,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
 
                     {/* Query Message if Action is raise_query */}
                     {rule.actionType === "raise_query" && (
-                      <div className="space-y-2 pt-1 border-t border-zinc-850">
+                      <div className="space-y-2 pt-1 border-t border-zinc-800">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-[10px] font-mono text-zinc-500 mb-1">
@@ -778,7 +778,7 @@ const RuleExplanationPanel: React.FC<RuleExplanationPanelProps> = ({
           : "text-red-400 border-red-800 bg-red-950/30";
 
   return (
-    <div className="space-y-2 pt-2 border-t border-zinc-850">
+    <div className="space-y-2 pt-2 border-t border-zinc-800">
       <span className="text-[10px] font-mono text-zinc-400 font-semibold uppercase">
         Test Values &amp; Explained Result
       </span>

@@ -34,9 +34,11 @@ function studioRoot(): HTMLElement {
   return root;
 }
 
+// The dock's toggle lives in the header's Check menu (#3394), where it
+// reports the dock's state as a checked menu item.
 function testDockToggle(): HTMLElement {
   const button = document.querySelector<HTMLElement>(
-    'button[title^="Toggle Form Test Dock"]'
+    '[role="menuitemcheckbox"][aria-label="Form Test Dock"]'
   );
   if (!button) throw new Error("Test dock toggle not rendered");
   return button;
@@ -138,7 +140,7 @@ describe("CRF Studio shortcuts on useHotkeys (#1589)", () => {
 
   it("toggles the test dock on every Ctrl/Meta combination with \\, and only then", () => {
     render(<CRFStudioContainer />);
-    const pressed = () => testDockToggle().getAttribute("aria-pressed");
+    const pressed = () => testDockToggle().getAttribute("aria-checked");
     expect(pressed()).toBe("false");
 
     press(window, "\\");
@@ -164,7 +166,7 @@ describe("CRF Studio shortcuts on useHotkeys (#1589)", () => {
   it("closes the test dock on Escape even from a focused input inside the studio", () => {
     render(<CRFStudioContainer />);
     press(window, "\\", { ctrlKey: true });
-    expect(testDockToggle().getAttribute("aria-pressed")).toBe("true");
+    expect(testDockToggle().getAttribute("aria-checked")).toBe("true");
 
     const input = document.createElement("input");
     studioRoot().appendChild(input);
@@ -172,7 +174,7 @@ describe("CRF Studio shortcuts on useHotkeys (#1589)", () => {
     const event = press(input, "Escape", { altKey: true });
     // Escape never called preventDefault in the raw listener either.
     expect(event.defaultPrevented).toBe(false);
-    expect(testDockToggle().getAttribute("aria-pressed")).toBe("false");
+    expect(testDockToggle().getAttribute("aria-checked")).toBe("false");
   });
 
   it("opens the slash palette on / and calls preventDefault", () => {
@@ -201,7 +203,7 @@ describe("CRF Studio shortcuts on useHotkeys (#1589)", () => {
     press(button, "3");
     expect(modeTab("Form Designer").getAttribute("aria-selected")).toBe("true");
     expect(press(button, "\\", { ctrlKey: true }).defaultPrevented).toBe(false);
-    expect(testDockToggle().getAttribute("aria-pressed")).toBe("false");
+    expect(testDockToggle().getAttribute("aria-checked")).toBe("false");
   });
 
   it("stops listening after unmount", () => {

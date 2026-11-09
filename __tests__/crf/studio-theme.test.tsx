@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
+import fs from "node:fs";
+import path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 (
@@ -287,5 +289,94 @@ describe("CRF Studio - Light Mode & Theming", () => {
     });
 
     expect(handleToggle).toHaveBeenCalledTimes(1);
+  });
+
+  describe("border-zinc-850 dark mode remediation (#3053)", () => {
+    it("renders StudioHeader with canonical border-zinc-800 instead of phantom border-zinc-850", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(
+          <StudioHeader
+            study={ONCOLOGY_RECIST_PRESET}
+            activeMode="designer"
+            canUndo={false}
+            canRedo={false}
+            theme="dark"
+            onToggleTheme={vi.fn()}
+            onUndo={vi.fn()}
+            onRedo={vi.fn()}
+            onChangeMode={vi.fn()}
+            onSelectPreset={vi.fn()}
+            onOpenDiagnostics={vi.fn()}
+            onOpenFormCatalog={vi.fn()}
+            onOpenBranding={vi.fn()}
+            onOpenExportDocument={vi.fn()}
+            onOpenWizard={vi.fn()}
+          />
+        );
+      });
+
+      const header = container.querySelector("header");
+      expect(header).not.toBeNull();
+      expect(header?.className).toContain("border-zinc-800");
+      expect(header?.className).not.toContain("border-zinc-850");
+    });
+
+    it("verifies zero phantom zinc-850 class occurrences across components/crf TSX/TS files", () => {
+      const crfDir = path.join(process.cwd(), "components/crf");
+
+      function findFiles(dir: string): string[] {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        const files: string[] = [];
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            files.push(...findFiles(fullPath));
+          } else if (
+            (entry.name.endsWith(".tsx") || entry.name.endsWith(".ts")) &&
+            !entry.name.endsWith(".test.tsx") &&
+            !entry.name.endsWith(".test.ts")
+          ) {
+            files.push(fullPath);
+          }
+        }
+        return files;
+      }
+
+      const crfFiles = findFiles(crfDir);
+      const violations: string[] = [];
+
+      for (const filePath of crfFiles) {
+        const content = fs.readFileSync(filePath, "utf8");
+        // Regex checking for class uses of zinc-850 (e.g. border-zinc-850, bg-zinc-850, etc.)
+        const matches = content.match(
+          /(?:border|bg|text|hover:bg|divide)-zinc-850(?:\/\d+)?/g
+        );
+        if (matches) {
+          const relPath = path.relative(process.cwd(), filePath);
+          violations.push(`${relPath}: ${matches.join(", ")}`);
+        }
+      }
+
+      expect(
+        violations,
+        `Found phantom zinc-850 utility class occurrences in CRF components:\n${violations.join("\n")}`
+      ).toHaveLength(0);
+    });
+
+    it("verifies studio-theme.css contains defensive dark fallback and light-mode cascades for border-zinc-850", () => {
+      const cssPath = path.join(process.cwd(), "components/crf/studio-theme.css");
+      const cssContent = fs.readFileSync(cssPath, "utf8");
+
+      expect(cssContent).toContain(
+        '[data-studio-theme="dark"] .border-zinc-850'
+      );
+      expect(cssContent).toContain(
+        '[data-studio-theme="light"] .border-zinc-800'
+      );
+      expect(cssContent).toContain(
+        '[data-studio-theme="light"] .border-zinc-800\\/60'
+      );
+    });
   });
 });

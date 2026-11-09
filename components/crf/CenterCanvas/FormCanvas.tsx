@@ -368,7 +368,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
               e.stopPropagation();
               onAddSection();
             }}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 text-xs font-mono transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-zinc-200 text-xs font-mono transition-all shadow-sm"
           >
             <IconFolderPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-cyan" />
             <span className="hidden sm:inline">Add Section</span>
@@ -719,7 +719,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                 e.stopPropagation();
                 onAddSection();
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition-all"
             >
               <IconPlus className="w-4 h-4 text-brand-cyan" />
               <span>Add New Section to Form</span>

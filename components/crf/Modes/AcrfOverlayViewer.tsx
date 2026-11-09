@@ -146,7 +146,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
             label="Copy aCRF HTML"
             copiedLabel="Copied HTML!"
             successMessage="aCRF HTML content copied to clipboard"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-200 text-xs font-mono transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-mono transition-all cursor-pointer"
           />
           <button
             onClick={handlePrint}
@@ -424,9 +424,9 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-850">
+              <tbody className="divide-y divide-zinc-800">
                 {sdtmMatrix.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-zinc-850/30">
+                  <tr key={idx} className="hover:bg-zinc-800/30">
                     <td className="p-2.5 font-bold text-brand-cyan">
                       {row.formDomain}
                     </td>

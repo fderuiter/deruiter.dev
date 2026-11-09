@@ -134,7 +134,18 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # #3706: cdisc-rules-engine v0.17.1 requires Python >=3.12,<3.13.
+      # The ubuntu-latest image moved to 3.14 in November 2026, so the
+      # interpreter is pinned here rather than taken from the image.
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
       - name: Install CDISC CORE
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
         run: |
           git clone --quiet --depth 1 --branch "$CORE_TAG" \
             https://github.com/cdisc-org/cdisc-rules-engine.git "$RUNNER_TEMP/core"
@@ -143,8 +154,8 @@ jobs:
             echo "::error::CORE $CORE_TAG resolved to $actual, expected $CORE_COMMIT."
             exit 1
           fi
-          python3 --version
-          python3 -m venv "$RUNNER_TEMP/core-venv"
+          "$PYTHON" --version
+          "$PYTHON" -m venv "$RUNNER_TEMP/core-venv"
           "$RUNNER_TEMP/core-venv/bin/pip" install --quiet \
             -c scripts/study-data-core-constraints.txt "$RUNNER_TEMP/core"
 

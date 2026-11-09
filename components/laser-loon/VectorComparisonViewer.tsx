@@ -26,10 +26,10 @@ export const VectorComparisonViewer: React.FC = () => {
             <IconLayersDifference className="w-3.5 h-3.5" />
             <span>LOON / LASERS / BOTH</span>
           </div>
-          <h3 className="text-xl font-bold font-mono text-white">
+          <h2 className="text-xl font-bold font-mono text-white">
             A Closer Look:{" "}
             <span className="text-red-400">The Bird and the Lasers</span>
-          </h3>
+          </h2>
           <p className="text-xs text-zinc-400 font-mono mt-1">
             Slide between the bird and its lasers, compare them side by side, or
             turn each layer on and off.

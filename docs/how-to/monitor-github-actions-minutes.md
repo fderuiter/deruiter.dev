@@ -11,8 +11,7 @@ Governing policy: [ADR 0039](../../adr/0039-github-pro-plan-capabilities-and-act
 The repository is public, so standard GitHub-hosted runner minutes are free.
 Keep using standard runner labels: larger runners are billable, and artifact
 and cache storage have separate limits. Workflow timeouts, bounded device
-coverage, and avoiding duplicate gating runs remain important operational
-controls. On 2026-09-13 the previous single-job `.github/workflows/ci.yml`
+coverage and avoiding duplicate gating runs still matter. On 2026-09-13 the previous single-job `.github/workflows/ci.yml`
 design (full four-device Playwright matrix on every PR push, repeated
 identically on the post-merge `main` push) exhausted the private-repository
 allowance during one active day of iteration. #733 restructured the workflow
@@ -36,9 +35,9 @@ Two properties of the response matter and are easy to get wrong:
 
 - **Only private repositories draw on the allowance.** Public repositories
   appear in the same response with their minutes fully discounted. Summing
-  every `usageItems` entry overstates consumption several-fold, September
-  2026 totalled 19,955 minutes across all repositories but only 2,433
-  against the allowance. Filter by private repositories before summing.
+  every `usageItems` entry overstates use several times over. September 2026
+  totalled 19,955 minutes across all repositories, but only 2,433 counted
+  against the allowance. Filter to private repositories before summing.
 - **`netAmount` is not a usage signal.** It stays `0.00` both when usage is
   comfortably inside the allowance and when the allowance is exhausted with
   a $0 spending limit, because in the latter case GitHub refuses the jobs
@@ -61,9 +60,9 @@ runs, repeated pushes while chasing a flaky test):
    `cross-device-matrix` unless the change specifically needs the full matrix.
    Validate speculative fixes locally first (`npm run typecheck && npm run
    lint && npx playwright test --project=chromium <file>`).
-4. Review run duration and storage independently of minutes; the free standard
-   runner allowance does not make an unbounded job or artifact accumulation
-   operationally safe.
+4. Review run duration and storage separately from minutes. Free
+   standard-runner minutes do not make an unbounded job or a growing pile of
+   artifacts safe.
 
 ## What changed to reduce cost (ADR 0039 / #733 / #1767)
 
@@ -177,18 +176,18 @@ and `__tests__/ci-run-policy.test.ts` ties it to `validateBranchName()`.
 Before this change, `device-gate` was `post-merge-device-smoke`: it ran only
 on the `push` to `main` after a squash-merge, so a device-engine regression
 (a pixel-diff drift or a touch-only interaction bug) could land on `main`
-before anything caught it, the PR's own `heavy-gate` run only exercised
+before anything caught it. The PR's own `heavy-gate` run only exercised
 `chromium`. `device-gate` now runs on the pull request itself, alongside
 `heavy-gate`, so both the full-suite `chromium` run and the targeted
 `Tablet Safari` / `Mobile Safari` / `Mobile Chrome` run of `visual.spec.ts`
 and `touch-controls.spec.ts` gate the merge. Nothing now re-runs that
-targeted suite a second time on the post-merge push, the reduced-scope
-split from #733/#775 (one four-device matrix run per merge, not per push and
-per PR) is unchanged, just relocated to before the merge instead of after.
+targeted suite a second time on the post-merge push. The reduced-scope split
+from #733/#775 (one four-device matrix run per merge, not per push and per PR)
+is unchanged. It only moved from after the merge to before it.
 
 `main`-push confirmation stays deliberately bounded to `changes`,
 `static-gate`, `unit-gate`, `unit-coverage`, `mutation-gate` and
-`security-gate`, a safety net for a direct push that bypasses PR review.
+`security-gate`, as a safety net for a direct push that bypasses PR review.
 The non-gating `cache-warm` job also runs on `main` pushes.
 The `main` ruleset (which replaced classic branch protection on 2026-10-20)
 is described in [Main Branch Protection](release-and-deploy.md#main-branch-protection).
@@ -211,15 +210,15 @@ same `main` rule.
 
 This replaces the two check names #732 originally listed
 (`Rigor Ecosystem (Logic, Visual, Performance)` and
-`Security Gate (Vulnerability Audit)`), the first no longer exists under
-that name since #775 split it, and #1767 split it further. Requiring the
+`Security Gate (Vulnerability Audit)`). The first has not existed under that
+name since #775 split it, and #1767 split it further. Requiring the
 individual job names directly does not work correctly here: the browser
 gates carry `if:` conditions (pull requests only, and only when the run
 policy allows them), and GitHub's required-status-checks rule treats a
 job skipped by its own `if:` (or skipped as a side effect of a failed
-`needs:` predecessor) the same as a job that never applied, a "skipped"
-conclusion satisfies the requirement instead of blocking it. `merge-gate`
-runs with `if: always()` specifically to stay unaffected by that, then
+`needs:` predecessor) the same as a job that never applied: a "skipped"
+conclusion satisfies the requirement instead of blocking it. `merge-gate` runs
+with `if: always()` so it is never skipped that way, then
 inspects `needs.<job>.result` for every job that should have run for the
 current event and fails unless each one is literally `"success"`, so a
 cancelled Playwright shard, a failed `static-gate`, or an unexpectedly
@@ -239,10 +238,11 @@ required for correctness.
 
 `merge-gate` originally carried `if: always() && github.event_name !=
 'workflow_dispatch'` at the job level. That exclusion made the *entire job*
-skip on a manual dispatch. Understanding why this matters requires examining
-how GitHub evaluates required status checks on pull requests versus head commits,
-as documented in official GitHub guidance on
-[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks):
+skip on a manual dispatch. Why that matters comes down to how GitHub evaluates
+required status checks on pull requests and on head commits, as GitHub's guide
+to
+[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)
+describes:
 
 1. **Test-merge versus head check evaluation**: When a pull request triggers a
    workflow via `pull_request`, GitHub creates a temporary test merge commit
@@ -250,21 +250,21 @@ as documented in official GitHub guidance on
    commit" in the pull request status checks box, and the checks associated with
    that test merge commit determine whether the PR can be merged. GitHub only
    falls back to evaluating checks reported on the head commit SHA if no checks
-   exist for the test merge commit. A check run reported on the head commit does
-   not unconditionally overwrite or replace an existing test-merge check run.
+   exist for the test merge commit. A check run reported on the head commit
+   does not replace an existing test-merge check run.
 2. **Evaluated event scopes**: GitHub evaluates workflow jobs for pull request
    status checks only when triggered by specific events: `push`, `pull_request`,
    `pull_request_review`, `pull_request_target`, `deployment`, or `deployment_status`.
    Checks created by `workflow_dispatch` do not appear in the pull request's
    status checks section and cannot satisfy a required status check in a branch ruleset.
-3. **The genuine skip-is-a-pass hazard**: If `merge-gate` were skipped via `if:`,
+3. **The skip-is-a-pass hazard**: If `merge-gate` were skipped via `if:`,
    GitHub would report its conclusion as "skipped". In any evaluation context
    where checks are assessed against a commit directly (such as direct branch pushes
    or head-check fallback when merge checks are absent), GitHub's required-status-checks
    rule treats "skipped" as satisfied rather than blocking. That could allow an
-   unsupported trigger to post a passing conclusion without validating requirements.
+   unsupported trigger to post a passing conclusion without running the gates.
 
-To eliminate this gap, `merge-gate` runs unconditionally (`if: always()`, no
+To close this gap, `merge-gate` runs unconditionally (`if: always()`, no
 event exclusion), and its shell script dispatches explicitly on `github.event_name`:
 
 - `pull_request`: requires `changes`, `static-gate`, `security-gate`,
@@ -275,9 +275,9 @@ event exclusion), and its shell script dispatches explicitly on `github.event_na
 - `push`: requires `changes`, `static-gate`, `unit-gate`, `unit-coverage`,
   `mutation-gate` and `security-gate` (the bounded main-push confirmation,
   since PR review already validated the browser gates).
-- `*` (default): any other event: `workflow_dispatch` included, and any future
-  trigger this workflow does not yet have, hits an explicit default branch that
-  fails the job outright (`echo "::error::..."; fail=1`).
+- `*` (default): any other event, including `workflow_dispatch` and any
+  trigger this workflow does not have yet, hits an explicit default branch
+  that fails the job outright (`echo "::error::..."; fail=1`).
 
 A manual or unrecognized trigger can therefore never produce a "skipped" conclusion
 (satisfied by default) or an accidental "success" for this required check name.
@@ -289,13 +289,13 @@ current constraint when the repository became public on 2026-09-23. This
 section records the historical outage separately from controls that still
 need verification:
 
-- **Local implementation evidence**: Workflow YAML topology, step dependencies
-  (`needs:`), and the literal bash evaluation logic of `merge-gate` are verified
-  locally by offline unit and shell execution test suites
-  (`__tests__/ci-execution-policy.test.ts` and `__tests__/ci-gate-ordering.test.ts`).
-  These tests extract the exact bash script from `.github/workflows/ci.yml` and
-  execute it across simulated event and status permutations (`pull_request`,
-  `push`, `workflow_dispatch`, `success`, `failure`, `cancelled`, `skipped`).
+- **Local implementation evidence**: Offline tests check the workflow's job
+  dependencies (`needs:`) and the bash logic of `merge-gate`
+  (`__tests__/ci-execution-policy.test.ts` and
+  `__tests__/ci-gate-ordering.test.ts`). They extract the bash script from
+  `.github/workflows/ci.yml` and run it against simulated events and job
+  results (`pull_request`, `push`, `workflow_dispatch`, `success`, `failure`,
+  `cancelled`, `skipped`).
 - **Server-side protection is verified**: GitHub currently reports this
   repository as public. The `main` ruleset, with Merge Gate as the only
   required check, has governed `main` since 2026-10-20; see

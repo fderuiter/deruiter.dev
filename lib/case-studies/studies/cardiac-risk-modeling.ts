@@ -98,10 +98,10 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> Out-of-fold AUROC of 0.894 with Brier calibration score < 0.088; 100% leak-free temporal & group stratified validation; sub-5ms single-patient risk scoring inference.</p>
 
 <h3>How it works</h3>
-<p><strong>Strict In-Fold Preprocessing:</strong> Enforces zero feature leakage by executing robust quantile scaling, iterative multivariate imputation, and one-hot encodings strictly inside cross-validation splits.</p>
-<p><strong>Ensemble Model Stacking:</strong> Blends gradient-boosted decision trees (XGBoost, LightGBM, CatBoost) with regularized logistic regression baselines.</p>
-<p><strong>Probability Calibration Engine:</strong> Applies Platt scaling (logistic sigmoid calibration) and isotonic regression to convert raw logit margins into well-calibrated posterior probabilities suitable for clinical decision curves.</p>
-<p><strong>SHAP Attribution & Feature Importance:</strong> Computes TreeSHAP feature interactions to explain individual patient risk factor contributions (e.g. ST depression delta, exercise-induced angina, age-adjusted max heart rate).</p>
+<p>Quantile scaling, iterative multivariate imputation and one-hot encoding all run inside each cross-validation split, so no information leaks from the held-out fold.</p>
+<p>A stacked ensemble blends gradient-boosted trees (XGBoost, LightGBM, CatBoost) with regularized logistic regression baselines.</p>
+<p>Platt scaling (logistic sigmoid calibration) and isotonic regression turn raw logit margins into calibrated probabilities that can go on a clinical decision curve.</p>
+<p>TreeSHAP explains how much each risk factor contributed to one patient's score, for example ST depression delta, exercise-induced angina or age-adjusted max heart rate.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -206,9 +206,9 @@ def compute_patient_shap_waterfall(model, background_data: pd.DataFrame, patient
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Probability Calibration in Clinical Thresholds:</strong> Raw tree output margins can produce overly polarized probabilities. Integrating Platt scaling and isotonic regression aligned predicted risks with empirical clinical prevalence (Expected Calibration Error &lt; 2.5%).</li>
-  <li><strong>Feature Attribution vs. Black-Box Accuracy:</strong> Using TreeSHAP allowed clinicians to verify that predictions were driven by physiologically plausible pathways (ST depression, angina) rather than dataset collection artifacts.</li>
-  <li><strong>Adversarial Validation:</strong> Testing train vs out-of-cohort clinical site distributions prevented silent covariate shift from degrading cross-hospital diagnostic accuracy.</li>
+  <li>Raw tree margins give probabilities that sit too close to 0 or 1. Platt scaling and isotonic regression brought predicted risk in line with observed prevalence (Expected Calibration Error &lt; 2.5%).</li>
+  <li>TreeSHAP lets a clinician check that a prediction comes from physiologically plausible signals such as ST depression and angina, and not from how the dataset was collected.</li>
+  <li>Adversarial validation compares the training distribution with sites outside the cohort, which catches covariate shift before it lowers accuracy at another hospital.</li>
 </ul>`,
     commands_json: JSON.stringify(CARDIAC_RISK_COMMANDS_OBJ),
     playback_json: JSON.stringify(CARDIAC_RISK_PLAYBACK_OBJ),

@@ -122,15 +122,15 @@ Source: https://github.com/fderuiter/deruiter.dev
 
 Abstract:
 
-When your brother lives with dyslexia, software accessibility ceases to be a checklist item; it becomes deeply personal. This case study details replacing generic system fonts with a scientifically grounded cognitive typography stack: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click persistent OpenDyslexic mode coupled with zero-CLS Pretext text reflow.
+My brother has dyslexia, so for me accessibility is personal. This case study covers replacing generic system fonts with a typography stack chosen for readability: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click OpenDyslexic mode that persists, with zero-CLS Pretext text reflow.
 
 Architecture and trade-offs:
 
 The problem
 
-Most modern web applications choose typography based exclusively on brand aesthetics or minimalism, relying on geometric grotesque sans-serifs that induce visual crowding and character mirror confusion for neurodivergent readers. For individuals with dyslexia, letters like b, d, p, and q appear rotationally symmetrical, causing cognitive fatigue, visual reversals, and reading stalls.
+Most web applications choose typography for brand or minimalism, which usually means geometric grotesque sans-serifs. Those crowd letters together and make mirrored characters easy to confuse. For readers with dyslexia, letters like b, d, p, and q look like rotations of each other, which leads to fatigue, reversals and stalls while reading.
 
-The personal context: My brother was diagnosed with dyslexia early in life. Watching him navigate the modern web (where ultra-thin fonts, cramped line heights, and layout shifts are ubiquitous) made the friction undeniable. Standard web design optimizes for visual coolness; accessible engineering optimizes for cognitive clarity, legibility, and orientation.
+The personal context: My brother was diagnosed with dyslexia early in life. Watching him use the web, with its ultra-thin fonts, cramped line heights and layout shifts, made the friction hard to miss. I wanted this site's typography chosen for legibility first.
 
 ### DuckDeploy: From Configuration Forms to Deployment Files
 

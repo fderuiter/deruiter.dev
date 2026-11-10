@@ -78,21 +78,21 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
     simulated_telemetry: false,
     tags: "Accessibility, Next.js, Pretext, Canvas 2D, OpenDyslexic, Typography, WCAG 2.1 AA, ADR 0040",
     editorial_content:
-      "When your brother lives with dyslexia, software accessibility ceases to be a checklist item; it becomes deeply personal. This case study details replacing generic system fonts with a scientifically grounded cognitive typography stack: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click persistent OpenDyslexic mode coupled with zero-CLS Pretext text reflow.",
+      "My brother has dyslexia, so for me accessibility is personal. This case study covers replacing generic system fonts with a typography stack chosen for readability: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click OpenDyslexic mode that persists, with zero-CLS Pretext text reflow.",
     architectural_narrative: `<h3>The problem</h3>
-<p>Most modern web applications choose typography based exclusively on brand aesthetics or minimalism, relying on geometric grotesque sans-serifs that induce visual crowding and character mirror confusion for neurodivergent readers. For individuals with dyslexia, letters like <strong>b</strong>, <strong>d</strong>, <strong>p</strong>, and <strong>q</strong> appear rotationally symmetrical, causing cognitive fatigue, visual reversals, and reading stalls.</p>
-<p><strong>The personal context:</strong> My brother was diagnosed with dyslexia early in life. Watching him navigate the modern web (where ultra-thin fonts, cramped line heights, and layout shifts are ubiquitous) made the friction undeniable. Standard web design optimizes for visual coolness; accessible engineering optimizes for cognitive clarity, legibility, and orientation.</p>
+<p>Most web applications choose typography for brand or minimalism, which usually means geometric grotesque sans-serifs. Those crowd letters together and make mirrored characters easy to confuse. For readers with dyslexia, letters like <strong>b</strong>, <strong>d</strong>, <strong>p</strong>, and <strong>q</strong> look like rotations of each other, which leads to fatigue, reversals and stalls while reading.</p>
+<p><strong>The personal context:</strong> My brother was diagnosed with dyslexia early in life. Watching him use the web, with its ultra-thin fonts, cramped line heights and layout shifts, made the friction hard to miss. I wanted this site's typography chosen for legibility first.</p>
 <p><strong>Quantitative performance targets:</strong> Zero Cumulative Layout Shift (CLS = 0.000) across typography switches; sub-5ms Pretext canvas recalculation overhead; strict WCAG 2.1 Level AA contrast conformance (&gt;= 7:1 for body copy); and 100% client-side persistence without layout flash (FOUT).</p>
 
 <h3>How it works</h3>
-<p><strong>Tripartite Typography Hierarchy:</strong> We architected a three-tier typography system grounded in cognitive research:</p>
+<p>The site uses three typefaces, each for a different kind of text:</p>
 <ul>
-  <li><strong>Headings (Lexend):</strong> Developed specifically by educational researchers to reduce visual stress and increase reading speed through expanded letter-spacing and distinct glyph silhouettes.</li>
-  <li><strong>Prose &amp; UI (Atkinson Hyperlegible):</strong> Commissioned by the Braille Institute to maximize character disambiguation for low-vision readers, emphasizing distinct forms for confusing pairs (e.g. uppercase 'I', lowercase 'l', and number '1').</li>
-  <li><strong>Dyslexia Mode (OpenDyslexic):</strong> A specialized typeface utilizing heavy weighted bottoms to anchor character orientation in mental space, preventing rotational flipping and visual swimming.</li>
+  <li>Headings use Lexend, which educational researchers designed to reduce visual stress and speed up reading with wider letter-spacing and distinct glyph shapes.</li>
+  <li>Prose and UI use Atkinson Hyperlegible, which the Braille Institute commissioned for low-vision readers. It gives easily confused characters distinct forms, such as uppercase 'I', lowercase 'l' and the number '1'.</li>
+  <li>Dyslexia mode switches to OpenDyslexic, whose heavy-weighted letter bottoms are meant to anchor each letter's orientation so it doesn't seem to flip or swim.</li>
 </ul>
-<p><strong>Client-Side Persistent Mode &amp; Zero-FOUT Initialization:</strong> To eliminate flashing unstyled text, an inline synchronous script in the document <code>&lt;head&gt;</code> reads the <code>portfolio-font-mode</code> preference from <code>localStorage</code> and applies <code>data-font-mode="opendyslexic"</code> prior to the initial paint.</p>
-<p><strong>Zero-CLS Dynamic Pretext Layout Reflow:</strong> Text rendered in custom Canvas 2D cards and hero modules utilizes the Pretext layout engine. When the user switches font modes, the <code>useFontPreference</code> hook purges the font configuration and layout caches, triggering an immediate recalculation within the current frame to prevent layout overflow or bounding-box clipping.</p>
+<p>To avoid a flash of unstyled text, an inline synchronous script in the document <code>&lt;head&gt;</code> reads the <code>portfolio-font-mode</code> preference from <code>localStorage</code> and applies <code>data-font-mode="opendyslexic"</code> prior to the initial paint.</p>
+<p>Text in the Canvas 2D cards and hero modules is laid out by the Pretext engine. When the user switches font modes, the <code>useFontPreference</code> hook clears the font configuration and layout caches and recalculates in the same frame, so nothing overflows or clips.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -213,10 +213,10 @@ function useFontPreference() {
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Self-Hosted WOFF2 vs. External CDNs:</strong> Serving OpenDyslexic (.woff2) locally from <code>public/fonts/</code> removed third-party network roundtrips, isolated user telemetry, and guaranteed sub-10ms font initialization.</li>
-  <li><strong>Visual Density vs. Readability:</strong> OpenDyslexic increases line height (1.75) and character tracking (+0.04em). This expands container heights by 15-20%, reinforcing our defensive CSS rule that text containers must use <code>min-h-*</code> rather than rigid fixed heights.</li>
-  <li><strong>First Tab-Stop Accessibility:</strong> Placing the dyslexia toggle inside <code>&lt;SkipToContent /&gt;</code> ensures keyboard and screen-reader users can activate accessible typography before navigating page contents.</li>
-  <li><strong>Pretext Cache Invalidation:</strong> Canvas 2D measurement requires clearing computed property caches synchronously on toggle; otherwise, canvas cards would measure using obsolete font metrics, inducing text truncation.</li>
+  <li>OpenDyslexic (.woff2) is served from <code>public/fonts/</code> instead of a CDN. That removes a third-party round trip, keeps visitors' requests off another company's servers, and loads the font in sub-10ms.</li>
+  <li>OpenDyslexic mode raises line height (1.75) and character tracking (+0.04em), which makes containers 15-20% taller. That is one reason for the site's rule that text containers use <code>min-h-*</code> instead of fixed heights.</li>
+  <li>Placing the dyslexia toggle inside <code>&lt;SkipToContent /&gt;</code> ensures keyboard and screen-reader users can activate accessible typography before navigating page contents.</li>
+  <li>Canvas 2D measurement needs its caches cleared synchronously on toggle. Otherwise the canvas cards measure with the old font's metrics and truncate text.</li>
 </ul>`,
     benchmarks: {
       reflowLatency: "< 4.2ms",

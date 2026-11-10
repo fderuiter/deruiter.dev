@@ -2,13 +2,16 @@
  * Procedural Dungeon & Cybersecurity Themed Room Generator
  */
 
+import { drawInt } from "@/lib/utils/prng";
 import { createFaceForgeBoss, createNeuralWardenBoss } from "./boss";
+import { drawRunRewards, type RunReward } from "./rewards";
 import {
   DungeonRoom,
   Enemy,
   ItemPickup,
   TSPMovingWall,
   TSPNode,
+  WeaponId,
 } from "./types";
 
 export const STAGE_1_MAZE: string[][] = [
@@ -771,6 +774,61 @@ export function generateRoguelikeCampaign(): DungeonRoom[] {
     ...generate(),
     index: i + 1,
   }));
+}
+
+/**
+ * The rooms a Quick Run can put in its middle slot (#2382): TSP Enclave,
+ * BlinkBrowse or Active Directory.
+ */
+const QUICK_RUN_MIDDLE_ROOMS: ReadonlyArray<() => DungeonRoom> = [
+  generateTSPRoom,
+  generateBlinkBrowseRoom,
+  generateActiveDirectoryRoom,
+];
+
+/** The zero-based run position of the Quick Run room that ends in a reward. */
+export const QUICK_RUN_REWARD_STEP = 1;
+
+/**
+ * Creates the room library for a Quick Run, the three-room mode for a short
+ * session (#2382, #3461): the DMZ Gateway, one middle room drawn from the
+ * seed, then the FaceForge boss. There is no rest stop. Passed to the route
+ * functions in `./route`, it gives a three-step map with one room per step,
+ * in the same shape as a full run's map.
+ *
+ * @param seed - The run seed. The same seed always draws the same middle room.
+ * @returns Three rooms, numbered 1 to 3.
+ */
+export function generateQuickRunCampaign(seed: string): DungeonRoom[] {
+  const middle =
+    QUICK_RUN_MIDDLE_ROOMS[
+      drawInt(`${seed}|quick-run`, 0, QUICK_RUN_MIDDLE_ROOMS.length)
+    ];
+  return [generateDMZGatewayRoom, middle, generateFaceForgeRoom].map(
+    (generate, i) => ({ ...generate(), index: i + 1 })
+  );
+}
+
+/**
+ * The smaller reward choice that ends a Quick Run's second room, in place of
+ * the rest stop a full run has: the Patch Kit and one more card, a tool or a
+ * passive drawn from the seed. A full run offers three cards after a room.
+ *
+ * @param seed - The run seed.
+ * @param loadout - The current loadout.
+ * @returns Two reward cards, the heal first.
+ */
+export function drawQuickRunRewards(
+  seed: string,
+  loadout: readonly WeaponId[]
+): [RunReward, RunReward] {
+  const [weapon, heal, passive] = drawRunRewards(
+    seed,
+    QUICK_RUN_REWARD_STEP,
+    loadout
+  );
+  const pick = drawInt(`${seed}|quick-run-reward`, 0, 2);
+  return [heal, pick === 0 ? weapon : passive];
 }
 
 /**

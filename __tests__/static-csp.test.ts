@@ -25,6 +25,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 import { proxy, config } from "@/proxy";
+import nextConfig from "@/next.config";
 import {
   applySecurityHeaders,
   buildContentSecurityPolicy,
@@ -140,15 +141,23 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     for (const path of [
       "/admin",
       "/admin/blog",
+      "/api/admin/case-studies",
+      "/api/case-studies",
+      "/api/case-studies/x",
+    ]) {
+      expect(matched(path), path).toBe(true);
+    }
+    // Public API routes, and the studios whose phone redirects moved into
+    // next.config.ts (#3204), no longer invoke the proxy (#3205).
+    for (const path of [
       "/api/telemetry",
+      "/api/contact",
+      "/api/newsletter",
+      "/api/blog/reactions",
       "/proof",
       "/crf",
       "/neuro/scan",
       "/patrol",
-    ]) {
-      expect(matched(path), path).toBe(true);
-    }
-    for (const path of [
       "/",
       "/blog",
       "/blog/some-post",
@@ -159,6 +168,21 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     ]) {
       expect(matched(path), path).toBe(false);
     }
+  });
+
+  it("serves /api/telemetry its security headers from next.config.ts now that the proxy skips it (#3205)", async () => {
+    expect(
+      config.matcher.some((source) => matchesSource(source, "/api/telemetry"))
+    ).toBe(false);
+    const rules = await nextConfig.headers!();
+    const forAll = rules.find((rule) => rule.source === "/:path*")!;
+    const value = (key: string) =>
+      forAll.headers.find((h) => h.key === key)?.value;
+    expect(value("Content-Security-Policy")).toBe(
+      SECURITY_HEADERS["Content-Security-Policy"]
+    );
+    expect(value("X-Content-Type-Options")).toBe("nosniff");
+    expect(value("Strict-Transport-Security")).toBeTruthy();
   });
 
   it("still decorates API responses with security headers", async () => {

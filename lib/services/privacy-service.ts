@@ -106,16 +106,16 @@ export function extractClientIp(reqOrHeaders?: RequestOrHeaders): string {
 }
 
 /**
- * Generates an anonymous SHA-256 connection hash directly from a request or header map.
- * Reads pre-computed connection tokens from proxy headers before recomputing client hashes.
+ * The anonymous SHA-256 connection hash for a request: the client IP and user
+ * agent, hashed, so rate limits and reaction de-duplication key on a client
+ * without storing its address. Every API handler computes it here (#3205).
+ * An `x-connection-hash` request header is ignored: the proxy no longer runs
+ * on public API routes to overwrite it, so a client could otherwise choose
+ * its own rate-limit bucket.
  */
 export async function getConnectionHashFromRequest(
   reqOrHeaders?: RequestOrHeaders
 ): Promise<string> {
-  const existingHash = extractHeaderValue(reqOrHeaders, "x-connection-hash");
-  if (existingHash) {
-    return existingHash;
-  }
   const userAgent = extractHeaderValue(reqOrHeaders, "user-agent") || "";
   const ip = extractClientIp(reqOrHeaders);
   return generateClientConnectionHash(`${ip}:${userAgent}`);

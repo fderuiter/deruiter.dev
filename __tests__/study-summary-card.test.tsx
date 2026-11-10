@@ -7,6 +7,7 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import {
+  coreSummaryStatus,
   StudySummaryCard,
   type CoreSummaryStatus,
 } from "@/components/study-data/StudySummaryCard";
@@ -111,5 +112,22 @@ describe("StudySummaryCard (#3159)", () => {
     const region = card();
     expect(field(region, "Datasets")[1]).toBe("14 SDTM · 5 ADaM");
     expect(field(region, "Tables and figures")[1]).toBe("6 tables · 1 figure");
+  });
+});
+
+describe("coreSummaryStatus (#3159)", () => {
+  it("is not run when CORE has no view of the run", () => {
+    expect(coreSummaryStatus(false, null, false)).toBe("not-run");
+    expect(coreSummaryStatus(false, 3, true)).toBe("not-run");
+  });
+
+  it("is loading, then unavailable if the recorded findings fail to load", () => {
+    expect(coreSummaryStatus(true, null, false)).toBe("loading");
+    expect(coreSummaryStatus(true, null, true)).toBe("unavailable");
+  });
+
+  it("is flagged when any rule reported an issue, otherwise passed", () => {
+    expect(coreSummaryStatus(true, 2, false)).toBe("flagged");
+    expect(coreSummaryStatus(true, 0, false)).toBe("passed");
   });
 });

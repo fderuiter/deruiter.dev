@@ -54,7 +54,7 @@ import {
 import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
-import { StudySummaryCard, type CoreSummaryStatus } from "./StudySummaryCard";
+import { StudySummaryCard, coreSummaryStatus } from "./StudySummaryCard";
 import { TlfPanel } from "./TlfPanel";
 import {
   BUTTON_PRIMARY,
@@ -243,16 +243,11 @@ export function StudyDataWorkbench({
         : null,
     [recorded.findings, coreView]
   );
-  const coreStatus: CoreSummaryStatus =
-    coreView === null
-      ? "not-run"
-      : coreReport === null
-        ? recorded.failed
-          ? "unavailable"
-          : "loading"
-        : (coreReport.outcomes["ISSUE REPORTED"] ?? 0) > 0
-          ? "flagged"
-          : "passed";
+  const coreStatus = coreSummaryStatus(
+    coreView !== null,
+    coreReport === null ? null : (coreReport.outcomes["ISSUE REPORTED"] ?? 0),
+    recorded.failed
+  );
 
   const client = useCallback((): PipelineClient => {
     clientRef.current ??= createPipelineClient();

@@ -8,6 +8,25 @@ import type { StageCounts } from "./protocol";
 export type CoreSummaryStatus =
   "passed" | "flagged" | "loading" | "unavailable" | "not-run";
 
+/**
+ * Where CDISC CORE stands for a run: not run when CORE never saw its output,
+ * loading or unavailable while its recorded findings are fetched or after the
+ * fetch failed, then flagged when any rule reported an issue.
+ *
+ * @param hasView - whether CORE has a recorded view of this run's output
+ * @param issues - rules with ISSUE REPORTED, or null before findings load
+ * @param failed - whether loading the recorded findings failed
+ */
+export function coreSummaryStatus(
+  hasView: boolean,
+  issues: number | null,
+  failed: boolean
+): CoreSummaryStatus {
+  if (!hasView) return "not-run";
+  if (issues === null) return failed ? "unavailable" : "loading";
+  return issues > 0 ? "flagged" : "passed";
+}
+
 interface StudySummaryCardProps {
   readonly studyId: string;
   /** Counts of the current run, the ones the stage rail shows; null before it. */

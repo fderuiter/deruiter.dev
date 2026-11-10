@@ -195,12 +195,12 @@ describe("the PostgreSQL target", () => {
 
   it("connects only with WAREHOUSE_DATABASE_URL", () => {
     expect(
-      connectionConfig("postgres", { DATABASE_URL: "postgres://site" }).ok
+      connectionConfig("postgres", { DATABASE_URL: "site-database-url" }).ok
     ).toBe(false);
-    const fakeUrl = "postgres://warehouse.example/db";
+    const fakeUrl = "warehouse-database-url";
     const connection = connectionConfig("postgres", {
       WAREHOUSE_DATABASE_URL: fakeUrl,
-      DATABASE_URL: "postgres://site",
+      DATABASE_URL: "site-database-url",
     });
     expect(connection.ok && connection.config.connectionString).toBe(fakeUrl);
     expect(connectionConfig("dsql", {}).ok).toBe(false);

@@ -17,6 +17,8 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>The approach:</strong> A SAX parser reads XML incrementally. ODM metadata defines Zod validation schemas, and a separate mapping layer builds SDTM records.</p>
 <p><strong>Reported project measurements:</strong> Sub-50MB peak memory during 2GB+ XML ingestion; 100% CDISC Controlled Terminology validation parity; 12x throughput acceleration over DOM-based parsers.</p>
 
+<p>Checking values against controlled terminology is one kind of data rule. The platform demo's <a href="/platform/governance">data rules and catalog</a> page shows how rules like it, data contracts and metric definitions are recorded and owned across a whole warehouse, on synthetic studies.</p>
+
 <h3>How it works</h3>
 <p><strong>Streaming SAX Parsing Pipeline:</strong> Node.js streaming SAX parser wrapped in TypeScript async generators to process multi-gigabyte XML payloads in discrete chunks without loading the entire DOM into memory.</p>
 <p><strong>Dynamic Schema Synthesis:</strong> Reads ODM <code>MetaDataVersion</code> specifications at runtime and compiles type-safe Zod schema models, automatically adapting to protocol amendments.</p>

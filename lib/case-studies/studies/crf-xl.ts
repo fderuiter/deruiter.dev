@@ -83,6 +83,8 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>The approach:</strong> Office.js reads the workbook, a dependency graph checks formula relationships, and Web Workers generate the clinical form exports.</p>
 <p><strong>Reported project measurements:</strong> Sub-10ms UI thread responsiveness during 10,000+ item parsing via asynchronous chunking workers; 100% strict compliance verification against CDISC ODM 1.3.2 foundation schemas; automated 21 CFR Part 11 audit trails with cryptographic state digests.</p>
 
+<p>The fields a CRF collects decide which metrics a study can report later. The platform demo's <a href="/platform/explore">study metrics explorer</a> groups and filters governed metrics built from that kind of collected data, on synthetic studies.</p>
+
 <h3>How it works</h3>
 <p><strong>Decoupled Office.js Taskpane & Domain Layer:</strong> Clean separation between Office.js Taskpane React components and the core domain layer (<code>src/taskpane/core/</code>). The orchestration pipeline relies on a composable middleware runner pattern for data transformations and validation gates.</p>
 <p><strong>Web Worker Pipeline:</strong> Resource-heavy parsing, AST construction, and XML serialization are offloaded to dedicated Web Workers (<code>engine.worker.ts</code>, <code>customxml-worker.ts</code>), preserving interactive UI responsiveness in constrained Office Webview runtimes.</p>

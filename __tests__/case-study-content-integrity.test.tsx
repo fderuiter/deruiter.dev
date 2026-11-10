@@ -161,3 +161,44 @@ describe("the case study detail page renders each field with the right renderer"
     ).toMatch(/<RichNarrative[\s\S]{0,120}architectural_narrative/);
   });
 });
+
+describe("case study links to the platform demos (#3428)", () => {
+  const internalHrefs = (html: string) =>
+    [...html.matchAll(/href="(\/[^"#?]*)/g)].map((m) => m[1]);
+  const pageExists = (href: string) => {
+    const dir = join(process.cwd(), "app", ...href.split("/").filter(Boolean));
+    return ["page.tsx", "page.ts", "page.mdx"].some((file) => {
+      try {
+        readFileSync(join(dir, file));
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  };
+
+  it("links five clinical case studies to one /platform page each", () => {
+    for (const slug of [
+      "clinical-data-mapper",
+      "cadence-clinical",
+      "imednet-python-sdk",
+      "crf-xl",
+      "equipose-randomization",
+    ]) {
+      const study = FALLBACK_CASE_STUDIES.find((s) => s.slug === slug);
+      expect(study, slug).toBeDefined();
+      const platform = internalHrefs(study!.architectural_narrative).filter(
+        (href) => href.startsWith("/platform/")
+      );
+      expect(platform, slug).toHaveLength(1);
+    }
+  });
+
+  it("points every internal narrative link at a page that exists", () => {
+    for (const study of FALLBACK_CASE_STUDIES) {
+      for (const href of internalHrefs(study.architectural_narrative)) {
+        expect(pageExists(href), `${study.slug} → ${href}`).toBe(true);
+      }
+    }
+  });
+});

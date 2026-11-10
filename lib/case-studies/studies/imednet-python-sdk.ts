@@ -120,6 +120,8 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>The approach:</strong> Pydantic models validate responses, async generators handle pagination, and the transport layer manages authentication and token refresh.</p>
 <p><strong>Reported project measurements:</strong> Sub-15ms extraction and validation per subject record; 100% HIPAA-safe transport without disk caching of unencrypted PHI; integrated CLI sandbox for rapid developer onboarding.</p>
 
+<p>Records pulled through an SDK like this one usually end up in a warehouse that people query. The platform demo's <a href="/platform/sql">query workbench</a> runs SQL against a synthetic clinical warehouse of that kind, in the browser.</p>
+
 <h3>How it works</h3>
 <p><strong>Declarative Type-Safe Contracts:</strong> Every endpoint response is parsed and validated against strict Pydantic v2 data models with runtime coercion and validation diagnostics.</p>
 <p><strong>Security-Hardened Transport Layer:</strong> Implements TLS 1.3 encryption, automatic session token refresh, and localized memory isolation to eliminate unencrypted PHI disk persistence.</p>

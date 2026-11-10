@@ -108,7 +108,7 @@
         "class": "Trial Design",
         "structure": "One record per trial summary parameter value",
         "keys": ["STUDYID", "TSPARMCD", "TSSEQ"],
-        "records": 12,
+        "records": 14,
         "file": "ts.xpt"
       },
       {

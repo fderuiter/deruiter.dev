@@ -41,7 +41,7 @@ describe("USDM-derived trial design", () => {
       ["TE", 5],
       ["TV", 7],
       ["TI", 3],
-      ["TS", 12],
+      ["TS", 14],
     ]);
   });
 
@@ -73,6 +73,28 @@ describe("USDM-derived trial design", () => {
     });
     expect(row("SDTIGVER").TSVAL).toBe("3.4");
     expect(codes).not.toContain("ADAMIGVER");
+  });
+
+  it("records the planned treatment and the study start date in TS (#3718)", () => {
+    const ts = trial().find((dataset) => dataset.name === "TS")!;
+    const codes = ts.columns.TSPARMCD as string[];
+    const value = (code: string) => ts.columns.TSVAL[codes.indexOf(code)];
+    expect(value("TRT")).toBe("Demoxacin");
+    expect(value("SSTDTC")).toBe(
+      runPipeline(DEMO_301_STUDY, options)
+        .datasets.find((dataset) => dataset.name === "EX")!
+        .columns.EXSTDTC.filter((date) => typeof date === "string")
+        .sort()[0]
+    );
+  });
+
+  it("leaves out TRT when the study names no experimental intervention", () => {
+    const modified = structuredClone(DEMO_301_USDM);
+    modified.study.versions![0].studyInterventions = [];
+    const ts = trial(readStudyDefinition(modified)).find(
+      (dataset) => dataset.name === "TS"
+    )!;
+    expect(ts.columns.TSPARMCD).not.toContain("TRT");
   });
 
   it("leaves out PCLAS when the study names no investigational product", () => {

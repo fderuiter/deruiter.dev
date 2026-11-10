@@ -315,6 +315,7 @@ export function readStudyDefinition(
       blinding: design.blindingSchema?.standardCode?.decode ?? "",
       blindingCode: design.blindingSchema?.standardCode?.code ?? "",
       interventionType: coded(experimental?.type),
+      plannedTreatment: experimental?.name?.trim() || null,
       pharmacologicClass: productClass
         ? { ...coded(productClass), version: productClass.codeSystemVersion }
         : null,

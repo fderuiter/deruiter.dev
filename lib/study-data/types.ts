@@ -370,6 +370,12 @@ export interface StudyDesignDefinition {
    */
   readonly interventionType: CodedValue;
   /**
+   * Name of the experimental intervention, for example `Demoxacin`, which
+   * Trial Summary records as the planned treatment (TRT). Null when the study
+   * names none.
+   */
+  readonly plannedTreatment: string | null;
+  /**
    * MED-RT Established Pharmacologic Class of the investigational product,
    * with the MED-RT release it was taken from. Null when the study names no
    * investigational product with a class.

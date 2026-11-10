@@ -282,7 +282,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
               href="#case-studies"
               className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-7 py-3.5 text-xs sm:text-sm font-mono font-bold text-black bg-amber-400 hover:bg-amber-300 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-500/10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
-              <span>Explore My Work</span>
+              <span>Explore my work</span>
               <IconArrowRight className="w-4 h-4" />
             </a>
 

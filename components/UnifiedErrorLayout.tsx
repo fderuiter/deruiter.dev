@@ -338,7 +338,7 @@ export function UnifiedErrorLayout({
 
                 {/* Bottom Status Footer */}
                 <div className="absolute bottom-3 left-4 right-4 text-center text-[9px] font-bold text-neutral-500 uppercase tracking-widest group-hover/coin:text-accent/80 transition-colors">
-                  ▶ DEFERRED ENGINE ACTIVATION READY
+                  ▶ GAME LOADS WHEN YOU LAUNCH IT
                 </div>
               </div>
             ))}

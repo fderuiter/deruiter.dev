@@ -41,8 +41,8 @@ export default function Error({
           </h1>
 
           <p className="text-sm text-neutral-400 leading-relaxed mb-8">
-            Something went wrong while loading this page. Try again; if it keeps
-            happening, please let me know.
+            Something went wrong while loading this page. Try again, and if it
+            keeps happening, let me know.
           </p>
 
           <button

@@ -40,22 +40,22 @@ export default function PlatformOperationsPage() {
         <p className="mt-5 max-w-3xl text-slate-300">
           Enrollment, site activation, data management, quality, risk and
           milestones for a synthetic sponsor portfolio. Drill from the portfolio
-          to a study, a country and a site; every number comes from the governed
+          to a study, a country and a site. Every number comes from the governed
           metric registry, and every chart has its data table. A study&apos;s
           Risk tab shows its key risk indicators, quality tolerance limits and
-          central statistical monitoring. Every study side by side is on the{" "}
+          central statistical monitoring. The{" "}
           <IntentLink href="/platform/portfolio" className={LINK}>
             portfolio dashboard
-          </IntentLink>
-          , a question of your own goes to the{" "}
+          </IntentLink>{" "}
+          puts every study side by side, the{" "}
           <IntentLink href="/platform/explore" className={LINK}>
             metrics explorer
-          </IntentLink>
-          , and each metric&apos;s definition and owner are in the{" "}
+          </IntentLink>{" "}
+          takes a question of your own, and the{" "}
           <IntentLink href="/platform/governance" className={LINK}>
             data catalog
-          </IntentLink>
-          .
+          </IntentLink>{" "}
+          gives each metric&apos;s definition and owner.
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">
           {SYNTHETIC_DATA_NOTICE} {REGULATORY_WORDING}

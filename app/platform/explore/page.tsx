@@ -36,11 +36,11 @@ export default function PlatformExplorePage() {
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
           Pick a governed metric, group it, filter it and choose how to draw it.
-          The explorer offers only what the semantic layer allows: the
-          dimensions each metric may be grouped and filtered by, and the visuals
-          that fit, so no exploration joins the wrong tables. Every result shows
-          the metric&apos;s definition, version and SQL, and comes from the same
-          registry as the{" "}
+          The explorer offers only what the semantic layer allows, which is the
+          dimensions each metric may be grouped and filtered by and the charts
+          that fit it. That keeps an exploration from joining the wrong tables.
+          Every result shows the metric&apos;s definition, version and SQL, and
+          comes from the same registry as the{" "}
           <IntentLink
             href="/platform/operations"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"
@@ -54,7 +54,7 @@ export default function PlatformExplorePage() {
           >
             portfolio
           </IntentLink>{" "}
-          dashboards. An exploration is saved in the link, never on a server.
+          dashboards. An exploration is saved in the link, not on a server.
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">
           {SYNTHETIC_DATA_NOTICE} {REGULATORY_WORDING}

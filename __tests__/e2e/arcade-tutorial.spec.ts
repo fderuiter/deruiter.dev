@@ -3,17 +3,12 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * #2972: a game's guided tutorial in a real browser. Laser Loon offers it
  * once on first launch, walks the player through the Sandbox with the keys
- * they will use, and hands back to the Campaign. The other specs start with
- * the offer already answered (playwright.config.ts); this one starts fresh.
+ * they will use, and hands back to the Campaign. Meme Vault (#3450) has no
+ * cabinet, so it offers its tutorial over the sampler and walks it on a
+ * desktop and a phone. The other specs start with the offer already
+ * answered (playwright.config.ts); this one starts fresh.
  */
 test.use({ storageState: { cookies: [], origins: [] } });
-
-test.beforeEach(({}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== "chromium",
-    "Keyboard walkthrough on desktop Chrome"
-  );
-});
 
 const step = (page: Page) =>
   page.getByTestId("tutorial-card").getAttribute("data-tutorial-step");
@@ -29,6 +24,13 @@ async function launch(page: Page) {
 }
 
 test.describe("Laser Loon guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
   test("is offered once, teaches by doing, and returns to the Campaign", async ({
     page,
   }) => {
@@ -99,6 +101,104 @@ test.describe("Laser Loon guided tutorial", () => {
     await page.reload();
     await launch(page);
     await expect(page.locator("[data-keyboard-boundary]")).toBeVisible();
+    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+  });
+});
+
+/** Scrolls the sampler into view, which is when the vault offers its tour. */
+async function openVault(page: Page) {
+  await page.goto("/arcade/meme-vault");
+  await expect(async () => {
+    await page.getByTestId("meme-echo").scrollIntoViewIfNeeded();
+    await expect(page.getByTestId("meme-echo")).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30000 });
+}
+
+test.describe("Meme Vault guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      !["chromium", "Mobile Chrome"].includes(testInfo.project.name),
+      "Walked on desktop Chrome and one phone"
+    );
+  });
+
+  test("is offered once, teaches by doing, and replays from its key", async ({
+    page,
+  }, testInfo) => {
+    const phone = testInfo.project.name !== "chromium";
+    const card = page.getByTestId("tutorial-card");
+    const press = async (key: string, target: string) => {
+      if (phone) await page.locator(`[data-tutorial-target="${target}"]`).tap();
+      else await page.keyboard.press(key);
+    };
+
+    await openVault(page);
+    const start = page.getByRole("button", { name: "Start the tutorial" });
+    await expect(start).toBeVisible();
+    await start.click();
+
+    await expect.poll(() => step(page)).toBe("welcome");
+    await card.getByRole("button", { name: "Next" }).click();
+
+    // Practice: Start Echo, by key on a desktop and by tap on a phone.
+    await expect.poll(() => step(page)).toBe("echo");
+    if (phone) {
+      await page.getByRole("button", { name: "Start Echo" }).tap();
+    } else {
+      await expect(page.locator("[data-keyboard-boundary]")).toBeFocused();
+      await page.keyboard.press("Enter");
+    }
+
+    // The pattern stops Echo, and a wrong pad only plays its sample.
+    await expect.poll(() => step(page)).toBe("pad-1");
+    await expect(page.getByTestId("meme-echo")).toHaveAttribute(
+      "data-echo-phase",
+      "idle"
+    );
+    if (phone) await page.getByRole("button", { name: /^Play 5 / }).tap();
+    else await page.keyboard.press("5");
+    await expect.poll(() => step(page)).toBe("pad-1");
+    await press("1", "pad-1");
+    await expect.poll(() => step(page)).toBe("pad-2");
+    await press("2", "pad-2");
+
+    await expect.poll(() => step(page)).toBe("sound");
+    await page.locator('[data-tutorial-target="sound"]').click();
+
+    await expect.poll(() => step(page)).toBe("manual");
+    if (phone) {
+      await page
+        .getByRole("button", { name: /Field Manual/i })
+        .first()
+        .tap();
+    } else {
+      await expect(page.locator("[data-keyboard-boundary]")).toBeFocused();
+      await page.keyboard.press("?");
+    }
+    const manual = page.getByRole("dialog", { name: /Meme Vault/i });
+    await expect(manual).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(manual).toHaveCount(0);
+
+    await expect.poll(() => step(page)).toBe("trophies");
+    await card.getByRole("button", { name: "Finish" }).click();
+    await expect(page.getByTestId("tutorial-finished")).toBeVisible();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(page.getByTestId("tutorial-finished")).toHaveCount(0);
+
+    // Finished on this device: no offer next time, and the key replays it.
+    await openVault(page);
+    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+    await page.getByTestId("meme-tutorial-key").click();
+    await expect.poll(() => step(page)).toBe("welcome");
+  });
+
+  test("can be turned down, and stays turned down", async ({ page }) => {
+    await openVault(page);
+    await page.getByRole("button", { name: "Skip, just play" }).click();
+    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+    await openVault(page);
+    await expect(page.getByTestId("meme-echo")).toBeVisible();
     await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
   });
 });

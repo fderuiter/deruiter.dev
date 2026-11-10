@@ -13,7 +13,7 @@ import {
   ASCII_TRAIN,
   SANDBOX_TERMINAL_HREF,
 } from "@/lib/meme-data";
-import { playMemeSound, unlockMemeAudio } from "@/lib/meme-audio";
+import { playMemeSound } from "@/lib/meme-audio";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -28,6 +28,7 @@ import {
   IconArrowLeft,
   IconRocket,
   IconMessage2,
+  IconSchool,
 } from "@tabler/icons-react";
 import { Oscilloscope } from "@/components/arcade/meme-vault/Oscilloscope";
 import { SamplerPads } from "@/components/arcade/meme-vault/SamplerPads";
@@ -35,6 +36,12 @@ import { TrophyShelf } from "@/components/arcade/meme-vault/TrophyShelf";
 import { VaultHero } from "@/components/arcade/meme-vault/VaultHero";
 import { EchoConsole } from "@/components/arcade/meme-vault/EchoConsole";
 import { useMemeVaultSession } from "@/components/arcade/meme-vault/useMemeVaultSession";
+import { TutorialOverlay, useTutorialRun } from "@/components/arcade/tutorial";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import {
+  MEME_VAULT_TUTORIAL,
+  MEME_VAULT_TUTORIAL_SIGNALS,
+} from "@/lib/meme-vault";
 
 export const MemeVaultClient: React.FC = () => {
   const { muted, setMuted, bypassActive, bypassReason, setReducedMotionOptIn } =
@@ -46,6 +53,71 @@ export const MemeVaultClient: React.FC = () => {
   });
   useEffect(() => () => setOptInRef.current?.(false), []);
 
+  // The room's guided tutorial (#3450). The vault has no cabinet, so the
+  // sampler panel is its stage: the offer shows once the panel is in view,
+  // and the Tutorial button beside Sound replays it.
+  const tutorialRun = useTutorialRun(MEME_VAULT_TUTORIAL);
+  const { signal: tutorialSignal } = tutorialRun.value;
+  const touch = useMediaQuery("(pointer: coarse)");
+  // The manual is a modal: the coach card waits behind it.
+  const [manualOpen, setManualOpen] = useState(false);
+  const stageRef = useRef<HTMLElement | null>(null);
+  const [stageSeen, setStageSeen] = useState(false);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || stageSeen || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setStageSeen(true);
+          observer.disconnect();
+        }
+      },
+      // Seen once about a third of it is on screen, which on a phone is
+      // the Echo strip and the first pads.
+      { threshold: 0.35 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [stageSeen]);
+  // The room scrolls, unlike a cabinet's stage, so each card the tutorial
+  // shows is brought into view below the site header once it is placed.
+  const { status: tutorialStatus, index: tutorialIndex } = tutorialRun.state;
+  const offerShowing = stageSeen && tutorialRun.offered;
+  useEffect(() => {
+    if (!offerShowing && tutorialStatus === "idle") return;
+    const bringIntoView = () => {
+      const card = stageRef.current?.querySelector<HTMLElement>(
+        '[data-testid^="tutorial-"][role]'
+      );
+      if (!card) return;
+      // Clear of the fixed site header, as revealPlayArea does.
+      const header = document.querySelector("header");
+      const top = Math.max(0, header?.getBoundingClientRect().bottom ?? 0) + 12;
+      const rect = card.getBoundingClientRect();
+      let delta = 0;
+      if (rect.top < top) delta = rect.top - top;
+      else if (rect.bottom > window.innerHeight - 12) {
+        delta = Math.min(rect.bottom - window.innerHeight + 12, rect.top - top);
+      }
+      if (delta === 0) return;
+      const reduce = window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      window.scrollBy({ top: delta, behavior: reduce ? "auto" : "smooth" });
+    };
+    // Once placed, and again after the card's next re-measure, which can
+    // move it when its control shifts.
+    const timers = [60, 400].map((ms) => setTimeout(bringIntoView, ms));
+    return () => timers.forEach(clearTimeout);
+  }, [offerShowing, tutorialStatus, tutorialIndex]);
+  const changeMuted = (next: boolean) => {
+    setMuted(next);
+    tutorialSignal(MEME_VAULT_TUTORIAL_SIGNALS.sound);
+  };
+
   const {
     activeSound,
     activeSoundLabel,
@@ -55,11 +127,12 @@ export const MemeVaultClient: React.FC = () => {
     missedPad,
     silentPress,
     stampId,
+    startEcho,
     totalAchievements,
     triggerChaosMode,
     unlockedCount,
     unlockedIds,
-  } = useMemeVaultSession({});
+  } = useMemeVaultSession({ tutorial: tutorialRun.value });
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [asciiTab, setAsciiTab] = useState<
     "cowsay" | "duck" | "loon" | "train"
@@ -90,6 +163,13 @@ export const MemeVaultClient: React.FC = () => {
     window.scrollBy({ top: delta, behavior: reduce ? "auto" : "smooth" });
   }, []);
 
+  const onStartEcho = () => {
+    startEcho();
+    // After the start renders, so the strip's new lines count. A running
+    // tutorial scrolls to its own card instead.
+    if (!tutorialRun.value.active) requestAnimationFrame(revealPlayArea);
+  };
+
   // React to meme card
   const handleReaction = (id: string) => {
     setReactions((prev) => ({
@@ -111,7 +191,7 @@ export const MemeVaultClient: React.FC = () => {
           type="button"
           onClick={() => {
             setReducedMotionOptIn(true);
-            setMuted(false);
+            changeMuted(false);
           }}
           className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
         >
@@ -126,7 +206,7 @@ export const MemeVaultClient: React.FC = () => {
       Sound is off.{" "}
       <button
         type="button"
-        onClick={() => setMuted(false)}
+        onClick={() => changeMuted(false)}
         className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
       >
         Turn sound on
@@ -164,7 +244,14 @@ export const MemeVaultClient: React.FC = () => {
         <Breadcrumbs path="/arcade/meme-vault" className="mr-auto" />
 
         <div className="flex flex-wrap items-center gap-2">
-          <FieldManualButton manualId="meme-vault" variant="inline" />
+          <FieldManualButton
+            manualId="meme-vault"
+            variant="inline"
+            onOpenChange={(open) => {
+              setManualOpen(open);
+              if (open) tutorialSignal(MEME_VAULT_TUTORIAL_SIGNALS.manual);
+            }}
+          />
           <button
             onClick={triggerChaosMode}
             title="A shortcut to the Konami show. It awards no trophy: type the code for that."
@@ -179,7 +266,12 @@ export const MemeVaultClient: React.FC = () => {
       <VaultHero unlocked={unlockedCount} total={totalAchievements} />
 
       {/* Section 1: The sampler face: oscilloscope and eight pads */}
-      <section className="mb-14" aria-labelledby="meme-sampler-heading">
+      <section
+        ref={stageRef}
+        className="relative mb-14"
+        aria-labelledby="meme-sampler-heading"
+        data-arcade-cabinet="meme-vault"
+      >
         <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="p-2 rounded-md bg-[#13151a] border border-white/[0.08] text-emerald-400">
@@ -198,28 +290,56 @@ export const MemeVaultClient: React.FC = () => {
               </p>
             </div>
           </div>
-          {!bypassActive && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setMuted(!muted)}
-              aria-pressed={!muted}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98] pointer-coarse:min-h-11"
+              onClick={tutorialRun.start}
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-amber-500/30 bg-[#13151a] px-3 text-xs font-semibold text-amber-300 transition-colors hover:border-amber-400/60 hover:text-amber-200 active:scale-[0.98] pointer-coarse:min-h-11"
+              data-testid="meme-tutorial-key"
             >
-              {muted ? (
-                <IconVolumeOff className="h-4 w-4 text-zinc-400" />
-              ) : (
-                <IconVolume className="h-4 w-4 text-emerald-400" />
-              )}
-              <span>{muted ? "Sound off" : "Sound on"}</span>
+              <IconSchool aria-hidden="true" className="h-4 w-4" />
+              <span>Tutorial</span>
             </button>
-          )}
+            {!bypassActive && (
+              <button
+                type="button"
+                onClick={() => changeMuted(!muted)}
+                aria-pressed={!muted}
+                data-tutorial-target="sound"
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98] pointer-coarse:min-h-11"
+              >
+                {muted ? (
+                  <IconVolumeOff className="h-4 w-4 text-zinc-400" />
+                ) : (
+                  <IconVolume className="h-4 w-4 text-emerald-400" />
+                )}
+                <span>{muted ? "Sound off" : "Sound on"}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="rounded-xl border border-white/[0.08] bg-[#13151a] p-3 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-5 pointer-coarse:landscape:lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] pointer-coarse:landscape:lg:gap-5">
             {/* Echo and the pads come first, so in one column the scope sits
                 below them and never pushes the pads off screen (#2124). */}
-            <div ref={playAreaRef} className="min-w-0">
+            {/* The play area takes focus during the tutorial's practice
+                steps: keys 1 to 8 press the pads, Enter or Space starts
+                Echo, and ? opens the manual (#3450). */}
+            <div
+              ref={playAreaRef}
+              className="min-w-0 focus:outline-none"
+              tabIndex={-1}
+              data-keyboard-boundary="true"
+              data-field-manual="meme-vault"
+              onKeyDown={(event) => {
+                if (event.target !== event.currentTarget) return;
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                if (echo.round && echo.round.phase !== "over") return;
+                onStartEcho();
+              }}
+            >
               {silentPress && silentReason && (
                 <p
                   className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-sans text-xs text-amber-200"
@@ -232,12 +352,7 @@ export const MemeVaultClient: React.FC = () => {
                 round={echo.round}
                 best={echo.best}
                 early={echo.early}
-                onStart={() => {
-                  unlockMemeAudio();
-                  echo.start();
-                  // After the start renders, so the strip's new lines count.
-                  requestAnimationFrame(revealPlayArea);
-                }}
+                onStart={onStartEcho}
                 onStop={echo.stop}
                 silentReason={silentReason}
                 missedPad={missedPad}
@@ -281,6 +396,16 @@ export const MemeVaultClient: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* The guided tutorial's offer, coach card and closing card, over
+            the sampler (#3450). */}
+        <TutorialOverlay
+          run={tutorialRun}
+          gameName="Meme Vault"
+          launched={stageSeen}
+          touch={touch}
+          covered={manualOpen}
+        />
       </section>
 
       {/* Section 2: Easter Egg Trophy Shelf */}

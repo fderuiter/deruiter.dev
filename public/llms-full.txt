@@ -92,9 +92,9 @@ Architecture and trade-offs:
 
 The problem
 
-Trial design involves comparing assumptions, not just choosing a formula. clintrials brings several statistical models into a browser workspace so their behavior can be explored without setting up a separate Python environment.
+Designing a trial means comparing assumptions as well as choosing a formula. clintrials brings several statistical models into a browser workspace so their behavior can be explored without setting up a separate Python environment.
 
-The approach: Pyodide runs Python models in WebAssembly workers, keeping numerical work separate from the page’s interaction loop.
+The approach: Pyodide runs Python models in WebAssembly workers, keeping numerical work separate from the page's interaction loop.
 
 ### CRF.xl: From Spreadsheet to Clinical Forms
 
@@ -248,13 +248,13 @@ Source: https://github.com/fderuiter/laser-loon
 
 Abstract:
 
-My submission to Minnesota’s state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.
+My submission to Minnesota's state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.
 
 Architecture and trade-offs:
 
 The problem
 
-For Minnesota’s state flag redesign, I submitted a common loon with red eye lasers. Submission F277 became Laser Loon. This project collects the artwork in formats people can use on screens, in print, and on whatever else needs a laser-eyed bird.
+For Minnesota's state flag redesign, I submitted a common loon with red eye lasers. Submission F277 became Laser Loon. This project collects the artwork in formats people can use on screens, in print, and on whatever else needs a laser-eyed bird.
 
 The approach: The bird silhouette and laser layers remain editable as vectors. The download set includes source, print, and web formats.
 
@@ -398,7 +398,7 @@ Architecture and trade-offs:
 
 The problem
 
-Quasiperfect numbers make for a deceptively short question and a very large search space. UALBF pairs Rust search routines with Lean 4 verification to explore candidate structures and check the reasoning used to rule them out.
+Quasiperfect numbers are a short question with a very large search space. UALBF pairs Rust search routines with Lean 4 verification to explore candidate structures and check the reasoning used to rule them out.
 
 The approach: Rust branch-and-bound routines narrow the search space. Lean 4 provides a separate place to express and verify the mathematical arguments.
 

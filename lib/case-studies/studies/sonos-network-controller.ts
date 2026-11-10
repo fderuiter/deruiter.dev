@@ -18,9 +18,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> Sub-25ms command response latency over local WiFi; 100% cloud-free local network execution; lightweight memory footprint under 35MB RAM on Raspberry Pi.</p>
 
 <h3>How it works</h3>
-<p><strong>Layered Service-Oriented Architecture (SOA):</strong> Segregates SOAP transport primitives (<code>BaseSonosClient</code>) from UPnP service clients (<code>AVTransportClient</code>, <code>RenderingControlClient</code>) and high-level audio domain services.</p>
-<p><strong>Command / Registry Dispatch Pattern:</strong> Centralized dispatch via <code>ACTION_REGISTRY</code> mapping string commands directly to asynchronous lambdas, eliminating verbose endpoint routing trees.</p>
-<p><strong>Hypermedia-Driven Architecture (HDA):</strong> HTMX-powered frontend with server-rendered Jinja2 HTML fragments, achieving dynamic UI reactivity without large client-side JavaScript bundles.</p>
+<p>The code is layered: SOAP transport (<code>BaseSonosClient</code>) at the bottom, UPnP service clients (<code>AVTransportClient</code>, <code>RenderingControlClient</code>) above it, and audio services on top.</p>
+<p>One <code>ACTION_REGISTRY</code> maps each string command to an async lambda, which replaces a long tree of endpoint routes.</p>
+<p>The frontend is HTMX swapping in server-rendered Jinja2 HTML fragments, so the page updates live without a large JavaScript bundle.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -95,9 +95,9 @@ ACTION_REGISTRY = {
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Direct UPnP/SOAP Implementation vs. Heavy 3rd-Party SDKs:</strong> Implemented a bespoke, lightweight asynchronous client over aiohttp to ensure strict async event-loop compatibility and predictable error boundaries.</li>
-  <li><strong>Server-Driven HTMX Swaps vs. Client-Side SPA:</strong> Traded client-side JavaScript state machines for HTMX polling (<code>hx-trigger="every 2s"</code>) and partial DOM updates, lowering memory footprint for low-power edge hosting.</li>
-  <li><strong>SSDP Multicast Discovery with Nmap Fallback:</strong> Leveraged UDP SSDP discovery (M-SEARCH) for standard zero-conf resolution, with optional socket port scanning on port 1400 for hardened local networks.</li>
+  <li>Instead of a heavy third-party SDK, a small async UPnP/SOAP client over aiohttp fits the event loop and fails in predictable places.</li>
+  <li>HTMX polling (<code>hx-trigger="every 2s"</code>) and partial DOM updates replace a client-side SPA's state machines, which keeps memory low on small hosts.</li>
+  <li>Speakers are found with UDP SSDP multicast (M-SEARCH). On locked-down networks, an optional Nmap-style fallback scans port 1400 instead.</li>
 </ul>`,
     created_at: new Date("2026-03-12T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

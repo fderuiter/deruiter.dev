@@ -58,7 +58,7 @@ function ItemContent({
         {action.icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold truncate">
+        <span className="block font-semibold break-words">
           {action.label ?? item.label}
         </span>
         {/* The tooltip shows the description; this copy is what

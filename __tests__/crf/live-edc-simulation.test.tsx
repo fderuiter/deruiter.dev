@@ -36,7 +36,7 @@ describe("Live EDC Simulation Suite", () => {
       root.render(<LiveEdcSimulator study={ONCOLOGY_RECIST_PRESET} />);
     });
 
-    expect(container.textContent).toContain("Live EDC Simulation");
+    expect(container.textContent).toContain("Live EDC data entry");
     expect(container.textContent).toContain("Patient Form Entry");
     expect(container.textContent).toContain("Subject Status Matrix");
     expect(container.textContent).toContain("Discrepancy Queries");

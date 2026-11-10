@@ -78,7 +78,7 @@ export default function OfflineFallbackPage() {
             </div>
             <div>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                {isOnline ? "Connection Restored" : "You’re offline"}
+                {isOnline ? "Connection restored" : "You’re offline"}
               </span>
               <h1 className="type-title text-zinc-100 mt-1">
                 {isOnline
@@ -90,8 +90,8 @@ export default function OfflineFallbackPage() {
 
           <p className="text-zinc-400 text-base sm:text-lg mb-8 leading-relaxed">
             {isOnline
-              ? "Your connection is available, but the requested page did not load. Reload to try the request again."
-              : "This page hasn’t been saved for offline use. Try again when you’re connected, or try one of the cached pages below."}
+              ? "You’re back online, but this page didn’t load. Reload to try again."
+              : "This page hasn’t been saved for offline use. Try again when you’re connected, or open one of the cached pages below."}
           </p>
 
           <div className="flex flex-wrap items-center gap-4 mb-10">
@@ -113,7 +113,7 @@ export default function OfflineFallbackPage() {
 
           <div className="border-t border-zinc-800/80 pt-8">
             <h2 className="text-sm font-mono uppercase tracking-wider text-zinc-400 mb-4">
-              Pages to Try Offline
+              Pages to try offline
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {precachedRoutes.map((route) => (

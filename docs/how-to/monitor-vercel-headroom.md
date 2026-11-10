@@ -18,19 +18,20 @@ npm run headroom:vercel -- --strict
 npm run inventory:vercel
 ```
 
-`--strict` exits unsuccessfully for critical, stale, unreadable or unverified
-meters. Evaluation uses the current clock; the checked-in snapshot retains its
-original collection timestamp and is explicitly labeled `snapshot-budget`.
-The table below records historical dashboard budgets, not verified current API
+`--strict` exits non-zero for critical, stale, unreadable or unverified
+meters. Evaluation uses the current clock, while the checked-in snapshot keeps
+its original collection timestamp and is labeled `snapshot-budget`. The table
+below records past dashboard budgets. They are not verified current API
 entitlements.
 
-When `VERCEL_TOKEN` is configured, the tool optionally probes `/v6/deployments`
-and `/v2/usage`. The usage response contract and quota availability have not
-been verified. Probe observations are labeled `unverified-api-probe`, never
-healthy release evidence. Missing units, invalid values and absent or malformed
-limits remain unknown; historical 10 GB / 100 hour budgets are not substituted.
-Schema-named byte/second fields and explicit compatible units are normalized
-without magnitude guessing; GB and MB use decimal units.
+When `VERCEL_TOKEN` is configured, the tool can also probe `/v6/deployments`
+and `/v2/usage`. Nobody has verified the usage response's format or whether it
+carries the quotas, so probe results are labeled `unverified-api-probe` and
+never count as release evidence. A missing unit, an invalid value or a missing
+or malformed limit stays unknown, and the old 10 GB / 100 hour budgets are
+never filled in for it. Fields the schema names as bytes or seconds, and
+values with an explicit compatible unit, are converted without guessing the
+magnitude. GB and MB are decimal.
 
 The [official billing API](https://vercel.com/changelog/access-billing-usage-cost-data-api)
 documents `/v1/billing/charges` billing records. Those records do not establish
@@ -39,7 +40,7 @@ audited snapshot from the dashboard with its collection timestamp. Without a
 usable probe, reporting retains the dated snapshot and evaluates its age.
 
 This is optional manual tooling. Production builds do not call the capacity
-helper and do not require a new Vercel API credential. The helper fails on child
+helper and need no new Vercel API credential. The helper fails on child
 errors, malformed reports, unverified provenance or stale samples. No tool
 starts or authorizes a deployment; Production ships through the weekly
 release train (ADR 0063).
@@ -98,8 +99,8 @@ When the meter is critical:
 2. Confirm only the weekly train's Deploy Hook fires, and no GitHub Action or
    second integration also deploys the same commit.
 3. Keep to one Production build a week from the train, plus break-glass
-   releases; use an on-demand preview only when deployed review materially
-   reduces risk.
+   releases. Use an on-demand preview only when reviewing a deployed build
+   clearly lowers the risk.
 4. Review failed and canceled build frequency before changing retention.
 
 ## Refresh the Audited Snapshot
@@ -137,7 +138,8 @@ records the authorization gap and public production evidence.
 
 The same ledger tracks the free-tier boundaries recorded in ADR 0036 for
 Vercel, Neon, Upstash, Resend, Clerk, and Sentry. An unavailable live meter is
-recorded as unknown. The ledger is a governance aid, not proof that an
-integration is connected; use the live integration and environment audit in
+recorded as unknown. The ledger records the limits. It does not show that an
+integration is connected, so check the live integration and environment audit
+in
 the [GitHub–Vercel governance report](../explanation/audits/2026-09-12-github-vercel-release-governance.md)
 before enabling a provider in Preview or Production.

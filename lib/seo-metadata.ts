@@ -234,7 +234,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   mCrf: {
     title: "Mobile CRF Studio for Clinical Forms",
     description:
-      "Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.",
+      "The clinical research form studio, laid out for a phone. Tap through each section of a form and inspect every field on a small touch screen.",
     path: "/m/crf",
     canonicalPath: "/crf",
     keywords: [
@@ -250,7 +250,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   patrol: {
     title: "Ski Patrol Shift Studio Simulation",
     description:
-      "An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.",
+      "Work a Midwest ski-patrol shift and make the judgment calls. A deterministic state machine and its dispatch routines decide what comes next.",
     path: "/patrol",
     keywords: [
       "Patrol Shift Studio",
@@ -267,7 +267,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   mPatrol: {
     title: "Mobile Ski Patrol Shift Studio",
     description:
-      "Touch-optimized ski patrol operational judgment simulator built for mobile screens, allowing real-time triage and emergency intervention decisions.",
+      "The ski-patrol judgment simulator, laid out for a phone. Triage calls as they come in and decide how to respond to each emergency in real time.",
     path: "/m/patrol",
     canonicalPath: "/patrol",
     keywords: [
@@ -283,7 +283,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   mProof: {
     title: "Mobile Logical Proof Workspace",
     description:
-      "Touch-optimized formal logic proof workspace tailored for handheld devices, offering interactive deduction step ledgers and fallacy diagnostics.",
+      "The formal logic proof workspace, laid out for a phone. Build a proof in a step-by-step deduction ledger and spot where a fallacy breaks it.",
     path: "/m/proof",
     canonicalPath: "/proof",
     keywords: [
@@ -299,7 +299,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   mNeuro: {
     title: "Mobile NeuroRecon Studio Viewer",
     description:
-      "Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.",
+      "The brain morphometry viewer, laid out for a phone. Read subcortical volume measures and the FreeSurfer reconstruction status on a touch screen.",
     path: "/m/neuro",
     canonicalPath: "/neuro",
     keywords: [
@@ -471,7 +471,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   protocolDrift: {
     title: "Protocol Drift: Data Pipeline Sim",
     description:
-      "A browser-first systems-engineering puzzle simulation exploring the friction between ideal regulatory specifications and messy human clinical data collection.",
+      "A browser puzzle about the gap between a clean regulatory specification and the messy way people collect clinical data, played as a systems simulation.",
     path: "/protocol-drift",
     ogImageType: "image/jpeg",
     keywords: [

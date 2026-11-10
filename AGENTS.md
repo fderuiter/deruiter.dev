@@ -10,203 +10,188 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Architectural & Testing Invariants
 
+One line per rule. The reasons, examples and incident history behind each section are in [`docs/agents/invariants/`](docs/agents/invariants/README.md), under the same section numbers.
+
 ### 1. Test Environment & Path Resolution
 
-- Never hardcode environment-specific root paths (such as `/app` or absolute local directories) in tests or scripts.
-- Always resolve the workspace root dynamically with `process.cwd()` or `path.resolve(__dirname, '..')`.
-- When testing browser storage APIs in JSDOM / Node 25+, ensure `globalThis.localStorage` is properly mocked and isolated with a standard `MockStorage` implementation.
-- When running tests in Node 25+, pass `--no-warnings` in `execArgv` to suppress experimental web storage notices. Vitest configs are `.mts` files using `import.meta.dirname`, so Vite loads them as native ESM without a config loader notice; do not reintroduce `VITE_CONFIG_NATIVE_IGNORE_WARNING` or a `.ts` config (#1368).
-- Ensure `vitest.setup.ts`, benchmark CLIs (`lib/dx/page-bench.ts`), and type-only barrel index files (`lib/*/types.ts`, `lib/*/index.ts`) are explicitly excluded from `coverage.exclude` in `vitest.config.mts` so mock boilerplate does not skew global coverage gates.
-- Production hooks and store subscribers must defensively check `typeof window.localStorage?.getItem === "function"` and `typeof window.localStorage?.setItem === "function"` before accessing storage methods to avoid unhandled exceptions in standalone test harnesses.
-- Modules that read environment files (`.env`, `.env.local`) must skip doing so when `process.env.VITEST` is set. `lib/env.ts` and `scripts/build.js` are the reference implementations. A test that deletes `DATABASE_URL` to exercise an offline fallback will otherwise have it repopulated from the developer's real credentials, and Vitest prints both sides of a failed comparison, which is how a live production connection string reached terminal output in #865. The exposure is in test _output_, so secret scanning of staged files does not catch it.
-- Test suites must maintain strict import and variable hygiene: remove unused module imports and prefer immutable `const` declarations over `let` unless variable reassignment is required.
-- Test suites containing React JSX elements or component rendering must strictly utilize the `.test.tsx` file extension (never `.test.ts`) to satisfy Vitest/oxc JSX transform parsing.
-- When mocking constructor functions or methods requiring explicit `this` parameter typing, use `this: Record<string, unknown>` or dedicated mock interfaces rather than `this: any` to comply with `@typescript-eslint/no-explicit-any`.
+- Never hardcode root paths such as `/app` in tests or scripts; resolve the root with `process.cwd()` or `path.resolve(__dirname, '..')`.
+- Mock and isolate `globalThis.localStorage` with a standard `MockStorage` when testing browser storage.
+- Pass `--no-warnings` in `execArgv` on Node 25+. Keep Vitest configs as `.mts` files using `import.meta.dirname`; never reintroduce `VITE_CONFIG_NATIVE_IGNORE_WARNING` or a `.ts` config (#1368).
+- Keep `vitest.setup.ts`, benchmark CLIs (`lib/dx/page-bench.ts`) and type-only barrels (`lib/*/types.ts`, `lib/*/index.ts`) in `coverage.exclude`.
+- Check `typeof window.localStorage?.getItem === "function"` and `typeof window.localStorage?.setItem === "function"` before touching storage in production hooks and store subscribers.
+- Skip reading `.env` files when `process.env.VITEST` is set (`lib/env.ts` and `scripts/build.js` are the reference), so real credentials never reach test output (#865).
+- Remove unused imports in tests and prefer `const` over `let`.
+- Give any test that renders JSX the `.test.tsx` extension.
+- Type a mocked `this` as `this: Record<string, unknown>` or a mock interface, never `this: any`.
 
 ### 2. Layout & Component Hierarchy
 
-- `app/layout.tsx` renders the global `<Navbar />` and top-level providers (`AudioProvider`, `SearchProvider`).
-- Route pages (e.g. `app/proof/page.tsx`, `app/simulator/page.tsx`, `app/schedule/page.tsx`, `app/stack/page.tsx`, `app/work/laser-loon/page.tsx`) must never render a secondary `<Navbar />` component.
-- Route entrypoint files (`app/**/page.tsx`) must directly declare root header clearance padding (`pt-24` to `pt-32` or `min-h-screen`/`min-h-dvh` or `<PageLayout />`) to satisfy static DX Doctor invariant audits.
+- `app/layout.tsx` renders the global `<Navbar />` and the top-level providers (`AudioProvider`, `SearchProvider`).
+- Never render a second `<Navbar />` from a route page.
+- Declare header clearance (`pt-24` to `pt-32`, `min-h-screen`/`min-h-dvh`, or `<PageLayout />`) directly in each `app/**/page.tsx`.
 
 ### 3. Route Indexing & Discovery
 
-- Any new first-class route or interactive tool must be synchronized across the 5-Point Discovery Matrix:
+- Register every new first-class route or tool in all five discovery points:
   - `STATIC_NAVS` in `lib/command-palette/static-navs.ts` (rendered by `components/CommandPalette.tsx`), with a Tabler icon name, status badge, tech stack tags and preview highlights.
-  - `lib/navigation.ts`, the single data source for the top bar, desktop menus, mobile drawer and footer columns (one entry under the right group, per [ADR 0058](adr/0058-site-navigation-information-architecture.md)).
-  - `app/sitemap.ts` and `lib/seo-metadata.ts` under `ROUTE_METADATA_CONFIGS` with canonical path and change frequency.
-  - `app/<route>/opengraph-image.tsx` providing a 1200x630 dynamic social preview card matching the systems architecture design system (`lib/og-image.tsx`).
-  - `PUBLIC_ROUTE_REGISTRY` in `lib/public-routes.ts`, which feeds `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` (see invariant 14).
-- An arcade game is also registered in `ARCADE_REGISTRY` (`lib/arcade/registry.ts`) with its listing and per-view readiness ([ADR 0062](adr/0062-three-views-per-arcade-game.md)); DX Doctor's `routes-arcade-registry-parity` check fails when a registry route is missing from the sitemap metadata, the public route registry or the Command Palette.
+  - `lib/navigation.ts`, one entry under the right group ([ADR 0058](adr/0058-site-navigation-information-architecture.md)).
+  - `app/sitemap.ts` and `ROUTE_METADATA_CONFIGS` in `lib/seo-metadata.ts`.
+  - `app/<route>/opengraph-image.tsx`, a 1200x630 card built on `lib/og-image.tsx`.
+  - `PUBLIC_ROUTE_REGISTRY` in `lib/public-routes.ts` (see section 14).
+- Also register an arcade game in `ARCADE_REGISTRY` (`lib/arcade/registry.ts`) with its listing and per-view readiness ([ADR 0062](adr/0062-three-views-per-arcade-game.md)).
 
 ### 4. Hydration & React Best Practices
 
-- For client-only rendering or browser API reads, prefer `useSyncExternalStore` over `useEffect` + `useState` hydration flags.
-- Keep hook dependency arrays exhaustive across all hooks and memoized callbacks (`useCallback`, `useMemo`) to satisfy React 19 compiler optimization rules (`react-hooks/preserve-manual-memoization`).
-- Declare all helper functions and event handlers prior to any `useEffect` blocks that invoke them to prevent temporal-dead-zone immutability errors.
-- When synchronizing URL hash or query parameters into component state on mount, use direct derivation where possible or annotate necessary synchronous `setState` calls with `// eslint-disable-next-line react-hooks/set-state-in-effect`.
-- Dynamic values that vary between server and client render (e.g. `toLocaleTimeString()`, timestamps, random IDs) must include `suppressHydrationWarning` on the host element or be rendered strictly after mounting.
-- When updating external stores, localStorage, or URL hash parameters (e.g. `useStudioHashParams().setParam`), never dispatch mutations or trigger window events synchronously inside functional `setState((prev) => ...)` updater callbacks. Compute the next state value and invoke external store/hash mutations as distinct sequential operations in event handlers or `useEffect` blocks to prevent "Cannot update a component while rendering a different component" execution errors.
+- Prefer `useSyncExternalStore` over `useEffect` + `useState` flags for client-only reads.
+- Keep every hook dependency array exhaustive (`react-hooks/preserve-manual-memoization`).
+- Declare helpers and handlers before the `useEffect` blocks that call them.
+- Derive URL hash or query state directly; annotate an unavoidable synchronous `setState` with `// eslint-disable-next-line react-hooks/set-state-in-effect`.
+- Put `suppressHydrationWarning` on elements whose values differ between server and client, or render them after mount.
+- Never mutate external stores, `localStorage` or the URL hash inside a `setState((prev) => ...)` updater; compute the value, then mutate in a handler or effect.
 
 ### 5. Multi-Agent Integration & Invariant Synthesis
 
-- When merging concurrent feature branches or autonomous agent PRs, always apply **Additive Synthesis** on merge conflicts: never drop features, combine context providers in topological hierarchy (e.g. `PersonaProvider` -> `TerminologyProvider` -> `SearchProvider`), preserve rich text tokens and tooltips, and provide safe fallback defaults for standalone component testing.
-- Never commit intermediate agent tracking logs, temporary planning scratchpads (`.scratch/`, `scratch/`, `tmp/`), or ad-hoc adversarial scripts to project git history. Curated agent skills in `.agents/skills/` are tracked configuration.
+- Resolve merge conflicts additively: never drop features, nest providers in order (`PersonaProvider` -> `TerminologyProvider` -> `SearchProvider`), keep rich text tokens and tooltips, and give standalone tests safe defaults.
+- Never commit agent logs, scratchpads (`.scratch/`, `scratch/`, `tmp/`) or ad-hoc scripts. `.agents/skills/` is tracked configuration.
 
 ### 6. Developer Suite (DX) & Quality Invariants
 
-- Run `npm run quality` (or `npm run verify`) to ensure type safety, zero ESLint warnings, docs synchronization, and every architectural invariant reported by DX Doctor passes.
-- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices (`arcade` writes a three-view game with its session and views and registers it across the discovery matrix and `ARCADE_REGISTRY`; `case-study` registers in `lib/command-palette/static-navs.ts`).
-- Whenever public library or hook signatures change, run `npm run check-docs-drift`, which compiles the TypeDoc reference with warnings as errors. The compiled reference in `docs/reference/api/` is git-ignored; never commit it.
+- Run `npm run quality` (or `npm run verify`) before a PR: types, zero ESLint warnings, docs and every DX Doctor invariant.
+- Create new games, APIs, ADRs, case studies and components with `npm run scaffold <type> <name>`.
+- Run `npm run check-docs-drift` when a public signature changes (section 9).
 
 ### 7. Headless Canvas 2D & DOM Observer Testing Lifecycle
 
-- In JSDOM and unit tests for canvas-driven components (games, simulators, neuro slice viewers, Pretext text layout engines), ensure Canvas 2D mock contexts in `vitest.setup.ts` provide:
-  - Full curve and stroke methods (`quadraticCurveTo`, `bezierCurveTo`, `arcTo`, `roundRect`, `strokeRect`, `clearRect`, `setLineDash`, `getLineDash`, `clip`, `ellipse`).
-  - Realistic `ImageData` instances from `createImageData(w, h)` and `getImageData(sx, sy, sw, sh)` with allocated `Uint8ClampedArray` pixel buffers (`width * height * 4`).
-  - Text measurement stubs (`measureText: (text) => ({ width: (text || "").length * 8, height: 16 })`).
-- When rendering components or hooks utilizing `ResizeObserver` or `IntersectionObserver` in JSDOM (such as `useResizeObserver` or `PretextCard`), ensure `global.ResizeObserver` / `global.IntersectionObserver` is mocked in `beforeAll` or test setup.
-- When mocking external classes or loader constructors invoked with the `new` keyword (e.g. `new OBJLoader()`, `new GLTFLoader()`, `new AudioContext()`), always provide a regular constructor function (`function (this: any) { this.load = mockLoad; }`) or ES6 class implementation in `mockImplementation` rather than an arrow function to prevent runtime `TypeError: ... is not a constructor` exceptions.
-- Ensure active component timers and animation frames are unmounted/cancelled cleanly in `afterEach`.
-- In unit tests verifying error boundaries, navigation fallbacks, or recovery layouts (`__tests__/unified-recovery.test.tsx`), mock heavy dynamic canvas/WebGL game components (`RetroLabyrinth`, `Brain3DViewer`) with lightweight stubs rather than executing full simulation loops in JSDOM to prevent memory leaks and unhandled worker exceptions.
-- Vitest test suites must configure explicit worker heap limits (`execArgv: ['--max-old-space-size=4096']` in `vitest.config.mts`), and pre-commit staging must utilize `vitest related --run --passWithNoTests` to bound test execution scope.
+- Keep the Canvas 2D mock in `vitest.setup.ts` complete: curve and stroke methods, real `ImageData` buffers (`width * height * 4`) and a `measureText` stub.
+- Mock `ResizeObserver` and `IntersectionObserver` before rendering components that use them.
+- Mock classes called with `new` using a regular function or an ES6 class, never an arrow function.
+- Cancel timers and animation frames in `afterEach`.
+- Stub heavy canvas and WebGL components (`RetroLabyrinth`, `Brain3DViewer`) in recovery and error-boundary tests.
+- Keep `execArgv: ['--max-old-space-size=4096']` in `vitest.config.mts`, and run staged tests with `vitest related --run --passWithNoTests`.
 
 ### 8. JSDoc & TypeDoc Markdown Formatting
 
-- In JSDoc comments on exported symbols, avoid numbered prefixes (e.g. `1. ...`) or raw unescaped JSX/HTML tags (e.g. `<Navbar />`), as TypeDoc converts these into markdown files subject to `markdownlint` rules `MD029` (ordered list style) and `MD033` (inline HTML).
-- When re-exporting hooks or public API functions from facade files (e.g. `hooks/useAnnouncer.tsx`), ensure all referenced parameter and context interfaces (e.g. `AnnouncerContextType`) are also re-exported to maintain 100% TypeDoc extraction parity with zero compilation warnings.
+- In JSDoc on exported symbols, avoid numbered prefixes (`1. ...`) and raw JSX or HTML tags (markdownlint MD029, MD033).
+- Re-export every interface a facade's public functions reference, so TypeDoc compiles with zero warnings.
 
 ### 9. Specification & API Documentation Synchronization
 
-- **Full-Spectrum Scope**: All public API endpoints (`app/api/**/route.ts`), TypeScript library/hook exports (`lib/`, `hooks/`, `types/`), architectural decision records (`adr/`), and system architecture guides (`ARCHITECTURE.md`) are governed by automated lockstep synchronization.
-- **Declarative Contracts & 100% Coverage**: All HTTP routes must declare runtime Zod validation schemas in `lib/schemas.ts`. `scripts/generate-openapi.ts` dynamically traverses `app/api/**/route.ts` to assert 100% route coverage in `openapi.json` with zero missing endpoints.
-- **API Reference Is Built, Not Committed**: `npm run compile-docs` compiles TypeDoc markdown for `lib/`, `hooks/` and `types/` into `docs/reference/api/`, which is git-ignored ([ADR 0023](adr/0023-diataxis-documentation-architecture-and-zero-drift-governance.md), amended 2026-10-28). Run it to browse the reference locally; there is nothing to stage.
-- **Local Documentation Drift Verification**: Prior to committing changes or creating a pull request, run `npm run check-docs-drift` (or `npm run quality` / `npm run verify`) to ensure TypeDoc compiles with zero warnings, authored docs are staged, and no API route contract is missing.
-- **Zero-Drift Invariant Gate**: CI (`.github/workflows/ci.yml`) executes both `npm run check-docs-drift` and `npm run verify`; pre-commit (`.husky/pre-commit`) executes `npm run check-docs-drift` (alongside `typecheck`, `lint:boundaries`, `test:staged`, and `audit:security`). Either gate fails fast (exit code 1) on a TypeDoc warning (such as a `{@link}` to an undocumented symbol), unstaged authored documentation, or undocumented API routes.
-- **One-Command Auto-Remediation**: Run `npm run doctor:fix` (`npx tsx scripts/dx.ts doctor --fix`) to automatically regenerate `openapi.json` and resolve fixable architectural invariants.
-- **Documentation Staging Protocol**: When adding or changing API routes, run `npm run doctor:fix` and stage `openapi.json` with the code. Stage any authored markdown you edited under `docs/`. Generated TypeDoc output is never staged.
-- **Transient Isolation Boundary**: Intermediate agent scratchpads, raw terminal dumps, and temporary logs (`.scratch/`, `scratch/`, `tmp/`) must remain strictly isolated from git tracking and markdown linting pipelines (`npm run lint:docs`). Curated agent skills in `.agents/skills/` remain tracked configuration.
-- **Dual Spec Exposure**: Co-locate machine-readable `openapi.json` at root for automated tooling/CI with human-readable markdown in `docs/` and `adr/` for GitHub-native developer navigation.
-- **Pre-PR Staging & Gate Invariant**: Prior to publishing a feature branch or opening a pull request, run the complete verification suite (`npm run quality` and `npm test`). Ensure zero lint warnings, zero documentation drift, and that all architectural invariants pass cleanly.
+- Treat API routes, `lib/`, `hooks/` and `types/` exports, `adr/` and `ARCHITECTURE.md` as one synchronized contract.
+- Declare a Zod schema in `lib/schemas.ts` for every HTTP route; `scripts/generate-openapi.ts` must cover 100% of `app/api/**/route.ts`.
+- Never commit the TypeDoc reference in `docs/reference/api/`; it is git-ignored ([ADR 0023](adr/0023-diataxis-documentation-architecture-and-zero-drift-governance.md)).
+- Run `npm run check-docs-drift` before committing. Pre-commit and CI both run it and fail on a TypeDoc warning, unstaged authored docs or an undocumented route.
+- After changing an API route, run `npm run doctor:fix` and stage `openapi.json` with the code. Stage authored markdown you edit under `docs/`.
+- Keep scratchpads and logs out of git and out of `npm run lint:docs`.
+- Keep `openapi.json` at the root and human-readable docs in `docs/` and `adr/`.
+- Before publishing a branch, run `npm run quality` and `npm test`.
 
 ### 10. Continuous Accessibility (a11y) & WCAG 2.1 Conformance
 
-- All public pages, interactive modals, drawers, and forms must maintain strict WCAG 2.1 Level AA compliance with zero Critical, Serious, or Moderate axe-core violations.
-- Root layout (`app/layout.tsx`) must provide a visible-on-focus `<SkipToContent />` link targeting `<main id="main-content" tabIndex={-1}>`, alongside the global screen reader live announcer provider (`A11yProvider`).
-- Interactive modal containers and mobile navigation drawers must enforce focus trapping (`useFocusTrap`) with Escape dismissal and focus restoration to the originating trigger.
-- Canvas-driven experiences (games, 3D brain simulator, proof DAGs) must supply accessible fallback descriptions and keyboard-navigable controls.
+- Keep every public page, modal, drawer and form at WCAG 2.1 AA with zero Critical, Serious or Moderate axe violations.
+- Keep the visible-on-focus `<SkipToContent />` link to `<main id="main-content" tabIndex={-1}>` and the `A11yProvider` announcer in `app/layout.tsx`.
+- Trap focus in modals and mobile drawers (`useFocusTrap`), close on Escape, and restore focus to the trigger.
+- Give canvas experiences accessible descriptions and keyboard controls.
 
 ### 11. Defect Remediation & Root-Cause Regression Invariant
 
-- All bug fixes and defect remediations across core computational engines (`lib/proof-utils.ts`, `lib/garmin/engine.ts`, `lib/working-with-duck-engine.ts`, `lib/crf/internal/ast-evaluator.ts`) must follow the strict Red-Green Remediation Protocol.
-- Every patch must include an isolated reproduction test in `__tests__/` verifying pre-fix failure and post-fix success, backed by regression test coverage in `__tests__/defect-remediation-regression.test.ts`.
-- Core calculation and state engines must enforce boundary defenses against division-by-zero, cyclic AST references, and out-of-bounds inputs with zero unhandled crash vectors.
+- Fix bugs in the core engines (`lib/proof-utils.ts`, `lib/garmin/engine.ts`, `lib/working-with-duck-engine.ts`, `lib/crf/internal/ast-evaluator.ts`) red-green.
+- Add a reproduction test in `__tests__/` and a regression case in `__tests__/defect-remediation-regression.test.ts` with every fix.
+- Guard core engines against division by zero, cyclic ASTs and out-of-bounds input.
 
 ### 12. Proactive Defect Interception & Synthetic Reliability
 
-- Core deterministic logic and security sanitization modules must maintain property-based fuzz tests (`__tests__/property-fuzz.test.ts`) and pass fast-check property fuzzing gates.
-- Critical user journeys (Landing Pretext layout, Command Palette discovery, Proof DAG studio, Arcade canvas lifecycles, and API telemetry ingestion) must be verified via Playwright synthetic user probes (`__tests__/e2e/synthetic-probes.spec.ts`) and monitored continuously via scheduled crons (`.github/workflows/synthetic-probes.yml`).
-- In Playwright synthetic user probes and end-to-end browser tests, interactive UI triggers (e.g. Command Palette search buttons, mobile navigation triggers, modal openers) must be wrapped in `expect(async () => { ... }).toPass({ timeout: 15000 })` polling blocks to prevent hydration race conditions where clicks land on static HTML before React 19 event listeners attach.
-- Modals and animated drawers hosted in `<AnimatePresence>` must specify an explicit `key` prop (e.g. `key="command-palette-modal"`) on their outermost container to ensure deterministic presence tracking during fast multi-browser headless evaluation.
-- Arcade canvas probes targeting `/arcade/*` must interact with the `<PlayCabinet>` launch workflow (`getByRole("button", { name: /Launch Cabinet/i }).click()`) and allow for CRT warmup before asserting `<canvas>` context availability.
-- Canary analysis (`scripts/canary-analyzer.ts`, `npm run canary:eval`) is manual tooling that evaluates caller-supplied metric windows against hard SLA limits (5xx error rate <= 0.5%, p95 latency <= 800ms, Sentry exception spike ratio <= 2.0x). Nothing invokes it automatically, and nothing in the repository promotes or rolls back a deployment: the weekly release train fires a Vercel Deploy Hook only after Merge Gate and its release-candidate suite pass, and smoke-tests the live site before publishing the release ([ADR 0063](adr/0063-weekly-release-train.md), `DEPLOYMENT.md`). Rollback is a person using Vercel's Instant Rollback.
+- Keep fast-check property tests (`__tests__/property-fuzz.test.ts`) on core deterministic and sanitization modules.
+- Cover critical journeys in `__tests__/e2e/synthetic-probes.spec.ts`, run on a schedule by `.github/workflows/synthetic-probes.yml`.
+- Wrap UI triggers in Playwright tests in `expect(async () => { ... }).toPass({ timeout: 15000 })`.
+- Give the outermost container of every `<AnimatePresence>` modal or drawer an explicit `key`.
+- In `/arcade/*` probes, click **Launch Cabinet** in `<PlayCabinet>` and wait for the CRT warmup before checking the `<canvas>`.
+- Canary analysis (`npm run canary:eval`) is manual tooling. Nothing in the repository promotes or rolls back a deployment; rollback is a person using Vercel's Instant Rollback ([ADR 0063](adr/0063-weekly-release-train.md)).
 
 ### 13. Layout Integrity, Defensive CSS & Stacking Context Isolation
 
-- All route page wrappers must use `<PageLayout />` or declare `min-h-dvh` and `overflow-x-hidden` without introducing duplicate nested `<main>` landmarks.
-- Dynamic containers must enforce flexible bounds (`min-h-*`, `h-auto`) over rigid fixed heights (`h-48`, `h-64`) when hosting text elements.
-- Flex and grid children hosting text or truncation badges must declare `min-w-0` to neutralize CSS `min-width: auto` and prevent layout blowouts.
-- Multi-layered composite sections must declare `isolation: isolate` (`.section-isolate`), with system-wide elevation strictly bounded between `-z-10` and `z-50` (zero arbitrary `z-[9999]`).
-- Modular cards and widgets must utilize Container Queries (`@container`, `@sm:`, `@md:`) for internal layout adaptation rather than global viewport media queries.
-- Interactive SVG viewports and canvas workspace wrappers (e.g. `ProofCanvas`, `ProofWorkspaceSkeleton`, `VectorComparisonViewer`) must utilize fluid `w-full` containers, container query width units (`w-[100cqw]`), and dynamic wrapper dimension tracking (`ResizeObserver`) rather than rigid minimum width limits (`min-w-[760px]`, `min-w-[800px]`). Dynamic coordinate alignment guides (`maxGuideX`) must scale relative to active wrapper bounds.
-- Scoped sub-studio theme variants (such as `[data-studio-theme="light"]` and `[data-studio-theme="dark"]` for CRF Studio) must be declared with scoped CSS variables (`--crf-*`) and attribute cascades in `app/globals.css` to prevent light mode overrides from leaking into the global dark-mode layout.
-- Layout resilience against +40% localized text expansion, unbroken URLs, and 200% font zoom must be verified via `__tests__/defensive-css-stress.test.tsx` and `lib/dx/doctor.ts`.
-- When authoring DOM assertions on components where multiple child elements share defensive utility classes (e.g. `.break-words` on both title and description), use `querySelectorAll` with indexed access or dedicated test IDs rather than ambiguous single `querySelector` lookups.
-- Production layout verification must adhere to the Four-Layer Layout Validation Protocol:
-  - **DevTools Stress Routine**: 320px squeeze (iPhone SE minimum), 200% zoom (WCAG 1.4.4 restacking), and 3x content fuzzing.
-  - **Horizontal Overflow Detector**: Automated evaluation (`getBoundingClientRect().right > clientWidth`) across all DOM elements in Playwright (`__tests__/e2e/visual.spec.ts`).
-  - **Multi-Viewport Visual Matrix**: Continuous regression coverage across Mobile (320px & 375px), Tablet (768px), and Desktop (1440px).
-  - **Real-Device Verification**: Verification on real iOS Safari (`min-h-dvh` floating bar clearance) and Android ("Largest" font scaling).
+- Wrap route pages in `<PageLayout />` or declare `min-h-dvh` and `overflow-x-hidden`, with no nested `<main>`.
+- Use flexible heights (`min-h-*`, `h-auto`), not fixed ones, on containers holding text.
+- Give flex and grid children holding text `min-w-0`.
+- Isolate layered sections (`.section-isolate`) and keep z-index between `-z-10` and `z-50`.
+- Use container queries (`@container`, `@sm:`, `@md:`) inside cards and widgets.
+- Size SVG and canvas workspaces fluidly (`w-full`, `w-[100cqw]`, `ResizeObserver`), never with rigid minimum widths; scale guides such as `maxGuideX` to the wrapper.
+- Scope studio theme variants with `--crf-*` variables and `[data-studio-theme]` cascades in `app/globals.css`.
+- Verify text expansion, unbroken URLs and 200% zoom in `__tests__/defensive-css-stress.test.tsx` and `lib/dx/doctor.ts`.
+- Use `querySelectorAll` with an index or test IDs when several elements share a utility class.
+- Validate layout at 320px, 375px, 768px and 1440px, at 200% zoom, with the overflow detector in `__tests__/e2e/visual.spec.ts`, and on real devices.
 
 ### 14. Continuous Real-Browser Page Benchmarking & Web Vitals Profiling
 
-- Any new first-class route, case study, or interactive mini-game must be registered in `PUBLIC_ROUTE_REGISTRY` in `lib/public-routes.ts`; `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` is derived from it, and DX Doctor's `routes-public-registry-drift` check fails on a route missing from it.
-- Real-browser navigation timing and Core Web Vitals (TTFB, FCP, LCP, CLS) must be benchmarked against production builds via `npm run bench:pages` or `npx tsx scripts/benchmark-pages.ts`.
-- In CI and pre-release gates, performance budgets can be enforced via `--assert` / `--budget` flags, ensuring fleet median LCP <= 2500ms, TTFB <= 800ms, and CLS <= 0.1.
+- Register every new first-class route in `PUBLIC_ROUTE_REGISTRY` (`lib/public-routes.ts`); `CANONICAL_ROUTES` derives from it.
+- Benchmark production builds with `npm run bench:pages`.
+- Enforce budgets with `--assert` / `--budget`: fleet median LCP <= 2500ms, TTFB <= 800ms, CLS <= 0.1.
 
 ### 15. Developer Experience (DX), Git Hygiene & Tooling Integrity
 
-- Runtime environment variables must be declared in `lib/env.ts` and synchronized with `.env.example` via `npm run dx env` and `npm run doctor:fix`.
-- All commit messages must strictly adhere to the Conventional Commits specification (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`, `dx`), verified by `.husky/commit-msg` (`scripts/validate-commit-msg.ts`) and supported by `npm run dx commit`.
-- Git branches must follow naming conventions (`feat/*`, `fix/*`, `chore/*`, `refactor/*`, `docs/*`, `perf/*`, `dx/*`, `test/*`, `ci/*`, `dev/*`, `jules/*`, `main`, `dev`). `jules/*` is reserved for branches the Jules agent opens; `dev` is reserved for the temporary consolidation release documented in [ADR 0050](adr/0050-jules-consolidation-release.md). Steady-state feature pull requests target `main`; the branch list is `validateBranchName()` in `lib/dx/git-guard.ts`, and agents must not edit the guard to get a branch through.
-- **Git Safety Guardrails & Protected Branch Invariant**: Destructive git commands (`git push --force`, `git push --force-with-lease`, `git push origin main`, `git reset --hard`, `git clean -f/-fd`, `git branch -D`, `git checkout .`, `git restore .`) are intercepted and blocked across agent tool runners and local CLI sessions by `scripts/git-guardrail.sh` (exit code 2) and `.husky/pre-push`. Direct pushes to `main`, remote branch deletions, and non-fast-forward branch updates are prohibited to preserve PR governance and shared history. Explicit emergency override requires `ALLOW_DANGEROUS_GIT=1`. The guardrail matches per command segment, anchored to each segment's leading program and ignoring quoted spans, so inspecting, testing or documenting a pattern is never mistaken for performing it; a guard that cannot be read without the bypass is one operators learn to bypass reflexively.
-- **Consequential Deploy Interception**: `scripts/git-guardrail.sh` intercepts CLI Production deploy and promotion commands: Production ships through the weekly release train, with Vercel Dashboard → Deployments → Create Deployment for the current green `main` SHA as the break-glass path ([ADR 0063](adr/0063-weekly-release-train.md)). It also intercepts `vercel deploy --prebuilt`, `vercel env rm`, `vercel domains rm` and `prisma migrate deploy`. `--prebuilt` is the sharpest: it ships a locally built artifact without rebuilding, so a build whose data source was unreachable deploys fallback content over real content. Other guards are skipped when `CI=true`, where deliberate automation carries its own verification, and share the single `ALLOW_DANGEROUS_GIT=1` override rather than introducing a variable per command.
-- **Branch Naming Enforcement**: `.husky/pre-push` runs `scripts/validate-branch.ts` before the protected-branch guard, and `.husky/post-checkout` warns (never blocks) at creation time, when renaming is still free. Failures name `npm run dx branch`.
-- **Early Fail-Fast Pre-Commit Pipeline**: `.husky/pre-commit` executes `lint:boundaries` immediately after `typecheck`, then `check-docs-drift`, both prior to `test:staged` and `audit:security`. Documentation drift is the most frequent and cheapest-to-detect failure, so discovering it after the staged suite cost two full pre-commit cycles on every public-export change. Drift failures print the exact command that resolves them, branched by category; authored documentation is never auto-staged, because it is edited deliberately and silently restaging it would discard that intent.
-- **Standard Developer Workflow**: `main` is the sole long-lived integration and release branch. Cut short-lived prefixed feature and agent branches from `main`, then squash-merge their pull requests into `main` after the required CI gates pass. The `dev` branch was a one-time Jules consolidation exception ([ADR 0050](adr/0050-jules-consolidation-release.md)); it merged in #1029 and no longer exists, so do not recreate it for new feature work. CI runs for pull requests targeting `main` and on `main` pushes. Keep automatic non-production Vercel deployments disabled unless an operator deliberately requests one preview. Keep all Vercel Git deployment triggers disabled: merging never deploys. Production ships through the weekly release train ([ADR 0063](adr/0063-weekly-release-train.md), accepted 2026-10-27, superseding [ADR 0051](adr/0051-manual-production-releases.md)): every Monday at 01:00 UTC (Sunday 7 PM Central standard time, 8 PM daylight time) `.github/workflows/weekly-train.yml` checks Merge Gate on `main` HEAD, refuses destructive migrations, browser-tests that commit, drafts a versioned GitHub Release, POSTs the Vercel Deploy Hook, waits for `/api/version`, smoke-tests the live site and only then publishes the Release; a failure after firing opens a `release:hold` issue. The Vercel build type-checks, migrates and builds, and a READY build takes the domains because the project keeps no Vercel Deployment Checks (#2899). GitHub Actions runs CI and never deploys: the train only POSTs the hook, never builds, migrates or holds a Vercel token, so production secrets live only in Vercel. Only the operator changes `WEEKLY_TRAIN`, the hook secret or a `release:hold` label; agents never set them. To ship between trains, use **Run workflow** on Weekly Train or, as break-glass, Create Deployment with the current `main` SHA (the Dashboard's Redeploy rebuilds the commit it is pressed on). Migrations remain expand/contract.
-- **Pull Request Publication Protocol**: When publishing feature branches via GitHub CLI (`gh pr create`), author structured descriptions that cross-link relevant Architectural Decision Records (`adr/00XX-*.md`), summarize key architectural changes, and report test validation metrics.
-- Dead code and orphaned exports must be inspected via `npm run dx dead-code` and monitored in `lib/dx/doctor.ts`. Private helper functions, props interfaces, and internal sub-components in `components/` and `app/` must not use `export` unless consumed across modules, while `lib/`, `types/`, and `hooks/` constitute public TypeDoc contract entrypoints.
-- Build-time static generation and offline fallbacks (such as dummy database connections or rate-limited GitHub stats) must gate console warnings on **runtime rather than production**, using `env.VERCEL_ENV === "production" && !isBuildPhase()` from `lib/env.ts`. A production build also runs with `VERCEL_ENV=production`, so a production check alone leaves the gate open throughout static compilation: one build then emits a warning per page per worker, which is the stderr noise this invariant exists to eliminate. `isBuildPhase()` identifies prerendering via `NEXT_PHASE` and the end-to-end harness via `PLAYWRIGHT_TEST`, and is the single definition of that distinction.
-- Production bundle chunks and initial shared footprints must comply with performance budgets via `npm run dx analyze` and `lib/dx/bundle-guard.ts`.
-- VS Code workspace configurations (`.vscode/`) and `.editorconfig` must remain valid and intact.
+- Declare runtime environment variables in `lib/env.ts` and sync `.env.example` with `npm run dx env` and `npm run doctor:fix`.
+- Write Conventional Commits (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`, `dx`).
+- Name branches with an allowed prefix (`validateBranchName()` in `lib/dx/git-guard.ts`); never edit the guard to get a branch through. `jules/*` is for Jules and `dev` was the one-time [ADR 0050](adr/0050-jules-consolidation-release.md) branch.
+- Never run destructive git commands (force push, push to `main`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, `restore .`); `scripts/git-guardrail.sh` and `.husky/pre-push` block them. The override is `ALLOW_DANGEROUS_GIT=1`.
+- Never deploy or promote Production from a CLI, and never run `vercel deploy --prebuilt`, `vercel env rm`, `vercel domains rm` or `prisma migrate deploy`.
+- `main` is the only long-lived branch. Cut short-lived branches from it and squash-merge PRs after required CI passes.
+- Merging never deploys. Production ships through the weekly release train ([ADR 0063](adr/0063-weekly-release-train.md)), and GitHub Actions runs CI and never deploys.
+- Only the operator changes `WEEKLY_TRAIN`, the deploy hook secret or a `release:hold` label.
+- Cross-link ADRs, summarize the change and report test results in PR descriptions.
+- Check dead code with `npm run dx dead-code`. Do not export private helpers from `components/` or `app/`.
+- Gate build-time fallback warnings on `env.VERCEL_ENV === "production" && !isBuildPhase()`.
+- Keep bundle chunks within budget (`npm run dx analyze`, `lib/dx/bundle-guard.ts`).
+- Keep `.vscode/` and `.editorconfig` valid.
 
 ### 16. Mobile Runtime Performance & Animation Invariants
 
-- **Background Animation Throttling**: Background SVG and particle canvas animations (e.g. `AnimatedGridPattern`, collision beams) must use hardware-accelerated CSS keyframes on mobile viewports (`< 768px`) or be clamped to static composited loops. They must never trigger continuous React `setState` updates or loop `onAnimationComplete` callbacks in mobile render trees.
-- **GPU Blur & Compositing Bounds**: Heavy gaussian blur layers (`blur-[100px]` or greater) and overlapping multi-layer `backdrop-blur` filters must be suppressed or substituted with lightweight CSS radial gradients (`hidden sm:block` or responsive classes) on mobile devices to prevent GPU rasterization stalls during scrolling.
-- **ResizeObserver Dimension Isolation**: Dynamic text layout engines and Pretext observers must isolate width measurements (`Math.floor(contentRect.width)`) from height fluctuations to prevent mobile browser URL bar / address-bar collapse during scrolling from triggering unnecessary canvas text layout recalculations.
-- **Touch & Synthesizer Isolation**: Synthesized Web Audio effects tied to mouse cursor movement (such as hover frequencies) must defensively check `window.matchMedia('(hover: none)').matches` to avoid unwanted audio thread contention during mobile touch-scrolling. Interactive touch buttons and cards must supply instant tactile scaling (`active:scale-[0.98]`).
+- Below 768px, run background animations as CSS keyframes or static loops, never as React `setState` loops.
+- Suppress heavy blur (`blur-[100px]` and up) and stacked `backdrop-blur` on mobile.
+- Measure only width (`Math.floor(contentRect.width)`) in text layout observers.
+- Check `window.matchMedia('(hover: none)').matches` before playing hover sounds, and give touch targets `active:scale-[0.98]`.
 
 ### 17. Brand Assets, Headless SVG Rasterization & Satori OpenGraph Invariants
 
-- **Headless SVG Rasterization Fallbacks**: SVGs consumed by Node.js build pipelines, `sharp`, or `librsvg` must define explicit inline presentation attributes (`fill="..."`, `stroke="..."`) on geometry elements in addition to CSS class styles, preventing unparsed CSS custom properties from rasterizing as solid black silhouettes.
-- **Satori (`next/og`) Layout Flow**: Dynamic `ImageResponse` social card generators (`lib/og-image.tsx`, `app/**/opengraph-image.tsx`) must avoid `zIndex` properties, relying strictly on flexbox and natural DOM document order for ambient glow and card stacking.
-- **Asset Hygiene & PWA Manifest Parity**: Default boilerplate assets (`vercel.svg`, `next.svg`, `file.svg`, `globe.svg`, `window.svg`, default 25KB placeholder `favicon.ico`) must be removed, maintaining dedicated multi-size binary ICOs (16/32/48px), Apple Touch icons (180x180), PWA icons (192/512px), and dynamic `app/manifest.ts` metadata synchronization.
+- Give SVGs used by build pipelines inline `fill` and `stroke` attributes as well as CSS classes.
+- Never use `zIndex` in `next/og` image generators; rely on flexbox and document order.
+- Keep boilerplate assets out, and keep the multi-size ICO, Apple Touch icon, PWA icons and `app/manifest.ts` in sync.
 
 ### 18. Canonical Domain, Base URL & Production Routing Invariant
 
-- **Single Source of Truth**: All canonical URLs, `metadataBase`, dynamic sitemaps (`app/sitemap.ts`), robots directives (`app/robots.ts`), OpenGraph preview metadata, and Schema.org JSON-LD structured data generators (`lib/seo.ts`) must resolve via `resolveBaseUrl()` in `lib/domain.ts` and `SITE_BASE_URL` in `lib/seo.ts`.
-- **Production Domain Parity**: The canonical production domain is strictly `https://deruiter.dev` (the apex, matching Vercel's primary domain routing; `www.deruiter.dev` issues a `308` to it at the edge). Route entrypoints, error layouts (`components/UnifiedErrorLayout.tsx`, `app/error.tsx`), and social generators must never hardcode temporary `.vercel.app`, `fderuiter.dev`, or the non-canonical `www` host.
-- **Dynamic Preview & Clipboard Isolation**: Runtime origin is scoped strictly to link sharing. `getActiveHostUrl()` in `lib/clipboard.ts` may read `window.location.origin` in active browser runtimes; `resolveBaseUrl()` must never do so, so that canonical tags, sitemaps, JSON-LD and OpenGraph metadata are byte-identical whether rendered on the server or in the browser. Headless SSR fallbacks and test harnesses validate deterministically against `https://deruiter.dev`.
+- Resolve every canonical URL, sitemap, robots rule, OpenGraph and JSON-LD URL through `resolveBaseUrl()` (`lib/domain.ts`) and `SITE_BASE_URL` (`lib/seo.ts`).
+- The canonical domain is `https://deruiter.dev`. Never hardcode `.vercel.app`, `fderuiter.dev` or `www`.
+- Only `getActiveHostUrl()` in `lib/clipboard.ts` may read `window.location.origin`; `resolveBaseUrl()` never does.
 
 ### 19. Studio Container Theming & Scoped Design Tokens
 
-- **Container-Level Scoping**: Interactive studio suites and simulators (CRF Studio, Proof Canvas, Neuro Simulator) offering independent light/dark modes must apply themes via container data attributes (`[data-studio-theme="light"]` / `[data-studio-theme="dark"]`) and CSS custom property cascades (`--crf-bg`, `--crf-surface-1`, `--crf-border`, etc.) rather than mutating the root `<html>` element. This preserves the surrounding portfolio's architectural frame, global navbar, and route landmarks.
-- **State Persistence & URL Sync**: Studio-level theme preferences must default to dark mode for portfolio consistency, persist in `localStorage`, and synchronize cleanly with URL hash parameters (`#theme=light`) using `useStudioHashParams`.
+- Theme studios through container attributes (`[data-studio-theme]`) and scoped variables, never by changing the root `<html>`.
+- Default studio themes to dark, persist them in `localStorage`, and sync them with the URL hash through `useStudioHashParams`.
 
 ### 20. Scientific & Engineering Editorial & Zero-Trope Invariant
 
-- **Prohibition of Generic AI Design Tropes**: The visual system strictly prohibits generic AI portfolio clichés:
-  - No continuous main-thread or canvas collision particle loops (e.g. Aceternity falling beams).
-  - No diffuse, uncontained neon glow washes or purple-on-dark aesthetics.
-  - No icon-stuffed bento cards lacking functional telemetry.
-- **High-Assurance Architectural Palette**: All surface backgrounds and cards must use warm architectural graphite (`#0d0e11`, `#13151a`), high-contrast text (`#f4f4f6`), and crisp hairline structural micro-borders (`rgba(255, 255, 255, 0.08)` / `border-zinc-800`).
-- **Functional Semantic Status Accents**: Status indicators, telemetry badges, and interactive feedback must use crisp semantic tokens (Precision Amber `#f59e0b`, Emerald `#10b981`, Steel `#94a3b8`) rather than decorative gradients.
-- **Swiss Editorial Typography & Layout**: High-impact headlines must utilize negative tracking (`-0.035em`) paired with zero-CLS Pretext calculations, and technical metadata must utilize tabular monospace (`var(--font-geist-mono)`).
-- **Scoped Arcade-Cabinet Exception**: Inside a launched `PlayCabinet`, a game may use saturated accents, glow, screen shake and CRT/scanline effects during discrete, event-driven _loud moments_ such as score resolution, a Blind cleared or failed, or a boss intro. The effects must be scoped to a cabinet attribute (Trial & Error uses `[data-te-cabinet][data-te-loud="on"]` with `--te-*` tokens), disabled under `prefers-reduced-motion` and below 768px, and animate only `transform` and `opacity`. Continuous particle loops, purple-on-dark washes, and any effect outside the cabinet remain prohibited. Governed by the [ADR 0046 card-table amendment](adr/0046-trial-and-error-biostat-ops-architecture.md#amendment-2026-09-23-card-table-presentation).
-- **Interactive Telemetry Over Static Cards**: Major technical showcases and dedicated studio pages (`/proof`, `/crf`, `/simulator`) must provide interactive micro-simulations (AST premise discharging, CDISC 21 CFR Part 11 auditing, embedded memory heap meters) with direct contextual handoffs to full studio workspaces.
+- No continuous particle loops, neon glow washes, purple-on-dark, or icon-stuffed bento cards.
+- Use graphite surfaces (`#0d0e11`, `#13151a`), text `#f4f4f6` and hairline borders (`rgba(255, 255, 255, 0.08)` / `border-zinc-800`).
+- Use the semantic accents Amber `#f59e0b`, Emerald `#10b981` and Steel `#94a3b8`, not decorative gradients.
+- Track headlines at `-0.035em` and set technical metadata in `var(--font-geist-mono)`.
+- Inside a launched `PlayCabinet`, loud-moment effects are allowed only when scoped to a cabinet attribute, off under `prefers-reduced-motion` and below 768px, and animating only `transform` and `opacity` ([ADR 0046 amendment](adr/0046-trial-and-error-biostat-ops-architecture.md#amendment-2026-09-23-card-table-presentation)).
+- Give `/proof`, `/crf` and `/simulator` interactive micro-simulations that hand off to the full studios.
 
 ### 21. TS Deep Modules & Architectural Seam Enforcement
 
-- Modules in `lib/` (e.g. `lib/crf/`, `lib/laser-loon/`, `lib/neuro/`, `lib/retro-labyrinth/`, `lib/arcade/`, `lib/clinical-trial-chaos/`) are deep modules: root entry points (`index.ts`, `types.ts`, `presets.ts`) constitute the only public contract. See [lib/README.md](./lib/README.md).
-- Subfolder internals (`lib/**/internal/*`, `lib/**/core/*`, `lib/**/presets/*`) are strictly private to their owning module.
-- Unit tests (`__tests__/`) and external components (`app/`, `components/`) must import exclusively through public root entry points.
-- Zero circular dependencies are permitted across the repository, enforced deterministically via `npm run lint:boundaries` and `npm run verify`.
-- The invariant also holds one layer down, between the webpack runtime chunks `npm run build` emits, which `dependency-cruiser` cannot see. A Web Worker created with `new Worker(new URL("./x.ts", import.meta.url))` gets its own runtime chunk, so a worker whose import graph reaches the module that constructs it makes its chunk start itself (#853). `ChunkCycleGuardPlugin` (`lib/dx/chunk-cycle-guard.ts`, registered in `next.config.ts`) fails the build on any such cycle instead of letting webpack warn, and `__tests__/chunk-cycle-guard.test.ts` checks worker import graphs statically. Break the reference, e.g. by having the worker import the computation directly rather than the module that offloads it; never add the warning to `ignoreWarnings`.
+- Import a `lib/` module only through its root entry points (`index.ts`, `types.ts`, `presets.ts`); see [lib/README.md](./lib/README.md).
+- Keep `lib/**/internal/*`, `lib/**/core/*` and `lib/**/presets/*` private to their module, in tests and components too.
+- Allow no circular dependencies (`npm run lint:boundaries`).
+- Never let a Web Worker's import graph reach the module that constructs it; `ChunkCycleGuardPlugin` fails the build (#853). Never add the warning to `ignoreWarnings`.
 
 ### 22. Free-Tier Provider Quota Governance & Edge Offloading
 
-- **Zero-Cost Free-Tier Ceiling**: All application architecture, scheduled jobs, and telemetry pipelines must operate strictly within the zero-cost free-tier entitlements of external providers (Vercel Hobby, Neon Free plan 1 GB storage and 100 CU-hours of compute per project per month ([Neon plans](https://neon.com/docs/introduction/plans)), Upstash Redis 10k commands/day, Resend 100 emails/day, Sentry 5k errors / 10k spans/mo, Clerk 10k MAU). Governed by [ADR 0036](adr/0036-free-tier-offloading-and-provider-quota-governance.md).
-- **GitHub Actions Resource Governance**: GitHub currently reports this repository as public. Standard GitHub-hosted runner minutes are free for public repositories; larger runners and artifact/cache storage have separate billing. Keep `timeout-minutes` bounds, standard runner labels, and the no-duplicate-gating rule as reliability and cost safeguards. Since 2026-11-02 the repository ruleset `main v2` governs `main` (classic branch protection was deleted on 2026-10-20) and requires `Merge Gate (Required Checks Summary)` and `CDISC CORE (SDTMIG 3.4, USDM 4.0)`; the CORE workflow keeps an unfiltered `pull_request` trigger so the check reports on every pull request (see `docs/how-to/release-and-deploy.md#main-branch-protection`). Local hooks remain defense-in-depth. Governed by [ADR 0039](adr/0039-github-pro-plan-capabilities-and-actions-minutes-governance.md).
-- **Database Compute Sleep Invariant**: Neon serverless Postgres compute auto-suspends after 5 minutes of inactivity. Public browsing routes must never query Neon directly per request: full-page editorial content must use Next.js Incremental Static Regeneration at the edge (ISR with a daily `revalidate = 86400` backstop, with content writes revalidating their paths on demand; every regeneration bills Vercel active CPU, #2971), dynamic reads must pass through Upstash Redis read-through caching (`CaseStudyService`), and visitor interaction counters (reactions, pageviews) must be buffered in Redis (`HINCRBY`) rather than waking Postgres per click.
-- **Fallback Content Is Runtime-Only**: The static fallbacks that keep pages serving while Neon is suspended must never be baked into a deployment. A production build whose database or cache is unreachable must exit non-zero via `failBuildOnDataSourceError()` in `lib/build-integrity.ts` rather than substituting fallback content and reporting success, because `--prebuilt` deploys the artifact without rebuilding it. A query that succeeds and returns no rows is not a failure. During a production build, a cache miss is not a data-source failure and must fall through to the database. At request time, a cache miss on a browsing route must not query Neon and returns the Redis value. `ALLOW_FALLBACK_PRODUCTION_BUILD=1` is the deliberate, logged emergency override.
-- **Upstash Daily Command Protection**: To prevent exhausting Upstash's 10,000 commands/day allowance, `@upstash/ratelimit` instances must configure local in-memory caching (`ephemeralCache`), multi-key operations must use `redis.pipeline()`, and rate-limiting must be restricted strictly to mutative routes (`/api/contact`, `/api/newsletter`, `/api/telemetry`), completely bypassing static GET assets.
-- **Unified Maintenance Pipeline (Vercel Hobby 1-Cron Limit)**: Because Vercel Hobby permits strictly one cron job per day (`0 0 * * *`), all background tasks (telemetry buffer syncing, outbound email retries, and retention rollups) must be consolidated into a single time-budgeted maintenance route (`/api/cron/maintenance`) executing within $\le 8$ seconds. Sub-daily email retries may optionally use external event-driven webhooks via Upstash QStash.
-- **Sentry Quota & Noise Bounds**: `tracesSampleRate` must resolve dynamically to 0% in preview, development, and testing, and be clamped to $\le 5\%$ (0.05) in production. `beforeSend` filters must drop benign client noise (`AbortError`, `ResizeObserver loop limit exceeded`, browser extension errors) and strip all PII and authorization headers.
-- **External Agent Review Brief Standard**: All integration, devops, and feature tickets authored for review or execution by external AI agents (Claude Code, OpenAI) must include an explicit `## Agent Review Brief` specifying:
-  1. Exact file paths and symbols to inspect.
-  2. Invariant boundaries (non-destructive execution, quota caps, environment namespacing).
-  3. Actionable terminal verification commands (`npm test`, `npm run verify:*`, `npm run check-docs-drift`, `npm run quality`).
+- Stay within the free tiers of every provider ([ADR 0036](adr/0036-free-tier-offloading-and-provider-quota-governance.md)).
+- Keep `timeout-minutes` bounds and standard runners in GitHub Actions, and never duplicate a gate. Ruleset `main v2` requires `Merge Gate (Required Checks Summary)` and `CDISC CORE (SDTMIG 3.4, USDM 4.0)` ([ADR 0039](adr/0039-github-pro-plan-capabilities-and-actions-minutes-governance.md)).
+- Never query Neon per request from a browsing route: use ISR with a daily `revalidate = 86400` backstop, Redis read-through caching and Redis-buffered counters.
+- Never bake fallback content into a production build: an unreachable data source fails the build through `failBuildOnDataSourceError()` (`lib/build-integrity.ts`). The override is `ALLOW_FALLBACK_PRODUCTION_BUILD=1`.
+- Give `@upstash/ratelimit` an `ephemeralCache`, batch multi-key calls with `redis.pipeline()`, and rate-limit only `/api/contact`, `/api/newsletter` and `/api/telemetry`.
+- Run every background task inside the single daily `/api/cron/maintenance` route, within 8 seconds.
+- Keep Sentry `tracesSampleRate` at 0 outside production and at most 0.05 in production, and drop benign noise and PII in `beforeSend`.
+- Give every ticket written for an external agent an `## Agent Review Brief` with file paths and symbols, invariant boundaries, and verification commands.
 
 ## Agent skills
 

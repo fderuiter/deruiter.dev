@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1265,
-    "runtime": 566,
+    "total": 1266,
+    "runtime": 567,
     "tooling": 699,
     "direct": 80
   },
@@ -3757,7 +3757,7 @@
     },
     {
       "name": "@types/node",
-      "version": "22.20.5",
+      "version": "24.19.2",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -11105,6 +11105,15 @@
     {
       "name": "undici-types",
       "version": "6.21.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://undici.nodejs.org",
+      "repository": "https://github.com/nodejs/undici"
+    },
+    {
+      "name": "undici-types",
+      "version": "7.24.6",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,

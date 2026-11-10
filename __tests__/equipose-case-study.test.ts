@@ -264,7 +264,7 @@ describe("Equipose case study: slug resolves consistently", () => {
     expect(seo.title).toContain("Equipose");
 
     const palette = readFileSync(
-      join(process.cwd(), "components/CommandPalette.tsx"),
+      join(process.cwd(), "lib/command-palette/static-navs.ts"),
       "utf-8"
     );
     expect(palette).toContain(`url: "${PATH}"`);

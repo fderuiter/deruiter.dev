@@ -100,7 +100,7 @@ describe("checkArcadeRegistryParity", () => {
       "lib/arcade/registry.ts": registry,
       "lib/seo-metadata.ts": listed,
       "lib/public-routes.ts": listed,
-      "components/CommandPalette.tsx": listed,
+      "lib/command-palette/static-navs.ts": listed,
     });
     expect(checkArcadeRegistryParity(root).status).toBe("pass");
   });
@@ -110,13 +110,13 @@ describe("checkArcadeRegistryParity", () => {
       "lib/arcade/registry.ts": registry,
       "lib/seo-metadata.ts": `"/arcade/a" "/b"`,
       "lib/public-routes.ts": `"/arcade/a"`,
-      "components/CommandPalette.tsx": `"/b"`,
+      "lib/command-palette/static-navs.ts": `"/b"`,
     });
     const result = checkArcadeRegistryParity(root);
     expect(result.status).toBe("fail");
     expect(result.details).toEqual([
       "/b is missing from PUBLIC_ROUTE_REGISTRY (lib/public-routes.ts)",
-      "/arcade/a is missing from CommandPalette staticNavs (components/CommandPalette.tsx)",
+      "/arcade/a is missing from Command Palette STATIC_NAVS (lib/command-palette/static-navs.ts)",
     ]);
   });
 

@@ -70,11 +70,16 @@ describe("DX Universal Scaffolder", () => {
   });
 
   it("scaffolds case study showcase page", () => {
-    const paletteFile = path.join(tempDir, "components", "CommandPalette.tsx");
+    const paletteFile = path.join(
+      tempDir,
+      "lib",
+      "command-palette",
+      "static-navs.ts"
+    );
     fs.mkdirSync(path.dirname(paletteFile), { recursive: true });
     fs.writeFileSync(
       paletteFile,
-      'const staticNavs: PaletteItem[] = [\n      { id: "nav-work", url: "/#work" }\n    ];'
+      'export const STATIC_NAVS: readonly StaticNavEntry[] = [\n  { id: "nav-work", url: "/#work" },\n];'
     );
 
     const generated = scaffoldCaseStudy(

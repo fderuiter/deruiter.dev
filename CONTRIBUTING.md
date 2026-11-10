@@ -125,9 +125,9 @@ Direct positional execution bypasses interactive prompts smoothly, executing non
 
 Whenever a new first-class route, interactive mini-game, or case study page is introduced, it must be indexed across the **5-Point Discovery Matrix**:
 
-1. **Command Palette (`components/CommandPalette.tsx`)**:
-   - Registered under `staticNavs` with Tabler icon, title, subtitle, category, and target URL.
-   - _Note:_ The CLI scaffolder registers `case-study` pages in `CommandPalette.tsx`, and `arcade` games in every point of this matrix.
+1. **Command Palette (`lib/command-palette/static-navs.ts`)**:
+   - An entry in `STATIC_NAVS` with a Tabler icon name, title, subtitle, category and target URL. `components/CommandPalette.tsx` renders the list and maps icon names to icons, so a new icon name also goes in its `STATIC_NAV_ICONS` map.
+   - _Note:_ The CLI scaffolder registers `case-study` pages in `lib/command-palette/static-navs.ts`, and `arcade` games in every point of this matrix.
 2. **Site Navigation (`lib/navigation.ts`)**:
    - One entry under the right group (Work, Blog, Arcade, Simulators, About, Contact). The top bar, desktop menus, mobile drawer and footer columns all render from this data ([ADR 0058](./adr/0058-site-navigation-information-architecture.md)).
 3. **Sitemap & SEO Metadata (`app/sitemap.ts` & `lib/seo-metadata.ts`)**:

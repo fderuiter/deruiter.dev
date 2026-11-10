@@ -48,7 +48,8 @@ parallel; merge one at a time.
 - **A red PR frees the slot.** If the fix needs more than one quick push,
   convert it back to draft and let the next PR go.
 - **Hot files take a lock** in the lane file before you edit them:
-  `components/CommandPalette.tsx`, `lib/navigation.ts`, `app/sitemap.ts`,
+  `components/CommandPalette.tsx`, `lib/command-palette/static-navs.ts`,
+  `lib/navigation.ts`, `app/sitemap.ts`,
   `lib/seo-metadata.ts`, `lib/dx/page-bench.ts`, `package.json` and the
   lockfile, `.github/workflows/ci.yml`, and `README.md`.
 - When GitHub and the lane file disagree, GitHub wins: if two PRs are

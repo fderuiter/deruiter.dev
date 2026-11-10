@@ -119,7 +119,7 @@ describe("Study Director discovery copy (#1818)", () => {
     expect(card?.description).not.toMatch(/five attention points/i);
     for (const file of [
       "components/arcade/ArcadeHubClient.tsx",
-      "components/CommandPalette.tsx",
+      "lib/command-palette/static-navs.ts",
       "components/arcade/StudyDirectorClient.tsx",
     ]) {
       const text = readFileSync(path.resolve(process.cwd(), file), "utf8");

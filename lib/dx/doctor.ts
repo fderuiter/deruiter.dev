@@ -96,14 +96,20 @@ function findFiles(
 }
 
 /**
- * Check Route Registration in CommandPalette.tsx (AGENTS.md Invariant #3)
+ * Check Route Registration in the Command Palette static entries
+ * (lib/command-palette/static-navs.ts, AGENTS.md Invariant #3)
  */
 export function checkRouteIndexing(
   root: string,
   fix = false
 ): DiagnosticCheckResult {
   const appDir = path.join(root, "app");
-  const paletteFile = path.join(root, "components", "CommandPalette.tsx");
+  const paletteFile = path.join(
+    root,
+    "lib",
+    "command-palette",
+    "static-navs.ts"
+  );
 
   if (!fs.existsSync(paletteFile)) {
     return {
@@ -111,7 +117,7 @@ export function checkRouteIndexing(
       name: "CommandPalette Registration File Check",
       category: "routes",
       status: "fail",
-      message: "components/CommandPalette.tsx not found",
+      message: "lib/command-palette/static-navs.ts not found",
       fixable: false,
     };
   }
@@ -140,7 +146,7 @@ export function checkRouteIndexing(
     // Skip root '/' if already handled by #case-studies or nav-work
     if (routeUrl === "/") continue;
 
-    // Check if route URL appears in staticNavs in CommandPalette.tsx
+    // Check if route URL appears in STATIC_NAVS
     const urlPattern = new RegExp(`url:\\s*["'\`]${routeUrl}["'\`]`);
     if (!urlPattern.test(paletteContent)) {
       missingRoutes.push({ routePath: relative, url: routeUrl });
@@ -154,15 +160,15 @@ export function checkRouteIndexing(
       category: "routes",
       status: "pass",
       message:
-        "All first-class app routes are registered in CommandPalette staticNavs.",
+        "All first-class app routes are registered in the Command Palette STATIC_NAVS.",
     };
   }
 
   if (fix) {
-    // Attempt auto-fix by injecting missing routes into staticNavs array
+    // Attempt auto-fix by injecting missing routes into the STATIC_NAVS array
     let updatedContent = paletteContent;
     const staticNavsRegex =
-      /(const staticNavs:\s*PaletteItem\[\]\s*=\s*\[)([\s\S]*?)(\n\s*\];)/;
+      /(export const STATIC_NAVS:[^=]*=\s*\[)([\s\S]*?)(\n\];)/;
     const match = paletteContent.match(staticNavsRegex);
 
     if (match) {
@@ -172,7 +178,7 @@ export function checkRouteIndexing(
           .split("-")
           .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
           .join(" ");
-        return `      {\n        id: "nav-${idSlug}",\n        title: "${titleName}",\n        subtitle: "Navigate to ${titleName} view",\n        category: "navigation",\n        url: "${mr.url}",\n        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />\n      },`;
+        return `  {\n    id: "nav-${idSlug}",\n    title: "${titleName}",\n    subtitle: "Navigate to ${titleName} view",\n    category: "navigation",\n    url: "${mr.url}",\n    icon: { name: "IconDirections", className: "w-4 h-4 text-brand-cyan" },\n  },`;
       });
 
       const insertion = "\n" + generatedItems.join("\n");
@@ -187,7 +193,7 @@ export function checkRouteIndexing(
         name: "First-Class Route Command Palette Registration",
         category: "routes",
         status: "fixed",
-        message: `Auto-registered ${missingRoutes.length} missing route(s) in CommandPalette.tsx`,
+        message: `Auto-registered ${missingRoutes.length} missing route(s) in lib/command-palette/static-navs.ts`,
         details: missingRoutes.map((m) => `${m.url} (${m.routePath})`),
       };
     }
@@ -198,7 +204,7 @@ export function checkRouteIndexing(
     name: "First-Class Route Command Palette Registration",
     category: "routes",
     status: "fail",
-    message: `${missingRoutes.length} route(s) not registered in CommandPalette.tsx staticNavs (AGENTS.md #3)`,
+    message: `${missingRoutes.length} route(s) not registered in the Command Palette STATIC_NAVS (lib/command-palette/static-navs.ts, AGENTS.md #3)`,
     details: missingRoutes.map(
       (m) => `Missing registration for ${m.url} (from app/${m.routePath})`
     ),
@@ -479,7 +485,7 @@ export function checkPublicRouteRegistryDrift(
  * Every game route in `ARCADE_REGISTRY` (lib/arcade/registry.ts) must also be
  * in the route metadata that feeds the sitemap (`ROUTE_METADATA_CONFIGS`), the
  * public route registry that feeds `CANONICAL_ROUTES`, and the Command
- * Palette's `staticNavs`, so a game cannot be listed in one place and missing
+ * Palette's `STATIC_NAVS`, so a game cannot be listed in one place and missing
  * from another.
  */
 export function checkArcadeRegistryParity(root: string): DiagnosticCheckResult {
@@ -507,8 +513,8 @@ export function checkArcadeRegistryParity(root: string): DiagnosticCheckResult {
     { label: "ROUTE_METADATA_CONFIGS", file: "lib/seo-metadata.ts" },
     { label: "PUBLIC_ROUTE_REGISTRY", file: "lib/public-routes.ts" },
     {
-      label: "CommandPalette staticNavs",
-      file: "components/CommandPalette.tsx",
+      label: "Command Palette STATIC_NAVS",
+      file: "lib/command-palette/static-navs.ts",
     },
   ];
 

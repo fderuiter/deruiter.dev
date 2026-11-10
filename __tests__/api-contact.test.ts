@@ -19,7 +19,7 @@ describe("API: /api/contact Route Handler", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-connection-hash": "test-client-hash-1",
+        "x-forwarded-for": "203.0.113.10",
         ...headers,
       },
       body: JSON.stringify(body),

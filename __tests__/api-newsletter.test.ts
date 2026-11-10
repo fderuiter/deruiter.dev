@@ -23,7 +23,7 @@ describe("API: /api/newsletter Route Handler", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-connection-hash": "test-newsletter-hash-1",
+        "x-forwarded-for": "203.0.113.11",
         ...headers,
       },
       body: JSON.stringify(body),

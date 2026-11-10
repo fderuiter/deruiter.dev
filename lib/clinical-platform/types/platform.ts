@@ -1251,6 +1251,13 @@ export interface DsqlLoadPlan {
 export interface DsqlLoadOptions {
   /** Most rows per `INSERT`, 1 to 3,000. Defaults to 1,000. */
   readonly maxRowsPerInsert?: number;
+  /**
+   * The database schema each warehouse layer loads into, for example
+   * `{ gold: "warehouse_gold" }` when the target database has other
+   * schemas (#3208). A layer not named here loads into a schema of its own
+   * name.
+   */
+  readonly schemas?: Readonly<Record<string, string>>;
 }
 
 /**

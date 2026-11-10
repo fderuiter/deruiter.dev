@@ -5,7 +5,7 @@ import {
   type PreparedRichInline,
   type RichInlineLine,
 } from "@chenglou/pretext/rich-inline";
-import { LRUCache } from "./graphics-math";
+import { LRUCache, toCanvasFontFamily } from "./graphics-math";
 
 export * from "./graphics-math";
 
@@ -149,7 +149,14 @@ export function isBrowser(): boolean {
 export function resolveFontFamily(
   variableName: string = "--font-atkinson"
 ): string {
-  const getFallback = (varName: string) => {
+  const getFallback = (varName: string) =>
+    toCanvasFontFamily(
+      getFallbackList(varName),
+      varName === "--font-mono" || varName === "--font-geist-mono"
+        ? "monospace"
+        : "sans-serif"
+    );
+  const getFallbackList = (varName: string) => {
     if (varName === "--font-heading" || varName === "--font-lexend") {
       return (
         (designManifest.typography.fonts as Record<string, string>).heading ||
@@ -178,7 +185,9 @@ export function resolveFontFamily(
       return getFallback(variableName);
     }
     const rawFontFamily = rootStyle.getPropertyValue(variableName).trim();
-    const resolved = rawFontFamily || getFallback(variableName);
+    const resolved = rawFontFamily
+      ? toCanvasFontFamily(rawFontFamily, getFallback(variableName))
+      : getFallback(variableName);
     cssPropertyCache.set(variableName, resolved);
     return resolved;
   } catch {

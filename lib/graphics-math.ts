@@ -308,3 +308,38 @@ export function calculateParticleTrajectory(
     y: initial.y + velocity.y * time + 0.5 * gravity * time * time,
   };
 }
+
+// --- Canvas font families ---
+
+/**
+ * Turns a CSS `font-family` list into one Canvas accepts.
+ *
+ * Canvas `ctx.font` does not resolve custom properties, so a family list such
+ * as `var(--font-atkinson), system-ui, sans-serif` is ignored outright, and
+ * Pretext 1.0 throws on it. This drops every entry that still holds a
+ * `var(...)` reference (commas inside the parentheses are kept with their
+ * entry) and returns the remaining families, or `fallback` when none remain.
+ */
+export function toCanvasFontFamily(
+  family: string,
+  fallback: string = "sans-serif"
+): string {
+  const entries: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of family) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    if (ch === "," && depth === 0) {
+      entries.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  entries.push(current);
+  const kept = entries
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "" && !/var\s*\(/i.test(entry));
+  return kept.length > 0 ? kept.join(", ") : fallback;
+}

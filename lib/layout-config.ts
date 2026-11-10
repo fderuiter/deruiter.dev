@@ -3,6 +3,7 @@ import {
   cssPropertyCache,
   fontConfigCache,
   isStylesheetLoaded,
+  toCanvasFontFamily,
 } from "@/lib/graphics-engine";
 
 export const LAYOUT_CONFIG = {
@@ -42,6 +43,14 @@ export interface ThemeFonts {
 }
 
 function resolveFallbackFont(fontFamilyVariable: string): string {
+  return toCanvasFontFamily(resolveFallbackFontList(fontFamilyVariable));
+}
+
+function resolveFallbackMono(): string {
+  return toCanvasFontFamily(designManifest.typography.fonts.mono, "monospace");
+}
+
+function resolveFallbackFontList(fontFamilyVariable: string): string {
   if (
     fontFamilyVariable === "--font-heading" ||
     fontFamilyVariable === "--font-lexend"
@@ -86,7 +95,7 @@ export function resolveThemeFonts(
 
   if (typeof window === "undefined") {
     const fallbackSans = resolveFallbackFont(fontFamilyVariable);
-    const fallbackMono = designManifest.typography.fonts.mono;
+    const fallbackMono = resolveFallbackMono();
     return {
       baseFont: `400 ${fontSize}px ${fallbackSans}`,
       boldFont: `700 ${fontSize}px ${fallbackSans}`,
@@ -99,7 +108,7 @@ export function resolveThemeFonts(
     const rootStyle = window.getComputedStyle(document.documentElement);
     if (!isStylesheetLoaded(rootStyle)) {
       const fallbackSans = resolveFallbackFont(fontFamilyVariable);
-      const fallbackMono = designManifest.typography.fonts.mono;
+      const fallbackMono = resolveFallbackMono();
       return {
         baseFont: `400 ${fontSize}px ${fallbackSans}`,
         boldFont: `700 ${fontSize}px ${fallbackSans}`,
@@ -112,8 +121,12 @@ export function resolveThemeFonts(
       const rawFontFamily = rootStyle
         .getPropertyValue(fontFamilyVariable)
         .trim();
-      resolvedFontFamily =
-        rawFontFamily || resolveFallbackFont(fontFamilyVariable);
+      resolvedFontFamily = rawFontFamily
+        ? toCanvasFontFamily(
+            rawFontFamily,
+            resolveFallbackFont(fontFamilyVariable)
+          )
+        : resolveFallbackFont(fontFamilyVariable);
       cssPropertyCache.set(fontFamilyVariable, resolvedFontFamily);
     }
 
@@ -121,8 +134,9 @@ export function resolveThemeFonts(
       const rawMonoFamily =
         rootStyle.getPropertyValue("--font-mono").trim() ||
         rootStyle.getPropertyValue("--font-geist-mono").trim();
-      resolvedMonoFamily =
-        rawMonoFamily || designManifest.typography.fonts.mono;
+      resolvedMonoFamily = rawMonoFamily
+        ? toCanvasFontFamily(rawMonoFamily, resolveFallbackMono())
+        : resolveFallbackMono();
       cssPropertyCache.set("--font-mono", resolvedMonoFamily);
     }
 
@@ -136,7 +150,7 @@ export function resolveThemeFonts(
     return result;
   } catch {
     const fallbackSans = resolveFallbackFont(fontFamilyVariable);
-    const fallbackMono = designManifest.typography.fonts.mono;
+    const fallbackMono = resolveFallbackMono();
     return {
       baseFont: `400 ${fontSize}px ${fallbackSans}`,
       boldFont: `700 ${fontSize}px ${fallbackSans}`,
@@ -176,8 +190,12 @@ export function resolveSingleThemeFont(
     }
 
     const rawFontFamily = rootStyle.getPropertyValue(fontFamilyVariable).trim();
-    resolvedFontFamily =
-      rawFontFamily || resolveFallbackFont(fontFamilyVariable);
+    resolvedFontFamily = rawFontFamily
+      ? toCanvasFontFamily(
+          rawFontFamily,
+          resolveFallbackFont(fontFamilyVariable)
+        )
+      : resolveFallbackFont(fontFamilyVariable);
     cssPropertyCache.set(fontFamilyVariable, resolvedFontFamily);
 
     const result = `${fontSize}px ${resolvedFontFamily}`;

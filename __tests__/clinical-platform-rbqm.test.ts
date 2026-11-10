@@ -396,6 +396,48 @@ describe("central statistical monitoring (#2631)", () => {
     }
   }, 60_000);
 
+  // Red test for #3003 (#3220). On seed 2 the KRI profile test gives
+  // DEV-402-CA-122, which carries no planted signal, p = 4.7e-8: too strong
+  // to be a false discovery the 5% FDR allows. `it.fails` records that this
+  // assertion fails today; #3221 removes the cause and turns it into `it`.
+  it.fails(
+    "gives no site without a planted signal p below 1e-6 on seeds 301 and 1 to 10 (#3003)",
+    () => {
+      const strong: string[] = [];
+      for (const seed of [
+        DEFAULT_PORTFOLIO_SEED,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+      ]) {
+        const other = generatePortfolio({ seed });
+        const plantedSites = new Set(
+          other.signals.filter((s) => s.siteId !== null).map((s) => s.siteId!)
+        );
+        const otherWarehouse = buildWarehouse(other);
+        for (const row of otherWarehouse.tables["gold.dim_study"]) {
+          for (const r of centralMonitoring(
+            otherWarehouse,
+            String(row.study_id)
+          ).results) {
+            if (!plantedSites.has(r.siteId) && r.pValue < 1e-6) {
+              strong.push(`seed ${seed} ${r.siteId} ${r.testId}`);
+            }
+          }
+        }
+      }
+      expect(strong).toEqual([]);
+    },
+    120_000
+  );
+
   it("adjusts every p-value of a study together and flags by the q-value", () => {
     const run = runs.get("DEMO-302")!;
     const q = benjaminiHochberg(run.results.map((r) => r.pValue));

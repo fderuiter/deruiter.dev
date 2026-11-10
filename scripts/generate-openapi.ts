@@ -171,60 +171,6 @@ export const openApiSpec = {
       },
     },
     "/api/case-studies/feedback": {
-      get: {
-        summary: "Query case study learning feedback",
-        description: "Retrieves learning feedback for a case study slug.",
-        parameters: [
-          {
-            name: "slug",
-            in: "query",
-            required: false,
-            description:
-              "Case study slug identifier (interchangeable with caseStudySlug)",
-            schema: { type: "string" },
-          },
-          {
-            name: "caseStudySlug",
-            in: "query",
-            required: false,
-            description:
-              "Case study slug identifier (interchangeable with slug)",
-            schema: { type: "string" },
-          },
-        ],
-        responses: {
-          200: {
-            description: "Successful retrieval of feedback",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/FeedbackGetResponse",
-                },
-              },
-            },
-          },
-          400: {
-            description: "Missing required query parameter",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ErrorResponse",
-                },
-              },
-            },
-          },
-          500: {
-            description: "Internal server error",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ErrorResponse",
-                },
-              },
-            },
-          },
-        },
-      },
       post: {
         summary: "Submit structured learning feedback",
         description:

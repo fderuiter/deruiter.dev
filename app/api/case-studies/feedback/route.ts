@@ -9,25 +9,6 @@ import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
-export const GET = createApiHandler(
-  async (req: NextRequest) => {
-    const { searchParams } = new URL(req.url);
-    const slug = searchParams.get("slug") || searchParams.get("caseStudySlug");
-
-    if (!slug) {
-      return NextResponse.json(
-        { error: "Missing required query parameter 'slug' or 'caseStudySlug'" },
-        { status: 400 }
-      );
-    }
-
-    const connectionHash = await getConnectionHashFromRequest(req);
-    const result = await CaseStudyService.getFeedback(slug, connectionHash);
-    return NextResponse.json(result);
-  },
-  { auth: "public" }
-);
-
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
     try {

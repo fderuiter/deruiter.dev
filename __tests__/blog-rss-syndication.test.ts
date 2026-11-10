@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as getRss } from "@/app/blog/rss.xml/route";
-import { GET as getFeed } from "@/app/feed.xml/route";
 import {
   BlogPostService,
   type BlogPostData,
@@ -112,10 +111,15 @@ describe("Blog RSS/Atom Syndication (Issue #763)", () => {
     );
   });
 
-  it("redirects /feed.xml to /blog/rss.xml with a 301 status", async () => {
-    const baseUrl = resolveBaseUrl();
-    const res = await getFeed();
-    expect(res.status).toBe(301);
-    expect(res.headers.get("Location")).toBe(`${baseUrl}/blog/rss.xml`);
+  it("redirects /feed.xml to /blog/rss.xml with a 301, from the config (#3204)", async () => {
+    const { default: nextConfig } = await import("@/next.config");
+    const redirects = await nextConfig.redirects!();
+    expect(redirects).toContainEqual(
+      expect.objectContaining({
+        source: "/feed.xml",
+        destination: "/blog/rss.xml",
+        statusCode: 301,
+      })
+    );
   });
 });

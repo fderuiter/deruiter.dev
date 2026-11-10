@@ -5,7 +5,12 @@
  * fully determined result.
  */
 import { STANDARD_VERSIONS, SUBJECT_COUNT_LIMITS } from "../presets";
-import type { PipelineOptions, PipelineRun, StudyDefinition } from "../types";
+import type {
+  Dataset,
+  PipelineOptions,
+  PipelineRun,
+  StudyDefinition,
+} from "../types";
 import { generateCollectedData } from "./synth/generate-collected-data";
 import { applyScenarios } from "./synth/scenarios";
 import { deriveTrialDesign } from "./sdtm/trial-design";
@@ -44,6 +49,22 @@ function assertValidInputs(
 }
 
 /**
+ * The earliest exposure start date in the collected records, which Trial
+ * Summary records as the study start (SSTDTC). Partial or invalid dates are
+ * ignored, so the result is always a full ISO 8601 date or null.
+ */
+function firstExposureDate(collected: readonly Dataset[]): string | null {
+  const exposure = collected.find((dataset) => dataset.name === "EX");
+  const dates = (exposure?.columns.EXSTDTC ?? []).filter(
+    (value): value is string =>
+      typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  );
+  return dates.length > 0
+    ? dates.reduce((first, next) => (next < first ? next : first))
+    : null;
+}
+
+/**
  * Runs the study data pipeline for one study definition.
  *
  * The same definition, seed and subject count always give the same result.
@@ -63,7 +84,11 @@ export function runPipeline(
   const messy =
     scenarios.length > 0 ? applyScenarios(generated, scenarios) : null;
   const collected = messy?.datasets ?? generated;
-  const trialDesign = deriveTrialDesign(definition, STANDARD_VERSIONS);
+  const trialDesign = deriveTrialDesign(
+    definition,
+    STANDARD_VERSIONS,
+    firstExposureDate(collected)
+  );
   const sdtmDatasets = [
     ...collected,
     ...trialDesign,

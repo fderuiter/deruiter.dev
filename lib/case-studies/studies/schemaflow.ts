@@ -18,9 +18,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> Sub-8ms canvas node interaction latency; 100% cyclical dependency detection and resolution via <code>$ref</code> pointers; automated real-time OpenAPI v3 code generation.</p>
 
 <h3>How it works</h3>
-<p><strong>Immutable Graph State Core:</strong> State is modeled as a Directed Acyclic Graph (DAG) using a customized Zustand store with memoized selectors to eliminate unnecessary React re-renders.</p>
-<p><strong>Cyclical Dependency Detection:</strong> Depth-first search (DFS) traversal detects recursive schema references, automatically synthesizing <code>$ref</code> pointer definitions rather than entering infinite compilation loops.</p>
-<p><strong>Web Worker AST Compiler:</strong> Offloads heavy schema AST generation and JSON/YAML serialization to Web Workers, keeping the canvas render loop completely free of main-thread computation.</p>
+<p>The editor's state is a Directed Acyclic Graph (DAG) in a customized Zustand store. Memoized selectors stop React re-rendering nodes that did not change.</p>
+<p>A depth-first search (DFS) finds recursive schema references and turns each one into a <code>$ref</code> definition, so the compiler never loops forever.</p>
+<p>Schema AST generation and JSON/YAML serialization run in Web Workers, which keeps that work off the main thread while the canvas renders.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -89,8 +89,8 @@ function detectAndResolveCycles(nodes: SchemaNode[], connections: SchemaConnecti
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Worker Thread Offloading:</strong> Moving JSON Schema serialization to Web Workers prevented frame drops on complex graphs containing 100+ interconnected schema nodes.</li>
-  <li><strong>Graceful Recursive <code>$ref</code> Handling:</strong> Detecting cycles and transforming them into JSON Schema <code>$ref</code> definitions prevented browser tab crashes on recursive types (like file trees).</li>
+  <li>Moving JSON Schema serialization to Web Workers stopped frame drops on graphs with 100+ connected schema nodes.</li>
+  <li>Recursive <code>$ref</code> handling: turning cycles into JSON Schema <code>$ref</code> definitions stopped the browser tab crashing on recursive types such as file trees.</li>
 </ul>`,
     created_at: new Date("2026-02-15T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

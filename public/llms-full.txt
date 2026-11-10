@@ -176,7 +176,7 @@ Source: https://github.com/fderuiter/hono-kiln
 
 Abstract:
 
-A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I’d rather not repeat on every project.
+A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I'd rather not repeat on every project.
 
 Architecture and trade-offs:
 
@@ -218,7 +218,7 @@ Architecture and trade-offs:
 
 The problem
 
-An InBody result contains a QR code, which raises a reasonable question: what is actually in it? This project examines the encoded binary data, maps positions to measurements, and turns those findings into Python tools.
+An InBody result contains a QR code, which raises a reasonable question: what is in it? This project examines the encoded binary data, maps positions to measurements, and turns those findings into Python tools.
 
 The approach: The Python packages separate binary decoding, field discovery, API access, and command-line use. Mutation-based experiments help identify what each field represents.
 
@@ -290,7 +290,7 @@ Architecture and trade-offs:
 
 The problem
 
-What changes when you solve the same problem in a different language? Polyglot-TSP uses brute-force Traveling Salesman solutions across more than 50 languages to compare implementation choices, runtime behavior, and the cost of factorial growth.
+Polyglot-TSP solves the Traveling Salesman Problem by brute force in more than 50 languages, to compare implementation choices, runtime behavior, and the cost of factorial growth.
 
 The approach: Each implementation solves the same routing problem. Comparing the code and benchmark results exposes differences in allocation, representation, and execution.
 

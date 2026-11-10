@@ -13,14 +13,14 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
     editorial_content:
       "A set of **Python** tools for decoding **InBody** body-composition QR codes. The project explores the binary format, maps its fields, and exposes the results through a library and CLI.",
     architectural_narrative: `<h3>The problem</h3>
-<p>An InBody result contains a QR code, which raises a reasonable question: what is actually in it? This project examines the encoded binary data, maps positions to measurements, and turns those findings into Python tools.</p>
+<p>An InBody result contains a QR code, which raises a reasonable question: what is in it? This project examines the encoded binary data, maps positions to measurements, and turns those findings into Python tools.</p>
 <p><strong>The approach:</strong> The Python packages separate binary decoding, field discovery, API access, and command-line use. Mutation-based experiments help identify what each field represents.</p>
 <p><strong>Reported project measurements:</strong> Sub-millisecond payload decoding; 100% reconstruction fidelity across 30+ body composition biometrics; automated differential mutation testing suite.</p>
 
 <h3>How it works</h3>
-<p><strong>Differential Mutation Oracle:</strong> Automated test harness that systematically mutates fixed-width byte slices to programmatically discover biomarker boundaries and scale factors.</p>
-<p><strong>Fixed-Width Positional Matrix Deserializer:</strong> High-speed byte slice parser converting ASCII place-value representations into calibrated floating-point biometrics.</p>
-<p><strong>Segment Normalizer &amp; Biomarker Deriver:</strong> Normalizes percent-encoded delimiters and computes derived clinical indicators (Appendicular Skeletal Muscle Mass, Skeletal Muscle Index).</p>
+<p>The Differential Mutation Oracle is a test harness that mutates fixed-width byte slices one at a time and watches the output, which is how it finds each biomarker's boundaries and scale factor.</p>
+<p>A byte-slice parser converts the ASCII place-value fields into calibrated floating-point measurements.</p>
+<p>A normalizer decodes percent-encoded delimiters, and a deriver computes indicators such as Appendicular Skeletal Muscle Mass and Skeletal Muscle Index.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -63,8 +63,8 @@ def probe_byte_slice(payload: str, start: int, end: int, delta: int = 1) -> str:
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Percent-Encoding Collision Bug:</strong> Resolved a critical bug where URL percent-encoding (<code>%21</code>) of literal <code>!</code> delimiters caused byte-slice alignment shifts, inducing a $10\\times$ error on Leg Lean Mass.</li>
-  <li><strong>Zero-Dependency Core:</strong> Built the core decoder using pure Python standard library primitives to allow embeddability in constrained IoT and mobile environments.</li>
+  <li>URL percent-encoding turned literal <code>!</code> delimiters into <code>%21</code>, which shifted the byte slices and produced a $10\\times$ error in Leg Lean Mass until the delimiters were normalized.</li>
+  <li>The core decoder uses only the Python standard library, so it can be embedded in constrained IoT and mobile environments.</li>
 </ul>`,
     created_at: new Date("2026-02-22T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

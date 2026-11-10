@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import {
-  POST as feedbackPOST,
-  GET as feedbackGET,
-} from "@/app/api/case-studies/feedback/route";
+import * as feedbackRoute from "@/app/api/case-studies/feedback/route";
 import {
   POST as reactionPOST,
   GET as reactionGET,
@@ -16,26 +13,8 @@ describe("Case Study Feedback & Reaction API Routes", () => {
   });
 
   describe("Feedback API (/api/case-studies/feedback)", () => {
-    it("should reject GET requests missing slug parameter with 400", async () => {
-      const req = new NextRequest("http://localhost/api/case-studies/feedback");
-      const res = await feedbackGET(req);
-      expect(res.status).toBe(400);
-
-      const json = await res.json();
-      expect(json.error).toContain("Missing required query parameter");
-    });
-
-    it("should handle GET requests with valid slug parameter", async () => {
-      const req = new NextRequest(
-        "http://localhost/api/case-studies/feedback?slug=imednet-python-sdk"
-      );
-      const res = await feedbackGET(req);
-      expect(res.status).toBe(200);
-
-      const json = await res.json();
-      expect(json.success).toBe(true);
-      expect(json.caseStudySlug).toBe("imednet-python-sdk");
-      expect(Array.isArray(json.feedback)).toBe(true);
+    it("serves no GET, so a case study view never reads feedback (#3199)", () => {
+      expect("GET" in feedbackRoute).toBe(false);
     });
 
     it("should reject feedback submission with missing or empty fields with 400", async () => {
@@ -51,7 +30,7 @@ describe("Case Study Feedback & Reaction API Routes", () => {
         }
       );
 
-      const res = await feedbackPOST(req);
+      const res = await feedbackRoute.POST(req);
       expect(res.status).toBe(400);
 
       const json = await res.json();
@@ -73,7 +52,7 @@ describe("Case Study Feedback & Reaction API Routes", () => {
         }
       );
 
-      const res = await feedbackPOST(req);
+      const res = await feedbackRoute.POST(req);
       expect(res.status).toBe(400);
 
       const json = await res.json();
@@ -94,7 +73,7 @@ describe("Case Study Feedback & Reaction API Routes", () => {
         }
       );
 
-      const res = await feedbackPOST(req);
+      const res = await feedbackRoute.POST(req);
       expect(res.status).toBe(400);
 
       const json = await res.json();
@@ -125,7 +104,7 @@ describe("Case Study Feedback & Reaction API Routes", () => {
         }
       );
 
-      const res = await feedbackPOST(req);
+      const res = await feedbackRoute.POST(req);
       expect(res.status).toBe(201);
 
       const json = await res.json();
@@ -151,7 +130,7 @@ describe("Case Study Feedback & Reaction API Routes", () => {
         }
       );
 
-      const res1 = await feedbackPOST(req1);
+      const res1 = await feedbackRoute.POST(req1);
       expect(res1.status).toBe(201);
 
       const req2 = new NextRequest(
@@ -167,7 +146,7 @@ describe("Case Study Feedback & Reaction API Routes", () => {
         }
       );
 
-      const res2 = await feedbackPOST(req2);
+      const res2 = await feedbackRoute.POST(req2);
       expect(res2.status).toBe(429);
       const json = await res2.json();
       expect(json.error).toContain("already submitted");

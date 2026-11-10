@@ -81,7 +81,7 @@ describe("[UI/UX 01] Homepage First Impression & Architectural Hierarchy Suite",
     it("presents one clear primary action pointing directly to case studies", () => {
       render(<Hero />);
 
-      const primaryCta = screen.getByRole("link", { name: /Explore My Work/i });
+      const primaryCta = screen.getByRole("link", { name: /Explore my work/i });
       expect(primaryCta.getAttribute("href")).toBe("#case-studies");
       expect(primaryCta.className).toContain("bg-amber-400");
       expect(primaryCta.className).toContain("min-h-[48px]");

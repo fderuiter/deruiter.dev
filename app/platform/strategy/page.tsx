@@ -34,9 +34,9 @@ export default function PlatformStrategyPage() {
           Vendor scoring (Platform Strategy)
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
-          Compare fictional platform options, examine the assumptions that move
-          a decision, and export a reviewable memo. Every input lives in this
-          page’s URL hash.
+          Compare fictional platform options, see which assumptions move the
+          decision, and export a memo someone else can review. Every input is
+          kept in this page’s URL hash.
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">
           {SYNTHETIC_DATA_NOTICE} Illustrative decisions are not procurement

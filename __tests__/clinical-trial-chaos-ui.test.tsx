@@ -560,6 +560,41 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     );
   });
 
+  it("names an authored protocol and links back to CRF Studio (#3393)", async () => {
+    mockStorage.setItem(
+      "crf_active_protocol",
+      JSON.stringify(EMPTY_STUDY_PRESET)
+    );
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+
+    expect(container.textContent).toContain(
+      `Using your authored protocol ${EMPTY_STUDY_PRESET.protocolNumber}`
+    );
+    const back = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.trim() === "Back to CRF Studio"
+    );
+    expect(back?.getAttribute("href")).toBe("/crf");
+    expect(
+      Array.from(container.querySelectorAll("button")).some((b) =>
+        b.textContent?.includes("Load Authored Protocol")
+      )
+    ).toBe(false);
+  });
+
+  it("offers no way back to CRF Studio without an authored protocol (#3393)", async () => {
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    expect(
+      Array.from(container.querySelectorAll("a")).some(
+        (link) => link.textContent?.trim() === "Back to CRF Studio"
+      )
+    ).toBe(false);
+  });
+
   it("accepts a compliant choice and lets the player retry after a rejection with a CRF Studio protocol loaded (#1150)", async () => {
     vi.useFakeTimers();
     // Every generated field starts flagged.

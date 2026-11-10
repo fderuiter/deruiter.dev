@@ -1,21 +1,21 @@
 # Contributing to Portfolio Hub
 
-Welcome! We are excited that you want to contribute to Portfolio Hub. This guide provides comprehensive setup workflows, architectural standards, feature creation rules, and instructions for using our interactive CLI scaffolding helper.
+Thanks for contributing to Portfolio Hub. This guide covers setup, the architectural rules, how new features are created, and the scaffolding CLI.
 
 ---
 
 ## 1. Context & Objectives
 
-The primary goal of Portfolio Hub is to maintain a unified, high-performance showcase of systems engineering, machine learning engines, clinical data processors, and interactive arcade modules.
+Portfolio Hub is one site that shows systems engineering, machine learning engines, clinical data tools and arcade games.
 
-To prevent route drift, unindexed navigation entries, and architectural regression, human contributor guidelines align **100%** with automated agent rules in [`AGENTS.md`](./AGENTS.md).
+The rules for people in this guide are the same rules agents follow in [`AGENTS.md`](./AGENTS.md). Keeping them identical stops routes from drifting, navigation entries from going unindexed, and the architecture from regressing.
 
 ### Core Standards
 
-- **Node.js**: `>=22.0.0 <25.0.0` (Sole supported runtime).
-- **Package Manager**: `npm >= 10.0.0` (Sole supported package manager; `bun`, `yarn`, and `pnpm` are unsupported).
-- **Quality Gates**: Zero TypeScript errors, zero ESLint warnings, 100% route indexing parity, zero uncommitted documentation drift.
-- **Architectural Slices**: All new features must be created via the scaffolding CLI to guarantee companion test files and automatic navigation indexing across the 5-Point Discovery Matrix.
+- Node.js `>=22.0.0 <25.0.0` is the only supported runtime.
+- npm `>= 10.0.0` is the only supported package manager. `bun`, `yarn` and `pnpm` are not supported.
+- A change passes when it has no TypeScript errors, no ESLint warnings, every route indexed and no uncommitted documentation drift.
+- New features are created with the scaffolding CLI, which writes the companion tests and registers the feature across the 5-Point Discovery Matrix.
 
 ---
 
@@ -43,7 +43,7 @@ From a fresh clone, run:
 ./scripts/setup.sh
 ```
 
-It checks the toolchain, installs dependencies with `npm ci`, creates `.env.local` for the profile you choose (`local-minimal`, `hosted-development` or `deployment`), offers each optional integration, asks separately before applying the schema and before loading sample data, and offers verification checks from cheapest to most expensive. It never prints a secret, never publishes a credential without your confirmation, and refuses to mutate an obvious production database. `npm run setup` runs the same stages after dependencies are installed.
+It checks the toolchain, installs dependencies with `npm ci` and creates `.env.local` for the profile you choose (`local-minimal`, `hosted-development` or `deployment`). It then offers each optional integration, asks before applying the schema and again before loading sample data, and offers verification checks from cheapest to most expensive. It never prints a secret, never publishes a credential without your confirmation, and refuses to change a database that is obviously production. `npm run setup` runs the same stages after dependencies are installed.
 
 Agents and CI run it without prompts:
 
@@ -55,11 +55,11 @@ The [setup reference](docs/reference/setup.md) documents every flag, the profile
 
 ### Secondary Services & Environment Setup
 
-- To configure optional Clerk authentication and author access allowlists interactively (this runs only the setup wizard's Clerk adapter):
+- To set up optional Clerk authentication and the author access allowlists (this runs only the setup wizard's Clerk step):
   ```bash
   npm run setup:clerk
   ```
-- To check or auto-synchronize environment variable schema:
+- To check the environment variable schema, or fix it:
   ```bash
   npm run dx env
   npm run dx env -- --fix
@@ -69,11 +69,11 @@ The [setup reference](docs/reference/setup.md) documents every flag, the profile
 
 ## 3. Feature Scaffolding & Vertical Slices
 
-To eliminate manual multi-file creation errors, route drift, and unindexed navigation items, all vertical slices (components, hooks, APIs, ADRs, case studies, arcade games) **must** be created using the Feature Scaffolding CLI.
+Create every vertical slice (component, hook, API, ADR, case study or arcade game) with the scaffolding CLI. Creating the files by hand is how routes drift and navigation entries go missing.
 
 ### Interactive CLI Scaffolding Wizard
 
-Executing the scaffolding command **without positional arguments** launches an interactive terminal wizard:
+Run the scaffolding command with no arguments to start the wizard:
 
 ```bash
 npm run scaffold
@@ -81,28 +81,24 @@ npm run scaffold
 npx tsx scripts/dx.ts scaffold
 ```
 
-The interactive terminal wizard guides you through three steps:
+The wizard asks three questions:
 
-1. **Select Architecture Template Type** (lists all 7 supported architecture template types):
+1. **Template type.** It lists the seven types:
    - `1) component` - Reusable UI component (`components/ui/<Name>.tsx` + companion test)
    - `2) hook` - Custom React hook (`hooks/use<Name>.ts` + companion test)
    - `3) api` - Zod-validated API route (`app/api/<name>/route.ts` + companion test)
    - `4) adr` - Architectural Decision Record (`adr/00XX-<name>.md`)
-   - `5) case-study` - Showcase Case Study page (`app/case-studies/<name>/page.tsx` + Command Palette registration + companion test)
+   - `5) case-study` - Case study page (`app/case-studies/<name>/page.tsx` + Command Palette registration + companion test)
    - `6) arcade` - Three-view arcade game ([ADR 0062](./adr/0062-three-views-per-arcade-game.md)): an engine at `lib/<name>/index.ts`; under `components/<name>/` an action map, a session (`use<Name>Session.ts`), a board in `parts/` and `views/{DesktopView,TabletView,PhoneView}.tsx`; a cabinet client using `defineGameViews`; the route and its OpenGraph card; a session unit test and phone and tablet e2e specs. It also adds the game to `ARCADE_REGISTRY`, the arcade metadata, the progress catalog and every discovery registry below. Then run `npm run doctor:fix`, update the tests that list every game (the hub count in `__tests__/arcade-registry.test.ts`, the phone picks in `__tests__/desktop-only-gate.test.tsx`), and once the game has a screenshot at `public/images/arcade/previews/<name>.webp`, add it to `GAME_CARD_COPY` and switch its OpenGraph card to `createGameImageResponse`.
    - `7) game` - Three-view arcade game (arcade alias)
 
-2. **Enter Feature / Asset Name**:
-   - Input a descriptive name (e.g. `matrix-defender`, `analytics-card`).
-   - The CLI performs input validation to ensure valid non-empty formatting.
+2. **Name.** Enter a descriptive name such as `matrix-defender` or `analytics-card`. The CLI rejects an empty or malformed name.
 
-3. **Preview Mode / Dry Run Option**:
-   - Choose whether to run in preview mode (`--dry-run`).
-   - In preview mode, the tool outputs all files and relative paths that would be created or updated without modifying disk state.
+3. **Dry run.** Choose whether to preview (`--dry-run`). A preview lists every file it would create or update and writes nothing.
 
 ### Direct Non-Interactive Scaffolding
 
-For automated CI pipelines, agent scripts, or power users who prefer direct CLI execution, pass explicit positional arguments:
+Scripts, agents and anyone who would rather skip the prompts can pass the type and name directly:
 
 ```bash
 # Non-interactive command syntax:
@@ -117,13 +113,13 @@ npm run scaffold case-study quantum-compiler
 npm run scaffold arcade cyber-vault
 ```
 
-Direct positional execution bypasses interactive prompts smoothly, executing non-interactively while applying full input validation.
+With arguments it runs without prompts and still validates the name.
 
 ---
 
 ## 4. The 5-Point Discovery Matrix
 
-Whenever a new first-class route, interactive mini-game, or case study page is introduced, it must be indexed across the **5-Point Discovery Matrix**:
+Every new first-class route, game or case study page is registered in all five places of the **5-Point Discovery Matrix**:
 
 1. **Command Palette (`lib/command-palette/static-navs.ts`)**:
    - An entry in `STATIC_NAVS` with a Tabler icon name, title, subtitle, category and target URL. `components/CommandPalette.tsx` renders the list and maps icon names to icons, so a new icon name also goes in its `STATIC_NAV_ICONS` map.
@@ -133,7 +129,7 @@ Whenever a new first-class route, interactive mini-game, or case study page is i
 3. **Sitemap & SEO Metadata (`app/sitemap.ts` & `lib/seo-metadata.ts`)**:
    - Canonical path and change frequency added to `ROUTE_METADATA_CONFIGS`.
 4. **OpenGraph Social Preview (`app/<route>/opengraph-image.tsx`)**:
-   - 1200x630 dynamic OpenGraph card generator matching design system (`lib/og-image.tsx`).
+   - A 1200x630 OpenGraph card built with the shared design in `lib/og-image.tsx`.
 5. **Public Route Registry (`lib/public-routes.ts`)**:
    - Path registered in `PUBLIC_ROUTE_REGISTRY`, which feeds `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` and the service-worker precache.
 
@@ -143,14 +139,14 @@ Arcade games are also registered in `ARCADE_REGISTRY` (`lib/arcade/registry.ts`)
 
 ## 5. Architectural & Quality Invariants
 
-When contributing code, ensure adherence to system invariants detailed in [`AGENTS.md`](./AGENTS.md):
+The full list of invariants is in [`AGENTS.md`](./AGENTS.md). These are the ones contributors meet most often:
 
-- **No Secondary Navbars**: `app/layout.tsx` renders the sole global `<Navbar />`. Route pages must never render a second `<Navbar />`.
-- **Root Header Clearance**: Route pages (`app/**/page.tsx`) must declare top padding clearance for the sticky header (`pt-24` to `pt-32`, `min-h-dvh`, or `<PageLayout />`).
-- **Hydration & Storage**: Use `useSyncExternalStore` or safe SSR checks for browser APIs (`typeof window !== "undefined"`).
-- **Red-Green Remediation Protocol**: All defect fixes must include isolated reproduction unit tests in `__tests__/` and regression assertions in `__tests__/defect-remediation-regression.test.ts`.
-- **WCAG AA Accessibility**: Zero Critical, Serious, or Moderate accessibility violations. Interactive components must support full keyboard navigation and focus trapping.
-- **Documentation Synchronization**: Keep `openapi.json` and `docs/` in lockstep. Auto-remediate drift via `npm run doctor:fix`.
+- **One navbar.** `app/layout.tsx` renders the only `<Navbar />`. A route page never renders a second one.
+- **Header clearance.** Route pages (`app/**/page.tsx`) declare top padding for the sticky header (`pt-24` to `pt-32`, `min-h-dvh`, or `<PageLayout />`).
+- **Hydration and storage.** Read browser APIs through `useSyncExternalStore` or behind an SSR check (`typeof window !== "undefined"`).
+- **Red-Green Remediation Protocol.** A bug fix comes with a reproduction test in `__tests__/` and a regression assertion in `__tests__/defect-remediation-regression.test.ts`.
+- **WCAG AA accessibility.** No Critical, Serious or Moderate violations. Interactive components work from the keyboard and trap focus where they should.
+- **Docs in step with code.** Keep `openapi.json` and `docs/` current. `npm run doctor:fix` repairs the drift it can.
 
 ---
 
@@ -164,11 +160,11 @@ work branches from `main` and returns through a pull request to `main`. Topic
 branches must follow conventional prefixes:
 
 - `feat/*` - New features or components
-- `fix/*` - Bug fixes and defect remediations
+- `fix/*` - Bug fixes
 - `docs/*` - Documentation additions
-- `dx/*` - Developer experience and tooling improvements
+- `dx/*` - Developer experience and tooling
 - `refactor/*` - Code refactoring without behavior changes
-- `perf/*` - Performance optimizations
+- `perf/*` - Performance work
 - `chore/*` - Dependencies and repository maintenance
 - `test/*` - Test additions without behavior changes
 - `ci/*` - CI workflow and pipeline changes
@@ -191,7 +187,7 @@ npm run dx branch
 
 ### Conventional Commit Messages
 
-Commit messages must adhere strictly to Conventional Commits:
+Commit messages follow Conventional Commits:
 `type(scope): subject` (e.g. `feat(scaffold): add interactive prompt wizard`).
 
 Generate valid commit messages interactively:
@@ -202,7 +198,7 @@ npm run dx commit
 
 ### Verification & Health Verification
 
-Before pushing changes or opening a Pull Request, run the full verification suite:
+Before you push or open a pull request, run the full set of checks:
 
 ```bash
 # 1. Run architectural health diagnostics
@@ -237,7 +233,7 @@ directly.
 
 ## 7. API Documentation & Drift Verification Workflow
 
-When introducing or modifying public interfaces (`lib/`, `hooks/`, `types/`) or HTTP API routes (`app/api/`), contributors must ensure documentation and specifications remain synchronized to prevent pre-commit blocks and CI build failures:
+When you add or change a public interface (`lib/`, `hooks/`, `types/`) or an HTTP API route (`app/api/`), update the docs and the API contract with it. Otherwise the pre-commit hook blocks the commit and CI fails:
 
 1. **Check the docs compile**
    Run the drift check before committing. It compiles the TypeDoc reference with warnings as errors, so a broken `{@link}` or doc comment fails here rather than in CI:
@@ -259,9 +255,9 @@ When introducing or modifying public interfaces (`lib/`, `hooks/`, `types/`) or 
 
 ## 8. Local Verification & Continuous Integration (CI) Mapping
 
-To prevent pull request build failures and maintain zero-drift quality standards, local verification commands map directly to automated continuous integration quality gates executed in GitHub Actions workflows (`.github/workflows/ci.yml` and `.github/workflows/synthetic-probes.yml`).
+Each local command below matches a CI gate in `.github/workflows/ci.yml` or `.github/workflows/synthetic-probes.yml`, so a check that passes locally should pass in CI.
 
-Before submitting a pull request, run the relevant local quality commands or execute the full pre-submission quality gate:
+Before you open a pull request, run the commands your change touches, or run all of them at once:
 
 ```bash
 # Complete pre-submission CI quality gate
@@ -277,9 +273,9 @@ npm run quality
 | `npm run env:check`                  | Local environment preflight                                       | Validates `.env.local` schema definitions against `lib/env.ts` and `.env.example`                      |
 | `npm run check`                      | `static-gate` / Type Check (Memory Budget) & Lint                 | Static TypeScript checking and ESLint (CI covers dependency boundaries through `verify`)               |
 | `npm run lint:docs`                  | `static-gate` / Lint Documentation                                | Markdown formatting and structure linting via `markdownlint-cli`                                       |
-| `npm run check-docs-drift`           | `static-gate` / Check Documentation Drift                         | Verifies lockstep synchronization for TypeDoc API docs, OpenAPI schemas, and onboarding guides         |
+| `npm run check-docs-drift`           | `static-gate` / Check Documentation Drift                         | Checks that the TypeDoc API docs, OpenAPI schema and onboarding guides are in step                     |
 | `npm run check:migrations:drift`     | `static-gate` / Check Schema Drift                                | Verifies Prisma database schema against active migrations and checks for drift                         |
-| `npm test` / `npm run test:ci`       | `unit-gate` (3 shards) and `unit-coverage` (merged thresholds)    | Comprehensive unit, logic, and state-engine tests with optional coverage                               |
+| `npm test` / `npm run test:ci`       | `unit-gate` (3 shards) and `unit-coverage` (merged thresholds)    | Unit, logic and state-engine tests, with optional coverage                                             |
 | `npm run test:fuzz`                  | `unit-gate` (part of the Vitest suite)                            | Fast-check property-based testing and generative invariant verification                                |
 | `npm run test:mutation`              | `mutation-gate` / Run Stryker Mutation Gate                       | Mutation testing of critical deterministic and security modules                                        |
 | `npx playwright test`                | `heavy-gate` (3 chromium shards) and `device-gate`                | Visual regression, interaction, responsive-device, and Playwright-Axe accessibility checks             |
@@ -295,7 +291,7 @@ npm run quality
 
 ## 9. Asset Generation & Design System Commands
 
-The repository provides standardized CLI commands for generating multi-resolution brand assets and compiling design system tokens:
+Two commands generate the brand icons and the design tokens:
 
 ### Brand Icon Generation
 
@@ -303,15 +299,15 @@ The repository provides standardized CLI commands for generating multi-resolutio
 - **Input Source Location:** Vector SVG artwork at `public/favicon.svg` (or `app/icon.svg`).
 - **Generated Output Asset Targets:**
   - `app/icon.svg` & `public/favicon.svg`: Vector SVG favicons
-  - `app/favicon.ico` & `public/favicon.ico`: Multi-resolution Windows ICO container enclosing 16x16, 32x32, and 48x48 PNG buffers
-  - `public/apple-touch-icon.png`: 180x180 high-DPI iOS touch icon
-  - `public/icon-192.png` & `public/icon-512.png`: Standard PWA web app manifest icons
+  - `app/favicon.ico` & `public/favicon.ico`: Windows ICO holding 16x16, 32x32 and 48x48 PNGs
+  - `public/apple-touch-icon.png`: 180x180 iOS touch icon
+  - `public/icon-192.png` & `public/icon-512.png`: PWA manifest icons
 
 ### Design System Token Compilation
 
 - **Command:** `npm run build:theme` (or `npm run generate:theme` / `npx tsx scripts/dx.ts build:theme`)
 - **Input Source Location:** CSS custom properties declared in `app/globals.css` (within the `:root` selector block).
-- **Generated Output Asset Target:** `lib/design-manifest.ts` (strongly-typed runtime TypeScript constants exported as `designManifest`).
+- **Generated Output Asset Target:** `lib/design-manifest.ts`, typed constants exported as `designManifest`.
 
 ---
 
@@ -323,12 +319,8 @@ production rollout order, and the one-time production baseline procedure.
 
 ---
 
-Thank you for contributing to Portfolio Hub!
-
----
-
 ## Licensing of Contributions
 
 The application source is licensed under the [Apache License 2.0](LICENSE). By submitting a pull request you agree that your contribution is licensed under those same terms (inbound = outbound), as described in Apache-2.0 section 5. No separate CLA is required.
 
-Two carve-outs apply and are described in full in [`NOTICE`](NOTICE): the Laser Loon artwork in `public/files/` is dedicated to the public domain under CC0 1.0, and editorial content, biography, resume data, photography, and the `Frederick de Ruiter` / `deruiter.dev` marks are all rights reserved. Pull requests that add third-party code must keep its original license intact and record it in `NOTICE`; new npm dependencies also need a credits entry and regenerated notices ([how-to](./docs/how-to/manage-dependency-licenses.md)); Apache-2.0-incompatible licenses (GPL, AGPL, SSPL, and non-commercial or source-available licenses) cannot be merged.
+Two carve-outs apply and are described in full in [`NOTICE`](NOTICE): the Laser Loon artwork in `public/files/` is dedicated to the public domain under CC0 1.0, and editorial content, biography, resume data, photography, and the `Frederick de Ruiter` / `deruiter.dev` marks are all rights reserved. A pull request that adds third-party code keeps that code's license intact and records it in `NOTICE`. A new npm dependency also needs a credits entry and regenerated notices ([how-to](./docs/how-to/manage-dependency-licenses.md)). Code under a license that is incompatible with Apache-2.0 (GPL, AGPL, SSPL, or a non-commercial or source-available license) cannot be merged.

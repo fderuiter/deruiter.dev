@@ -249,6 +249,22 @@ describe("/study-data workbench", () => {
     expect(text).not.toMatch(FORBIDDEN_CLAIMS);
   });
 
+  it("reruns the same design and shows that nothing changed (#3160)", async () => {
+    await renderFinishedRun();
+    expect(
+      screen.queryByRole("region", { name: /Compared with the last run/ })
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Rerun and compare" }));
+    const panel = await screen.findByRole(
+      "region",
+      { name: /Compared with the last run/ },
+      RUN_TIMEOUT
+    );
+    expect(
+      within(panel).getByText("No change from the last run.")
+    ).toBeTruthy();
+  });
+
   it("injects an issue and shows where the gate caught it", async () => {
     await renderFinishedRun();
     expect(screen.queryByRole("region", { name: /^Injected:/ })).toBeNull();

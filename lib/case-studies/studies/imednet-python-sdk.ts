@@ -123,9 +123,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p>Records pulled through an SDK like this one usually end up in a warehouse that people query. The platform demo's <a href="/platform/sql">query workbench</a> runs SQL against a synthetic clinical warehouse of that kind, in the browser.</p>
 
 <h3>How it works</h3>
-<p><strong>Declarative Type-Safe Contracts:</strong> Every endpoint response is parsed and validated against strict Pydantic v2 data models with runtime coercion and validation diagnostics.</p>
-<p><strong>Security-Hardened Transport Layer:</strong> Implements TLS 1.3 encryption, automatic session token refresh, and localized memory isolation to eliminate unencrypted PHI disk persistence.</p>
-<p><strong>Asynchronous Pagination Engine:</strong> Exposes async generators that paginate through large multi-center clinical trials without blocking memory.</p>
+<p>Every endpoint response is parsed by a Pydantic v2 model, which coerces types at runtime and reports what failed validation.</p>
+<p>The transport layer uses TLS 1.3, refreshes session tokens automatically, and keeps records in memory so unencrypted PHI is never written to disk.</p>
+<p>Async generators page through large multi-center trials without holding every page in memory.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -183,8 +183,8 @@ class IMednetClient:
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Zero Disk Persistence for PHI:</strong> Sanitized log handlers and memory-only record deserialization guaranteed 100% compliance with HIPAA audit mandates.</li>
-  <li><strong>Pydantic v2 Performance:</strong> Leveraging Pydantic v2's Rust core reduced schema serialization overhead by 5x during bulk data extraction.</li>
+  <li>Sanitized log handlers and memory-only record deserialization keep PHI off disk.</li>
+  <li>Pydantic v2's Rust core cut schema serialization overhead by 5x during bulk extraction.</li>
 </ul>`,
     commands_json: JSON.stringify(IMEDNET_COMMANDS_OBJ),
     playback_json: JSON.stringify(IMEDNET_PLAYBACK_OBJ),

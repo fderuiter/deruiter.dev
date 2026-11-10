@@ -20,9 +20,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p>Checking values against controlled terminology is one kind of data rule. The platform demo's <a href="/platform/governance">data rules and catalog</a> page shows how rules like it, data contracts and metric definitions are recorded and owned across a whole warehouse, on synthetic studies.</p>
 
 <h3>How it works</h3>
-<p><strong>Streaming SAX Parsing Pipeline:</strong> Node.js streaming SAX parser wrapped in TypeScript async generators to process multi-gigabyte XML payloads in discrete chunks without loading the entire DOM into memory.</p>
-<p><strong>Dynamic Schema Synthesis:</strong> Reads ODM <code>MetaDataVersion</code> specifications at runtime and compiles type-safe Zod schema models, automatically adapting to protocol amendments.</p>
-<p><strong>Declarative SDTM Domain Compiler:</strong> Transforms raw item data into standard SDTM domains (DM, AE, VS, LB) with automated study day derivations (<code>--DY</code>) and vocabulary validation.</p>
+<p>A Node.js streaming SAX parser, wrapped in TypeScript async generators, reads multi-gigabyte XML files in chunks without loading the whole DOM into memory.</p>
+<p>At runtime the tool reads the ODM <code>MetaDataVersion</code> and compiles Zod schemas from it, so a protocol amendment updates the schemas without a code change.</p>
+<p>A declarative compiler turns raw item data into SDTM domains (DM, AE, VS, LB), derives study days (<code>--DY</code>) and checks values against controlled terminology.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -81,8 +81,8 @@ function deriveStudyDay(eventDate: Date, referenceDate: Date): number {
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Streaming vs. In-Memory DOM:</strong> DOM parsing 2GB XMLs caused Node.js process out-of-memory crashes. SAX streaming bounded memory consumption to &lt; 50MB regardless of file size.</li>
-  <li><strong>SDTM Day 0 Prohibition:</strong> CDISC standards omit Day 0; date math was adjusted to ensure proper negative-to-positive transition across baseline trial events.</li>
+  <li>Parsing 2GB XML files into a DOM crashed Node.js with out-of-memory errors. SAX streaming keeps memory &lt; 50MB whatever the file size.</li>
+  <li>SDTM has no Day 0, so the date math steps from Day -1 straight to Day 1 at baseline.</li>
 </ul>`,
     created_at: new Date("2026-01-15T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

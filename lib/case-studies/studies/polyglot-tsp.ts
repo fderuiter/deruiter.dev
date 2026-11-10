@@ -13,14 +13,14 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
     editorial_content:
       "The **Traveling Salesman Problem**, implemented across **50+ programming languages**. An excuse to compare memory models, type systems, and runtime costs while asking the same very expensive routing question.",
     architectural_narrative: `<h3>The problem</h3>
-<p>What changes when you solve the same problem in a different language? Polyglot-TSP uses brute-force Traveling Salesman solutions across more than 50 languages to compare implementation choices, runtime behavior, and the cost of factorial growth.</p>
+<p>Polyglot-TSP solves the Traveling Salesman Problem by brute force in more than 50 languages, to compare implementation choices, runtime behavior, and the cost of factorial growth.</p>
 <p><strong>The approach:</strong> Each implementation solves the same routing problem. Comparing the code and benchmark results exposes differences in allocation, representation, and execution.</p>
 <p><strong>Reported project measurements:</strong> 100% baseline output verification across 50+ language implementations; sub-microsecond execution on native Rust/C++ implementations; automated multi-target CI matrix.</p>
 
 <h3>How it works</h3>
-<p><strong>Unified Test Harness &amp; Process Driver:</strong> <code>scripts/run_all.py</code> maps file extensions to compiler flags, abstracting invocation models across native executables, bytecode interpreters, and JVM/CLR/Wasm targets.</p>
-<p><strong>Canonical Baseline Verification:</strong> All implementations execute identical TSP adjacency matrices (Distance 60, 80, 97) and emit standardized JSON/stdout tuples (<code>min_distance</code>, <code>best_route</code>) verified by a central test suite.</p>
-<p><strong>Cross-Paradigm Idiomatic Fidelity:</strong> Each language implements the algorithm using idiomatic paradigms (e.g. Heap's algorithm in Rust, lazy stream permutations in Haskell, finite state machines in Verilog).</p>
+<p><code>scripts/run_all.py</code> maps each file extension to its compiler flags, so one driver runs native executables, bytecode interpreters, and JVM/CLR/Wasm targets.</p>
+<p>Every implementation runs the same TSP adjacency matrices (Distance 60, 80, 97) and prints the same JSON/stdout fields (<code>min_distance</code>, <code>best_route</code>), which a central test suite checks.</p>
+<p>Each language uses its own idioms: Heap's algorithm in Rust, lazy stream permutations in Haskell, finite state machines in Verilog.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -83,8 +83,8 @@ solveTSP matrix =
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Process-Level Assertion vs. C-ABI FFI:</strong> Chose process stdout stream assertion over C-ABI bindings to accommodate esoteric and simulated runtimes (INTERCAL, Verilog HDL) without linking incompatibilities.</li>
-  <li><strong>Brute-Force Permutations ($O(N!)$) Parity:</strong> Maintained identical brute-force algorithms across all languages rather than heuristics to isolate raw language runtime efficiency.</li>
+  <li>Tests assert on each process's stdout instead of calling through C-ABI FFI bindings, so esoteric and simulated runtimes (INTERCAL, Verilog HDL) need no linking.</li>
+  <li>Every language runs the same brute-force permutation search ($O(N!)$) with no heuristics, so the timings compare runtimes and nothing else.</li>
 </ul>`,
     created_at: new Date("2026-02-25T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

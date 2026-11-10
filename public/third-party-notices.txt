@@ -466,7 +466,7 @@ LICENSE TEXT 2 of 87, applies to 62 package(s):
     Copyright (c) 2016 Dolan
 - find-replace@3.0.0 (MIT)
     Copyright (c) 2015-19 Lloyd Brookes <75pound@gmail.com>
-- framer-motion@13.5.1 (MIT)
+- framer-motion@14.11.1 (MIT)
     Copyright (c) 2018 Framer B.V.
 - generate-function@2.3.1 (MIT)
     Copyright (c) 2014 Mathias Buus
@@ -490,9 +490,9 @@ LICENSE TEXT 2 of 87, applies to 62 package(s):
     Copyright (c) 2020-present Marvin Hagemeister
 - mermaid@12.2.0 (MIT)
     Copyright (c) 2014 - 2022 Knut Sveidqvist
-- motion-dom@13.5.1 (MIT)
+- motion-dom@14.11.1 (MIT)
     Copyright (c) 2024 [Motion](https://motion.dev) B.V.
-- motion-utils@13.5.0 (MIT)
+- motion-utils@14.7.0 (MIT)
     Copyright (c) 2024 [Motion](https://motion.dev) B.V.
 - ms@2.1.3 (MIT)
     Copyright (c) 2020 Vercel, Inc.

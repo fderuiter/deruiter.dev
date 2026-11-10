@@ -48,11 +48,31 @@ export default function ClinicalPage() {
           Clinical data, end to end
         </h1>
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
-          One fictional study, DEMO-301, followed from the forms a site fills in
-          to the tables of a study report and the portfolio it belongs to. Each
-          step is a working page you can use, and each says what its evidence is
-          drawn from.
+          This section follows one made-up clinical study from start to finish:
+          the forms a site fills in, the tables in a study report, and the
+          portfolio the study belongs to. Every page uses fictional data, and
+          each one says where its data came from.
         </p>
+        <aside
+          aria-labelledby="start-here-title"
+          className="mt-8 max-w-3xl border border-amber-500/40 bg-amber-500/[0.06] p-5 sm:p-6"
+        >
+          <h2
+            id="start-here-title"
+            className="font-mono text-xs uppercase tracking-[0.18em] text-amber-400"
+          >
+            Start here
+          </h2>
+          <p className="mt-3 break-words text-slate-300">
+            New to clinical studies? Open step 1 and read down the list. Each
+            step builds on the one before it.
+          </p>
+          <p className="mt-4">
+            <IntentLink href={CLINICAL_JOURNEY[0].href} className={LINK}>
+              Open step 1: {CLINICAL_JOURNEY[0].title}
+            </IntentLink>
+          </p>
+        </aside>
       </header>
 
       <section aria-labelledby="journey-title" className="py-10 sm:py-14">

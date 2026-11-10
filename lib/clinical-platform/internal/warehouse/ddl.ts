@@ -144,7 +144,15 @@ export function constraintName(
   return name.length <= 63 ? name : name.slice(0, 63);
 }
 
-function createTable(table: WarehouseTable, dialect: Dialect): string {
+/** Maps a warehouse layer to the database schema that holds it. */
+type SchemaOf = (layer: string) => string;
+const sameSchema: SchemaOf = (layer) => layer;
+
+function createTable(
+  table: WarehouseTable,
+  dialect: Dialect,
+  schemaOf: SchemaOf = sameSchema
+): string {
   const q = dialect.quote;
   const width = Math.max(...table.columns.map((c) => q(c.name).length));
   const lines = table.columns.map(
@@ -165,7 +173,7 @@ function createTable(table: WarehouseTable, dialect: Dialect): string {
     if (ref === null) continue;
     const [layer, name] = ref.table.split(".");
     lines.push(
-      `  CONSTRAINT ${q(constraintName("fk", table, column.name))} FOREIGN KEY (${q(column.name)}) REFERENCES ${q(layer)}.${q(name)} (${q(ref.column)})`
+      `  CONSTRAINT ${q(constraintName("fk", table, column.name))} FOREIGN KEY (${q(column.name)}) REFERENCES ${q(schemaOf(layer))}.${q(name)} (${q(ref.column)})`
     );
   }
   for (const sequence of table.sequences) {
@@ -176,7 +184,7 @@ function createTable(table: WarehouseTable, dialect: Dialect): string {
       );
     }
   }
-  return `CREATE TABLE ${q(table.layer)}.${q(table.name)} (\n${lines.join(",\n")}\n);`;
+  return `CREATE TABLE ${q(schemaOf(table.layer))}.${q(table.name)} (\n${lines.join(",\n")}\n);`;
 }
 
 /**
@@ -185,14 +193,18 @@ function createTable(table: WarehouseTable, dialect: Dialect): string {
  * statement per transaction (ADR 0070).
  *
  * @param schema - The schema or a subset of it, in schema order.
+ * @param schemaOf - The database schema each layer goes in; by default the layer's own name.
  * @returns One PostgreSQL statement per element.
  */
-export function postgresStatements(schema: WarehouseSchema): string[] {
+export function postgresStatements(
+  schema: WarehouseSchema,
+  schemaOf: (layer: string) => string = sameSchema
+): string[] {
   const d = DIALECTS.postgres;
   const layers = [...new Set(schema.tables.map((t) => t.layer))];
   return [
-    ...layers.map((layer) => d.createSchema(layer)),
-    ...schema.tables.map((table) => createTable(table, d)),
+    ...layers.map((layer) => d.createSchema(schemaOf(layer))),
+    ...schema.tables.map((table) => createTable(table, d, schemaOf)),
   ];
 }
 

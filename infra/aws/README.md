@@ -45,8 +45,12 @@ stores are untouched.
 
 ## Loading the warehouse
 
-**Actions**, **DSQL Load**, **Run workflow** on `main` runs
-`scripts/dsql-load.ts`: it loads the gold layer, reads every table back,
-and writes `platform_meta.load_manifest` only when all of them match. The
-job summary lists each table's fingerprint and the load's `TotalDPU`. It
-runs by hand until the first load's DPUs are known, as ADR 0070 requires.
+**Actions**, **Warehouse Load**, **Run workflow** on `main` runs
+`scripts/dsql-load.ts --target postgres`. Since #3208 the warehouse lives
+in its own Neon project rather than DSQL (#3207): the workflow connects
+with the `WAREHOUSE_DATABASE_URL` repository secret, loads the gold layer
+into the schema `warehouse_gold`, reads every table back, and writes
+`platform_meta.load_manifest` only when all of them match. The job summary
+lists each table's fingerprint. `--target dsql` still loads DSQL with
+`DSQL_ENDPOINT` and an admin token in `PGPASSWORD`, for a hand run while
+the cluster exists.

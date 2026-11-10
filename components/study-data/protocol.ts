@@ -18,7 +18,9 @@ import type {
   LineageOrigin,
   LineageTrace,
   MessyDataScenario,
+  RunDiff,
   ScenarioId,
+  StudyDesignDefinition,
   TlfKmFigure,
   TlfTable,
   VariableMeta,
@@ -98,6 +100,8 @@ export interface RunSummary {
   /** Milliseconds the run took in the worker. */
   readonly elapsedMs: number;
   readonly counts: StageCounts;
+  /** The design the run used; a rerun sends it back, edited or not (#3160). */
+  readonly design: StudyDesignDefinition;
   readonly datasets: readonly DatasetSummary[];
   readonly conformance: ConformanceReport;
   readonly findings: FindingSample;
@@ -183,6 +187,15 @@ export type StudyDataRequest =
     }
   | {
       readonly id: number;
+      readonly type: "rerun";
+      /**
+       * The edited design: the study, seed, subject count and scenario stay
+       * those of the current run (#3160).
+       */
+      readonly design: StudyDesignDefinition;
+    }
+  | {
+      readonly id: number;
       readonly type: "rows";
       readonly runId: number;
       readonly key: string;
@@ -203,10 +216,17 @@ export type StudyDataRequest =
       readonly kind: PackageKind;
     };
 
+/** A rerun's new summary and what changed from the run it replaced. */
+export interface RerunResult {
+  readonly summary: RunSummary;
+  readonly diff: RunDiff;
+}
+
 /** What each request type resolves to. */
 export interface StudyDataResults {
   readonly prepare: PreparedStudy;
   readonly run: RunSummary;
+  readonly rerun: RerunResult;
   readonly rows: RowWindow;
   readonly trace: LineageTrace;
   readonly package: PackageFileResult;

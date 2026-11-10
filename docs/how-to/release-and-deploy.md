@@ -20,7 +20,7 @@ release as one versioned GitHub Release.
    **Merge Gate (Required Checks Summary)** is green.
 3. Merge after **Merge Gate** is green. Git pushes the merge commit to `main`;
    Vercel does not build it, because `vercel.json` disables Git deployments.
-4. On Sunday at 7 PM Central the [weekly train](#weekly-train) gates `main`
+4. On Sunday evening (01:00 UTC Monday) the [weekly train](#weekly-train) gates `main`
    HEAD, tests that exact commit, and fires the Vercel Deploy Hook. To ship
    between trains, use **Actions → Weekly Train → Run workflow**, or, as
    break-glass, Vercel **Deployments → Create Deployment** with the current
@@ -59,8 +59,9 @@ configuration and release-hold checks. It does not enable the train or verify
 the deploy hook; follow the operator steps below to do those.
 
 [ADR 0063](../../adr/0063-weekly-release-train.md) (Accepted) ships Production
-through `.github/workflows/weekly-train.yml`. Every Sunday at 7 PM
-Central (01:00 UTC Monday), it checks that **Merge Gate (Required Checks
+through `.github/workflows/weekly-train.yml`. Every Monday at 01:00 UTC,
+which is Sunday at 7 PM Central standard time or 8 PM Central daylight
+time, it checks that **Merge Gate (Required Checks
 Summary)** passed on `main` HEAD and that no migration since the live commit
 is destructive, builds that exact commit and runs the full chromium
 Playwright suite on it, drafts a GitHub Release with the next semantic

@@ -6,7 +6,7 @@ the criteria the three For Better or Bulk playtests used implicitly (7, 7.5 and
 7.5 out of 10; issues #1927, #1931 and #1933). Those reports gave one holistic
 score with BLOCKER, SHOULD-FIX and NICE findings, and every point they took off
 maps to one line below. [ADR 0062](../../adr/0062-three-views-per-arcade-game.md)
-uses it for each game's phone bar.
+uses it for the phone bar of each game that claims phone support.
 
 ## How to score
 
@@ -18,7 +18,7 @@ Two caps apply on top of the sum:
 
 **10/10 means:** zero blockers, zero should-fix findings, every criterion verified in a real browser at the sizes of the view being scored, and a stranger could pick the game up cold, play it through, and want to play again. Nice-to-have ideas do not cost points.
 
-Score each view on its own. The desktop view is played at 1024, 1280 and 1440. The tablet view is played on the iPad matrix in [ADR 0061](../../adr/0061-mobile-first-arcade.md). The phone view is played at the sizes in ADR 0062's phone bar, item 20.
+Score each view on its own. The desktop view is played at 1024, 1280 and 1440. The tablet view is played on the iPad matrix in [ADR 0061](../../adr/0061-mobile-first-arcade.md). The phone view is played at the sizes in ADR 0062's phone bar, item 20, and only for a game that claims phone support; a game whose `views.phone` is `gated` gets no phone score.
 
 ## The ten criteria
 

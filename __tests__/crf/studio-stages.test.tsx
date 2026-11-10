@@ -143,6 +143,29 @@ describe("StudioHeader mode bar", () => {
     expect(onChangeMode).toHaveBeenCalledWith("matrix");
   });
 
+  it.each([
+    ["design", "designer", "Schedule the forms"],
+    ["schedule", "matrix", "Test in Live EDC"],
+    ["verify", "edc", "Run the pipeline"],
+  ] as const)(
+    "shows one primary action in the %s stage: the Next button (#3395)",
+    (_stage, mode, label) => {
+      renderHeader(mode);
+      const next = screen.getByTestId("studio-next-step");
+      expect(next.textContent).toContain(label);
+      // Shown at every width: no responsive class hides it.
+      expect(next.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+      expect(screen.queryByText("Run Pipeline")).toBeNull();
+      expect(screen.queryByRole("button", { name: /Add form/ })).toBeNull();
+    }
+  );
+
+  it("keeps number keys 1 to 7 on the same modes after #3395", () => {
+    expect(
+      ["1", "2", "3", "4", "5", "6", "7"].map((key) => MODE_BY_KEY[key])
+    ).toEqual(["designer", "grid", "rules", "matrix", "edc", "acrf", "export"]);
+  });
+
   it("arrow keys follow the stage order", () => {
     const onChangeMode = renderHeader("rules");
     fireEvent.keyDown(screen.getByRole("tab", { selected: true }), {

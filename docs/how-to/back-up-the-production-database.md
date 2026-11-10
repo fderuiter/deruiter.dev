@@ -10,9 +10,13 @@ backup.
 
 ## How it works
 
-- **When:** every Sunday at 23:00 UTC, two hours before the weekly release
-  train, so each release has a restore point taken before its migrations.
-  It can also be run by hand from Actions → Neon Backup → Run workflow.
+- **When:** scheduled every Sunday at 23:00 UTC, two hours before the
+  weekly release train. It can also be run by hand from Actions → Neon
+  Backup → Run workflow. The schedule is a target, not a guarantee: GitHub
+  can [delay or drop scheduled runs](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
+  and the train does not check that a backup ran or succeeded. Before a
+  release that needs a restore point, check one exists (see
+  [Check backup readiness before a release](#check-backup-readiness-before-a-release)).
 - **What:** `pg_dump --format=custom` of the `public` schema (all application
   tables and `_prisma_migrations`), using Postgres 17 to match Neon. The job
   fails if `pg_restore --list` finds no table data.
@@ -63,6 +67,62 @@ not write credentials or dispatch a workflow; follow the steps below to do so.
    `backup_reader` and its password, plus `?sslmode=require`.
 
 5. Run the workflow once by hand and check the job summary shows table data.
+
+## Check backup readiness before a release
+
+Three things are easy to confuse. Only the second gives you a restore point,
+and only the third shows that it works.
+
+| What you see | What it proves |
+| --- | --- |
+| A scheduled run in Actions → Neon Backup | Only that GitHub started the job. A run that fails at "Check configuration" leaves no backup. The runs on 2026-11-01 and 2026-11-08 both failed there, because the secret and variable were not set yet ([#3586](https://github.com/fderuiter/deruiter.dev/issues/3586), [#3587](https://github.com/fderuiter/deruiter.dev/issues/3587)). |
+| A **successful** run with an unexpired `neon-backup-<stamp>` artifact | An encrypted dump exists and `pg_restore --list` found table data in it. The recovery point is `<stamp>` (UTC), when the dump started. Data written after it is not in the dump. |
+| A restore of that artifact into a new Neon branch | That the dump decrypts with the private key you hold and restores. No restore from this workflow's artifacts has been recorded yet. |
+
+Before firing the train (or any release with a migration), check the second
+row:
+
+```bash
+gh run list --repo fderuiter/deruiter.dev --workflow neon-backup.yml \
+  --limit 5 --json createdAt,event,conclusion
+gh api "repos/fderuiter/deruiter.dev/actions/artifacts?per_page=100" \
+  --jq '.artifacts[] | select(.name | startswith("neon-backup-"))
+        | {name, created_at, expired}'
+```
+
+The newest artifact should be unexpired and its stamp recent enough for the
+release. If its run succeeded, the job summary also shows the number of
+tables with data and the start of the ciphertext's SHA-256.
+
+**If the latest run failed or there is no recent artifact:**
+
+1. Open the failed run. A "Check configuration" error means the secret or
+   variable is missing; finish [Set up](#set-up-once) first.
+2. Run the workflow by hand (Actions → Neon Backup → Run workflow) and wait
+   for it to succeed before you fire the train.
+3. If it keeps failing, decide whether to release without a fresh restore
+   point. Neon's six-hour history is then the only way back
+   ([restore runbook](restore-the-production-database.md)), so prefer waiting
+   for any release whose migration changes data.
+
+To check the third row, restore the newest artifact into a new branch as
+described in [Restore from a backup](#restore-from-a-backup), check the
+fingerprints, and delete the branch. Doing this once after setup and after
+each key rotation proves the key you hold matches `BACKUP_AGE_RECIPIENT`.
+
+### Why the train does not require a backup
+
+The train does not check for a backup, and adding that check is the
+owner's decision rather than a documentation change. Points to weigh:
+
+- A required backup would block every release while the setup above is
+  incomplete, and whenever GitHub delays or drops the Sunday schedule.
+- The check would have to accept a manual run as well as the scheduled one,
+  and define how old a backup may be.
+- A successful run proves the dump lists table data, not that it restores,
+  so a gate would still not prove a tested restore.
+- The backup runs in Actions on a public repository, so a check costs no
+  Vercel or Neon quota. Each extra dump does wake the Neon compute once.
 
 ## Restore from a backup
 

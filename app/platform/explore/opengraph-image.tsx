@@ -11,7 +11,7 @@ export const contentType = OG_IMAGE_CONTENT_TYPE;
 export default function Image() {
   return createSocialImageResponse({
     category: "CLINICAL DATA PLATFORM",
-    title: "Explore the metrics",
+    title: "Study metrics explorer (Metrics Explorer)",
     description:
       "Pick a governed metric, group and filter it, and see its chart, table, definition and SQL.",
     badge: "EXPLORE // SYNTHETIC",

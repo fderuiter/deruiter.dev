@@ -155,7 +155,7 @@ describe("/study-data with a study handed over from CRF Studio", () => {
     renderWorkbench();
     expect(
       await screen.findByText(
-        /No study was handed over from CRF Studio.*press Run Pipeline/
+        /No study was handed over from CRF Studio.*press Run the pipeline/
       )
     ).toBeTruthy();
     await waitFor(

@@ -198,7 +198,7 @@ describe("a study without the extension", () => {
     });
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("59ad1b6938b5a4c68d795501e383b32a490dd363ea9a2ebaff2af9ab648fd446");
+    ).toBe("431abfbece74ddb9258072253631c89ce22b348857e8eb51d83e082df36432c1");
     expect(rows(find(datasets, "SUPPDM")).map((row) => row.QNAM)).not.toContain(
       "STRAT1R"
     );

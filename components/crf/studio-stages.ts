@@ -65,7 +65,7 @@ export function nextStepFor(mode: StudioMode): StudioNextStep {
 /**
  * The studio header's secondary actions, grouped into the four menus approved
  * in #3394. Each item keeps the tooltip of the header control it replaces, so
- * its description says where it goes. Run Pipeline is in no menu: the
+ * its description says where it goes. Run Pipeline is in no menu: the last stage's
  * next-step button carries it (#3395).
  */
 export type StudioMenuId = "edit" | "view" | "check" | "share";

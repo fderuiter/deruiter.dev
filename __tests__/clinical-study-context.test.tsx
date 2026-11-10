@@ -122,7 +122,7 @@ describe("StudyPicker (#3157)", () => {
     expect(screen.getByText("Synthetic data")).toBeTruthy();
     const summary = screen.getByTestId("study-picker-summary").textContent;
     expect(summary).toContain(DEMO_301_STUDY.title);
-    expect(summary).toContain("8 forms · 28 datasets · 5 TLFs");
+    expect(summary).toContain("8\u00a0forms · 28\u00a0datasets · 5\u00a0TLFs");
   });
 
   it("re-renders when the stored study changes in the tab", () => {

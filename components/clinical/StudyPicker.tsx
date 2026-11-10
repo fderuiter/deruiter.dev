@@ -10,7 +10,8 @@ import {
   type ClinicalStudyId,
 } from "@/lib/clinical-study-context";
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const plural = (n: number, word: string) =>
+  `${n}\u00a0${word}${n === 1 ? "" : "s"}`;
 
 const getServerSnapshot = (): ClinicalStudyId => DEMO_STUDY_ID;
 
@@ -73,7 +74,7 @@ export function StudyPicker({
         className="mt-3 min-w-0 break-words text-sm leading-relaxed text-slate-300"
       >
         <span className="text-[#f4f4f6]">{study.title}.</span>{" "}
-        <span className="font-mono text-xs text-slate-400">
+        <span className="mt-1 block font-mono text-xs text-slate-400">
           {plural(study.forms, "form")} · {plural(study.datasets, "dataset")} ·{" "}
           {plural(study.tlfs, "TLF")}
         </span>

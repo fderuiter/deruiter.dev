@@ -3,8 +3,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NextRequest, type NextFetchEvent } from "next/server";
 import { fromPartial } from "@total-typescript/shoehorn";
 
-const { clerkInvocations } = vi.hoisted(() => ({
+const { clerkInvocations, protectedPaths } = vi.hoisted(() => ({
   clerkInvocations: [] as string[],
+  protectedPaths: [] as string[],
 }));
 
 /**
@@ -15,10 +16,24 @@ const { clerkInvocations } = vi.hoisted(() => ({
  * route down in CI.
  */
 vi.mock("@clerk/nextjs/server", () => ({
-  clerkMiddleware: () => (req: NextRequest) => {
-    clerkInvocations.push(req.nextUrl.pathname);
-    return new Response(null, { status: 200 });
-  },
+  clerkMiddleware:
+    (
+      handler: (
+        auth: { protect: () => Promise<void> },
+        req: NextRequest
+      ) => Promise<Response>
+    ) =>
+    (req: NextRequest) => {
+      clerkInvocations.push(req.nextUrl.pathname);
+      return handler(
+        {
+          protect: async () => {
+            protectedPaths.push(req.nextUrl.pathname);
+          },
+        },
+        req
+      );
+    },
   createRouteMatcher:
     (patterns: string[]) => (req: { nextUrl: { pathname: string } }) =>
       patterns.some((pattern) =>
@@ -44,6 +59,7 @@ const call = async (pathname: string, method = "GET") => {
 describe("Proxy Clerk Scope", () => {
   beforeEach(() => {
     clerkInvocations.length = 0;
+    protectedPaths.length = 0;
   });
 
   const PUBLIC_GET_ROUTES = [
@@ -84,6 +100,22 @@ describe("Proxy Clerk Scope", () => {
       expect(await call(route, "POST")).toEqual([route]);
     }
   );
+
+  it("protects the admin area but not its login page", async () => {
+    await call("/admin");
+    await call("/api/admin/case-studies", "POST");
+    await call("/admin/login");
+    await call("/api/case-studies", "POST");
+    expect(protectedPaths).toEqual(["/admin", "/api/admin/case-studies"]);
+  });
+
+  it("gives Clerk routes the security headers too", async () => {
+    const res = await proxy(
+      new NextRequest("http://localhost:3000/admin/login"),
+      event
+    );
+    expect(res!.headers.get("x-content-type-options")).toBe("nosniff");
+  });
 
   it("leaves the connection hash to the API handlers (#3205)", async () => {
     const res = await proxy(

@@ -10,7 +10,11 @@ import {
 import {
   MANIFEST_DDL,
   MANIFEST_TABLE,
+  POSTGRES_GOLD_SCHEMA,
+  ROWS_PER_INSERT,
+  connectionConfig,
   goldSchema,
+  loadOptions,
   runDsqlLoad,
   summaryMarkdown,
   type SqlClient,
@@ -137,5 +141,81 @@ describe("runDsqlLoad", () => {
     expect(
       markdown.split("\n").filter((l) => l.endsWith("| match |"))
     ).toHaveLength(schema.tables.length);
+  });
+});
+
+describe("the PostgreSQL target", () => {
+  const pgPlan = planDsqlLoad(
+    schema,
+    buildWarehouse(generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED })),
+    loadOptions("postgres")
+  );
+
+  it("loads the gold layer into warehouse_gold in batches of at most 1,000 rows", async () => {
+    expect(loadOptions("postgres")).toEqual({
+      maxRowsPerInsert: ROWS_PER_INSERT,
+      schemas: { gold: POSTGRES_GOLD_SCHEMA },
+    });
+    expect(ROWS_PER_INSERT).toBe(1_000);
+    const fake = new FakeDsql();
+    const result = await runDsqlLoad(fake, schema, pgPlan, "abc123", clock);
+    expect(result.ok).toBe(true);
+    const tableStatements = fake.statements.filter(
+      (q) => !q.includes("platform_meta")
+    );
+    expect(tableStatements.map((q) => q.replace(/;$/, ""))).toContain(
+      `CREATE SCHEMA IF NOT EXISTS "${POSTGRES_GOLD_SCHEMA}"`
+    );
+    for (const statement of tableStatements) {
+      expect(statement).not.toContain('"gold".');
+    }
+    expect(
+      tableStatements.filter((q) => q.startsWith("INSERT INTO")).length
+    ).toBe(pgPlan.inserts.length);
+    for (const batch of pgPlan.inserts) {
+      expect(
+        batch.text.startsWith(`INSERT INTO "${POSTGRES_GOLD_SCHEMA}".`)
+      ).toBe(true);
+      const columns = (batch.text.match(/\(([^)]+)\)/)?.[1] ?? "").split(", ");
+      expect(batch.values.length / columns.length).toBeLessThanOrEqual(
+        ROWS_PER_INSERT
+      );
+    }
+    expect(fake.manifestValues).toHaveLength(1);
+    expect(fake.statements.at(-1)).toMatch(
+      /^INSERT INTO "platform_meta"\."load_manifest"/
+    );
+  });
+
+  it("fingerprints the same as the DSQL plan", () => {
+    expect(pgPlan.parity.map((t) => t.fingerprint)).toEqual(
+      plan.parity.map((t) => t.fingerprint)
+    );
+  });
+
+  it("connects only with WAREHOUSE_DATABASE_URL", () => {
+    expect(
+      connectionConfig("postgres", { DATABASE_URL: "site-database-url" }).ok
+    ).toBe(false);
+    const fakeUrl = "warehouse-database-url";
+    const connection = connectionConfig("postgres", {
+      WAREHOUSE_DATABASE_URL: fakeUrl,
+      DATABASE_URL: "site-database-url",
+    });
+    expect(connection.ok && connection.config.connectionString).toBe(fakeUrl);
+    expect(connectionConfig("dsql", {}).ok).toBe(false);
+  });
+
+  it("labels the summary for the warehouse database", async () => {
+    const result = await runDsqlLoad(
+      new FakeDsql(),
+      schema,
+      pgPlan,
+      "abc123",
+      clock
+    );
+    expect(summaryMarkdown(result, "postgres")).toContain(
+      "Warehouse PostgreSQL load passed"
+    );
   });
 });

@@ -26,7 +26,7 @@ export const ViewportSwitcher: React.FC<ViewportSwitcherProps> = ({
           viewport === "desktop"
             ? "bg-zinc-800 text-white font-bold shadow-sm"
             : "text-zinc-400 hover:text-zinc-200"
-        }`}
+        } pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center`}
         title="Desktop 12-Column Responsive View"
       >
         <IconDeviceDesktop className="w-3.5 h-3.5" />
@@ -39,7 +39,7 @@ export const ViewportSwitcher: React.FC<ViewportSwitcherProps> = ({
           viewport === "tablet"
             ? "bg-zinc-800 text-white font-bold shadow-sm"
             : "text-zinc-400 hover:text-zinc-200"
-        }`}
+        } pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center`}
         title="Tablet 768px Form Factor"
       >
         <IconDeviceTablet className="w-3.5 h-3.5" />
@@ -52,7 +52,7 @@ export const ViewportSwitcher: React.FC<ViewportSwitcherProps> = ({
           viewport === "mobile"
             ? "bg-zinc-800 text-white font-bold shadow-sm"
             : "text-zinc-400 hover:text-zinc-200"
-        }`}
+        } pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center`}
         title="ePRO Mobile Patient Device Preview"
       >
         <IconDeviceMobile className="w-3.5 h-3.5" />

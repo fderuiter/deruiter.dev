@@ -41,3 +41,46 @@ for (const width of [320, 375, 768]) {
     expect(horizontalOverflow).toBe(false);
   });
 }
+
+test.describe("CRF Studio touch targets (#3469)", () => {
+  test.use({ hasTouch: true, viewport: { width: 375, height: 740 } });
+
+  test("section, field and toolbar tools are at least 44px on a touch screen", async ({
+    page,
+  }) => {
+    await page.goto("/crf");
+    expect(
+      await page.evaluate(() => matchMedia("(pointer: coarse)").matches)
+    ).toBe(true);
+
+    const targets = [
+      page.getByRole("button", { name: "Find, F: search the study" }),
+      page.getByRole("button", { name: "More Studio Actions" }),
+      page.getByRole("button", { name: /^Save form .* as a template$/ }),
+      page.getByRole("button", { name: "Rename Section" }),
+      page.getByRole("button", { name: "Move Section Down" }),
+      page.getByRole("button", { name: "Field Actions" }),
+      page.getByRole("button", { name: "* Hard Stop" }),
+    ];
+    for (const target of targets) {
+      const button = target.filter({ visible: true }).first();
+      await expect(button).toBeVisible();
+      const box = await button.boundingBox();
+      expect(
+        box?.height,
+        (await button.getAttribute("aria-label")) ?? (await button.innerText())
+      ).toBeGreaterThanOrEqual(44);
+    }
+
+    const iconOnly = page
+      .getByRole("button", { name: "Field Actions" })
+      .filter({ visible: true })
+      .first();
+    expect((await iconOnly.boundingBox())?.width).toBeGreaterThanOrEqual(44);
+
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth
+    );
+    expect(horizontalOverflow).toBe(false);
+  });
+});

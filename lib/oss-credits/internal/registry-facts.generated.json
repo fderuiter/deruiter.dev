@@ -4757,8 +4757,8 @@
       ],
       "notices": []
     },
-    "@types/node@22.20.5": {
-      "integrity": "sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==",
+    "@types/node@24.19.2": {
+      "integrity": "sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==",
       "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
       "author": null,
@@ -13253,6 +13253,20 @@
     },
     "undici-types@6.21.0": {
       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+      "homepage": "https://undici.nodejs.org",
+      "repository": "git+https://github.com/nodejs/undici.git",
+      "author": null,
+      "licenses": [
+        {
+          "kind": "file",
+          "name": "LICENSE",
+          "sha": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
+        }
+      ],
+      "notices": []
+    },
+    "undici-types@7.24.6": {
+      "integrity": "sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==",
       "homepage": "https://undici.nodejs.org",
       "repository": "git+https://github.com/nodejs/undici.git",
       "author": null,

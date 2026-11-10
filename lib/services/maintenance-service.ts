@@ -137,7 +137,21 @@ function createProductionAdapters(batchSize: number): MaintenanceAdapters {
         await BlogPostService.flushBufferedReactionsToDatabase(batchSize);
       if (!reactions.success) return reactions;
       if (!blogReactions.success) return blogReactions;
+      // The public telemetry GET reads only this Redis copy, so it is
+      // computed once here, after the flush, rather than per request (#3201).
+      // A failed refresh leaves yesterday's copy serving and does not undo the
+      // flush, so it is logged and counted as null rather than failing the
+      // phase.
+      const aggregate = await TelemetryService.refreshAggregateStats();
+      if (!aggregate.success) {
+        logger.warn(
+          `[maintenance:telemetry] ${aggregate.error.code}: ${aggregate.error.message}`,
+          sanitizeError(aggregate.error.details),
+          { maintenancePhase: "telemetry", errorCode: aggregate.error.code }
+        );
+      }
       return createSuccess({
+        aggregateProjects: aggregate.success ? aggregate.data.projects : null,
         processed: telemetry.data.processed,
         inserted: telemetry.data.inserted,
         reactionsProcessed: reactions.data.processed,

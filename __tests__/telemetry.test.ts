@@ -12,6 +12,7 @@ const {
   mockTelemetryTransaction,
   mockRawGroupBy,
   mockRollupGroupBy,
+  mockRedisGet,
 } = vi.hoisted(() => {
   return {
     mockRatelimitLimit: vi.fn(),
@@ -21,6 +22,7 @@ const {
     mockTelemetryTransaction: vi.fn(),
     mockRawGroupBy: vi.fn(),
     mockRollupGroupBy: vi.fn(),
+    mockRedisGet: vi.fn(),
   };
 });
 
@@ -52,6 +54,7 @@ vi.mock("@upstash/redis", () => {
         exec: mockExec,
       };
     }
+    get = mockRedisGet;
   }
   return { Redis: MockRedis };
 });
@@ -77,6 +80,7 @@ describe("Telemetry API Route - Route Error Telemetry", () => {
     vi.clearAllMocks();
     mockRawGroupBy.mockReset().mockResolvedValue([]);
     mockRollupGroupBy.mockReset().mockResolvedValue([]);
+    mockRedisGet.mockReset().mockResolvedValue(null);
     mockTelemetryTransaction
       .mockReset()
       .mockImplementation(
@@ -286,51 +290,44 @@ describe("Telemetry API Route - Route Error Telemetry", () => {
     expect(mockRatelimitLimit).toHaveBeenCalledTimes(1);
   });
 
-  it("should return consolidated stats on GET request", async () => {
-    const mockGroupByRes = [
-      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 12 } },
-      {
-        projectSlug: "/dashboard",
-        eventType: "project_click",
-        _count: { id: 7 },
-      },
-      { projectSlug: "/about", eventType: "page_view", _count: { id: 4 } },
-    ];
-    mockRawGroupBy.mockResolvedValue(mockGroupByRes);
-    mockRollupGroupBy.mockResolvedValue([
-      {
-        projectSlug: "/dashboard",
-        eventType: "page_view",
-        _sum: { count: 3 },
-      },
-      {
-        projectSlug: "/about",
-        eventType: "project_click",
-        _sum: { count: 2 },
-      },
-    ]);
+  it("serves the aggregate from Redis on GET, with no database query (#3201)", async () => {
+    mockRedisGet.mockResolvedValue({
+      "/dashboard": { views: 15, clicks: 7 },
+      "/about": { views: 4, clicks: 2 },
+    });
 
     const res = await GET();
     expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe(
+      "public, max-age=10, s-maxage=3600, stale-while-revalidate=600"
+    );
 
     const data = await res.json();
     expect(data["/dashboard"]).toEqual({ views: 15, clicks: 7 });
     expect(data["/about"]).toEqual({ views: 4, clicks: 2 });
-    expect(mockTelemetryTransaction).toHaveBeenCalledTimes(1);
-    expect(mockRawGroupBy).toHaveBeenCalledTimes(1);
-    expect(mockRollupGroupBy).toHaveBeenCalledTimes(1);
+    expect(mockRedisGet).toHaveBeenCalledWith("telemetry:aggregate");
+    expect(mockTelemetryTransaction).not.toHaveBeenCalled();
+    expect(mockRawGroupBy).not.toHaveBeenCalled();
+    expect(mockRollupGroupBy).not.toHaveBeenCalled();
   });
 
-  it("should fail gracefully on GET request if database query fails", async () => {
-    mockRollupGroupBy.mockRejectedValue(
-      new Error("Database connection timed out")
-    );
+  it("returns the empty aggregate on GET when the maintenance run has not written one", async () => {
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({});
+    expect(mockTelemetryTransaction).not.toHaveBeenCalled();
+    expect(mockRawGroupBy).not.toHaveBeenCalled();
+  });
+
+  it("should fail gracefully on GET request if Redis is unreachable", async () => {
+    mockRedisGet.mockRejectedValue(new Error("Redis connection timed out"));
 
     const res = await GET();
     expect(res.status).toBe(500);
 
     const data = await res.json();
     expect(data.error).toContain("Failed to compile aggregate");
+    expect(mockTelemetryTransaction).not.toHaveBeenCalled();
   });
 
   it("should mask / hash IP addresses anonymously to prevent plain-text PII storage", async () => {

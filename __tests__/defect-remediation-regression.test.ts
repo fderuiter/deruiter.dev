@@ -1607,7 +1607,7 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
           await import("@/lib/services/telemetry-service");
 
         await expect(
-          isolatedTelemetryService.getAggregateStats()
+          isolatedTelemetryService.computeAggregateStats()
         ).resolves.toEqual({
           "/legacy": { views: 13, clicks: 0 },
           "/archived": { views: 0, clicks: 3 },

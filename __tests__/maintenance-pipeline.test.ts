@@ -216,6 +216,9 @@ describe("unified maintenance pipeline (#714)", () => {
       vi.spyOn(TelemetryService, "rollupAndPruneRawEvents").mockResolvedValue(
         createSuccess({ rollupsUpserted: 0, rawEventsDeleted: 0 })
       );
+      return vi
+        .spyOn(TelemetryService, "refreshAggregateStats")
+        .mockResolvedValue(createSuccess({ projects: 3 }));
     }
 
     it("reports every counter when all services succeed", async () => {
@@ -236,6 +239,7 @@ describe("unified maintenance pipeline (#714)", () => {
 
       expect(result.success).toBe(true);
       expect(result.phases.telemetry.counts).toEqual({
+        aggregateProjects: 3,
         processed: 2,
         inserted: 2,
         reactionsProcessed: 2,
@@ -248,6 +252,38 @@ describe("unified maintenance pipeline (#714)", () => {
         rawEventsDeleted: 0,
         providerExpiredKeysDeleted: 0,
       });
+    });
+
+    it("refreshes the aggregate once after the flush, and a failed refresh keeps the phase completed (#3201)", async () => {
+      const refresh = stubOtherPhases();
+      const sync = vi
+        .spyOn(TelemetryService, "syncBufferedEvents")
+        .mockResolvedValue(counts);
+      vi.spyOn(
+        CaseStudyService,
+        "flushBufferedReactionsToDatabase"
+      ).mockResolvedValue(counts);
+      const blogFlush = vi
+        .spyOn(BlogPostService, "flushBufferedReactionsToDatabase")
+        .mockResolvedValue(counts);
+      refresh.mockResolvedValue(
+        createFailure(
+          "AGGREGATE_FAILED",
+          "Failed to refresh the telemetry aggregate in Redis"
+        )
+      );
+
+      const result = await MaintenanceService.run();
+
+      expect(refresh).toHaveBeenCalledOnce();
+      expect(refresh.mock.invocationCallOrder[0]).toBeGreaterThan(
+        Math.max(
+          sync.mock.invocationCallOrder[0] ?? 0,
+          blogFlush.mock.invocationCallOrder[0] ?? 0
+        )
+      );
+      expect(result.phases.telemetry.status).toBe("completed");
+      expect(result.phases.telemetry.counts.aggregateProjects).toBeNull();
     });
 
     it("fails the phase on a reaction flush failure after draining both queues", async () => {

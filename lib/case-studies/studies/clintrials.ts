@@ -13,14 +13,14 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
     editorial_content:
       "A browser-based workspace for comparing **adaptive clinical trial designs**. **Pyodide** workers run models including CRM, EffTox, group sequential designs, and win ratio analyses.",
     architectural_narrative: `<h3>The problem</h3>
-<p>Trial design involves comparing assumptions, not just choosing a formula. clintrials brings several statistical models into a browser workspace so their behavior can be explored without setting up a separate Python environment.</p>
-<p><strong>The approach:</strong> Pyodide runs Python models in WebAssembly workers, keeping numerical work separate from the page’s interaction loop.</p>
+<p>Designing a trial means comparing assumptions as well as choosing a formula. clintrials brings several statistical models into a browser workspace so their behavior can be explored without setting up a separate Python environment.</p>
+<p><strong>The approach:</strong> Pyodide runs Python models in WebAssembly workers, keeping numerical work separate from the page's interaction loop.</p>
 <p><strong>Reported project measurements:</strong> Sub-second CRM dose-escalation simulation over 1,000 trial iterations; 100% client-side Pyodide execution with zero server compute costs; deterministic numerical parity verified against native CPython.</p>
 
 <h3>How it works</h3>
-<p><strong>Modular Domain-Driven Architecture:</strong> Core numerical protocol engines (<code>clintrials/core/</code>) are partitioned from specialized trial methodology domains (<code>dosefinding/</code>, <code>phase3/</code>, <code>winratio/</code>) and client runtime hubs (<code>hub/</code>).</p>
-<p><strong>Provider &amp; Factory Patterns:</strong> Pluggable simulation interfaces decouple trial definitions from recruitment modeling and diverse rendering targets (Jupyter, CLI, Pyodide).</p>
-<p><strong>Deterministic State Solvers:</strong> Non-linear patient accrual and toxicity outcomes are governed by deterministic numerical state solvers.</p>
+<p>The numerical engines (<code>clintrials/core/</code>) sit apart from the trial methods (<code>dosefinding/</code>, <code>phase3/</code>, <code>winratio/</code>) and the runtime hub (<code>hub/</code>).</p>
+<p>Providers and factories keep trial definitions separate from recruitment modeling and from where results render (Jupyter, CLI, Pyodide).</p>
+<p>Non-linear patient accrual and toxicity outcomes come from deterministic numerical solvers.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -121,8 +121,8 @@ class CRMDoseEscalationEngine:
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Client-Side Pyodide WASM vs. Cloud APIs:</strong> Chose client-side execution over hosted API microservices (FastAPI/Celery) to eliminate server hosting overhead, maintain strict data privacy for clinical protocol designers, and enable offline-first simulation via Service Workers.</li>
-  <li><strong>Deterministic Parity:</strong> MCMC and CRM escalation models produce identical outputs on native CPython and Pyodide WebAssembly environments, verified via automated fixture suites (<code>test_crm_fixtures.py</code>).</li>
+  <li>The models run client-side in Pyodide WASM instead of behind hosted API microservices (FastAPI/Celery). That removes server hosting, keeps a protocol designer's inputs on their machine, and lets Service Workers run simulations offline.</li>
+  <li>MCMC and CRM escalation models give identical outputs on native CPython and in Pyodide WebAssembly, which fixture suites (<code>test_crm_fixtures.py</code>) check.</li>
 </ul>`,
     created_at: new Date("2026-03-08T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

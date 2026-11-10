@@ -11,16 +11,16 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
     simulated_telemetry: false,
     tags: "TypeScript, Bun, Hono, Drizzle, Monorepo, Inngest, Clean Architecture, Docker",
     editorial_content:
-      "A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I’d rather not repeat on every project.",
+      "A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I'd rather not repeat on every project.",
     architectural_narrative: `<h3>The problem</h3>
 <p>New backends tend to start with familiar chores: routes, database access, migrations, and module boundaries. Hono-Kiln packages those patterns into a Bun and Hono scaffold, including support for keeping tenants separate.</p>
 <p><strong>The approach:</strong> Bun and Hono provide the runtime and routing. Generated modules keep application logic, persistence, and tenant handling organized.</p>
 <p><strong>Reported project measurements:</strong> Sub-1ms cold start on edge runtimes; 100% tenant isolation across database repositories; automated OpenAPI spec generation from Drizzle/Zod schemas.</p>
 
 <h3>How it works</h3>
-<p><strong>Clean Architecture Monorepo:</strong> Separates HTTP transport (<code>@kiln/api</code>), domain logic (<code>@kiln/sdk</code>), and database persistence (<code>@kiln/shared</code>) across strict workspace package boundaries.</p>
-<p><strong>Tenant Isolation Middleware:</strong> Enforces tenant identity constraints at the HTTP gateway layer and propagates context across all Drizzle ORM queries.</p>
-<p><strong>Edge-Native Event Architecture:</strong> Integrates Inngest step functions directly inside Hono route handlers to process asynchronous background tasks without requiring dedicated worker infrastructure.</p>
+<p>The monorepo puts HTTP transport (<code>@kiln/api</code>), domain logic (<code>@kiln/sdk</code>) and database persistence (<code>@kiln/shared</code>) in separate workspace packages.</p>
+<p>Middleware checks the tenant at the HTTP gateway and carries it into every Drizzle ORM query.</p>
+<p>Inngest step functions run inside Hono route handlers, so background tasks need no separate worker infrastructure.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -72,8 +72,8 @@ const processTenantDataSync = inngest.createFunction(
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Bun + Hono Performance:</strong> Leveraging Bun's native HTTP server alongside Hono eliminated Node.js cold-start penalties, dropping p99 response times to under 12ms.</li>
-  <li><strong>Tenant Context Propagation:</strong> Using Hono's contextual storage guarantees that background tasks and database queries remain strictly scoped to the requesting tenant.</li>
+  <li>Bun's native HTTP server with Hono removed the Node.js cold-start penalty and brought p99 response times under 12ms.</li>
+  <li>Hono's context storage keeps background tasks and database queries scoped to the tenant that made the request.</li>
 </ul>`,
     created_at: new Date("2026-02-18T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

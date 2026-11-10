@@ -86,9 +86,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p>The fields a CRF collects decide which metrics a study can report later. The platform demo's <a href="/platform/explore">study metrics explorer</a> groups and filters governed metrics built from that kind of collected data, on synthetic studies.</p>
 
 <h3>How it works</h3>
-<p><strong>Decoupled Office.js Taskpane & Domain Layer:</strong> Clean separation between Office.js Taskpane React components and the core domain layer (<code>src/taskpane/core/</code>). The orchestration pipeline relies on a composable middleware runner pattern for data transformations and validation gates.</p>
-<p><strong>Web Worker Pipeline:</strong> Resource-heavy parsing, AST construction, and XML serialization are offloaded to dedicated Web Workers (<code>engine.worker.ts</code>, <code>customxml-worker.ts</code>), preserving interactive UI responsiveness in constrained Office Webview runtimes.</p>
-<p><strong>DAG Dependency Graph:</strong> Abstract Syntax Tree (AST) validation for conditional logic and form item display skips uses topological DAG traversal (<code>dag-validator.ts</code>, <code>rules-parser.ts</code>) to detect circular dependencies and unresolvable item references at authoring time.</p>
+<p>The Office.js taskpane's React components sit apart from the domain layer (<code>src/taskpane/core/</code>). Transformations and validation gates run as a chain of composable middleware.</p>
+<p>Parsing, AST construction and XML serialization run in Web Workers (<code>engine.worker.ts</code>, <code>customxml-worker.ts</code>), so the taskpane stays responsive in the limited Office Webview.</p>
+<p>Conditional logic and skip rules are parsed into an AST and checked with a topological DAG traversal (<code>dag-validator.ts</code>, <code>rules-parser.ts</code>), which finds circular dependencies and references to missing items while the form is being written.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -214,9 +214,9 @@ function serializeODMStudy(study: {
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Office.js Memory vs. Web Worker Offloading:</strong> Ingesting 10,000+ rows directly in the main Office.js thread caused severe UI stutters in Office Webview. Offloading raw matrix data to background Web Workers via chunked ArrayBuffers restored 60fps UI responsiveness.</li>
-  <li><strong>DAG Cycle Detection at Edit Time:</strong> Evaluating conditional skips on blur using topological cycle detection prevented runaway infinite validation cascades during protocol authoring.</li>
-  <li><strong>CDISC Schema Compatibility:</strong> Emitting strict XML with CDASH 2.2 controlled terminology validation eliminated upstream EDC data migration failures.</li>
+  <li>Reading 10,000+ rows on the main Office.js thread made Office Webview stutter badly. Passing the raw data to Web Workers in chunked ArrayBuffers brought the UI back to 60fps.</li>
+  <li>Checking skip conditions for cycles on blur stops a circular rule from setting off an endless validation cascade while the protocol is being written.</li>
+  <li>Writing strict XML and validating against CDASH 2.2 controlled terminology prevents data migration failures in the EDC downstream.</li>
 </ul>`,
     commands_json: JSON.stringify(CRF_XL_COMMANDS_OBJ),
     playback_json: JSON.stringify(CRF_XL_PLAYBACK_OBJ),

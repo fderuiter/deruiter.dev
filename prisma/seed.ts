@@ -1145,8 +1145,8 @@ flowchart TD
 
 <h3>5. Lessons Learned & Trade-Offs</h3>
 <ul>
-  <li><strong>Client-Side Pyodide WASM vs. Cloud APIs:</strong> Chose client-side execution over hosted API microservices (FastAPI/Celery) to eliminate server hosting overhead, maintain strict data privacy for clinical protocol designers, and enable offline-first simulation via Service Workers.</li>
-  <li><strong>Deterministic Parity:</strong> MCMC and CRM escalation models produce identical outputs on native CPython and Pyodide WebAssembly environments, verified via automated fixture suites (<code>test_crm_fixtures.py</code>).</li>
+  <li>The models run client-side in Pyodide WASM instead of behind hosted API microservices (FastAPI/Celery). That removes server hosting, keeps a protocol designer's inputs on their machine, and lets Service Workers run simulations offline.</li>
+  <li>MCMC and CRM escalation models give identical outputs on native CPython and in Pyodide WebAssembly, which fixture suites (<code>test_crm_fixtures.py</code>) check.</li>
 </ul>
     `.trim(),
   },
@@ -1436,8 +1436,8 @@ flowchart LR
 
 <h3>5. Lessons Learned & Trade-Offs</h3>
 <ul>
-  <li><strong>GC Management in Hard Real-Time Haskell:</strong> High-frequency real-time DSP logic in Haskell requires minimizing heap allocation in the main loop by reusing ForeignPtr buffers and compiling with <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
-  <li><strong>Lock-Free C++ Ring Buffer:</strong> Implemented custom C++ lock-free ring buffers for UART frame ingestion to eliminate garbage collector pauses in the critical ingestion path.</li>
+  <li>Hard real-time DSP in Haskell means keeping heap allocation out of the main loop: ForeignPtr buffers are reused, and the build uses <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
+  <li>UART frames land in a custom lock-free C++ ring buffer, so garbage collector pauses never touch the ingestion path.</li>
 </ul>
     `.trim(),
   },
@@ -1459,9 +1459,9 @@ flowchart LR
 <p><strong>Core Technical Highlight:</strong> DuckDeploy dynamically ingests JSON Schema Draft-07 and Draft 2020-12 specifications, compiles structural types into a normalized Abstract Syntax Tree (AST), and synthesizes polymorphic form state. Manifest generation for Kubernetes, Helm values, and Knative Cloud Run specs is entirely offloaded to background Web Workers, maintaining strict sub-4ms keystroke input latency on 100+ field dynamic forms.</p>
 
 <h3>2. Architecture & Design Patterns</h3>
-<p><strong>AST-Driven Dynamic UI Synthesis:</strong> Parses complex JSON Schema constructs (<code>oneOf</code>, <code>anyOf</code>, <code>$ref</code>, <code>patternProperties</code>) into an intermediate UI node tree (<code>SchemaNode</code>), mapping structural primitives to specialized, accessible input components.</p>
-<p><strong>Polymorphic Discriminated Union Store:</strong> Utilizes a Zustand-backed normalized state store that isolates inactive polymorphic union branches, preventing stale input parameters from leaking into compiled output manifests.</p>
-<p><strong>Off-Main-Thread Web Worker Compilation Pipeline:</strong> An isolated Web Worker execution sandbox (<code>manifest.worker.ts</code>) processes AST normalization, Zod constraint validation, and multi-format YAML generation without degrading React 19 rendering frame rates.</p>
+<p>The parser turns JSON Schema constructs (<code>oneOf</code>, <code>anyOf</code>, <code>$ref</code>, <code>patternProperties</code>) into an intermediate UI node tree (<code>SchemaNode</code>), and each kind of node maps to an accessible input component.</p>
+<p>A normalized Zustand store keeps the inactive branches of a union apart, so values typed into a branch the user switched away from never reach the compiled manifest.</p>
+<p>A Web Worker (<code>manifest.worker.ts</code>) normalizes the AST, validates it with Zod and writes the YAML for each format, so React 19 keeps its frame rate.</p>
 
 <h3>3. System Design & Runtime Flow</h3>
 <pre><code class="language-mermaid">
@@ -1584,8 +1584,8 @@ addEventListener("message", ({ data }: MessageEvent&lt;{ formState: Record&lt;st
 
 <h3>5. Lessons Learned & Architectural Trade-Offs</h3>
 <ul>
-  <li><strong>Client-Side Worker Compilation vs. Remote REST API:</strong> Compiling manifests client-side eliminated server roundtrips, reducing preview update latency from 450ms to 2.4ms and allowing full offline manifest authoring.</li>
-  <li><strong>Custom AST Normalizer vs. Heavy Generic Schema Parsers:</strong> Authoring a tailored, lightweight AST normalizer reduced the client bundle footprint by 85KB compared to monolithic schema engines.</li>
+  <li>Compiling manifests in the browser instead of through a REST API removed the server round trip, cut preview updates from 450ms to 2.4ms, and lets manifests be written offline.</li>
+  <li>A small purpose-built AST normalizer is 85KB lighter in the client bundle than a general schema engine.</li>
 </ul>
     `.trim(),
   },
@@ -2029,9 +2029,9 @@ export function serializeODMStudy(study: { oid: string; name: string; descriptio
 <p><strong>Core Technical Highlight:</strong> PromptOps introduces an immutable prompt orchestration framework in TypeScript with semantic SemVer releases, Zod output schema enforcement with automatic JSON repair, multi-provider failover routing, and automated CI/CD golden eval regression test suites.</p>
 
 <h3>2. Architecture & Design Patterns</h3>
-<p><strong>Prompt as Code &amp; SemVer Registry:</strong> Models prompt templates with typed input/output variables, storing versions with semantic SemVer tags (major: schema contract change, minor: prompt engineering optimization, patch: parameter/temperature tuning).</p>
-<p><strong>Structured Output Assertion &amp; JSON Repair:</strong> Enforces strict Zod schema validation on model outputs, with automated markdown stripping and bracket repair for multi-provider API responses (OpenAI, Anthropic, Ollama).</p>
-<p><strong>Automated CI/CD Evaluation Pipeline:</strong> Executes regression test suites against prompt releases on golden datasets, computing LLM-as-a-Judge semantic similarity, exact match rates, token costs, and latency metrics.</p>
+<p>Prompt templates are code with typed input and output variables, versioned with SemVer: major for a schema contract change, minor for a prompt rewrite, patch for parameter or temperature tuning.</p>
+<p>Every model output is validated against a Zod schema. Before that, the toolkit strips markdown and repairs brackets in responses from each provider (OpenAI, Anthropic, Ollama).</p>
+<p>CI runs regression suites against each prompt release on golden datasets and records LLM-as-a-Judge semantic similarity, exact match rate, token cost and latency.</p>
 <p><strong>Multi-Provider Failover Router:</strong> Implements circuit breakers and intelligent retry routing across primary and secondary model endpoints.</p>
 
 <h3>3. System Design & Runtime Flow</h3>
@@ -2133,8 +2133,8 @@ export async function runEvalSuite(
 
 <h3>5. Lessons Learned & Architectural Trade-Offs</h3>
 <ul>
-  <li><strong>Strict Schemas vs. Unstructured Chat:</strong> Schema-driven structured outputs combined with CI eval gates reduced downstream API contract failures by 99.4%.</li>
-  <li><strong>Multi-Provider Failover:</strong> Dynamic routing between Anthropic and OpenAI ensured high availability during third-party API degradation.</li>
+  <li>Structured outputs checked against schemas, plus CI eval gates, cut downstream API contract failures by 99.4%.</li>
+  <li>Routing between Anthropic and OpenAI keeps requests flowing when one provider's API degrades.</li>
 </ul>
     `.trim(),
   },

@@ -110,10 +110,10 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> Out-of-sample prediction accuracy benchmarked across 2,400+ games; 100% leak-free temporal splitting; calibrated Brier score &lt; 0.198 on spread and win probability forecasts.</p>
 
 <h3>How it works</h3>
-<p><strong>Vectorized Rolling Feature Pipeline:</strong> Computes cumulative and windowed rolling differentials (Offensive Rating, Defensive Rating, True Shooting %, Rebound Rate, Turnover Delta) using vectorized NumPy/Pandas transforms without row-iteration bottlenecks.</p>
-<p><strong>Temporal Walk-Forward Validation:</strong> Enforces strictly chronological train/test splits that model real-world deployment, eliminating look-ahead bias common in naive random cross-validation.</p>
-<p><strong>Probability Calibration in High-Variance Regimes:</strong> Calibrates raw XGBoost and logistic regression logits using Platt scaling and isotonic regression to yield reliable win probabilities for expected value analysis.</p>
-<p><strong>SHAP Feature Explainability:</strong> Decomposes model predictions into interpretable feature contributions, surfacing how schedule fatigue, rest disparity, and pace deltas influence outcome projections.</p>
+<p>Cumulative and windowed rolling differentials (Offensive Rating, Defensive Rating, True Shooting %, Rebound Rate, Turnover Delta) come from vectorized NumPy/Pandas transforms instead of row-by-row loops.</p>
+<p>Train/test splits run in date order, the way the model would be used for real, so there is none of the look-ahead bias that random cross-validation introduces.</p>
+<p>Platt scaling and isotonic regression calibrate the raw XGBoost and logistic regression logits into win probabilities that hold up in expected value analysis.</p>
+<p>SHAP splits each prediction into feature contributions, which shows how schedule fatigue, rest disparity and pace deltas move a projection.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -215,9 +215,9 @@ def explain_matchup_prediction(model, feature_matrix: pd.DataFrame, matchup_idx:
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Look-Ahead Bias Elimination:</strong> Standard k-fold cross validation artificially inflates sports prediction accuracy by training on future games to predict past games. Enforcing temporal walk-forward splitting yielded realistic out-of-sample metrics.</li>
-  <li><strong>Probability Calibration in High-Variance Environments:</strong> Applying Platt scaling to model logits prevented overconfident probability estimates in high 3-point shooting variance matchups.</li>
-  <li><strong>Decoupled Production Architecture:</strong> Refactoring exploratory Jupyter notebooks into modular, type-annotated Python scripts with automated test harnesses enabled reliable model retraining and historical backtesting.</li>
+  <li>Standard k-fold cross validation inflates sports prediction accuracy because it trains on future games to predict past ones. Walk-forward splits gave out-of-sample numbers I could believe.</li>
+  <li>Platt scaling on the logits stopped the model being overconfident in matchups with high 3-point shooting variance.</li>
+  <li>Moving the exploratory Jupyter notebooks into typed Python modules with tests made retraining and historical backtesting repeatable.</li>
 </ul>`,
     commands_json: JSON.stringify(FOUR_GLORY_COMMANDS_OBJ),
     playback_json: JSON.stringify(FOUR_GLORY_PLAYBACK_OBJ),

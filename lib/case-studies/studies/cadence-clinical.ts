@@ -20,9 +20,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p>Cadence keeps one study's design and records together. The platform demo's <a href="/platform/portfolio">portfolio dashboard</a> looks across many studies instead, rating each one from synthetic data.</p>
 
 <h3>How it works</h3>
-<p><strong>Hexagonal Architecture (Ports &amp; Adapters):</strong> Domain logic across microservices is strictly decoupled from framework concerns. Ports define explicit interfaces while adapters handle persistence and network integration.</p>
-<p><strong>Dual Graph-Relational Data Core:</strong> Neo4j graph stores complex Schedule of Activities (SoA) and biomedical concept dependencies; PostgreSQL with SQLModel handles ACID-compliant clinical record transactions.</p>
-<p><strong>Cryptographic 21 CFR Part 11 Audit Trails:</strong> Every subject data mutation is appended to an in-memory Merkle tree, yielding cryptographic state verification with RSA-PSS digital signatures.</p>
+<p>The services use a hexagonal (ports &amp; adapters) layout. Ports define the interfaces the domain logic needs, and adapters supply persistence and network calls, so the domain logic stays separate from the frameworks.</p>
+<p>Neo4j stores the Schedule of Activities (SoA) and the dependencies between biomedical concepts. PostgreSQL, through SQLModel, handles ACID transactions on clinical records.</p>
+<p>Every change to subject data is appended to an in-memory Merkle tree, and RSA-PSS digital signatures let that state be verified. The audit trail is modelled on 21 CFR Part 11.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -89,8 +89,8 @@ def verify_manifest_signature(public_key: rsa.RSAPublicKey, signature: bytes, pa
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>RSA-PSS vs. PKCS#1 v1.5:</strong> Transitioned all cryptographic signature verification to RSA-PSS to eliminate padding oracle side-channel vulnerabilities.</li>
-  <li><strong>Graph-to-Relational Protocol Sync:</strong> Offloaded protocol amendment cascading to Neo4j graph traversals, preventing lockouts on high-volume relational subject records during active trials.</li>
+  <li>All signature verification moved from PKCS#1 v1.5 to RSA-PSS, which closes the padding oracle side channel of the older scheme.</li>
+  <li>Cascading a protocol amendment runs as a Neo4j graph traversal, so it does not lock the busy relational subject tables during an active trial.</li>
 </ul>`,
     created_at: new Date("2026-01-20T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

@@ -13,16 +13,16 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
     simulated_telemetry: false,
     tags: "Graphic Design, Vector Illustration, Iconography, Open Asset Distribution, Cultural Branding",
     editorial_content:
-      "My submission to Minnesota’s state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.",
+      "My submission to Minnesota's state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.",
     architectural_narrative: `<h3>The problem</h3>
-<p>For Minnesota’s state flag redesign, I submitted a common loon with red eye lasers. Submission F277 became Laser Loon. This project collects the artwork in formats people can use on screens, in print, and on whatever else needs a laser-eyed bird.</p>
+<p>For Minnesota's state flag redesign, I submitted a common loon with red eye lasers. Submission F277 became Laser Loon. This project collects the artwork in formats people can use on screens, in print, and on whatever else needs a laser-eyed bird.</p>
 <p><strong>The approach:</strong> The bird silhouette and laser layers remain editable as vectors. The download set includes source, print, and web formats.</p>
 <p><strong>Reported project measurements:</strong> Sub-5KB optimized SVG payload; 300 DPI lossless raster masters; full CMYK/RGB print-pipeline interoperability.</p>
 
 <h3>How it works</h3>
-<p><strong>Anatomical Accuracy &amp; Stylization:</strong> Stark black-and-white field blocking capturing the distinctive bill curve, crested crown, and patterned plumage for micro-favicon and billboard scales.</p>
-<p><strong>Focal Convergence &amp; Glow Dynamics:</strong> Hard-edge vector rays with layered radial glows engineered along the sightline for high contrast on light and dark backgrounds.</p>
-<p><strong>Multi-Tier Asset Packaging:</strong> Dual-track packaging separating source editing vectors (<code>.ai</code>, <code>.eps</code>) from web-optimized assets (<code>.svg</code>, <code>.png</code>).</p>
+<p>Black-and-white blocks keep the loon's bill curve, crown and patterned plumage readable from favicon size to billboard size.</p>
+<p>The lasers are hard-edged vector rays with layered radial glows along the sightline, so they hold their contrast on light and dark backgrounds.</p>
+<p>The download set keeps the editable source vectors (<code>.ai</code>, <code>.eps</code>) apart from the web-ready files (<code>.svg</code>, <code>.png</code>).</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -85,8 +85,8 @@ flowchart TD
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Creative Commons CC0 Distribution:</strong> A public domain dedication accelerated grassroots community propagation and third-party merchandising without legal friction.</li>
-  <li><strong>Color Gamut Clamping:</strong> Designed distinct color profiles for digital sRGB displays versus physical CMYK spot-color inks to prevent dull laser tones during commercial textile printing.</li>
+  <li>The art is released under Creative Commons CC0, a public domain dedication, so anyone can share it or print it on merchandise without asking.</li>
+  <li>Screens get an sRGB color profile and printed goods a separate CMYK spot-color one, so the lasers don't print dull on commercial textiles.</li>
 </ul>`,
     created_at: new Date("2026-03-05T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

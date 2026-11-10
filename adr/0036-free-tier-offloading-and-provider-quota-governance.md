@@ -11,7 +11,7 @@ Accepted — architectural policy governing parent epic #632 and child integrati
 The portfolio platform is deployed on Vercel Hobby alongside generous external free tiers:
 
 - **Vercel Hobby**: 10 GB functions storage, 100 build hours/month, strictly **one** scheduled cron job per day (`0 0 * * *`), 10-second serverless execution timeout. At the decision date, the account was observed at **9.6 / 10 GB (96%)** Functions Storage and **86 / 100 hours (86%)** build time (audited in #691, #698). These values are historical context, not live meters; the dated retention inventory is the operational evidence record.
-- **Neon Postgres**: 0.5 GiB storage, compute auto-suspends after 5 minutes of inactivity. Direct un-cached public queries wake compute, adding 1–3s cold-start latency and consuming monthly compute hours.
+- **Neon Postgres** (Free plan): 1 GB storage and 100 CU-hours of compute per project per month ([Neon plans](https://neon.com/docs/introduction/plans)); compute auto-suspends after 5 minutes of inactivity. Direct un-cached public queries wake compute, adding 1–3s cold-start latency and consuming monthly compute hours.
 - **Upstash Redis**: 10,000 commands/day, 256 MB storage, 100 requests/sec. Uncached rate-limit queries on every static request would quickly burn the daily command budget.
 - **Resend**: 100 emails/day, 3,000/month, 1 sending domain. Spam bots hitting contact forms can rapidly exhaust daily quotas, while outbound retries require a reliable scheduler.
 - **Sentry**: 5,000 errors/month, 10,000 transaction spans/month. 100% trace sampling burns quota within days.
@@ -28,7 +28,7 @@ We adopt the **Free-Tier Offloading Architecture & Quota Governance Strategy**:
 To ensure Neon's serverless compute remains suspended in zero-compute sleep states across public visitor traffic:
 
 - **Tier 1 (Static Edge Prerendering)**: Full-page editorial routes (case studies, dossier specs) use Next.js Incremental Static Regeneration (ISR) with `revalidate = 86400`, and content writes revalidate their paths on demand (each regeneration bills Vercel active CPU, #2971). Static requests cost 0 database queries and 0 Redis commands at runtime.
-- **Tier 2 (Upstash Redis Read-Through Cache)**: Dynamic data queries in `CaseStudyService` and reaction counters query Upstash Redis first with a 1-hour TTL. Only cache misses wake Neon Postgres.
+- **Tier 2 (Upstash Redis Read-Through Cache)**: Dynamic data queries in `CaseStudyService` and reaction counters query Upstash Redis first with a 1-hour TTL. During a production build, a cache miss is not a data-source failure and must fall through to the database. At request time, a cache miss on a browsing route must not query Neon and returns the Redis value.
 - **Write Buffering**: Visitor reactions and telemetry events are buffered in Upstash Redis (`HINCRBY`, `RPUSH`) rather than issuing immediate mutative SQL queries per request.
 
 ### 2. Upstash Command Budget Protection (10,000 Commands/Day)
@@ -100,3 +100,15 @@ production builds, so AWS adds no Vercel Fluid Compute and no visitor
 request depends on it. The account is on AWS's Free plan, which closes
 after six months unless upgraded; the deadline is tracked on
 [#2974](https://github.com/fderuiter/deruiter.dev/issues/2974).
+
+## Amendment 2026-11-10: cache-miss scope and Neon Free plan figures
+
+The cache-miss rule now has two scopes
+([#3396](https://github.com/fderuiter/deruiter.dev/issues/3396)). During a
+production build, a cache miss falls through to the database, as
+`failBuildOnDataSourceError()` expects. At request time, a cache miss on a
+browsing route does not query Neon. The Neon figures now match the
+[Free plan](https://neon.com/docs/introduction/plans): 1 GB of storage and
+100 CU-hours of compute per project per month. The request-time Neon read in
+`CaseStudyService`'s Redis-outage fallback is unchanged here and needs its
+own decision.

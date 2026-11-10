@@ -552,7 +552,7 @@
     },
     {
       "name": "@chenglou/pretext",
-      "version": "0.0.9",
+      "version": "1.0.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,

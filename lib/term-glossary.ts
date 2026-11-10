@@ -486,6 +486,16 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
     source: "CDISC Glossary",
   },
   {
+    key: "adverse-event-term",
+    canonical: "Adverse event (AE)",
+    simplified: "unwanted medical event",
+    definition:
+      "Any untoward medical occurrence in a subject given a study treatment, whether or not it is caused by the treatment. Sites record each event with its onset date and report it in the EDC.",
+    aliases: ["Adverse event", "AE"],
+    autoLink: false,
+    source: "ICH E2A",
+  },
+  {
     key: "teae-term",
     canonical: "Treatment-emergent adverse event (TEAE)",
     simplified: "side effect during treatment",

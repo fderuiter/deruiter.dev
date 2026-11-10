@@ -172,4 +172,8 @@ customProperties:
       - silver.edc_adverse_event
       - silver.site
   - property: consumers
-    value: []
+    value:
+      - "metric:adverse_event_count"
+      - "metric:adverse_event_rate_per_10_visits"
+      - "metric:adverse_event_report_time_median"
+      - "metric:serious_adverse_event_report_time_median"

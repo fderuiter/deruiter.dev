@@ -12,7 +12,9 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
+  CONFORMANCE_RULES_VERSION,
   MESSY_DATA_SCENARIOS,
+  PACKAGE_FORMAT_VERSION,
   coreViewReport,
   isEmptyRunDiff,
   loadRecordedCoreFindings,
@@ -56,7 +58,9 @@ import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
 import { RunDiffPanel } from "./RunDiffPanel";
+import { StudySummaryCard, coreSummaryStatus } from "./StudySummaryCard";
 import { TlfPanel } from "./TlfPanel";
+import { TraceNumberPath } from "./TraceNumberPath";
 import {
   BUTTON_PRIMARY,
   BUTTON_SECONDARY,
@@ -67,10 +71,17 @@ import {
 } from "./ui";
 
 type TabId =
-  "datasets" | "conformance" | "define" | "guides" | "tlf" | "schedule";
+  | "datasets"
+  | "conformance"
+  | "define"
+  | "guides"
+  | "tlf"
+  | "trace"
+  | "schedule";
 
 const TABS: readonly { id: TabId; label: string }[] = [
   { id: "tlf", label: "Tables and figures" },
+  { id: "trace", label: "Trace a number" },
   { id: "datasets", label: "Datasets" },
   { id: "conformance", label: "Conformance" },
   { id: "define", label: "Define-XML" },
@@ -217,9 +228,12 @@ export function StudyDataWorkbench({
   }>({ findings: null, failed: false });
 
   // CORE's recorded findings load as their own chunk, and only once the
-  // conformance tab is opened.
+  // conformance tab is opened or a run CORE has recorded findings for ends,
+  // so the summary card can say whether CORE passed it (#3159).
+  const hasCoreView = summary?.coreView != null;
   useEffect(() => {
-    if (tab !== "conformance" || recorded.findings || recorded.failed) return;
+    if (tab !== "conformance" && !hasCoreView) return;
+    if (recorded.findings || recorded.failed) return;
     let live = true;
     loadRecordedCoreFindings().then(
       (findings) => {
@@ -232,7 +246,7 @@ export function StudyDataWorkbench({
     return () => {
       live = false;
     };
-  }, [tab, recorded.findings, recorded.failed]);
+  }, [tab, hasCoreView, recorded.findings, recorded.failed]);
 
   const coreView = summary?.coreView ?? null;
   const coreReport = useMemo(
@@ -241,6 +255,11 @@ export function StudyDataWorkbench({
         ? coreViewReport(recorded.findings, coreView)
         : null,
     [recorded.findings, coreView]
+  );
+  const coreStatus = coreSummaryStatus(
+    coreView !== null,
+    coreReport === null ? null : (coreReport.outcomes["ISSUE REPORTED"] ?? 0),
+    recorded.failed
   );
 
   const client = useCallback((): PipelineClient => {
@@ -445,7 +464,7 @@ export function StudyDataWorkbench({
   };
 
   const traceFrom = useCallback(
-    (origin: LineageOrigin) => {
+    (origin: LineageOrigin, reveal = true) => {
       if (!summary) return;
       setTraceBusy(true);
       setTraceError(null);
@@ -462,7 +481,7 @@ export function StudyDataWorkbench({
           announce(
             `Traced ${result.title}: ${result.adam.total} ADaM rows, ${result.sdtm.total} SDTM records, ${result.collected.total} collected records, ${result.results.total} results.`
           );
-          const heading = lineageHeading.current;
+          const heading = reveal ? lineageHeading.current : null;
           if (heading) {
             heading.focus({ preventScroll: true });
             const reduced = window.matchMedia?.(
@@ -807,6 +826,17 @@ export function StudyDataWorkbench({
           current run.
         </p>
         <div className="mt-8">
+          <StudySummaryCard
+            studyId={handoff?.prepared.report.studyId ?? "DEMO-301"}
+            counts={summary?.counts ?? null}
+            versions={{
+              package: PACKAGE_FORMAT_VERSION,
+              rules: CONFORMANCE_RULES_VERSION,
+            }}
+            core={coreStatus}
+          />
+        </div>
+        <div className="mt-4">
           <StageRail
             definition={handoff?.prepared.counts ?? definitionCounts}
             counts={summary?.counts ?? null}
@@ -907,6 +937,21 @@ export function StudyDataWorkbench({
             <DefineViewer define={summary.define} />
           ) : tab === "guides" ? (
             <ReviewerGuidePanel guides={summary.guides} />
+          ) : tab === "trace" ? (
+            <TraceNumberPath
+              key={summary.runId}
+              tables={summary.tables}
+              trace={trace}
+              busy={traceBusy}
+              error={traceError}
+              onTrace={(resultIds) =>
+                traceFrom({ kind: "result", resultIds }, false)
+              }
+              onViewRecord={(record) => {
+                viewRecord(record);
+                document.getElementById("study-data-tab-datasets")?.focus();
+              }}
+            />
           ) : (
             <TlfPanel
               tables={summary.tables}

@@ -596,12 +596,12 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     body: `
 <h2>A badge I should not have shipped</h2>
 <p>This week I had my own site reviewed the way a clinical data manager would read it, and I did not like what came back. CRF Studio carried a badge announcing one hundred percent conformance with CDISC and SDTM. Its audit log was described as an unalterable Part 11 trail. A status line declared the whole thing ready for regulated work.</p>
-<p>None of that was implemented. What existed was a useful subset of design checks from the CDASH and SDTM implementation guides, an audit trail that lives in browser state, and a local slice of controlled terminology. That is a reasonable thing for a portfolio to demonstrate. It is not what the copy said, and the people the clinical work is written for are exactly the readers who notice the difference and stop trusting the rest of the page.</p>
+<p>None of that was implemented. What existed was a useful subset of design checks from the CDASH and SDTM implementation guides, an audit trail that lives in browser state, and a local slice of controlled terminology. That is a reasonable thing for a portfolio to show. The copy claimed far more, and the people the clinical work is written for are the readers who notice the gap and stop trusting the rest of the page.</p>
 <p>I cannot quote the old wording here. This file is one of more than 130 that a test now scans for it, and the build would fail.</p>
 
 <h2>Describe what is implemented</h2>
 <p>The replacement rule is easy to state: copy describes the checks that exist, never the standard they are aimed at. A clean run now reads "No findings from the implemented checks." The audit trail is a "Part 11-style audit trail (simulation)". The terminology is a local subset aligned to one NCI EVS package.</p>
-<p>A rule like that decays the moment nobody is watching, so it is a function rather than a guideline. <code>findClinicalClaims()</code> matches the shapes that kept appearing: a standard or regulation followed by "compliant", a percentage score in front of a standard, a promise to comply with a regulation, an audit trail that cannot be changed. A test runs it across the clinical routes, components and libraries, the social card presets and this blog, and names the phrase and the file when it fails. It also has to let honest sentences through, so the test keeps a list of those as well. "Three non-compliant records." must pass.</p>
+<p>A rule like that decays once nobody is watching, so I wrote it as a function. <code>findClinicalClaims()</code> matches the shapes that kept appearing: a standard or regulation followed by "compliant", a percentage score in front of a standard, a promise to comply with a regulation, an audit trail that cannot be changed. A test runs it across the clinical routes, components and libraries, the social card presets and this blog, and names the phrase and the file when it fails. It also has to let honest sentences through, so the test keeps a list of those as well. "Three non-compliant records." must pass.</p>
 
 <h2>Then I checked the codes</h2>
 <p>"Aligned to the package" was itself a claim, so the next job was to check it. Every codelist and term in CRF Studio went up against the NCI EVS SDTM terminology file for the package date the site declares.</p>
@@ -611,24 +611,24 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
   <li>Race and ethnicity pointed at codelists that have been retired; their last appearance was the 2025-09-26 package. Collection now uses C128689 and C128690.</li>
   <li>Severity was filed with CTCAE grade codes. Mild, moderate and severe have their own: C41338, C41339 and C41340.</li>
 </ul>
-<p>These were not cosmetic. They were published in ODM <code>def:NCICode</code> attributes, SAS format comments, the annotated CRF and the Word export. Every one of them looked right, which is the worst property a wrong identifier can have. A misspelled term fails a lookup. A real code from the neighbouring codelist passes every check that does not go back to the source file.</p>
+<p>The wrong codes were published in ODM <code>def:NCICode</code> attributes, SAS format comments, the annotated CRF and the Word export. Every one of them looked right, which is the worst property a wrong identifier can have. A misspelled term fails a lookup. A real code from the neighbouring codelist passes every check that does not go back to the source file.</p>
 <p>The error had spread, too. The study data pipeline wrote a dose unit of <code>TABLETS</code>, an extension that existed only to match the wrong CRF code. It now writes the package's own <code>TABLET</code>, C48542, and the golden files that changed changed for that reason alone.</p>
 
 <h2>An outside opinion, in CI</h2>
-<p>My own conformance stage checks my own reading of the rules. That is circular in the way that matters, so the pipeline's outputs now also go through CDISC's open-source rules engine, CORE, pinned to v0.17.1, in a separate workflow that runs whenever the pipeline changes and once a week.</p>
-<p>The first run reported findings on 69 rule and dataset pairs. Sorted honestly:</p>
+<p>My own conformance stage checks my own reading of the rules. That is circular, so the pipeline's outputs now also go through CDISC's open-source rules engine, CORE, pinned to v0.17.1, in a separate workflow that runs whenever the pipeline changes and once a week.</p>
+<p>The first run reported findings on 69 rule and dataset pairs. Sorted by cause:</p>
 <ul>
-  <li><strong>55 are real defects</strong> in my pipeline or its study definition, each tracked in an issue.</li>
-  <li><strong>12 are engine limitations,</strong> such as duplicate-check rules that misfire on the fixture.</li>
-  <li><strong>1 is by design:</strong> adverse events carry no epoch.</li>
-  <li><strong>1 is a gap</strong> in the engine's terminology cache.</li>
+  <li>55 are real defects in my pipeline or its study definition, each tracked in an issue.</li>
+  <li>12 are engine limitations, such as duplicate-check rules that misfire on the fixture.</li>
+  <li>1 is by design: adverse events carry no epoch.</li>
+  <li>1 is a gap in the engine's terminology cache.</li>
 </ul>
-<p>The design decision worth copying is the allowlist that explains them. CI fails on any finding the list does not explain, which is the usual rule. It also fails on any entry that CORE <em>no longer</em> reports. A fix proves itself by making its allowlist entry stale, and the list cannot quietly become a museum of problems solved months ago.</p>
+<p>The design decision worth copying is the allowlist that explains them. CI fails on any finding the list does not explain, which is the usual rule. It also fails on any entry that CORE <em>no longer</em> reports. A fix proves itself by making its allowlist entry stale, so the list cannot turn into a museum of problems solved months ago.</p>
 <p>The job summary also says what was not checked. CORE's newest cached terminology is from March while the pipeline declares September, so the export substitutes the older release and says so. CORE has no ADaMIG rules yet, so the analysis layer is reported as "not run". The workflow asks the engine for its rule list rather than hardcoding that, so it will notice when they arrive.</p>
 
 <h2>Program it twice</h2>
 <p>Clinical programming has an old answer to "how do you know the derivation is right": a second programmer writes it again from the specification, without looking at the first, and the outputs are compared. The pipeline now has that, as a test suite. Study days, baseline selection, change from baseline, last observation carried forward, adverse event date imputation, treatment-emergent flags, time to event and the three summary tables are each derived again from the specification and compared row for row with the pipeline, on the study's own seed and on 200 generated ones.</p>
-<p>Its pull request listed what it could not test. The synthetic generator never lands an adverse event on the edge of the treatment-emergent window, so a mutant that moves that edge from fourteen days after last dose to thirteen survives. That gap is written down next to the suite instead of being left for a reader to find.</p>
+<p>Its pull request listed what it could not test. The synthetic generator never lands an adverse event on the edge of the treatment-emergent window, so a mutant that moves that edge from fourteen days after last dose to thirteen survives. That gap is written down next to the suite.</p>
 
 <h2>Smaller claims, more checks</h2>
 <p>The page that runs the pipeline now says what it is: one fictional study, synthetic subjects, and a conformance stage that models a subset of published rules and is not a validator of record. That is a much smaller sentence than the badge was. Behind it sit a wording guard, a terminology check against the source file, an outside rules engine whose findings are tracked one by one, and an independent second implementation.</p>
@@ -652,34 +652,34 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     body: `
 <h2>The day in numbers</h2>
 <p>On 24 October, main took 38 squash merges. They came from four lanes running in parallel: clinical release blockers, the clinical data platform, the arcade's phone work, and CI and test debt. Each lane is a coding agent working through its own queue of issues. I set the queues, make the product calls, and press the buttons only a person should press.</p>
-<p>That throughput did not come from the agents being fast. It came from a rule about how their work reaches main, and the rule came from a bad evening the day before.</p>
+<p>The throughput came from a rule about how their work reaches main, and the rule came from a bad evening the day before.</p>
 
 <h2>What stacking cost</h2>
 <p>That evening I let one wave of work land as a stack: each pull request based on the branch of the one below it, so they would merge in order. It looks tidy. It went badly, for reasons that are specific to this repository's setup and are probably true of yours:</p>
 <ul>
-  <li><strong>Nothing above the bottom of the stack got CI.</strong> The workflow runs for pull requests into <code>main</code>. A pull request into another branch ran no gates at all, so the stack was green the way an empty test suite is green.</li>
-  <li><strong>Squash merges into intermediate branches leave add-versus-nothing conflicts</strong> that have to be resolved by hand, and every resolution is a chance to drop someone's change.</li>
-  <li><strong>Closing keywords only fire on a merge into the default branch,</strong> so issues stayed open after their work had merged.</li>
-  <li><strong>The history stopped describing itself.</strong> When the stack collapsed, the commit on main titled for Dataset-JSON, CSV and XPT exports also carried the arcade's stage-fitting layout and its tests. Anyone bisecting a layout regression later lands on a commit whose message is about clinical exports.</li>
+  <li>Nothing above the bottom of the stack got CI. The workflow runs for pull requests into <code>main</code>. A pull request into another branch ran no gates at all, so the stack was green the way an empty test suite is green.</li>
+  <li>Squash merges into intermediate branches leave add-versus-nothing conflicts that have to be resolved by hand, and every resolution is a chance to drop someone's change.</li>
+  <li>Closing keywords only fire on a merge into the default branch, so issues stayed open after their work had merged.</li>
+  <li>The history stopped describing itself. When the stack collapsed, the commit on main titled for Dataset-JSON, CSV and XPT exports also carried the arcade's stage-fitting layout and its tests. Anyone bisecting a layout regression later lands on a commit whose message is about clinical exports.</li>
 </ul>
 
 <h2>The rule: one slot</h2>
 <p>Since then every pull request is cut from main and targets main. Work stays in draft until its quick checks pass. Only one pull request at a time may be marked ready: the one holding the slot. Whoever takes the slot merges the current main into their branch, reruns the fast checks if main moved, pushes, marks it ready and turns on auto-merge once. When it lands, the next one moves up.</p>
 <p>A few files are touched by nearly every feature: the command palette, the navigation data, the sitemap, the route metadata, <code>package.json</code>, the CI workflow and the README. Those take a lock in the lane file before anyone edits them, so two lanes never find the conflict at merge time.</p>
-<p>It is a merge queue, written in Markdown, which every agent reads before any pull request action. It is slower per pull request than letting everything race. It is much faster per day, because almost nothing has to be done twice.</p>
+<p>In effect it is a merge queue written in Markdown, and every agent reads it before any pull request action. Each pull request waits longer than it would in a free-for-all, but the day goes faster, because almost nothing has to be done twice.</p>
 
 <h2>What the slot does not protect</h2>
-<p>Serialising merges does not serialise <em>resources</em>. Two pull requests that day, Duck's Halloween mode and the new study data page, each passed every gate on its own and failed together. The cold type check needed about 2.54 GB of live heap, and CI's budget was 2,560 MB. Neither change was large. The program was simply around 5,800 files by then, and those two happened to be the pair that crossed the line.</p>
+<p>Serialising merges does not serialise <em>resources</em>. Two pull requests that day, Duck's Halloween mode and the new study data page, each passed every gate on its own and failed together. The cold type check needed about 2.54 GB of live heap, and CI's budget was 2,560 MB. Neither change was large. The program was around 5,800 files by then, and those two happened to be the pair that crossed the line.</p>
 <p>Both ceilings went up by 512 MB, with the CI budget still 512 MB below the production build's, so growth still fails a pull request before it can reach a deploy. Before raising anything, the obvious suspects were measured. Leaving the tests out of the program dropped memory from about 3.0 GB to 2.0 GB. Stubbing a 7.6 MB icon declaration file down to the 262 icons actually used made no difference that rose above the run-to-run noise of about 300 MB. That second result saved a refactor nobody needed.</p>
 <p>A budget gate is a shared resource. Parallel lanes spend it together, and the lane that crosses it is rarely the one that grew it most.</p>
 
 <h2>Two smaller lessons</h2>
-<p><strong>Push everything before you turn on auto-merge.</strong> The metric registry merged while its governance commit was still being written, because auto-merge does exactly what it says. The follow-up became its own pull request from main. Now a branch is finished before auto-merge goes on, or the next change is a fresh pull request.</p>
-<p><strong>A shared types file is a serial resource too.</strong> Every platform pull request added to the same types file and the same table in the architecture decision record. One evening I marked three of them ready and turned on auto-merge for all three at once. Each merge forced the other two to merge main again and resolve the same two files. Resolving additively (keep both type blocks, keep both table rows, regenerate the docs) made it safe. Following my own rule would have made it unnecessary.</p>
+<p>First, push everything before you turn on auto-merge. The metric registry merged while its governance commit was still being written, because auto-merge does exactly what it says. The follow-up became its own pull request from main. Now a branch is finished before auto-merge goes on, or the next change is a fresh pull request.</p>
+<p>Second, a shared types file is a serial resource too. Every platform pull request added to the same types file and the same table in the architecture decision record. One evening I marked three of them ready and turned on auto-merge for all three at once. Each merge forced the other two to merge main again and resolve the same two files. Resolving additively (keep both type blocks, keep both table rows, regenerate the docs) made it safe. Following my own rule would have made it unnecessary.</p>
 
 <h2>What I would tell someone starting</h2>
 <ul>
-  <li>Parallelise the building, not the merging. Agents in separate lanes are cheap; merges that race are not.</li>
+  <li>Build in parallel and merge one at a time. Agents in separate lanes are cheap, and merges that race cost rework.</li>
   <li>Do not stack branches unless CI runs on every base. Check that before you trust a green tick.</li>
   <li>Write the lane rules where the agents read them before acting, and keep each edit small and dated.</li>
   <li>Treat every budget CI enforces, whether memory, time or bundle size, as shared by every lane, and measure before you raise one.</li>
@@ -709,10 +709,10 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <h2>One session, three views</h2>
 <p>The plan gives each game one headless session and three views: desktop, tablet and phone.</p>
 <ul>
-  <li><strong>The session owns the game:</strong> state, the fixed-step loop, timers, saves, scoring and an action map. It never reads the viewport or the pointer type.</li>
-  <li><strong>The session is an external store.</strong> It exposes <code>getState</code>, <code>subscribe</code> and <code>dispatch</code>, plus an <code>onFrame</code> channel that asks the mounted view to paint once per frame. HUD components read slices of it, so a frame does not re-render React.</li>
-  <li><strong>A view only lays out and paints.</strong> Views never branch on the device. Choosing the view is the branch.</li>
-  <li><strong>The session holds no DOM.</strong> Canvases and WebGL contexts belong to the view and are disposed of when it unmounts. iOS caps a page at roughly sixteen live WebGL contexts, so a swap that leaked one would run out within a few rotations.</li>
+  <li>The session owns the game: state, the fixed-step loop, timers, saves, scoring and an action map. It never reads the viewport or the pointer type.</li>
+  <li>The session is an external store. It exposes <code>getState</code>, <code>subscribe</code> and <code>dispatch</code>, plus an <code>onFrame</code> channel that asks the mounted view to paint once per frame. HUD components read slices of it, so a frame does not re-render React.</li>
+  <li>A view only lays out and paints. Views never branch on the device. Choosing the view is the branch.</li>
+  <li>The session holds no DOM. Canvases and WebGL contexts belong to the view and are disposed of when it unmounts. iOS caps a page at roughly sixteen live WebGL contexts, so a swap that leaked one would run out within a few rotations.</li>
 </ul>
 <p>Rotating a phone or narrowing a window pauses the game, swaps the view and keeps the run.</p>
 
@@ -720,10 +720,10 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>Retro Labyrinth went first. The rule for the move was that code moved as it was and nothing was rewritten. The game's state and rules went into <code>useRetroLabyrinthSession</code>, the view now reads a typed snapshot and acts through named intents, and the presentation pieces went into shared parts. The view component went from 4,387 lines to about 1,430.</p>
 <p>"No gameplay change" is an easy claim to make about 57 changed files and a hard one to check by playing. Two things checked it instead:</p>
 <ul>
-  <li><strong>Replays.</strong> Five runs had been recorded on main before the move. After the move, all five replay to exactly the same result.</li>
-  <li><strong>Pixels.</strong> Screenshots at 1024, 1280 and 1440 pixels wide, with a frozen clock and seeded randomness, were compared against main. The launched and moved states are identical.</li>
+  <li>Replays: five runs had been recorded on main before the move. After the move, all five replay to exactly the same result.</li>
+  <li>Pixels: screenshots at 1024, 1280 and 1440 pixels wide, with a frozen clock and seeded randomness, were compared against main. The launched and moved states are identical.</li>
 </ul>
-<p>The screenshot comparison earned its keep. It found that a developer-only view picker was showing in production builds, and that patrols started moving while the view's code was still downloading. The loop now runs only while a view has registered a painter and the room is not paused.</p>
+<p>The screenshot comparison also found that a developer-only view picker was showing in production builds, and that patrols started moving while the view's code was still downloading. The loop now runs only while a view has registered a painter and the room is not paused.</p>
 
 <h2>Generate the docs from the map</h2>
 <p>Keys and gamepad buttons now come from one action map. The cabinet's control list and the field manual's key column are generated from it, which fixed a small, old lie: the control list said the tools sat on keys 1 to 3, and the game read 1 to 5.</p>
@@ -732,7 +732,7 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>The first CI run of that pull request failed device tests that had passed locally. They had passed locally because Playwright retried them. The summary said 120 passed, and the tests that only passed on a second attempt were counted inside that number. Device runs are now repeated with retries off before a pull request asks for review.</p>
 
 <h2>A report that was not a bug</h2>
-<p>A report said the touch controls in Working With Duck vanished after closing the wardrobe. They did, on purpose: a hardware Escape key had switched the input mode to keyboard, and the touch dock fades out until the next tap. The investigation was still worth it. The same dialog had close buttons with no accessible name and a heading order that skipped a level, and both are fixed.</p>
+<p>A report said the touch controls in Working With Duck vanished after closing the wardrobe. That was intended: a hardware Escape key had switched the input mode to keyboard, and the touch dock fades out until the next tap. Looking into it still turned up two real bugs. The same dialog had close buttons with no accessible name and a heading order that skipped a level, and both are fixed.</p>
 
 <h2>Where it stands</h2>
 <p>One registry now decides, per game, whether the phone notice shows, which badge the hub card carries and which games the notice suggests instead. Two of the twelve games play on a phone today: Trial &amp; Error and Meme Vault. Retro Labyrinth's phone view is next. A game comes off the notice only after it has been played on a real phone and is fun there, not just when its tests pass.</p>
@@ -755,28 +755,28 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     body: `
 <h2>What coverage cannot tell you</h2>
 <p>Line and branch coverage answer one question: did the tests execute this code? They say nothing about whether any test would notice if the code were wrong. A suite can run every line of a derivation and assert only that it returned an array.</p>
-<p>Mutation testing asks the second question directly. A tool (Stryker, here) makes small changes to the source one at a time: it flips a comparison, removes a <code>+ 1</code>, swaps <code>&amp;&amp;</code> for <code>||</code>. Then it runs the tests against each mutant. A mutant that no test kills is a change in behaviour your suite would have shipped.</p>
+<p>Mutation testing asks the second question. A tool (Stryker, here) makes small changes to the source one at a time: it flips a comparison, removes a <code>+ 1</code>, swaps <code>&amp;&amp;</code> for <code>||</code>. Then it runs the tests against each mutant. A mutant that no test kills is a change in behaviour your suite would have shipped.</p>
 
 <h2>The study data derivations</h2>
 <p>Until this week nothing mutation-tested the SDTM, ADaM and table derivations behind the <a href="/study-data">study data pipeline</a>. They sat under the library-wide coverage floor of 70% of branches, which is a low bar for code that decides who counts as having a treatment-emergent adverse event.</p>
-<p>The first run scored 80.65% over 1,891 mutants. The spread matters more than the total. Each file now has its own floor at its measured score: the ADaM core and the table filters at 91, the Kaplan-Meier code at 88, and the table assembly at 56. That last number is the honest one, and it is written into the configuration rather than averaged away.</p>
+<p>The first run scored 80.65% over 1,891 mutants, and the spread between files told me more than the total. Each file now has its own floor at its measured score: the ADaM core and the table filters at 91, the Kaplan-Meier code at 88, and the table assembly at 56. That last number is low, and it sits in the configuration as it is instead of being averaged into the others.</p>
 <p>Writing tests aimed at the surviving mutants added 27 edge cases on hand-made SDTM fixtures: baseline ties on the first-dose day, age-group boundaries, overlapping analysis windows, year-only partial dates, censoring for a subject with no contact at all. Branch coverage on the ADaM core went from 82% to 96%, and on the event derivations from 76% to 91%.</p>
 
-<h2>A ratchet, not a target</h2>
+<h2>A ratchet instead of a target</h2>
 <p>The issue asked for 95% branch coverage across the module. Measured coverage after the new tests was 86.8%, and most of the remaining branches are <code>?? []</code> fallbacks that the public API cannot reach. Tests written to hit them would exercise paths that real inputs never take, only to move a number.</p>
-<p>I chose a ratchet instead. The floor is set at today's measurement (96% of statements, 86% of branches, 99% of functions and 96% of lines), and a test pins it so it can only go up. A target says where you wish you were. A ratchet says where you are and does not let you slide back.</p>
+<p>I chose a ratchet instead. The floor is set at today's measurement (96% of statements, 86% of branches, 99% of functions and 96% of lines), and a test pins it so it can only go up. A target records where you would like to be. A ratchet records where you are and stops you sliding back.</p>
 
 <h2>The mutant that was a data problem</h2>
 <p>An independent QC suite programs the key derivations a second time from their specifications and compares them with the pipeline across 200 generated seeds. One mutant survives it anyway: move the end of the treatment-emergent window from fourteen days after last dose to thirteen, and nothing fails.</p>
-<p>The assertions are not the problem; the QC logic for that boundary is in place. The synthetic generator never lands an adverse event on that boundary, never writes a partial end date, and never discontinues a subject for any reason other than an adverse event. No assertion can catch a case the data never contains.</p>
-<p>That was the most useful thing the mutation run said. It points the fix at the test data rather than the tests: a library of deliberately messy scenarios, each with the findings it is expected to produce, is where those cases will come from.</p>
+<p>The QC logic for that boundary is in place. The gap is in the data: the synthetic generator never lands an adverse event on that boundary, never writes a partial end date, and never discontinues a subject for any reason other than an adverse event. No assertion can catch a case the data never contains.</p>
+<p>So the fix belongs in the test data: a library of deliberately messy scenarios, each with the findings it is expected to produce, is where those cases will come from.</p>
 
 <h2>What it costs</h2>
 <p>Mutation testing is slow, and the cost decides where it runs. The study data scope took 119 minutes on a loaded four-core container, so it runs weekly with a 150-minute bound, not on every pull request. The independent QC suite stays out of the mutation run: it costs about 30 seconds per re-import, which pushed the estimate past five hours.</p>
-<p>The tooling can fail too, and this time it failed loudly. Upgrading to Vitest 5 broke the Stryker runner: it built test-name filters with spaces, Vitest 5 joins test names with <code>" &gt; "</code>, and every mutant ran zero tests. The gate scored 0%. A zero is at least obviously wrong. A filter that matched half the tests would have produced a plausible number, and I would have believed it. Once the runner was updated, the pull request gate came back at 82.24%, the same as before the upgrade, which is the check that the upgrade changed nothing it should not have.</p>
+<p>The tooling can fail too. This time it failed loudly. Upgrading to Vitest 5 broke the Stryker runner: it built test-name filters with spaces, Vitest 5 joins test names with <code>" &gt; "</code>, and every mutant ran zero tests. The gate scored 0%. At least a zero is obviously wrong. A filter that matched half the tests would have produced a plausible number, and I would have believed it. Once the runner was updated, the pull request gate came back at 82.24%, the same as before the upgrade, which is the check that the upgrade changed nothing it should not have.</p>
 
 <h2>When to bother</h2>
-<p>Most code does not need this. Derivations do, along with anything where a wrong answer looks like a right one: a count that is off by the subjects on a boundary day still renders as a perfectly good table. For that kind of code, coverage tells you the tests were there. Mutants tell you they were paying attention.</p>
+<p>Most code does not need this. Derivations do, along with anything where a wrong answer looks like a right one: a count that is off by the subjects on a boundary day still renders as a perfectly good table. For that kind of code, coverage shows the tests ran, and mutants show whether they would notice a mistake.</p>
 `.trim(),
   },
   {
@@ -796,32 +796,32 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>Every production deploy of this site since 14 October went the same way. The build finished and the deployment showed READY. Then nothing happened. The domain stayed on the old deployment until I opened the Vercel dashboard and pressed Force Promote. On 25 October one deployment sat READY for almost an hour before I did.</p>
 <p>I had stopped noticing. Pressing Force Promote had become a step in the release, the same as pressing Deploy.</p>
 
-<h2>What was actually failing</h2>
-<p>Vercel holds a production deployment off its domains until the project's Deployment Checks pass. This project had two, Lint and Typecheck, which Vercel runs itself in a separate sandbox. The runbook, the deployment guide and an architecture decision record all said something else: that the check waited for the GitHub Merge Gate. That check had never been configured. The documents described a control that did not exist, and nobody re-read the settings page, because the documents were confident.</p>
+<h2>What was failing</h2>
+<p>Vercel holds a production deployment off its domains until the project's Deployment Checks pass. This project had two, Lint and Typecheck, which Vercel runs itself in a separate sandbox. The runbook, the deployment guide and an architecture decision record all said something else: that the check waited for the GitHub Merge Gate. That check had never been configured. The documents described a control that did not exist, and nobody re-read the settings page because the documents sounded sure.</p>
 <p>Lint passed every time. Typecheck printed "Types generated successfully", ran for about 80 seconds, and exited with code 137. Every production deployment checked since the 14th had failed the same way: eight of them.</p>
 <p>Exit 137 is a SIGKILL from the out-of-memory killer. The sandbox ran <code>tsc</code> with a 3,584 MB heap ceiling alongside ESLint, and the two did not fit in its memory together. This project had already raised that ceiling twice, most recently on 24 October, after two pull requests crossed the CI budget together. A third raise would not have helped: <code>--max-old-space-size</code> moves V8's limit, not the machine's.</p>
 
 <h2>Remove it, don't fix it</h2>
-<p>The tempting fix was to make the check pass: a smaller program, a bigger sandbox, lint on its own. The better question was what the check caught that nothing else did. The answer was nothing.</p>
+<p>One fix was to make the check pass with a smaller program, a bigger sandbox or lint on its own. First I asked what the check caught that nothing else did, and the answer was nothing.</p>
 <ul>
-  <li><strong>CI already runs both.</strong> The static gate runs lint and a cold type check on every pull request and every push to main, and the main branch requires it.</li>
-  <li><strong>The production build type-checks itself.</strong> It runs the type check as its own step before anything is compiled. A type error fails the build, so it never gets far enough for a deployment check to hold it.</li>
+  <li>CI already runs both. The static gate runs lint and a cold type check on every pull request and every push to main, and the main branch requires it.</li>
+  <li>The production build type-checks itself. It runs the type check as its own step before anything is compiled. A type error fails the build, so it never gets far enough for a deployment check to hold it.</li>
 </ul>
 <p>The Typecheck check was a third run of the same verification, on a machine too small for it. When it worked, it added nothing. When it failed, which was always, it taught the person releasing to override it. I removed both checks. The next production deploy had the domain 2.6 seconds after it was READY.</p>
 
 <h2>Don't swap in the obvious replacement</h2>
-<p>The documents had promised a Merge Gate check, so wiring one up looked like the honest fix. It would have failed in a new way. CI cancels an in-progress run on main when a newer merge lands, which keeps the queue short. A commit whose run was cancelled never gets a passing Merge Gate, so on a busy day the check would have held back any commit that was not the last to land. The documents now say what is configured, which is nothing, and why.</p>
+<p>The documents had promised a Merge Gate check, so wiring one up looked like the obvious fix, but it would have failed in a new way. CI cancels an in-progress run on main when a newer merge lands, which keeps the queue short. A commit whose run was cancelled never gets a passing Merge Gate, so on a busy day the check would have held back any commit that was not the last to land. The documents now say what is configured, which is nothing, and why.</p>
 
 <h2>A gate is worth what only it catches</h2>
-<p>An earlier post here, <a href="/blog/the-cost-of-being-wrong-quietly">The Cost of Being Wrong Quietly</a>, argued that a green check is only evidence when a red one was possible. The converse is just as true and does more damage. A check that is always red is not evidence either, and it is worse than no check at all, because it trains people to click past red. By the time a real failure arrived, Force Promote would have been muscle memory.</p>
+<p>An earlier post here, <a href="/blog/the-cost-of-being-wrong-quietly">The Cost of Being Wrong Quietly</a>, argued that a green check is only evidence when a red one was possible. A check that is always red is no evidence either, and it does more damage than having no check, because it trains people to click past red. By the time a real failure arrived, Force Promote would have been muscle memory.</p>
 <p>Questions I now ask of any gate:</p>
 <ul>
-  <li><strong>What does it catch that nothing earlier catches?</strong> If the answer is nothing, it is cost and noise.</li>
-  <li><strong>When did it last pass?</strong> A gate that has not passed in a week is not a gate. It is a step people skip.</li>
-  <li><strong>Does the documentation match the settings page?</strong> Check the provider, not the runbook. Here they disagreed about which check even existed.</li>
-  <li><strong>Is the fix more resources, or less duplication?</strong> Raising a limit is right when the work is necessary. Here it was the third copy of the same work.</li>
+  <li>What does it catch that nothing earlier catches? If the answer is nothing, it is cost and noise.</li>
+  <li>When did it last pass? A gate that has not passed in a week has become a step people skip.</li>
+  <li>Does the documentation match the settings page? Check the provider's settings. Here the runbook and the provider disagreed about which check even existed.</li>
+  <li>Is the fix more resources, or less duplication? Raising a limit is right when the work is necessary. Here it was the third copy of the same work.</li>
 </ul>
-<p>An override button is useful. It should feel unusual every time you press it. When pressing it has become routine, the thing it overrides is what needs attention.</p>
+<p>An override button is useful, and it should feel unusual every time you press it. Once pressing it is routine, look at the thing it overrides.</p>
 `.trim(),
   },
   {
@@ -839,39 +839,39 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     body: `
 <h2>Sixteen ways to break a study</h2>
 <p>The <a href="/study-data">study data pipeline</a> on this site has an "Inject an issue" menu. Each of its sixteen scenarios changes the synthetic study in one way real study data gets messy: an adverse event that started on 30 February, a screen failure screened again under the same subject number, a vital sign entered twice, sex recorded as FEMALE instead of F, a lab unit that changes mid-study, a missing baseline, a death on treatment. Each scenario also declares which of the site's own checks should fire and what the derivations should do with the bad value.</p>
-<p>The site's own checks flag or handle all sixteen as declared. That proves little, because they were written alongside the scenarios. So on 26 October I ran CDISC CORE, the open-source engine CDISC publishes for its conformance rules, over the clean run and every scenario, and committed what it found.</p>
+<p>The site's own checks flag or handle all sixteen as declared. That proves little, since they were written alongside the scenarios. So on 26 October I ran CDISC CORE, the open-source engine CDISC publishes for its conformance rules, over the clean run and every scenario, and committed what it found.</p>
 
 <h2>What CORE saw</h2>
 <p>On the clean run, CORE evaluated 430 SDTM rules. 282 passed, 136 did not apply to this study, 9 reported issues, and 3 hit engine errors. Every reported issue was already explained in the pipeline's list of known, justified findings.</p>
 <p>Then the scenarios. For twelve of the sixteen, CORE's output was identical to the clean run. For the other four:</p>
 <ul>
-  <li><strong>Impossible date.</strong> CORE did not say the date was impossible. It said the adverse event had no epoch, which is empty because no epoch can be derived from a day that does not exist. Right row, indirect reason.</li>
-  <li><strong>Rescreened subject.</strong> Caught directly: the subject identifier is no longer unique in demographics, and the supplemental qualifiers are no longer unique per subject.</li>
-  <li><strong>Death during treatment</strong> and <strong>withdrawal before Week 12.</strong> A finding that already existed on the disposition record changed its value. Nothing new was reported.</li>
+  <li>Impossible date: CORE said the adverse event had no epoch, which is empty because no epoch can be derived from a day that does not exist. Right row, indirect reason.</li>
+  <li>Rescreened subject: caught directly. The subject identifier is no longer unique in demographics, and the supplemental qualifiers are no longer unique per subject.</li>
+  <li>Death during treatment and withdrawal before Week 12: a finding that already existed on the disposition record changed its value. Nothing new was reported.</li>
 </ul>
 <p>The duplicated vital sign, FEMALE on a codelist that admits only F and M, the unit change and the missing baseline produced nothing at all.</p>
 
-<h2>That is not a flaw in CORE</h2>
-<p>CORE answers one question: does this dataset have the shape the standard requires? Are the required variables present, are the keys unique, do references resolve, do values sit where the implementation guide says they go? That question matters, and reviewers ask it first.</p>
+<h2>What CORE is for</h2>
+<p>CORE answers one question: does this dataset have the shape the standard requires? Are the required variables present, are the keys unique, do references resolve, do values sit where the implementation guide says they go? Reviewers ask that question first.</p>
 <p>Whether a measurement was entered twice, whether a subject has a baseline, whether a date exists on the calendar: those are questions about this study's data, and a published standard cannot answer them. A dataset can pass every structural rule and still say something false about a patient.</p>
-<p>So a clinical warehouse needs two layers, and neither replaces the other:</p>
+<p>So a clinical warehouse needs both layers:</p>
 <ul>
-  <li><strong>Conformance to the published standard.</strong> Run the engine the standard's authors publish, pinned to a recorded version, rather than a home-grown copy of their rules. When it and your copy disagree, it is your copy that has to explain itself.</li>
-  <li><strong>Study-specific data quality.</strong> Rules written against the protocol and the data: duplicates, missing baselines, impossible dates, units that drift. This layer is yours to write, and nobody else can.</li>
+  <li>Conformance to the published standard. Run the engine the standard's authors publish, pinned to a recorded version, instead of a home-grown copy of their rules. When the engine and your copy disagree, your copy has to explain itself.</li>
+  <li>Study-specific data quality. Rules written against the protocol and the data: duplicates, missing baselines, impossible dates, units that drift. This layer is yours to write, and nobody else can.</li>
 </ul>
-<p>The twelve silent scenarios also say which of the site's own rules are worth keeping. A local rule that duplicates a CORE rule is a second implementation to maintain. A local rule that catches what CORE cannot is the whole point of having local rules. The next step of this work retires only the first kind.</p>
+<p>The twelve silent scenarios also say which of the site's own rules are worth keeping. A local rule that duplicates a CORE rule is a second implementation to maintain. A local rule that catches what CORE cannot is the reason to have local rules. The next step of this work retires only the first kind.</p>
 
 <h2>The file that went stale in four minutes</h2>
 <p>CORE needs Python and several minutes per run, so it runs in a CI workflow, and its findings are committed to the repository as a JSON file the site can read with no server compute. Every view in that file carries a SHA-256 fingerprint of the pipeline output CORE ran on. A unit test recomputes the fingerprints and fails when any of them differ, so a stale file fails <code>npm test</code> in seconds, without Python.</p>
 <p>That test paid for itself within the hour. A pull request that added the inclusion and exclusion domain for screen failures merged at 23:51 UTC. The CORE pull request merged at 23:55. Each had passed CI against a main that did not contain the other. Together, the pipeline now produced a domain the recorded findings had never seen, and the test failed for all seventeen views. The fix reran CORE and recorded again: two new findings, both already explained, and five rules that had skipped for want of that domain now passed.</p>
-<p>Without the fingerprint, nothing would have failed. The file would have gone on describing a dataset that no longer existed, and the site would have shown CDISC's verdict on data CDISC never saw.</p>
+<p>Without the fingerprint nothing would have failed, and the file would have gone on describing a dataset that no longer existed, and the site would have shown CDISC's verdict on data CDISC never saw.</p>
 
 <h2>What I would take to any warehouse</h2>
 <ul>
-  <li><strong>Plant defects, then see which layer catches each one.</strong> The gaps tell you what your own rules are for.</li>
-  <li><strong>Do not read silence from a conformance engine as clean data.</strong> It means the structure is sound, and nothing more.</li>
-  <li><strong>Record the engine's version with its results.</strong> A finding without the rule set that produced it cannot be reproduced.</li>
-  <li><strong>Treat every committed derived file as a cache.</strong> Store the fingerprint of its inputs beside it and test that the two still match. Two green pull requests are not a green merge when one generates a file from the other's inputs.</li>
+  <li>Plant defects, then see which layer catches each one. The gaps tell you what your own rules are for.</li>
+  <li>Silence from a conformance engine means the structure is sound. It says nothing about whether the data is clean.</li>
+  <li>Record the engine's version with its results. A finding without the rule set that produced it cannot be reproduced.</li>
+  <li>Treat every committed derived file as a cache. Store the fingerprint of its inputs beside it and test that the two still match. Two green pull requests are not a green merge when one generates a file from the other's inputs.</li>
 </ul>
 <p>CDISC CORE is CDISC's open-source engine. Running it here does not imply CDISC endorsement.</p>
 `.trim(),
@@ -890,7 +890,7 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     updated_at: new Date("2026-10-27T13:00:00.000Z"),
     body: `
 <h2>What a release used to be</h2>
-<p>Until 26 October, production shipped when I opened the Vercel dashboard and pressed Create Deployment. About fourteen commits reach main on a typical day. I released five times between 4 and 19 October, and the last version tag was v0.4.1, from 30 September. If you had asked which version was live, the honest answer was a commit SHA from <code>/api/version</code> and whatever I remembered about it.</p>
+<p>Until 26 October, production shipped when I opened the Vercel dashboard and pressed Create Deployment. About fourteen commits reach main on a typical day. I released five times between 4 and 19 October, and the last version tag was v0.4.1, from 30 September. If you had asked which version was live, the true answer was a commit SHA from <code>/api/version</code> and whatever I remembered about it.</p>
 <p>Clinical systems often have the same shape. Each change is reviewed and tested on its own, but the release, the moment changes reach the people using them, rests on one person's memory. Change control asks a release four questions: what changed, who decided it should ship, what evidence showed it worked, and how do we get back. A pull request answers them for one change. Nothing answered them for the batch that went live.</p>
 
 <h2>Merges never deploy</h2>
@@ -904,7 +904,7 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 </ul>
 
 <h2>Test the commit you ship</h2>
-<p>This gap was the one I did not see coming. Every pull request passes the full browser suite before it merges. A squash merge then creates a new commit, and CI on main skips the browser jobs, so the commit that ships has never been in a browser. It is almost always the same code as the pull request. "Almost always" is a poor thing to write in a release record.</p>
+<p>I did not see this gap coming. Every pull request passes the full browser suite before it merges. A squash merge then creates a new commit, and CI on main skips the browser jobs, so the commit that ships has never been in a browser. It is almost always the same code as the pull request, and "almost always" is a poor thing to write in a release record.</p>
 <p>So the train builds the candidate itself, with the same bundle budgets as CI, and runs the full Chromium Playwright suite against it in three shards, in the same digest-pinned container image. Those jobs get a read-only token. If they fail, nothing ships and the train opens an issue for me. That issue does not hold next week's train, because production has not changed.</p>
 
 <h2>Publish after production answers</h2>
@@ -914,7 +914,7 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 
 <h2>The dry run that probed nothing</h2>
 <p>The train has a dry-run mode that probes the live site without drafting or deploying anything. The first dry run finished green. Its smoke-test job had been skipped.</p>
-<p>The probe job's <code>if</code> condition had no status function, so GitHub Actions added an implicit <code>success()</code>, which is false whenever any upstream job was skipped. A dry run always skips the release-candidate jobs. The fix was an explicit condition starting with <code>!cancelled()</code>, and a test now pins it (#3027). A skipped job shows as a grey icon in a green run, and nobody reads grey icons. A gate needs a test that proves it ran.</p>
+<p>The probe job's <code>if</code> condition had no status function, so GitHub Actions added an implicit <code>success()</code>, which is false whenever any upstream job was skipped. A dry run always skips the release-candidate jobs. The fix was an explicit condition starting with <code>!cancelled()</code>, and a test now pins it (#3027). A skipped job shows as a grey icon in a green run, and nobody reads grey icons, so a gate needs a test that proves it ran.</p>
 
 <h2>What I would keep anywhere</h2>
 <ul>
@@ -949,14 +949,14 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
   <li>NCI codes were written as an attribute that neither ODM nor Define-XML defines.</li>
   <li>The design audit trail was written as ODM elements that do not exist.</li>
 </ul>
-<p>Nothing had caught these because the only reader of the files was our own importer, written alongside the exporter. A round trip proves the two halves agree with each other. Whether either agrees with the standard is a separate question.</p>
+<p>Nothing had caught these because the only reader of the files was our own importer, written alongside the exporter. A round trip proves the two halves agree with each other. It says nothing about the standard.</p>
 
 <h2>Use the schema the authors publish</h2>
-<p>Each fix was small (#3039). The audit trail moved into a CRF Studio namespace in ODM's extension slot, which is how Define-XML extends ODM, with its own small extension schema. The importer still reads files saved before the change. The test is the part that lasts: every preset is now checked against the vendored official XSD on every run, so the next drift fails CI instead of somebody's import.</p>
+<p>Each fix was small (#3039). The audit trail moved into a CRF Studio namespace in ODM's extension slot, which is how Define-XML extends ODM, with its own small extension schema. The importer still reads files saved before the change. The test matters most: every preset is now checked against the vendored official XSD on every run, so the next drift fails CI instead of somebody's import.</p>
 <p>The ARS reporting event got the same treatment (#3045). Checked against the official ARS JSON schema, it failed in five ways. Lineage fields sat on classes that do not define them. Some analyses had no purpose. Nested where clauses had no level or order. Two file types were outside ARS's enumeration. Results carried ids ARS has no place for. The lineage was worth keeping, so it moved to its own file beside the ARS file, and a test proves the two files together rebuild the whole event. The schema test runs over the default study, two other seeds and all sixteen messy-data scenarios.</p>
 
 <h2>Codes that looked right</h2>
-<p>Controlled terminology is where plausible and wrong are hardest to tell apart, because a C-code is a letter and some digits. I swept the 213 NCI codes cited in the site's code against the published NCI EVS release of CDISC terminology (#3050). Some were wrong in ways nobody would catch by eye:</p>
+<p>In controlled terminology, plausible and wrong are hard to tell apart, because a C-code is a letter and some digits. I swept the 213 NCI codes cited in the site's code against the published NCI EVS release of CDISC terminology (#3050). Some were wrong in ways nobody would catch by eye:</p>
 <ul>
   <li>The USDM screening and follow-up epochs used general NCI Thesaurus concepts instead of the DDF epoch type terms.</li>
   <li>The code given for the NYHA class codelist belonged to a different codelist, and the PHQ-9 codelist code belonged to another questionnaire.</li>
@@ -966,16 +966,16 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 
 <h2>Then the rules engine</h2>
 <p>A schema checks shape. CDISC CORE, the open-source conformance engine CDISC publishes, checks rules on top of it. <a href="/blog/the-engine-checks-the-standard-not-the-study">An earlier post</a> covered running CORE over the study data pipeline. On 27 October we ran its USDM rules over every CRF Studio preset's export as well (#3055). It reported 103 findings, which came down to 19 explanations.</p>
-<p>Three of the nineteen were CORE's own mistakes: a rule that flags next and previous chains that are correct, one that reports a study's only title twice, and one that reports governance dates the export does not contain. Those are recorded as engine limitations, each with its reason. Bending the export to quiet them would have made it worse. The other sixteen were real export defects, among them missing eligibility criteria and five of the six presets with no arms, epochs or cells.</p>
+<p>Three of the nineteen were CORE's own mistakes: a rule that flags next and previous chains that are correct, one that reports a study's only title twice, and one that reports governance dates the export does not contain. Those are recorded as engine limitations, each with its reason. Changing the export to silence them would have made it worse. The other sixteen were real export defects, among them missing eligibility criteria and five of the six presets with no arms, epochs or cells.</p>
 <p>A follow-up fixed the ones the export code caused (#3061). The sponsor is now named as a study role. Every visit falls in an epoch, an unscheduled one in the epoch of the visit before it. The timeline orders visits the same way the visits order themselves. A one-arm design is labelled single group instead of parallel. That removed seven of the sixteen allowlist entries and narrowed two more. What remains is content CRF Studio does not hold yet, such as eligibility and endpoints, and the allowlist names each gap.</p>
 
 <h2>Check the checker too</h2>
-<p>The three misfires are the part I would point to when someone asks how to evaluate a tool, from a vendor or from your own team. An outside reference is useful only if you read what it says and are willing to disagree with it in writing. A suppressed finding needs a reason a reviewer can read. A finding you cannot explain needs a fix.</p>
+<p>I would point to the three misfires when someone asks how to evaluate a tool, from a vendor or from your own team. An outside reference helps only if you read what it says and are willing to disagree with it in writing. A suppressed finding needs a reason a reviewer can read. A finding you cannot explain needs a fix.</p>
 <p>What I would take to any team that exports a standard:</p>
 <ul>
-  <li>Get the official schema and run it in CI. A round trip through your own importer proves consistency with yourself, and that is all.</li>
+  <li>Get the official schema and run it in CI. A round trip through your own importer only proves you agree with yourself.</li>
   <li>Pin every reference: the schema, the terminology release, the engine version. A result can be reproduced only with its inputs.</li>
-  <li>Check terminology codes against the published release, not a list someone typed once.</li>
+  <li>Check terminology codes against the published release instead of a list someone typed once.</li>
   <li>Treat the reference engine as a second opinion to evaluate. Record its false positives with reasons, and fix everything else.</li>
 </ul>
 <p>CDISC CORE and these schemas are CDISC's. Using them here does not imply CDISC endorsement.</p>
@@ -1001,17 +1001,17 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 
 <h2>Writes from CI, reads at build time</h2>
 <p>The decision, ADR 0070, gives each store one job. DSQL is the warehouse of record: the synthetic gold layer is loaded into it and checked against the DuckDB copy. DynamoDB is to be the run ledger, one item per pipeline or release run, holding versions, hashes and conformance results.</p>
-<p>The rules about who touches them, and when, matter more than the products:</p>
+<p>I spent more time on who touches them, and when, than on the products:</p>
 <ul>
-  <li>Writes come only from GitHub Actions workflows on main, through an OIDC role. No access key exists anywhere. The role may connect to the one cluster, put, query and describe on the one table, and read one CloudWatch metric. A test pins that list so it cannot widen quietly. Pull requests, forks and other branches cannot assume the role.</li>
+  <li>Writes come only from GitHub Actions workflows on main, through an OIDC role. No access key exists anywhere. The role may connect to the one cluster, put, query and describe on the one table, and read one CloudWatch metric. A test pins that list so it cannot widen unnoticed. Pull requests, forks and other branches cannot assume the role.</li>
   <li>Reads happen only while the production site is built, through the Marketplace's read role. No route handler, server component, revalidation or middleware calls AWS. Visitors get static pages, and the compute budget does not move.</li>
   <li>A failed read fails the production build, the same rule the site applies to its database and cache. A build without the warehouse variables renders the page without that section. It never fills the gap with invented numbers.</li>
 </ul>
 <p>I would want the same shape in any clinical platform: one automated path writes the system of record, a second one reads it, and nobody writes to it by hand.</p>
 
 <h2>Prove the copy matches</h2>
-<p>Loading a warehouse is easy. Knowing the load is right takes the effort. The load plan (#3004) is pure code. It emits the statements, batched inside DSQL's limit of 3,000 rows per transaction, and a fingerprint for each table from the rows it loads. The loader (#3013) reads every table back, fingerprints what DSQL returns the same way, and writes a load manifest only when every table matches. It empties the manifest before it drops the first table, so a load that dies halfway leaves no manifest at all, rather than an old one that still says everything matched.</p>
-<p>Each fingerprint is a row count, a text length and a hash over the sorted rows, so the order DSQL returns rows in does not matter. It is a change detector, not a cryptographic hash, and the code says so. Making the two sides agree meant spelling out how PostgreSQL renders each type as text: dates as YYYY-MM-DD, booleans as words, and decimals sent as text so that no binary float reaches a NUMERIC column.</p>
+<p>Loading a warehouse is the easy part. Knowing the load is right takes more work. The load plan (#3004) is pure code. It emits the statements, batched inside DSQL's limit of 3,000 rows per transaction, and a fingerprint for each table from the rows it loads. The loader (#3013) reads every table back, fingerprints what DSQL returns the same way, and writes a load manifest only when every table matches. It empties the manifest before it drops the first table, so a load that dies halfway leaves no manifest at all instead of an old one that still says everything matched.</p>
+<p>Each fingerprint is a row count, a text length and a hash over the sorted rows, so the order DSQL returns rows in does not matter. It is a change detector and not a cryptographic hash, and the code says so. Making the two sides agree meant spelling out how PostgreSQL renders each type as text: dates as YYYY-MM-DD, booleans as words, and decimals sent as text so that no binary float reaches a NUMERIC column.</p>
 <p>DSQL has limits of its own: no temporary tables, no triggers, no PL/pgSQL, and one DDL statement per transaction. So its DDL is generated on its own instead of being shared with the DuckDB and T-SQL dialects the warehouse already produces.</p>
 
 <h2>An exit plan before the first load</h2>
@@ -1044,53 +1044,53 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     updated_at: new Date("2026-10-27T23:00:00.000Z"),
     body: `
 <h2>Three numbers for one question</h2>
-<p>Ask a clinical operations team how long site activation takes and you can get three answers in one meeting. The dashboard counts from the site's selection. The analyst's SQL counts from the protocol's final version. The BI model counts calendar days where the others count business days, and drops sites that never activated where the others don't. Every number is defensible. None of them is the number, and the meeting spends its hour reconciling instead of deciding.</p>
-<p>The usual fix is a document: a metric dictionary that every tool is meant to follow. Documents don't execute. Each tool still holds its own copy of the logic, and each copy drifts on its own schedule.</p>
+<p>Ask a clinical operations team how long site activation takes and you can get three answers in one meeting. The dashboard counts from the site's selection. The analyst's SQL counts from the protocol's final version. The BI model counts calendar days where the others count business days, and drops sites that never activated where the others don't. Each number is defensible, and the meeting spends its hour reconciling them instead of deciding anything.</p>
+<p>The usual fix is a document: a metric dictionary that every tool is meant to follow. A document doesn't execute, so each tool still holds its own copy of the logic, and each copy drifts on its own schedule.</p>
 <p>The <a href="/platform/governance">clinical data platform</a> on this site takes the other route. Each metric is defined once, as data, and every tool's version is compiled from that one definition.</p>
 
-<h2>A definition is data, not a query</h2>
-<p>The registry holds 53 governed metrics. Each one is a record, not a SQL string: the gold table it reads, the aggregation, the expression, the filters, the grain, the dimensions it may be grouped by, the unit and display format, a named owner and data steward, a link to the business glossary term it implements, a semantic version and a change log.</p>
+<h2>A definition is a record</h2>
+<p>The registry holds 53 governed metrics. Each one is a record instead of a SQL string: the gold table it reads, the aggregation, the expression, the filters, the grain, the dimensions it may be grouped by, the unit and display format, a named owner and data steward, a link to the business glossary term it implements, a semantic version and a change log.</p>
 <p>Site activation cycle time, for example, is the median of days from a site's first version in the site dimension to its activation date, over sites that have activated. Its description names the governed source of the start date: the study's protocol finalisation date, which the warehouse build uses to open each site's first version.</p>
 <p>From that one record a compiler emits five targets:</p>
 <ul>
-  <li><strong>SQL for DuckDB, PostgreSQL and SQL Server.</strong> Three dialects, because a median, a date difference and a null comparison are spelled differently in each.</li>
-  <li><strong>dbt MetricFlow YAML,</strong> for a semantic layer that sits over the warehouse.</li>
-  <li><strong>Power BI TMDL measures,</strong> for a semantic model, with the metric's display folder and format carried over.</li>
+  <li>SQL for DuckDB, PostgreSQL and SQL Server: three dialects, because a median, a date difference and a null comparison are spelled differently in each.</li>
+  <li>dbt MetricFlow YAML, for a semantic layer that sits over the warehouse.</li>
+  <li>Power BI TMDL measures, for a semantic model, with the metric's display folder and format carried over.</li>
 </ul>
 <p>The dashboards on the site use a TypeScript evaluator that reads the same records. Nobody hand-writes a metric in any of these places. Each generated file is checked in as a golden file, and a test fails when the generated output and the committed one drift apart, so any change to a definition shows up in review as a diff in every tool at once.</p>
 
 <h2>Prove the copies agree</h2>
-<p>Compiling from one definition removes hand-written drift. It does not prove the compiler is right. A wrong join compiled five times is wrong five times, consistently.</p>
+<p>Compiling from one definition removes hand-written drift, but it cannot show the compiler is right. A wrong join compiled five times is wrong five times.</p>
 <p>So the platform computes every metric twice, by independent routes. A test loads the seeded gold tables into DuckDB, runs each metric's generated SQL, and compares the result with the TypeScript evaluator on the same data, for every metric, every allowed dimension and every filter. The two implementations write the joins, the filters, the null handling and the aggregation separately. When they agree, that is evidence both compute what the definition says. When they disagree, one of them has a bug, and the test names the metric.</p>
-<p>Only the DuckDB output runs against data here. The PostgreSQL, SQL Server, MetricFlow and TMDL outputs are pinned by their golden files and by the compile rules below, not executed. That is a known limit, and I would rather say it than imply otherwise.</p>
+<p>Only the DuckDB output runs against data here. The PostgreSQL, SQL Server, MetricFlow and TMDL outputs are pinned by their golden files and by the compile rules below, and nothing executes them. That is a known limit.</p>
 
 <h2>Rules that run on every change</h2>
-<p>A registry is only as good as what it refuses. Before anything compiles, a check walks every definition and fails the build when a metric:</p>
+<p>Before anything compiles, a check walks every definition and fails the build when a metric:</p>
 <ul>
-  <li><strong>reads a table or column that does not exist</strong> in the gold model, or a type its aggregation cannot take;</li>
-  <li><strong>reads a nullable column without a not-null guard.</strong> SQL and DAX treat a null operand differently, so an unguarded null is a place where two correct compilations give two different answers;</li>
-  <li><strong>allows a dimension it cannot reach</strong> from every table it reads;</li>
-  <li><strong>is certified without a glossary term,</strong> or has a version its change log does not end at;</li>
-  <li><strong>makes a compliance or validation claim</strong> in its description.</li>
+  <li>reads a table or column that does not exist in the gold model, or a type its aggregation cannot take;</li>
+  <li>reads a nullable column without a not-null guard. SQL and DAX treat a null operand differently, so an unguarded null is a place where two correct compilations give two different answers;</li>
+  <li>allows a dimension it cannot reach from every table it reads;</li>
+  <li>is certified without a glossary term, or has a version its change log does not end at;</li>
+  <li>makes a compliance or validation claim in its description.</li>
 </ul>
 <p>Versions follow semantic versioning, and the check enforces it against a lock file that records each release. Changing a certified metric's formula, grain, unit or default filters, or removing a dimension, is a breaking change and needs a major version. Adding a dimension or changing status needs at least a minor one. A version cannot go backwards, and one version cannot describe two different calculations. A consumer pinned to version 1 of a metric knows that version 1 means one thing.</p>
-<p>Reports are held to the same rule from the other side: a certified report may only use certified metrics, never a draft or a deprecated one.</p>
+<p>Reports follow the same rule from the other side: a certified report may use only certified metrics, and no draft or deprecated ones.</p>
 
 <h2>Certification has to mean the source exists</h2>
-<p>The most useful decision the registry forced was about a metric it refused to certify. Overdue monitoring visit reports started with a 20-day deadline written into its formula. The number looked fine. The deadline came from nowhere: no table in the warehouse held it. Governance does not certify an unsourced business rule, so the metric stayed a draft, and no certified report could use it.</p>
-<p>The fix was not in the metric. Each study got a monitoring plan in the warehouse, with its own visit interval, window and report deadline: 20 days where the sponsor's procedure applies, 15 where a CRO's plan does. Now "overdue" means overdue against the study's own terms, and the metric is certified because its rule has a source a reviewer can open.</p>
+<p>One metric the registry refused to certify taught me the most. Overdue monitoring visit reports started with a 20-day deadline written into its formula. The number looked fine, but no table in the warehouse held the deadline. Governance does not certify an unsourced business rule, so the metric stayed a draft, and no certified report could use it.</p>
+<p>The fix went into the warehouse. Each study got a monitoring plan in the warehouse, with its own visit interval, window and report deadline: 20 days where the sponsor's procedure applies, 15 where a CRO's plan does. Now "overdue" means overdue against the study's own terms, and the metric is certified because its rule has a source a reviewer can open.</p>
 
 <h2>List what you cannot compute</h2>
 <p>The registry also keeps a list of metrics it does not define, with the reason and what would be needed. There are six today. One is the query rate per 100 CRF pages, a common operational measure. The gold model counts visits but not the CRF pages a visit produces, so the registry defines a query rate per 100 visits, says why in its description, and lists the per-page rate as a gap naming the missing column.</p>
-<p>The tempting alternative is to estimate pages per visit and ship the familiar number. That metric would look certified and be a guess. A listed gap is honest, and it is also a backlog: each entry says exactly which data would close it.</p>
+<p>The alternative is to estimate pages per visit and ship the familiar number, which would look certified and be a guess. A listed gap is also a backlog: each entry says which data would close it.</p>
 
 <h2>What I would take to any warehouse</h2>
 <ul>
-  <li><strong>Define metrics as data, then compile.</strong> A dictionary nobody executes is a wish. A definition that generates the SQL and the BI measure is a contract.</li>
-  <li><strong>Compute each metric twice, independently.</strong> One definition removes drift between tools. Two implementations that must agree catch the bugs that one definition would copy everywhere.</li>
-  <li><strong>Version metrics like an API.</strong> A changed calculation under the same version is how two quarters' numbers stop being comparable without anyone noticing.</li>
-  <li><strong>Certify only what has a source.</strong> A threshold someone typed in is an assumption, and a certified metric should not rest on one.</li>
-  <li><strong>Publish your gaps.</strong> Saying what you cannot yet measure is part of being trusted on what you can.</li>
+  <li>Define metrics as data, then compile. A definition that generates the SQL and the BI measure binds every tool; a dictionary nobody executes binds none.</li>
+  <li>Compute each metric twice, independently. One definition removes drift between tools. Two implementations that must agree catch the bugs that one definition would copy everywhere.</li>
+  <li>Version metrics like an API. A changed calculation under the same version is how two quarters' numbers stop being comparable without anyone noticing.</li>
+  <li>Certify only what has a source. A threshold someone typed in is an assumption, and a certified metric should not rest on one.</li>
+  <li>Publish your gaps. Saying what you cannot yet measure makes the rest easier to trust.</li>
 </ul>
 <p>All data on the platform is synthetic. Every study, site and subject is fictional.</p>
 `.trim(),

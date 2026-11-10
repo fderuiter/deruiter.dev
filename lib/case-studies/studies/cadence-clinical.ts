@@ -17,6 +17,8 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>The approach:</strong> Neo4j represents protocol relationships; PostgreSQL handles record transactions. Ports and adapters separate the study logic from storage, with append-only audit records and RSA-PSS signatures.</p>
 <p><strong>Reported project measurements:</strong> Sub-50ms API gateway latency; 100% GxP audit trail traceability; 65% faster cold test runner execution via <code>uv</code> monorepo workspaces.</p>
 
+<p>Cadence keeps one study's design and records together. The platform demo's <a href="/platform/portfolio">portfolio dashboard</a> looks across many studies instead, rating each one from synthetic data.</p>
+
 <h3>How it works</h3>
 <p><strong>Hexagonal Architecture (Ports &amp; Adapters):</strong> Domain logic across microservices is strictly decoupled from framework concerns. Ports define explicit interfaces while adapters handle persistence and network integration.</p>
 <p><strong>Dual Graph-Relational Data Core:</strong> Neo4j graph stores complex Schedule of Activities (SoA) and biomedical concept dependencies; PostgreSQL with SQLModel handles ACID-compliant clinical record transactions.</p>

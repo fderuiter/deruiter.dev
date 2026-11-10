@@ -18,9 +18,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> 100% offline air-gapped execution with zero remote API telemetry; sub-15ms classification latency per document; zero-data-loss two-phase commit file relocation with SHA-256 verification across 50,000+ files.</p>
 
 <h3>How it works</h3>
-<p><strong>Clean Architecture &amp; Strategy Pattern:</strong> File extraction (<code>extractor_strategies.py</code>) and classification (<code>analyzer_strategies.py</code>) isolate format-specific parsers and clustering algorithms behind unified abstract interfaces, ensuring clean extendability across PDF, DOCX, XLSX, and CSV formats.</p>
-<p><strong>Two-Phase Commit File Relocation:</strong> Staged file movement utilizes shadow directories, journaled state tracking, and SHA-256 integrity verification before and after file operations. Cross-partition hardlink and move failures (<code>EXDEV</code>) fall back gracefully to chunked streams with checksum verifications.</p>
-<p><strong>Encrypted SQLCipher Registry &amp; Worker Concurrency:</strong> Database encryption at rest is enforced via per-platform SQLCipher shared libraries with PRAGMA key derivation. Thread-isolated background workers communicate via non-blocking queues with the main UI thread (PyQt6/PySide6) to prevent interface lockups during bulk ingestion.</p>
+<p>File extraction (<code>extractor_strategies.py</code>) and classification (<code>analyzer_strategies.py</code>) put format-specific parsers and clustering algorithms behind shared interfaces, so a new format joins PDF, DOCX, XLSX, and CSV without touching the rest.</p>
+<p>Files move in two phases: they are staged in shadow directories, every step is journaled, and SHA-256 hashes are checked before and after. When a hardlink or move fails across partitions (<code>EXDEV</code>), the move falls back to chunked streams with checksums.</p>
+<p>The registry is encrypted at rest with per-platform SQLCipher libraries and PRAGMA key derivation. Background workers talk to the main UI thread (PyQt6/PySide6) through non-blocking queues, so the interface stays responsive during bulk ingestion.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -103,9 +103,9 @@ class HybridDocumentClassifier:
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Air-Gapped Local Inference vs. Cloud APIs:</strong> Executing local ONNX quantized embeddings eliminated all data exfiltration risks, guaranteeing 100% HIPAA and GDPR regulatory compliance for proprietary trial records.</li>
-  <li><strong>Cross-Filesystem Atomic Moves:</strong> Standard <code>os.rename()</code> fails across separate disk partitions with <code>EXDEV</code> errors. Implementing the shadow staging two-phase commit guaranteed atomicity regardless of mount configuration.</li>
-  <li><strong>SQLCipher Encryption Overhead:</strong> Optimized encrypted SQLite PRAGMA cache sizes (<code>PRAGMA cache_size = -64000</code>) to maintain sub-5ms record retrieval over 100k indexed files.</li>
+  <li>Quantized ONNX embeddings run locally instead of through a cloud API, so document contents never leave the machine.</li>
+  <li>Standard <code>os.rename()</code> fails across disk partitions with <code>EXDEV</code> errors. The shadow staging two-phase commit makes a move atomic whatever the mount configuration.</li>
+  <li>Encryption costs time, so the SQLite cache is tuned (<code>PRAGMA cache_size = -64000</code>) to keep record retrieval sub-5ms over 100k indexed files.</li>
 </ul>`,
     created_at: new Date("2026-02-20T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

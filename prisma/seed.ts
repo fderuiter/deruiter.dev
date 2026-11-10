@@ -1145,8 +1145,8 @@ flowchart TD
 
 <h3>5. Lessons Learned & Trade-Offs</h3>
 <ul>
-  <li><strong>Client-Side Pyodide WASM vs. Cloud APIs:</strong> Chose client-side execution over hosted API microservices (FastAPI/Celery) to eliminate server hosting overhead, maintain strict data privacy for clinical protocol designers, and enable offline-first simulation via Service Workers.</li>
-  <li><strong>Deterministic Parity:</strong> MCMC and CRM escalation models produce identical outputs on native CPython and Pyodide WebAssembly environments, verified via automated fixture suites (<code>test_crm_fixtures.py</code>).</li>
+  <li>The models run client-side in Pyodide WASM instead of behind hosted API microservices (FastAPI/Celery). That removes server hosting, keeps a protocol designer's inputs on their machine, and lets Service Workers run simulations offline.</li>
+  <li>MCMC and CRM escalation models give identical outputs on native CPython and in Pyodide WebAssembly, which fixture suites (<code>test_crm_fixtures.py</code>) check.</li>
 </ul>
     `.trim(),
   },
@@ -1436,8 +1436,8 @@ flowchart LR
 
 <h3>5. Lessons Learned & Trade-Offs</h3>
 <ul>
-  <li><strong>GC Management in Hard Real-Time Haskell:</strong> High-frequency real-time DSP logic in Haskell requires minimizing heap allocation in the main loop by reusing ForeignPtr buffers and compiling with <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
-  <li><strong>Lock-Free C++ Ring Buffer:</strong> Implemented custom C++ lock-free ring buffers for UART frame ingestion to eliminate garbage collector pauses in the critical ingestion path.</li>
+  <li>Hard real-time DSP in Haskell means keeping heap allocation out of the main loop: ForeignPtr buffers are reused, and the build uses <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
+  <li>UART frames land in a custom lock-free C++ ring buffer, so garbage collector pauses never touch the ingestion path.</li>
 </ul>
     `.trim(),
   },

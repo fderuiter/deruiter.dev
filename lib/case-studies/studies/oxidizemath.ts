@@ -18,9 +18,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> Sub-2ms Runge-Kutta adaptive stepping on 10,000-node lattices; compile-time LaTeX formula traceability; 100% WebAssembly browser execution parity.</p>
 
 <h3>How it works</h3>
-<p><strong>Procedural Macro Theory Verification:</strong> Custom AST visitors (<code>verified_engine_macros</code>) enforce mathematical invariants and formal LaTeX theory traceability at compile time.</p>
-<p><strong>Zero-Copy Double-Buffered State Execution:</strong> Thread-safe buffer swapping (<code>oxidize_core::double_buffer</code>) for grid-based PDEs and Lattice Boltzmann fluids, decoupling numerical compute loops from egui rendering threads.</p>
-<p><strong>WASM-First GUI Architecture:</strong> Cross-compiles identical math visualizers to native desktop binaries and zero-install WebAssembly canvas apps.</p>
+<p>Procedural macros with custom AST visitors (<code>verified_engine_macros</code>) check mathematical invariants at compile time and tie each formula back to its LaTeX source.</p>
+<p>Grid-based PDEs and Lattice Boltzmann fluids step in a double buffer (<code>oxidize_core::double_buffer</code>) that swaps without copying, so the numerical loop and the egui rendering thread never wait on each other.</p>
+<p>The same visualizers compile to native desktop binaries and to WebAssembly canvas apps that need no install.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -72,8 +72,8 @@ where
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Compile-Time LaTeX Verification:</strong> Macro-based formula verification caught mathematical variable index mismatches prior to expensive GPU simulations.</li>
-  <li><strong>Double-Buffered State Separation:</strong> Eliminating mutex contention between the numerical stepping thread and 60fps GUI render loop stabilized browser frame rates.</li>
+  <li>Checking formulas in macros caught variable index mismatches at compile time, before an expensive GPU simulation ran.</li>
+  <li>Removing mutex contention between the stepping thread and the 60fps GUI render loop steadied frame rates in the browser.</li>
 </ul>`,
     created_at: new Date("2026-02-28T00:00:00Z"),
     updated_at: new Date("2026-08-18T00:00:00Z"),

@@ -18,9 +18,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> Sub-10ms hard safety watchdog window; sub-millimeter motion tracking precision; zero-copy shared memory FFI bridge executing at 60fps.</p>
 
 <h3>How it works</h3>
-<p><strong>Functional Core / Imperative Shell:</strong> Pure mathematical modules (<code>Numeric.Kinematics</code>, <code>SignalProcessing.FMCW</code>, <code>SignalProcessing.Kalman</code>) are decoupled from IO and side-effects.</p>
-<p><strong>Lock-Free Circular Ring Buffer Bridge:</strong> High-throughput raw radar frame ingestion from TI IWR6843ISK mmWave hardware across C/C++ FFI via zero-copy shared memory abstractions.</p>
-<p><strong>Watchdog &amp; Fail-Safe Interlock Pattern:</strong> Independent watchdog thread verifying signal freshness and safety invariant tokens; any communication dropout immediately forces hardware beam-hold assertion.</p>
+<p>The core is functional and the shell imperative: pure modules (<code>Numeric.Kinematics</code>, <code>SignalProcessing.FMCW</code>, <code>SignalProcessing.Kalman</code>) do the math, and IO stays outside them.</p>
+<p>Raw radar frames from the TI IWR6843ISK mmWave board arrive through a lock-free ring buffer in C/C++ and cross the FFI through shared memory without copying.</p>
+<p>An independent watchdog thread checks that the signal is fresh and the safety tokens are valid. Any communication dropout asserts the hardware beam hold at once.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -123,7 +123,7 @@ assertBeamHoldHardwareInterlock = do
     -- Write direct GPIO pin register to halt LINAC beam immediately
 </code></pre>
 
-<h3>4. System Design & Data Flow Architecture</h3>
+<h3>System design and data flow</h3>
 <pre><code class="language-mermaid">
 flowchart LR
     A[TI IWR6843ISK mmWave Radar] -->|UART Raw Chirps| B[C++ Lock-Free RingBuffer]
@@ -136,10 +136,10 @@ flowchart LR
     D -->|FFI Bridge| I[C++ / OpenGL ImGui HUD Visualizer]
 </code></pre>
 
-<h3>5. Lessons Learned & Trade-Offs</h3>
+<h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>GC Management in Hard Real-Time Haskell:</strong> High-frequency real-time DSP logic in Haskell requires minimizing heap allocation in the main loop by reusing ForeignPtr buffers and compiling with <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
-  <li><strong>Lock-Free C++ Ring Buffer:</strong> Implemented custom C++ lock-free ring buffers for UART frame ingestion to eliminate garbage collector pauses in the critical ingestion path.</li>
+  <li>Hard real-time DSP in Haskell means keeping heap allocation out of the main loop: ForeignPtr buffers are reused, and the build uses <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
+  <li>UART frames land in a custom lock-free C++ ring buffer, so garbage collector pauses never touch the ingestion path.</li>
 </ul>`,
     created_at: new Date("2026-03-10T00:00:00Z"),
     updated_at: new Date("2026-08-14T00:00:00Z"),

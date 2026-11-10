@@ -15,12 +15,12 @@ export const SCHEDULE_FAQ: readonly FAQItem[] = [
   {
     question: "What can we talk about in a 30-minute chat?",
     answer:
-      "Clinical software engineering, CDISC data standards, distributed systems, web experiments, the projects on this site, or feedback on a side project. Bring a question or an idea and we will take it from there.",
+      "Clinical software engineering, CDISC data standards, distributed systems, web experiments, the projects on this site, or feedback on a side project. Bring a question or an idea.",
   },
   {
     question: "How do I book a time?",
     answer:
-      "Use the Google Calendar booking link on this page to pick an open slot. The call takes place on Google Meet and the booking link handles the calendar details.",
+      "Use the Google Calendar booking link on this page to pick an open slot. The call is on Google Meet, and the booking link handles the calendar details.",
   },
   {
     question: "Is this a formal consulting engagement?",
@@ -47,7 +47,7 @@ export const CRF_FAQ: readonly FAQItem[] = [
   {
     question: "Is CRF Studio ready for 21 CFR Part 11 use?",
     answer:
-      "It models Part 11 concepts such as electronic signature fields and audit-style field comments so you can design and discuss them. It is not a validated system, and it is not a substitute for a qualified electronic data capture platform in a regulated study.",
+      "No. It models Part 11 concepts such as electronic signature fields and audit-style field comments so you can design and discuss them. It is not a validated system, and it is not a substitute for a qualified electronic data capture platform in a regulated study.",
   },
   {
     question: "Can I try validation rules without writing code?",
@@ -70,6 +70,6 @@ export const LASER_LOON_FAQ: readonly FAQItem[] = [
   {
     question: "Which file formats are available?",
     answer:
-      "The download set includes the editable source vector (.ai), print vectors (.eps and .pdf), and web-ready files (.svg and .png). Pick the format that suits screen or print use.",
+      "The download set includes the editable source vector (.ai), print vectors (.eps and .pdf), and web-ready files (.svg and .png).",
   },
 ];

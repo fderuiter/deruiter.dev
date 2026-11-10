@@ -177,7 +177,8 @@ branches must follow conventional prefixes:
 
 Open pull requests against `main` and squash-merge them using a Conventional
 Commit PR title. Merging never deploys: the weekly release train ships
-`main` every Sunday at 7 PM Central as a versioned GitHub Release
+`main` every Monday at 01:00 UTC (Sunday at 7 PM Central standard time,
+8 PM daylight time) as a versioned GitHub Release
 ([ADR 0063](./adr/0063-weekly-release-train.md)). Feature branches do not
 deploy automatically. See
 [Release and deployment workflow](./docs/how-to/release-and-deploy.md).

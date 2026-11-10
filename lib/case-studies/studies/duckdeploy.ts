@@ -131,9 +131,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>The approach:</strong> The UI derives form state from JSON Schema. Web Workers compile that state into the selected deployment format.</p>
 
 <h3>How it works</h3>
-<p><strong>AST-Driven Dynamic UI Synthesis:</strong> Parses complex JSON Schema constructs (<code>oneOf</code>, <code>anyOf</code>, <code>$ref</code>, <code>patternProperties</code>) into an intermediate UI node tree (<code>SchemaNode</code>), mapping structural primitives to specialized, accessible input components.</p>
-<p><strong>Polymorphic Discriminated Union Store:</strong> Utilizes a Zustand-backed normalized state store that isolates inactive polymorphic union branches, preventing stale input parameters from leaking into compiled output manifests.</p>
-<p><strong>Off-Main-Thread Web Worker Compilation Pipeline:</strong> An isolated Web Worker execution sandbox (<code>manifest.worker.ts</code>) processes AST normalization, Zod constraint validation, and multi-format YAML generation without degrading React 19 rendering frame rates.</p>
+<p>The parser turns JSON Schema constructs (<code>oneOf</code>, <code>anyOf</code>, <code>$ref</code>, <code>patternProperties</code>) into an intermediate UI node tree (<code>SchemaNode</code>), and each kind of node maps to an accessible input component.</p>
+<p>A normalized Zustand store keeps the inactive branches of a union apart, so values typed into a branch the user switched away from never reach the compiled manifest.</p>
+<p>A Web Worker (<code>manifest.worker.ts</code>) normalizes the AST, validates it with Zod and writes the YAML for each format, so React 19 keeps its frame rate.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -254,10 +254,10 @@ addEventListener("message", ({ data }: MessageEvent&lt;{ formState: Record&lt;st
   <li><strong>Sub-4ms Keystroke Latency:</strong> Multi-target manifest generation is debounced with a 150ms worker dispatch queue, isolating heavy YAML serializations from the browser's 60fps main UI event loop.</li>
 </ul>
 
-<h3>5. Lessons Learned & Architectural Trade-Offs</h3>
+<h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Client-Side Worker Compilation vs. Remote REST API:</strong> Compiling manifests client-side eliminated server roundtrips, reducing preview update latency from 450ms to 2.4ms and allowing full offline manifest authoring.</li>
-  <li><strong>Custom AST Normalizer vs. Heavy Generic Schema Parsers:</strong> Authoring a tailored, lightweight AST normalizer reduced the client bundle footprint by 85KB compared to monolithic schema engines.</li>
+  <li>Compiling manifests in the browser instead of through a REST API removed the server round trip, cut preview updates from 450ms to 2.4ms, and lets manifests be written offline.</li>
+  <li>A small purpose-built AST normalizer is 85KB lighter in the client bundle than a general schema engine.</li>
 </ul>`,
     commands_json: JSON.stringify(DUCKDEPLOY_COMMANDS_OBJ),
     playback_json: JSON.stringify(DUCKDEPLOY_PLAYBACK_OBJ),

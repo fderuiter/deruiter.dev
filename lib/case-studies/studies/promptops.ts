@@ -121,9 +121,9 @@ export const caseStudy: CaseStudyData = compileCaseStudy({
 <p><strong>Reported project measurements:</strong> 99.4% reduction in downstream JSON parse exceptions; sub-25ms input/output assertion overhead; automated eval test suites evaluating 500+ golden cases across model upgrades.</p>
 
 <h3>How it works</h3>
-<p><strong>Prompt as Code &amp; SemVer Registry:</strong> Models prompt templates with typed input/output variables, storing versions with semantic SemVer tags (major: schema contract change, minor: prompt engineering optimization, patch: parameter/temperature tuning).</p>
-<p><strong>Structured Output Assertion &amp; JSON Repair:</strong> Enforces strict Zod schema validation on model outputs, with automated markdown stripping and bracket repair for multi-provider API responses (OpenAI, Anthropic, Ollama).</p>
-<p><strong>Automated CI/CD Evaluation Pipeline:</strong> Executes regression test suites against prompt releases on golden datasets, computing LLM-as-a-Judge semantic similarity, exact match rates, token costs, and latency metrics.</p>
+<p>Prompt templates are code with typed input and output variables, versioned with SemVer: major for a schema contract change, minor for a prompt rewrite, patch for parameter or temperature tuning.</p>
+<p>Every model output is validated against a Zod schema. Before that, the toolkit strips markdown and repairs brackets in responses from each provider (OpenAI, Anthropic, Ollama).</p>
+<p>CI runs regression suites against each prompt release on golden datasets and records LLM-as-a-Judge semantic similarity, exact match rate, token cost and latency.</p>
 
 <h3>How the pieces connect</h3>
 <pre><code class="language-mermaid">
@@ -220,9 +220,9 @@ async function runEvalSuite(
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Strict Schemas vs. Unstructured Chat:</strong> Schema-driven structured outputs combined with CI eval gates reduced downstream API contract failures by 99.4%.</li>
-  <li><strong>Multi-Provider Failover:</strong> Dynamic routing between Anthropic and OpenAI ensured high availability during third-party API degradation.</li>
-  <li><strong>Prompt Regression Isolation:</strong> Treating prompt templates as SemVer packages isolated behavioral changes, allowing safe rollbacks when model providers updated underlying model weights.</li>
+  <li>Structured outputs checked against schemas, plus CI eval gates, cut downstream API contract failures by 99.4%.</li>
+  <li>Routing between Anthropic and OpenAI keeps requests flowing when one provider's API degrades.</li>
+  <li>Versioning prompt templates as SemVer packages ties each behavior change to a version, so a prompt can be rolled back when a provider updates the model underneath it.</li>
 </ul>`,
     commands_json: JSON.stringify(PROMPTOPS_COMMANDS_OBJ),
     playback_json: JSON.stringify(PROMPTOPS_PLAYBACK_OBJ),

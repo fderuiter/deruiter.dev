@@ -97,6 +97,8 @@
       "DEMO-301",
       "DEMO-301",
       "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
       "DEMO-301"
     ],
     "DOMAIN": [
@@ -111,9 +113,11 @@
       "TS",
       "TS",
       "TS",
+      "TS",
+      "TS",
       "TS"
     ],
-    "TSSEQ": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "TSSEQ": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     "TSPARMCD": [
       "TITLE",
       "TPHASE",
@@ -126,7 +130,9 @@
       "NARMS",
       "RANDOM",
       "SDTIGVER",
-      "CTVERS"
+      "CTVERS",
+      "TRT",
+      "SSTDTC"
     ],
     "TSPARM": [
       "Trial Title",
@@ -140,7 +146,9 @@
       "Number of Arms",
       "Randomized Trial",
       "SDTM IG Version",
-      "Controlled Terminology Version"
+      "Controlled Terminology Version",
+      "Planned Treatment",
+      "Study Start Date"
     ],
     "TSVAL": [
       "A Randomised, Double-Blind, Placebo-Controlled Study of Demoxacin in Adults with Mild Hypertension",
@@ -154,7 +162,9 @@
       "3",
       "Y",
       "3.4",
-      "2026-09-25"
+      "2026-09-25",
+      "Demoxacin",
+      "2030-01-03"
     ],
     "TSVALCD": [
       null,
@@ -167,6 +177,8 @@
       null,
       null,
       "C49488",
+      null,
+      null,
       null,
       null
     ],
@@ -182,6 +194,8 @@
       null,
       "CDISC",
       null,
+      null,
+      null,
       null
     ],
     "TSVCDVER": [
@@ -196,8 +210,10 @@
       null,
       "2026-09-25",
       null,
+      null,
+      null,
       null
     ]
   },
-  "rowCount": 12
+  "rowCount": 14
 }

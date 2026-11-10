@@ -143,7 +143,7 @@ describe("a study without a questionnaire", () => {
     });
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("431abfbece74ddb9258072253631c89ce22b348857e8eb51d83e082df36432c1");
+    ).toBe("d8fb899766eb61711098dbc56449afc1de3591964fc512ea7ea8c9cdf6b207c9");
     expect(datasets.some((dataset) => dataset.name === "QS")).toBe(false);
   });
 });

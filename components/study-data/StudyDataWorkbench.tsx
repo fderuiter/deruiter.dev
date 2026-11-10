@@ -53,6 +53,7 @@ import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
 import { TlfPanel } from "./TlfPanel";
+import { TraceNumberPath } from "./TraceNumberPath";
 import {
   BUTTON_PRIMARY,
   BUTTON_SECONDARY,
@@ -63,10 +64,17 @@ import {
 } from "./ui";
 
 type TabId =
-  "datasets" | "conformance" | "define" | "guides" | "tlf" | "schedule";
+  | "datasets"
+  | "conformance"
+  | "define"
+  | "guides"
+  | "tlf"
+  | "trace"
+  | "schedule";
 
 const TABS: readonly { id: TabId; label: string }[] = [
   { id: "tlf", label: "Tables and figures" },
+  { id: "trace", label: "Trace a number" },
   { id: "datasets", label: "Datasets" },
   { id: "conformance", label: "Conformance" },
   { id: "define", label: "Define-XML" },
@@ -403,7 +411,7 @@ export function StudyDataWorkbench({
   };
 
   const traceFrom = useCallback(
-    (origin: LineageOrigin) => {
+    (origin: LineageOrigin, reveal = true) => {
       if (!summary) return;
       setTraceBusy(true);
       setTraceError(null);
@@ -420,7 +428,7 @@ export function StudyDataWorkbench({
           announce(
             `Traced ${result.title}: ${result.adam.total} ADaM rows, ${result.sdtm.total} SDTM records, ${result.collected.total} collected records, ${result.results.total} results.`
           );
-          const heading = lineageHeading.current;
+          const heading = reveal ? lineageHeading.current : null;
           if (heading) {
             heading.focus({ preventScroll: true });
             const reduced = window.matchMedia?.(
@@ -854,6 +862,21 @@ export function StudyDataWorkbench({
             <DefineViewer define={summary.define} />
           ) : tab === "guides" ? (
             <ReviewerGuidePanel guides={summary.guides} />
+          ) : tab === "trace" ? (
+            <TraceNumberPath
+              key={summary.runId}
+              tables={summary.tables}
+              trace={trace}
+              busy={traceBusy}
+              error={traceError}
+              onTrace={(resultIds) =>
+                traceFrom({ kind: "result", resultIds }, false)
+              }
+              onViewRecord={(record) => {
+                viewRecord(record);
+                document.getElementById("study-data-tab-datasets")?.focus();
+              }}
+            />
           ) : (
             <TlfPanel
               tables={summary.tables}

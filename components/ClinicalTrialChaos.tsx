@@ -2370,7 +2370,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                           "polite"
                         );
                         addAuditLog(
-                          "No authored protocol found. Author one in CRF Studio and click 'Simulate Protocol'.",
+                          "No authored protocol found. Author one in CRF Studio and choose Check, then 'Try in Clinical Trial Chaos (game)'.",
                           "WARN"
                         );
                       }}

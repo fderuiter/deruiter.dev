@@ -54,7 +54,7 @@ describe("StudioHeader & Keyboard Shortcuts Suite", () => {
     expect(container.textContent).toContain("Form Designer");
     expect(container.textContent).toContain("Visit Matrix (SoA)");
     expect(container.textContent).toContain("Logic & AST Rules");
-    expect(container.textContent).toContain("Live EDC Simulation");
+    expect(container.textContent).toContain("Live EDC data entry");
     expect(container.textContent).toContain("Annotated aCRF");
     expect(container.textContent).toContain("CDISC / Exports");
 

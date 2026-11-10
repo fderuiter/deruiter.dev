@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { devices, expect, test } from "@playwright/test";
 
 for (const width of [320, 375, 768]) {
   test(`CRF Studio keeps its study picker usable at ${width}px`, async ({
@@ -82,5 +82,33 @@ test.describe("CRF Studio touch targets (#3469)", () => {
       () => document.documentElement.scrollWidth > window.innerWidth
     );
     expect(horizontalOverflow).toBe(false);
+  });
+});
+
+test.describe("CRF Studio mobile redirect (#3204)", () => {
+  test("a phone user agent on /crf lands on /m/crf", async ({ browser }) => {
+    const context = await browser.newContext({
+      userAgent: devices["Pixel 7"].userAgent,
+      viewport: { width: 412, height: 915 },
+    });
+    const page = await context.newPage();
+    await expect(async () => {
+      await page.goto("/crf");
+      await expect(page).toHaveURL(/\/m\/crf$/, { timeout: 5_000 });
+    }).toPass({ timeout: 15_000 });
+    await context.close();
+  });
+
+  test("a desktop user agent on /crf stays on /crf", async ({ browser }) => {
+    const context = await browser.newContext({
+      userAgent: devices["Desktop Chrome"].userAgent,
+    });
+    const page = await context.newPage();
+    await expect(async () => {
+      await page.goto("/crf");
+      await expect(page).toHaveURL(/\/crf$/, { timeout: 5_000 });
+      expect(new URL(page.url()).pathname).toBe("/crf");
+    }).toPass({ timeout: 15_000 });
+    await context.close();
   });
 });

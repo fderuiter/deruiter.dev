@@ -58,6 +58,7 @@ import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
 import { RunDiffPanel } from "./RunDiffPanel";
+import { SandboxEditPanel } from "./SandboxEditPanel";
 import { StudySummaryCard, coreSummaryStatus } from "./StudySummaryCard";
 import { TlfPanel } from "./TlfPanel";
 import { TraceNumberPath } from "./TraceNumberPath";
@@ -774,6 +775,13 @@ export function StudyDataWorkbench({
         >
           {statusText}
         </p>
+        {summary ? (
+          <SandboxEditPanel
+            design={summary.design}
+            disabled={running}
+            onRerun={rerunWith}
+          />
+        ) : null}
         {runDiff && !running ? <RunDiffPanel diff={runDiff} /> : null}
         {summary?.injected && !running ? (
           <InjectedIssuePanel

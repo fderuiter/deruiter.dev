@@ -5,8 +5,8 @@ confirmations, case-study feedback alerts) and the inbound Resend
 deliverability webhook working locally or in a new deployment environment.
 See [ADR 0018](../../adr/0018-resilient-transactional-email-and-bot-defense.md)
 and [ADR 0024](../../adr/0024-resilient-resend-webhook-deliverability-and-outbound-retry-queue.md)
-for the design rationale behind the retry queue and bounce/complaint
-handling this configuration enables. See the
+for why the retry queue and the bounce and complaint handling work the way
+they do. See the
 [integration catalog](../reference/integrations-catalog.md) for how Resend
 fits alongside this project's other external integrations, and
 [how-to: configure Clerk, Sentry, Upstash, Vercel Cron/Analytics, and GitHub data fetching](configure-integrations.md)
@@ -24,9 +24,9 @@ RESEND_FROM_EMAIL="Your Name <notifications@yourdomain.com>"
 ```
 
 - **`RESEND_API_KEY`**: from the [Resend dashboard](https://resend.com/api-keys).
-  Live transmission is allowed only when the application runs as Production.
-  Development and Preview always use simulated delivery even if a key is
-  accidentally attached. Tests exercise a mocked transport with an explicit
+  Mail is sent for real only when the application runs as Production.
+  Development and Preview always simulate delivery, even if a key is attached
+  by mistake. Tests exercise a mocked transport with an explicit
   `re_test_` fixture key and never contact Resend.
 - **`RESEND_FROM_EMAIL`**: must be a verified sending address/domain in
   your Resend account, or sends will be rejected.
@@ -47,17 +47,17 @@ receives Resend's deliverability events (bounces, complaints, delivery
 confirmations). It:
 
 1. Requires all three Svix signature headers (`svix-id`, `svix-timestamp`,
-   `svix-signature`), a request missing any of them is rejected with 400.
+   `svix-signature`). A request missing any of them gets a 400.
 2. Verifies the signature via
    [`verifySvixSignature`](../../lib/services/email-service.ts) against
-   `RESEND_WEBHOOK_SECRET` before parsing the body at all, an invalid
-   signature is rejected with 401.
+   `RESEND_WEBHOOK_SECRET` before it parses the body. An invalid signature
+   gets a 401.
 3. Parses and validates the JSON payload against `ResendWebhookEventSchema`
-   in `lib/schemas.ts`, a payload that doesn't match is rejected with 422.
+   in `lib/schemas.ts`. A payload that doesn't match gets a 422.
 
-Because signature verification happens before JSON parsing, a webhook
-misconfigured with the wrong secret fails fast and visibly rather than
-silently accepting unverified events.
+Because the signature is checked before the JSON is parsed, a webhook set up
+with the wrong secret fails on the first event instead of quietly accepting
+unverified ones.
 
 ### Event selection
 
@@ -65,55 +65,52 @@ Only `email.bounced` and `email.complained` trigger a suppression-list
 write (`EmailService.recordSuppression`). Every other subscribed event type
 (`email.sent`, `email.delivered`, `email.delivery_delayed`, `email.opened`,
 `email.clicked`) is accepted and acknowledged (`handled: true`) but has no
-side effect, there is currently no delivery-analytics store for them.
+side effect, because there is no delivery-analytics store for them yet.
 
 ### Retry and duplicate-delivery semantics
 
 The route acknowledges an event with `200` only once it is durably
 processed. If the suppression-list write throws (database outage, connection
 drop, etc.), `EmailService.handleWebhookEvent` returns `{ handled: false }`
-and the route responds `500` instead of `200`, Resend/Svix treat any non-2xx
-response as a delivery failure and retry with backoff, so the event is not
-lost.
+and the route responds `500`. Resend and Svix treat any non-2xx response as a
+failed delivery and retry with backoff, so the event is not lost.
 
 A legitimate redelivery (Svix retrying after a prior non-2xx, or Resend
-sending a genuine duplicate) is never rejected outright, the route does not
-attempt to detect "have I seen this `svix-id` before" and short-circuit. Instead,
+sending a genuine duplicate) is never rejected. The route does not check
+whether it has seen a `svix-id` before. Instead,
 `recordSuppression` is an idempotent upsert keyed by the recipient's email
 address, so replaying the same `email.bounced`/`email.complained` event any
-number of times converges on the same suppression-list state rather than
-creating duplicate rows or duplicate side effects. This also means a batch
-event with multiple recipients is safe to fully retry after a partial
-failure: recipients already written are simply re-upserted as a no-op, and
-only the recipient that previously failed changes state.
+number of times leaves the suppression list in the same state, with no
+duplicate rows or side effects. A batch event with several recipients is also
+safe to retry in full after a partial failure. Recipients already written are
+upserted again with no change, and only the one that failed before changes
+state.
 
-This is a deliberate simplification for this Hobby-tier deployment: it trades
-a dedicated processed-event-ID ledger (which would let a duplicate be
-detected and skipped without re-touching the database at all) for relying on
-upsert idempotency, since a second write to the same suppression row is
-already both safe and cheap here.
+That is a deliberate simplification for a Hobby-tier deployment. A ledger of
+processed event IDs would let a duplicate be skipped without touching the
+database, but a second write to the same suppression row is already safe and
+cheap, so the upsert is enough.
 
 ### Suppression-check failure policy
 
 `EmailService.isSuppressed` (the *read* path, consulted before every
-outbound send) fails **open** on a database error, it returns
-`{ suppressed: false }` rather than blocking the send. This is intentional:
-a transient outage on the read path should not stop all outbound mail. It is
-asymmetric with the *write* path above on purpose, a suppression-list write
-failure must never be silently accepted, because losing it means a
-bounced/complained address could keep receiving mail indefinitely.
+outbound send) fails **open** on a database error. It returns
+`{ suppressed: false }` and the send goes ahead, because a brief outage on the
+read path should not stop all outbound mail. The *write* path above fails the
+other way on purpose. A failed suppression-list write is never accepted
+silently, because losing it could mean a bounced or complaining address keeps
+getting mail.
 
 ### Secret rotation
 
 Only a single active `RESEND_WEBHOOK_SECRET` is supported. There is no
-overlap window for verifying against both an old and a new secret during
-rotation, rotating the secret in the Resend dashboard and updating the
-environment variable must happen together, or verification will fail for
-requests signed with whichever secret is not currently configured.
+window where both the old and the new secret verify. Rotate the secret in the
+Resend dashboard and update the environment variable together, or requests
+signed with the secret that is not configured will fail verification.
 
 ### Durable outbound retry safety
 
-The daily unified maintenance route leases at most fifteen due queue rows
+The daily maintenance route leases at most fifteen due queue rows
 (`EMAIL_RETRY_BATCH_SIZE`) before dispatching them. An overlapping invocation can lease each row only once; if a
 worker stops unexpectedly, its five-minute lease expires and the row becomes
 eligible again. Every retry uses `portfolio-email-<queue-id>` as the Resend
@@ -166,18 +163,17 @@ In the Resend dashboard, add a webhook endpoint pointing at:
 https://<your-deployed-domain>/api/webhooks/resend
 ```
 
-Resend will generate a signing secret for that endpoint, copy it into
-`RESEND_WEBHOOK_SECRET`. Locally, you'll need a tunnel (e.g. an `ngrok`-style
-forwarding URL) pointing at `npm run dev`'s port if you want to receive real
-webhook deliveries against your local environment; otherwise, test the
-route directly (see step 4).
+Resend generates a signing secret for that endpoint. Copy it into
+`RESEND_WEBHOOK_SECRET`. To receive real webhook deliveries locally you need a
+tunnel (an `ngrok`-style forwarding URL) pointing at `npm run dev`'s port.
+Otherwise, test the route directly (see step 4).
 
 ## 4. Test the webhook locally without a live tunnel
 
 Because signature verification is a pure function of the raw body and the
 three Svix headers, you can construct a valid signed request in a test or a
-local script using the same secret your `.env.local` declares, without
-needing Resend to actually deliver anything. Follow
+local script with the secret in your `.env.local`, without Resend delivering
+anything. Follow
 [`__tests__/resend-webhook.test.ts`](../../__tests__/resend-webhook.test.ts)
 for the exact signing scheme
 (`${svixId}.${svixTimestamp}.${payload}`, HMAC over that string) and for
@@ -193,12 +189,12 @@ Submit the contact form (or trigger a newsletter subscription) locally and
 check the server logs for the simulated-send confirmation. Local development
 never transmits. Live delivery and bounce/complaint verification must be done
 from the protected Production environment with an approved synthetic
-recipient; confirm the event round-trips through the webhook route without a
-400/401/422 and retain only secret-redacted evidence.
+recipient. Confirm the event comes back through the webhook route without a
+400, 401 or 422, and keep only evidence with the secrets redacted.
 
 Before closing the provider configuration gate, an operator must verify the
 Production sending domain and sender, register the canonical
 `https://deruiter.dev/api/webhooks/resend` endpoint with the intended event
 types, scope the API and webhook secrets to Production, and confirm Preview has
-no transmitting path. These dashboard actions cannot be inferred from source
-code or automated without the protected account credentials.
+no way to send. None of these dashboard steps can be checked from the source
+code, or automated without the protected account credentials.

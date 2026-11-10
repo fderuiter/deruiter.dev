@@ -19,12 +19,12 @@ changing any of them, run:
 npm run env:check
 ```
 
-This is a **secret-safe preflight**: it checks that every declared key in
-`lib/env.ts` exists in `.env.example` and that your current environment
-matches the schema's types, it never opens a network connection to any
-provider, never mutates one, and never reports a simulated result as a live
-success. It will not tell you whether a credential is *valid*, only whether
-one is present and correctly shaped.
+This preflight is safe to run with real secrets. It checks that every key
+declared in `lib/env.ts` exists in `.env.example` and that your current
+environment matches the schema's types. It never opens a network connection to
+a provider, never changes one, and never reports a simulated result as a live
+success. It can tell you that a credential is present and correctly shaped,
+but not that it is *valid*.
 
 The setup wizard saves and offers to publish provider values only after the
 provider's offline check succeeds. If required values are missing or a value
@@ -53,18 +53,17 @@ surface is gated this way, and
 [`lib/auth/admin.ts`](../../lib/auth/admin.ts) for the authorization
 contract itself: `ADMIN_USER_IDS` matches on exact Clerk user ID,
 `ADMIN_EMAILS` matches only against an email address Clerk reports as
-`verification.status === "verified"`, an unverified address on the account
-never grants access, regardless of whether the string matches.
+`verification.status === "verified"`. An unverified address on the account
+never grants access, even when the string matches.
 
 ### Verification
 
-- With no allowlist configured at all, `/admin` must show the access-denied
-  view for any signed-in user, this is the default-closed behavior, not a
-  bug.
+- With no allowlist configured, `/admin` shows the access-denied view to every
+  signed-in user. That is the intended default-closed behavior.
 - `__tests__/clerk-auth-middleware.test.ts` exercises the full authorization
   contract (verified/unverified/absent verification, denied identity,
   missing allowlist, mismatched identity, and a simulated Clerk provider
-  failure) against synthetic Clerk objects, run it directly when changing
+  failure) against synthetic Clerk objects. Run it directly when you change
   anything in `lib/auth/admin.ts`:
 
   ```bash
@@ -84,14 +83,14 @@ never grants access, regardless of whether the string matches.
   actually running in (local `.env.local` vs. the deployed environment's
   variables are separate) and that the matching email is verified in Clerk's
   own dashboard for that user.
-- **Locked out of the only configured admin identity**: `ADMIN_USER_IDS`/
-  `ADMIN_EMAILS` are plain environment variables, not stored in Clerk, 
-  recovery is updating the deployment's environment variables directly
-  (Vercel project settings), no Clerk-side action needed.
+- **Locked out of the only configured admin identity**:
+  `ADMIN_USER_IDS`/`ADMIN_EMAILS` are plain environment variables, not Clerk
+  data. Update the deployment's environment variables in the Vercel project
+  settings to recover. Nothing needs to change in Clerk.
 - **Clerk backend API unavailable**: `isCurrentUserAdmin()` catches any
-  thrown error from `currentUser()`/`auth()` and returns `false` (fails
-  closed) rather than throwing, a Clerk outage denies admin access rather
-  than granting it or crashing the request.
+  thrown error from `currentUser()`/`auth()` and returns `false`. It fails
+  closed, so a Clerk outage denies admin access instead of granting it or
+  crashing the request.
 
 ## Sentry (error monitoring)
 
@@ -116,15 +115,13 @@ runtimes:
 ### Verification
 
 - With `NEXT_PUBLIC_SENTRY_DSN` unset, both server configs fall
-  back to a dummy DSN (`https://dummy@o0.ingest.sentry.io/0`), Sentry's SDK
-  accepts this and silently drops every event rather than throwing, so a
-  missing DSN never breaks a request. This means "no errors show up in
-  Sentry" is not by itself proof the app is healthy in an environment
-  without a real DSN configured, check the deployment's own logs too.
+  back to a dummy DSN (`https://dummy@o0.ingest.sentry.io/0`). Sentry's SDK
+  accepts it and drops every event without throwing, so a missing DSN never
+  breaks a request. It also means an empty Sentry dashboard proves nothing in
+  an environment without a real DSN. Check the deployment's own logs too.
 - `sentry.server.config.ts`'s `beforeSend` deliberately discards simulated
-  `GameEngineException` errors (from the arcade game engines), an
-  intentional filter, not a bug, if you're trying to confirm a *different*
-  error type reaches Sentry.
+  `GameEngineException` errors from the arcade game engines. Keep that filter
+  in mind when you check that a *different* error type reaches Sentry.
 
 ### Troubleshooting & recovery
 
@@ -134,8 +131,8 @@ runtimes:
   pointing at the dummy fallback value.
 - **No recovery action needed for a Sentry outage**: every call site uses
   `Sentry.captureException` as a side effect alongside its own
-  `console.error`/structured response, a Sentry-side outage does not by
-  itself block any request path in this codebase.
+  `console.error` or structured response, so a Sentry outage does not block
+  any request path in this codebase.
 
 ## Upstash Redis
 
@@ -144,30 +141,30 @@ runtimes:
 Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` from an Upstash
 Redis database's REST API credentials (Upstash's free tier is REST-only,
 which is why this project uses `@upstash/redis` rather than a raw TCP Redis
-client, see [`lib/redis.ts`](../../lib/redis.ts)).
+client; see [`lib/redis.ts`](../../lib/redis.ts)).
 
 To isolate deployments sharing an Upstash database:
 - `UPSTASH_REDIS_KEY_PREFIX`: optional custom key prefix (e.g. `preview-pr-123:`).
-- When running in Vercel Previews (`VERCEL_ENV="preview"`), the system automatically
-  applies the `preview:` namespace prefix to prevent preview rate limits and
-  telemetry buffers from colliding with or draining production data.
-- Production defaults to unprefixed keys (`telemetry_buffer`, `telemetry_processing`,
-  `@upstash/ratelimit`) to maintain continuous access to active queues without
-  disruption. Any production namespace modification must be operator-gated.
+- In Vercel Previews (`VERCEL_ENV="preview"`), keys get the `preview:` prefix
+  automatically, so preview rate limits and telemetry buffers never collide
+  with or drain production data.
+- Production uses unprefixed keys (`telemetry_buffer`, `telemetry_processing`,
+  `@upstash/ratelimit`) so the live queues keep working. Only the operator
+  changes the production namespace.
 
 ### Verification
 
-Run the safe, non-destructive Upstash verification CLI:
+Run the Upstash verification CLI, which changes nothing:
 
 ```bash
 npm run verify:upstash
 ```
 
-This inspects environment attachments, evaluates active namespace prefixes,
-checks quota limits, and reports live connectivity/latency (when configured)
-without revealing credentials or mutating database contents. Add `--strict` in
-automated deployment gates to require verified live connectivity, or `--json`
-for machine-readable telemetry audits:
+It reports which environments have the variables, which namespace prefix is
+active, how close the quota is and, when configured, live connectivity and
+latency. It never prints a credential or changes the database. Add `--strict`
+in an automated gate to require a live connection, or `--json` for
+machine-readable output:
 
 ```bash
 npm run verify:upstash -- --json
@@ -183,21 +180,19 @@ curl -X POST http://localhost:3000/api/telemetry \
 
 ### Outage response & circuit breaker
 
-- **Request deadline**: Upstream rate-limiting checks enforce an explicit
-  1500ms request deadline. If Upstash takes longer than 1500ms, the request
-  does not hang; it immediately trips the circuit breaker and falls back to
-  instance-local memory rate limiting.
-- **Circuit breaker cooldown**: Upon upstream timeout or connection failure,
-  a 30-second circuit breaker cooldown activates. During this window, all
-  requests bypass remote Redis calls and enforce rate limiting using an
-  in-memory generational double-buffered cache (`activeGeneration` /
-  `inactiveGeneration`), attaching standard `X-RateLimit-*` headers.
-- **Recovery probe**: After 30 seconds, the circuit breaker enters a half-open
-  state and probes Upstash again on the next request. If the provider has
-  recovered, distributed rate limiting resumes automatically.
-- **Lossy telemetry buffer fallback**: If Upstash buffer writes fail, the event
-  is dropped cleanly, logged to Sentry, and the API returns HTTP 202
-  (`durable: false`), preventing upstream retries from compounding outages.
+- **Request deadline**: Rate-limit checks against Upstash have a 1500ms
+  deadline. A slower answer trips the circuit breaker, and the request falls
+  back to in-memory rate limiting on that instance instead of hanging.
+- **Circuit breaker cooldown**: A timeout or connection failure starts a
+  30-second cooldown. During it, requests skip Redis and are rate limited by
+  an in-memory cache with two generations (`activeGeneration` /
+  `inactiveGeneration`), still with the standard `X-RateLimit-*` headers.
+- **Recovery probe**: After 30 seconds the breaker is half-open and tries
+  Upstash again on the next request. If Upstash answers, shared rate limiting
+  resumes.
+- **Lossy telemetry buffer fallback**: If a write to the Upstash buffer fails,
+  the event is dropped and logged to Sentry, and the API returns HTTP 202
+  (`durable: false`) so clients don't retry and make the outage worse.
 
 ### Credential rotation & namespace cleanup runbook
 
@@ -205,17 +200,17 @@ curl -X POST http://localhost:3000/api/telemetry \
   Update the Production URL and token together in Vercel project environment
   variables, then create a Production deployment from the current green `main`
   SHA in the Dashboard (or run the Weekly Train). Vercel binds variables at
-  deploy time (ADR 0063). There is no dual-secret overlap window in the
-  Upstash REST API, so the deployment constitutes the atomic switch.
-- **Preview namespace cleanup**: Ephemeral preview keys prefixed with `preview:`
-  or a custom PR prefix can be listed via `SCAN 0 MATCH preview:* COUNT 100`.
-  Queue keys have an explicit 48-hour TTL (`172800s`), and rate-limit sliding
-  windows expire within 60 seconds, ensuring automated reclamation without
-  manual deletion. Never execute un-prefixed `FLUSHDB` on shared instances.
+  deploy time (ADR 0063). The Upstash REST API has no window where both tokens
+  work, so the new deployment is the switch.
+- **Preview namespace cleanup**: List preview keys (prefixed `preview:` or
+  with a custom PR prefix) with `SCAN 0 MATCH preview:* COUNT 100`. Queue keys
+  have a 48-hour TTL (`172800s`) and rate-limit windows expire within 60
+  seconds, so nothing needs deleting by hand. Never run an unprefixed
+  `FLUSHDB` on a shared instance.
 - **Buffered telemetry events never reach Postgres**: check the Vercel Cron
-  job (`/api/cron/maintenance`, see below) is actually firing, buffered
-  events sit in Redis until that route drains them, they are not written to
-  Postgres directly on ingestion.
+  job (`/api/cron/maintenance`, see below) is firing. Buffered events stay in
+  Redis until that route drains them. Ingestion never writes them to Postgres
+  directly.
 
 ## Vercel Hosting, Cron, Analytics, and Speed Insights
 
@@ -223,8 +218,8 @@ curl -X POST http://localhost:3000/api/telemetry \
 
 - **Hosting**: connect the repository to a Vercel project; `vercel.json` at
   the repository root declares `buildCommand`/`installCommand` and the cron
-  schedule below. There is no dedicated setup script for this, it's a
-  one-time dashboard action per Vercel's own
+  schedule below. There is no setup script for this. It is a one-time
+  dashboard step, described in Vercel's
   [Git integration docs](https://vercel.com/docs/git). `vercel.json` also sets
   `git.deploymentEnabled: false`, so pushes do not deploy. The weekly release
   train fires a Deploy Hook for Production; Vercel Dashboard → Deployments →
@@ -234,8 +229,8 @@ curl -X POST http://localhost:3000/api/telemetry \
   (`0 0 * * *`). Vercel signs every cron invocation with an
   `Authorization: Bearer <CRON_SECRET>` header matching the `CRON_SECRET`
   environment variable configured on the project (see
-  [Vercel Cron Jobs docs](https://vercel.com/docs/cron-jobs)), set
-  `CRON_SECRET` in the Vercel project's environment variables to any strong
+  [Vercel Cron Jobs docs](https://vercel.com/docs/cron-jobs)). Set
+  `CRON_SECRET` in the Vercel project's environment variables to a strong
   random value.
 - **Analytics**: `@vercel/analytics/next`'s `<Analytics />` component is
   already mounted in [`app/layout.tsx`](../../app/layout.tsx); Vercel
@@ -250,8 +245,8 @@ curl -X POST http://localhost:3000/api/telemetry \
 
 - **Cron**: `lib/security.ts`'s `validateSyncRequest` fails closed (401) in
   any non-development environment when `CRON_SECRET` is unset, and rejects
-  any request whose `Authorization` header doesn't match, the fastest local
-  verification is calling the route with and without the header:
+  any request whose `Authorization` header doesn't match. The fastest local
+  check is to call the route with and without the header:
 
   ```bash
   # Unauthenticated (expected to fail once CRON_SECRET is set and NODE_ENV isn't development)
@@ -263,19 +258,19 @@ curl -X POST http://localhost:3000/api/telemetry \
   ```
 
 - **Analytics**: confirm data appears in the Vercel dashboard's Analytics
-  tab after visiting pages on a real (non-local) deployment, Vercel
-  Analytics does not report from `next dev`.
+  tab after visiting pages on a real (non-local) deployment. Vercel Analytics
+  does not report from `next dev`.
 - **Speed Insights**: confirm Real Experience Score (RES) and Core Web Vitals
   (LCP, FID/INP, CLS) appear in the Vercel dashboard's Speed Insights tab after
   visiting pages on a deployed preview or production URL. Speed Insights does
-  not emit telemetry during local `next dev` execution.
+  not report from local `next dev`.
 
 ### Troubleshooting & recovery
 
 - **Cron job stops running**: check the Vercel dashboard's Cron Jobs tab for
-  the job's execution history and last status; Vercel disables a project's
-  cron jobs entirely if the project moves off a plan that supports the
-  configured schedule frequency, confirm the current Hobby-plan cron limits
+  the job's history and last status. Vercel disables all of a project's cron
+  jobs if the project moves to a plan that doesn't support the schedule, so
+  confirm the current Hobby-plan cron limits
   at [vercel.com/docs/cron-jobs/usage-and-pricing](https://vercel.com/docs/cron-jobs/usage-and-pricing)
   before assuming a code regression.
   A missed sync is recoverable without code changes: the buffered events
@@ -296,9 +291,9 @@ calls GitHub's REST API unauthenticated, which GitHub rate-limits to 60
 requests/hour per source IP (see
 [GitHub's REST API rate-limit docs](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)).
 Setting `GITHUB_TOKEN` to a fine-grained personal access token with public
-read-only scope raises this to 5,000 requests/hour, no elevated
-permissions are required, since every call this codebase makes is a
-read-only public-repository fetch.
+read-only scope raises this to 5,000 requests/hour. No other permission is
+needed, because every call this codebase makes is a read-only fetch from a
+public repository.
 
 ### Verification
 
@@ -310,12 +305,12 @@ simulated sine-wave fallback (`generateMockCommitActivity`).
 
 ### Troubleshooting & recovery
 
-- **Stats look like a smooth sine wave instead of real activity**: this is
-  the intentional fallback for a 403 (unauthenticated rate limit) or 404
-  (private/unreleased repository) response, not a bug. Set `GITHUB_TOKEN`
-  or wait for the rate-limit window to reset.
-- **Build fails because of a GitHub API error**: it shouldn't, 
-  `lib/github.ts` treats 403/404 as expected offline/build conditions and
-  falls back to simulated data specifically so a rate limit never fails a
-  static build. If a build does fail here, that's a regression in the
-  fallback path itself, not an infrastructure problem to work around.
+- **Stats look like a smooth sine wave instead of real activity**: that is the
+  fallback for a 403 (unauthenticated rate limit) or 404 (private or
+  unreleased repository). Set `GITHUB_TOKEN` or wait for the rate-limit window
+  to reset.
+- **Build fails because of a GitHub API error**: it shouldn't. `lib/github.ts`
+  treats 403 and 404 as expected during offline builds and falls back to
+  simulated data so a rate limit never fails a static build. A build that
+  fails here means the fallback itself has regressed, so fix the fallback
+  rather than working around it.

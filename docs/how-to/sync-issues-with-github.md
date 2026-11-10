@@ -1,17 +1,17 @@
 # How-To: Synchronize Issues with GitHub CLI
 
-Goal: manage local tracer-bullet specifications in `.scratch/issues/` and synchronize them with remote GitHub Issues using `scripts/sync-issues.ts` and the `gh` CLI, adhering to ADR 0025.
+Goal: keep the local tracer-bullet tickets in `.scratch/issues/` in step with GitHub Issues, using `scripts/sync-issues.ts` and the `gh` CLI, as ADR 0025 describes.
 
 ---
 
 ## 1. Context & Architecture
 
-Per [ADR 0025](../../adr/0025-dual-tracker-issue-slicing-and-github-sync.md), autonomous agents perform best with self-contained, context-isolated tracer-bullet tickets in the local workspace (`.scratch/issues/`). However, team visibility, issue tracking, and PR linking benefit from native GitHub Issues with milestone tags and dependency references.
+Per [ADR 0025](../../adr/0025-dual-tracker-issue-slicing-and-github-sync.md), coding agents work best from small, self-contained tracer-bullet tickets in the local workspace (`.scratch/issues/`). People still need GitHub Issues to see the work, track it and link it from PRs, with milestones and dependency references.
 
-The **Dual-Tracker Issue Slicing Pattern** bridges this divide:
-1. **Local Tracer-Bullet Specification (`.scratch/issues/`)**: authored as standalone markdown files (`0001-<slug>.md`, `0548-<slug>.md`).
-2. **Automated GitHub CLI Synchronization**: zero-dependency script utilizing GitHub CLI (`gh issue list`, `gh issue create`, `gh issue edit`) to update or create GitHub Issues.
-3. **Execution Boundary**: agents work from local ticket files via `/implement`, clearing context between tickets, while commits and PRs reference both the ticket ID and GitHub issue number.
+The **Dual-Tracker Issue Slicing Pattern** keeps both:
+1. **Local Tracer-Bullet Specification (`.scratch/issues/`)**: one standalone markdown file per ticket (`0001-<slug>.md`, `0548-<slug>.md`).
+2. **Automated GitHub CLI Synchronization**: a script with no dependencies that calls the GitHub CLI (`gh issue list`, `gh issue create`, `gh issue edit`) to create or update GitHub Issues.
+3. **Execution Boundary**: agents work from the local ticket files with `/implement` and clear their context between tickets. Commits and PRs cite both the ticket ID and the GitHub issue number.
 
 ---
 
@@ -51,7 +51,7 @@ Target files: `lib/telemetry.ts`, `app/api/telemetry/route.ts`.
 
 ### Dry-Run Preview
 
-To inspect what changes would be dispatched without making network calls or mutations:
+To see what would change, without network calls or writes:
 
 ```bash
 npm run dx issues:sync -- --dry-run

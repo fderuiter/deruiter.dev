@@ -12,8 +12,7 @@ backup.
 
 - **When:** scheduled every Sunday at 23:00 UTC, two hours before the
   weekly release train. It can also be run by hand from Actions → Neon
-  Backup → Run workflow. The schedule is a target, not a guarantee: GitHub
-  can [delay or drop scheduled runs](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
+  Backup → Run workflow. The schedule can slip: GitHub can [delay or drop scheduled runs](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
   and the train does not check that a backup ran or succeeded. Before a
   release that needs a restore point, check one exists (see
   [Check backup readiness before a release](#check-backup-readiness-before-a-release)).

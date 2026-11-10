@@ -1,8 +1,8 @@
 # How-To: Add an API Route with a Zod Contract
 
 Goal: add a new `app/api/**/route.ts` endpoint that is validated at
-runtime with Zod and shows up in `openapi.json` automatically, with zero
-drift reported by `npm run check-docs-drift`.
+runtime with Zod and shows up in `openapi.json` automatically, with no drift
+reported by `npm run check-docs-drift`.
 
 ## 1. Define the request contract in `lib/schemas.ts`
 
@@ -20,9 +20,9 @@ export const ExampleSubmissionSchema = z.object({
 ## 2. Write the route handler behind `createApiHandler`
 
 Wrap the handler with [`createApiHandler`](../../lib/route-wrapper.ts)
-rather than exporting a bare `POST`/`GET` function. It gives you automatic
-Zod validation, uniform error shaping, Sentry exception capture, error
-sanitization, and security header enforcement for free:
+rather than exporting a bare `POST`/`GET` function. The wrapper validates the
+input with Zod, shapes every error the same way, reports exceptions to Sentry,
+sanitizes error messages and sets the security headers:
 
 ```ts
 // app/api/example/route.ts
@@ -49,15 +49,14 @@ example, including a custom validation-error formatter and rate limiting.
 ## 3. Regenerate the OpenAPI contract
 
 `scripts/generate-openapi.ts` walks every `app/api/**/route.ts` handler and
-asserts 100% coverage against `openapi.json`, a new, undocumented route
-handler fails the drift gate. Regenerate it:
+checks that `openapi.json` covers every one of them, so a new route that is
+not documented fails the drift gate. Regenerate it:
 
 ```bash
 npm run doctor:fix
 ```
 
-`doctor:fix` also resolves other fixable architectural invariants in the same
-pass. To regenerate only the contract, run `npx tsx scripts/generate-openapi.ts`.
+`doctor:fix` also fixes the other invariants it can. To regenerate only the contract, run `npx tsx scripts/generate-openapi.ts`.
 `npm run compile-docs` does not touch `openapi.json`; it compiles the TypeDoc
 reference for public `lib/`, `hooks/` and `types/` exports.
 
@@ -85,13 +84,11 @@ least one Zod validation failure.
 
 ## Common mistakes this prevents
 
-- **Forgetting the schema entirely**: without `options.schema`,
-  `createApiHandler` skips validation, any route accepting user input
-  should have one.
+- **Forgetting the schema**: without `options.schema`, `createApiHandler`
+  skips validation. Any route that accepts user input should have one.
 - **Hand-rolling error responses**: `createApiHandler` already sanitizes
-  errors and reports them to Sentry; a bare `try/catch` that swallows or
-  reformats errors duplicates that work and can leak internals in the
-  process.
+  errors and reports them to Sentry. A bare `try/catch` that swallows or
+  reformats errors repeats that work and can leak internals.
 - **Shipping a route the OpenAPI gate doesn't know about**: `npm run
   check-docs-drift` (and CI's `static-gate` job, summarized by Merge Gate)
-  fails fast specifically to catch this before review.
+  fails on it before review.

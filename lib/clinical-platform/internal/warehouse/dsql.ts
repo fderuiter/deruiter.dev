@@ -27,8 +27,10 @@ const DEFAULT_ROWS_PER_INSERT = 1_000;
 const MAX_PARAMETERS = 65_535;
 
 const quote = (identifier: string) => `"${identifier.replaceAll('"', '""')}"`;
-const tableRef = (table: WarehouseTable) =>
-  `${quote(table.layer)}.${quote(table.name)}`;
+/** The database schema a layer loads into, from `DsqlLoadOptions.schemas`. */
+type SchemaOf = (layer: string) => string;
+const tableRef = (table: WarehouseTable, schemaOf: SchemaOf) =>
+  `${quote(schemaOf(table.layer))}.${quote(table.name)}`;
 
 /** The column as the text `csvField` writes for it, computed by PostgreSQL. */
 function canonicalText(column: WarehouseColumn): string {
@@ -101,7 +103,7 @@ export function fingerprintDsqlRows(
  *
  * @param schema - The tables to load, in schema order, such as the gold layer.
  * @param warehouse - Rows from `buildWarehouse`.
- * @param options - Batch size.
+ * @param options - Batch size, and the database schema each layer loads into.
  * @returns The plan, with each table's expected row count, fingerprint and read-back query.
  */
 export function planDsqlLoad(
@@ -110,6 +112,7 @@ export function planDsqlLoad(
   options: DsqlLoadOptions = {}
 ): DsqlLoadPlan {
   const maxRows = options.maxRowsPerInsert ?? DEFAULT_ROWS_PER_INSERT;
+  const schemaOf: SchemaOf = (layer) => options.schemas?.[layer] ?? layer;
   if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > DSQL_ROW_LIMIT) {
     throw new RangeError(
       `maxRowsPerInsert must be an integer from 1 to ${DSQL_ROW_LIMIT}, not ${maxRows}.`
@@ -137,7 +140,7 @@ export function planDsqlLoad(
       });
       inserts.push({
         table: name,
-        text: `INSERT INTO ${tableRef(table)} (${columnList}) VALUES ${tuples.join(", ")}`,
+        text: `INSERT INTO ${tableRef(table, schemaOf)} (${columnList}) VALUES ${tuples.join(", ")}`,
         values,
         rowCount: batch.length,
       });
@@ -152,15 +155,15 @@ export function planDsqlLoad(
       fingerprint: fingerprintLines(lines),
       readback: `SELECT ${columns
         .map((c) => `${canonicalText(c)} AS ${quote(c.name)}`)
-        .join(", ")} FROM ${tableRef(table)}`,
+        .join(", ")} FROM ${tableRef(table, schemaOf)}`,
     });
   }
   return {
     schemaVersion: schema.version,
     drop: [...schema.tables]
       .reverse()
-      .map((table) => `DROP TABLE IF EXISTS ${tableRef(table)}`),
-    create: postgresStatements(schema),
+      .map((table) => `DROP TABLE IF EXISTS ${tableRef(table, schemaOf)}`),
+    create: postgresStatements(schema, schemaOf),
     inserts,
     parity,
     csvBytes,

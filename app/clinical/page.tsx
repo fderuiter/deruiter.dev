@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StudyPicker } from "@/components/clinical/StudyPicker";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -74,6 +75,8 @@ export default function ClinicalPage() {
           </p>
         </aside>
       </header>
+
+      <StudyPicker className="mt-10" />
 
       <section aria-labelledby="journey-title" className="py-10 sm:py-14">
         <h2

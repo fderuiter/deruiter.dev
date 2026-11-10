@@ -35,16 +35,16 @@ export default function PlatformPortfolioPage() {
           Portfolio dashboard
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
-          Eight synthetic studies side by side against their plans: each rated
-          on schedule, budget and quality by stated rules, every study&apos;s
-          milestones on one timeline, with the slips highlighted, how long each
-          took to start up, recruit and lock its database against the rest of
-          the portfolio, what each is now forecast to cost against its budget,
-          and when each study still enrolling is likely to enroll its last
+          Eight synthetic studies, each compared with its plan. Stated rules
+          rate every study on schedule, budget and quality, and one timeline
+          shows every study&apos;s milestones with the slips highlighted. The
+          dashboard compares how long each study took to start up, recruit and
+          lock its database, forecasts each one&apos;s cost against its budget,
+          and estimates when each study still enrolling will enroll its last
           subject, with a what-if that adds sites. Every measure comes from the
-          governed metric registry, the enrollment forecast from a seeded Monte
-          Carlo model, and every chart has its data table. To drill into one
-          study, open the{" "}
+          governed metric registry, the enrollment forecast comes from a seeded
+          Monte Carlo model, and every chart has its data table. To drill into
+          one study, open the{" "}
           <IntentLink
             href="/platform/operations"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"

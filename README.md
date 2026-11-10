@@ -203,18 +203,20 @@ that runs it.
 
 ## How it ships
 
-Merging to `main` never deploys. Once a week, Sunday at 7 PM Central, the
+Merging to `main` never deploys. Once a week, at 01:00 UTC on Monday, the
 weekly train checks that `main` is green and has no destructive migration,
 browser-tests the exact release candidate, cuts a versioned
 [GitHub Release](https://github.com/fderuiter/deruiter.dev/releases) with
 notes written from the commit messages, and asks Vercel to build that commit
 ([ADR 0063](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0063-weekly-release-train.md)).
 v1.0.0, the first release it cut, shipped on 2026-10-27. Anything that
-misses a Sunday goes out the next one.
+misses a Sunday goes out the next one. That run is Sunday at 7 PM Central
+in standard time and 8 PM in daylight saving time, because GitHub schedules
+in UTC.
 
 ```mermaid
 flowchart LR
-  M["Merged to main<br/>no deploy"] --> T{"Sunday 7 PM<br/>main green?"}
+  M["Merged to main<br/>no deploy"] --> T{"Sunday evening<br/>main green?"}
   T -- yes --> B["Browser-test<br/>the candidate"]
   B --> R["Draft release,<br/>fire deploy hook"]
   R --> S{"Live site<br/>smoke test"}

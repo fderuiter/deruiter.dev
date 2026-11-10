@@ -95,6 +95,22 @@ describe("CaseStudyFeedbackSection UI Component", () => {
     cleanup();
   });
 
+  it("sends no feedback GET when the section mounts (#3199)", async () => {
+    render(<CaseStudyFeedbackSection slug={slug} />);
+    const fetchMock = vi.mocked(global.fetch);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([url]) =>
+          String(url).includes("/api/case-studies/reactions")
+        )
+      ).toBe(true)
+    );
+    const feedbackCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).includes("/api/case-studies/feedback")
+    );
+    expect(feedbackCalls).toEqual([]);
+  });
+
   it("renders reaction options and predefined takeaways", async () => {
     render(<CaseStudyFeedbackSection slug={slug} />);
 

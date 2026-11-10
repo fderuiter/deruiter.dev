@@ -42,10 +42,6 @@ interface ReactionsResponse {
   userReactions?: string[];
 }
 
-interface FeedbackStatusResponse {
-  hasSubmitted?: boolean;
-}
-
 interface FeedbackSubmitResponse {
   message?: string;
 }
@@ -144,20 +140,17 @@ export function CaseStudyFeedbackSection({
     }
   }, [dlqQueue, slug]);
 
-  // Initial fetch for reaction counts and submission status
+  // Initial fetch for reaction counts. Whether this visitor already sent
+  // feedback comes from the local submit queue below, not from a GET that
+  // would read the database on every case study view (#3199).
   useEffect(() => {
     let isMounted = true;
 
     async function loadReactionsAndStatus() {
       try {
-        const [rxRes, fbRes] = await Promise.all([
-          apiClient.get<ReactionsResponse>(
-            `/api/case-studies/reactions?slug=${encodeURIComponent(slug)}`
-          ),
-          apiClient.get<FeedbackStatusResponse>(
-            `/api/case-studies/feedback?slug=${encodeURIComponent(slug)}`
-          ),
-        ]);
+        const rxRes = await apiClient.get<ReactionsResponse>(
+          `/api/case-studies/reactions?slug=${encodeURIComponent(slug)}`
+        );
 
         if (rxRes.data && isMounted) {
           if (rxRes.data.counts) {
@@ -168,16 +161,9 @@ export function CaseStudyFeedbackSection({
           }
         }
 
-        if (fbRes.data?.hasSubmitted && isMounted) {
-          setHasSubmittedFeedback(true);
-        }
-
-        if (
-          (rxRes.networkError || fbRes.networkError) &&
-          !isProductionEnvironment()
-        ) {
+        if (rxRes.networkError && !isProductionEnvironment()) {
           logger.error(
-            "Failed to load case study reaction/feedback status: network error"
+            "Failed to load case study reaction counts: network error"
           );
         }
       } finally {

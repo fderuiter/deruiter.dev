@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StudyPicker } from "@/components/clinical/StudyPicker";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
@@ -105,6 +106,8 @@ export default function StudyDataPage() {
           fictional, and every subject is generated from a seed.
         </p>
       </header>
+
+      <StudyPicker className="mt-10" />
 
       <StudyDataWorkbench
         design={toScheduleDesign(DEMO_301_STUDY)}

@@ -8377,8 +8377,8 @@
       ],
       "notices": []
     },
-    "framer-motion@13.5.1": {
-      "integrity": "sha512-HeWOaeHD3kyTSIEMT6+nw7fBn4saIfxxabZyAITbycAl4xr1kzGJKIvGt/OWghSlvIA9qTnZ1zTGelHAe6S8DA==",
+    "framer-motion@14.11.1": {
+      "integrity": "sha512-kXs+RHzja034QumwdXJubF0az86ueiWtANLB7FbhM+WKNGrgmYHysRRWG+we2KEpWv1+8W4eoMtsKaUldf54nA==",
       "homepage": "https://github.com/motiondivision/motion#readme",
       "repository": "git+https://github.com/motiondivision/motion.git",
       "author": "Matt Perry",
@@ -10624,8 +10624,8 @@
       ],
       "notices": []
     },
-    "motion-dom@13.5.1": {
-      "integrity": "sha512-/7CVCD20Mz1KobktorpdgvowV0V41J7UxqE+qWS3GkSJqrRr5ft+2RloOYtEKv+wvBp3JaSFBclhxt4ja8ovHg==",
+    "motion-dom@14.11.1": {
+      "integrity": "sha512-H/12gSe24nuV19IR7jHLObI+5Tm34UA/S5JaUye802l19VoVsT1USE+Suv+G/XO1U+YmXI9Nnbs4Krd4FthSSg==",
       "homepage": "https://github.com/motiondivision/motion#readme",
       "repository": "git+https://github.com/motiondivision/motion.git",
       "author": "Matt Perry",
@@ -10638,8 +10638,8 @@
       ],
       "notices": []
     },
-    "motion-utils@13.5.0": {
-      "integrity": "sha512-Hqe/sqjIKliPZg8sVjWAkdySDPJNIeKH+euVkDOG8ri3DUUU7ZjndmHsGqEPz2iHpiyVaV5I22iguCMHU2he+Q==",
+    "motion-utils@14.7.0": {
+      "integrity": "sha512-woO0/Nb7ys75f94fjvQi/6leiHGvZUYkeHUPEZ3vxsV+9OpEVhkxp01x8MlRwX0zt31EqgXsKDAoBoJLC148Tw==",
       "homepage": "https://github.com/motiondivision/motion#readme",
       "repository": "git+https://github.com/motiondivision/motion.git",
       "author": "Matt Perry",

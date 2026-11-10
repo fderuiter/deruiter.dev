@@ -157,7 +157,8 @@ The view is chosen by space first, then by pointer.
 
 ### The three bars
 
-A game's epic closes only when all three bars hold.
+A game's epic closes only when its bars hold: the desktop and tablet bars
+always, and the phone bar only when the game claims phone support.
 
 **Desktop** (1024 to 2560 px, fine pointer)
 
@@ -177,6 +178,11 @@ A game's epic closes only when all three bars hold.
 - The tablet view is extracted from today's touch branches, not redesigned.
 
 **Phone**
+
+The phone bar applies only to a game that claims phone support, which
+means its `views.phone` in `ARCADE_REGISTRY` is not `gated`. A game that
+keeps `views.phone` at `gated` stays behind `DesktopOnlyGate` on phones,
+needs no phone score, and closes its epic on the desktop and tablet bars.
 
 ADR 0061's phone bar, items 1 to 12, plus:
 
@@ -211,7 +217,7 @@ ADR 0061's phone bar, items 1 to 12, plus:
   first-seen order, and the assists it reached) ride in the run snapshot and
   beside the game's best score, and trophies, par stars, the Arcade Daily
   and share text read them through `isUnassisted` and `assistLabel`.
-- **20. Fun.** A fresh phone playtest on the
+- **20. Fun.** For a game that claims phone support, a fresh phone playtest on the
   [arcade playtest rubric](../docs/explanation/arcade-playtest-rubric.md) scores 9/10 or better
   at 320x568, 375x667, 393x852 and 430x932 plus one landscape size, with no
   blockers or should-fix findings, then a check on a real iPhone and a real
@@ -373,3 +379,15 @@ Then the Retro Labyrinth pilot,
 [#2375](https://github.com/fderuiter/deruiter.dev/issues/2375), each later game
 in turn, and the cleanup,
 [#2373](https://github.com/fderuiter/deruiter.dev/issues/2373), after the last.
+
+## Amendment 2026-11-10: the phone bar applies only to games that claim phone support
+
+The three bars no longer require a phone view from every game
+([#2387](https://github.com/fderuiter/deruiter.dev/issues/2387), following the
+owner's 2026-10-28 decision to narrow Meme Vault to desktop and tablet). A game
+claims phone support by setting `views.phone` to anything other than `gated` in
+`ARCADE_REGISTRY`. Only then does the phone bar, items 13 to 20, apply, including
+item 20's 9/10 phone playtest. A game that does not claim it stays behind
+`DesktopOnlyGate` on phones and closes its epic on the desktop and tablet bars.
+So `DesktopOnlyGate` and ADR 0048 stay for as long as any game keeps
+`views.phone` at `gated`, rather than retiring with the last game.

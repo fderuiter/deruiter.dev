@@ -95,10 +95,10 @@ remaining 16 of the 18 committed migrations (one per `prisma/migrations/` direct
 from `20260814000000_add_simulated_telemetry` through
 `20261026000000_reorder_case_study_reaction_unique_constraint`) as pending.
 
-**Halt Condition:** Operators must ONLY halt deployment if `prisma migrate status`
-reports missing migration files, unrecognized migrations outside the active inventory,
-or unresolvable schema drift errors. Do NOT halt deployment simply because
-more than one migration is pending on an unledgered database setup.
+**Halt Condition:** Stop the deployment only if `prisma migrate status`
+reports missing migration files, migrations outside the active inventory, or
+schema drift that cannot be resolved. Several pending migrations on an
+unledgered database are expected and are not a reason to stop.
 
 ### Verify
 
@@ -146,7 +146,7 @@ endpoints.
 
 ### Schema drift verification
 
-To verify that the database schema is synchronized with `prisma/schema.prisma` without executing live database connections or making mutations, run the schema drift check:
+To check that the database schema matches `prisma/schema.prisma` without changing anything, run the schema drift check:
 
 ```bash
 npm run check:migrations:drift
@@ -162,7 +162,7 @@ npm run check:migrations
 
 ### Disposable migration replay (`npm run migration:replay`)
 
-To prove that the full committed migration history reaches the current `prisma/schema.prisma` from an empty database without reading ambient production credentials or risking data corruption, run the dedicated migration replay command:
+To show that the committed migration history builds the current `prisma/schema.prisma` from an empty database, without reading production credentials or touching real data, run the replay command:
 
 ```bash
 npm run migration:replay
@@ -170,10 +170,10 @@ npm run migration:replay
 
 #### Replay execution model & target precedence
 
-1. **Target Precedence**: Replay looks for an explicit disposable target via `--url <url>`, `MIGRATION_REPLAY_URL`, or `DISPOSABLE_DATABASE_URL`. If none is specified, it checks for an available local Docker daemon to spin up an ephemeral container (`postgres:17-alpine`).
-2. **Ambient Credential Isolation**: The replay command deliberately ignores `.env`, `.env.local`, and ambient `DIRECT_URL` / `DATABASE_URL` values to prevent accidental replay or drift checks against live environments.
-3. **Target Disposability Guard**: External or production hosts (e.g. `*.neon.tech`, `*.supabase.co`, hosts containing `prod`) are strictly refused by default. To explicitly authorize an external or staging rehearsal target, set `ALLOW_NON_DISPOSABLE_TARGET=true` or pass `--allow-non-disposable`. All diagnostics redact user credentials and display safe target information.
-4. **Zero-Drift Invariant**: The workflow applies all committed migrations in sequence (`prisma migrate deploy`) and executes a zero-drift schema diff (`prisma migrate diff`) against `prisma/schema.prisma`. Any residual drift or replay error exits with code 1 and actionable diagnostics.
+1. **Target Precedence**: Replay uses a disposable target from `--url <url>`, `MIGRATION_REPLAY_URL` or `DISPOSABLE_DATABASE_URL`. With none set, it starts a throwaway container (`postgres:17-alpine`) if a local Docker daemon is available.
+2. **Ambient Credential Isolation**: Replay ignores `.env`, `.env.local` and any `DIRECT_URL` / `DATABASE_URL` already in the environment, so it can never replay or drift-check against a live database by accident.
+3. **Target Disposability Guard**: External or production hosts (e.g. `*.neon.tech`, `*.supabase.co`, hosts containing `prod`) are refused by default. To allow an external or staging rehearsal target, set `ALLOW_NON_DISPOSABLE_TARGET=true` or pass `--allow-non-disposable`. Diagnostics redact credentials.
+4. **Zero-Drift Invariant**: Replay applies every committed migration in order (`prisma migrate deploy`), then diffs the result against `prisma/schema.prisma` (`prisma migrate diff`). Any drift or replay error exits with code 1 and says what went wrong.
 
 #### Continuous integration replay mode
 
@@ -199,7 +199,7 @@ disposable replay, and drift verification against non-production targets.
 
 ### Destructive migration environment variables
 
-Automated migration safety checks (`scripts/check-migrations.js`) block any migration SQL containing destructive operations (`DROP TABLE` or `DROP COLUMN`) by default to prevent accidental data loss.
+The migration safety checks (`scripts/check-migrations.js`) block any migration SQL with a destructive operation (`DROP TABLE` or `DROP COLUMN`) by default, so data is not lost by accident.
 
 To explicitly authorize a destructive migration during local integrity
 validation:
@@ -244,8 +244,8 @@ Each finding names the file and the statement's first line. Comments, string
 literals and index renames are ignored. Exit 1 means something was flagged, so
 the release goes out manually after review. Exit 2 means the arguments were
 missing or a commit could not be resolved. The script reads git objects only
-and never connects to a database. The nightly release train (#1168) is the
-intended caller.
+and never connects to a database. The weekly release train runs it before it
+fires ([ADR 0063](../../adr/0063-weekly-release-train.md)).
 
 ## Email resilience rollout and rollback
 
@@ -326,16 +326,16 @@ requires a verified schema comparison and a restorable snapshot.
 
 ## Email contract enforcement (`20261016000000_enforce_email_contracts`)
 
-`20261016000000_enforce_email_contracts` upgrades the string columns on `SuppressionList.reason` and `OutboundEmailQueue.status` into strict PostgreSQL enums (`SuppressionReason` and `OutboundEmailStatus`), drops the redundant non-unique index on `SuppressionList(email)`, and guarantees zero data loss via PostgreSQL `ALTER TABLE ... ALTER COLUMN ... TYPE ... USING` casts.
+`20261016000000_enforce_email_contracts` upgrades the string columns on `SuppressionList.reason` and `OutboundEmailQueue.status` into strict PostgreSQL enums (`SuppressionReason` and `OutboundEmailStatus`), drops the redundant non-unique index on `SuppressionList(email)`, and converts the values in place with PostgreSQL `ALTER TABLE ... ALTER COLUMN ... TYPE ... USING` casts, so no row is lost.
 
 ### Preflight guard
 
-The migration executes an automated preflight check that validates existing rows before attempting type conversion:
+The migration checks the existing rows before it converts any type:
 
 - Validates all `SuppressionList.reason` values belong to `'BOUNCE'`, `'COMPLAINT'`, or `'UNSUBSCRIBE'`.
 - Validates all `OutboundEmailQueue.status` values belong to `'PENDING'`, `'RETRYING'`, `'DELIVERED'`, or `'FAILED'`.
 
-If any row contains incompatible legacy values, the preflight transaction aborts with a descriptive exception requiring operator remediation rather than silently dropping or corrupting data.
+If any row holds a value outside those sets, the transaction aborts with an exception that names the problem, and an operator fixes the data. Nothing is dropped or changed silently.
 
 ## Connection URLs (`DATABASE_URL` vs `DIRECT_URL`)
 
@@ -351,7 +351,7 @@ In Vercel, the Neon integration must provision both `DATABASE_URL` for pooled ru
 If a build fails with:
 `Error: P1002 ... Timed out trying to acquire a postgres advisory lock (SELECT pg_advisory_lock(72707369))`
 
-This indicates a dangling lock held by a previous deployment, an interrupted baseline attempt, or a connection pooler holding session state.
+A previous deployment, an interrupted baseline attempt or a connection pooler that kept its session still holds the lock.
 
 ### Resolution Steps
 

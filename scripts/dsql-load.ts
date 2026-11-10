@@ -8,17 +8,26 @@ import {
   fingerprintDsqlRows,
   generatePortfolio,
   planDsqlLoad,
+  type DsqlLoadOptions,
   type DsqlLoadPlan,
   type WarehouseSchema,
   type WarehouseValue,
 } from "../lib/clinical-platform";
 
 /**
- * Loads the clinical platform's gold layer into Aurora DSQL, the warehouse
- * of record (ADR 0070, #3007).
+ * Loads the clinical platform's gold layer into the warehouse of record:
+ * Aurora DSQL (ADR 0070, #3007), or a plain PostgreSQL database such as the
+ * warehouse's own Neon project, which replaces DSQL before the AWS Free plan
+ * closes (#3207, #3208).
  *
- * Run by `.github/workflows/dsql-load.yml` on `main` with a short-lived
- * admin token. Every statement goes in its own transaction, as DSQL
+ * `--target postgres` connects with `WAREHOUSE_DATABASE_URL` and loads the
+ * gold layer into the schema `warehouse_gold`, so it can share a database
+ * with other schemas. It never reads `DATABASE_URL` or the `PG*` variables:
+ * the site's own database is not a warehouse target. `--target dsql`, the
+ * default, connects to `DSQL_ENDPOINT` with the admin token in `PGPASSWORD`
+ * and keeps the schema `gold`.
+ *
+ * Run by `.github/workflows/dsql-load.yml` on `main`. Every statement goes in its own transaction, as DSQL
  * requires of DDL and as keeps each insert under its 3,000-row limit. Each
  * table is then read back and fingerprinted; only when every table matches
  * the plan does `platform_meta.load_manifest` get one row per table, which
@@ -73,7 +82,32 @@ export const MANIFEST_DDL = [
     "loaded_at TIMESTAMPTZ NOT NULL)",
 ];
 
-/** The gold layer of the default portfolio: what DSQL holds. */
+/** Where a load goes. */
+export type WarehouseTarget = "dsql" | "postgres";
+
+/** The database schema the gold layer loads into on a PostgreSQL target. */
+export const POSTGRES_GOLD_SCHEMA = "warehouse_gold";
+
+/** Rows per `INSERT` on either target. */
+export const ROWS_PER_INSERT = 1_000;
+
+/** Plan options for a target: the batch size, and on PostgreSQL the schema. */
+export function loadOptions(target: WarehouseTarget): DsqlLoadOptions {
+  return target === "postgres"
+    ? {
+        maxRowsPerInsert: ROWS_PER_INSERT,
+        schemas: { gold: POSTGRES_GOLD_SCHEMA },
+      }
+    : { maxRowsPerInsert: ROWS_PER_INSERT };
+}
+
+/** The label the job summary gives a target. */
+export const TARGET_LABEL: Readonly<Record<WarehouseTarget, string>> = {
+  dsql: "Aurora DSQL",
+  postgres: "Warehouse PostgreSQL",
+};
+
+/** The gold layer of the default portfolio: what the warehouse holds. */
 export function goldSchema(): WarehouseSchema {
   return {
     ...WAREHOUSE_SCHEMA,
@@ -159,10 +193,13 @@ export async function runDsqlLoad(
 }
 
 /** The job summary, in Markdown. */
-export function summaryMarkdown(result: DsqlLoadResult): string {
+export function summaryMarkdown(
+  result: DsqlLoadResult,
+  target: WarehouseTarget = "dsql"
+): string {
   const mb = (result.csvBytes / (1024 * 1024)).toFixed(2);
   return [
-    `## Aurora DSQL load ${result.ok ? "passed" : "FAILED"}`,
+    `## ${TARGET_LABEL[target]} load ${result.ok ? "passed" : "FAILED"}`,
     "",
     `Commit \`${result.commit}\`, warehouse schema ${result.schemaVersion}, ` +
       `${result.rows.toLocaleString("en-US")} rows (${mb} MB as CSV) in ` +
@@ -181,34 +218,72 @@ export function summaryMarkdown(result: DsqlLoadResult): string {
   ].join("\n");
 }
 
+/** Connection settings for a target, from the environment it is given. */
+export function connectionConfig(
+  target: WarehouseTarget,
+  env: Readonly<Record<string, string | undefined>>
+):
+  | { readonly ok: true; readonly config: Record<string, unknown> }
+  | { readonly ok: false; readonly error: string } {
+  if (target === "postgres") {
+    const connectionString = env.WAREHOUSE_DATABASE_URL;
+    if (!connectionString) {
+      return {
+        ok: false,
+        error:
+          "WAREHOUSE_DATABASE_URL is required for --target postgres. It comes from a GitHub Actions secret, never DATABASE_URL.",
+      };
+    }
+    return {
+      ok: true,
+      config: { connectionString, ssl: { rejectUnauthorized: true } },
+    };
+  }
+  const host = env.DSQL_ENDPOINT;
+  const token = env.PGPASSWORD;
+  if (!host || !token) {
+    return {
+      ok: false,
+      error: "DSQL_ENDPOINT and PGPASSWORD (an admin auth token) are required.",
+    };
+  }
+  return {
+    ok: true,
+    config: {
+      host,
+      port: 5432,
+      user: "admin",
+      password: token,
+      database: "postgres",
+      ssl: { rejectUnauthorized: true },
+    },
+  };
+}
+
 async function main(args: string[]): Promise<number> {
   const option = (name: string) => {
     const index = args.indexOf(name);
     return index >= 0 ? args[index + 1] : undefined;
   };
-  const host = process.env.DSQL_ENDPOINT;
-  const token = process.env.PGPASSWORD;
-  const commit = process.env.GITHUB_SHA ?? "local";
-  if (!host || !token) {
-    console.error(
-      "DSQL_ENDPOINT and PGPASSWORD (an admin auth token) are required."
-    );
+  const target = option("--target") ?? "dsql";
+  if (target !== "dsql" && target !== "postgres") {
+    console.error(`--target must be dsql or postgres, not ${target}.`);
     return 2;
   }
+  const connection = connectionConfig(target, process.env);
+  if (!connection.ok) {
+    console.error(connection.error);
+    return 2;
+  }
+  const commit = process.env.GITHUB_SHA ?? "local";
   const schema = goldSchema();
   const plan = planDsqlLoad(
     schema,
-    buildWarehouse(generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED }))
+    buildWarehouse(generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED })),
+    loadOptions(target)
   );
   const { Client } = await import("pg");
-  const client = new Client({
-    host,
-    port: 5432,
-    user: "admin",
-    password: token,
-    database: "postgres",
-    ssl: { rejectUnauthorized: true },
-  });
+  const client = new Client(connection.config);
   await client.connect();
   try {
     const result = await runDsqlLoad(
@@ -217,7 +292,7 @@ async function main(args: string[]): Promise<number> {
       plan,
       commit
     );
-    const markdown = summaryMarkdown(result);
+    const markdown = summaryMarkdown(result, target);
     console.log(markdown);
     const summary = option("--summary");
     if (summary) fs.appendFileSync(summary, markdown);

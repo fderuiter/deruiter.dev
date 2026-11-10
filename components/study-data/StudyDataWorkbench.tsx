@@ -14,6 +14,7 @@ import {
 import {
   MESSY_DATA_SCENARIOS,
   coreViewReport,
+  isEmptyRunDiff,
   loadRecordedCoreFindings,
   type DataLayer,
   type LineageOrigin,
@@ -21,7 +22,9 @@ import {
   type LineageResult,
   type LineageTrace,
   type RecordedFindings,
+  type RunDiff,
   type ScenarioId,
+  type StudyDesignDefinition,
 } from "@/lib/study-data";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { ConformancePanel } from "./ConformancePanel";
@@ -52,6 +55,7 @@ import {
 import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
+import { RunDiffPanel } from "./RunDiffPanel";
 import { TlfPanel } from "./TlfPanel";
 import {
   BUTTON_PRIMARY,
@@ -193,6 +197,7 @@ export function StudyDataWorkbench({
   const handoffTaken = useRef<TakenHandoff | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [summary, setSummary] = useState<RunSummary | null>(null);
+  const [runDiff, setRunDiff] = useState<RunDiff | null>(null);
   const [mode, setMode] = useState<"worker" | "main-thread" | "idle">("idle");
   const [tab, setTab] = useState<TabId>("tlf");
   const [datasetKey, setDatasetKey] = useState("adam:ADSL");
@@ -264,6 +269,7 @@ export function StudyDataWorkbench({
         .then((result) => {
           if (token !== runToken.current) return;
           setSummary(result);
+          setRunDiff(null);
           setMode(pipeline.mode());
           setStatus("ready");
           setRunError(null);
@@ -274,6 +280,42 @@ export function StudyDataWorkbench({
               `Pipeline run complete: ${nSubjects.toLocaleString("en-US")} subjects, seed ${seed}.${result.injected ? ` ${injectedAnnouncement(result.injected)}` : ""}`
             );
           }
+        })
+        .catch((error: unknown) => {
+          if (token !== runToken.current) return;
+          if (error instanceof PipelineCancelledError) return;
+          setStatus("error");
+          setRunError(error instanceof Error ? error.message : String(error));
+        });
+    },
+    [announce, client]
+  );
+
+  /**
+   * Reruns the current run with a design, edited or not, and keeps the diff
+   * against the run it replaces (#3160). The pipeline stays in the worker.
+   */
+  const rerunWith = useCallback(
+    (design: StudyDesignDefinition) => {
+      const token = ++runToken.current;
+      const pipeline = client();
+      setStatus("running");
+      pipeline
+        .request<"rerun">({ type: "rerun", design })
+        .then((result) => {
+          if (token !== runToken.current) return;
+          setSummary(result.summary);
+          setRunDiff(result.diff);
+          setMode(pipeline.mode());
+          setStatus("ready");
+          setRunError(null);
+          setTrace(null);
+          setTraceError(null);
+          announce(
+            isEmptyRunDiff(result.diff)
+              ? "Rerun complete. No change from the last run."
+              : `Rerun complete: ${result.diff.findings.length} findings, ${result.diff.rowCounts.length} row counts and ${result.diff.tlfValues.length} table values changed.`
+          );
         })
         .catch((error: unknown) => {
           if (token !== runToken.current) return;
@@ -686,6 +728,16 @@ export function StudyDataWorkbench({
             <button type="submit" className={`${BUTTON_PRIMARY} min-h-12`}>
               Run pipeline
             </button>
+            <button
+              type="button"
+              disabled={!summary || running}
+              onClick={() => {
+                if (summary) rerunWith(summary.design);
+              }}
+              className={`${BUTTON_SECONDARY} min-h-12`}
+            >
+              Rerun and compare
+            </button>
             {running ? (
               <button
                 type="button"
@@ -703,6 +755,7 @@ export function StudyDataWorkbench({
         >
           {statusText}
         </p>
+        {runDiff && !running ? <RunDiffPanel diff={runDiff} /> : null}
         {summary?.injected && !running ? (
           <InjectedIssuePanel
             injected={summary.injected}

@@ -245,3 +245,11 @@ export type {
   RecordedScenarioView,
   RecordedTwin,
 } from "./internal/core/recorded";
+export { diffRuns, isEmptyRunDiff } from "./diff";
+export type {
+  FindingChange,
+  RowCountChange,
+  RunDiff,
+  RunDiffInput,
+  TlfValueChange,
+} from "./diff";

@@ -24,13 +24,16 @@ import {
  * the events stay queued for the next run. `ACKNOWLEDGEMENT_FAILED` means the
  * batch was written but not removed from the processing queue, so the next
  * run replays it idempotently. `RETENTION_FAILED` means the rollup
- * transaction rolled back.
+ * transaction rolled back. `AGGREGATE_FAILED` means the aggregate statistics
+ * could not be computed or written to Redis, so the public GET keeps serving
+ * the previous run's copy.
  */
 export const TelemetryMaintenanceErrorCode = z.enum([
   "QUEUE_UNAVAILABLE",
   "PERSISTENCE_FAILED",
   "ACKNOWLEDGEMENT_FAILED",
   "RETENTION_FAILED",
+  "AGGREGATE_FAILED",
 ]);
 export type TelemetryMaintenanceErrorCode = z.infer<
   typeof TelemetryMaintenanceErrorCode
@@ -41,6 +44,29 @@ export type TelemetrySyncResult = ServiceResult<
   { processed: number; inserted: number },
   TelemetryMaintenanceErrorCode
 >;
+
+/** Result envelope of {@link TelemetryService.refreshAggregateStats}. */
+export type TelemetryAggregateRefreshResult = ServiceResult<
+  { projects: number },
+  TelemetryMaintenanceErrorCode
+>;
+
+/** Views and clicks per project slug, as the public telemetry GET returns them. */
+export type TelemetryAggregateStats = Record<
+  string,
+  { views: number; clicks: number }
+>;
+
+/** Redis key holding the aggregate the daily maintenance run writes (#3201). */
+export const TELEMETRY_AGGREGATE_KEY = "telemetry:aggregate";
+
+const AggregateStatsSchema = z.record(
+  z.string(),
+  z.object({
+    views: z.number().int().nonnegative(),
+    clicks: z.number().int().nonnegative(),
+  })
+);
 
 /** Result envelope of {@link TelemetryService.rollupAndPruneRawEvents}. */
 export type TelemetryRetentionResult = ServiceResult<
@@ -107,7 +133,7 @@ let circuitBreakerCooldownUntil = 0;
 const AGGREGATE_STATS_TTL_MS = 10000; // 10 seconds
 
 let aggregateStatsCache: {
-  data: Record<string, { views: number; clicks: number }>;
+  data: TelemetryAggregateStats;
   expiresAt: number;
 } | null = null;
 
@@ -407,10 +433,14 @@ export class TelemetryService {
   }
 
   /**
-   * Fetches aggregate portfolio view/click telemetry statistics.
-   * Results are cached in memory for 10 seconds.
+   * The aggregate view and click counts for the public telemetry GET.
+   *
+   * It reads only the Redis copy that {@link TelemetryService.refreshAggregateStats}
+   * writes once a day, so a public request never queries Postgres (AGENTS.md
+   * 22, #3201). A missing or malformed key returns the empty aggregate. The
+   * result is held in memory for 10 seconds to spare Redis commands.
    */
-  static async getAggregateStats() {
+  static async getAggregateStats(): Promise<TelemetryAggregateStats> {
     if (env.PLAYWRIGHT_TEST === "true") {
       return {
         "synthetic-probe-runner": { views: 5, clicks: 2 },
@@ -424,6 +454,31 @@ export class TelemetryService {
       return cloneAggregateStats(aggregateStatsCache.data);
     }
 
+    const stored = await redis.get<unknown>(
+      getScopedRedisKey(TELEMETRY_AGGREGATE_KEY)
+    );
+    const parsed = AggregateStatsSchema.safeParse(stored ?? {});
+    if (!parsed.success) {
+      logger.warn(
+        "Ignoring a malformed telemetry aggregate in Redis; serving the empty aggregate."
+      );
+    }
+    const formattedStats = parsed.success ? parsed.data : {};
+
+    aggregateStatsCache = {
+      data: formattedStats,
+      expiresAt: now + AGGREGATE_STATS_TTL_MS,
+    };
+
+    return cloneAggregateStats(formattedStats);
+  }
+
+  /**
+   * Counts views and clicks per project from Postgres: raw events plus the
+   * daily rollups, in one RepeatableRead transaction so a concurrent rollup
+   * cannot count an event twice. Only the maintenance run calls it.
+   */
+  static async computeAggregateStats(): Promise<TelemetryAggregateStats> {
     const formattedStats: Record<string, { views: number; clicks: number }> =
       {};
 
@@ -469,12 +524,27 @@ export class TelemetryService {
       { isolationLevel: "RepeatableRead" }
     );
 
-    aggregateStatsCache = {
-      data: formattedStats,
-      expiresAt: now + AGGREGATE_STATS_TTL_MS,
-    };
+    return formattedStats;
+  }
 
-    return cloneAggregateStats(formattedStats);
+  /**
+   * Computes the aggregate from Postgres and writes it to Redis under
+   * {@link TELEMETRY_AGGREGATE_KEY}, for the daily maintenance run (#3201).
+   * On failure the previous copy stays in place.
+   */
+  static async refreshAggregateStats(): Promise<TelemetryAggregateRefreshResult> {
+    try {
+      const stats = await TelemetryService.computeAggregateStats();
+      await redis.set(getScopedRedisKey(TELEMETRY_AGGREGATE_KEY), stats);
+      aggregateStatsCache = null;
+      return createSuccess({ projects: Object.keys(stats).length });
+    } catch (error) {
+      return createFailure(
+        "AGGREGATE_FAILED",
+        "Failed to refresh the telemetry aggregate in Redis",
+        { recoverable: true, details: error }
+      );
+    }
   }
 
   /**

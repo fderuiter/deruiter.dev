@@ -10,17 +10,18 @@ export const dynamic = "force-dynamic";
 export const GET = createApiHandler(
   async () => {
     try {
+      // Redis only: the daily maintenance run writes the aggregate (#3201).
       const formattedStats = await TelemetryService.getAggregateStats();
       return NextResponse.json(formattedStats, {
         status: 200,
         headers: {
           "Cache-Control":
-            "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+            "public, max-age=10, s-maxage=3600, stale-while-revalidate=600",
         },
       });
     } catch (err) {
       // Gate on the runtime, not the build (AGENTS.md section 15). Outside a
-      // production runtime an unreachable database is expected, so it is logged
+      // production runtime an unreachable Redis is expected, so it is logged
       // as a warning and flagged for the client, which then stays off
       // console.error.
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
@@ -31,7 +32,7 @@ export const GET = createApiHandler(
         );
       }
       logger.warn(
-        "Telemetry statistics are unavailable without a reachable database:",
+        "Telemetry statistics are unavailable without a reachable Redis:",
         err
       );
       return NextResponse.json(

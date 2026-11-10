@@ -1,13 +1,19 @@
 // @vitest-environment node
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockTransaction, mockRawGroupBy, mockRollupGroupBy } = vi.hoisted(
-  () => ({
-    mockTransaction: vi.fn(),
-    mockRawGroupBy: vi.fn(),
-    mockRollupGroupBy: vi.fn(),
-  })
-);
+const {
+  mockTransaction,
+  mockRawGroupBy,
+  mockRollupGroupBy,
+  mockRedisGet,
+  mockRedisSet,
+} = vi.hoisted(() => ({
+  mockTransaction: vi.fn(),
+  mockRawGroupBy: vi.fn(),
+  mockRollupGroupBy: vi.fn(),
+  mockRedisGet: vi.fn(),
+  mockRedisSet: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -15,23 +21,28 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/redis", () => ({
+  redis: { get: mockRedisGet, set: mockRedisSet },
+  getScopedRedisKey: (key: string) => key,
+}));
+
 const transactionClient = {
   telemetryEvent: { groupBy: mockRawGroupBy },
   telemetryDailyRollup: { groupBy: mockRollupGroupBy },
 };
 
-let getAggregateStats: typeof import("@/lib/services/telemetry-service").TelemetryService.getAggregateStats;
+let computeAggregateStats: typeof import("@/lib/services/telemetry-service").TelemetryService.computeAggregateStats;
 let TelemetryService: typeof import("@/lib/services/telemetry-service").TelemetryService;
 let _testCache: typeof import("@/lib/services/telemetry-service")._testCache;
 
-describe("TelemetryService.getAggregateStats", () => {
+describe("TelemetryService.computeAggregateStats", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
 
     const mod = await import("@/lib/services/telemetry-service");
     TelemetryService = mod.TelemetryService;
-    getAggregateStats = mod.TelemetryService.getAggregateStats;
+    computeAggregateStats = mod.TelemetryService.computeAggregateStats;
     _testCache = mod._testCache;
     _testCache.reset();
 
@@ -46,76 +57,6 @@ describe("TelemetryService.getAggregateStats", () => {
 
   afterAll(() => {
     vi.unstubAllEnvs();
-  });
-
-  it("returns cached statistics when called within 10 seconds without executing new database queries", async () => {
-    mockRawGroupBy.mockResolvedValue([
-      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 10 } },
-    ]);
-
-    const stats1 = await getAggregateStats();
-    expect(stats1).toEqual({ "/dashboard": { views: 10, clicks: 0 } });
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
-
-    mockRawGroupBy.mockResolvedValue([
-      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 99 } },
-    ]);
-
-    const stats2 = await getAggregateStats();
-    expect(stats2).toEqual({ "/dashboard": { views: 10, clicks: 0 } });
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
-  });
-
-  it("re-queries the database after the 10-second cache TTL expires", async () => {
-    vi.useFakeTimers();
-    try {
-      mockRawGroupBy.mockResolvedValue([
-        {
-          projectSlug: "/dashboard",
-          eventType: "page_view",
-          _count: { id: 10 },
-        },
-      ]);
-
-      const stats1 = await getAggregateStats();
-      expect(stats1).toEqual({ "/dashboard": { views: 10, clicks: 0 } });
-      expect(mockTransaction).toHaveBeenCalledTimes(1);
-
-      vi.advanceTimersByTime(10001);
-
-      mockRawGroupBy.mockResolvedValue([
-        {
-          projectSlug: "/dashboard",
-          eventType: "page_view",
-          _count: { id: 25 },
-        },
-      ]);
-
-      const stats2 = await getAggregateStats();
-      expect(stats2).toEqual({ "/dashboard": { views: 25, clicks: 0 } });
-      expect(mockTransaction).toHaveBeenCalledTimes(2);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("re-queries the database when the cache is cleared via test utility", async () => {
-    mockRawGroupBy.mockResolvedValue([
-      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 5 } },
-    ]);
-
-    await getAggregateStats();
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
-
-    TelemetryService.clearAggregateCache();
-
-    mockRawGroupBy.mockResolvedValue([
-      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 15 } },
-    ]);
-
-    const refreshedStats = await getAggregateStats();
-    expect(refreshedStats).toEqual({ "/dashboard": { views: 15, clicks: 0 } });
-    expect(mockTransaction).toHaveBeenCalledTimes(2);
   });
 
   it("adds raw and daily rollup counts for matching slugs and event types", async () => {
@@ -140,7 +81,7 @@ describe("TelemetryService.getAggregateStats", () => {
       },
     ]);
 
-    await expect(getAggregateStats()).resolves.toEqual({
+    await expect(computeAggregateStats()).resolves.toEqual({
       "/dashboard": { views: 15, clicks: 9 },
     });
   });
@@ -157,7 +98,7 @@ describe("TelemetryService.getAggregateStats", () => {
       },
     ]);
 
-    await expect(getAggregateStats()).resolves.toEqual({
+    await expect(computeAggregateStats()).resolves.toEqual({
       "/live": { views: 4, clicks: 0 },
       "/archived": { views: 0, clicks: 6 },
     });
@@ -185,13 +126,13 @@ describe("TelemetryService.getAggregateStats", () => {
       },
     ]);
 
-    await expect(getAggregateStats()).resolves.toEqual({
+    await expect(computeAggregateStats()).resolves.toEqual({
       "/dashboard": { views: 2, clicks: 3 },
     });
   });
 
   it("uses two grouped queries in one RepeatableRead transaction", async () => {
-    await getAggregateStats();
+    await computeAggregateStats();
 
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockTransaction.mock.calls[0]?.[1]).toEqual({
@@ -221,7 +162,132 @@ describe("TelemetryService.getAggregateStats", () => {
         mockRollupGroupBy.mockRejectedValue(failure);
       }
 
-      await expect(getAggregateStats()).rejects.toThrow(failure.message);
+      await expect(computeAggregateStats()).rejects.toThrow(failure.message);
     }
   );
+});
+
+describe("TelemetryService.getAggregateStats reads only Redis (#3201)", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("PLAYWRIGHT_TEST", "");
+    const mod = await import("@/lib/services/telemetry-service");
+    TelemetryService = mod.TelemetryService;
+    _testCache = mod._testCache;
+    _testCache.reset();
+    vi.clearAllMocks();
+    mockRedisGet.mockResolvedValue(null);
+    mockRedisSet.mockResolvedValue("OK");
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns the stored aggregate without touching the database", async () => {
+    mockRedisGet.mockResolvedValue({ "/dashboard": { views: 3, clicks: 1 } });
+
+    await expect(TelemetryService.getAggregateStats()).resolves.toEqual({
+      "/dashboard": { views: 3, clicks: 1 },
+    });
+    expect(mockRedisGet).toHaveBeenCalledWith("telemetry:aggregate");
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockRawGroupBy).not.toHaveBeenCalled();
+  });
+
+  it("returns the empty aggregate when the key is missing", async () => {
+    await expect(TelemetryService.getAggregateStats()).resolves.toEqual({});
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("returns the empty aggregate when the stored value is malformed", async () => {
+    mockRedisGet.mockResolvedValue({ "/dashboard": { views: "lots" } });
+
+    await expect(TelemetryService.getAggregateStats()).resolves.toEqual({});
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("holds the Redis copy in memory for 10 seconds", async () => {
+    vi.useFakeTimers();
+    try {
+      mockRedisGet.mockResolvedValue({ "/a": { views: 1, clicks: 0 } });
+      await TelemetryService.getAggregateStats();
+      await TelemetryService.getAggregateStats();
+      expect(mockRedisGet).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(10_001);
+      await TelemetryService.getAggregateStats();
+      expect(mockRedisGet).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rejects when Redis cannot be read", async () => {
+    mockRedisGet.mockRejectedValue(new Error("Redis down"));
+
+    await expect(TelemetryService.getAggregateStats()).rejects.toThrow(
+      "Redis down"
+    );
+  });
+});
+
+describe("TelemetryService.refreshAggregateStats (#3201)", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("PLAYWRIGHT_TEST", "");
+    const mod = await import("@/lib/services/telemetry-service");
+    TelemetryService = mod.TelemetryService;
+    _testCache = mod._testCache;
+    _testCache.reset();
+    vi.clearAllMocks();
+    mockRedisSet.mockResolvedValue("OK");
+    mockRawGroupBy.mockResolvedValue([
+      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 4 } },
+    ]);
+    mockRollupGroupBy.mockResolvedValue([
+      {
+        projectSlug: "/dashboard",
+        eventType: "project_click",
+        _sum: { count: 2 },
+      },
+    ]);
+    mockTransaction.mockImplementation(
+      async (callback: (transaction: typeof transactionClient) => unknown) =>
+        callback(transactionClient)
+    );
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("computes the aggregate once and writes it to the Redis key", async () => {
+    const result = await TelemetryService.refreshAggregateStats();
+
+    expect(result).toEqual({ success: true, data: { projects: 1 } });
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+    expect(mockRedisSet).toHaveBeenCalledWith("telemetry:aggregate", {
+      "/dashboard": { views: 4, clicks: 2 },
+    });
+  });
+
+  it("reports AGGREGATE_FAILED and writes nothing when the query fails", async () => {
+    mockRawGroupBy.mockRejectedValue(new Error("Neon asleep"));
+
+    const result = await TelemetryService.refreshAggregateStats();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.code).toBe("AGGREGATE_FAILED");
+    expect(mockRedisSet).not.toHaveBeenCalled();
+  });
+
+  it("reports AGGREGATE_FAILED when the Redis write fails", async () => {
+    mockRedisSet.mockRejectedValue(new Error("Redis down"));
+
+    const result = await TelemetryService.refreshAggregateStats();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.code).toBe("AGGREGATE_FAILED");
+  });
 });

@@ -2,9 +2,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
-import { NextRequest } from "next/server";
-import { fromPartial } from "@total-typescript/shoehorn";
-import { proxy } from "@/proxy";
+import nextConfig from "@/next.config";
+import { config as proxyConfig } from "@/proxy";
 import MobileProofPage from "@/app/m/proof/page";
 import MobileCrfPage from "@/app/m/crf/page";
 import MobileNeuroPage from "@/app/m/neuro/page";
@@ -44,73 +43,33 @@ describe("Route-Level Mobile Decoupling & Dedicated Mobile Views", () => {
     cleanup();
   });
 
-  describe("Edge Proxy Mobile Redirection Invariant", () => {
-    it("redirects mobile requests from /proof to /m/proof while preserving query parameters", async () => {
-      const req = new NextRequest(
-        "http://localhost/proof?theorem=natural-deduction&inspect=C",
-        {
-          headers: {
-            "user-agent":
-              "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
-          },
-        }
+  describe("Phone redirects from next.config.ts (#3204, #3205)", () => {
+    it("sends the four studios and their subpaths to /m/* for phones, temporarily", async () => {
+      const redirects = (await nextConfig.redirects!()).filter((r) =>
+        r.destination.startsWith("/m/")
       );
-
-      const mockEvent = fromPartial<import("next/server").NextFetchEvent>({
-        waitUntil: vi.fn(),
-      });
-
-      const res = await proxy(req, mockEvent);
-
-      expect(res!.status).toBe(307);
-      const location = res!.headers.get("location");
-      expect(location).toContain("/m/proof");
-      expect(location).toContain("theorem=natural-deduction");
-      expect(location).toContain("inspect=C");
-    });
-
-    it("redirects mobile requests from /crf, /neuro, and /patrol to /m/* routes", async () => {
-      const routes = ["/crf", "/neuro", "/patrol"];
-
-      for (const route of routes) {
-        const req = new NextRequest(`http://localhost${route}?mode=demo`, {
-          headers: {
-            "sec-ch-ua-mobile": "?1",
-          },
-        });
-
-        const res = await proxy(req, fromPartial({ waitUntil: vi.fn() }));
-        expect(res!.status).toBe(307);
-        const location = res!.headers.get("location");
-        expect(location).toContain(`/m${route}`);
-        expect(location).toContain("mode=demo");
+      expect(redirects.map((r) => r.has?.[0]?.key)).toEqual([
+        "user-agent",
+        "sec-ch-ua-mobile",
+      ]);
+      for (const redirect of redirects) {
+        expect(redirect.source).toBe("/:studio(crf|proof|neuro|patrol)/:path*");
+        expect(redirect.destination).toBe("/m/:studio/:path*");
+        expect(redirect.permanent).toBe(false);
       }
     });
 
-    it("does NOT redirect desktop requests on workspace routes", async () => {
-      const req = new NextRequest("http://localhost/proof", {
-        headers: {
-          "user-agent":
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-      });
-
-      const res = await proxy(req, fromPartial({ waitUntil: vi.fn() }));
-      expect(res!.status).toBe(200);
-      expect(res!.headers.get("location")).toBeNull();
-    });
-
-    it("does NOT issue infinite redirects when request is already on /m/* route", async () => {
-      const req = new NextRequest("http://localhost/m/proof", {
-        headers: {
-          "user-agent":
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
-        },
-      });
-
-      const res = await proxy(req, fromPartial({ waitUntil: vi.fn() }));
-      expect(res!.status).toBe(200);
-      expect(res!.headers.get("location")).toBeNull();
+    it("no longer runs the proxy on the studios or on /m/*", () => {
+      for (const path of ["/proof", "/crf", "/neuro", "/patrol", "/m/proof"]) {
+        expect(
+          proxyConfig.matcher.some(
+            (source) =>
+              path === source.replace(/\/:path\*$/, "") ||
+              path.startsWith(source.replace(/:path\*$/, ""))
+          ),
+          path
+        ).toBe(false);
+      }
     });
   });
 

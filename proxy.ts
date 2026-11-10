@@ -1,10 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 import { applySecurityHeaders } from "@/lib/security-headers";
-import {
-  generateClientConnectionHash,
-  extractClientIp,
-} from "@/lib/services/privacy-service";
 
 /** Matchers for routes that require Clerk middleware protection or hydration. */
 const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
@@ -38,29 +34,12 @@ export function isClerkRoute(req: NextRequest): boolean {
 }
 
 /**
- * Privacy-preserving client connection token for API telemetry/rate limiting,
- * plus the standard HTTP security headers. Applies to every request the proxy
- * matches, whether or not Clerk is in the chain.
+ * Passes the request on with the standard HTTP security headers. The admin
+ * surface gets the policy that allows Clerk. `next.config.ts` serves the same
+ * headers to every route the proxy does not match.
  */
-async function decorateRequest(req: NextRequest): Promise<NextResponse> {
-  const requestHeaders = new Headers(req.headers);
-
-  if (req.nextUrl.pathname.startsWith("/api")) {
-    const ip = extractClientIp(req);
-    const userAgent = req.headers.get("user-agent") || "";
-    const connectionHash = await generateClientConnectionHash(
-      `${ip}:${userAgent}`
-    );
-    requestHeaders.set("x-connection-hash", connectionHash);
-  }
-
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-
-  return applySecurityHeaders(response, req);
+function decorateRequest(req: NextRequest): NextResponse {
+  return applySecurityHeaders(NextResponse.next(), req);
 }
 
 const authMiddleware = clerkMiddleware(async (auth, req: NextRequest) => {
@@ -74,58 +53,31 @@ const authMiddleware = clerkMiddleware(async (auth, req: NextRequest) => {
 /**
  * Next.js 16 Node.js Proxy
  *
- * Clerk runs only for the admin area. It used to wrap every route, which meant
- * a missing or non-resolvable publishable key took down the whole site: the
- * handshake fails and the middleware returns Clerk's error JSON as the page
- * body, or throws outright when the key is absent. Nothing outside `/admin`
- * reads Clerk state -- `ClerkProvider` is mounted in `app/admin/layout.tsx`
- * and `lib/auth/admin.ts` is admin-only -- so the rest of the site has no
- * reason to pay that cost or carry that risk.
+ * Clerk runs only for the admin area and for mutating requests to the case
+ * study API. It used to wrap every route, which meant a missing or
+ * non-resolvable publishable key took down the whole site: the handshake
+ * fails and the middleware returns Clerk's error JSON as the page body, or
+ * throws outright when the key is absent. Nothing outside those routes reads
+ * Clerk state -- `ClerkProvider` is mounted in `app/admin/layout.tsx` and
+ * `lib/auth/admin.ts` is admin-only -- so the rest of the site has no reason
+ * to pay that cost or carry that risk.
  */
-const MOBILE_DECOUPLED_ROUTES = ["/proof", "/crf", "/neuro", "/patrol"];
-
 export function proxy(req: NextRequest, event: NextFetchEvent) {
   if (isClerkRoute(req)) {
     return authMiddleware(req, event);
   }
-
-  const pathname = req.nextUrl.pathname;
-  if (
-    MOBILE_DECOUPLED_ROUTES.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
-    )
-  ) {
-    const userAgentHeader = req.headers.get("user-agent") || "";
-    const isMobileUa =
-      /android|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(
-        userAgentHeader
-      ) || req.headers.get("sec-ch-ua-mobile") === "?1";
-
-    if (isMobileUa) {
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = `/m${pathname}`;
-      const response = NextResponse.redirect(redirectUrl);
-      return applySecurityHeaders(response, req);
-    }
-  }
-
   return decorateRequest(req);
 }
 
 /**
- * The proxy runs as a Vercel function, so it matches only the routes that need
- * it: the Clerk-protected admin area, API routes (connection hash), and the
- * desktop studios that redirect phones to `/m/*`. Security headers for every
- * other route come from `next.config.ts`, which lets those pages stay static
- * instead of paying a function invocation per view (#1900).
+ * The proxy runs as a Vercel function, so it matches only the routes Clerk
+ * guards (#3205). The phone redirects for the desktop studios are
+ * `redirects()` in `next.config.ts` (#3204), security headers for every route
+ * come from `headers()` there (#1900), and API handlers hash the client
+ * connection themselves through `getConnectionHashFromRequest`. A matcher
+ * cannot filter on method, so read requests to the case study API still pass
+ * through the proxy without reaching Clerk.
  */
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/api/:path*",
-    "/proof/:path*",
-    "/crf/:path*",
-    "/neuro/:path*",
-    "/patrol/:path*",
-  ],
+  matcher: ["/admin/:path*", "/api/admin/:path*", "/api/case-studies/:path*"],
 };

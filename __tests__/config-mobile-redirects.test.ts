@@ -1,15 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { NextRequest } from "next/server";
-import { fromPartial } from "@total-typescript/shoehorn";
 import nextConfig from "@/next.config";
-import { proxy } from "@/proxy";
 
 /**
  * The phone redirects for the desktop studios moved from `proxy.ts` into
  * `redirects()` in `next.config.ts` (#3204), so they answer without invoking
- * the proxy. These checks hold the config to the proxy's rule: the same user
- * agents go to `/m/<studio>`, and the rest stay put.
+ * the proxy, and the proxy dropped its copy of the rule (#3205). These checks
+ * hold the config to that rule: the same user agents go to `/m/<studio>`,
+ * and the rest stay put.
  */
 
 const USER_AGENTS = {
@@ -56,12 +54,13 @@ function configRedirects(
   );
 }
 
-async function proxyRedirects(headers: Record<string, string>) {
-  const res = await proxy(
-    new NextRequest("https://deruiter.dev/crf", { headers }),
-    fromPartial({ waitUntil: () => undefined })
+/** The rule `proxy.ts` applied before #3204, kept as the reference. */
+function proxyRedirects(headers: Record<string, string>): boolean {
+  return (
+    /android|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(
+      headers["user-agent"] ?? ""
+    ) || headers["sec-ch-ua-mobile"] === "?1"
   );
-  return res?.status === 307;
 }
 
 describe("phone redirects from the desktop studios (#3204)", () => {
@@ -76,25 +75,23 @@ describe("phone redirects from the desktop studios (#3204)", () => {
   });
 
   it.each(Object.entries(USER_AGENTS))(
-    "agrees with the proxy for %s",
+    "agrees with the former proxy rule for %s",
     async (_name, userAgent) => {
       const headers = { "user-agent": userAgent };
       expect(configRedirects(await studioRedirects(), headers)).toBe(
-        await proxyRedirects(headers)
+        proxyRedirects(headers)
       );
     }
   );
 
-  it("agrees with the proxy on the sec-ch-ua-mobile client hint", async () => {
+  it("agrees with the former proxy rule on the sec-ch-ua-mobile client hint", async () => {
     const redirects = await studioRedirects();
     for (const hint of ["?1", "?0"]) {
       const headers = {
         "user-agent": USER_AGENTS["Desktop Chrome"],
         "sec-ch-ua-mobile": hint,
       };
-      expect(configRedirects(redirects, headers)).toBe(
-        await proxyRedirects(headers)
-      );
+      expect(configRedirects(redirects, headers)).toBe(proxyRedirects(headers));
     }
     expect(
       configRedirects(redirects, {

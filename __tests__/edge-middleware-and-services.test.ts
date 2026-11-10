@@ -87,6 +87,7 @@ import { CaseStudyService } from "@/lib/services/case-study-service";
 import { TelemetryService } from "@/lib/services/telemetry-service";
 import {
   generateClientConnectionHash,
+  getConnectionHashFromRequest,
   extractClientIp,
 } from "@/lib/services/privacy-service";
 import { createApiHandler } from "@/lib/route-wrapper";
@@ -143,6 +144,28 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
       });
       const ip = extractClientIp(req);
       expect(ip).toBe("198.51.100.1");
+    });
+
+    it("hashes the client in the handler and ignores a forged x-connection-hash header (#3205)", async () => {
+      const client = {
+        "x-forwarded-for": "198.51.100.7",
+        "user-agent": "probe/1.0",
+      };
+      const expected = await generateClientConnectionHash(
+        "198.51.100.7:probe/1.0"
+      );
+      const plain = new NextRequest("http://localhost/api/contact", {
+        headers: client,
+      });
+      const forged = new NextRequest("http://localhost/api/contact", {
+        headers: { ...client, "x-connection-hash": "attacker-chosen-bucket" },
+      });
+      expect(await getConnectionHashFromRequest(plain)).toBe(expected);
+      expect(await getConnectionHashFromRequest(forged)).toBe(expected);
+      const other = new NextRequest("http://localhost/api/contact", {
+        headers: { ...client, "x-forwarded-for": "198.51.100.8" },
+      });
+      expect(await getConnectionHashFromRequest(other)).not.toBe(expected);
     });
   });
 

@@ -457,7 +457,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenOmnibar}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98]"
+              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98] pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center"
               title="Find forms, fields, visits and actions (F)"
               aria-label="Find, F: search the study"
               aria-keyshortcuts="F"

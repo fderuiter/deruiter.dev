@@ -172,7 +172,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     (!field.requirementTier && field.required)
                   ? "bg-red-500/15 text-red-400 border-red-500/30 font-bold"
                   : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-            }`}
+            } pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:min-h-11`}
             title={`Requirement Tier: ${
               field.requirementTier === "auto_query"
                 ? "Auto-Query on empty"
@@ -261,7 +261,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 e.stopPropagation();
                 onMoveUp();
               }}
-              className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white sm:hidden"
+              className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white inline-flex items-center justify-center sm:hidden pointer-coarse:min-h-11 pointer-coarse:min-w-11"
               title="Move Up"
               aria-label="Move Field Up"
             >
@@ -275,7 +275,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 e.stopPropagation();
                 onMoveDown();
               }}
-              className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white sm:hidden"
+              className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white inline-flex items-center justify-center sm:hidden pointer-coarse:min-h-11 pointer-coarse:min-w-11"
               title="Move Down"
               aria-label="Move Field Down"
             >
@@ -340,7 +340,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 e.stopPropagation();
                 setIsMobileMenuOpen((prev) => !prev);
               }}
-              className="p-1 rounded bg-zinc-900 text-zinc-400 hover:text-white"
+              className="p-1 rounded bg-zinc-900 text-zinc-400 hover:text-white pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
               title="Field Actions"
               aria-label="Field Actions"
             >

@@ -136,7 +136,10 @@ describe("the governance page", () => {
   it("shows the five sections, the catalog and a passing stewardship check", async () => {
     const { container } = render(<PlatformGovernancePage />);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Govern the data" })
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Data rules and catalog (Data Governance)",
+      })
     ).toBeTruthy();
     const headings = screen
       .getAllByRole("heading", { level: 2 })

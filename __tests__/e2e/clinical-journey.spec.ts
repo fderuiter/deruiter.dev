@@ -60,7 +60,7 @@ for (const width of [320, 1440]) {
     await page.goto("/");
 
     const start = page.getByRole("link", {
-      name: "Start the journey at CRF Studio",
+      name: "Start the journey at Case report form designer (CRF Studio)",
     });
     await expect(async () => {
       await start.click();

@@ -62,7 +62,7 @@ export default function PlatformSqlPage() {
           Self-service / SQL
         </p>
         <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
-          Query the warehouse
+          Query workbench (SQL Workbench)
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
           Write SQL against the gold tables every dashboard reads. The engine is

@@ -1022,7 +1022,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-crf",
-        title: "CRF Studio: Clinical Form & Protocol Designer",
+        title: "Case report form designer (CRF Studio)",
         subtitle:
           "Build clinical research forms, add validation rules, and try them with sample data in a browser-based study designer.",
         category: "navigation",
@@ -1324,7 +1324,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-platform-strategy",
-        title: "Platform Strategy Toolkit",
+        title: "Vendor scoring (Platform Strategy)",
         subtitle:
           "Fictional vendor scoring and five-year investment decisions.",
         category: "navigation",
@@ -1379,7 +1379,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-platform-explore",
-        title: "Clinical Metrics Explorer",
+        title: "Study metrics explorer (Metrics Explorer)",
         subtitle: "Group and filter any governed metric, and see its SQL.",
         category: "navigation",
         url: "/platform/explore",
@@ -1397,12 +1397,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-platform-sql",
-        title: "Clinical SQL Workbench",
+        title: "Query workbench (SQL Workbench)",
         subtitle: "Run read-only SQL on the gold tables, in your browser.",
         category: "navigation",
         url: "/platform/sql",
         icon: <IconTerminal className="h-4 w-4 text-amber-400" />,
-        badge: "DuckDB-WASM",
+        badge: "Runs in your browser",
         status: "Interactive",
         description:
           "DuckDB compiled to WebAssembly over your own copy of the synthetic warehouse: a schema browser from the data contracts, saved queries, each governed metric in DuckDB, PostgreSQL and T-SQL, and EXPLAIN.",
@@ -1434,13 +1434,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-platform-governance",
-        title: "Clinical Data Governance",
+        title: "Data rules and catalog (Data Governance)",
         subtitle:
           "The data catalog, business glossary, stewardship and policies.",
         category: "navigation",
         url: "/platform/governance",
         icon: <IconShieldCheck className="h-4 w-4 text-amber-400" />,
-        badge: "Catalog",
         status: "Interactive",
         description:
           "Every data product and governed metric with its owner, steward, classification, contract status and quality score, searchable by facet, beside the glossary, RACI and policies.",

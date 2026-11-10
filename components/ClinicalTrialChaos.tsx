@@ -2351,6 +2351,14 @@ export const ClinicalTrialChaos: React.FC = () => {
                       ? `Using your authored protocol ${activeProtocol.protocolNumber} (${activeProtocol.forms?.length || 0} forms).`
                       : "Using built-in scenarios. Authored a study in CRF Studio? Play it here."}
                   </span>
+                  {activeProtocol ? (
+                    <IntentLink
+                      href="/crf"
+                      className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-700 px-3 font-bold text-zinc-300 transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                    >
+                      Back to CRF Studio
+                    </IntentLink>
+                  ) : null}
                   {!activeProtocol && (
                     <button
                       type="button"

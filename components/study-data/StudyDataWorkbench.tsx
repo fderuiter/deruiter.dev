@@ -12,7 +12,9 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
+  CONFORMANCE_RULES_VERSION,
   MESSY_DATA_SCENARIOS,
+  PACKAGE_FORMAT_VERSION,
   coreViewReport,
   loadRecordedCoreFindings,
   type DataLayer,
@@ -52,6 +54,7 @@ import {
 import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
+import { StudySummaryCard, coreSummaryStatus } from "./StudySummaryCard";
 import { TlfPanel } from "./TlfPanel";
 import {
   BUTTON_PRIMARY,
@@ -212,9 +215,12 @@ export function StudyDataWorkbench({
   }>({ findings: null, failed: false });
 
   // CORE's recorded findings load as their own chunk, and only once the
-  // conformance tab is opened.
+  // conformance tab is opened or a run CORE has recorded findings for ends,
+  // so the summary card can say whether CORE passed it (#3159).
+  const hasCoreView = summary?.coreView != null;
   useEffect(() => {
-    if (tab !== "conformance" || recorded.findings || recorded.failed) return;
+    if (tab !== "conformance" && !hasCoreView) return;
+    if (recorded.findings || recorded.failed) return;
     let live = true;
     loadRecordedCoreFindings().then(
       (findings) => {
@@ -227,7 +233,7 @@ export function StudyDataWorkbench({
     return () => {
       live = false;
     };
-  }, [tab, recorded.findings, recorded.failed]);
+  }, [tab, hasCoreView, recorded.findings, recorded.failed]);
 
   const coreView = summary?.coreView ?? null;
   const coreReport = useMemo(
@@ -236,6 +242,11 @@ export function StudyDataWorkbench({
         ? coreViewReport(recorded.findings, coreView)
         : null,
     [recorded.findings, coreView]
+  );
+  const coreStatus = coreSummaryStatus(
+    coreView !== null,
+    coreReport === null ? null : (coreReport.outcomes["ISSUE REPORTED"] ?? 0),
+    recorded.failed
   );
 
   const client = useCallback((): PipelineClient => {
@@ -754,6 +765,17 @@ export function StudyDataWorkbench({
           current run.
         </p>
         <div className="mt-8">
+          <StudySummaryCard
+            studyId={handoff?.prepared.report.studyId ?? "DEMO-301"}
+            counts={summary?.counts ?? null}
+            versions={{
+              package: PACKAGE_FORMAT_VERSION,
+              rules: CONFORMANCE_RULES_VERSION,
+            }}
+            core={coreStatus}
+          />
+        </div>
+        <div className="mt-4">
           <StageRail
             definition={handoff?.prepared.counts ?? definitionCounts}
             counts={summary?.counts ?? null}

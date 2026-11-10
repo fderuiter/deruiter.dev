@@ -16,7 +16,7 @@ const REGISTRIES = [
   "lib/seo-metadata.ts",
   "lib/public-routes.ts",
   "lib/navigation.ts",
-  "components/CommandPalette.tsx",
+  "lib/command-palette/static-navs.ts",
 ];
 
 const GAME_FILES = [

@@ -250,6 +250,38 @@ if [[ "$DEPS_STATUS" != failed && ! -f app/generated/prisma/client.ts ]] && (( !
     DEPS_STATUS=failed; DEPS_DETAIL="Prisma client generation failed."
   fi
 fi
+# npm's prepare script (husky) installs the repository's git hooks. A reused
+# install, a symlinked node_modules or npm ci --ignore-scripts skips it, so
+# check the hooks themselves rather than trusting the install (#3616).
+if [[ "$DEPS_STATUS" != failed ]]; then
+  HOOK_STATE="$(setup_hook_state "$ROOT")"
+  case "$HOOK_STATE" in
+    active) wizard_ok "Git hooks are installed (.husky)." ;;
+    disabled) wizard_note "HUSKY=0 is set, so the repository's git hooks stay off." ;;
+    no-git) wizard_note "Not a git checkout, so there are no git hooks to install." ;;
+    custom)
+      wizard_warn "core.hooksPath is $(git config --get core.hooksPath); leaving it alone. The .husky hooks run only if that path calls them."
+      DEPS_DETAIL="$DEPS_DETAIL Git hooks use a custom core.hooksPath."
+      ;;
+    user-hooks)
+      wizard_warn "Your own hooks are in the git hooks directory, so setup will not point core.hooksPath at .husky/_ over them. To switch to the repository's hooks:"
+      wizard_command "npx husky"
+      DEPS_DETAIL="$DEPS_DETAIL Repository git hooks are not installed."
+      ;;
+    missing)
+      if ((DRY_RUN)); then
+        wizard_note "Dry run: would run husky to install the repository's git hooks."
+      elif [[ -x node_modules/.bin/husky ]] && node_modules/.bin/husky >&"$WIZARD_FD" 2>&1 &&
+        [[ "$(setup_hook_state "$ROOT")" == active ]]; then
+        wizard_ok "Installed the repository's git hooks (husky)."
+      else
+        wizard_warn "The repository's git hooks are not installed, because npm's prepare step did not run. To install them:"
+        wizard_command "npx husky"
+        DEPS_DETAIL="$DEPS_DETAIL Repository git hooks are not installed."
+      fi
+      ;;
+  esac
+fi
 record dependencies "$DEPS_STATUS" "$DEPS_DETAIL"
 [[ "$DEPS_STATUS" == failed ]] && stop 1
 

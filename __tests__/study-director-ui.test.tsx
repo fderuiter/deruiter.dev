@@ -207,7 +207,7 @@ describe("Study Director copy", () => {
     const files = [
       "components/arcade/StudyDirectorClient.tsx",
       "components/arcade/ArcadeHubClient.tsx",
-      "components/CommandPalette.tsx",
+      "lib/command-palette/static-navs.ts",
       "lib/arcade-data.ts",
     ];
     for (const file of files) {

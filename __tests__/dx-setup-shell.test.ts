@@ -266,3 +266,189 @@ describe("setup shell entrypoint (#982, #985)", () => {
     });
   });
 });
+
+describe("setup git hook detection (#3616)", () => {
+  let repo: string;
+  const env = { ...process.env, HUSKY: "" };
+
+  const git = (...args: string[]) =>
+    execFileSync("git", ["-C", repo, ...args], { encoding: "utf-8" }).trim();
+
+  const state = (extra: Record<string, string> = {}) =>
+    execFileSync(
+      "bash",
+      ["-c", `. scripts/lib/setup-checks.sh; setup_hook_state "$1"`, "_", repo],
+      { cwd: ROOT, encoding: "utf-8", env: { ...env, ...extra } }
+    ).trim();
+
+  const installHuskyStubs = () => {
+    fs.mkdirSync(path.join(repo, ".husky", "_"), { recursive: true });
+    fs.writeFileSync(path.join(repo, ".husky", "_", "h"), "#!/bin/sh\n");
+    fs.writeFileSync(
+      path.join(repo, ".husky", "_", "pre-commit"),
+      "#!/bin/sh\n",
+      { mode: 0o755 }
+    );
+  };
+
+  beforeEach(() => {
+    repo = fs.mkdtempSync(path.join(os.tmpdir(), "dx-setup-hooks-"));
+    execFileSync("git", ["init", "-q", repo]);
+  });
+
+  afterEach(() => {
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("reports missing hooks when npm's prepare step never ran", () => {
+    expect(state()).toBe("missing");
+  });
+
+  it("reports missing hooks when core.hooksPath is set but the stubs are gone", () => {
+    git("config", "core.hooksPath", ".husky/_");
+    expect(state()).toBe("missing");
+  });
+
+  it("reports active hooks once Husky has installed its stubs", () => {
+    git("config", "core.hooksPath", ".husky/_");
+    installHuskyStubs();
+    expect(state()).toBe("active");
+  });
+
+  it("respects an intentional HUSKY=0", () => {
+    expect(state({ HUSKY: "0" })).toBe("disabled");
+  });
+
+  it("leaves a custom core.hooksPath alone", () => {
+    git("config", "core.hooksPath", ".githooks");
+    expect(state()).toBe("custom");
+  });
+
+  it("does not claim the person's own hooks as missing", () => {
+    fs.writeFileSync(
+      path.join(repo, ".git", "hooks", "pre-commit"),
+      "#!/bin/sh\nexit 0\n",
+      { mode: 0o755 }
+    );
+    expect(state()).toBe("user-hooks");
+  });
+
+  it("ignores git's sample hooks", () => {
+    fs.writeFileSync(
+      path.join(repo, ".git", "hooks", "pre-commit.sample"),
+      "#!/bin/sh\n",
+      { mode: 0o755 }
+    );
+    expect(state()).toBe("missing");
+  });
+
+  it("treats a folder inside another checkout as no git checkout of its own", () => {
+    const nested = path.join(repo, "nested");
+    fs.mkdirSync(nested);
+    const result = execFileSync(
+      "bash",
+      [
+        "-c",
+        `. scripts/lib/setup-checks.sh; setup_hook_state "$1"`,
+        "_",
+        nested,
+      ],
+      { cwd: ROOT, encoding: "utf-8", env }
+    ).trim();
+    expect(result).toBe("no-git");
+  });
+
+  describe("when setup reuses an existing install", () => {
+    const scaffold = (husky: string) => {
+      fs.mkdirSync(path.join(repo, "scripts", "lib"), { recursive: true });
+      for (const script of [
+        "scripts/setup.sh",
+        "scripts/lib/wizard-ui.sh",
+        "scripts/lib/setup-checks.sh",
+      ]) {
+        fs.copyFileSync(path.join(ROOT, script), path.join(repo, script));
+      }
+      fs.copyFileSync(
+        path.join(ROOT, "package.json"),
+        path.join(repo, "package.json")
+      );
+      const bin = path.join(repo, "node_modules", ".bin");
+      fs.mkdirSync(bin, { recursive: true });
+      fs.writeFileSync(path.join(repo, "package-lock.json"), "{}");
+      const marker = path.join(repo, "node_modules", ".package-lock.json");
+      fs.writeFileSync(marker, "{}");
+      const future = new Date(Date.now() + 5000);
+      fs.utimesSync(marker, future, future);
+      fs.writeFileSync(path.join(bin, "tsx"), "#!/bin/sh\nexit 0\n", {
+        mode: 0o755,
+      });
+      fs.writeFileSync(path.join(bin, "husky"), husky, { mode: 0o755 });
+      fs.mkdirSync(path.join(repo, "app", "generated", "prisma"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(repo, "app", "generated", "prisma", "client.ts"),
+        ""
+      );
+    };
+
+    const run = () =>
+      spawnSync(
+        "bash",
+        [path.join(repo, "scripts", "setup.sh"), "--non-interactive"],
+        { encoding: "utf-8", env: { ...env, CI: "" } }
+      );
+
+    const fakeHusky = [
+      "#!/bin/sh",
+      "git config core.hooksPath .husky/_",
+      "mkdir -p .husky/_",
+      "printf '#!/bin/sh\\n' > .husky/_/h",
+      "printf '#!/bin/sh\\n' > .husky/_/pre-commit",
+      "chmod +x .husky/_/pre-commit",
+      "",
+    ].join("\n");
+
+    it("installs the hooks the skipped prepare step would have", () => {
+      scaffold(fakeHusky);
+      const result = run();
+      expect(result.status).toBe(0);
+      expect(git("config", "--get", "core.hooksPath")).toBe(".husky/_");
+      expect(result.stdout).toContain("Installed the repository's git hooks");
+    });
+
+    it("says so, and prints the command, when Husky cannot install them", () => {
+      scaffold("#!/bin/sh\nexit 0\n");
+      const result = run();
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("git hooks are not installed");
+      expect(result.stdout).toContain("npx husky");
+      expect(result.stdout).not.toContain(
+        "Installed the repository's git hooks"
+      );
+    });
+
+    it("never points core.hooksPath over the person's own hooks", () => {
+      scaffold(fakeHusky);
+      const own = path.join(repo, ".git", "hooks", "pre-commit");
+      fs.writeFileSync(own, "#!/bin/sh\necho mine\n", { mode: 0o755 });
+      const result = run();
+      expect(result.status).toBe(0);
+      expect(() => git("config", "--get", "core.hooksPath")).toThrow();
+      expect(fs.readFileSync(own, "utf-8")).toContain("mine");
+      expect(result.stdout).toContain("npx husky");
+    });
+
+    it("leaves hooks off under HUSKY=0", () => {
+      scaffold(fakeHusky);
+      const result = spawnSync(
+        "bash",
+        [path.join(repo, "scripts", "setup.sh"), "--non-interactive"],
+        { encoding: "utf-8", env: { ...env, CI: "", HUSKY: "0" } }
+      );
+      expect(result.status).toBe(0);
+      expect(() => git("config", "--get", "core.hooksPath")).toThrow();
+      expect(result.stdout).toContain("HUSKY=0");
+    });
+  });
+});

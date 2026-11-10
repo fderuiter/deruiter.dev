@@ -552,7 +552,7 @@
     },
     {
       "name": "@chenglou/pretext",
-      "version": "0.0.9",
+      "version": "1.0.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -6826,7 +6826,7 @@
     },
     {
       "name": "framer-motion",
-      "version": "13.5.1",
+      "version": "14.11.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -8898,7 +8898,7 @@
     },
     {
       "name": "motion-dom",
-      "version": "13.5.1",
+      "version": "14.11.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -8907,7 +8907,7 @@
     },
     {
       "name": "motion-utils",
-      "version": "13.5.0",
+      "version": "14.7.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,

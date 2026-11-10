@@ -63,6 +63,10 @@ const storageGlobalRestrictions = ["localStorage", "sessionStorage"].map(
 //                              the CRF Studio handoff lives in one tab by design
 //                              (#2595), and lib/safe-storage wraps localStorage
 //                              only.
+//   lib/clinical-study-context.ts
+//                              the study picked on /clinical and /study-data is
+//                              kept for one tab by design (#3157), and
+//                              lib/safe-storage wraps localStorage only.
 // app/layout.tsx needs no entry: its pre-hydration font-mode script reads
 // localStorage inside a string literal, which these rules do not inspect.
 const storageExemptFiles = [
@@ -70,6 +74,7 @@ const storageExemptFiles = [
   "lib/garmin/engine.ts",
   "components/patrol/MedicalDisclaimerBanner.tsx",
   "components/study-data/handoff-storage.ts",
+  "lib/clinical-study-context.ts",
 ];
 
 const storageUnrestrictedFiles = storageExemptFiles;

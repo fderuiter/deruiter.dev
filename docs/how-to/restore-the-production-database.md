@@ -50,8 +50,7 @@ RTO breakdown, from Neon's own operation timestamps:
 | Compute cold start to queryable | 31s |
 | **Total** | **~64s** |
 
-RTO is bounded by compute cold start, not by data volume, the database is 30.8
-MiB of 512 MiB and restore is copy-on-write. Expect this figure to hold as the
+Compute cold start sets the RTO. Data volume does not: the database is 30.8 MiB of 512 MiB and restore is copy-on-write. Expect this figure to hold as the
 database grows.
 
 ## Limitations you cannot engineer around on this plan
@@ -66,7 +65,7 @@ database grows.
    what the application runs as. There is no migration-only or read-only role.
    See [#622](https://github.com/fderuiter/deruiter.dev/issues/622).
 4. **No network restriction.** `allowed_ips: []`, `block_public_connections: false`.
-   A leaked credential is usable from anywhere, see
+   A leaked credential is usable from anywhere; see
    [#865](https://github.com/fderuiter/deruiter.dev/issues/865).
 5. **Ten branches maximum** on the free plan. Rehearsal branches must be cleaned up.
 6. **The production branch is not protected.** `"protected": false`. Nothing at
@@ -152,8 +151,8 @@ Re-run both queries from step 1 against the restored branch, passing its
 the incident being recovered from is itself a data change, in which case the
 CaseStudy fingerprint should differ and the schema fingerprint should not.
 
-Then verify application connectivity against the restored branch, not just raw
-SQL. `_prisma_migrations` must contain one row per directory in
+Then check that the application connects to the restored branch, as well as
+raw SQL. `_prisma_migrations` must contain one row per directory in
 `prisma/migrations/` (18 as of 2026-10-19); a mismatch means the restore point
 predates a migration and the application code will not match the schema.
 
@@ -161,8 +160,8 @@ predates a migration and the application code will not match the schema.
 
 If you restored with `finalize: false`, call `finalize_branch_restore` now.
 
-Confirm the endpoint actually moved, **this is the step most likely to surprise
-you**:
+Confirm the endpoint actually moved. **This is the step most likely to
+surprise you**:
 
 ```text
 list_branch_computes(project_id = "...", branch_id = <restored branch>)
@@ -185,7 +184,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://deruiter.dev/case-studies/qrcr
 ```
 
 `200` means the running deployment reached Neon. `404` means it is serving
-fallbacks, the failure mode of
+fallbacks. That is the failure mode of
 [#859](https://github.com/fderuiter/deruiter.dev/issues/859), which otherwise looks
 like a healthy site.
 

@@ -53,6 +53,15 @@ checksum verification. An `npm ci` failure may also come from a lifecycle
 script or network failure, so inspect the original output before changing the
 lockfile.
 
+The dependency stage also checks that the repository's git hooks are installed.
+npm's `prepare` script (`husky`) installs them, but a reused install, a
+symlinked `node_modules` or `npm ci --ignore-scripts` skips it. When the hooks
+are missing, setup runs `husky` and checks again; if that fails, for example in
+a read-only checkout, it says the hooks are not installed and prints
+`npx husky`. It leaves hooks alone when `HUSKY=0` is set, when
+`core.hooksPath` points somewhere other than `.husky/_`, or when your own hooks
+sit in the git hooks directory.
+
 Each stage reports one status: `completed`, `skipped`, `failed`, `manual`
 (a person must finish it, for example a missing secret or a refused
 production target) or `cancelled`. Stage outcomes, never values, are saved to

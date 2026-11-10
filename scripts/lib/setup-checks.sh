@@ -227,3 +227,47 @@ setup_json_escape() {
   text="${text//$'\n'/ }"
   printf '%s' "$text"
 }
+
+# setup_hook_state ROOT prints one word for whether the repository's Husky
+# hooks will run in the git checkout at ROOT (#3616):
+#   disabled    HUSKY=0 is set, an intentional opt-out
+#   no-git      ROOT is not the top of a git checkout
+#   custom      core.hooksPath points somewhere other than .husky/_
+#   user-hooks  core.hooksPath is unset and the hooks directory holds the
+#               person's own hooks, which pointing it at .husky/_ would mute
+#   missing     the hooks were never installed (npm's prepare was skipped)
+#   active      core.hooksPath is .husky/_ and Husky's stubs are present
+setup_hook_state() {
+  local root="$1" top hooks_path hooks_dir hook
+  if [[ "${HUSKY:-}" == 0 ]]; then
+    echo disabled
+    return
+  fi
+  if ! top="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" ||
+    [[ "$(cd "$top" && pwd -P)" != "$(cd "$root" && pwd -P)" ]]; then
+    echo no-git
+    return
+  fi
+  hooks_path="$(git -C "$root" config --get core.hooksPath 2>/dev/null || true)"
+  if [[ -n "$hooks_path" && "$hooks_path" != ".husky/_" ]]; then
+    echo custom
+    return
+  fi
+  if [[ -z "$hooks_path" ]]; then
+    hooks_dir="$(git -C "$root" rev-parse --git-path hooks)"
+    [[ "$hooks_dir" == /* ]] || hooks_dir="$root/$hooks_dir"
+    for hook in "$hooks_dir"/*; do
+      if [[ -f "$hook" && -x "$hook" && "$hook" != *.sample ]]; then
+        echo user-hooks
+        return
+      fi
+    done
+    echo missing
+    return
+  fi
+  if [[ -f "$root/.husky/_/h" && -x "$root/.husky/_/pre-commit" ]]; then
+    echo active
+  else
+    echo missing
+  fi
+}

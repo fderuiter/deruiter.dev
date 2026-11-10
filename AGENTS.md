@@ -32,7 +32,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ### 3. Route Indexing & Discovery
 
 - Any new first-class route or interactive tool must be synchronized across the 5-Point Discovery Matrix:
-  - `components/CommandPalette.tsx` under `staticNavs` with Tabler/Lucide icon, status badge, tech stack tags, and preview highlights.
+  - `STATIC_NAVS` in `lib/command-palette/static-navs.ts` (rendered by `components/CommandPalette.tsx`), with a Tabler icon name, status badge, tech stack tags and preview highlights.
   - `lib/navigation.ts`, the single data source for the top bar, desktop menus, mobile drawer and footer columns (one entry under the right group, per [ADR 0058](adr/0058-site-navigation-information-architecture.md)).
   - `app/sitemap.ts` and `lib/seo-metadata.ts` under `ROUTE_METADATA_CONFIGS` with canonical path and change frequency.
   - `app/<route>/opengraph-image.tsx` providing a 1200x630 dynamic social preview card matching the systems architecture design system (`lib/og-image.tsx`).
@@ -56,7 +56,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ### 6. Developer Suite (DX) & Quality Invariants
 
 - Run `npm run quality` (or `npm run verify`) to ensure type safety, zero ESLint warnings, docs synchronization, and every architectural invariant reported by DX Doctor passes.
-- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices (`arcade` writes a three-view game with its session and views and registers it across the discovery matrix and `ARCADE_REGISTRY`; `case-study` registers in `CommandPalette.tsx`).
+- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices (`arcade` writes a three-view game with its session and views and registers it across the discovery matrix and `ARCADE_REGISTRY`; `case-study` registers in `lib/command-palette/static-navs.ts`).
 - Whenever public library or hook signatures change, run `npm run check-docs-drift`, which compiles the TypeDoc reference with warnings as errors. The compiled reference in `docs/reference/api/` is git-ignored; never commit it.
 
 ### 7. Headless Canvas 2D & DOM Observer Testing Lifecycle

@@ -225,7 +225,7 @@ export function scaffoldCaseStudy(root: string, rawName: string, dryRun = false)
 
   const routeFile = path.join(root, "app", "case-studies", kebab, "page.tsx");
   const testFile = path.join(root, "__tests__", `${kebab}-case-study.test.ts`);
-  const paletteFile = path.join(root, "components", "CommandPalette.tsx");
+  const paletteFile = path.join(root, "lib", "command-palette", "static-navs.ts");
 
   const routeContent = `import React from "react";
 import { type Metadata } from "next";
@@ -292,13 +292,13 @@ describe("${title} Case Study Page", () => {
     });
   }
 
-  // Register in CommandPalette.tsx
+  // Register in the Command Palette static entries
   if (fs.existsSync(paletteFile)) {
     const paletteContent = fs.readFileSync(paletteFile, "utf-8");
     const targetUrl = `/case-studies/${kebab}`;
     if (!paletteContent.includes(`url: "${targetUrl}"`)) {
-      const staticNavsRegex = /(const staticNavs:\s*PaletteItem\[\]\s*=\s*\[)([\s\S]*?)(\n\s*\];)/;
-      const navItem = `      {\n        id: "case-study-${kebab}",\n        title: "${title} Case Study",\n        subtitle: "Read architectural case study and metrics",\n        category: "case-study",\n        url: "${targetUrl}",\n        icon: <IconFileCode className="w-4 h-4 text-brand-cyan" />\n      },`;
+      const staticNavsRegex = /(export const STATIC_NAVS:[^=]*=\s*\[)([\s\S]*?)(\n\];)/;
+      const navItem = `  {\n    id: "case-study-${kebab}",\n    title: "${title} Case Study",\n    subtitle: "Read architectural case study and metrics",\n    category: "case-study",\n    url: "${targetUrl}",\n    icon: { name: "IconFileCode", className: "w-4 h-4 text-brand-cyan" },\n  },`;
       
       const updatedContent = paletteContent.replace(staticNavsRegex, `$1$2\n${navItem}$3`);
       if (!dryRun) {

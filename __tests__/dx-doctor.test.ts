@@ -41,8 +41,8 @@ describe("DX Invariant Doctor Engine", () => {
   });
 
   describe("checkRouteIndexing", () => {
-    it("fails when a route page is not registered in CommandPalette.tsx", () => {
-      // Setup fake workspace with app/arcade/cyber-dash/page.tsx and un-indexed CommandPalette
+    it("fails when a route page is not registered in STATIC_NAVS", () => {
+      // Setup fake workspace with app/arcade/cyber-dash/page.tsx and un-indexed STATIC_NAVS
       const appArcadeDir = path.join(tempDir, "app", "arcade", "cyber-dash");
       fs.mkdirSync(appArcadeDir, { recursive: true });
       fs.writeFileSync(
@@ -50,11 +50,11 @@ describe("DX Invariant Doctor Engine", () => {
         "export default function Page() { return null; }"
       );
 
-      const compDir = path.join(tempDir, "components");
+      const compDir = path.join(tempDir, "lib", "command-palette");
       fs.mkdirSync(compDir, { recursive: true });
       fs.writeFileSync(
-        path.join(compDir, "CommandPalette.tsx"),
-        'const staticNavs: PaletteItem[] = [\n      { id: "nav-work", url: "/#work" }\n    ];'
+        path.join(compDir, "static-navs.ts"),
+        'export const STATIC_NAVS: readonly StaticNavEntry[] = [\n  { id: "nav-work", url: "/#work" },\n];'
       );
 
       const result = checkRouteIndexing(tempDir, false);
@@ -71,11 +71,11 @@ describe("DX Invariant Doctor Engine", () => {
         "export default function Page() { return null; }"
       );
 
-      const compDir = path.join(tempDir, "components");
+      const compDir = path.join(tempDir, "lib", "command-palette");
       fs.mkdirSync(compDir, { recursive: true });
       fs.writeFileSync(
-        path.join(compDir, "CommandPalette.tsx"),
-        'const staticNavs: PaletteItem[] = [\n      { id: "nav-work", url: "/#work" }\n    ];'
+        path.join(compDir, "static-navs.ts"),
+        'export const STATIC_NAVS: readonly StaticNavEntry[] = [\n  { id: "nav-work", url: "/#work" },\n];'
       );
 
       const fixResult = checkRouteIndexing(tempDir, true);
@@ -83,7 +83,7 @@ describe("DX Invariant Doctor Engine", () => {
 
       // Verify file was written
       const updatedPalette = fs.readFileSync(
-        path.join(compDir, "CommandPalette.tsx"),
+        path.join(compDir, "static-navs.ts"),
         "utf-8"
       );
       expect(updatedPalette).toContain('url: "/arcade/cyber-dash"');

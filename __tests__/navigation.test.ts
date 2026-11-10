@@ -203,7 +203,7 @@ describe("navigation structure (#1842, #2952)", () => {
 
   it("is covered by the command palette", () => {
     const palette = fs.readFileSync(
-      path.join(process.cwd(), "components/CommandPalette.tsx"),
+      path.join(process.cwd(), "lib/command-palette/static-navs.ts"),
       "utf8"
     );
     const internal = getAllNavItems().filter((i) => !i.external);

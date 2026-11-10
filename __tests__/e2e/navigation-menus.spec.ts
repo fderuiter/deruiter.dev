@@ -88,7 +88,7 @@ test.describe("Top bar and menus on a wide screen", () => {
     ).toBeVisible();
     const journey = panel.getByRole("group", { name: "The journey, in order" });
     await expect(journey.getByRole("link")).toHaveText([
-      /1\. CRF Studio/,
+      /1\. Case report form designer \(CRF Studio\)/,
       /2\. Protocol Drift/,
       /3\. Study Data Pipeline/,
       /4\. Clinical Data Platform/,

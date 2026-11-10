@@ -163,7 +163,7 @@ export default function PlatformGovernancePage() {
           Governance / Catalog
         </p>
         <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
-          Govern the data
+          Data rules and catalog (Data Governance)
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
           Every data product and governed metric on the platform, in one

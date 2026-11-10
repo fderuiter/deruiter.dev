@@ -31,7 +31,7 @@ export default function PlatformStrategyPage() {
           Decision systems / Strategy
         </p>
         <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
-          Platform strategy toolkit
+          Vendor scoring (Platform Strategy)
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
           Compare fictional platform options, examine the assumptions that move

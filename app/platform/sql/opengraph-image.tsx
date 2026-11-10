@@ -11,7 +11,7 @@ export const contentType = OG_IMAGE_CONTENT_TYPE;
 export default function Image() {
   return createSocialImageResponse({
     category: "CLINICAL DATA PLATFORM",
-    title: "Query the warehouse",
+    title: "Query workbench (SQL Workbench)",
     description:
       "Run read-only SQL on the gold tables in your browser, with DuckDB compiled to WebAssembly.",
     badge: "SQL // SYNTHETIC",

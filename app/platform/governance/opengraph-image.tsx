@@ -11,7 +11,7 @@ export const contentType = OG_IMAGE_CONTENT_TYPE;
 export default function Image() {
   return createSocialImageResponse({
     category: "CLINICAL DATA PLATFORM",
-    title: "Govern the data",
+    title: "Data rules and catalog (Data Governance)",
     description:
       "Every data product and governed metric with its owner, steward, contract and quality score, beside the glossary and RACI.",
     badge: "GOVERNANCE // SYNTHETIC",

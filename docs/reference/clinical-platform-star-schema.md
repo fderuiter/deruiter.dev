@@ -750,7 +750,7 @@ Month-end key risk indicator snapshots per site, cumulative from activation to t
 | --- | --- | --- | --- | --- | --- |
 | `site_key` | integer | no | PK, FK to `gold.dim_site` | internal | Site version in force on the snapshot date. |
 | `snapshot_date_key` | integer | no | PK, FK to `gold.dim_date` | internal | Month-end snapshot date. |
-| `kri_id` | string | no | PK | internal | Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate or entry-lag-days. |
+| `kri_id` | string | no | PK | internal | Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate, entry-lag-days, ae-rate, ae-report-days or sae-report-days. |
 | `study_key` | integer | no | FK to `gold.dim_study` | internal | Study. |
 | `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
 | `numerator` | integer | no |  | internal | Numerator, cumulative to the snapshot date. |

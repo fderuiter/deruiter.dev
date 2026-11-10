@@ -69,6 +69,10 @@ metrics.
 | Events adjudicated | `cec_events_adjudicated` | certified | 1.0.0 | portfolio | 28 events |
 | Events awaiting adjudication | `cec_adjudication_backlog` | certified | 1.0.0 | portfolio | 11 events |
 | Time to adjudication (median) | `cec_adjudication_time_median` | certified | 1.0.0 | portfolio | 27.5 days |
+| Adverse events reported | `adverse_event_count` | certified | 1.0.0 | portfolio | 2,084 adverse events |
+| Adverse events per 10 entered visits | `adverse_event_rate_per_10_visits` | certified | 1.0.0 | portfolio | 2.8 adverse events per 10 entered visits |
+| Adverse event report time (median) | `adverse_event_report_time_median` | certified | 1.0.0 | portfolio | 12.0 days |
+| Serious adverse event report time (median) | `serious_adverse_event_report_time_median` | certified | 1.0.0 | portfolio | 11.0 days |
 | Protocol final to first subject in | `protocol_final_to_fpi_days` | certified | 1.0.0 | study | DEMO-101: 90 days; DEMO-201: 90 days; DEMO-202: 132 days; DEMO-203: 147 days; DEMO-301: 93 days; DEMO-302: 185 days; DEV-401: 114 days; DEV-402: 86 days |
 | First subject in to last subject in | `fpi_to_lpi_days` | certified | 1.0.0 | study | DEMO-101: 128 days; DEMO-201: 457 days; DEMO-202: 527 days; DEMO-203: 442 days; DEMO-301: 176 days; DEV-401: 201 days |
 | Last subject last visit to database lock | `lplv_to_dbl_days` | certified | 1.0.0 | study | DEMO-101: 75 days; DEMO-301: 46 days; DEV-401: 43 days |
@@ -609,6 +613,56 @@ Median calendar days from the site's report of an event to its adjudication by t
 - Default filters: none.
 - Owner: Medical Safety Lead. Steward: Safety Data Steward.
 - Glossary term: Event adjudication (`event-adjudication-term`).
+
+## Safety reporting
+
+### Adverse events reported
+
+Adverse events the site reported in the EDC by the data cut, dated by the report.
+
+- Id: `adverse_event_count`, version 1.0.0, certified.
+- Formula: count of gold.fct_adverse_event rows.
+- Unit: adverse events. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Adverse event (AE) (`adverse-event-term`).
+
+### Adverse events per 10 entered visits
+
+Adverse events reported per 10 visits with data entered. A site far below its peers may be missing events, so a low value is the risk.
+
+- Id: `adverse_event_rate_per_10_visits`, version 1.0.0, certified.
+- Formula: (count of gold.fct_adverse_event rows) / (count of gold.fct_visit rows where entry_lag_days is not null and visit_date_key is not null), times 10.
+- Unit: adverse events per 10 entered visits. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Adverse event (AE) (`adverse-event-term`).
+
+### Adverse event report time (median)
+
+Median calendar days from an adverse event's onset to the site's report of it, over events reported by the data cut.
+
+- Id: `adverse_event_report_time_median`, version 1.0.0, certified.
+- Formula: median of days_to_report over gold.fct_adverse_event rows.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Adverse event (AE) (`adverse-event-term`).
+
+### Serious adverse event report time (median)
+
+Median calendar days from a serious adverse event's onset to the site's report of it, over serious events reported by the data cut. Serious events are held to a tighter limit, so they are measured on their own.
+
+- Id: `serious_adverse_event_report_time_median`, version 1.0.0, certified.
+- Formula: median of days_to_report over gold.fct_adverse_event rows where is_serious = true.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: SAE (`sae-term`).
 
 ## Milestones
 

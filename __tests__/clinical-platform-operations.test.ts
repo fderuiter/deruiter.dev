@@ -958,7 +958,12 @@ describe("operations risk tab (#2631)", () => {
     const factor = risk({ study: "DEMO-302" })!.factors.find(
       (f) => f.id === "ctq-safety-reporting"
     )!;
-    expect(factor.gap?.issue).toBe(2980);
-    expect(factor.kris).toEqual([]);
+    // DEMO-302 is a drug study, so the adverse event KRIs close the gap
+    // (#3218).
+    expect(factor.gap).toBeNull();
+    expect(factor.kris).toEqual([
+      "Adverse events per 10 entered visits",
+      "Adverse event report time (median days)",
+    ]);
   });
 });

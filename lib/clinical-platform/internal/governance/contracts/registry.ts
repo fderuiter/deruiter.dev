@@ -340,7 +340,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     FINANCE,
     MONTHLY_CLOSE
   ),
-  "gold.fct_kri_snapshot": gold("KRI snapshots", "RBQM mart", QUALITY),
+  "gold.fct_kri_snapshot": {
+    ...gold("KRI snapshots", "RBQM mart", QUALITY),
+    // 1.1.0 (#3218): adverse event rate and report time series.
+    version: "1.1.0",
+  },
   [STUDY_DATA_PRODUCT_ID]: {
     name: "Study data: SDTM and ADaM",
     domain: "Study data",

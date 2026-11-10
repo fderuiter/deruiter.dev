@@ -101,6 +101,124 @@
           "phase",
           "product_type",
           "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_adverse_event",
+            "timeKey": "reported_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "adverse events"
+      },
+      "id": "adverse_event_count",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "entry_lag_days",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_adverse_event",
+            "timeKey": "reported_date_key",
+            "where": []
+          },
+          "scale": 10
+        },
+        "grain": "portfolio",
+        "unit": "adverse events per 10 entered visits"
+      },
+      "id": "adverse_event_rate_per_10_visits",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "column": "days_to_report",
+              "kind": "column"
+            },
+            "table": "gold.fct_adverse_event",
+            "timeKey": "reported_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "adverse_event_report_time_median",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
           "vendor"
         ],
         "defaultFilters": [],
@@ -2407,6 +2525,54 @@
         "unit": "days"
       },
       "id": "selection_to_contract_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "column": "days_to_report",
+              "kind": "column"
+            },
+            "table": "gold.fct_adverse_event",
+            "timeKey": "reported_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "is_serious",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": true
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "serious_adverse_event_report_time_median",
       "status": "certified",
       "version": "1.0.0"
     },

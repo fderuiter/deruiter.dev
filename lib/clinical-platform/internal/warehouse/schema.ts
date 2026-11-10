@@ -2403,7 +2403,7 @@ const FACTS: readonly TableDraft[] = [
       [
         "kri_id",
         "string",
-        "Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate or entry-lag-days.",
+        "Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate, entry-lag-days, ae-rate, ae-report-days or sae-report-days.",
         { length: 32, from: [], how: "constant" },
       ],
       [
@@ -2431,6 +2431,8 @@ const FACTS: readonly TableDraft[] = [
             "silver.edc_visit.visit_status",
             "silver.edc_visit.data_entered_at",
             "silver.ctms_deviation.importance",
+            "silver.edc_adverse_event.onset_on",
+            "silver.edc_adverse_event.reported_on",
           ],
           how: "aggregate",
         },
@@ -2443,6 +2445,9 @@ const FACTS: readonly TableDraft[] = [
           from: [
             "silver.edc_visit.visit_date",
             "silver.edc_subject.enrolled_on",
+            "silver.edc_visit.data_entered_at",
+            "silver.edc_adverse_event.reported_on",
+            "silver.edc_adverse_event.is_serious",
           ],
           how: "aggregate",
         },

@@ -99,6 +99,12 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     open_query_count: 36,
     query_aging_mean: 2.91666666667,
     query_resolution_time_median: 5,
+    // #3218: DEMO-301's adverse events stay in its Study Data Pipeline run,
+    // so its entered visits count toward the rate with no events.
+    adverse_event_count: 2084,
+    adverse_event_rate_per_10_visits: 2.77127659574,
+    adverse_event_report_time_median: 12,
+    serious_adverse_event_report_time_median: 11,
     // The age bands (#2759) add up to the open queries: no unresolved query
     // on the seed is older than 30 days at the data cut.
     open_queries_aged_0_7_days: 33,
@@ -182,8 +188,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 53 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(53);
+  it("defines 57 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(57);
     expect(checkMetricRegistry()).toEqual([]);
   });
 
@@ -298,6 +304,7 @@ describe("golden values on the default seed", () => {
       ["missed-visit-rate", "missed_visit_rate", 1],
       ["important-deviation-rate", "important_deviation_rate", 100],
       ["entry-lag-days", "data_entry_lag_mean", 1],
+      ["ae-rate", "adverse_event_rate_per_10_visits", 10],
     ];
     const siteOf = new Map(
       warehouse.tables["gold.dim_site"].map((s) => [s.site_key, s.site_id])

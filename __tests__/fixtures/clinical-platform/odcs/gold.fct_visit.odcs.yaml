@@ -185,3 +185,4 @@ customProperties:
       - "metric:missed_visit_rate"
       - "metric:out_of_window_visit_rate"
       - "metric:query_rate_per_100_visits"
+      - "metric:adverse_event_rate_per_10_visits"

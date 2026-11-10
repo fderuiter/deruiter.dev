@@ -353,6 +353,7 @@ describe("business glossary", () => {
       "protocol-deviation-term",
       "important-deviation-term",
       "database-lock-term",
+      "adverse-event-term",
       "teae-term",
       "budget-burn-term",
       "forecast-at-completion-term",
@@ -558,7 +559,8 @@ describe("data catalog search and facets", () => {
       ])
     );
     // The safety lead owns the adjudication feed, its fact and its metrics
-    // (#2881), and the adverse event feed and its fact (#2956).
+    // (#2881), the adverse event feed and its fact (#2956), and the
+    // adverse event metrics (#3218).
     expect(search({ text: "medical safety" })).toEqual([
       "silver.edc_adverse_event",
       "silver.cec_adjudication",
@@ -568,6 +570,10 @@ describe("data catalog search and facets", () => {
       "cec_events_adjudicated",
       "cec_adjudication_backlog",
       "cec_adjudication_time_median",
+      "adverse_event_count",
+      "adverse_event_rate_per_10_visits",
+      "adverse_event_report_time_median",
+      "serious_adverse_event_report_time_median",
     ]);
     // The backlog says why a waiting event matters: it holds up the lock.
     expect(search({ text: "Database lock" })).toEqual([

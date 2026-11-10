@@ -117,6 +117,29 @@ export const KRI_LIBRARY: readonly KriDefinition[] = [
       "The monitoring plans target verifying all critical data due by the next interim visit. Below 80% the backlog outlasts a visit interval; below 70% critical data goes into a data cut unverified.",
     minimum: ENROLLED(1),
   },
+  {
+    id: "kri-ae-rate",
+    name: "Adverse events per 10 entered visits",
+    metricId: "adverse_event_rate_per_10_visits",
+    direction: "low",
+    amber: 1,
+    red: 0.5,
+    reason:
+      "Across the portfolio sites report about three adverse events per 10 visits with data entered. A site at a third of that may be missing events; at a sixth, under-reporting is the likelier explanation than a healthier population.",
+    minimum: ENROLLED(3),
+    studyMinimum: { metricId: "adverse_event_count", value: 1 },
+  },
+  {
+    id: "kri-ae-report-time",
+    name: "Adverse event report time (median days)",
+    metricId: "adverse_event_report_time_median",
+    direction: "high",
+    amber: 28,
+    red: 35,
+    reason:
+      "A subject usually mentions an event at the next visit and the site enters it with that visit's data, so across the portfolio the median from onset to report is about two weeks. Twice that is the warning; at five weeks events reach safety review a visit or more late.",
+    minimum: { metricId: "adverse_event_count", value: 5 },
+  },
 ];
 
 /** Quality tolerance limits, in display order. */
@@ -303,16 +326,17 @@ function factors(device: boolean): CriticalToQualityFactor[] {
         ? "Adverse event and device deficiency reporting"
         : "Adverse event reporting",
       risk: "Under-reported or late safety events hide risk from subjects, investigators and regulators.",
-      kriIds: [],
+      kriIds: ["kri-ae-rate", "kri-ae-report-time"],
       qtlIds: [],
-      // Central monitoring tests each site's AE rate against its peers
-      // (#2956); what is still missing is a KRI to follow it week by week.
-      gap: {
-        reason: device
-          ? "No key risk indicator follows a site's adverse event rate or how long it takes to report an event, and the portfolio has no device deficiency feed. Central monitoring compares each site's adverse event rate with its peers in the meantime."
-          : "No key risk indicator follows a site's adverse event rate or how long it takes to report an event. Central monitoring compares each site's rate with its peers in the meantime.",
-        issue: SAFETY_KRIS_ISSUE,
-      },
+      // Central monitoring also tests each site's AE rate against its peers
+      // (#2956); the KRIs follow it month by month (#3218).
+      gap: device
+        ? {
+            reason:
+              "The portfolio has no device deficiency feed, so no key risk indicator follows how sites report device deficiencies.",
+            issue: SAFETY_KRIS_ISSUE,
+          }
+        : null,
     },
   ];
 }

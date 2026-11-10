@@ -2048,6 +2048,135 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.fct_kri_snapshot",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Site version in force on the snapshot date.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Month-end snapshot date.",
+              "maxLength": null,
+              "name": "snapshot_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate, entry-lag-days, ae-rate, ae-report-days or sae-report-days.",
+              "maxLength": 32,
+              "name": "kri_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Numerator, cumulative to the snapshot date.",
+              "maxLength": null,
+              "name": "numerator",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Denominator, cumulative to the snapshot date.",
+              "maxLength": null,
+              "name": "denominator",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Numerator over denominator, to 4 places; null when the denominator is 0.",
+              "maxLength": null,
+              "name": "kri_value",
+              "nullable": true,
+              "pattern": null,
+              "precision": 12,
+              "scale": 4,
+              "type": "decimal"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Month-end key risk indicator snapshots per site, cumulative from activation to the snapshot date.",
+          "grain": "One row per site, month-end snapshot date and key risk indicator.",
+          "name": "fct_kri_snapshot",
+          "physicalName": "gold.fct_kri_snapshot",
+          "primaryKey": [
+            "site_key",
+            "snapshot_date_key",
+            "kri_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_kri_snapshot",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
+    },
+    {
       "id": "clinical-platform/gold.fct_milestone",
       "objects": [
         {

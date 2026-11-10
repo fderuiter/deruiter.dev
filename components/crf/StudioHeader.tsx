@@ -345,7 +345,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     },
     {
       mode: "edc",
-      label: "Live EDC Simulation",
+      label: "Live EDC data entry",
       shortLabel: "Live EDC",
       description:
         "Enter test data as a clinical site would and see the checks fire",

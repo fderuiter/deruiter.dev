@@ -91,7 +91,9 @@ describe("CRF Studio Collapsible Sidebars & Header Controls", () => {
     });
 
     expect(container.textContent).toContain("Studio Actions");
-    expect(container.textContent).toContain("Simulate Protocol");
+    expect(container.textContent).toContain(
+      "Try in Clinical Trial Chaos (game)"
+    );
     expect(container.textContent).toContain("Docx / PDF Books");
     expect(container.textContent).toContain("Organization Branding");
 

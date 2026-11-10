@@ -743,7 +743,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               <IconShieldCheck className="w-5 h-5" />
             </span>
             <h2 className="text-base sm:text-lg font-bold text-white font-mono truncate">
-              Live EDC Simulation
+              Live EDC data entry
             </h2>
           </div>
           <p className="text-xs text-zinc-400 font-sans mt-1">

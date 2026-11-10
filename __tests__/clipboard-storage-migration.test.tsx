@@ -232,7 +232,7 @@ describe("CRF Studio simulation hand-off (#1514)", () => {
       />
     );
     return screen.getByTitle(
-      "Launch Live Conformance Engine Simulation with Active Protocol Pre-Loaded"
+      "Opens the Clinical Trial Chaos game with this protocol loaded"
     );
   }
 

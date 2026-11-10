@@ -52,6 +52,79 @@ export interface DiagnosticCheckResult {
   remediation?: RemediationAction;
 }
 
+/**
+ * The AGENTS.md section each DX Doctor check enforces, by check id. The full
+ * text of each section, with its reasons, is in `docs/agents/invariants/`.
+ */
+export const AGENTS_SECTION_BY_CHECK: Readonly<Record<string, number>> = {
+  "tests-dynamic-paths": 1,
+  "tests-fixture-hygiene": 1,
+  "security-credentials": 1,
+  "layout-navbar-hierarchy": 2,
+  "layout-top-padding": 2,
+  "routes-command-palette-exists": 3,
+  "routes-indexed": 3,
+  "routes-arcade-registry-parity": 3,
+  "arcade-three-view-guardrails": 3,
+  "hydration-safety": 4,
+  "architecture-session-determinism": 4,
+  "security-license-compliance": 6,
+  "docs-drift": 9,
+  "docs-llms-manifests-drift": 9,
+  "technical-guide-schema-parity": 9,
+  "docs-onboarding-drift": 9,
+  "docs-topology-drift": 9,
+  "docs-section-structures": 9,
+  "api-openapi-sync": 9,
+  "a11y-standards": 10,
+  "a11y-audit-integrity": 10,
+  "architecture-touch-target-dimensions": 10,
+  "quality-defect-remediation": 11,
+  "quality-proactive-interception": 12,
+  "architecture-layout-integrity": 13,
+  "routes-public-registry-drift": 14,
+  "quality-subroute-performance": 14,
+  "database-migrations": 15,
+  "env-schema-parity": 15,
+  "env-client-reads": 15,
+  "git-hygiene-config": 15,
+  "workspace-ide-config": 15,
+  "alternative-lockfiles": 15,
+  "dead-code-review": 15,
+  "dead-code-scanner": 15,
+  "bundle-optimize": 15,
+  "bundle-performance-budgets": 15,
+  "seo-social-integrity": 18,
+  "architecture-design-tokens": 20,
+  "architecture-deep-module-boundaries": 21,
+  "architecture-service-result-types": 21,
+};
+
+/**
+ * Names the AGENTS.md section a failing or warning check enforces, so the
+ * message points at the rule. A message that already names a section, and a
+ * passing check, are returned unchanged.
+ *
+ * @param check - One check's result.
+ * @returns The result, with ` (AGENTS.md section N)` added to its message.
+ */
+export function withAgentsSection(
+  check: DiagnosticCheckResult
+): DiagnosticCheckResult {
+  const section = AGENTS_SECTION_BY_CHECK[check.id];
+  if (
+    section === undefined ||
+    (check.status !== "fail" && check.status !== "warn") ||
+    check.message.includes("AGENTS.md")
+  ) {
+    return check;
+  }
+  return {
+    ...check,
+    message: `${check.message} (AGENTS.md section ${section})`,
+  };
+}
+
 export interface DoctorOptions {
   fix?: boolean;
   ci?: boolean;
@@ -3581,7 +3654,7 @@ export async function runDiagnostics(
     checkModuleBoundaries(root),
   ];
 
-  const checks = rawChecks.map((check) => {
+  const checks = rawChecks.map(withAgentsSection).map((check) => {
     if (
       (check.status === "fail" || check.status === "warn") &&
       !check.remediation

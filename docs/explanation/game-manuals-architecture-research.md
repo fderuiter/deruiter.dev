@@ -13,7 +13,7 @@
 - [`lib/arcade-achievements.ts`](../../lib/arcade-achievements.ts) (Precedent root re-export facade)
 - [`__tests__/arcade-achievements-exports.test.ts`](../../__tests__/arcade-achievements-exports.test.ts) (Precedent contract snapshot test)
 - [`.dependency-cruiser.cjs`](../../.dependency-cruiser.cjs) (Boundary and cyclic dependency invariant configuration)
-- [`AGENTS.md`](../../AGENTS.md#L189-L196) (Section 21: TS Deep Modules & Architectural Seams)
+- [`AGENTS.md`](../../AGENTS.md) section 21, TS Deep Modules & Architectural Seams ([full text](../agents/invariants/20-22-editorial-modules-free-tier.md))
 - [`lib/README.md`](../../lib/README.md) (Deep module architectural rules and package depth boundaries)
 
 ---

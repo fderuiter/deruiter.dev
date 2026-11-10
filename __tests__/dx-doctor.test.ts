@@ -1008,6 +1008,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Every failing or warning check names the AGENTS.md section it enforces.
+      for (const result of summary.results) {
+        if (result.status === "fail" || result.status === "warn") {
+          expect(result.message, result.id).toMatch(/AGENTS\.md/);
+        }
+      }
+
       // A read-only run never writes to the workspace.
       expect(snapshotTree(tempDir)).toEqual(before);
 

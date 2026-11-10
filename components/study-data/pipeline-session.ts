@@ -23,6 +23,7 @@ import {
   buildStudyDataPackage,
   buildTlfOutputs,
   createLineageIndex,
+  diffRuns,
   prepareStudyHandoff,
   recordedCoreView,
   renderReviewerGuideHtml,
@@ -36,6 +37,7 @@ import {
   type PipelineRun,
   type ScenarioId,
   type StudyDefinition,
+  type StudyDesignDefinition,
   type TlfOutputs,
 } from "@/lib/study-data";
 import {
@@ -46,6 +48,7 @@ import {
   type InjectedIssue,
   type PackageFileResult,
   type PreparedStudy,
+  type RerunResult,
   type RowWindow,
   type RunSummary,
   type StageCounts,
@@ -55,6 +58,15 @@ import { toDefinitionCounts, toScheduleDesign } from "./schedule-design";
 
 interface ActiveRun {
   readonly runId: number;
+  /** What produced the run, so a rerun can repeat it with an edited design. */
+  readonly inputs: {
+    readonly definition: StudyDefinition;
+    readonly seed: number;
+    readonly nSubjects: number;
+    readonly scenario: ScenarioId | undefined;
+    /** Whether the run is DEMO-301 as published, which CORE has recorded. */
+    readonly defaultStudy: boolean;
+  };
   readonly run: PipelineRun;
   readonly outputs: TlfOutputs;
   readonly lineage: LineageIndex;
@@ -260,12 +272,25 @@ export function createStudyDataSession() {
     nSubjects: number,
     study: unknown,
     scenario: ScenarioId | undefined
-  ): RunSummary => {
-    const started = performance.now();
-    const definition: StudyDefinition =
+  ): RunSummary =>
+    runDefinition(
       study === undefined
         ? DEMO_301_STUDY
-        : prepareStudyHandoff(study).definition;
+        : prepareStudyHandoff(study).definition,
+      seed,
+      nSubjects,
+      scenario,
+      study === undefined
+    );
+
+  const runDefinition = (
+    definition: StudyDefinition,
+    seed: number,
+    nSubjects: number,
+    scenario: ScenarioId | undefined,
+    defaultStudy: boolean
+  ): RunSummary => {
+    const started = performance.now();
     if (
       scenario !== undefined &&
       !MESSY_DATA_SCENARIOS.some((item) => item.id === scenario)
@@ -292,6 +317,7 @@ export function createStudyDataSession() {
     lastRunId += 1;
     active = {
       runId: lastRunId,
+      inputs: { definition, seed, nSubjects, scenario, defaultStudy },
       run: result,
       outputs,
       lineage: createLineageIndex(definition, result, outputs),
@@ -305,6 +331,7 @@ export function createStudyDataSession() {
       nSubjects,
       elapsedMs: Math.round(performance.now() - started),
       counts: stageCounts(result, outputs, define, nSubjects),
+      design: definition.design,
       datasets: result.datasets.map(summarise),
       conformance: result.conformance,
       findings: {
@@ -315,7 +342,7 @@ export function createStudyDataSession() {
         ? {}
         : { injected: injectedIssue(result, scenario) }),
       coreView: recordedCoreView({
-        defaultStudy: study === undefined,
+        defaultStudy,
         seed,
         nSubjects,
         scenario,
@@ -392,6 +419,45 @@ export function createStudyDataSession() {
     };
   };
 
+  /**
+   * Reruns the current run with an edited design and compares the two runs
+   * (#3160). The study, seed, subject count and scenario stay the same, so an
+   * unchanged design gives the same run and an empty diff.
+   */
+  const rerun = (design: StudyDesignDefinition): RerunResult => {
+    const previous = active;
+    if (!previous) {
+      throw new Error("There is no run to rerun. Run the pipeline first.");
+    }
+    const { definition, seed, nSubjects, scenario, defaultStudy } =
+      previous.inputs;
+    const unchanged =
+      JSON.stringify(design) === JSON.stringify(definition.design);
+    const summary = runDefinition(
+      { ...definition, design },
+      seed,
+      nSubjects,
+      scenario,
+      defaultStudy && unchanged
+    );
+    const next = current(summary.runId);
+    return {
+      summary,
+      diff: diffRuns(
+        {
+          findings: previous.run.findings,
+          datasets: previous.run.datasets,
+          tables: previous.outputs.tables,
+        },
+        {
+          findings: next.run.findings,
+          datasets: next.run.datasets,
+          tables: next.outputs.tables,
+        }
+      ),
+    };
+  };
+
   /** Answers one request; throws on a bad or stale request. */
   const handle = async (request: StudyDataRequest): Promise<unknown> => {
     switch (request.type) {
@@ -404,6 +470,8 @@ export function createStudyDataSession() {
           request.study,
           request.scenario
         );
+      case "rerun":
+        return rerun(request.design);
       case "rows":
         return rows(request.runId, request.key, request.offset, request.limit);
       case "trace":

@@ -177,7 +177,10 @@ describe("Equipose case study: evidence-backed narrative", () => {
 
   it("links every source to the Equipose repository main branch or the live site", () => {
     const narrative = getStudy().architectural_narrative;
-    const hrefs = [...narrative.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    // Same-site links (the platform demo cross-link) are not sources.
+    const hrefs = [...narrative.matchAll(/href="([^"]+)"/g)]
+      .map((m) => m[1])
+      .filter((href) => !href.startsWith("/"));
     expect(hrefs.length).toBeGreaterThan(10);
     for (const href of hrefs) {
       const ok =

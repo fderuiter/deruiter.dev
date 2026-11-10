@@ -1177,6 +1177,8 @@ flowchart TD
 </ul>
 <p>Equipose is a design and inspection tool, not a validated system. Its documentation marks the in-browser schedule as a draft and directs organisations to run exported scripts inside their own validated statistical environment.</p>
 
+<p>Randomization decides which arm each subject joins, and enrollment by site is one of the first things a study team watches. The platform demo's <a href="/platform/operations">clinical operations dashboards</a> show enrollment and key risk indicators by site, on synthetic data.</p>
+
 <h3>How it works</h3>
 <p><strong>Three bounded contexts.</strong> <code>randomization-engine</code> holds the pure TypeScript algorithms, the Web Worker, and the facade the UI talks to. <code>study-builder</code> holds the configuration form and an NgRx SignalStore (<code>@ngrx/signals</code>). <code>schema-management</code> holds the results grid, CSV/PDF export, and code generation. ESLint forbids <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, and Angular’s <code>HttpClient</code> everywhere under <code>src/app/domain</code>. The app is built on Angular 22 (<code>package.json</code>; the README badge still says 21).</p>
 <p><strong>Seeding.</strong> If the user gives no seed, 128 bits from <code>crypto.getRandomValues</code> become one. The seed string is hashed with SHA-256, the first 32 hex characters are folded into a 31-bit integer with an FNV-style loop, and that integer seeds MT19937. A second generator, seeded from the seed plus <code>-id</code>, keeps random subject-ID tokens on a separate stream.</p>

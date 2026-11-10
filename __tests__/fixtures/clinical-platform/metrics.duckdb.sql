@@ -1535,6 +1535,141 @@ SELECT
 FROM "measure"
 ORDER BY 1, 2;
 
+-- Adverse events reported: adverse_event_count 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Adverse events reported: adverse_event_count 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Adverse events per 10 entered visits: adverse_event_rate_per_10_visits 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+)
+SELECT 10 * CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE), 0) AS "value";
+
+-- Adverse events per 10 entered visits: adverse_event_rate_per_10_visits 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  10 * CAST(COALESCE("n"."value", 0) AS DOUBLE) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Adverse event report time (median): adverse_event_report_time_median 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."days_to_report" AS DOUBLE)) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Adverse event report time (median): adverse_event_report_time_median 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."days_to_report" AS DOUBLE)) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Serious adverse event report time (median): serious_adverse_event_report_time_median 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."days_to_report" AS DOUBLE)) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+  WHERE "f"."is_serious" = TRUE
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Serious adverse event report time (median): serious_adverse_event_report_time_median 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."days_to_report" AS DOUBLE)) AS "value"
+  FROM "gold"."fct_adverse_event" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  WHERE "f"."is_serious" = TRUE
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
 -- Protocol final to first subject in: protocol_final_to_fpi_days 1.0.0 (certified), DuckDB.
 -- Grouped by: study. Filters: none.
 WITH "span" AS (

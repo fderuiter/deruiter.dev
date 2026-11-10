@@ -30,6 +30,7 @@ const FORECAST = "gold.fct_spend_forecast";
 const AS_OF = "as_of_date_key";
 const SITE = "gold.dim_site";
 const ADJUDICATION = "gold.fct_cec_adjudication";
+const ADVERSE_EVENT = "gold.fct_adverse_event";
 
 const col = (column: string): MetricExpression => ({ kind: "column", column });
 const lit = (value: string | number | boolean): MetricExpression => ({
@@ -327,6 +328,21 @@ const enteredLag = (aggregation: MetricAggregation) =>
     "visit_date_key",
     present("entry_lag_days"),
     present("visit_date_key")
+  );
+/** Visits whose data is in the EDC: what a site can have reported events at. */
+const enteredVisits = count(
+  VISIT,
+  "visit_date_key",
+  present("entry_lag_days"),
+  present("visit_date_key")
+);
+const daysToReport = (...where: MetricPredicate[]) =>
+  measure(
+    ADVERSE_EVENT,
+    "median",
+    col("days_to_report"),
+    "reported_date_key",
+    ...where
   );
 const unresolvedQuery = oneOf("query_status", ["open", "answered"]);
 const queryAge = daysBetween(keyDate("opened_date_key"), DATA_CUT);
@@ -1062,6 +1078,82 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
       displayFolder: "Event adjudication",
     },
     2881
+  ),
+  define(
+    {
+      id: "adverse_event_count",
+      name: "Adverse events reported",
+      description:
+        "Adverse events the site reported in the EDC by the data cut, dated by the report.",
+      formula: {
+        kind: "simple",
+        measure: count(ADVERSE_EVENT, "reported_date_key"),
+      },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      unit: "adverse events",
+      format: WHOLE,
+      owner: SAFETY_OWNER,
+      steward: SAFETY_STEWARD,
+      glossaryTerm: "adverse-event-term",
+      displayFolder: "Safety reporting",
+    },
+    2980
+  ),
+  define(
+    {
+      id: "adverse_event_rate_per_10_visits",
+      name: "Adverse events per 10 entered visits",
+      description:
+        "Adverse events reported per 10 visits with data entered. A site far below its peers may be missing events, so a low value is the risk.",
+      formula: {
+        kind: "ratio",
+        numerator: count(ADVERSE_EVENT, "reported_date_key"),
+        denominator: enteredVisits,
+        scale: 10,
+      },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      unit: "adverse events per 10 entered visits",
+      format: ONE_DECIMAL,
+      owner: SAFETY_OWNER,
+      steward: SAFETY_STEWARD,
+      glossaryTerm: "adverse-event-term",
+      displayFolder: "Safety reporting",
+    },
+    2980
+  ),
+  define(
+    {
+      id: "adverse_event_report_time_median",
+      name: "Adverse event report time (median)",
+      description:
+        "Median calendar days from an adverse event's onset to the site's report of it, over events reported by the data cut.",
+      formula: { kind: "simple", measure: daysToReport() },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      unit: "days",
+      format: ONE_DECIMAL,
+      owner: SAFETY_OWNER,
+      steward: SAFETY_STEWARD,
+      glossaryTerm: "adverse-event-term",
+      displayFolder: "Safety reporting",
+    },
+    2980
+  ),
+  define(
+    {
+      id: "serious_adverse_event_report_time_median",
+      name: "Serious adverse event report time (median)",
+      description:
+        "Median calendar days from a serious adverse event's onset to the site's report of it, over serious events reported by the data cut. Serious events are held to a tighter limit, so they are measured on their own.",
+      formula: { kind: "simple", measure: daysToReport(is("is_serious", true)) },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      unit: "days",
+      format: ONE_DECIMAL,
+      owner: SAFETY_OWNER,
+      steward: SAFETY_STEWARD,
+      glossaryTerm: "sae-term",
+      displayFolder: "Safety reporting",
+    },
+    2980
   ),
   define(
     {

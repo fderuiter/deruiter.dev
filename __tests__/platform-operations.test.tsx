@@ -402,16 +402,15 @@ describe("Risk tab (#2631)", () => {
     expect(
       within(gaps).getAllByRole("link", { name: "Planned in #2776" })
     ).toHaveLength(1);
+    // DEMO-302 is a drug study, so its safety factor is watched by the
+    // adverse event KRIs and has no gap left (#3218).
     const factor = screen.getByText("Adverse event reporting").closest("li")!;
     expect(factor.textContent).toContain(
-      "Central monitoring compares each site's rate with its peers"
+      "KRIs: Adverse events per 10 entered visits, Adverse event report time (median days)"
     );
     expect(
-      within(factor).getByRole("link", { name: "Planned in #2980" })
-    ).toHaveProperty(
-      "href",
-      "https://github.com/fderuiter/deruiter.dev/issues/2980"
-    );
+      within(factor).queryByRole("link", { name: "Planned in #2980" })
+    ).toBeNull();
   });
 });
 

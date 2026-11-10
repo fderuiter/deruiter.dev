@@ -76,6 +76,9 @@ export const KRI_IDS = [
   "missed-visit-rate",
   "important-deviation-rate",
   "entry-lag-days",
+  "ae-rate",
+  "ae-report-days",
+  "sae-report-days",
 ] as const;
 
 /** The `fct_vital_sign` column each SDTM vital sign test code pivots to. */
@@ -975,6 +978,21 @@ class Cumulative {
   }
 }
 
+/** Days from onset to report, summed and counted by the day of the report. */
+function reportDays(
+  events: readonly WarehouseRow[]
+): [Cumulative, Cumulative] {
+  return [
+    new Cumulative(
+      events.map((e) => [
+        optStr(e, "reported_on"),
+        daysBetween(str(e, "onset_on"), str(e, "reported_on")),
+      ])
+    ),
+    new Cumulative(events.map((e) => [optStr(e, "reported_on"), 1])),
+  ];
+}
+
 /**
  * Month-end KRI snapshots per site, cumulative from activation, for every
  * month end from the activation month to the close-out month or the data cut.
@@ -995,6 +1013,7 @@ function kriSnapshots(
   const queries = bySite(silver.edc_query);
   const deviations = bySite(silver.ctms_deviation);
   const subjects = bySite(silver.edc_subject);
+  const adverseEvents = bySite(silver.edc_adverse_event);
   const rows: WarehouseRow[] = [];
   for (const site of silver.site) {
     const siteId = str(site, "site_id");
@@ -1010,6 +1029,7 @@ function kriSnapshots(
         optStr(v, "visit_date") !== null &&
         optStr(v, "data_entered_at") !== null
     );
+    const siteEvents = adverseEvents.get(siteId) ?? [];
     const series: Record<(typeof KRI_IDS)[number], [Cumulative, Cumulative]> = {
       "query-rate": [
         new Cumulative(
@@ -1045,6 +1065,21 @@ function kriSnapshots(
           enteredVisits.map((v) => [optStr(v, "data_entered_at"), 1])
         ),
       ],
+      // Adverse events per entered visit (#3218); the registry metric
+      // scales it to per 10 visits.
+      "ae-rate": [
+        new Cumulative(siteEvents.map((e) => [optStr(e, "reported_on"), 1])),
+        new Cumulative(
+          enteredVisits.map((v) => [optStr(v, "data_entered_at"), 1])
+        ),
+      ],
+      // Mean days from onset to report: a snapshot row holds a numerator
+      // and a denominator, so it carries the mean, and the KRI the
+      // registry's median.
+      "ae-report-days": reportDays(siteEvents),
+      "sae-report-days": reportDays(
+        siteEvents.filter((e) => e.is_serious === true)
+      ),
     };
     const study = lookup(studyKey, str(site, "study_id"), "study");
     for (

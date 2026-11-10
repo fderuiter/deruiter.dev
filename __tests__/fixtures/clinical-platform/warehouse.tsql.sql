@@ -2944,7 +2944,7 @@ EXEC sys.sp_addextendedproperty
   @level1type = N'TABLE', @level1name = N'fct_kri_snapshot',
   @level2type = N'COLUMN', @level2name = N'snapshot_date_key';
 EXEC sys.sp_addextendedproperty
-  @name = N'MS_Description', @value = N'Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate or entry-lag-days.',
+  @name = N'MS_Description', @value = N'Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate, entry-lag-days, ae-rate, ae-report-days or sae-report-days.',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_kri_snapshot',
   @level2type = N'COLUMN', @level2name = N'kri_id';

@@ -170,3 +170,4 @@ customProperties:
   - property: consumers
     value:
       - "product:gold.fct_adverse_event"
+      - "product:gold.fct_kri_snapshot"

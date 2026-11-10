@@ -88,7 +88,7 @@ describe("the risk heatmap (#2914)", () => {
       "The quality tolerance limit on subjects who end the study early is breached. Also raised: 6 red key risk indicators."
     );
     expect(rows.find((r) => r.studyId === "DEMO-302")!.quality.reason).toBe(
-      "Raised at the data cut: 2 sites flagged by central monitoring."
+      "Raised at the data cut: 1 red key risk indicator and 2 sites flagged by central monitoring."
     );
   });
 

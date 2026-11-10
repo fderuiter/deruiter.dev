@@ -538,6 +538,56 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
+	/// Adverse events the site reported in the EDC by the data cut, dated by the report. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: adverse events.
+	measure 'Adverse events reported' =
+			COUNTROWS('fct_adverse_event') + 0
+		formatString: #,0
+		displayFolder: Safety reporting
+
+		annotation MetricId = adverse_event_count
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Adverse events reported per 10 visits with data entered. A site far below its peers may be missing events, so a low value is the risk. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: adverse events per 10 entered visits.
+	measure 'Adverse events per 10 entered visits' =
+			VAR Numerator = COUNTROWS('fct_adverse_event') + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_visit', NOT ISBLANK('fct_visit'[entry_lag_days]) && NOT ISBLANK('fct_visit'[visit_date_key]))) + 0
+			RETURN DIVIDE(10 * Numerator, Denominator)
+		formatString: #,0.0
+		displayFolder: Safety reporting
+
+		annotation MetricId = adverse_event_rate_per_10_visits
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median calendar days from an adverse event's onset to the site's report of it, over events reported by the data cut. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: days.
+	measure 'Adverse event report time (median)' =
+			MEDIANX('fct_adverse_event', 'fct_adverse_event'[days_to_report])
+		formatString: #,0.0
+		displayFolder: Safety reporting
+
+		annotation MetricId = adverse_event_report_time_median
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median calendar days from a serious adverse event's onset to the site's report of it, over serious events reported by the data cut. Serious events are held to a tighter limit, so they are measured on their own. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: days.
+	measure 'Serious adverse event report time (median)' =
+			MEDIANX(FILTER('fct_adverse_event', 'fct_adverse_event'[is_serious] = TRUE()), 'fct_adverse_event'[days_to_report])
+		formatString: #,0.0
+		displayFolder: Safety reporting
+
+		annotation MetricId = serious_adverse_event_report_time_median
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
 	/// Days from protocol finalisation to the first subject's enrollment in one study: study start-up, through regulatory approval and the first site's activation. A study that has not reached both milestones has no value. Defined per study: slice by one study. Version 1.0.0, certified. Owner: Portfolio Management Lead. Steward: Portfolio Data Steward. Unit: days.
 	measure 'Protocol final to first subject in' =
 			IF(

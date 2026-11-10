@@ -29,6 +29,15 @@ export interface KriDefinition {
    * assess, for example 3 enrolled subjects.
    */
   readonly minimum: { readonly metricId: string; readonly value: number };
+  /**
+   * The count metric and value below which no site in the study is
+   * assessed, for example a study with no adverse events in the warehouse
+   * because its events are held in another feed.
+   */
+  readonly studyMinimum?: {
+    readonly metricId: string;
+    readonly value: number;
+  };
 }
 
 /**

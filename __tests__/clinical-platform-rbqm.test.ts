@@ -563,7 +563,48 @@ describe("study risk assessment (#2631)", () => {
         evaluateMetric(warehouse, metric(kri.minimum.metricId), {
           dimensions: ["site"],
         }).rows.find((r) => r.dimensions.site === row.siteId)?.value ?? 0;
-      expect(row.value === null || count < kri.minimum.value).toBe(true);
+      const study = String(row.siteId).split("-").slice(0, 2).join("-");
+      const studyCount =
+        kri.studyMinimum === undefined
+          ? Infinity
+          : (evaluateMetric(warehouse, metric(kri.studyMinimum.metricId), {
+              dimensions: ["study"],
+              filters: [
+                { dimension: "study", operator: "in", values: [study] },
+              ],
+            }).rows[0]?.value ?? 0);
+      expect(
+        row.value === null ||
+          count < kri.minimum.value ||
+          studyCount < kri.studyMinimum!.value
+      ).toBe(true);
+    }
+  });
+
+  it("puts the planted data-integrity site in DEMO-302 amber or red on the adverse event rate (#3218)", () => {
+    const row = assessments
+      .get("DEMO-302")!
+      .kris.find((k) => k.kriId === "kri-ae-rate" && k.siteId === integritySite)!;
+    expect(["amber", "red"]).toContain(row.status);
+  });
+
+  it("does not assess adverse event KRIs in DEMO-301, whose events stay in its Study Data Pipeline run (#3218)", () => {
+    const rows = assessments
+      .get("DEMO-301")!
+      .kris.filter((k) => k.kriId.startsWith("kri-ae-"));
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((k) => k.status === "insufficient-data")).toBe(true);
+  });
+
+  it("follows both adverse event KRIs under the safety reporting quality factor (#3218)", () => {
+    for (const productType of ["drug", "device"]) {
+      const safety = qualityPlan(
+        "DEMO-302",
+        productType,
+        "2025-01-01"
+      ).factors.find((f) => f.id === "ctq-safety-reporting")!;
+      expect(safety.kriIds).toEqual(["kri-ae-rate", "kri-ae-report-time"]);
+      expect(safety.gap === null).toBe(productType === "drug");
     }
   });
 

@@ -69,9 +69,14 @@ import {
  * its sites activate earlier, a week before their first consent. Its
  * queries (+19), deviations (+3), monitoring visits (+5) and KRI snapshots
  * (+12) move with it; no other study's rows change.
+ *
+ * #3218: `gold.fct_kri_snapshot` gained the ae-rate, ae-report-days and
+ * sae-report-days series, one row each per site month (+5967). With those
+ * rows left out the hash is the previous golden, 81bb95dd, so no other
+ * value moved.
  */
 const GOLDEN_SHA256 =
-  "81bb95dd8ea8a85c3fc8bb8b0ce5d2e68e2190896e803e0f5c112cd87fc6154d";
+  "e8741e7d8d3dae1693169cc303c9fada2999a8a3d01c6d643a870434665c46ce";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -114,7 +119,7 @@ const GOLDEN_ROW_COUNTS = {
   "gold.fct_milestone": 72,
   "gold.fct_spend": 1089,
   "gold.fct_spend_forecast": 48,
-  "gold.fct_kri_snapshot": 7956,
+  "gold.fct_kri_snapshot": 13923,
 };
 
 const portfolio = generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED });
@@ -569,7 +574,7 @@ describe("buildWarehouse: integrity", () => {
     ).toBe(7);
   });
 
-  it("snapshots four KRIs per active site month, cumulative and never decreasing", () => {
+  it("snapshots seven KRIs per active site month, cumulative and never decreasing", () => {
     const kri = rows("gold.fct_kri_snapshot");
     expect(new Set(kri.map((r) => r.kri_id))).toEqual(
       new Set([
@@ -577,6 +582,9 @@ describe("buildWarehouse: integrity", () => {
         "missed-visit-rate",
         "important-deviation-rate",
         "entry-lag-days",
+        "ae-rate",
+        "ae-report-days",
+        "sae-report-days",
       ])
     );
     const site = new Map(

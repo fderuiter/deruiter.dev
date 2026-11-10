@@ -41,6 +41,20 @@ function bySite(
   return new Map(result.rows.map((row) => [row.dimensions.site!, row.value]));
 }
 
+/** Value of a metric for one study as a whole. */
+function studyValue(
+  warehouse: Warehouse,
+  definition: MetricDefinition,
+  studyId: string
+): number | null {
+  return (
+    evaluateMetric(warehouse, definition, {
+      dimensions: ["study"],
+      filters: [{ dimension: "study", operator: "in", values: [studyId] }],
+    }).rows[0]?.value ?? null
+  );
+}
+
 /** Where a value falls against a KRI's thresholds. */
 function kriStatus(kri: KriDefinition, value: number): KriStatus {
   if (kri.direction === "high") {
@@ -60,11 +74,16 @@ function assessKris(
     kri,
     values: bySite(warehouse, metric(kri.metricId), studyId),
     minimum: bySite(warehouse, metric(kri.minimum.metricId), studyId),
+    studyEnough:
+      kri.studyMinimum === undefined ||
+      (studyValue(warehouse, metric(kri.studyMinimum.metricId), studyId) ??
+        0) >= kri.studyMinimum.value,
   }));
   return siteIds.flatMap((siteId) =>
-    columns.map(({ kri, values, minimum }) => {
+    columns.map(({ kri, values, minimum, studyEnough }) => {
       const value = values.get(siteId) ?? null;
-      const enough = (minimum.get(siteId) ?? 0) >= kri.minimum.value;
+      const enough =
+        studyEnough && (minimum.get(siteId) ?? 0) >= kri.minimum.value;
       return {
         kriId: kri.id,
         siteId,
@@ -85,11 +104,7 @@ function assessQtls(
 ): QtlAssessment[] {
   return plan.qtls.map(({ qtlId, limit, secondaryLimit }) => {
     const qtl = QTL_LIBRARY.find((q) => q.id === qtlId)!;
-    const value =
-      evaluateMetric(warehouse, metric(qtl.metricId), {
-        dimensions: ["study"],
-        filters: [{ dimension: "study", operator: "in", values: [studyId] }],
-      }).rows[0]?.value ?? null;
+    const value = studyValue(warehouse, metric(qtl.metricId), studyId);
     const status: QtlStatus =
       value === null
         ? "no-data"

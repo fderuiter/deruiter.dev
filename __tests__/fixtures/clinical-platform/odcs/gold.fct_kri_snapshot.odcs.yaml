@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/gold.fct_kri_snapshot"
 name: "KRI snapshots"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "RBQM mart"
 tags:
@@ -43,7 +43,7 @@ schema:
         logicalTypeOptions:
           maxLength: 32
         physicalType: "VARCHAR(32)"
-        description: "Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate or entry-lag-days."
+        description: "Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate, entry-lag-days, ae-rate, ae-report-days or sae-report-days."
         required: true
         primaryKey: true
         primaryKeyPosition: 3
@@ -143,6 +143,7 @@ customProperties:
       - gold.dim_site
       - gold.dim_study
       - silver.ctms_deviation
+      - silver.edc_adverse_event
       - silver.edc_query
       - silver.edc_subject
       - silver.edc_visit

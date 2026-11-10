@@ -155,6 +155,51 @@ semantic_models:
       - name: vendor_name
         type: categorical
         description: "Fictional vendor name."
+  - name: fct_adverse_event
+    description: "Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956). Grain: One row per adverse event."
+    model: "ref('fct_adverse_event')"
+    defaults:
+      agg_time_dimension: reported_date
+    entities:
+      - name: fct_adverse_event
+        type: primary
+        expr: ae_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: reported_date
+        type: time
+        expr: "CAST(strptime(CAST(reported_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: adverse_event_count__value
+        description: "Measure of adverse_event_count."
+        agg: sum
+        expr: "1"
+        agg_time_dimension: reported_date
+      - name: adverse_event_rate_per_10_visits__numerator
+        description: "The numerator of adverse_event_rate_per_10_visits."
+        agg: sum
+        expr: "1"
+        agg_time_dimension: reported_date
+      - name: adverse_event_report_time_median__value
+        description: "Measure of adverse_event_report_time_median."
+        agg: median
+        expr: "CAST(days_to_report AS DOUBLE)"
+        agg_time_dimension: reported_date
+      - name: serious_adverse_event_report_time_median__value
+        description: "Measure of serious_adverse_event_report_time_median."
+        agg: median
+        expr: "CASE WHEN is_serious = TRUE THEN CAST(days_to_report AS DOUBLE) END"
+        agg_time_dimension: reported_date
   - name: fct_cec_adjudication
     description: "Events sent to the clinical events committee, with when each was reported and adjudicated (#2881). Grain: One row per event sent for adjudication."
     model: "ref('fct_cec_adjudication')"
@@ -680,6 +725,11 @@ semantic_models:
         description: "The denominator of query_rate_per_100_visits."
         agg: sum
         expr: "CASE WHEN visit_date_key IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: visit_date
+      - name: adverse_event_rate_per_10_visits__denominator
+        description: "The denominator of adverse_event_rate_per_10_visits."
+        agg: sum
+        expr: "CASE WHEN entry_lag_days IS NOT NULL AND visit_date_key IS NOT NULL THEN 1 ELSE 0 END"
         agg_time_dimension: visit_date
 metrics:
   - name: subjects_screened
@@ -2033,6 +2083,143 @@ metrics:
         format: "number, 1 decimals"
         display_folder: "Event adjudication"
         glossary_term: event-adjudication-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: adverse_event_count
+    label: "Adverse events reported"
+    description: "Adverse events the site reported in the EDC by the data cut, dated by the report."
+    type: simple
+    type_params:
+      measure:
+        name: adverse_event_count__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: "adverse events"
+        format: "number, 0 decimals"
+        display_folder: "Safety reporting"
+        glossary_term: adverse-event-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: adverse_event_rate_per_10_visits__numerator
+    label: "Adverse events per 10 entered visits (numerator)"
+    description: "Adverse events per 10 entered visits (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: adverse_event_rate_per_10_visits__numerator
+        fill_nulls_with: 0
+  - name: adverse_event_rate_per_10_visits__denominator
+    label: "Adverse events per 10 entered visits (denominator)"
+    description: "Adverse events per 10 entered visits (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: adverse_event_rate_per_10_visits__denominator
+        fill_nulls_with: 0
+  - name: adverse_event_rate_per_10_visits
+    label: "Adverse events per 10 entered visits"
+    description: "Adverse events reported per 10 visits with data entered. A site far below its peers may be missing events, so a low value is the risk."
+    type: derived
+    type_params:
+      expr: "10 * numerator / NULLIF(denominator, 0)"
+      metrics:
+        - name: adverse_event_rate_per_10_visits__numerator
+          alias: numerator
+        - name: adverse_event_rate_per_10_visits__denominator
+          alias: denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: "adverse events per 10 entered visits"
+        format: "number, 1 decimals"
+        display_folder: "Safety reporting"
+        glossary_term: adverse-event-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: adverse_event_report_time_median
+    label: "Adverse event report time (median)"
+    description: "Median calendar days from an adverse event's onset to the site's report of it, over events reported by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: adverse_event_report_time_median__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Safety reporting"
+        glossary_term: adverse-event-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: serious_adverse_event_report_time_median
+    label: "Serious adverse event report time (median)"
+    description: "Median calendar days from a serious adverse event's onset to the site's report of it, over serious events reported by the data cut. Serious events are held to a tighter limit, so they are measured on their own."
+    type: simple
+    type_params:
+      measure:
+        name: serious_adverse_event_report_time_median__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Safety reporting"
+        glossary_term: sae-term
         allowed_dimensions:
           - study
           - study_status

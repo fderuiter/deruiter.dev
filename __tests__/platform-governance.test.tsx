@@ -166,7 +166,7 @@ describe("the governance page", () => {
     expect(shownIds(container)).toEqual(catalog.map((e) => e.id));
     expect(container.textContent).toContain("The stewardship check passes");
     expect(container.textContent).toContain(
-      "41 data products and 53 governed metrics"
+      "41 data products and 57 governed metrics"
     );
     expect(String(metadata.title)).toContain(
       "Clinical Data Governance & Catalog"

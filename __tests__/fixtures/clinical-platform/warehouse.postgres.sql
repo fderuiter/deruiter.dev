@@ -1127,7 +1127,7 @@ CREATE TABLE "gold"."fct_kri_snapshot" (
 COMMENT ON TABLE "gold"."fct_kri_snapshot" IS 'Month-end key risk indicator snapshots per site, cumulative from activation to the snapshot date. Grain: One row per site, month-end snapshot date and key risk indicator.';
 COMMENT ON COLUMN "gold"."fct_kri_snapshot"."site_key" IS 'Site version in force on the snapshot date.';
 COMMENT ON COLUMN "gold"."fct_kri_snapshot"."snapshot_date_key" IS 'Month-end snapshot date.';
-COMMENT ON COLUMN "gold"."fct_kri_snapshot"."kri_id" IS 'Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate or entry-lag-days.';
+COMMENT ON COLUMN "gold"."fct_kri_snapshot"."kri_id" IS 'Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate, entry-lag-days, ae-rate, ae-report-days or sae-report-days.';
 COMMENT ON COLUMN "gold"."fct_kri_snapshot"."study_key" IS 'Study.';
 COMMENT ON COLUMN "gold"."fct_kri_snapshot"."country_key" IS 'Country of the site.';
 COMMENT ON COLUMN "gold"."fct_kri_snapshot"."numerator" IS 'Numerator, cumulative to the snapshot date.';

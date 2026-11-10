@@ -263,8 +263,9 @@ export function TutorialOverlay({
           New to {gameName}?
         </h2>
         <p className="mt-1 text-sm leading-snug text-zinc-300">
-          Learn it by playing: about {script.minutes} minutes, with nothing to
-          lose. You can replay it any time from the Tutorial key.
+          Learn it by playing: about {script.minutes}{" "}
+          {script.minutes === 1 ? "minute" : "minutes"}, with nothing to lose.
+          You can replay it any time from the Tutorial key.
         </p>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <button

@@ -49,6 +49,14 @@ Inside the cabinet, the game reads `useCabinetTutorial()` from `@/components/arc
 
 Pass the script to `PlayCabinet` as `tutorial`. The cabinet then offers it once on first launch, adds a Tutorial key beside Setup, and adds "Replay the tutorial" to the Setup sheet.
 
+A room with no cabinet, such as Meme Vault, runs the tutorial itself (`components/arcade/MemeVaultClient.tsx`):
+
+- Call `useTutorialRun(script)` and render `TutorialOverlay` inside a `relative` container marked `data-arcade-cabinet`, which is the stage the card is placed in.
+- Pass `launched` once that container is on screen, so the offer is not placed below the fold.
+- Mark the element that takes focus during practice with `data-keyboard-boundary="true"` and `tabIndex={-1}`.
+- Add a Tutorial button so the player can replay it, since there is no Setup sheet.
+- Scroll each card into view below the site header, because the page scrolls and a cabinet's stage does not.
+
 ## 4. Test it
 
 - Move the game from `PENDING` to `SCRIPTS` in `__tests__/arcade-tutorial.test.ts`. That test checks the script and that every registry game is accounted for.

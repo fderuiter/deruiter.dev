@@ -164,6 +164,45 @@ describe("useMemeVaultSession intents", () => {
   });
 });
 
+describe("useMemeVaultSession guided tutorial (#3450)", () => {
+  function renderWithTutorial(stepId: string | null) {
+    const signal = vi.fn();
+    const hook = renderHook(
+      ({ step }: { step: string | null }) =>
+        useMemeVaultSession({
+          tutorial: { active: step !== null, stepId: step, signal },
+        }),
+      { wrapper, initialProps: { step: stepId } }
+    );
+    return { ...hook, signal };
+  }
+
+  it("signals Echo starting and the two pattern pads, and nothing else", () => {
+    const { result, signal } = renderWithTutorial("echo");
+    act(() => result.current.startEcho());
+    expect(signal).toHaveBeenCalledWith("echo");
+    act(() => result.current.stopEcho());
+    signal.mockClear();
+
+    act(() => result.current.pressPad(0));
+    act(() => result.current.pressPad(1));
+    act(() => result.current.pressPad(5));
+    expect(signal.mock.calls).toEqual([["pad-1"], ["pad-2"]]);
+  });
+
+  it("stops Echo for the pattern practice, so a wrong pad ends nothing", () => {
+    const { result, rerender } = renderWithTutorial("echo");
+    act(() => result.current.startEcho());
+    untilTurn(result);
+    rerender({ step: "pad-1" });
+    expect(result.current.echo.round).toBeNull();
+
+    act(() => result.current.pressPad(7));
+    expect(result.current.echo.round).toBeNull();
+    expect(result.current.activeSound).toBe(SOUNDBOARD_BUTTONS[7].id);
+  });
+});
+
 describe("useMemeVaultSession Konami sequence (#1328)", () => {
   it("the Retro Chaos shortcut starts the show but awards no trophy", () => {
     const { result, events } = renderSession();

@@ -25,6 +25,14 @@ import { emitAppEvent } from "@/lib/event-bus";
 import { useEchoGame } from "@/components/arcade/meme-vault/useEchoGame";
 import type { EchoRound } from "@/lib/meme-echo";
 import { padKeyLabel } from "@/components/arcade/meme-vault/vault-geometry";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
+import { MEME_VAULT_TUTORIAL_SIGNALS } from "@/lib/meme-vault";
+
+/** Pad 1 and pad 2, the tutorial's fixed practice pattern (#3450). */
+const PATTERN_SIGNALS: Record<number, string> = {
+  0: MEME_VAULT_TUTORIAL_SIGNALS.pad1,
+  1: MEME_VAULT_TUTORIAL_SIGNALS.pad2,
+};
 
 /** How long a newly unlocked trophy keeps its stamp class. */
 const STAMP_MS = 900;
@@ -82,6 +90,12 @@ export function vaultEvents(
 interface MemeVaultSessionOptions {
   /** Called with each named session event (#3432). */
   readonly onEvent?: (event: MemeVaultEvent) => void;
+  /**
+   * The room's guided tutorial (#3450): the session sends it a signal when
+   * Echo starts and when pad 1 or pad 2 is pressed, and stops Echo for the
+   * pattern practice so it cannot be failed.
+   */
+  readonly tutorial?: CabinetTutorialValue;
 }
 
 /**
@@ -91,7 +105,9 @@ interface MemeVaultSessionOptions {
  * MemeVaultClient.tsx, which renders what it returns.
  */
 export function useMemeVaultSession(options: MemeVaultSessionOptions) {
-  const { onEvent } = options;
+  const { onEvent, tutorial } = options;
+  const tutorialSignal = tutorial?.signal;
+  const tutorialStep = tutorial?.stepId ?? null;
   // The latest onEvent, so a new callback each render re-creates nothing.
   const onEventRef = useRef(onEvent);
   useEffect(() => {
@@ -231,10 +247,12 @@ export function useMemeVaultSession(options: MemeVaultSessionOptions) {
       // suspended context resumes here.
       unlockMemeAudio();
       const index = SOUNDBOARD_BUTTONS.findIndex((b) => b.id === button.id);
+      const patternSignal = PATTERN_SIGNALS[index];
+      if (patternSignal) tutorialSignal?.(patternSignal);
       if (index >= 0 && pressEcho(index)) return;
       handlePlaySound(button);
     },
-    [pressEcho, handlePlaySound]
+    [pressEcho, handlePlaySound, tutorialSignal]
   );
 
   // The browser may suspend audio while the page is hidden; the first visible
@@ -278,6 +296,11 @@ export function useMemeVaultSession(options: MemeVaultSessionOptions) {
   // The session's intents (#3432), named for what the player does. The view
   // still calls the handlers above; these are the same calls by name.
   const { start: startEchoRound, stop: stopEcho } = echo;
+  // The pattern practice plays pads as samples, so Echo stops for it and a
+  // wrong pad cannot end anything (#3450).
+  useEffect(() => {
+    if (tutorialStep === "pad-1") stopEcho();
+  }, [tutorialStep, stopEcho]);
   const pressPad = useCallback(
     (index: number) => {
       const pad = SOUNDBOARD_BUTTONS[index];
@@ -288,7 +311,8 @@ export function useMemeVaultSession(options: MemeVaultSessionOptions) {
   const startEcho = useCallback(() => {
     unlockMemeAudio();
     startEchoRound();
-  }, [startEchoRound]);
+    tutorialSignal?.(MEME_VAULT_TUTORIAL_SIGNALS.echo);
+  }, [startEchoRound, tutorialSignal]);
   // Stops Echo and every sound, and puts out the lit pad.
   const stopAll = useCallback(() => {
     stopEcho();

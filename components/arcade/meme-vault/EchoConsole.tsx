@@ -61,6 +61,7 @@ export function EchoConsole({
     <div
       className="mb-4 rounded-lg border border-white/[0.08] bg-[#0d0e11] p-3 sm:p-4"
       data-testid="meme-echo"
+      data-tutorial-target="echo"
       data-echo-phase={round?.phase ?? "idle"}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">

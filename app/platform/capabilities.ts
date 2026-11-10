@@ -37,7 +37,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
         href: "https://github.com/fderuiter/deruiter.dev/blob/main/adr/0066-clinical-data-platform-architecture.md",
         kind: "artifact",
       },
-      route("/platform/strategy", "Strategy toolkit"),
+      route("/platform/strategy", "Vendor scoring (Platform Strategy)"),
     ],
   },
   {
@@ -85,7 +85,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "Stewardship, quality rules, column lineage and risk-based validation evidence.",
     evidence: [
-      route("/platform/governance", "Catalog, glossary and stewardship"),
+      route("/platform/governance", "Data rules and catalog (Data Governance)"),
       issue(2636, "Quality plan"),
       issue(2637, "Lineage plan"),
       issue(2639, "Validation evidence plan"),
@@ -97,7 +97,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "Study and portfolio measures with drill-down and accessible table equivalents.",
     evidence: [
-      route("/platform/explore", "Self-service explorer"),
+      route("/platform/explore", "Study metrics explorer (Metrics Explorer)"),
       route("/platform/operations", "Operations dashboards"),
       route("/platform/portfolio", "Portfolio dashboard"),
     ],
@@ -108,7 +108,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "Weighted evaluation, build versus buy, five-year cost and decision memos.",
     evidence: [
-      route("/platform/strategy", "Strategy toolkit"),
+      route("/platform/strategy", "Vendor scoring (Platform Strategy)"),
       issue(2646, "Vendor oversight plan"),
     ],
   },
@@ -140,7 +140,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     evidence: [
       issue(2628, "SQL Server plan"),
       issue(2629, "Power BI plan"),
-      route("/platform/sql", "SQL workbench"),
+      route("/platform/sql", "Query workbench (SQL Workbench)"),
     ],
   },
   {

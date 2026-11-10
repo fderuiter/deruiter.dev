@@ -31,7 +31,7 @@ export default function CRFStudioPage() {
       {/* The studio's visible headings belong to whichever mode panel is open,
           so the stable page-level heading is visually hidden rather than
           duplicating a title the layout does not have room for. */}
-      <h1 className="sr-only">CRF Studio</h1>
+      <h1 className="sr-only">Case report form designer (CRF Studio)</h1>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 w-full flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">

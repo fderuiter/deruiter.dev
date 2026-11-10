@@ -10,7 +10,7 @@ export const contentType = OG_IMAGE_CONTENT_TYPE;
 export default function Image() {
   return createSocialImageResponse({
     category: "CLINICAL DATA PLATFORM",
-    title: "Platform strategy toolkit",
+    title: "Vendor scoring (Platform Strategy)",
     description:
       "Fictional vendor scoring, five-year investment models and a decision memo.",
     badge: "STRATEGY // SYNTHETIC",

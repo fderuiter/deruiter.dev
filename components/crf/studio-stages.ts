@@ -70,6 +70,13 @@ export function nextStepFor(mode: StudioMode): StudioNextStep {
  */
 export type StudioMenuId = "edit" | "view" | "check" | "share";
 
+/**
+ * The label of the action that opens the authored protocol in the Clinical
+ * Trial Chaos game. It names the destination, so the studio and the game's
+ * own hint (#3135) read the same.
+ */
+export const SIMULATE_IN_GAME_LABEL = "Try in Clinical Trial Chaos (game)";
+
 /** One action in a studio header menu. The header maps each id to a handler. */
 export type StudioMenuItemId =
   | "undo"
@@ -237,9 +244,9 @@ export const STUDIO_HEADER_MENUS: readonly StudioMenuSpec[] = [
       },
       {
         id: "simulate",
-        label: "Simulate Protocol",
+        label: SIMULATE_IN_GAME_LABEL,
         description:
-          "Launch Live Conformance Engine Simulation with Active Protocol Pre-Loaded",
+          "Opens the Clinical Trial Chaos game with this protocol loaded",
         dividerBefore: true,
       },
     ],

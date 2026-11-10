@@ -212,7 +212,8 @@ const INTERVENTION_TYPES: Readonly<Record<string, string>> = {
 /** Build the five trial-design domains solely from the parsed USDM study definition. */
 export function deriveTrialDesign(
   definition: StudyDefinition,
-  versions: Readonly<Record<string, string>>
+  versions: Readonly<Record<string, string>>,
+  studyStart: string | null = null
 ): readonly Dataset[] {
   const { studyId, title, design } = definition;
   const epochById = new Map(design.epochs.map((epoch) => [epoch.id, epoch]));
@@ -395,6 +396,14 @@ export function deriveTrialDesign(
       "Controlled Terminology Version",
       versions["NCI-EVS-CT"] ?? ""
     ),
+    ...(design.plannedTreatment
+      ? [summary(studyId, "TRT", "Planned Treatment", design.plannedTreatment)]
+      : []),
+    // The first exposure of any subject, the earliest date the study treated
+    // anyone. Left out when the collected data holds no exposure date.
+    ...(studyStart
+      ? [summary(studyId, "SSTDTC", "Study Start Date", studyStart)]
+      : []),
   ];
   return [
     table("TA", ta),

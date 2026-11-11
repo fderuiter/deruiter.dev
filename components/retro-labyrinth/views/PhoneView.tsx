@@ -195,7 +195,12 @@ function PhoneLayoutStage({ parts, optionsButtonRef }: LabyrinthStageProps) {
         }
         actionDock={
           <TouchControlsGate>
-            <div className="flex flex-col items-center gap-1">
+            {/* The tutorial points at the column, so its card docks clear
+                of it (#3459). */}
+            <div
+              className="flex flex-col items-center gap-1"
+              data-tutorial-target="actions"
+            >
               <ActionCluster
                 map={phoneActions}
                 actions={clusterActions}

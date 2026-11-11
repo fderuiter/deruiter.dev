@@ -82,6 +82,7 @@ import {
   getReportTone,
 } from "@/components/clinical-trial-chaos/floor-scene";
 import { safeRemoveItem } from "@/lib/safe-storage";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import {
   CRF_ACTIVE_PROTOCOL_KEY,
   readStoredProtocol,
@@ -134,6 +135,7 @@ function readReducedMotion(): boolean {
 
 export const ClinicalTrialChaos: React.FC = () => {
   const touchCabinet = useCabinetTouch();
+  const tutorial = useCabinetTutorial();
   const {
     activeAmendment,
     activeProtocol,
@@ -250,6 +252,7 @@ export const ClinicalTrialChaos: React.FC = () => {
     touch: touchCabinet,
     readReducedMotion,
     readCalmMotion: prefersCalmMotion,
+    tutorial,
   });
 
   // SSR check
@@ -2579,6 +2582,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               {playState === "playing" && (
                 <section
                   aria-label="Queue"
+                  data-tutorial-target="queue"
                   className="rounded-xl border border-white/[0.08] bg-[#13151a] p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -2658,6 +2662,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               {playState === "playing" && !touchCabinet && (
                 <section
                   aria-label="Lifelines"
+                  data-tutorial-target="lifelines"
                   className="rounded-xl border border-white/[0.08] bg-[#13151a] p-2.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-x-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">

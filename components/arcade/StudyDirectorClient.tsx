@@ -9,6 +9,7 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestStudyDirectorAutoPause } from "@/components/study-director-world/auto-pause";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
+import { STUDY_DIRECTOR_TUTORIAL } from "@/lib/study-director";
 
 /** The game opens in the walkable office; the classic desk is one click away. */
 const StudyDirectorLoader = () =>
@@ -87,6 +88,8 @@ export const StudyDirectorClient: React.FC = () => {
             mobileLayout="fit"
             // A hidden tab, a blur or a turned device stops a walk in progress.
             onAutoPause={requestStudyDirectorAutoPause}
+            // A practice morning that teaches the office by doing (#3457).
+            tutorial={STUDY_DIRECTOR_TUTORIAL}
           >
             <DynamicStudyDirector />
           </PlayCabinet>

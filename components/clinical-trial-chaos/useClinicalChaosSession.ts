@@ -21,6 +21,7 @@ import {
   recordArcadeScore,
 } from "@/lib/arcade-achievements";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
 import { applyCanvasScale, computeCanvasResolution } from "@/lib/arcade";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -173,6 +174,8 @@ import {
   type InspectionRound,
   type InspectionSignature,
   type SponsorSkeleton,
+  CLINICAL_CHAOS_TUTORIAL_SIGNALS,
+  chargeTutorialLifelines,
 } from "@/lib/clinical-trial-chaos";
 
 import {
@@ -350,6 +353,8 @@ interface ClinicalChaosSessionOptions {
   readonly readReducedMotion: () => boolean;
   /** Reads whether motion should be calm (a narrow screen or reduced motion) now. */
   readonly readCalmMotion: () => boolean;
+  /** The cabinet's tutorial (#3458): a practice shift while it runs. */
+  readonly tutorial?: CabinetTutorialValue;
 }
 
 /**
@@ -358,7 +363,17 @@ interface ClinicalChaosSessionOptions {
  * Moved verbatim from ClinicalTrialChaos.tsx; the view renders what it returns.
  */
 export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
-  const { touch: touchCabinet, readReducedMotion, readCalmMotion } = options;
+  const {
+    touch: touchCabinet,
+    readReducedMotion,
+    readCalmMotion,
+    tutorial,
+  } = options;
+  // The guided tutorial plays a practice shift whose clocks stand still and
+  // whose score is never saved (#3458). The loop reads the ref.
+  const practising = tutorial?.active ?? false;
+  const signal = tutorial?.signal;
+  const tutorialActiveRef = useRef(false);
   const isMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -944,6 +959,55 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
     );
   }, [playState, isPaused, announce]);
 
+  // 8c. The guided tutorial (#3458). Starting it clocks in a practice Phase I
+  // shift with full lifelines and no calibration; the clocks stand still
+  // while it runs (see the loop's clock rate). Ending it clocks out and puts
+  // back the score the player had, so nothing practised is kept.
+  const tutorialScoreRef = useRef<GameScoreState | null>(null);
+  useEffect(() => {
+    if (practising === tutorialActiveRef.current) return;
+    tutorialActiveRef.current = practising;
+    if (practising) {
+      tutorialScoreRef.current = scoreState;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the tutorial's start is an external event the shift follows
+      startGame("campaign", 1);
+      setCalibrationSubjectId(null);
+      calibrationActiveRef.current = false;
+      setPowerUps(chargeTutorialLifelines(createInitialPowerUpInventory()));
+      return;
+    }
+    setPlayState("idle");
+    setIsPaused(false);
+    setValidatingObs(null);
+    setSignatureModal({
+      isOpen: false,
+      subject: null,
+      selectedReason: "Intent to Submit",
+      passwordInput: "••••••••",
+      requiresReason: true,
+    });
+    const saved = tutorialScoreRef.current;
+    tutorialScoreRef.current = null;
+    if (saved) setScoreState(saved);
+  }, [practising, scoreState, startGame, setPowerUps]);
+
+  // The queue and validate steps watch what the player does: moving to
+  // another dossier, and opening a flagged field.
+  const tutorialSubjectRef = useRef(selectedSubjectId);
+  useEffect(() => {
+    const previous = tutorialSubjectRef.current;
+    tutorialSubjectRef.current = selectedSubjectId;
+    if (practising && previous && selectedSubjectId !== previous) {
+      signal?.(CLINICAL_CHAOS_TUTORIAL_SIGNALS.cycle);
+    }
+  }, [practising, selectedSubjectId, signal]);
+  const openedField = !!validatingObs && !validatingObs.feedback;
+  useEffect(() => {
+    if (practising && openedField) {
+      signal?.(CLINICAL_CHAOS_TUTORIAL_SIGNALS.open);
+    }
+  }, [practising, openedField, signal]);
+
   // 9. Active Subject in Dossier
   const activeSubject = useMemo(() => {
     return (
@@ -1035,6 +1099,7 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
 
       if (result.isValid) {
         triggerSound("validate");
+        signal?.(CLINICAL_CHAOS_TUTORIAL_SIGNALS.validate);
         setValidatingObs((prev) =>
           prev
             ? {
@@ -1119,6 +1184,7 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
       setAuditor,
       setConveyorSubjects,
       setPowerUps,
+      signal,
     ]
   );
 
@@ -1157,15 +1223,19 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
       );
       pushScorePop(submission.points);
       setScoreState((prev) => applySubmissionScore(prev, submission, allClean));
-      // Persist outside the updater (AGENTS.md §4).
-      safeSetRawItem(
-        "clinical_chaos_highscore",
-        settledScore.highScore.toString()
-      );
-      recordArcadeScore("clinical-chaos", settledScore.highScore);
+      // Persist outside the updater (AGENTS.md §4). The practice shift keeps
+      // nothing (#3458).
+      const practice = tutorialActiveRef.current;
+      if (!practice) {
+        safeSetRawItem(
+          "clinical_chaos_highscore",
+          settledScore.highScore.toString()
+        );
+        recordArcadeScore("clinical-chaos", settledScore.highScore);
+      }
       // Endless Audit Years (#2053): crossing a year boundary raises the
       // next axis, opens any new station and is kept as the endless best.
-      if (gameMode === "endless") {
+      if (gameMode === "endless" && !practice) {
         const prevYear = getAuditYear(scoreState.subjectsSubmitted);
         const nextYear = getAuditYear(settledScore.subjectsSubmitted);
         persistEndlessBest(settledScore.score, nextYear);
@@ -1235,7 +1305,10 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
         setNextDossierCue(null);
       }
 
-      if (phaseCleared && gameMode === "campaign" && phase === 3) {
+      signal?.(CLINICAL_CHAOS_TUTORIAL_SIGNALS.submit);
+      if (practice) {
+        // The practice shift never clears a phase or files a report.
+      } else if (phaseCleared && gameMode === "campaign" && phase === 3) {
         // The campaign finale (#2089): the auditor interviews the site about
         // records from this run before the report is filed.
         setPlayState("phase_cleared");
@@ -1313,6 +1386,7 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
       setPowerUps,
       commitAmendmentEffects,
       fileFinaleReport,
+      signal,
     ]
   );
 
@@ -1394,8 +1468,10 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
 
       setPowerUps((prev) => spendPowerUp(prev, type));
       announce(`${p.name} activated`, "polite");
+      signal?.(CLINICAL_CHAOS_TUTORIAL_SIGNALS.lifeline);
     },
     [
+      signal,
       powerUps,
       playState,
       activeSubject,
@@ -1966,6 +2042,8 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
       // Ends the shift on a Form 483 or a terminated sponsor contract and
       // files the BIMO inspection report from the latest simulation state.
       const endShift = (reason: "auditor" | "sponsor") => {
+        // The practice shift cannot be lost (#3458).
+        if (tutorialActiveRef.current) return;
         triggerSoundRef.current("alarm");
         playStateRef.current = "game_over";
         setGameOverReason(reason);
@@ -2003,7 +2081,8 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
         manualOpen: isManualOpenRef.current || stressSheetOpenRef.current,
         dialogOpen:
           !!validatingObsRef.current || !!signatureModalRef.current?.isOpen,
-        calibrating: calibrationActiveRef.current,
+        calibrating:
+          calibrationActiveRef.current || tutorialActiveRef.current,
       });
       const halted = clockRate === 0;
       const deltaSeconds = getShiftTickSeconds(

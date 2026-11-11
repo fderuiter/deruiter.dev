@@ -626,6 +626,166 @@ test.describe("For Better or Bulk guided tutorial", () => {
   });
 });
 
+test.describe("Study Director guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("walks a practice morning whose clock stands still, then hands the office back", async ({
+    page,
+  }) => {
+    // Directory walks take a step per tick, so the morning takes a while.
+    test.setTimeout(90000);
+    await page.goto("/arcade/study-director");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    // The offer is the office's first-run help: the two are not stacked.
+    await expect(page.getByTestId("world-intro")).toHaveCount(0);
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    const floor = page.getByTestId("world-playfield");
+    const clock = page.getByTestId("world-clock");
+    const directory = page.getByRole("button", { name: /Office directory/ });
+    const walkTo = async (name: RegExp) => {
+      if ((await directory.getAttribute("aria-expanded")) !== "true")
+        await directory.click();
+      await page.getByRole("button", { name }).first().click();
+      await expect(floor).toBeFocused({ timeout: 15000 });
+    };
+    await expect.poll(() => step(page)).toBe("welcome");
+    const start = await clock.textContent();
+    await card.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => step(page)).toBe("move");
+    await expect(floor).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+
+    await expect.poll(() => step(page)).toBe("talk");
+    await walkTo(/^Walk to Omar/);
+    await page.keyboard.press("e");
+    await expect(page.getByTestId("world-dialogue")).toBeVisible();
+    await expect.poll(() => step(page)).toBe("edc");
+    await page.keyboard.press("Escape");
+
+    await walkTo(/^Walk to EDC workstation/);
+    await page.keyboard.press("e");
+    await expect.poll(() => step(page)).toBe("self");
+    await page.keyboard.press("Escape");
+    await expect(floor).toBeFocused();
+    await page.keyboard.press("f");
+
+    await expect.poll(() => step(page)).toBe("desk");
+    await walkTo(/^Walk to Phone/);
+    await page.keyboard.press("e");
+    await expect.poll(() => step(page)).toBe("decide");
+    await page
+      .getByRole("button", { name: /^Call: / })
+      .first()
+      .click();
+    // The call's answers are numbered; the first is fine for practice.
+    await expect(async () => {
+      await page.keyboard.press("1");
+      await expect.poll(() => step(page), { timeout: 1000 }).toBe("document");
+    }).toPass({ timeout: 10000 });
+    await page.getByRole("button", { name: /Write it up now/ }).click();
+
+    await expect.poll(() => step(page)).toBe("done");
+    // The walk, the talk, the desk and the write-up took no time.
+    await expect(clock).toHaveText(start ?? "");
+    // Finishing closes the desk and hands the real run back.
+    await card.getByRole("button", { name: "Finish" }).click();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(card).toHaveCount(0);
+    await expect(page.getByTestId("world-desk")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Switch to the classic desk" })
+    ).toBeEnabled();
+  });
+});
+
+test.describe("Clinical Trial Chaos guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("runs a practice shift by doing, and can be replayed", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.goto("/arcade/clinical-chaos");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    const queue = page.locator('[data-tutorial-target="queue"]');
+    await expect.poll(() => step(page)).toBe("welcome");
+    await card.getByRole("button", { name: "Next" }).click();
+
+    // The practice shift is on the floor, and its queue holds still.
+    await expect.poll(() => step(page)).toBe("cycle");
+    await expect(queue).toBeVisible();
+    const opening = await queue.getByRole("button").count();
+    await page.keyboard.press("ArrowRight");
+
+    // Back to the first dossier, which has a flagged field, and open it.
+    await expect.poll(() => step(page)).toBe("open");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("Enter");
+
+    // Work through the answers until the right one lands.
+    await expect.poll(() => step(page)).toBe("validate");
+    await expect(async () => {
+      for (const key of ["1", "2", "3", "4"]) {
+        if ((await step(page)) !== "validate") break;
+        await page.keyboard.press(key);
+      }
+      expect(await step(page)).toBe("lifeline");
+    }).toPass({ timeout: 15000 });
+
+    // The Coffee Break always fires; Enter then routes and signs.
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.keyboard.press("q");
+    await expect.poll(() => step(page)).toBe("submit");
+    const signDialog = page.locator('[aria-labelledby="cc-sign-dialog-title"]');
+    await page.keyboard.press("Enter");
+    const routed = async () =>
+      (await signDialog.isVisible()) ? "signing" : await step(page);
+    await expect.poll(routed).not.toBe("submit");
+    if ((await routed()) === "signing") await page.keyboard.press("Enter");
+    await expect.poll(() => step(page)).toBe("auditor");
+
+    // No new dossier arrived while the clocks stood still.
+    expect(await queue.getByRole("button").count()).toBeLessThanOrEqual(
+      opening
+    );
+
+    await card.getByRole("button", { name: "Next" }).click();
+    await expect.poll(() => step(page)).toBe("done");
+    await card.getByRole("button", { name: "Finish" }).click();
+    await expect(card).toHaveCount(0);
+
+    // The Tutorial key replays it.
+    await page.getByTestId("cabinet-tutorial-key").click();
+    await expect.poll(() => step(page)).toBe("welcome");
+  });
+});
+
 test.describe("Retro Labyrinth guided tutorial", () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(

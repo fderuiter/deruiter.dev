@@ -14,12 +14,18 @@ export interface CabinetTutorialValue {
    * dropped without a render.
    */
   readonly signal: (name: string) => void;
+  /**
+   * True when the cabinet has a tutorial for this game, running or not, so
+   * a game can leave its own first-run help to the tutorial's offer.
+   */
+  readonly available?: boolean;
 }
 
 const NO_TUTORIAL: CabinetTutorialValue = Object.freeze({
   active: false,
   stepId: null,
   signal: () => {},
+  available: false,
 });
 
 /**

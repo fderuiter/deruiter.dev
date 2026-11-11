@@ -352,3 +352,88 @@ test.describe("Monkey C Mayhem guided tutorial", () => {
     await expect.poll(() => step(page)).toBe("welcome");
   });
 });
+
+test.describe("Study Director guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("walks a practice morning whose clock stands still, then hands the office back", async ({
+    page,
+  }) => {
+    // Directory walks take a step per tick, so the morning takes a while.
+    test.setTimeout(90000);
+    await page.goto("/arcade/study-director");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    // The offer is the office's first-run help: the two are not stacked.
+    await expect(page.getByTestId("world-intro")).toHaveCount(0);
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    const floor = page.getByTestId("world-playfield");
+    const clock = page.getByTestId("world-clock");
+    const directory = page.getByRole("button", { name: /Office directory/ });
+    const walkTo = async (name: RegExp) => {
+      if ((await directory.getAttribute("aria-expanded")) !== "true")
+        await directory.click();
+      await page.getByRole("button", { name }).first().click();
+      await expect(floor).toBeFocused({ timeout: 15000 });
+    };
+    await expect.poll(() => step(page)).toBe("welcome");
+    const start = await clock.textContent();
+    await card.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => step(page)).toBe("move");
+    await expect(floor).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+
+    await expect.poll(() => step(page)).toBe("talk");
+    await walkTo(/^Walk to Omar/);
+    await page.keyboard.press("e");
+    await expect(page.getByTestId("world-dialogue")).toBeVisible();
+    await expect.poll(() => step(page)).toBe("edc");
+    await page.keyboard.press("Escape");
+
+    await walkTo(/^Walk to EDC workstation/);
+    await page.keyboard.press("e");
+    await expect.poll(() => step(page)).toBe("self");
+    await page.keyboard.press("Escape");
+    await expect(floor).toBeFocused();
+    await page.keyboard.press("f");
+
+    await expect.poll(() => step(page)).toBe("desk");
+    await walkTo(/^Walk to Phone/);
+    await page.keyboard.press("e");
+    await expect.poll(() => step(page)).toBe("decide");
+    await page
+      .getByRole("button", { name: /^Call: / })
+      .first()
+      .click();
+    // The call's answers are numbered; the first is fine for practice.
+    await expect(async () => {
+      await page.keyboard.press("1");
+      await expect.poll(() => step(page), { timeout: 1000 }).toBe("document");
+    }).toPass({ timeout: 10000 });
+    await page.getByRole("button", { name: /Write it up now/ }).click();
+
+    await expect.poll(() => step(page)).toBe("done");
+    // The walk, the talk, the desk and the write-up took no time.
+    await expect(clock).toHaveText(start ?? "");
+    // Finishing closes the desk and hands the real run back.
+    await card.getByRole("button", { name: "Finish" }).click();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(card).toHaveCount(0);
+    await expect(page.getByTestId("world-desk")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Switch to the classic desk" })
+    ).toBeEnabled();
+  });
+});

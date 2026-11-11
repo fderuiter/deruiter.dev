@@ -30,6 +30,10 @@ import {
   GARMIN_TUTORIAL_SIGNALS,
 } from "@/lib/garmin/tutorial";
 import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
+import {
+  STUDY_DIRECTOR_TUTORIAL,
+  STUDY_DIRECTOR_TUTORIAL_SIGNALS,
+} from "@/lib/study-director";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -217,13 +221,13 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "meme-vault": MEME_VAULT_TUTORIAL,
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
+  "study-director": STUDY_DIRECTOR_TUTORIAL,
 };
 const PENDING = [
   "working-with-duck",
   "quasi-puzzler",
   "clinical-chaos",
   "trial-and-error",
-  "study-director",
   "for-better-or-bulk",
   "retro-labyrinth",
   "protocol-drift",
@@ -260,6 +264,15 @@ describe("game tutorials", () => {
   it("practises only signals Patty's Drive-Thru sends", () => {
     const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
     for (const step of PATTY_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Study Director sends", () => {
+    const sent = new Set<string>(
+      Object.values(STUDY_DIRECTOR_TUTORIAL_SIGNALS)
+    );
+    for (const step of STUDY_DIRECTOR_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

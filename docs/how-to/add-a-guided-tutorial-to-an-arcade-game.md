@@ -44,6 +44,7 @@ Inside the cabinet, the game reads `useCabinetTutorial()` from `@/components/arc
 - Call `signal("jump")` wherever the action really happens. A signal the current step is not waiting for is dropped without a render, so it is safe in a game loop.
 - While `active` is true, keep the player safe. Laser Loon switches to its Sandbox, where nothing hurts the loon, and switches back when the tutorial ends. Monkey C Mayhem has no sandbox, so it clears the course of gaps and foes after every step of the run instead (`keepTutorialRunSafe` in `lib/garmin/tutorial.ts`).
 - `stepId` names the current step if the game needs to stage something for it.
+- `available` is true when the cabinet has a tutorial for the game, running or not. A game with its own first-run help can leave that to the cabinet's offer, so the two are not shown one over the other. Study Director does this, and its Controls button still opens its help.
 
 ## 3. Hand it to the cabinet
 

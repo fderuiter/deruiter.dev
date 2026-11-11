@@ -115,6 +115,7 @@ export function useTeamLayer({
   announce,
   refuse: report,
   refocus,
+  signal,
 }: {
   world: WorldState;
   setWorld: (world: WorldState) => void;
@@ -122,6 +123,8 @@ export function useTeamLayer({
   /** Shows a refusal on screen too, and offers to go home when it ends the day (#2184, #2185). */
   refuse?: (reason: WorldRefusal, text: string) => void;
   refocus: () => void;
+  /** Tells the cabinet's tutorial what the player did (#3457). */
+  signal?: (name: string) => void;
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   // You cannot take a second call while on one: the next waits until you
@@ -189,18 +192,21 @@ export function useTeamLayer({
         announce(
           `${outcome.title}: ${result.lines.map((l) => l.text).join(" ")}`
         );
+        signal?.("talk");
       } else if (panel.kind === "desk") {
         setWorld(outcome.world);
         setConversation({ kind: "desk", lines: [] });
         announce("Your desk.");
+        signal?.("desk");
       } else {
         setWorld(outcome.world);
         setConversation({ kind: "edc" });
         announce("EDC workstation.");
+        signal?.("edc");
       }
       return true;
     },
-    [announce, refuse, setWorld]
+    [announce, refuse, setWorld, signal]
   );
 
   /**
@@ -231,8 +237,9 @@ export function useTeamLayer({
       setWorld(result.world);
       setConversation({ ...conversation, after: result.lines });
       announce(result.lines.map((l) => l.text).join(" "));
+      signal?.("decide");
     },
-    [announce, conversation, refuse, setWorld, world]
+    [announce, conversation, refuse, setWorld, signal, world]
   );
 
   const leaveEvent = useCallback(() => {
@@ -287,8 +294,9 @@ export function useTeamLayer({
       setWorld(result.world);
       setConversation({ kind: "desk", lines: result.lines });
       announce(result.lines.map((l) => l.text).join(" "));
+      signal?.("document");
     },
-    [announce, refuse, setWorld, world]
+    [announce, refuse, setWorld, signal, world]
   );
 
   const clearQueries = useCallback(() => {
@@ -300,7 +308,8 @@ export function useTeamLayer({
     setWorld(result.world);
     setConversation({ kind: "edc", lines: result.lines });
     announce(result.lines.map((l) => l.text).join(" "));
-  }, [announce, refuse, setWorld, world]);
+    signal?.("edc");
+  }, [announce, refuse, setWorld, signal, world]);
 
   const deskOpen = useCallback(
     (eventId: string, via: "mail" | "voicemail" | "callback") => {
@@ -392,8 +401,9 @@ export function useTeamLayer({
           .map((l) => l.text)
           .join(" ") || "Decided."
       );
+      signal?.("decide");
     },
-    [announce, refuse, setWorld, world]
+    [announce, refuse, setWorld, signal, world]
   );
 
   const openDesk = useCallback(() => {

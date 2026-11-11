@@ -41,6 +41,7 @@ import { formatGap } from "@/lib/garmin/ghost";
 import {} from "@/lib/garmin/ghost-store";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
 import { useCabinetTouch } from "@/components/arcade/mobile";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import { GarminTouchDock } from "@/components/garmin-watch/GarminTouchDock";
 import "@/components/garmin-watch/garmin-touch.css";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
@@ -277,6 +278,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // The immersive touch cabinet (ADR 0061, #2122): the watch, a touch dock
   // and the companion panel share the viewport. Desktop never sets it.
   const touchCabinet = useCabinetTouch();
+  // The cabinet's guided tutorial (#3452): the session keeps its run safe
+  // and sends it the watch's moves.
+  const tutorial = useCabinetTutorial();
   const {
     a11yAction,
     a11yBack,
@@ -371,6 +375,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   } = useMonkeyCSession({
     initialState,
     prefersReducedMotion,
+    tutorial,
   });
 
   return (

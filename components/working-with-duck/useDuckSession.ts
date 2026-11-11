@@ -8,6 +8,11 @@ import {
   useCallback,
 } from "react";
 import { clamp } from "@/lib/game-utils";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
+import {
+  duckTutorialSignals,
+  holdTutorialMeters,
+} from "@/lib/working-with-duck";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import {
   safeGetItem,
@@ -281,6 +286,11 @@ type InterruptionReason =
 interface DuckSessionOptions {
   /** A state to start from instead of the saved one, as in tests. */
   readonly initialState?: WorkingWithDuckState;
+  /**
+   * The cabinet's guided tutorial (#3453). While it is active the meters
+   * are frozen and the player's moves are sent to it as signals.
+   */
+  readonly tutorial?: CabinetTutorialValue;
 }
 
 /**
@@ -290,7 +300,14 @@ interface DuckSessionOptions {
  * WorkingWithDuck.tsx, which draws and renders what it returns.
  */
 export function useDuckSession(options: DuckSessionOptions) {
-  const { initialState } = options;
+  const { initialState, tutorial } = options;
+  // The loop and every transition read the tutorial through a ref, so a step
+  // change never restarts the loop.
+  const tutorialActive = tutorial?.active ?? false;
+  const tutorialRef = useRef(tutorial);
+  useEffect(() => {
+    tutorialRef.current = tutorial;
+  }, [tutorial]);
   const rawHighScore = useSyncExternalStore(
     subscribeStorage,
     getHighScoreSnapshot,
@@ -363,10 +380,17 @@ export function useDuckSession(options: DuckSessionOptions) {
       updater: (state: WorkingWithDuckState) => WorkingWithDuckState,
       shouldSync: (next: WorkingWithDuckState) => boolean = () => true
     ): WorkingWithDuckState => {
-      const next = updater(gameStateRef.current);
+      const before = gameStateRef.current;
+      const next = updater(before);
       gameStateRef.current = next;
       if (shouldSync(next)) {
         setUiState(next);
+      }
+      // Every move, from the keyboard, the touch dock or the mouse, passes
+      // through here, so the tutorial hears them all the same way (#3453).
+      const run = tutorialRef.current;
+      if (run?.active && next !== before) {
+        for (const name of duckTutorialSignals(before, next)) run.signal(name);
       }
       return next;
     },
@@ -428,11 +452,15 @@ export function useDuckSession(options: DuckSessionOptions) {
           // never hidden behind a stale throttled frame.
           applyTransition((state) => {
             // The engine reads Halloween mode from the state (#2740).
-            const stepped = stepDuckGame(
+            const engineStep = stepDuckGame(
               state.halloween === halloweenRef.current
                 ? state
                 : { ...state, halloween: halloweenRef.current }
             );
+            // A tutorial sprint's meters are frozen (#3453).
+            const stepped = tutorialRef.current?.active
+              ? holdTutorialMeters(state, engineStep)
+              : engineStep;
             if (stepped.soundCueQueue.length > 0) {
               cuesToPlay = stepped.soundCueQueue;
               return { ...stepped, soundCueQueue: [] };
@@ -509,6 +537,31 @@ export function useDuckSession(options: DuckSessionOptions) {
     applyTransition((state) => ({ ...state, status: "running" }));
     recordEvent("working-with-duck", "project_click").catch(() => {});
   }, [applyTransition, recordEvent]);
+
+  // The tutorial (#3453) starts on a fresh Sprint 1 waiting for its first
+  // key, and leaving it hands back another fresh one, so the practice
+  // sprint's frozen meters never carry into real play. Pauses are cleared.
+  const tutorialWasActiveRef = useRef(false);
+  useEffect(() => {
+    if (tutorialActive === tutorialWasActiveRef.current) return;
+    tutorialWasActiveRef.current = tutorialActive;
+    activeInterruptionsRef.current.clear();
+    wasRunningBeforeInterruptionRef.current = false;
+    pendingDragReleaseRef.current = false;
+    stepAccumulatorRef.current = 0;
+    lastFrameTimeRef.current = null;
+    setIsManualPauseActive(false);
+    applyTransition((state) => {
+      const fresh = createInitialDuckGameState(
+        1,
+        "campaign",
+        state.unlockedAccessories,
+        state.unlockedFacts,
+        state.bestStars
+      );
+      return { ...fresh, activeAccessory: state.activeAccessory };
+    });
+  }, [tutorialActive, applyTransition]);
 
   const toggleManualPause = useCallback(() => {
     const currentStatus = gameStateRef.current.status;

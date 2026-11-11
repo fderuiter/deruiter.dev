@@ -1786,9 +1786,14 @@ test.describe("Trial & Error protocol deviations (#1087)", () => {
   });
 });
 
-test.describe("Trial & Error guided Blind (#1089)", () => {
+test.describe("Trial & Error guided Blind on the cabinet tutorial (#1089, #3455)", () => {
   const coach = (page: Page) => page.getByTestId("coach");
   const coachTitle = (page: Page) => coach(page).getByRole("heading");
+  const tutorialCard = (page: Page) => page.getByTestId("tutorial-card");
+  const step = (page: Page) =>
+    tutorialCard(page).getAttribute("data-tutorial-step");
+  const startTutorial = (page: Page) =>
+    page.locator('button[aria-label="Tutorial"]:visible').first().click();
 
   for (const [label, width, fontSize] of [
     ["1440px", 1440, "100%"],
@@ -1804,21 +1809,20 @@ test.describe("Trial & Error guided Blind (#1089)", () => {
       await page.evaluate((size) => {
         document.documentElement.style.fontSize = size;
       }, fontSize);
-      await expect(page.getByTestId("tutorial-offer")).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      await expectNoBlockingViolations(page, `tutorial offer at ${label}`);
 
-      await page.getByRole("button", { name: "Start guided Blind" }).click();
-      await expect(coachTitle(page)).toBeFocused();
-      await expect(coachTitle(page)).toHaveText("Your first review");
-      await page.getByRole("button", { name: "Next" }).click();
-      await expect(coachTitle(page)).toHaveText("Inspect the Table");
+      await startTutorial(page);
+      await expect.poll(() => step(page)).toBe("welcome");
+      await expect(page.getByTestId("hand")).toContainText("(Guided)");
       await expectNoHorizontalOverflow(page);
-      await expectNoBlockingViolations(page, `coach step at ${label}`);
+      await expectNoBlockingViolations(page, `tutorial card at ${label}`);
+      await tutorialCard(page).getByRole("button", { name: "Next" }).click();
 
-      await card(page, "C-T14.1.1-G").focus();
+      await expect.poll(() => step(page)).toBe("inspect");
+      await expect(card(page, "C-T14.1.1-G")).toBeFocused();
       await page.keyboard.press("i");
+      // The Inspect view covers the cabinet, so it shows the step itself.
       await expect(drawer(page).getByTestId("coach")).toBeVisible();
+      await expect(tutorialCard(page)).toHaveCount(0);
       await expect(coachTitle(page)).toHaveText("Review a cell");
       await expectNoBlockingViolations(page, `coach in Inspect at ${label}`);
       await page.keyboard.press("ArrowDown");
@@ -1828,41 +1832,41 @@ test.describe("Trial & Error guided Blind (#1089)", () => {
       await expect(coachTitle(page)).toHaveText("Back to the table");
       await page.keyboard.press("Escape");
       await expect(drawer(page)).toBeHidden();
-      await expect(coachTitle(page)).toHaveText("Make a TLF Pair");
 
+      await expect.poll(() => step(page)).toBe("select");
       await card(page, "C-T14.1.1-G").focus();
       await page.keyboard.press("Space");
       await card(page, DM_LISTING).focus();
       await page.keyboard.press("Space");
-      await expect(coachTitle(page)).toHaveText("Play the hand");
+      await expect.poll(() => step(page)).toBe("play");
       await page.keyboard.press("Enter");
-      await expect(coachTitle(page)).toHaveText("Blind cleared", {
-        timeout: 15000,
-      });
+
+      const finish = page.getByRole("button", { name: "Finish the tutorial" });
+      await expect(finish).toBeVisible({ timeout: 15000 });
+      await expect.poll(() => step(page)).toBe("blind");
       await expectNoHorizontalOverflow(page);
       await expectNoBlockingViolations(
         page,
         `guided Blind cleared at ${label}`
       );
+      await finish.click();
 
-      await page.getByRole("button", { name: "Start the campaign" }).click();
-      await expect(coach(page)).toHaveCount(0);
-      await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+      await expect(page.getByTestId("tutorial-finished")).toBeVisible();
+      await page.getByRole("button", { name: "Start playing" }).click();
+      await expect(page.getByTestId("tutorial-finished")).toHaveCount(0);
       await expect(card(page, DRAFT_A)).toBeVisible();
     });
   }
 
-  test("skips at any step and is not offered again", async ({ page }) => {
+  test("leaves at any step for the campaign", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await launch(page);
-    await page.getByRole("button", { name: "Start guided Blind" }).click();
-    await page.getByRole("button", { name: "Next" }).click();
-    await page.getByRole("button", { name: "Skip tutorial" }).click();
-    await expect(coach(page)).toHaveCount(0);
+    await startTutorial(page);
+    await tutorialCard(page).getByRole("button", { name: "Next" }).click();
+    await expect.poll(() => step(page)).toBe("inspect");
+    await page.getByRole("button", { name: "Leave the tutorial" }).click();
+    await expect(tutorialCard(page)).toHaveCount(0);
     await expect(card(page, DRAFT_A)).toBeVisible();
-    await page.reload();
-    await launch(page);
-    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
   });
 });
 

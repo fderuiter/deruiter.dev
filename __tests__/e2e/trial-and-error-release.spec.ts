@@ -236,6 +236,8 @@ test.describe("Trial & Error release hardening (#925)", () => {
         Storage.prototype.removeItem = blocked;
       });
       await launch(page);
+      // With no record to read, the cabinet offers its tutorial every visit.
+      await page.getByRole("button", { name: "Skip, just play" }).click();
 
       const speed = page.getByRole("group", { name: "Scoring speed" });
       await expect(speed.getByRole("button", { name: "1×" })).toHaveAttribute(

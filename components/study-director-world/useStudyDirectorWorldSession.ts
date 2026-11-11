@@ -48,6 +48,7 @@ import {
   type InteractionOutcome,
   type MorningDigest,
   type OvernightReport,
+  type PersonPlacement,
   type PriorityId,
   type SiteCheckId,
   type SiteVisitReport,
@@ -56,6 +57,8 @@ import {
   type WorldState,
 } from "@/lib/study-director-world";
 import {
+  STUDY_DIRECTOR_TUTORIAL_SEED,
+  STUDY_DIRECTOR_TUTORIAL_SIGNALS as TUTORIAL,
   studyLength,
   type Difficulty,
   type StudyLength,
@@ -76,6 +79,7 @@ import { KICKOFF_DAY } from "@/components/study-director/career";
 import { recordArcadeMilestone } from "@/lib/arcade-achievements";
 import { tapDestination } from "./tap-walk";
 import { playWorldCue } from "./world-sound";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
 
 /** Milliseconds between steps when walking by directory or holding a key. */
 const STEP_MS = 110;
@@ -299,7 +303,24 @@ interface StudyDirectorWorldSessionOptions {
   readonly onStart?: () => void;
   /** Whether the office runs in the touch cabinet (ADR 0061). */
   readonly touch: boolean;
+  /** The cabinet's tutorial (#3457): a practice morning while it runs. */
+  readonly tutorial?: CabinetTutorialValue;
 }
+
+/** The real run set aside while the tutorial plays its practice morning. */
+interface SetAside {
+  readonly world: WorldState;
+  readonly digest: MorningDigest | null;
+  readonly report: OvernightReport | null;
+  readonly visitReport: SiteVisitReport | null;
+  readonly acted: boolean;
+  /** The practice morning's clock, which stands still (#3457). */
+  readonly minute: number;
+}
+
+/** Said when an action would end or leave the practice morning. */
+const PRACTICE_ONLY =
+  "Not on the practice morning. Finish or leave the tutorial first.";
 
 /**
  * The Study Director office session (#3437): the world, its day clock and
@@ -310,9 +331,26 @@ interface StudyDirectorWorldSessionOptions {
 export function useStudyDirectorWorldSession(
   options: StudyDirectorWorldSessionOptions
 ) {
-  const { onExit, onCloseout, onStart, touch } = options;
+  const { onExit, onCloseout, onStart, touch, tutorial } = options;
   const [opened] = useState(openWorld);
-  const [world, setWorld] = useState<WorldState>(opened.world);
+  const [world, setWorldState] = useState<WorldState>(opened.world);
+  // While the tutorial runs, the real run is set aside and a practice
+  // morning stands in for it: its clock stands still, so no call, visitor or
+  // hard stop comes, and it is never saved (#3457).
+  const setAside = useRef<SetAside | null>(null);
+  const setWorld = useCallback(
+    (next: WorldState | ((w: WorldState) => WorldState)) =>
+      setWorldState((prev) => {
+        const w = typeof next === "function" ? next(prev) : next;
+        const held = setAside.current;
+        return held && w.minute !== held.minute
+          ? { ...w, minute: held.minute }
+          : w;
+      }),
+    []
+  );
+  const practising = tutorial?.active ?? false;
+  const signal = tutorial?.signal;
   const [digest, setDigest] = useState<MorningDigest | null>(opened.digest);
   const [outcome, setOutcome] = useState<InteractionOutcome | null>(null);
   const [report, setReport] = useState<OvernightReport | null>(null);
@@ -321,8 +359,12 @@ export function useStudyDirectorWorldSession(
   const [notice, setNotice] = useState("");
   // The latest result or refusal, visible on the stage (#2185).
   const [said, setSaid] = useState<Said | null>(null);
-  // First-run help (#1819); the Controls button reopens it.
-  const [showIntro, setShowIntro] = useState(() => !introSeen());
+  // First-run help (#1819); the Controls button reopens it. In a cabinet
+  // with the guided tutorial, its offer is the first-run help instead, so
+  // the two are not shown one over the other (#3457).
+  const [showIntro, setShowIntro] = useState(
+    () => !introSeen() && !tutorial?.available
+  );
   // A resumed run that has moved on from its first morning has acted
   // already: the day-1 goal went back to "walk to the EDC" on reload (#2187).
   const [acted, setActed] = useState(() => !opened.fresh);
@@ -335,6 +377,7 @@ export function useStudyDirectorWorldSession(
   // The career counts a new run once it is under way, not when it opens.
   const counted = useRef(false);
   useEffect(() => {
+    if (setAside.current) return;
     if (counted.current || freshWorld === null || world === freshWorld) return;
     counted.current = true;
     onStart?.();
@@ -398,7 +441,15 @@ export function useStudyDirectorWorldSession(
     announce: setNotice,
     refuse: refuseWith,
     refocus,
+    signal,
   });
+  /** Someone stopping you in the hallway, except on the practice morning. */
+  const teamCatchUp = team.catchUp;
+  const catchUp = useCallback(
+    (next: WorldState, at: readonly PersonPlacement[]) =>
+      setAside.current ? false : teamCatchUp(next, at),
+    [teamCatchUp]
+  );
   const { study, coffees, fatigue } = world;
   // The office tells the story of the study (#1691).
   const conditions = useMemo(
@@ -484,7 +535,7 @@ export function useStudyDirectorWorldSession(
       setDigest(morning.digest);
       setNotice(said);
     },
-    [world.study.seed]
+    [world.study.seed, setWorld]
   );
 
   /** Starts the untouched run again on the chosen difficulty, same seed. */
@@ -542,10 +593,13 @@ export function useStudyDirectorWorldSession(
         );
         return;
       }
-      if (result.moved) setSaid(null);
+      if (result.moved) {
+        setSaid(null);
+        signal?.(TUTORIAL.move);
+      }
       setWorld(result.world);
       if (result.moved)
-        team.catchUp(
+        catchUp(
           result.world,
           placePeople(result.world, currentMap(result.world))
         );
@@ -554,7 +608,7 @@ export function useStudyDirectorWorldSession(
         if (room) setNotice(room.name);
       }
     },
-    [world, map, people, team, refuseWith, show]
+    [world, map, people, catchUp, refuseWith, show, signal, setWorld]
   );
 
   const pressE = useCallback(() => {
@@ -576,10 +630,14 @@ export function useStudyDirectorWorldSession(
     setOutcome(result);
     setDigest(null);
     setNotice(`${result.title}. ${result.lines.join(" ")}`);
-  }, [world, map, people, team]);
+  }, [world, map, people, team, setWorld]);
 
   const drive = useCallback(
     (option: TravelOption) => {
+      if (setAside.current) {
+        show(PRACTICE_ONLY, "bad");
+        return;
+      }
       const result = travel(world, option.mapId);
       if (!result.ok) {
         setNotice(siteRefusalText(result.reason));
@@ -596,7 +654,7 @@ export function useStudyDirectorWorldSession(
       );
       playfieldRef.current?.focus({ preventScroll: true });
     },
-    [world]
+    [world, show, setWorld]
   );
 
   const doCheck = useCallback(
@@ -620,7 +678,7 @@ export function useStudyDirectorWorldSession(
       setNotice(`${SITE_CHECKS[id].label}. ${lines.join(" ")}`);
       playfieldRef.current?.focus({ preventScroll: true });
     },
-    [world]
+    [world, setWorld]
   );
 
   /** Asks yourself how it is going. It is fine. */
@@ -629,7 +687,8 @@ export function useStudyDirectorWorldSession(
     setOutcome(result);
     setDigest(null);
     setNotice(`${result.title}. ${result.lines.join(" ")}`);
-  }, [world]);
+    signal?.(TUTORIAL.self);
+  }, [world, signal]);
 
   const walkTo = useCallback(
     (entry: DirectoryEntry) => {
@@ -712,7 +771,7 @@ export function useStudyDirectorWorldSession(
       show(result.result);
       refocus();
     },
-    [world, refocus, refuseWith, show]
+    [world, refocus, refuseWith, show, setWorld]
   );
 
   const pickPriority = useCallback(
@@ -728,7 +787,7 @@ export function useStudyDirectorWorldSession(
       );
       refocus();
     },
-    [world, refocus, refuseWith]
+    [world, refocus, refuseWith, setWorld]
   );
 
   const answer = useCallback(
@@ -745,10 +804,15 @@ export function useStudyDirectorWorldSession(
       show(result.result);
       refocus();
     },
-    [world, refocus, refuseWith, show]
+    [world, refocus, refuseWith, show, setWorld]
   );
 
   const leave = useCallback(() => {
+    if (setAside.current) {
+      setOutcome(null);
+      show(PRACTICE_ONLY, "bad");
+      return;
+    }
     // Driving home from a site writes the visit up first, and excuses what
     // came while you were there (#2334).
     const night = driveHome(world);
@@ -762,7 +826,7 @@ export function useStudyDirectorWorldSession(
         ? "The study is complete."
         : `You went home. Overnight report for day ${night.report.day}.`
     );
-  }, [world]);
+  }, [world, show, setWorld]);
 
   /**
    * Hands the whole day to the team (#2092): they settle the inbox without
@@ -771,6 +835,10 @@ export function useStudyDirectorWorldSession(
    */
   const handOver = useCallback(() => {
     setConfirmDelegate(false);
+    if (setAside.current) {
+      show(PRACTICE_ONLY, "bad");
+      return;
+    }
     const result = delegateDay(world);
     if (!result.ok) {
       refuseWith(result.reason);
@@ -788,8 +856,10 @@ export function useStudyDirectorWorldSession(
         ? "The team ran the last day. The study is complete."
         : `The team ran day ${result.report.day} without you. Overnight report for day ${result.report.day}.`
     );
-  }, [world, refuseWith]);
-  const delegation = delegationPreview(world);
+  }, [world, refuseWith, show, setWorld]);
+  const preview = delegationPreview(world);
+  // The practice morning cannot be handed to the team (#3457).
+  const delegation = practising ? { ...preview, available: false } : preview;
 
   // An outcome card (the car's Drive / Go home, a refusal that ends the day,
   // a desk result) is brought fully into view, whether it opened off the top
@@ -852,7 +922,7 @@ export function useStudyDirectorWorldSession(
       `${morning.digest.weekday}, day ${morning.digest.day}. You start at ${formatClock(morning.digest.startsAt)}.`
     );
     playfieldRef.current?.focus({ preventScroll: true });
-  }, [world]);
+  }, [world, setWorld]);
 
   /** An arrow button: like the key, it ends a directory walk and takes a step. */
   const stepBy = (dir: Facing) => {
@@ -916,8 +986,9 @@ export function useStudyDirectorWorldSession(
   };
 
   useEffect(() => {
-    // A run handed to the closeout stays cleared.
-    if (closedOut.current) return;
+    // A run handed to the closeout stays cleared, and the practice morning
+    // is never saved (#3457).
+    if (closedOut.current || setAside.current) return;
     saveWorld(world);
   }, [world]);
 
@@ -980,8 +1051,9 @@ export function useStudyDirectorWorldSession(
         return;
       }
       setWorld(result.world);
+      signal?.(TUTORIAL.move);
       if (
-        team.catchUp(
+        catchUp(
           result.world,
           placePeople(result.world, currentMap(result.world))
         )
@@ -992,7 +1064,80 @@ export function useStudyDirectorWorldSession(
       setWalk({ ...walk, steps: rest, facing });
     }, STEP_MS);
     return () => window.clearTimeout(id);
-  }, [walk, world, map, people, team, directory, show, refuseWith]);
+  }, [
+    walk,
+    world,
+    map,
+    people,
+    team,
+    directory,
+    show,
+    refuseWith,
+    catchUp,
+    signal,
+    setWorld,
+  ]);
+
+  // The tutorial starting sets the real run aside for a practice morning;
+  // its end hands the run back exactly as it was (#3457).
+  const closeTeam = team.close;
+  useEffect(() => {
+    const held = setAside.current;
+    if (practising === (held !== null)) return;
+    if (practising) {
+      const practice = firstMorning(
+        STUDY_DIRECTOR_TUTORIAL_SEED,
+        "standard",
+        "short"
+      );
+      setAside.current = {
+        world,
+        digest,
+        report,
+        visitReport,
+        acted,
+        minute: practice.world.minute,
+      };
+      lastWorld.current = practice.world;
+      lastHud.current = {
+        hud: hudReadout(practice.world),
+        minute: practice.world.minute,
+      };
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setWorldState(practice.world);
+      setDigest(null);
+      setReport(null);
+      setVisitReport(null);
+      setShowIntro(false);
+      setNotice("Practice morning. The clock stands still.");
+    } else if (held) {
+      setAside.current = null;
+      lastWorld.current = held.world;
+      lastHud.current = {
+        hud: hudReadout(held.world),
+        minute: held.world.minute,
+      };
+      setWorldState(held.world);
+      setDigest(held.digest);
+      setReport(held.report);
+      setVisitReport(held.visitReport);
+      setActed(held.acted);
+      setNotice("Back to your study.");
+    }
+    setOutcome(null);
+    setWalk(null);
+    setSaid(null);
+    setConfirmDelegate(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    closeTeam();
+  }, [practising, world, digest, report, visitReport, acted, closeTeam]);
+
+  // The closing step puts the desk away, so its card can be read and
+  // clicked rather than sitting under the desk (#3457).
+  const closing = practising && tutorial?.stepId === "done";
+  useEffect(() => {
+    if (closing) closeTeam();
+  }, [closing, closeTeam]);
 
   // A shared link waits while a study is under way, and says so (#2191).
   const [sharedHeld, setSharedHeld] = useState(opened.sharedWaiting === true);

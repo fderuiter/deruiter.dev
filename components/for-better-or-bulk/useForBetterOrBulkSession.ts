@@ -42,7 +42,12 @@ import {
   type SharedRun,
   bestTimeFor,
   parFor,
+  FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS,
+  TUTORIAL_SETUP,
+  bulkTutorialSignals,
+  holdTutorialClock,
 } from "@/lib/for-better-or-bulk";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
 import {
   recordArcadeScore,
   unlockArcadeTrophies,
@@ -228,6 +233,12 @@ interface ForBetterOrBulkSessionOptions {
   readonly touch: boolean;
   /** The cabinet, which takes focus when a day starts or a replay closes. */
   readonly boundaryRef: React.RefObject<HTMLDivElement | null>;
+  /**
+   * The cabinet's guided tutorial (#3456). While it runs the session plays
+   * a practice day whose clock stands still, and sends it the player's
+   * actions.
+   */
+  readonly tutorial?: CabinetTutorialValue;
 }
 
 /**
@@ -240,7 +251,8 @@ interface ForBetterOrBulkSessionOptions {
 export function useForBetterOrBulkSession(
   options: ForBetterOrBulkSessionOptions
 ) {
-  const { initialSetup, initialMode, loud, touch, boundaryRef } = options;
+  const { initialSetup, initialMode, loud, touch, boundaryRef, tutorial } =
+    options;
   const [phase, setPhase] = useState<Phase>("setup");
   const [setup, setSetup] = useState<Setup>(() => {
     const seed = seedFromUrl();
@@ -300,6 +312,11 @@ export function useForBetterOrBulkSession(
   const helperKindRef = useRef<string | null>(null);
   /** The one focus move still waiting for a paint, cancelled on unmount. */
   const pendingFocus = useRef<number | null>(null);
+  /** The tutorial as of the last render, read from the loop between renders. */
+  const tutorialRef = useRef<CabinetTutorialValue | undefined>(tutorial);
+  useEffect(() => {
+    tutorialRef.current = tutorial;
+  });
 
   const pushMessages = useCallback(
     (
@@ -476,7 +493,29 @@ export function useForBetterOrBulkSession(
     (frame: Frame): GameState | null => {
       const state = stateRef.current;
       if (!state) return null;
-      const result = stepGame(state, frame);
+      const stepped = stepGame(state, frame);
+      // A tutorial day's clock stands still (#3456), and it never ends.
+      const practising = tutorialRef.current?.active === true;
+      const result = practising
+        ? { ...stepped, state: holdTutorialClock(state, stepped.state) }
+        : stepped;
+      if (practising) {
+        const signal = tutorialRef.current?.signal;
+        for (const name of bulkTutorialSignals(
+          state,
+          result.state,
+          result.events,
+          activeRef.current
+        )) {
+          signal?.(name);
+        }
+        if (result.state.phase === "done") {
+          const fresh = createLevel(TUTORIAL_SETUP);
+          stateRef.current = fresh;
+          setView(fresh);
+          return fresh;
+        }
+      }
       if (state.phase !== "done") {
         recorded.current.push(recordedFrame(state, frame));
       }
@@ -595,6 +634,37 @@ export function useForBetterOrBulkSession(
     [focusAfterPaint, touch, boundaryRef]
   );
 
+  // The tutorial plays a practice day on the default plan (#3456), and
+  // hands the plan screen back as the player left it when it ends.
+  const tutorialActive = tutorial?.active === true;
+  const tutorialWasActive = useRef(false);
+  const planBeforeTutorial = useRef<{
+    setup: Setup;
+    mode: ControlMode;
+  } | null>(null);
+  useEffect(() => {
+    if (tutorialActive === tutorialWasActive.current) return;
+    tutorialWasActive.current = tutorialActive;
+    if (tutorialActive) {
+      planBeforeTutorial.current = { setup, mode };
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      start(TUTORIAL_SETUP, "solo");
+      return;
+    }
+    const plan = planBeforeTutorial.current;
+    planBeforeTutorial.current = null;
+    held.current.clear();
+    tapped.current.clear();
+    pressed.current.clear();
+    if (plan) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSetup(plan.setup);
+      setMode(plan.mode);
+    }
+    setUserPaused(false);
+    setPhase("setup");
+  }, [tutorialActive, setup, mode, start]);
+
   const decide = (decision: PresenceDecision) => {
     if (userPaused) return;
     // Keys down while the text was up are not carried into the game, so a
@@ -648,6 +718,7 @@ export function useForBetterOrBulkSession(
     activeRef.current = other;
     setActive(other);
     setAnnouncement(`Now playing as ${NAMES[other]}.`);
+    tutorialRef.current?.signal(FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS.swap);
   };
 
   /**

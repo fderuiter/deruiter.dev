@@ -1550,10 +1550,15 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
     await expect(page.locator(IMMERSIVE)).toBeVisible();
   });
 
-  test("the first-run help is a dialog: Escape closes it and the cabinet stays open", async ({
+  test("the help is a dialog: Escape closes it and the cabinet stays open", async ({
     page,
   }) => {
     await launchStudyDirector(page);
+    // The cabinet's tutorial stands in for the first-run help (#3457), so
+    // the help opens from the Controls button.
+    await page
+      .getByRole("button", { name: "Controls" })
+      .tap({ timeout: 15000 });
     const intro = page.getByTestId("world-intro");
     await expect(intro).toBeVisible();
     const viewport = page.viewportSize()!;

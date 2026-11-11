@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import "./study-director-touch.css";
 import { AUDIT_ATTENTION } from "@/lib/study-director";
 import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
@@ -100,6 +101,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   // The immersive touch cabinet (ADR 0061, #2076) lays the desk out to fit
   // its stage; desktop markup is untouched.
   const touch = useCabinetTouch();
+  const tutorialActive = useCabinetTutorial().active;
   const {
     alert,
     audit,
@@ -150,7 +152,9 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
     officeFirst,
   });
 
-  if (worldMode)
+  // The guided tutorial teaches the office, so it opens there from the
+  // classic desk too, and hands the desk back when it ends (#3457).
+  if (worldMode || tutorialActive)
     return (
       <StudyDirectorWorld
         onExit={leaveWorld}

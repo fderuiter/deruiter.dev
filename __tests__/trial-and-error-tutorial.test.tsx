@@ -1,25 +1,42 @@
 // @vitest-environment jsdom
-import React from "react";
+import React, { useEffect } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
   screen,
   waitFor,
 } from "@testing-library/react";
+import { TrialAndErrorTable } from "@/components/trial-and-error/Tutorial";
 import {
   TUTORIAL_SEEN_KEY,
-  TrialAndErrorTable,
-} from "@/components/trial-and-error/Tutorial";
-import { TUTORIAL_STEPS } from "@/lib/trial-and-error";
+  carryOverTutorialSeen,
+} from "@/components/trial-and-error/tutorial-seen";
+import {
+  CabinetTutorialContext,
+  useTutorialRun,
+  type TutorialRun,
+} from "@/components/arcade/tutorial";
+import {
+  arcadeTutorialsSlice,
+  read,
+  setTutorialOutcome,
+  write,
+} from "@/lib/arcade";
+import { TRIAL_AND_ERROR_TUTORIAL } from "@/lib/trial-and-error";
 
-const announce = vi.fn();
+/**
+ * Trial & Error's guided Blind (#1089) on the cabinet's shared tutorial
+ * (#3455): the table deals the guided hand while the tutorial runs and
+ * signals each step the table shows done.
+ */
+
 vi.mock("@/hooks/useAnnouncer", () => ({
-  useAnnouncer: () => ({ announce }),
+  useAnnouncer: () => ({ announce: vi.fn() }),
 }));
-// The manual's own modal needs the site's audio provider; its action is the
-// part under test here.
+// The manual's own modal needs the site's audio provider.
 vi.mock("@/components/FieldManualButton", () => ({
   FieldManualButton: ({
     action,
@@ -59,17 +76,14 @@ class MockStorage implements Storage {
 }
 
 const original = Object.getOwnPropertyDescriptor(window, "localStorage");
-const useStorage = (value: unknown) =>
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value,
-  });
-
 let storage: MockStorage;
 beforeEach(() => {
-  announce.mockClear();
   storage = new MockStorage();
-  useStorage(storage);
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: storage,
+  });
+  write(arcadeTutorialsSlice, { version: 1, games: {} });
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -86,111 +100,132 @@ afterEach(() => {
   if (original) Object.defineProperty(window, "localStorage", original);
 });
 
-const coachTitle = () => screen.getByTestId("coach").querySelector("h3");
+/** The table inside a cabinet's tutorial, with the run held for the test. */
+function renderTable() {
+  const holder: { run: TutorialRun | null } = { run: null };
+  function Harness() {
+    const run = useTutorialRun(TRIAL_AND_ERROR_TUTORIAL);
+    useEffect(() => {
+      holder.run = run;
+    });
+    return (
+      <CabinetTutorialContext.Provider value={run.value}>
+        <TrialAndErrorTable />
+      </CabinetTutorialContext.Provider>
+    );
+  }
+  render(<Harness />);
+  const run = () => holder.run!;
+  const stepId = () =>
+    TRIAL_AND_ERROR_TUTORIAL.steps[run().state.index]?.id ?? null;
+  return { run, stepId };
+}
 
-describe("first-run guided Blind (#1089)", () => {
-  it("offers the guided Blind to a first-time player", () => {
-    render(<TrialAndErrorTable />);
-    expect(screen.getByTestId("tutorial-offer")).toBeTruthy();
-    // The campaign stays playable underneath.
-    expect(screen.getByTestId("hand")).toBeTruthy();
-  });
+const guidedTable = "C-T14.1.1-G";
+const card = (id: string) =>
+  document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
 
-  it("keeps the offer readable on phones and clear of the touch toolbar (#2281)", () => {
-    render(<TrialAndErrorTable />);
-    const offer = screen.getByTestId("tutorial-offer");
-    // The buttons wrap below the text instead of squeezing it to a sliver.
-    expect(offer.querySelector("div")?.className).toContain("basis-64");
-    // The right edge leaves room for the floating touch toolbar.
-    expect(offer.className).toContain("var(--cabinet-toolbar-inset,0px)");
-  });
-
-  it("does not offer it to a returning player", () => {
-    storage.setItem(TUTORIAL_SEEN_KEY, "1");
-    render(<TrialAndErrorTable />);
-    expect(screen.queryByTestId("tutorial-offer")).toBeNull();
-  });
-
-  it("remembers a skip", () => {
-    render(<TrialAndErrorTable />);
-    fireEvent.click(screen.getByRole("button", { name: "No thanks" }));
-    expect(storage.getItem(TUTORIAL_SEEN_KEY)).toBe("1");
-    expect(screen.queryByTestId("tutorial-offer")).toBeNull();
-  });
-
-  it("walks from Welcome to the first action and announces each step", async () => {
-    render(<TrialAndErrorTable />);
-    fireEvent.click(screen.getByRole("button", { name: "Start guided Blind" }));
+describe("Trial & Error on the shared tutorial (#3455)", () => {
+  it("plays the campaign until the tutorial starts", () => {
+    const { run } = renderTable();
+    expect(screen.getByTestId("hand").textContent).not.toContain("(Guided)");
+    act(() => run().start());
     expect(screen.getByTestId("hand").textContent).toContain("(Guided)");
-    expect(coachTitle()?.textContent).toBe(TUTORIAL_STEPS[0].title);
-    await waitFor(() =>
-      expect(announce).toHaveBeenCalledWith(
-        `${TUTORIAL_STEPS[0].title}. ${TUTORIAL_STEPS[0].text}`
-      )
+  });
+
+  it("marks each table step's control for the tutorial card", () => {
+    const { run } = renderTable();
+    act(() => run().start());
+    expect(card(guidedTable)?.dataset.tutorialTarget).toBe(
+      `card-${guidedTable}`
     );
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(coachTitle()?.textContent).toBe(TUTORIAL_STEPS[1].title);
-    // A step that waits for the table has no Next.
-    expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
-    await waitFor(() =>
-      expect(announce).toHaveBeenCalledWith(
-        `${TUTORIAL_STEPS[1].title}. ${TUTORIAL_STEPS[1].text}`
-      )
-    );
+    expect(
+      document.querySelector('[data-tutorial-target="play"]')
+    ).not.toBeNull();
   });
 
   it("moves focus to the card the next step points at (#2155)", async () => {
-    render(<TrialAndErrorTable />);
-    fireEvent.click(screen.getByRole("button", { name: "Start guided Blind" }));
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    const target = TUTORIAL_STEPS[1].target;
-    expect(target.kind).toBe("CARD");
-    const cardId = target.kind === "CARD" ? target.cardId : "";
+    const { run, stepId } = renderTable();
+    act(() => run().start());
+    act(() => run().dispatch({ type: "next" }));
+    expect(stepId()).toBe("inspect");
     await waitFor(() =>
       expect(
         (document.activeElement as HTMLElement | null)?.dataset.cardId
-      ).toBe(cardId)
+      ).toBe(guidedTable)
     );
   });
 
-  it("skips from any step to the campaign and remembers it", () => {
-    render(<TrialAndErrorTable />);
-    fireEvent.click(screen.getByRole("button", { name: "Start guided Blind" }));
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    fireEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
-    expect(screen.queryByTestId("coach")).toBeNull();
+  it("signals Inspect from the table and shows the step inside the Inspect view", async () => {
+    const { run, stepId } = renderTable();
+    act(() => run().start());
+    act(() => run().dispatch({ type: "next" }));
+    fireEvent.click(card(guidedTable)!);
+    fireEvent.click(screen.getByRole("button", { name: /^Inspect/ }));
+
+    await waitFor(() => expect(run().state.progress).toBe(1));
+    expect(stepId()).toBe("inspect");
+    // The Inspect view covers the cabinet, so it shows the step itself.
+    const drawer = screen.getByTestId("inspect-drawer");
+    expect(drawer.dataset.tutorialCovers).toBe("true");
+    act(() => run().dispatch({ type: "next" }));
+    expect(stepId()).toBe("review");
+    expect(drawer.querySelector("[data-testid='coach'] h3")?.textContent).toBe(
+      "Review a cell"
+    );
+  });
+
+  it("no longer offers its own replay in the Field Manual", () => {
+    renderTable();
+    expect(
+      screen.queryByRole("button", { name: "Replay tutorial" })
+    ).toBeNull();
+  });
+
+  it("returns to the campaign when the tutorial is left", () => {
+    const { run } = renderTable();
+    act(() => run().start());
+    act(() => run().dispatch({ type: "exit" }));
     expect(screen.getByTestId("hand").textContent).not.toContain("(Guided)");
-    expect(storage.getItem(TUTORIAL_SEEN_KEY)).toBe("1");
   });
+});
 
-  it("replays from the Field Manual for a returning player", () => {
+describe("a returning player's guided Blind answer (#3455)", () => {
+  it("carries the old record over as turned down", () => {
     storage.setItem(TUTORIAL_SEEN_KEY, "1");
-    render(<TrialAndErrorTable />);
-    fireEvent.click(screen.getByRole("button", { name: "Replay tutorial" }));
-    expect(coachTitle()?.textContent).toBe(TUTORIAL_STEPS[0].title);
+    carryOverTutorialSeen();
+    expect(read(arcadeTutorialsSlice).games["trial-and-error"]).toEqual({
+      version: TRIAL_AND_ERROR_TUTORIAL.version,
+      outcome: "declined",
+    });
   });
 
-  it("still offers and skips when storage throws", () => {
-    useStorage({
-      getItem: () => {
-        throw new Error("blocked");
-      },
-      setItem: () => {
-        throw new Error("blocked");
+  it("leaves a first-time player to be offered it", () => {
+    carryOverTutorialSeen();
+    expect(read(arcadeTutorialsSlice).games["trial-and-error"]).toBeUndefined();
+  });
+
+  it("keeps a record the cabinet already holds", () => {
+    storage.setItem(TUTORIAL_SEEN_KEY, "1");
+    setTutorialOutcome("trial-and-error", 1, "completed");
+    carryOverTutorialSeen();
+    expect(read(arcadeTutorialsSlice).games["trial-and-error"]?.outcome).toBe(
+      "completed"
+    );
+  });
+
+  it("does nothing when storage throws", () => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: () => {
+          throw new Error("blocked");
+        },
+        setItem: () => {
+          throw new Error("blocked");
+        },
       },
     });
-    render(<TrialAndErrorTable />);
-    expect(screen.getByTestId("tutorial-offer")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Start guided Blind" }));
-    expect(() =>
-      fireEvent.click(screen.getByRole("button", { name: "Skip tutorial" }))
-    ).not.toThrow();
-    expect(screen.queryByTestId("coach")).toBeNull();
-  });
-
-  it("works with no storage at all", () => {
-    useStorage(undefined);
-    render(<TrialAndErrorTable />);
-    expect(screen.getByTestId("tutorial-offer")).toBeTruthy();
+    expect(() => carryOverTutorialSeen()).not.toThrow();
   });
 });

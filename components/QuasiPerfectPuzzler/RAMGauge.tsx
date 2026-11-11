@@ -36,7 +36,10 @@ export const RAMGauge: React.FC<RAMGaugeProps> = ({
       : "SIMULATED RAM NOMINAL";
 
   return (
-    <div className="w-full flex flex-col gap-1 font-mono">
+    <div
+      data-tutorial-target="ram"
+      className="w-full flex flex-col gap-1 font-mono"
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs">
         <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px]">
           Simulated Memory:

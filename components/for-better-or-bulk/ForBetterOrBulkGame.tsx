@@ -29,6 +29,7 @@ import {
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetTouch } from "@/components/arcade/mobile";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import { FbbTouchDock } from "./FbbTouchDock";
 import "./fbb-touch.css";
 import { BrothersDialog } from "./BrothersDialog";
@@ -107,6 +108,8 @@ export function ForBetterOrBulkGame({
   // The immersive touch cabinet on an iPad (#2123): the dock, the fit layout
   // and copy that names the on-screen keys. Desktop reads false.
   const touch = useCabinetTouch();
+  // The cabinet's guided tutorial (#3456) runs a practice day in the session.
+  const tutorial = useCabinetTutorial();
   const boundaryRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pauseRef = useRef<HTMLButtonElement>(null);
@@ -160,6 +163,7 @@ export function ForBetterOrBulkGame({
     loud,
     touch,
     boundaryRef,
+    tutorial,
   });
   const draw = useCallback(
     (scale: number) => {
@@ -420,7 +424,7 @@ export function ForBetterOrBulkGame({
           {/* The ceremony is the last time in the header, after the rush and shower. */}
           <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
           {mode === "solo" ? (
-            <span data-testid="fbb-active">
+            <span data-testid="fbb-active" data-tutorial-target="active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
               {touch
                 ? view.players[partner].presence === "away"
@@ -454,7 +458,10 @@ export function ForBetterOrBulkGame({
 
         <div className="fbb-main grid min-w-0 gap-2 @3xl:grid-cols-[minmax(0,1fr)_12rem] @4xl:grid-cols-[minmax(0,1fr)_14rem]">
           <div className="fbb-venue relative min-w-0">
-            <div className="fbb-venue-frame relative min-w-0">
+            <div
+              className="fbb-venue-frame relative min-w-0"
+              data-tutorial-target="venue"
+            >
               <canvas
                 ref={canvasRef}
                 width={VENUE_WIDTH}
@@ -493,7 +500,8 @@ export function ForBetterOrBulkGame({
                 {bankText("joke-leaving")}
               </p>
             ) : null}
-            {hideTips ? (
+            {/* The tutorial's card does the teaching, so the tips wait. */}
+            {tutorial.active ? null : hideTips ? (
               <button
                 type="button"
                 onClick={() => writeHideTips(false)}
@@ -544,6 +552,7 @@ export function ForBetterOrBulkGame({
               aria-label="Still to do"
               className="flex flex-col gap-1"
               data-testid="fbb-checklist"
+              data-tutorial-target="checklist"
             >
               {CHECKLIST.map((category) => {
                 const line = checklistLine(view, category);
@@ -710,7 +719,11 @@ export function ForBetterOrBulkGame({
         // with no target; anything else that takes focus away pauses.
         const removedChild =
           next === null && event.target !== event.currentTarget;
-        if (phase === "playing" && !removedChild) setPaused(true);
+        // The tutorial's card takes focus for its read steps, and its day
+        // has no clock to lose, so leaving for it does not pause.
+        if (phase === "playing" && !removedChild && !tutorial.active) {
+          setPaused(true);
+        }
       }}
       className={`@container relative isolate flex min-h-[460px] scroll-mt-28 w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]${touch ? " fbb-touch" : ""}`}
     >

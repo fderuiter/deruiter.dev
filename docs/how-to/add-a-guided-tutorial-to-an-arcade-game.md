@@ -42,8 +42,10 @@ Guidelines:
 Inside the cabinet, the game reads `useCabinetTutorial()` from `@/components/arcade/tutorial`:
 
 - Call `signal("jump")` wherever the action really happens. A signal the current step is not waiting for is dropped without a render, so it is safe in a game loop.
-- While `active` is true, keep the player safe. Laser Loon switches to its Sandbox, where nothing hurts the loon, and switches back when the tutorial ends. Monkey C Mayhem has no sandbox, so it clears the course of gaps and foes after every step of the run instead (`keepTutorialRunSafe` in `lib/garmin/tutorial.ts`).
+- While `active` is true, keep the player safe and keep the practice out of saved progress. Laser Loon switches to its Sandbox, where nothing hurts the loon, and switches back when the tutorial ends. Monkey C Mayhem has no sandbox, so it clears the course of gaps and foes after every step of the run instead (`keepTutorialRunSafe` in `lib/garmin/tutorial.ts`).
 - `stepId` names the current step if the game needs to stage something for it.
+- `available` is true when the cabinet has a tutorial for the game, running or not. A game with its own first-run help can leave that to the cabinet's offer, so the two are not shown one over the other. Study Director does this, and its Controls button still opens its help.
+- A game modal that covers the stage, such as Trial & Error's Inspect view, carries `data-tutorial-covers="true"`. The card steps aside while it is open, so the game shows the current step inside the modal (`components/trial-and-error/Tutorial.tsx`).
 
 ## 3. Hand it to the cabinet
 
@@ -55,7 +57,7 @@ A room with no cabinet, such as Meme Vault, runs the tutorial itself (`component
 - Pass `launched` once that container is on screen, so the offer is not placed below the fold.
 - Mark the element that takes focus during practice with `data-keyboard-boundary="true"` and `tabIndex={-1}`.
 - Add a Tutorial button so the player can replay it, since there is no Setup sheet.
-- Scroll each card into view below the site header, because the page scrolls and a cabinet's stage does not.
+- Scroll each card into view below the site header once it is placed, because the room scrolls. `TutorialOverlay` also does this once per step, for a cabinet taller than the window.
 
 ## 4. Test it
 

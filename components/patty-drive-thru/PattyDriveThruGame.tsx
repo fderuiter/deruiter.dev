@@ -17,6 +17,9 @@ import React, {
 import dynamic from "next/dynamic";
 import {
   BOOTH_CREW,
+  PATTY_TUTORIAL_DILEMMA,
+  PATTY_TUTORIAL_SHIFT,
+  PATTY_TUTORIAL_SIGNALS,
   getKdsTickets,
   isWeekOver,
   type ShiftAction,
@@ -30,6 +33,7 @@ import {
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCabinetTouch } from "@/components/arcade/mobile";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import { playShiftEvents } from "./booth-audio";
 import {
   DiaryIntroPage,
@@ -156,6 +160,56 @@ export function PattyDriveThruGame({
     yells,
   } = usePattySession({ config, reducedMotion, boundaryRef });
 
+  // The guided tutorial (#3451) runs in a practice shift with one car. Its
+  // clock runs only until that car pulls up, then holds, so the order never
+  // ages, nothing expires and the manager never yells. Leaving or finishing
+  // the tutorial goes back to the diary.
+  const {
+    active: tutorialActive,
+    stepId: tutorialStep,
+    signal: tutorialSignal,
+  } = useCabinetTutorial();
+  const practiceRef = useRef(false);
+  useEffect(() => {
+    if (tutorialActive && !practiceRef.current) {
+      practiceRef.current = true;
+      setPaused(false);
+      store.getState().clockInPractice(PATTY_TUTORIAL_SHIFT);
+    } else if (!tutorialActive && practiceRef.current) {
+      practiceRef.current = false;
+      backToIntro();
+    }
+  }, [tutorialActive, store, setPaused, backToIntro]);
+  useEffect(() => {
+    if (tutorialStep === "dilemma") {
+      store.getState().offerDilemma(PATTY_TUTORIAL_DILEMMA);
+    }
+  }, [tutorialStep, store]);
+  // What the player did, from the shift's own events and the picked order.
+  useEffect(() => {
+    const S = PATTY_TUTORIAL_SIGNALS;
+    const offEvents = store.getState().onEvents((events) => {
+      for (const event of events) {
+        if (event.type === "item-rung") tutorialSignal(S.ring);
+        else if (event.type === "bumped") tutorialSignal(S.bump);
+        else if (event.type === "wiped") tutorialSignal(S.wipe);
+        else if (event.type === "dilemma-resolved" && !event.timedOut) {
+          tutorialSignal(S.answer);
+        }
+      }
+    });
+    const offOrder = store.subscribe((state, previous) => {
+      const picked = state.shift.pos.activeOrderId;
+      if (picked !== null && picked !== previous.shift.pos.activeOrderId) {
+        tutorialSignal(S.order);
+      }
+    });
+    return () => {
+      offEvents();
+      offOrder();
+    };
+  }, [store, tutorialSignal]);
+
   // Switching views swaps the whole layout and drops focus from the toggle,
   // which let the browser scroll the cabinet under the navbar. Keep focus on
   // the booth and the cabinet top just below the header (#1938).
@@ -186,7 +240,10 @@ export function PattyDriveThruGame({
     (deltaMs) => {
       const dt = deltaMs / 1000;
       const state = store.getState();
-      state.tick(dt);
+      // A practice shift holds its clock once its one car has arrived.
+      if (!(practiceRef.current && state.shift.nextOrderId > 1)) {
+        state.tick(dt);
+      }
       // Holding both ways cancels out, whichever was pressed first.
       let left = 0;
       let right = 0;
@@ -197,6 +254,7 @@ export function PattyDriveThruGame({
       const turn = left - right;
       const { yaw, pitch } = drag.current;
       drag.current = { yaw: 0, pitch: 0 };
+      if (turn !== 0 || yaw !== 0) tutorialSignal(PATTY_TUTORIAL_SIGNALS.turn);
       state.moveHead({ turn, dragYaw: yaw, dragPitch: pitch }, dt);
     },
     { isActive: phase === "shift" && !paused }
@@ -305,6 +363,11 @@ export function PattyDriveThruGame({
     // While paused the booth hears nothing but the pause keys.
     if (userPaused) return;
 
+    // The flat view shows the whole booth, so its turn keys do nothing but
+    // complete the tutorial's turn step.
+    if (view === "flat" && (LEFT_KEYS.has(key) || RIGHT_KEYS.has(key))) {
+      tutorialSignal(PATTY_TUTORIAL_SIGNALS.turn);
+    }
     if (
       view === "3d" &&
       !state.registerOpen &&

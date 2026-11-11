@@ -44,6 +44,7 @@ export function DilemmaPrompt({
     <section
       aria-labelledby={titleId}
       data-testid="pdt-dilemma"
+      data-tutorial-target="dilemma"
       data-dilemma={open.dilemmaId}
       className={`pointer-events-auto w-full min-w-0 rounded-md border-2 border-[var(--pdt-bump-edge)] bg-[var(--pdt-hud-bg)] p-3 font-mono text-[var(--pdt-hud-text)] ${className}`}
     >

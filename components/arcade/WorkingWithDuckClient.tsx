@@ -27,6 +27,7 @@ import {
   IconHeart,
 } from "@tabler/icons-react";
 import { getPhotosByCategory } from "@/lib/media-registry";
+import { WORKING_WITH_DUCK_TUTORIAL } from "@/lib/working-with-duck";
 
 /** The cabinet's control list, generated from the action map (#2356). */
 const DUCK_CABINET_CONTROLS = controlsFromActions(
@@ -114,6 +115,7 @@ export const WorkingWithDuckClient: React.FC = () => {
               importComponent={WorkingWithDuckLoader}
               controlDock={touchDevice ? <DuckControlDock /> : undefined}
               onAutoPause={handleAutoPause}
+              tutorial={WORKING_WITH_DUCK_TUTORIAL}
             >
               <DynamicWorkingWithDuck />
             </PlayCabinet>

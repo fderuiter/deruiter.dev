@@ -537,3 +537,91 @@ test.describe("Trial & Error guided tutorial", () => {
     await expect.poll(() => step(page)).toBe("welcome");
   });
 });
+
+test.describe("For Better or Bulk guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("runs a practice day whose clock stands still, then returns to the plan", async ({
+    page,
+  }) => {
+    await page.goto("/arcade/for-better-or-bulk");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    const game = page.getByTestId("fbb-game");
+    const prompt = page.getByTestId("fbb-prompt-abbi");
+    const clock = page.getByTestId("fbb-clock");
+    await expect.poll(() => step(page)).toBe("welcome");
+    await expect(clock).toHaveText(/^9:00/);
+    // The card does the teaching, so the coach tips wait.
+    await expect(page.getByTestId("fbb-coach")).toHaveCount(0);
+    await card.getByRole("button", { name: "Next" }).click();
+
+    // Walk up a step, then left to the rose crate.
+    await expect.poll(() => step(page)).toBe("move");
+    await expect(game).toBeFocused();
+    await page.keyboard.down("ArrowUp");
+    await waitForAnimationFrames(page, 10);
+    await page.keyboard.up("ArrowUp");
+    await expect.poll(() => step(page)).toBe("pick-up");
+    await page.keyboard.down("ArrowLeft");
+    await expect(prompt).toContainText("Take the roses", { timeout: 15000 });
+    await page.keyboard.up("ArrowLeft");
+    await page.keyboard.press("Enter");
+
+    // Carry them right, turning to face up and down as she goes, until she
+    // faces the rose table; then put them there.
+    await expect.poll(() => step(page)).toBe("put-down");
+    const tap = async (key: string, frames: number) => {
+      await page.keyboard.down(key);
+      await waitForAnimationFrames(page, frames);
+      await page.keyboard.up(key);
+    };
+    await expect
+      .poll(
+        async () => {
+          await tap("ArrowRight", 2);
+          for (const key of ["ArrowUp", "ArrowDown"]) {
+            await tap(key, 2);
+            await waitForAnimationFrames(page, 2);
+            if ((await prompt.textContent())?.includes("Put the roses on")) {
+              return true;
+            }
+          }
+          return false;
+        },
+        { timeout: 30000, intervals: [0] }
+      )
+      .toBe(true);
+    await page.keyboard.press("Enter");
+
+    await expect.poll(() => step(page)).toBe("work");
+    await page.keyboard.down("f");
+    await expect.poll(() => step(page), { timeout: 15000 }).toBe("swap");
+    await page.keyboard.up("f");
+    await page.keyboard.press("Tab");
+    await expect(page.getByTestId("fbb-active")).toContainText("Fred");
+
+    await expect.poll(() => step(page)).toBe("checklist");
+    // Every practice ran on a clock that never moved.
+    await expect(clock).toHaveText(/^9:00/);
+    await card.getByRole("button", { name: "Next" }).click();
+    await expect.poll(() => step(page)).toBe("done");
+    await card.getByRole("button", { name: "Finish" }).click();
+
+    await expect(page.getByTestId("tutorial-finished")).toBeVisible();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(page.getByTestId("fbb-setup")).toBeVisible();
+  });
+});

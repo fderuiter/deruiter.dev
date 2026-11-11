@@ -12,6 +12,7 @@ import {
   describeOrder,
   getDilemma,
   getDilemmaOption,
+  offerDilemma,
   getHeadsetLine,
   getKdsBand,
   getManagerLine,
@@ -24,6 +25,7 @@ import {
   recordWeekDay,
   stepLook,
   stepShift,
+  type DilemmaId,
   type DilemmaSpeaker,
   type LookInput,
   type LookPreset,
@@ -90,12 +92,19 @@ export interface BoothActions {
     /** Seconds to answer a dilemma (#2087); kept for the rest of the week. */
     dilemmaWindowSec?: number;
   }) => void;
+  /**
+   * Clocks in to a one-off practice shift, for the guided tutorial (#3451).
+   * Unlike `clockIn` it leaves the config the next real shift uses alone.
+   */
+  clockInPractice: (config: Partial<ShiftConfig>) => void;
   /** Goes back to the diary intro. */
   backToIntro: () => void;
   /** Advances the shift clock. */
   tick: (dtSec: number) => void;
   /** Applies one player action. */
   act: (action: ShiftAction) => void;
+  /** Puts a dilemma to the player now, for the guided tutorial (#3451). */
+  offerDilemma: (dilemmaId: DilemmaId) => void;
   /** Advances the head with the input gathered since the last frame. */
   moveHead: (input: LookInput, dtSec: number) => void;
   /** Points the head at a preset. */
@@ -401,6 +410,22 @@ export function createBoothStore(
         });
       },
 
+      clockInPractice: (practice) => {
+        set({
+          phase: "shift",
+          week: null,
+          shift: createShift(practice),
+          look: createLook(),
+          registerOpen: false,
+          caption: null,
+          announcement:
+            "Clocked in for a practice shift. The clock is stopped.",
+          yells: 0,
+          lateAnnounced: [],
+          log: [],
+        });
+      },
+
       backToIntro: () => set({ phase: "intro", registerOpen: false }),
 
       tick: (dtSec) => {
@@ -428,6 +453,14 @@ export function createBoothStore(
             announcement: EVENT_CAPTIONS.coworkerFlagged,
           });
         }
+        absorb(result.state, result.events);
+      },
+
+      offerDilemma: (dilemmaId) => {
+        const state = get();
+        if (state.phase !== "shift") return;
+        const result = offerDilemma(state.shift, dilemmaId);
+        if (result.state === state.shift) return;
         absorb(result.state, result.events);
       },
 

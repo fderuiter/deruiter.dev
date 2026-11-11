@@ -18,6 +18,7 @@ import {
   IconRun,
 } from "@tabler/icons-react";
 import { getPhotoById } from "@/lib/media-registry";
+import { GARMIN_TUTORIAL } from "@/lib/garmin/tutorial";
 
 const GarminWatchSimulatorLoader = () =>
   import("@/components/GarminWatchSimulator").then(
@@ -110,6 +111,7 @@ export const GarminWatchClient: React.FC = () => {
             mobileLayout="fit"
             // A hidden tab or a backgrounded app pauses a run in progress.
             onAutoPause={requestGarminAutoPause}
+            tutorial={GARMIN_TUTORIAL}
           >
             <div className="garmin-stage flex flex-col items-center w-full">
               <DynamicGarminWatchSimulator />

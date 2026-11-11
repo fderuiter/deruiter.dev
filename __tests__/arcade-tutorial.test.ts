@@ -29,6 +29,11 @@ import {
   WORKING_WITH_DUCK_TUTORIAL,
   WORKING_WITH_DUCK_TUTORIAL_SIGNALS,
 } from "@/lib/working-with-duck";
+import {
+  GARMIN_TUTORIAL,
+  GARMIN_TUTORIAL_SIGNALS,
+} from "@/lib/garmin/tutorial";
+import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -215,14 +220,14 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "laser-loon": LASER_LOON_TUTORIAL,
   "meme-vault": MEME_VAULT_TUTORIAL,
   "working-with-duck": WORKING_WITH_DUCK_TUTORIAL,
+  "garmin-watch": GARMIN_TUTORIAL,
+  "patty-drive-thru": PATTY_TUTORIAL,
 };
 const PENDING = [
   "quasi-puzzler",
-  "garmin-watch",
   "clinical-chaos",
   "trial-and-error",
   "study-director",
-  "patty-drive-thru",
   "for-better-or-bulk",
   "retro-labyrinth",
   "protocol-drift",
@@ -254,6 +259,20 @@ describe("game tutorials", () => {
       Object.values(WORKING_WITH_DUCK_TUTORIAL_SIGNALS)
     );
     for (const step of WORKING_WITH_DUCK_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Monkey C Mayhem sends", () => {
+    const sent = new Set<string>(Object.values(GARMIN_TUTORIAL_SIGNALS));
+    for (const step of GARMIN_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Patty's Drive-Thru sends", () => {
+    const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
+    for (const step of PATTY_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

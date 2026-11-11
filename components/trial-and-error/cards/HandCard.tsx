@@ -206,6 +206,7 @@ export function HandCard({
           aria-pressed={view.selected}
           aria-label={label}
           data-card-id={view.card.id}
+          data-tutorial-target={`card-${view.card.id}`}
           onClick={interaction.onClick}
           onFocus={(e) => {
             setRaised(true);

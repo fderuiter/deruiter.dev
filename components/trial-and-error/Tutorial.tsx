@@ -1,84 +1,19 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { CardTable } from "@/components/trial-and-error/CardTable";
-import { useAnnouncer } from "@/hooks/useAnnouncer";
-import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import {
   GUIDED_BLIND_SCENARIO,
+  TRIAL_AND_ERROR_TUTORIAL,
+  TUTORIAL_RESULT_SIGNAL,
   TUTORIAL_STEPS,
-  nextTutorialStep,
-  tutorialStepAfter,
+  tutorialStepDone,
   type TableState,
   type TutorialTarget,
 } from "@/lib/trial-and-error";
 
-/** Set once the guided Blind is finished or skipped (#1089). */
-export const TUTORIAL_SEEN_KEY = "te:tutorial-seen";
-const SEEN_EVENT = "te:tutorial-seen-change";
-
-// 48px targets: the arcade touch standard (ADR 0003, ADR 0019).
-const BUTTON =
-  "min-h-[48px] min-w-[48px] border px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider touch-manipulation active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
-const PRIMARY = `${BUTTON} border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`;
-const QUIET = `${BUTTON} border-zinc-600 text-zinc-200 hover:bg-zinc-800`;
-
-/** A coach or offer button: amber when it is the step's main action. */
-function TutorialButton({
-  primary = false,
-  onClick,
-  children,
-}: {
-  primary?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={primary ? PRIMARY : QUIET}
-    >
-      {children}
-    </button>
-  );
-}
-
-function readSeen(): boolean {
-  return safeGetRawItem(TUTORIAL_SEEN_KEY) === "1";
-}
-
-function writeSeen() {
-  // Storage is unavailable: the write is dropped and the offer simply
-  // returns next visit.
-  safeSetRawItem(TUTORIAL_SEEN_KEY, "1", { retainInMemory: false });
-  window.dispatchEvent(new Event(SEEN_EVENT));
-}
-
-function subscribeSeen(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  window.addEventListener(SEEN_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onChange);
-    window.removeEventListener(SEEN_EVENT, onChange);
-  };
-}
-
-/**
- * Whether this browser has finished or skipped the guided Blind. Without
- * storage it reads as unseen, so the offer returns and can still be skipped.
- */
-function useTutorialSeen(): boolean {
-  return useSyncExternalStore(subscribeSeen, readSeen, () => true);
-}
-
-/** The CSS selector for a step's target, marked while the step shows. */
+/** The CSS selector for a step's target, outlined while the step shows. */
 function targetSelector(target: TutorialTarget): string | null {
   switch (target.kind) {
     case "NONE":
@@ -98,253 +33,133 @@ function targetSelector(target: TutorialTarget): string | null {
   }
 }
 
-interface CoachProps {
-  step: number;
-  table: TableState | null;
-  onNext: () => void;
-  onSkip: () => void;
-  onRestart: () => void;
+/**
+ * Moves focus to what a step points at, so its key works at once: the card
+ * to inspect or the button to press (#2155).
+ */
+function focusTarget(selector: string | null) {
+  if (!selector) return;
+  requestAnimationFrame(() => {
+    document.querySelector<HTMLElement>(selector)?.focus();
+  });
 }
 
 /**
- * The coach mark: the step's text beside the table, with the step's target
- * outlined in amber. It never takes focus from the target, so the player
- * acts on the real control; Skip is always there.
+ * The step inside the Inspect view, which covers the cabinet and so the
+ * tutorial's own card. It reads the shared script, so the wording is the
+ * same in both places, and is read out politely as it changes.
  */
-function Coach({ step, table, onNext, onSkip, onRestart }: CoachProps) {
-  const current = TUTORIAL_STEPS[step];
-  const done = step >= TUTORIAL_STEPS.length;
-  const selector = current ? targetSelector(current.target) : null;
-  const status = table?.status;
-  const quota = GUIDED_BLIND_SCENARIO.blind.quota;
-
-  let title: string;
-  let text: string;
-  if (!done) {
-    title = current.title;
-    text = current.text;
-  } else if (status === "CLEARED") {
-    title = "Blind cleared";
-    text =
-      "That is the loop: inspect, correct, pair, play. The campaign runs three studies, each with its own SAP and a Boss at the end. Start it from the result card.";
-  } else if (status === "FAILED") {
-    title = "Out of hands";
-    text = `The Blind needed ${quota} points. Try the guided Blind again, or go straight to the campaign.`;
-  } else {
-    title = "Keep going";
-    text = `${table?.roundScore ?? 0} of ${quota} so far. An uncorrected finding costs Mult: restart to try the steps again.`;
-  }
-
+function InspectCoach({ stepId }: { stepId: string }) {
+  const steps = TRIAL_AND_ERROR_TUTORIAL.steps;
+  const index = steps.findIndex((step) => step.id === stepId);
+  const step = steps[index];
+  if (!step) return null;
   return (
     <section
       aria-labelledby="coach-title"
       className="min-w-0 border border-amber-400/60 bg-[color:var(--te-surface-1)] p-3 font-mono text-xs"
       data-testid="coach"
     >
-      {selector && (
-        <style>{`${selector} { outline: 2px solid #f59e0b; outline-offset: 3px; }`}</style>
-      )}
       <p className="text-[10px] uppercase tracking-wider text-zinc-400 tabular-nums">
-        Guided Blind ·{" "}
-        {done ? "done" : `step ${step + 1} of ${TUTORIAL_STEPS.length}`}
+        Tutorial · step {index + 1} of {steps.length}
       </p>
-      <h3
-        id="coach-title"
-        tabIndex={-1}
-        className="mt-1 font-bold uppercase tracking-wider text-amber-300 break-words focus:outline-none"
-      >
-        {title}
-      </h3>
-      <p className="mt-1 text-zinc-200 break-words" data-testid="coach-text">
-        {text}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {!done && current.waitsFor === null && (
-          <TutorialButton primary onClick={onNext}>
-            Next
-          </TutorialButton>
-        )}
-        {done && status === "REVIEWING" && (
-          <TutorialButton primary onClick={onRestart}>
-            Restart guided Blind
-          </TutorialButton>
-        )}
-        {!(done && status === "CLEARED") && (
-          <TutorialButton onClick={onSkip}>
-            {done ? "Go to the campaign" : "Skip tutorial"}
-          </TutorialButton>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/**
- * The offer shown to a first-time player (#1089). It never blocks the
- * table: the campaign is playable underneath until the player chooses.
- */
-function TutorialOffer({
-  onStart,
-  onSkip,
-}: {
-  onStart: () => void;
-  onSkip: () => void;
-}) {
-  return (
-    <section
-      aria-labelledby="tutorial-offer-title"
-      className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border border-amber-400/60 bg-[color:var(--te-surface-1)] py-1.5 pl-3 pr-[calc(0.75rem+var(--cabinet-toolbar-inset,0px))] font-mono text-xs"
-      data-testid="tutorial-offer"
-    >
-      {/* One slim strip, so the table still fits one screen (#1524). */}
-      <div className="min-w-0 flex-1 basis-64 break-words text-zinc-300">
-        <strong
-          id="tutorial-offer-title"
-          className="mr-2 inline font-bold uppercase tracking-wider text-amber-300"
+      <div aria-live="polite">
+        <h3
+          id="coach-title"
+          className="mt-1 font-bold uppercase tracking-wider text-amber-300 break-words"
         >
-          First time at the table?
-        </strong>
-        Play a guided Blind: one hand, seven short steps, with a coach pointing
-        at each control.
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <TutorialButton primary onClick={onStart}>
-          Start guided Blind
-        </TutorialButton>
-        <TutorialButton onClick={onSkip}>No thanks</TutorialButton>
+          {step.title}
+        </h3>
+        <p className="mt-1 text-zinc-200 break-words" data-testid="coach-text">
+          {step.body}
+        </p>
       </div>
     </section>
   );
 }
 
-/** Focuses the hand's current card, where play starts. */
-function focusHand() {
-  requestAnimationFrame(() => {
-    document
-      .querySelector<HTMLElement>('[data-testid="hand"] [tabindex="0"]')
-      ?.focus();
-  });
-}
-
 /**
- * Moves focus to what a step points at, so its key works at once: the card
- * to inspect or the button to press. A step with nothing focusable to point
- * at focuses the coach's title instead, so focus never drops to the page
- * (#2155).
- */
-function focusStep(index: number) {
-  requestAnimationFrame(() => {
-    const current = TUTORIAL_STEPS[index];
-    const selector = current ? targetSelector(current.target) : null;
-    const target = selector
-      ? document.querySelector<HTMLElement>(selector)
-      : null;
-    (target ?? document.getElementById("coach-title"))?.focus();
-  });
-}
-
-/**
- * The Trial & Error table with its first-run guided Blind (#1089). A
- * first-time player is offered the guided Blind before the campaign; it can
- * be skipped at any step, and once finished or skipped it is not offered
- * again. The Field Manual can replay it.
+ * The Trial & Error table. While the cabinet's tutorial runs (#2972) it
+ * deals the guided Blind (#1089) and tells the tutorial when the table shows
+ * a step done; otherwise it is the campaign.
  */
 export function TrialAndErrorTable() {
-  const seen = useTutorialSeen();
-  const [mode, setMode] = useState<"CAMPAIGN" | "GUIDED">("CAMPAIGN");
+  const { active, stepId, signal } = useCabinetTutorial();
   // Restarting the guided Blind remounts its table with a fresh state.
   const [attempt, setAttempt] = useState(0);
-  const [step, setStep] = useState(0);
-  const [table, setTable] = useState<TableState | null>(null);
-  const { announce } = useAnnouncer();
-  const announced = useRef<string | null>(null);
+  const tableRef = useRef<TableState | null>(null);
+  const stepIdRef = useRef(stepId);
 
-  const onTableChange = useCallback((next: TableState) => {
-    setTable(next);
-    setStep((current) =>
-      tutorialStepAfter(TUTORIAL_STEPS, current, next.lastEvent, next)
+  // A table step is done once the table shows its outcome: when the table
+  // moves, and when the step starts, since a player may do a step early.
+  const signalIfDone = useCallback(
+    (table: TableState | null, id: string | null) => {
+      const step = TUTORIAL_STEPS.find((candidate) => candidate.id === id);
+      if (table && step && tutorialStepDone(step, table.lastEvent, table)) {
+        signal(step.id);
+      }
+    },
+    [signal]
+  );
+
+  const onTableChange = useCallback(
+    (next: TableState) => {
+      tableRef.current = next;
+      signalIfDone(next, stepIdRef.current);
+    },
+    [signalIfDone]
+  );
+
+  useEffect(() => {
+    const previous = TUTORIAL_STEPS.find(
+      (candidate) => candidate.id === stepIdRef.current
     );
-  }, []);
+    stepIdRef.current = stepId;
+    signalIfDone(tableRef.current, stepId);
+    // After Next, focus what the new step points at. A step the table moved
+    // on to leaves focus where the player is already working.
+    const step = TUTORIAL_STEPS.find((candidate) => candidate.id === stepId);
+    if (previous?.waitsFor === null && step && step.waitsFor !== null) {
+      focusTarget(targetSelector(step.target));
+    }
+  }, [stepId, signalIfDone]);
 
-  const startGuided = useCallback(() => {
-    setAttempt((n) => n + 1);
-    setStep(0);
-    setTable(null);
-    setMode("GUIDED");
-    requestAnimationFrame(() => {
-      document.getElementById("coach-title")?.focus();
-    });
-  }, []);
+  useEffect(() => {
+    if (!active) tableRef.current = null;
+  }, [active]);
 
-  const toCampaign = useCallback(() => {
-    writeSeen();
-    setMode("CAMPAIGN");
-    focusHand();
-  }, []);
-
-  // The table's end button hands over to the campaign, or retries.
+  // The result hands over to the tutorial's close, or deals the Blind again.
   const guidedEnd = useCallback(
     (won: boolean) =>
       won
-        ? { label: "Start the campaign", onSelect: toCampaign }
-        : { label: "Restart guided Blind", onSelect: startGuided },
-    [toCampaign, startGuided]
+        ? {
+            label: "Finish the tutorial",
+            onSelect: () => signal(TUTORIAL_RESULT_SIGNAL),
+          }
+        : {
+            label: "Restart guided Blind",
+            onSelect: () => setAttempt((n) => n + 1),
+          },
+    [signal]
   );
 
-  const next = useCallback(() => {
-    if (!table) return;
-    const after = nextTutorialStep(TUTORIAL_STEPS, step, table);
-    setStep(after);
-    focusStep(after);
-  }, [table, step]);
+  if (!active) return <CardTable key="campaign" persist />;
 
-  // Each step's text is announced politely, once, as the step starts.
-  useEffect(() => {
-    if (mode !== "GUIDED") {
-      announced.current = null;
-      return;
-    }
-    const current = TUTORIAL_STEPS[step];
-    const key = `${attempt}:${step}:${table?.status ?? ""}`;
-    if (announced.current === key) return;
-    announced.current = key;
-    if (current) announce(`${current.title}. ${current.text}`);
-    else if (table?.status === "CLEARED") announce("Guided Blind cleared.");
-  }, [mode, step, attempt, table?.status, announce]);
-
-  if (mode === "GUIDED") {
-    return (
+  const step = TUTORIAL_STEPS.find((candidate) => candidate.id === stepId);
+  const selector = step ? targetSelector(step.target) : null;
+  return (
+    <>
+      {selector && (
+        <style>{`${selector} { outline: 2px solid #f59e0b; outline-offset: 3px; }`}</style>
+      )}
       <CardTable
         key={`guided-${attempt}`}
         scenario={GUIDED_BLIND_SCENARIO}
         seed="guided"
         onTableChange={onTableChange}
         endAction={guidedEnd}
-        coach={
-          <Coach
-            step={step}
-            table={table}
-            onNext={next}
-            onSkip={toCampaign}
-            onRestart={startGuided}
-          />
-        }
+        coach={stepId ? <InspectCoach stepId={stepId} /> : undefined}
       />
-    );
-  }
-
-  return (
-    <>
-      {!seen && (
-        <TutorialOffer
-          onStart={startGuided}
-          onSkip={() => {
-            writeSeen();
-            focusHand();
-          }}
-        />
-      )}
-      <CardTable key="campaign" persist onReplayTutorial={startGuided} />
     </>
   );
 }

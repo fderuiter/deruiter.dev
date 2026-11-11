@@ -1,3 +1,4 @@
+import type { TutorialScript } from "@/lib/arcade";
 import type { TableEvent, TableState } from "./table";
 
 /**
@@ -164,3 +165,59 @@ export function nextTutorialStep(
   }
   return tutorialStepAfter(steps, current + 1, state.lastEvent, state);
 }
+
+/**
+ * The cabinet value a guided step points at: the `data-tutorial-target` the
+ * table puts on that control. A Pair step points at its last card, the one
+ * the player has not touched yet.
+ */
+export function tutorialTargetName(target: TutorialTarget): string | undefined {
+  switch (target.kind) {
+    case "NONE":
+      return undefined;
+    case "CARD":
+      return `card-${target.cardId}`;
+    case "CARDS":
+      return `card-${target.cardIds[target.cardIds.length - 1]}`;
+    case "CELL":
+      return `cell-${target.row}-${target.col}`;
+    case "CORRECT":
+      return "correct";
+    case "CLOSE_INSPECT":
+      return "close-inspect";
+    case "PLAY":
+      return "play";
+  }
+}
+
+/** The closing step: it waits for the player to finish from the result. */
+export const TUTORIAL_RESULT_SIGNAL = "result";
+
+/**
+ * Trial & Error's guided tutorial (#2972) on the shared cabinet shell: the
+ * guided Blind's seven steps as written, then a wrap-up on Blinds and
+ * scoring. Each table step is a practice step whose signal is its own id,
+ * sent by the table once {@link tutorialStepDone} shows it done.
+ */
+export const TRIAL_AND_ERROR_TUTORIAL: TutorialScript = Object.freeze({
+  gameId: "trial-and-error",
+  version: 1,
+  minutes: 3,
+  steps: Object.freeze([
+    ...TUTORIAL_STEPS.map((step) => ({
+      id: step.id,
+      chapter: "Guided Blind",
+      title: step.title,
+      body: step.text,
+      target: tutorialTargetName(step.target),
+      practice: step.waitsFor === null ? undefined : { signal: step.id },
+    })),
+    {
+      id: "blind",
+      chapter: "Blinds and scoring",
+      title: "Clear the Blind",
+      body: "Each Blind sets a target score and a number of hands. Reach it to clear the Blind; run out of hands and the run ends. Then press Finish the tutorial on the result.",
+      practice: { signal: TUTORIAL_RESULT_SIGNAL },
+    },
+  ]),
+});

@@ -6,6 +6,7 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import {
   IconArrowLeft,
@@ -26,7 +27,10 @@ export interface TutorialOverlayProps {
   readonly launched: boolean;
   /** True on a touch cabinet: steps show their touch control. */
   readonly touch: boolean;
-  /** True while Setup or another cabinet sheet covers the stage. */
+  /**
+   * True while Setup or another cabinet sheet covers the stage. A game's own
+   * modal marked `data-tutorial-covers="true"` covers it too.
+   */
   readonly covered?: boolean;
 }
 
@@ -56,14 +60,37 @@ interface Placement {
   readonly left: number;
 }
 
+/**
+ * Marks a game's own modal that covers the stage, such as Trial & Error's
+ * Inspect view: while one is open the card steps aside, and the game shows
+ * the step inside its modal.
+ */
+const GAME_COVER_SELECTOR = '[data-tutorial-covers="true"]';
+
+function subscribeGameCover(onChange: () => void) {
+  if (typeof MutationObserver === "undefined") return () => {};
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["data-tutorial-covers"],
+  });
+  return () => observer.disconnect();
+}
+
+function readGameCover(): boolean {
+  return document.querySelector(GAME_COVER_SELECTOR) !== null;
+}
+
 function samePlacement(a: Placement | null, b: Placement | null): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /**
  * Where the card goes: above its control when that fits, else below it,
- * else docked at the stage's top right, clear of the game's left side
- * where most games put the player.
+ * else docked at the top right of the stage's part on screen, clear of the
+ * game's left side where most games put the player.
  */
 function place(
   card: HTMLElement,
@@ -74,9 +101,14 @@ function place(
   const box = stage.getBoundingClientRect();
   const width = card.offsetWidth;
   const height = card.offsetHeight;
+  // The card is placed in the stage's content, which a phone's stage
+  // scrolls: dock it in the part on screen, below the floating toolbar.
+  const scrollTop = stage.scrollTop;
+  const visibleTop = Math.max(0, -box.top) + scrollTop;
+  const lowestTop = Math.max(dockTop, stage.scrollHeight - height - EDGE_PX);
   const docked = {
     ring: null,
-    top: dockTop,
+    top: Math.round(clamp(visibleTop + dockTop, dockTop, lowestTop)),
     left: Math.max(EDGE_PX, Math.round(box.width - width - EDGE_PX)),
   };
   if (!target) return docked;
@@ -85,16 +117,16 @@ function place(
   // desktop) gets no ring, and the card docks.
   if (rect.width < MIN_TARGET_PX || rect.height < MIN_TARGET_PX) return docked;
   const ring = {
-    top: Math.round(rect.top - box.top),
-    left: Math.round(rect.left - box.left),
+    top: Math.round(rect.top - box.top + scrollTop),
+    left: Math.round(rect.left - box.left + stage.scrollLeft),
     width: Math.round(rect.width),
     height: Math.round(rect.height),
   };
   const above = ring.top - GAP_PX - height;
   const below = ring.top + ring.height + GAP_PX;
   let top: number;
-  if (above >= EDGE_PX) top = above;
-  else if (below + height <= box.height - EDGE_PX) top = below;
+  if (above >= scrollTop + EDGE_PX) top = above;
+  else if (below + height <= scrollTop + box.height - EDGE_PX) top = below;
   else return { ...docked, ring };
   const centred = ring.left + ring.width / 2 - width / 2;
   const maxLeft = Math.max(EDGE_PX, box.width - width - EDGE_PX);
@@ -149,9 +181,15 @@ export function TutorialOverlay({
   gameName,
   launched,
   touch,
-  covered = false,
+  covered: cabinetCovered = false,
 }: TutorialOverlayProps) {
   const { script, state, offered, dispatch } = run;
+  const gameCovered = useSyncExternalStore(
+    subscribeGameCover,
+    readGameCover,
+    () => false
+  );
+  const covered = cabinetCovered || gameCovered;
   const [offerDismissed, setOfferDismissed] = useState(false);
   const [placement, setPlacement] = useState<Placement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);

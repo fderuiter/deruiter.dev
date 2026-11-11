@@ -139,14 +139,13 @@ interface CardTableProps {
    */
   persist?: boolean;
   /**
-   * A coach mark for the guided Blind (#1089). It shows above the table, or
-   * inside the Inspect view while that is open, so it is always on screen.
+   * The guided Blind's coach inside the Inspect view (#1089). The Inspect
+   * view covers the cabinet, and with it the tutorial's own card, so the
+   * step is shown here while it is open.
    */
   coach?: React.ReactNode;
   /** Called with the table state after every move, for the guided Blind. */
   onTableChange?: (table: TableState) => void;
-  /** Offers "Replay tutorial" in the Field Manual. */
-  onReplayTutorial?: () => void;
   /**
    * Replaces Play again or Restart run when the run ends, as the guided Blind
    * does to hand over to the campaign.
@@ -403,7 +402,6 @@ export function CardTable({
   persist = false,
   coach,
   onTableChange,
-  onReplayTutorial,
   endAction,
 }: CardTableProps) {
   const {
@@ -1132,25 +1130,9 @@ export function CardTable({
             >
               Hands [H]
             </button>
-            <FieldManualButton
-              manualId="trial-and-error"
-              label="Manual"
-              action={
-                onReplayTutorial
-                  ? {
-                      label: "Replay tutorial",
-                      description:
-                        "Play the guided Blind again: one hand, step by step.",
-                      onSelect: onReplayTutorial,
-                    }
-                  : undefined
-              }
-            />
+            <FieldManualButton manualId="trial-and-error" label="Manual" />
           </div>
         </header>
-        {coach && !inspected && (
-          <div className="border-b border-zinc-800 p-3">{coach}</div>
-        )}
 
         {/* One screen at 1280x800 (#1524): the Blind panel down the left, the
           play zone and a slim relic rail across the top, and the hand docked
@@ -2039,6 +2021,7 @@ export function CardTable({
                       type="button"
                       onClick={play}
                       data-coach="play"
+                      data-tutorial-target="play"
                       disabled={!view.canPlay}
                       aria-describedby={playDescribedBy}
                       className={`${BUTTON_BASE} border-emerald-500 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20`}
@@ -2649,6 +2632,7 @@ export function CardTable({
                 }
                 className="max-h-[90dvh] w-full max-w-5xl overflow-y-auto border border-zinc-700 bg-[color:var(--te-surface-0)]"
                 data-testid="inspect-drawer"
+                data-tutorial-covers="true"
               >
                 <p
                   className="border-b border-zinc-800 px-4 py-2 font-mono text-xs text-zinc-300 break-words"
@@ -2710,6 +2694,7 @@ export function CardTable({
                     type="button"
                     onClick={closeInspect}
                     data-coach="close-inspect"
+                    data-tutorial-target="close-inspect"
                     className={`${BUTTON_BASE} w-full border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
                   >
                     Close Inspect [Esc]

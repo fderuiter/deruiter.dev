@@ -13,7 +13,7 @@ import {
   actionNameForHandIntent,
   resolveHandKeyIntent,
 } from "@/components/trial-and-error/actions";
-import { TUTORIAL_SEEN_KEY } from "@/components/trial-and-error/Tutorial";
+import { TUTORIAL_SEEN_KEY } from "@/components/trial-and-error/tutorial-seen";
 import { CODEX_KEY } from "@/components/trial-and-error/useCodex";
 
 const BASE_KEY: HandKeyInput = {

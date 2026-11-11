@@ -26,6 +26,11 @@ import {
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
 import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
+import {
+  TRIAL_AND_ERROR_TUTORIAL,
+  TUTORIAL_RESULT_SIGNAL,
+  TUTORIAL_STEPS,
+} from "@/lib/trial-and-error";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -212,13 +217,13 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "laser-loon": LASER_LOON_TUTORIAL,
   "meme-vault": MEME_VAULT_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
+  "trial-and-error": TRIAL_AND_ERROR_TUTORIAL,
 };
 const PENDING = [
   "working-with-duck",
   "quasi-puzzler",
   "garmin-watch",
   "clinical-chaos",
-  "trial-and-error",
   "study-director",
   "for-better-or-bulk",
   "retro-labyrinth",
@@ -258,5 +263,21 @@ describe("game tutorials", () => {
     for (const step of MEME_VAULT_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
+  });
+
+  it("keeps Trial & Error's seven guided Blind steps as written", () => {
+    const [last, ...rest] = [...TRIAL_AND_ERROR_TUTORIAL.steps].reverse();
+    const guided = rest.reverse();
+    expect(guided.map((step) => [step.id, step.title, step.body])).toEqual(
+      TUTORIAL_STEPS.map((step) => [step.id, step.title, step.text])
+    );
+    // A table step practises its own id; the wrap-up waits for the result.
+    for (const [index, step] of guided.entries()) {
+      const table = TUTORIAL_STEPS[index];
+      expect(step.practice?.signal).toBe(
+        table.waitsFor === null ? undefined : table.id
+      );
+    }
+    expect(last.practice?.signal).toBe(TUTORIAL_RESULT_SIGNAL);
   });
 });

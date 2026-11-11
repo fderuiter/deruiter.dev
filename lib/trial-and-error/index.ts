@@ -206,8 +206,11 @@ export {
   type TransitionOutcome,
 } from "./internal/snapshots";
 export {
+  TRIAL_AND_ERROR_TUTORIAL,
+  TUTORIAL_RESULT_SIGNAL,
   TUTORIAL_STEPS,
   nextTutorialStep,
+  tutorialTargetName,
   tutorialStepAfter,
   tutorialStepDone,
   type TutorialStep,

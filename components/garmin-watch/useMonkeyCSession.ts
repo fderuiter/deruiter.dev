@@ -132,6 +132,12 @@ import {
 } from "@/components/garmin-watch/GarminTouchDock";
 import { GARMIN_AUTO_PAUSE_EVENT } from "@/components/garmin-watch/auto-pause";
 import "@/components/garmin-watch/garmin-touch.css";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
+import {
+  GARMIN_TUTORIAL_SIGNALS,
+  TUTORIAL_HOLD_JUMP_MS,
+  keepTutorialRunSafe,
+} from "@/lib/garmin/tutorial";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import {
   DeviceTarget,
@@ -483,6 +489,11 @@ interface MonkeyCSessionOptions {
   readonly initialState?: GameEngineState;
   /** Whether the visitor asks for less motion. */
   readonly prefersReducedMotion: boolean;
+  /**
+   * The cabinet's guided tutorial (#3452). While it is active, a run is a
+   * safe practice run and the watch's moves are sent to it as signals.
+   */
+  readonly tutorial?: CabinetTutorialValue;
 }
 
 /**
@@ -492,7 +503,19 @@ interface MonkeyCSessionOptions {
  * verbatim from GarminWatchSimulator.tsx; the watch renders what it returns.
  */
 export function useMonkeyCSession(options: MonkeyCSessionOptions) {
-  const { initialState, prefersReducedMotion } = options;
+  const { initialState, prefersReducedMotion, tutorial } = options;
+  // The frame loop and the handlers read the tutorial through a ref, so a
+  // step change never restarts the loop.
+  const tutorialActive = tutorial?.active ?? false;
+  const tutorialRef = useRef(tutorial);
+  useEffect(() => {
+    tutorialRef.current = tutorial;
+  }, [tutorial]);
+  const sendTutorial = useCallback((name: string) => {
+    if (tutorialRef.current?.active) tutorialRef.current.signal(name);
+  }, []);
+  // When the last jump started, for the tutorial's held jump.
+  const jumpStartedAtRef = useRef<number | null>(null);
   const rawHighScore = useSyncExternalStore(
     subscribeHighScore,
     getHighScoreSnapshot,
@@ -537,8 +560,9 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
     getRaceModeServerSnapshot
   );
   // Races and the plan run with Dev Mode off; the stored setting is kept.
+  // A tutorial run is a practice Training Run under the default rules (#3452).
   const runRules: GameRules =
-    devMode && !raceMode && !planMode ? "dev" : "fitness";
+    devMode && !raceMode && !planMode && !tutorialActive ? "dev" : "fitness";
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
@@ -778,7 +802,7 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
                 seed: workout.run.seed,
               }
             : undefined
-          : raceMode
+          : raceMode && !tutorialRef.current?.active
             ? raceSetup(raceCourse, raceCategory, today)
             : undefined);
       if (!restart) raceDayRef.current = today;
@@ -814,10 +838,13 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
       setRaceReport(null);
       setShareNote(null);
       setBadgeFresh([]);
-      applyTransition(() => ({
-        ...started,
-        bestSplits: loadBests(splitsKeyOf(started)).splits,
-      }));
+      const bestSplits = loadBests(splitsKeyOf(started)).splits;
+      // A tutorial run starts on a course with nothing that can hurt (#3452).
+      applyTransition(() =>
+        tutorialRef.current?.active
+          ? keepTutorialRunSafe({ ...started, bestSplits })
+          : { ...started, bestSplits }
+      );
       if (race && !restart && !workout) {
         const info = RACE_CATEGORY_INFO[race.category];
         announce(
@@ -880,6 +907,7 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
   const planFaceShowing = useCallback(
     () =>
       planModeRef.current &&
+      !tutorialRef.current?.active &&
       plan.viewRef.current.save !== null &&
       stateRef.current.gameState !== "playing" &&
       stateRef.current.gameState !== "paused",
@@ -1031,18 +1059,30 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
     ) {
       triggerHaptic(20);
       playBeep(900, 0.03);
+      jumpStartedAtRef.current = performance.now();
+      sendTutorial(GARMIN_TUTORIAL_SIGNALS.jump);
     }
-  }, [playBeep, applyTransition, pressPlan]);
+  }, [playBeep, applyTransition, pressPlan, sendTutorial]);
 
   const handleJumpRelease = useCallback(() => {
+    const startedAt = jumpStartedAtRef.current;
+    jumpStartedAtRef.current = null;
+    if (
+      startedAt !== null &&
+      stateRef.current.gameState === "playing" &&
+      performance.now() - startedAt >= TUTORIAL_HOLD_JUMP_MS
+    ) {
+      sendTutorial(GARMIN_TUTORIAL_SIGNALS.highJump);
+    }
     applyTransition((state) => releaseJump(state));
-  }, [applyTransition]);
+  }, [applyTransition, sendTutorial]);
 
   // The action key (X): a Heat Map runner throws a heat bolt (#1989) and a
   // Cape runner spins (#1990).
   const handleAction = useCallback(() => {
     const current = stateRef.current;
     if (current.gameState !== "playing") return;
+    sendTutorial(GARMIN_TUTORIAL_SIGNALS.action);
     const next = applyTransition((state) => pressAction(state));
     if ((next.boltsThrown ?? 0) !== (current.boltsThrown ?? 0)) {
       playBeep(1200, 0.03);
@@ -1052,14 +1092,21 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
       // Spin Jump (#2023): a light rising chirp.
       playBeep(1000, 0.03);
     }
-  }, [playBeep, applyTransition]);
+  }, [playBeep, applyTransition, sendTutorial]);
 
   // Sprint (Right) and brake (Left), held.
   const handleRunInput = useCallback(
     (input: -1 | 0 | 1) => {
+      if (input !== 0 && stateRef.current.gameState === "playing") {
+        sendTutorial(
+          input === 1
+            ? GARMIN_TUTORIAL_SIGNALS.sprint
+            : GARMIN_TUTORIAL_SIGNALS.jog
+        );
+      }
       applyTransition((state) => setRunInput(state, input));
     },
-    [applyTransition]
+    [applyTransition, sendTutorial]
   );
 
   // DOWN: into a Water Station's bonus room when standing on one (#1992).
@@ -1082,6 +1129,7 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
         triggerHaptic(30);
         playBeep(330, 0.05);
         applyTransition((state) => pressSlam(state));
+        sendTutorial(GARMIN_TUTORIAL_SIGNALS.slam);
       }
       return;
     }
@@ -1093,7 +1141,7 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
       return;
     }
     applyTransition((state) => jettisonOldestVariable(state).state);
-  }, [playBeep, applyTransition, setAlertMessage, pressPlan]);
+  }, [playBeep, applyTransition, setAlertMessage, pressPlan, sendTutorial]);
 
   // Trigger Backlight / Flashlight (LIGHT)
   const handleToggleLight = useCallback(() => {
@@ -1194,12 +1242,13 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
       current.gameState === "summary"
     ) {
       launchRun();
+      sendTutorial(GARMIN_TUTORIAL_SIGNALS.start);
     } else if (current.gameState === "playing") {
       applyTransition((state) => pauseGame(state));
     } else if (current.gameState === "paused") {
       applyTransition((state) => resumeGame(state));
     }
-  }, [launchRun, playButtonTone, applyTransition, pressPlan]);
+  }, [launchRun, playButtonTone, applyTransition, pressPlan, sendTutorial]);
 
   // Quick restart (#2019): while a race is paused, Backspace runs the same
   // race again, on the same course seed.
@@ -1468,6 +1517,29 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
     window.addEventListener(GARMIN_AUTO_PAUSE_EVENT, pauseRun);
     return () => window.removeEventListener(GARMIN_AUTO_PAUSE_EVENT, pauseRun);
   }, [applyTransition, handleJumpRelease, handleRunInput, releaseDockRun]);
+
+  // The tutorial (#3452) starts and ends on an idle watch: starting one ends
+  // any run in progress without saving it, so its first practice is START,
+  // and leaving one ends the practice run the same way. Held keys let go.
+  const tutorialWasActiveRef = useRef(false);
+  useEffect(() => {
+    if (tutorialActive === tutorialWasActiveRef.current) return;
+    tutorialWasActiveRef.current = tutorialActive;
+    handleJumpRelease();
+    releaseDockRun();
+    handleRunInput(0);
+    telemetryRef.current.reset();
+    setTelemetryCount(0);
+    applyTransition((state) =>
+      createInitialState(state.device, state.highScore)
+    );
+  }, [
+    tutorialActive,
+    applyTransition,
+    handleJumpRelease,
+    handleRunInput,
+    releaseDockRun,
+  ]);
 
   // Keyboard Event Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1984,8 +2056,8 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
             // Race Day moves The Wall after each step (#1994), packed gear
             // takes effect (#1995), the pole's Finisher Card is collected
             // (#1996), and the run's badges are watched (#2021).
-            (state) =>
-              stepBadgeRun(
+            (state) => {
+              const stepped = stepBadgeRun(
                 state,
                 stepFinisherCard(
                   state,
@@ -2000,7 +2072,13 @@ export function useMonkeyCSession(options: MonkeyCSessionOptions) {
                     stepMs
                   )
                 )
-              ),
+              );
+              // A tutorial run is cleared of anything that could end a
+              // life after every step (#3452).
+              return tutorialRef.current?.active
+                ? keepTutorialRunSafe(stepped)
+                : stepped;
+            },
             (next) => {
               if (next.gameState !== prevStatus) return true;
               if (!last) return false;

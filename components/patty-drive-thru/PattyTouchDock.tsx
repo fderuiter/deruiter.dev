@@ -80,6 +80,7 @@ export function PattyTouchDock({
         <button
           type="button"
           aria-label="Wipe counter"
+          data-tutorial-target="wipe"
           aria-keyshortcuts="W"
           disabled={!canWipe}
           onMouseDown={(event) => event.preventDefault()}

@@ -25,6 +25,7 @@ import {
   MEME_VAULT_TUTORIAL,
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
+import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -210,6 +211,7 @@ describe("arcade.tutorials slice", () => {
 const SCRIPTS: Record<string, TutorialScript> = {
   "laser-loon": LASER_LOON_TUTORIAL,
   "meme-vault": MEME_VAULT_TUTORIAL,
+  "patty-drive-thru": PATTY_TUTORIAL,
 };
 const PENDING = [
   "working-with-duck",
@@ -218,7 +220,6 @@ const PENDING = [
   "clinical-chaos",
   "trial-and-error",
   "study-director",
-  "patty-drive-thru",
   "for-better-or-bulk",
   "retro-labyrinth",
   "protocol-drift",
@@ -241,6 +242,13 @@ describe("game tutorials", () => {
   it("practises only signals Laser Loon sends", () => {
     const sent = new Set<string>(Object.values(LASER_LOON_TUTORIAL_SIGNALS));
     for (const step of LASER_LOON_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Patty's Drive-Thru sends", () => {
+    const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
+    for (const step of PATTY_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

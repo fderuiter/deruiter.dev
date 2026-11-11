@@ -9,7 +9,7 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { requestPattyAutoPause } from "@/components/patty-drive-thru/auto-pause";
-import { COMPANION_POST_PATH } from "@/lib/patty-drive-thru";
+import { COMPANION_POST_PATH, PATTY_TUTORIAL } from "@/lib/patty-drive-thru";
 
 const PattyDriveThruLoader = () =>
   import("@/components/patty-drive-thru/PattyDriveThruGame").then(
@@ -92,6 +92,9 @@ export const PattyDriveThruClient: React.FC = () => (
           mobileLayout="fit"
           // A hidden tab or a backgrounded app pauses a shift in progress.
           onAutoPause={requestPattyAutoPause}
+          // A guided tutorial in a practice shift whose clock holds,
+          // offered on first launch (#3451).
+          tutorial={PATTY_TUTORIAL}
         >
           <DynamicPattyDriveThru />
         </PlayCabinet>

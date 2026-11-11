@@ -92,6 +92,7 @@ export const Register = React.forwardRef<HTMLDivElement, RegisterProps>(
         <div
           role="toolbar"
           aria-label="Open orders"
+          data-tutorial-target="orders"
           className="flex min-h-11 flex-wrap gap-1.5"
         >
           {tickets.length === 0 ? (
@@ -196,6 +197,7 @@ export const Register = React.forwardRef<HTMLDivElement, RegisterProps>(
             disabled={!active}
             shortcut="B"
             tone="bump"
+            target="bump"
             onClick={() =>
               active && act({ type: "bump", orderId: active.orderId })
             }
@@ -207,6 +209,7 @@ export const Register = React.forwardRef<HTMLDivElement, RegisterProps>(
         <div
           role="group"
           aria-label={`Menu: ${screen.label}`}
+          data-tutorial-target="menu"
           className="grid grid-cols-2 gap-1.5 border-t border-[var(--pdt-screen-rule)] pt-2 @md:grid-cols-4"
         >
           {(screen.children ?? []).map((node) => (
@@ -248,6 +251,8 @@ interface ActionKeyProps {
   disabled: boolean;
   shortcut: string;
   tone?: "plain" | "bump";
+  /** The key's `data-tutorial-target`, for the guided tutorial (#3451). */
+  target?: string;
   onClick: () => void;
 }
 
@@ -256,12 +261,14 @@ function ActionKey({
   disabled,
   shortcut,
   tone = "plain",
+  target,
   onClick,
 }: ActionKeyProps) {
   return (
     <button
       type="button"
       disabled={disabled}
+      data-tutorial-target={target}
       aria-keyshortcuts={shortcut}
       onClick={onClick}
       className={`min-h-11 rounded border-2 px-3 text-xs font-bold uppercase tracking-wide active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)] ${

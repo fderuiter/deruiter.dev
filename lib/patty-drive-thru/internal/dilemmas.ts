@@ -34,6 +34,7 @@ import type {
   ShiftEndingId,
   ShiftEvent,
   ShiftState,
+  StepResult,
   WeekdayId,
 } from "../types";
 
@@ -104,7 +105,9 @@ export function getDilemmaPlan(
  * in order. Anything that is not a list is left out, so the shift draws its
  * own; a list with no known ids is an empty deck, and the shift asks nothing.
  */
-export function dilemmaDeckOf(value: unknown): readonly DilemmaId[] | undefined {
+export function dilemmaDeckOf(
+  value: unknown
+): readonly DilemmaId[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const deck: DilemmaId[] = [];
   for (const id of value) {
@@ -245,6 +248,42 @@ export function stepDilemmas(
       offeredAt: next.time,
       closesAt: Math.min(next.time + window, next.config.durationSec),
     },
+  };
+}
+
+/**
+ * Puts a dilemma to the player now, outside the shift's plan (#3451). The
+ * guided tutorial uses it to practise answering while the shift clock is
+ * held, so the answer window cannot run out. Nothing changes while another
+ * dilemma is open or once the shift is over.
+ *
+ * @param state - The shift.
+ * @param dilemmaId - The dilemma to offer.
+ * @returns The shift with the dilemma open, and its `dilemma-offered` event.
+ */
+export function offerDilemma(
+  state: ShiftState,
+  dilemmaId: DilemmaId
+): StepResult {
+  if (
+    state.dilemma ||
+    state.outcome !== "playing" ||
+    !Object.hasOwn(DILEMMAS, dilemmaId)
+  ) {
+    return { state, events: [] };
+  }
+  const window =
+    dilemmaWindowOf(state.config.dilemmaWindowSec) ?? DILEMMA_WINDOW_SEC;
+  return {
+    state: {
+      ...state,
+      dilemma: {
+        dilemmaId,
+        offeredAt: state.time,
+        closesAt: Math.min(state.time + window, state.config.durationSec),
+      },
+    },
+    events: [{ type: "dilemma-offered", dilemmaId }],
   };
 }
 

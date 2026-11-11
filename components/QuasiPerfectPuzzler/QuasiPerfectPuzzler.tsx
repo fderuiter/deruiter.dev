@@ -9,6 +9,8 @@ import {
   getRunStartingRam,
   ACT_ONE_CAPSTONE_LEVEL_ID,
   ACT_TWO_FIRST_CHAPTER,
+  QUASI_TUTORIAL_LEVEL_INDEX,
+  QUASI_TUTORIAL_SIGNALS,
   isTacticBanned,
   isVariantCleared,
   isVariantRunCleared,
@@ -30,6 +32,7 @@ import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { useCabinetTouch } from "@/components/arcade/mobile";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import {
   IconBulb,
   IconChevronDown,
@@ -55,6 +58,23 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   // the cabinet's Setup Wizard turns screen shake off.
   const fx = useArcadeFx();
   const { stageRef: fxStageRef, flashRef: fxFlashRef } = fx;
+
+  // The cabinet's guided tutorial (#3454): it plays Level 1 as practice, so
+  // its proof is never saved, and hears the player's moves as signals.
+  const tutorial = useCabinetTutorial();
+  const {
+    active: tutorialActive,
+    signal: signalTutorial,
+    stepId: tutorialStepId,
+  } = tutorial;
+  const handleSessionEvent = useCallback(
+    (event: { readonly type: string }) => {
+      if (event.type === "tacticApplied") {
+        signalTutorial(QUASI_TUTORIAL_SIGNALS.apply);
+      }
+    },
+    [signalTutorial]
+  );
 
   const {
     actTwoOpen,
@@ -110,7 +130,61 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     subgoals,
     targetingHint,
     variantsUnlocked,
-  } = useQuasiSession({ fx });
+  } = useQuasiSession({
+    fx,
+    onEvent: handleSessionEvent,
+    practice: tutorialActive,
+  });
+
+  // Undo and Reset, from the keys, the buttons and the screen-reader row,
+  // tell the tutorial when they did something.
+  const undoStep = useCallback(() => {
+    if (history.length > 0) signalTutorial(QUASI_TUTORIAL_SIGNALS.undo);
+    handleUndo();
+  }, [history.length, handleUndo, signalTutorial]);
+  const resetLevel = useCallback(() => {
+    signalTutorial(QUASI_TUTORIAL_SIGNALS.reset);
+    handleResetLevel();
+  }, [handleResetLevel, signalTutorial]);
+
+  // Opening the hints and picking a card are practice steps.
+  useEffect(() => {
+    if (showHints) signalTutorial(QUASI_TUTORIAL_SIGNALS.hint);
+  }, [showHints, signalTutorial]);
+  useEffect(() => {
+    if (selectedTacticIndex !== null) {
+      signalTutorial(QUASI_TUTORIAL_SIGNALS.select);
+    }
+  }, [selectedTacticIndex, signalTutorial]);
+
+  // Once the hints step is done the hints fold away, so the tactic and
+  // goal steps have the board on screen.
+  useEffect(() => {
+    if (tutorialStepId === "select") setShowHints(false);
+  }, [tutorialStepId, setShowHints]);
+
+  // The tutorial plays Level 1 on the campaign board with the hints shut,
+  // and hands back the level the player had open when it ends.
+  const levelBeforeTutorialRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (tutorialActive && levelBeforeTutorialRef.current === null) {
+      levelBeforeTutorialRef.current = currentLevelIndex;
+      setActiveTab("campaign");
+      setShowHints(false);
+      loadLevel(QUASI_TUTORIAL_LEVEL_INDEX, undefined, null);
+    } else if (!tutorialActive && levelBeforeTutorialRef.current !== null) {
+      const index = levelBeforeTutorialRef.current;
+      levelBeforeTutorialRef.current = null;
+      setShowHints(false);
+      loadLevel(index);
+    }
+  }, [
+    tutorialActive,
+    currentLevelIndex,
+    loadLevel,
+    setActiveTab,
+    setShowHints,
+  ]);
 
   // Board first (#1519): the Lean inspector starts collapsed at every width.
   const [showLeanInspector, setShowLeanInspector] = useState<boolean>(false);
@@ -182,7 +256,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     if (e.altKey) return;
     if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      handleUndo();
+      undoStep();
     } else if (e.key === "y" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleRedo();
@@ -190,7 +264,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       return;
     } else if (e.key === "r" || e.key === "R") {
       e.preventDefault();
-      handleResetLevel();
+      resetLevel();
     } else if (e.key === "h" || e.key === "H") {
       e.preventDefault();
       setShowHints((prev) => !prev);
@@ -562,6 +636,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  data-tutorial-target="hint"
                   onClick={() => setShowHints((prev) => !prev)}
                   aria-pressed={showHints}
                   className={`${quietButtonClass} ${showHints ? "border-amber-500/60 text-amber-200" : ""}`}
@@ -711,8 +786,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={handleUndo}
-                  disabled={history.length === 0 || levelSolved}
+                  data-tutorial-target="undo"
+                  onClick={undoStep}
+                  // The tutorial undoes the proof it just found (#3454).
+                  disabled={
+                    history.length === 0 || (levelSolved && !tutorialActive)
+                  }
                   className={quietButtonClass}
                 >
                   <IconArrowBackUp className="w-3.5 h-3.5" />
@@ -729,7 +808,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={handleResetLevel}
+                  data-tutorial-target="reset"
+                  onClick={resetLevel}
                   className={quietButtonClass}
                 >
                   <IconRotate className="w-3.5 h-3.5" />
@@ -909,6 +989,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           {/* The proof board */}
           <div
             ref={fxStageRef}
+            data-tutorial-target="goal"
             className={`relative mt-3${inCabinet ? " qp-touch-board" : ""}`}
           >
             {subgoals.map((sg, idx) => {
@@ -1033,7 +1114,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    handleUndo();
+                    undoStep();
                     announce("Reverted last tactic step.", "polite");
                   }}
                   disabled={history.length === 0}
@@ -1055,7 +1136,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    handleResetLevel();
+                    resetLevel();
                     announce("Reset current proof level.", "polite");
                   }}
                 >
@@ -1074,6 +1155,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             <div
               ref={handRef}
               data-testid="quasi-tactic-hand-dock"
+              data-tutorial-target="tactics"
               data-docked={handDock ? "true" : "false"}
               className={
                 handDock
@@ -1136,9 +1218,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             onToggleMode={handleToggleMode}
           />
 
-          {/* Victory Modal */}
+          {/* Victory Modal. The tutorial's practice proof shows no result
+              card: its next step is to undo it (#3454). */}
           {levelSolved &&
             currentScore &&
+            !tutorialActive &&
             dismissedScoreAt === currentScore.timestamp && (
               <div className="mt-2 flex justify-center">
                 <button
@@ -1153,6 +1237,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             )}
           {levelSolved &&
             currentScore &&
+            !tutorialActive &&
             dismissedScoreAt !== currentScore.timestamp && (
               <VictoryModal
                 score={currentScore}

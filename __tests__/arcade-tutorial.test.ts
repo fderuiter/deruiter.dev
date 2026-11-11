@@ -25,6 +25,7 @@ import {
   MEME_VAULT_TUTORIAL,
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
+import { QUASI_TUTORIAL, QUASI_TUTORIAL_SIGNALS } from "@/lib/quasi-perfect";
 import {
   WORKING_WITH_DUCK_TUTORIAL,
   WORKING_WITH_DUCK_TUTORIAL_SIGNALS,
@@ -219,12 +220,12 @@ describe("arcade.tutorials slice", () => {
 const SCRIPTS: Record<string, TutorialScript> = {
   "laser-loon": LASER_LOON_TUTORIAL,
   "meme-vault": MEME_VAULT_TUTORIAL,
+  "quasi-puzzler": QUASI_TUTORIAL,
   "working-with-duck": WORKING_WITH_DUCK_TUTORIAL,
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
 };
 const PENDING = [
-  "quasi-puzzler",
   "clinical-chaos",
   "trial-and-error",
   "study-director",
@@ -273,6 +274,13 @@ describe("game tutorials", () => {
   it("practises only signals Patty's Drive-Thru sends", () => {
     const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
     for (const step of PATTY_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Quasi-Perfect Puzzler sends", () => {
+    const sent = new Set<string>(Object.values(QUASI_TUTORIAL_SIGNALS));
+    for (const step of QUASI_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

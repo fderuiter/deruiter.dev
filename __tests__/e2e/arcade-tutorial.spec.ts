@@ -426,3 +426,66 @@ test.describe("Working With Duck guided tutorial", () => {
     await expect.poll(() => step(page)).toBe("welcome");
   });
 });
+
+test.describe("Quasi-Perfect Puzzler guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("proves Level 1 as practice, undoes it, and saves nothing", async ({
+    page,
+  }) => {
+    await page.goto("/arcade/quasi-puzzler");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    await expect.poll(() => step(page)).toBe("goal");
+    await card.getByRole("button", { name: "Next" }).click();
+
+    // Practice: the puzzler's own keys and cards complete each step.
+    await expect.poll(() => step(page)).toBe("hint");
+    await expect(page.locator("[data-keyboard-boundary]")).toBeFocused();
+    await page.keyboard.press("h");
+
+    await expect.poll(() => step(page)).toBe("select");
+    await page.getByRole("button", { name: /^Tactic rfl\./ }).click();
+
+    await expect.poll(() => step(page)).toBe("apply");
+    await page.getByRole("button", { name: /^Goal\. Equality node/ }).click();
+
+    // The practice proof shows no result card, so it can be undone.
+    await expect.poll(() => step(page)).toBe("undo");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("[data-keyboard-boundary]").focus();
+    await page.keyboard.press("Control+z");
+
+    await expect.poll(() => step(page)).toBe("reset");
+    await page.keyboard.press("r");
+
+    await expect.poll(() => step(page)).toBe("subgoals");
+    await card.getByRole("button", { name: "Next" }).click();
+    await expect.poll(() => step(page)).toBe("done");
+    await card.getByRole("button", { name: "Finish" }).click();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(page.getByTestId("tutorial-card")).toHaveCount(0);
+
+    // Nothing from the practice proof was saved.
+    const saved = await page.evaluate(() =>
+      window.localStorage.getItem("quasi_perfect_puzzler_progress_v1")
+    );
+    expect(JSON.parse(saved ?? "{}").completedLevels?.["1"]).toBeUndefined();
+
+    // The Tutorial key replays it.
+    await page.getByTestId("cabinet-tutorial-key").click();
+    await expect.poll(() => step(page)).toBe("goal");
+  });
+});

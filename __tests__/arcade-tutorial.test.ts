@@ -40,6 +40,10 @@ import {
   RETRO_LABYRINTH_TUTORIAL_SIGNALS,
 } from "@/lib/retro-labyrinth";
 import {
+  FOR_BETTER_OR_BULK_TUTORIAL,
+  FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS,
+} from "@/lib/for-better-or-bulk";
+import {
   TRIAL_AND_ERROR_TUTORIAL,
   TUTORIAL_RESULT_SIGNAL,
   TUTORIAL_STEPS,
@@ -235,13 +239,9 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "patty-drive-thru": PATTY_TUTORIAL,
   "trial-and-error": TRIAL_AND_ERROR_TUTORIAL,
   "retro-labyrinth": RETRO_LABYRINTH_TUTORIAL,
+  "for-better-or-bulk": FOR_BETTER_OR_BULK_TUTORIAL,
 };
-const PENDING = [
-  "clinical-chaos",
-  "study-director",
-  "for-better-or-bulk",
-  "protocol-drift",
-];
+const PENDING = ["clinical-chaos", "study-director", "protocol-drift"];
 
 describe("game tutorials", () => {
   it("covers every registry game, each either shipped or pending", () => {
@@ -306,6 +306,15 @@ describe("game tutorials", () => {
   it("practises only signals Meme Vault sends", () => {
     const sent = new Set<string>(Object.values(MEME_VAULT_TUTORIAL_SIGNALS));
     for (const step of MEME_VAULT_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals For Better or Bulk sends", () => {
+    const sent = new Set<string>(
+      Object.values(FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS)
+    );
+    for (const step of FOR_BETTER_OR_BULK_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

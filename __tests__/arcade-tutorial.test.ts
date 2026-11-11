@@ -30,6 +30,10 @@ import {
   GARMIN_TUTORIAL_SIGNALS,
 } from "@/lib/garmin/tutorial";
 import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
+import {
+  FOR_BETTER_OR_BULK_TUTORIAL,
+  FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS,
+} from "@/lib/for-better-or-bulk";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -217,6 +221,7 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "meme-vault": MEME_VAULT_TUTORIAL,
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
+  "for-better-or-bulk": FOR_BETTER_OR_BULK_TUTORIAL,
 };
 const PENDING = [
   "working-with-duck",
@@ -224,7 +229,6 @@ const PENDING = [
   "clinical-chaos",
   "trial-and-error",
   "study-director",
-  "for-better-or-bulk",
   "retro-labyrinth",
   "protocol-drift",
 ];
@@ -267,6 +271,15 @@ describe("game tutorials", () => {
   it("practises only signals Meme Vault sends", () => {
     const sent = new Set<string>(Object.values(MEME_VAULT_TUTORIAL_SIGNALS));
     for (const step of MEME_VAULT_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals For Better or Bulk sends", () => {
+    const sent = new Set<string>(
+      Object.values(FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS)
+    );
+    for (const step of FOR_BETTER_OR_BULK_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

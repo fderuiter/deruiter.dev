@@ -9,7 +9,11 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { requestFbbAutoPause } from "@/components/for-better-or-bulk/auto-pause";
-import { DEFAULT_SETUP, type Setup } from "@/lib/for-better-or-bulk";
+import {
+  DEFAULT_SETUP,
+  FOR_BETTER_OR_BULK_TUTORIAL,
+  type Setup,
+} from "@/lib/for-better-or-bulk";
 
 const ForBetterOrBulkLoader = () =>
   import("@/components/for-better-or-bulk/ForBetterOrBulkGame").then(
@@ -91,6 +95,7 @@ export const ForBetterOrBulkClient: React.FC = () => (
           mobileLayout="fit"
           // A hidden tab or a backgrounded app pauses a day in progress.
           onAutoPause={requestFbbAutoPause}
+          tutorial={FOR_BETTER_OR_BULK_TUTORIAL}
         >
           <DynamicForBetterOrBulk initialSetup={PAGE_SETUP} />
         </PlayCabinet>

@@ -10,6 +10,7 @@ import {
 import { type StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import "@/components/study-director/study-director-touch.css";
 import {
   DigestCard,
@@ -72,6 +73,8 @@ export const StudyDirectorWorld: React.FC<{
   // The immersive touch cabinet (ADR 0061, #2076) lays the office out to fit
   // its stage; desktop markup is untouched.
   const touch = useCabinetTouch();
+  // The cabinet's guided tutorial plays a practice morning (#3457).
+  const tutorial = useCabinetTutorial();
   const {
     acted,
     answer,
@@ -145,6 +148,7 @@ export const StudyDirectorWorld: React.FC<{
     onCloseout,
     onStart,
     touch,
+    tutorial,
   });
 
   const panel = report ? (
@@ -308,7 +312,8 @@ export const StudyDirectorWorld: React.FC<{
         <button
           type="button"
           onClick={onExit}
-          className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+          disabled={tutorial.active}
+          className="min-h-12 border disabled:opacity-50 border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
         >
           Switch to the classic desk
         </button>
@@ -416,6 +421,7 @@ export const StudyDirectorWorld: React.FC<{
         </p>
         <button
           type="button"
+          data-tutorial-target="self"
           onClick={lookAtSelf}
           disabled={away}
           className="mt-2 min-h-[32px] border border-zinc-700 px-2 text-[11px] text-zinc-300 hover:border-[var(--sd-amber)] disabled:opacity-50"

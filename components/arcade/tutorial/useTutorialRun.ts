@@ -98,8 +98,8 @@ export function useTutorialRun(tutorial?: TutorialScript): TutorialRun {
   const active = state.status === "running";
   const stepId = active ? (script.steps[state.index]?.id ?? null) : null;
   const value = useMemo(
-    () => ({ active, stepId, signal }),
-    [active, stepId, signal]
+    () => ({ active, stepId, signal, available }),
+    [active, stepId, signal, available]
   );
 
   return {

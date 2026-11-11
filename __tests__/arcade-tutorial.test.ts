@@ -36,6 +36,10 @@ import {
 } from "@/lib/garmin/tutorial";
 import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
 import {
+  STUDY_DIRECTOR_TUTORIAL,
+  STUDY_DIRECTOR_TUTORIAL_SIGNALS,
+} from "@/lib/study-director";
+import {
   FOR_BETTER_OR_BULK_TUTORIAL,
   FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS,
 } from "@/lib/for-better-or-bulk";
@@ -235,13 +239,9 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "patty-drive-thru": PATTY_TUTORIAL,
   "trial-and-error": TRIAL_AND_ERROR_TUTORIAL,
   "for-better-or-bulk": FOR_BETTER_OR_BULK_TUTORIAL,
+  "study-director": STUDY_DIRECTOR_TUTORIAL,
 };
-const PENDING = [
-  "clinical-chaos",
-  "study-director",
-  "retro-labyrinth",
-  "protocol-drift",
-];
+const PENDING = ["clinical-chaos", "retro-labyrinth", "protocol-drift"];
 
 describe("game tutorials", () => {
   it("covers every registry game, each either shipped or pending", () => {
@@ -283,6 +283,15 @@ describe("game tutorials", () => {
   it("practises only signals Patty's Drive-Thru sends", () => {
     const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
     for (const step of PATTY_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Study Director sends", () => {
+    const sent = new Set<string>(
+      Object.values(STUDY_DIRECTOR_TUTORIAL_SIGNALS)
+    );
+    for (const step of STUDY_DIRECTOR_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

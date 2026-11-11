@@ -69,3 +69,4 @@ export {
 } from "./internal/endgame";
 export * from "./export";
 export * from "./scenario";
+export * from "./tutorial";

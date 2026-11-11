@@ -36,6 +36,10 @@ import {
 } from "@/lib/garmin/tutorial";
 import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
 import {
+  RETRO_LABYRINTH_TUTORIAL,
+  RETRO_LABYRINTH_TUTORIAL_SIGNALS,
+} from "@/lib/retro-labyrinth";
+import {
   TRIAL_AND_ERROR_TUTORIAL,
   TUTORIAL_RESULT_SIGNAL,
   TUTORIAL_STEPS,
@@ -230,12 +234,12 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
   "trial-and-error": TRIAL_AND_ERROR_TUTORIAL,
+  "retro-labyrinth": RETRO_LABYRINTH_TUTORIAL,
 };
 const PENDING = [
   "clinical-chaos",
   "study-director",
   "for-better-or-bulk",
-  "retro-labyrinth",
   "protocol-drift",
 ];
 
@@ -272,6 +276,15 @@ describe("game tutorials", () => {
   it("practises only signals Monkey C Mayhem sends", () => {
     const sent = new Set<string>(Object.values(GARMIN_TUTORIAL_SIGNALS));
     for (const step of GARMIN_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Retro Labyrinth sends", () => {
+    const sent = new Set<string>(
+      Object.values(RETRO_LABYRINTH_TUTORIAL_SIGNALS)
+    );
+    for (const step of RETRO_LABYRINTH_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

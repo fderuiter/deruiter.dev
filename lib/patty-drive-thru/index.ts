@@ -69,6 +69,7 @@ export {
   getDilemmaDiaryLines,
   getDilemmaOption,
   getDilemmaPlan,
+  offerDilemma,
 } from "./internal/dilemmas";
 export {
   carryMeters,
@@ -85,3 +86,4 @@ export {
   scoreWeek,
   summarizeWeekDay,
 } from "./internal/week";
+export * from "./tutorial";

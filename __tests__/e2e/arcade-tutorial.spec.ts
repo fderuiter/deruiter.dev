@@ -202,3 +202,69 @@ test.describe("Meme Vault guided tutorial", () => {
     await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
   });
 });
+
+test.describe("Patty's Drive-Thru guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("runs a practice shift whose clock holds, then returns to the diary", async ({
+    page,
+  }) => {
+    // Reduced motion picks the flat view on every browser, WebGL or not.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/arcade/patty-drive-thru");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    const game = page.getByTestId("pdt-game");
+    await expect.poll(() => step(page)).toBe("welcome");
+    await card.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => step(page)).toBe("turn");
+    await expect(game).toBeFocused();
+    await page.keyboard.press("a");
+
+    // The one car pulls up, and the clock holds from then on.
+    await expect.poll(() => step(page)).toBe("order");
+    const order = page
+      .getByRole("toolbar", { name: "Open orders" })
+      .getByRole("button", { name: /#1, order/ });
+    await expect(order).toBeVisible();
+    const clock = await page.getByTestId("pdt-clock").textContent();
+    await page.keyboard.press("1");
+    await expect(order).toHaveAttribute("aria-pressed", "true");
+
+    await expect.poll(() => step(page)).toBe("ring");
+    await page.getByRole("button", { name: "Sides ›", exact: true }).click();
+    await page.getByRole("button", { name: "Fries", exact: true }).click();
+
+    await expect.poll(() => step(page)).toBe("bump");
+    await expect(game).toBeFocused();
+    await page.keyboard.press("b");
+    await expect(order).toBeHidden();
+
+    await expect.poll(() => step(page)).toBe("wipe");
+    await page.keyboard.press("w");
+
+    await expect.poll(() => step(page)).toBe("dilemma");
+    await expect(page.getByTestId("pdt-dilemma")).toBeVisible();
+    await page.keyboard.press("q");
+    await expect(page.getByTestId("pdt-dilemma")).toBeHidden();
+    expect(await page.getByTestId("pdt-clock").textContent()).toBe(clock);
+
+    await expect.poll(() => step(page)).toBe("done");
+    await card.getByRole("button", { name: "Finish" }).click();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(page.getByTestId("pdt-intro")).toBeVisible();
+  });
+});

@@ -43,6 +43,22 @@ import {
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
 
+/**
+ * A copy button's word, shown on a phone or a touch screen so the 44px key
+ * says what it does (#3521); a desktop keeps the bare icon. The button's
+ * aria-label still names it in full.
+ */
+function CopyLabel({ children }: { readonly children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="hidden text-xs pointer-coarse:inline max-md:inline"
+    >
+      {children}
+    </span>
+  );
+}
+
 export const MemeVaultClient: React.FC = () => {
   const { muted, setMuted, bypassActive, bypassReason, setReducedMotionOptIn } =
     useAudio();
@@ -371,7 +387,7 @@ export const MemeVaultClient: React.FC = () => {
                 soundLabel={activeSoundLabel}
                 silentReason={silentReason}
               />
-              <dl className="mt-3 hidden grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.08] font-mono text-[11px] pointer-coarse:text-xs tabular-nums xl:grid">
+              <dl className="mt-3 hidden grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.08] font-mono text-[11px] pointer-coarse:text-xs max-md:text-xs tabular-nums xl:grid">
                 <div className="bg-[#0d0e11] p-2.5">
                   <dt className="uppercase tracking-wider text-zinc-400">
                     Pads
@@ -484,7 +500,7 @@ export const MemeVaultClient: React.FC = () => {
               >
                 <div>
                   <div className="flex items-center justify-between text-xs text-zinc-400 mb-3">
-                    <span className="px-2 py-0.5 rounded-sm border border-white/[0.08] text-zinc-400 font-mono uppercase tracking-wider text-[10px] pointer-coarse:text-xs font-bold">
+                    <span className="px-2 py-0.5 rounded-sm border border-white/[0.08] text-zinc-400 font-mono uppercase tracking-wider text-[10px] pointer-coarse:text-xs max-md:text-xs font-bold">
                       {q.tagline || q.category}
                     </span>
                     <CopyButton
@@ -493,8 +509,10 @@ export const MemeVaultClient: React.FC = () => {
                       copiedIcon={
                         <IconCheck className="w-4 h-4 text-emerald-400" />
                       }
-                      className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center pointer-coarse:justify-center"
+                      className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:gap-1.5 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center max-md:justify-center max-md:gap-1.5"
                       title="Copy Quote"
+                      label={<CopyLabel>Copy</CopyLabel>}
+                      copiedLabel={<CopyLabel>Copied</CopyLabel>}
                       aria-label="Copy Quote"
                       successMessage="Copied quote to clipboard"
                     />
@@ -506,7 +524,7 @@ export const MemeVaultClient: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
-                  <cite className="text-zinc-400 text-[11px] pointer-coarse:text-xs truncate max-w-[200px] sm:max-w-xs not-italic">
+                  <cite className="text-zinc-400 text-[11px] pointer-coarse:text-xs max-md:text-xs truncate max-w-[200px] sm:max-w-xs not-italic">
                     by {q.author}
                   </cite>
                   <button
@@ -516,7 +534,7 @@ export const MemeVaultClient: React.FC = () => {
                         ? `React to quote (${rxCount})`
                         : "React to quote"
                     }
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#1a1d24] hover:border-white/[0.16] text-zinc-300 text-[11px] pointer-coarse:text-xs transition-transform active:scale-95 pointer-coarse:min-h-11 pointer-coarse:px-4"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#1a1d24] hover:border-white/[0.16] text-zinc-300 text-[11px] pointer-coarse:text-xs max-md:text-xs transition-transform active:scale-95 pointer-coarse:min-h-11 pointer-coarse:px-4"
                   >
                     <IconRocket
                       aria-hidden="true"
@@ -552,7 +570,7 @@ export const MemeVaultClient: React.FC = () => {
                 type="button"
                 aria-pressed={asciiTab === tab}
                 onClick={() => setAsciiTab(tab)}
-                className={`px-3 py-1 rounded uppercase tracking-wider text-[10px] pointer-coarse:text-xs font-bold transition-colors active:scale-95 pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-4 ${
+                className={`px-3 py-1 rounded uppercase tracking-wider text-[10px] pointer-coarse:text-xs max-md:text-xs font-bold transition-colors active:scale-95 pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-4 ${
                   asciiTab === tab
                     ? "bg-[#1a1d24] text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.45)]"
                     : "text-zinc-400 hover:text-zinc-100"
@@ -581,8 +599,10 @@ export const MemeVaultClient: React.FC = () => {
             text={() => getAsciiContent()}
             icon={<IconCopy className="w-4 h-4" />}
             copiedIcon={<IconCheck className="w-4 h-4 text-emerald-400" />}
-            className="absolute top-4 right-4 p-2 rounded-lg bg-[#13151a] hover:bg-[#1a1d24] text-zinc-400 hover:text-zinc-100 border border-white/[0.08] transition-colors cursor-pointer pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center pointer-coarse:justify-center"
+            className="absolute top-4 right-4 max-md:static max-md:mb-3 p-2 rounded-lg bg-[#13151a] hover:bg-[#1a1d24] text-zinc-400 hover:text-zinc-100 border border-white/[0.08] transition-colors cursor-pointer pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:gap-1.5 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center max-md:justify-center max-md:gap-1.5"
             title="Copy ASCII Art"
+            label={<CopyLabel>Copy</CopyLabel>}
+            copiedLabel={<CopyLabel>Copied</CopyLabel>}
             aria-label="Copy ASCII Art"
             successMessage="Copied ASCII art to clipboard"
           />

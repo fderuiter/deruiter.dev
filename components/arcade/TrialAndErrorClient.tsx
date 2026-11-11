@@ -104,6 +104,9 @@ export const TrialAndErrorClient: React.FC = () => {
             // The cabinet's Tutorial key and Setup sheet replay the guided
             // Blind, so the Field Manual no longer has its own replay.
             tutorial={TRIAL_AND_ERROR_TUTORIAL}
+            // The touch table has no header row to spare in an iPad Split
+            // View pane; Setup still offers the tutorial there.
+            tutorialKeyInTouchToolbar={false}
           >
             <DynamicCardTable />
           </PlayCabinet>

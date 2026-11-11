@@ -10,6 +10,8 @@ import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { ResultCard } from "@/components/arcade/ResultCard";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
 import { useSkipTitleScreen } from "@/components/arcade/CabinetSetupContext";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
+import { WORKING_WITH_DUCK_TUTORIAL_SIGNALS } from "@/lib/working-with-duck";
 import { ArcadeHud } from "@/components/arcade/ArcadeHud";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -925,6 +927,10 @@ const DOCK_ICON = "hidden xl:block w-3.5 h-3.5";
 export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   initialState,
 }) => {
+  // The cabinet's guided tutorial (#3453): the session freezes the meters
+  // and hears the player's moves; toys are signalled where they are used.
+  const tutorial = useCabinetTutorial();
+  const signalTutorial = tutorial.signal;
   const {
     addInterruption,
     applyTransition,
@@ -944,7 +950,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     uiState,
     advanceClock,
     resetClock,
-  } = useDuckSession({ initialState });
+  } = useDuckSession({ initialState, tutorial });
 
   const { playNote, muted, setMuted } = useAudio();
 
@@ -1544,10 +1550,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             // A second press uses the toy without the mouse (#1942): the
             // ball is thrown across the room, a Kong or squeaky toy lands
             // just past Duck to pull him off whatever he is chewing.
-            applyTransition((state) => {
+            const before = gameStateRef.current;
+            const after = applyTransition((state) => {
               const { x, y } = keyboardToyTarget(state);
               return applySelectedItemAt(duckService, state, x, y);
             });
+            if (after !== before)
+              signalTutorial(WORKING_WITH_DUCK_TUTORIAL_SIGNALS.toy);
             announce(`Used the ${TOY_LABEL[item]} near Duck.`, "polite");
           } else {
             applyTransition((state) => ({ ...state, selectedItem: item }));
@@ -1602,6 +1611,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       applyTransition,
       duckService,
       announce,
+      signalTutorial,
       handleGiveTreat,
       handlePerformTrick,
       toggleManualPause,
@@ -2118,7 +2128,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     }
 
     // Use Selected Hotbar Item on Canvas click
-    applyTransition((state) => applySelectedItemAt(duckService, state, x, y));
+    const before = gameStateRef.current;
+    const after = applyTransition((state) =>
+      applySelectedItemAt(duckService, state, x, y)
+    );
+    if (after !== before)
+      signalTutorial(WORKING_WITH_DUCK_TUTORIAL_SIGNALS.toy);
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -2414,9 +2429,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       return next;
     });
   };
-  // A dismissed tip stays hidden until the advice changes.
+  // A dismissed tip stays hidden until the advice changes. While the guided
+  // tutorial runs, its coach card does the teaching, so the strip waits
+  // (#3453) and is back for real play.
   const visibleTip =
-    tutorialHint && tutorialHint !== dismissedTip ? tutorialHint : null;
+    !tutorial.active && tutorialHint && tutorialHint !== dismissedTip
+      ? tutorialHint
+      : null;
   // In the touch cabinet the tip takes the band above the room when the
   // stage has room for its lines; a landscape stage has none, so it stays at
   // the floor end.

@@ -95,6 +95,18 @@ describe("useQuasiSession proving", () => {
     });
   });
 
+  it("shows a practice proof but never saves it (#3454)", () => {
+    const fx = fromPartial<ArcadeFx>({ shake: vi.fn(), flash: vi.fn() });
+    const { result } = renderHook(() =>
+      useQuasiSession({ fx, practice: true })
+    );
+    act(() => result.current.applyTactic(0, result.current.goalAST.id));
+
+    expect(result.current.levelSolved).toBe(true);
+    expect(result.current.currentScore?.levelId).toBe(1);
+    expect(result.current.parsedProgress.completedLevels?.[1]).toBeUndefined();
+  });
+
   it("admits the goal with sorry", () => {
     const { result, events } = renderSession();
     act(() => result.current.admitSorry());

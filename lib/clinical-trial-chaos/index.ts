@@ -16,3 +16,4 @@ export * from "./amendments";
 export * from "./observation-generators";
 export * from "./inspection";
 export * from "./terminology";
+export * from "./tutorial";

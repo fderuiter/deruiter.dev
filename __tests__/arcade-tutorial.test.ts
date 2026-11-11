@@ -34,6 +34,10 @@ import {
   GARMIN_TUTORIAL_SIGNALS,
 } from "@/lib/garmin/tutorial";
 import { PATTY_TUTORIAL, PATTY_TUTORIAL_SIGNALS } from "@/lib/patty-drive-thru";
+import {
+  CLINICAL_CHAOS_TUTORIAL,
+  CLINICAL_CHAOS_TUTORIAL_SIGNALS,
+} from "@/lib/clinical-trial-chaos";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -222,10 +226,10 @@ const SCRIPTS: Record<string, TutorialScript> = {
   "working-with-duck": WORKING_WITH_DUCK_TUTORIAL,
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
+  "clinical-chaos": CLINICAL_CHAOS_TUTORIAL,
 };
 const PENDING = [
   "quasi-puzzler",
-  "clinical-chaos",
   "trial-and-error",
   "study-director",
   "for-better-or-bulk",
@@ -273,6 +277,15 @@ describe("game tutorials", () => {
   it("practises only signals Patty's Drive-Thru sends", () => {
     const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
     for (const step of PATTY_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Clinical Trial Chaos sends", () => {
+    const sent = new Set<string>(
+      Object.values(CLINICAL_CHAOS_TUTORIAL_SIGNALS)
+    );
+    for (const step of CLINICAL_CHAOS_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

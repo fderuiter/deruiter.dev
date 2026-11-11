@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
+import { CLINICAL_CHAOS_TUTORIAL } from "@/lib/clinical-trial-chaos";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestClinicalChaosAutoPause } from "@/components/clinical-trial-chaos/auto-pause";
 import { IntentLink } from "@/components/ui/IntentLink";
@@ -80,6 +81,7 @@ export const ClinicalChaosClient: React.FC = () => {
                 it stays as the game's one start step after Launch. */}
           <PlayCabinet
             gameId="clinical-chaos"
+            tutorial={CLINICAL_CHAOS_TUTORIAL}
             singleTitleScreen={false}
             title="Clinical Trial Chaos: CDISC Compliance"
             subtitle="Clinical Data, Against the Clock"

@@ -26,6 +26,10 @@ import {
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
 import {
+  WORKING_WITH_DUCK_TUTORIAL,
+  WORKING_WITH_DUCK_TUTORIAL_SIGNALS,
+} from "@/lib/working-with-duck";
+import {
   GARMIN_TUTORIAL,
   GARMIN_TUTORIAL_SIGNALS,
 } from "@/lib/garmin/tutorial";
@@ -215,11 +219,11 @@ describe("arcade.tutorials slice", () => {
 const SCRIPTS: Record<string, TutorialScript> = {
   "laser-loon": LASER_LOON_TUTORIAL,
   "meme-vault": MEME_VAULT_TUTORIAL,
+  "working-with-duck": WORKING_WITH_DUCK_TUTORIAL,
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
 };
 const PENDING = [
-  "working-with-duck",
   "quasi-puzzler",
   "clinical-chaos",
   "trial-and-error",
@@ -246,6 +250,15 @@ describe("game tutorials", () => {
   it("practises only signals Laser Loon sends", () => {
     const sent = new Set<string>(Object.values(LASER_LOON_TUTORIAL_SIGNALS));
     for (const step of LASER_LOON_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Working With Duck sends", () => {
+    const sent = new Set<string>(
+      Object.values(WORKING_WITH_DUCK_TUTORIAL_SIGNALS)
+    );
+    for (const step of WORKING_WITH_DUCK_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });

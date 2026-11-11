@@ -352,3 +352,77 @@ test.describe("Monkey C Mayhem guided tutorial", () => {
     await expect.poll(() => step(page)).toBe("welcome");
   });
 });
+
+test.describe("Working With Duck guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("walks a frozen practice sprint by doing, and can be replayed", async ({
+    page,
+  }) => {
+    await page.goto("/arcade/working-with-duck");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    await expect.poll(() => step(page)).toBe("welcome");
+    // The coach card does the teaching, so the hint strip waits.
+    await expect(page.getByText(/^Goal: ship the work/)).toHaveCount(0);
+    await card.getByRole("button", { name: "Next" }).click();
+
+    // Practice: the game's own keys complete each step.
+    await expect.poll(() => step(page)).toBe("start");
+    await expect(page.locator("[data-keyboard-boundary]")).toBeFocused();
+    // A key in the first half second after Sprint 1 opens is taken as one
+    // left over from the last screen, so the press repeats until it lands.
+    await expect(async () => {
+      await page.keyboard.press("Space");
+      await expect.poll(() => step(page), { timeout: 1000 }).not.toBe("start");
+    }).toPass({ timeout: 10000 });
+
+    await expect.poll(() => step(page)).toBe("code");
+    await expect(async () => {
+      await page.keyboard.press("Space");
+      await expect.poll(() => step(page), { timeout: 1000 }).not.toBe("code");
+    }).toPass({ timeout: 10000 });
+
+    await expect.poll(() => step(page)).toBe("trick");
+    await expect(async () => {
+      await page.keyboard.press("q");
+      await expect.poll(() => step(page), { timeout: 1500 }).not.toBe("trick");
+    }).toPass({ timeout: 10000 });
+
+    await expect.poll(() => step(page)).toBe("toy");
+    await expect(async () => {
+      await page.keyboard.press("2");
+      await page.keyboard.press("2");
+      await expect.poll(() => step(page), { timeout: 1500 }).not.toBe("toy");
+    }).toPass({ timeout: 10000 });
+
+    await expect.poll(() => step(page)).toBe("carry");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Enter");
+
+    await expect.poll(() => step(page)).toBe("meters");
+    await card.getByRole("button", { name: "Next" }).click();
+    await expect.poll(() => step(page)).toBe("loop");
+    await card.getByRole("button", { name: "Finish" }).click();
+
+    await expect(page.getByTestId("tutorial-finished")).toBeVisible();
+    await page.getByRole("button", { name: "Start playing" }).click();
+    await expect(page.getByTestId("tutorial-card")).toHaveCount(0);
+
+    // The Tutorial key replays it.
+    await page.getByTestId("cabinet-tutorial-key").click();
+    await expect.poll(() => step(page)).toBe("welcome");
+  });
+});

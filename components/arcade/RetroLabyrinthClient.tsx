@@ -12,6 +12,7 @@ import {
   useSavedRun,
 } from "@/components/retro-labyrinth/RunResumeChoice";
 import { LABYRINTH_CONTROLS } from "@/lib/retro-labyrinth/actions";
+import { RETRO_LABYRINTH_TUTORIAL } from "@/lib/retro-labyrinth";
 import { IntentLink } from "@/components/ui/IntentLink";
 import {
   IconDeviceGamepad2,
@@ -97,6 +98,7 @@ export const RetroLabyrinthClient: React.FC = () => {
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(244,63,94,0.1)] flex flex-col items-center 2xl:mx-[calc(50%-min(50vw-2rem,56rem))]">
           <PlayCabinet
             gameId="retro-labyrinth"
+            tutorial={RETRO_LABYRINTH_TUTORIAL}
             title="Retro Labyrinth: Graveyard Roguelike"
             subtitle="There Are Bugs in the Dungeon"
             icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}

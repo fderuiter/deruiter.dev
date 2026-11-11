@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, type ReactNode } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import {
   CabinetPauseProvider,
   useCabinetPauseController,
@@ -64,7 +65,12 @@ function SessionHost({
   readonly children: ReactNode;
 }) {
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const session = useRetroLabyrinthSession({ active, reducedMotion });
+  const tutorial = useCabinetTutorial();
+  const session = useRetroLabyrinthSession({
+    active,
+    reducedMotion,
+    tutorial,
+  });
   return (
     <LabyrinthSessionContext.Provider value={{ session, cabinetPause }}>
       {children}

@@ -179,6 +179,11 @@ interface QuasiSessionOptions {
   readonly fx: ArcadeFx;
   /** Called with each named session event (#3433). */
   readonly onEvent?: (event: QuasiSessionEvent) => void;
+  /**
+   * A practice run, such as the guided tutorial (#3454): a proof found in
+   * it is shown but never saved, so it counts toward no stars or unlocks.
+   */
+  readonly practice?: boolean;
 }
 
 /**
@@ -189,7 +194,12 @@ interface QuasiSessionOptions {
  * which renders what it returns.
  */
 export function useQuasiSession(options: QuasiSessionOptions) {
-  const { fx, onEvent } = options;
+  const { fx, onEvent, practice = false } = options;
+  // Read when a proof closes, so a change never re-creates the handlers.
+  const practiceRef = useRef(practice);
+  useEffect(() => {
+    practiceRef.current = practice;
+  }, [practice]);
   // The latest onEvent, so a new callback each render never re-creates the
   // handlers that emit through it.
   const onEventRef = useRef(onEvent);
@@ -693,7 +703,9 @@ export function useQuasiSession(options: QuasiSessionOptions) {
 
           setCurrentScore(score);
           emit({ type: "levelSolved", score });
-          if (activeVariant) {
+          if (practiceRef.current) {
+            // A practice proof is not saved (#3454).
+          } else if (activeVariant) {
             // A variant run never touches the base level's score (#2090).
             if (isVariantRunCleared(activeVariant, steps, usedSorry)) {
               saveVariantClear(currentLevel.id, activeVariant.kind);

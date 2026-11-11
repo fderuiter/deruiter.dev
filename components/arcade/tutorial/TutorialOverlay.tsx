@@ -6,6 +6,7 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import {
   IconArrowLeft,
@@ -26,7 +27,10 @@ export interface TutorialOverlayProps {
   readonly launched: boolean;
   /** True on a touch cabinet: steps show their touch control. */
   readonly touch: boolean;
-  /** True while Setup or another cabinet sheet covers the stage. */
+  /**
+   * True while Setup or another cabinet sheet covers the stage. A game's own
+   * modal marked `data-tutorial-covers="true"` covers it too.
+   */
   readonly covered?: boolean;
 }
 
@@ -35,6 +39,8 @@ export const PRACTICE_DONE_MS = 900;
 /** The card's distance from its control and from the stage's edges, in px. */
 const GAP_PX = 10;
 const EDGE_PX = 8;
+/** Room the fixed site header takes at the top of the window (scroll-mt-nav-24). */
+const HEADER_CLEARANCE_PX = 96;
 /**
  * The docked card's top on a touch cabinet, in px: below the floating
  * toolbar (48px keys in the stage's top right corner).
@@ -56,14 +62,37 @@ interface Placement {
   readonly left: number;
 }
 
+/**
+ * Marks a game's own modal that covers the stage, such as Trial & Error's
+ * Inspect view: while one is open the card steps aside, and the game shows
+ * the step inside its modal.
+ */
+const GAME_COVER_SELECTOR = '[data-tutorial-covers="true"]';
+
+function subscribeGameCover(onChange: () => void) {
+  if (typeof MutationObserver === "undefined") return () => {};
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["data-tutorial-covers"],
+  });
+  return () => observer.disconnect();
+}
+
+function readGameCover(): boolean {
+  return document.querySelector(GAME_COVER_SELECTOR) !== null;
+}
+
 function samePlacement(a: Placement | null, b: Placement | null): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /**
  * Where the card goes: above its control when that fits, else below it,
- * else docked at the stage's top right, clear of the game's left side
- * where most games put the player.
+ * else docked at the top right of the stage's part on screen, clear of the
+ * game's left side where most games put the player.
  */
 function place(
   card: HTMLElement,
@@ -74,9 +103,14 @@ function place(
   const box = stage.getBoundingClientRect();
   const width = card.offsetWidth;
   const height = card.offsetHeight;
+  // The card is placed in the stage's content, which a phone's stage
+  // scrolls: dock it in the part on screen, below the floating toolbar.
+  const scrollTop = stage.scrollTop;
+  const visibleTop = Math.max(0, -box.top) + scrollTop;
+  const lowestTop = Math.max(dockTop, stage.scrollHeight - height - EDGE_PX);
   const docked = {
     ring: null,
-    top: dockTop,
+    top: Math.round(clamp(visibleTop + dockTop, dockTop, lowestTop)),
     left: Math.max(EDGE_PX, Math.round(box.width - width - EDGE_PX)),
   };
   if (!target) return docked;
@@ -85,16 +119,16 @@ function place(
   // desktop) gets no ring, and the card docks.
   if (rect.width < MIN_TARGET_PX || rect.height < MIN_TARGET_PX) return docked;
   const ring = {
-    top: Math.round(rect.top - box.top),
-    left: Math.round(rect.left - box.left),
+    top: Math.round(rect.top - box.top + scrollTop),
+    left: Math.round(rect.left - box.left + stage.scrollLeft),
     width: Math.round(rect.width),
     height: Math.round(rect.height),
   };
   const above = ring.top - GAP_PX - height;
   const below = ring.top + ring.height + GAP_PX;
   let top: number;
-  if (above >= EDGE_PX) top = above;
-  else if (below + height <= box.height - EDGE_PX) top = below;
+  if (above >= scrollTop + EDGE_PX) top = above;
+  else if (below + height <= scrollTop + box.height - EDGE_PX) top = below;
   else return { ...docked, ring };
   const centred = ring.left + ring.width / 2 - width / 2;
   const maxLeft = Math.max(EDGE_PX, box.width - width - EDGE_PX);
@@ -103,6 +137,23 @@ function place(
     top: Math.round(top),
     left: Math.round(clamp(centred, EDGE_PX, maxLeft)),
   };
+}
+
+/** Scrolls the window just enough to show the card below the site header. */
+function revealCard(card: HTMLElement | null) {
+  if (!card || typeof window.scrollBy !== "function") return;
+  const rect = card.getBoundingClientRect();
+  if (rect.height === 0) return;
+  // Measured as Meme Vault's room does, so the two never pull apart.
+  const header = document.querySelector("header")?.getBoundingClientRect();
+  const top = Math.max(0, header?.bottom ?? HEADER_CLEARANCE_PX) + EDGE_PX;
+  if (rect.top < top) {
+    window.scrollBy({ top: rect.top - top });
+  } else if (rect.bottom > window.innerHeight - EDGE_PX) {
+    const over = rect.bottom - window.innerHeight + EDGE_PX;
+    // Never push the card's top under the header to show its bottom.
+    window.scrollBy({ top: Math.min(over, rect.top - top) });
+  }
 }
 
 function findTarget(from: HTMLElement, name: string): HTMLElement | null {
@@ -149,9 +200,15 @@ export function TutorialOverlay({
   gameName,
   launched,
   touch,
-  covered = false,
+  covered: cabinetCovered = false,
 }: TutorialOverlayProps) {
   const { script, state, offered, dispatch } = run;
+  const gameCovered = useSyncExternalStore(
+    subscribeGameCover,
+    readGameCover,
+    () => false
+  );
+  const covered = cabinetCovered || gameCovered;
   const [offerDismissed, setOfferDismissed] = useState(false);
   const [placement, setPlacement] = useState<Placement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -202,6 +259,10 @@ export function TutorialOverlay({
     if (!running || covered || !placed) return;
     if (practising) focusGame(cardRef.current);
     else nextRef.current?.focus({ preventScroll: true });
+    // A cabinet taller than the window can leave a step's card above or
+    // below it (#3454), so each new step brings its card on screen once,
+    // clear of the site header. A card already on screen does not move.
+    revealCard(cardRef.current);
   }, [running, covered, placed, practising, state.index]);
 
   // A finished practice shows its tick briefly, then moves on.

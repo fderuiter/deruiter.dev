@@ -25,6 +25,11 @@ import {
   MEME_VAULT_TUTORIAL,
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
+import { QUASI_TUTORIAL, QUASI_TUTORIAL_SIGNALS } from "@/lib/quasi-perfect";
+import {
+  WORKING_WITH_DUCK_TUTORIAL,
+  WORKING_WITH_DUCK_TUTORIAL_SIGNALS,
+} from "@/lib/working-with-duck";
 import {
   GARMIN_TUTORIAL,
   GARMIN_TUTORIAL_SIGNALS,
@@ -34,6 +39,11 @@ import {
   FOR_BETTER_OR_BULK_TUTORIAL,
   FOR_BETTER_OR_BULK_TUTORIAL_SIGNALS,
 } from "@/lib/for-better-or-bulk";
+import {
+  TRIAL_AND_ERROR_TUTORIAL,
+  TUTORIAL_RESULT_SIGNAL,
+  TUTORIAL_STEPS,
+} from "@/lib/trial-and-error";
 
 const SCRIPT: TutorialScript = {
   gameId: "test-game",
@@ -219,15 +229,15 @@ describe("arcade.tutorials slice", () => {
 const SCRIPTS: Record<string, TutorialScript> = {
   "laser-loon": LASER_LOON_TUTORIAL,
   "meme-vault": MEME_VAULT_TUTORIAL,
+  "quasi-puzzler": QUASI_TUTORIAL,
+  "working-with-duck": WORKING_WITH_DUCK_TUTORIAL,
   "garmin-watch": GARMIN_TUTORIAL,
   "patty-drive-thru": PATTY_TUTORIAL,
+  "trial-and-error": TRIAL_AND_ERROR_TUTORIAL,
   "for-better-or-bulk": FOR_BETTER_OR_BULK_TUTORIAL,
 };
 const PENDING = [
-  "working-with-duck",
-  "quasi-puzzler",
   "clinical-chaos",
-  "trial-and-error",
   "study-director",
   "retro-labyrinth",
   "protocol-drift",
@@ -254,6 +264,15 @@ describe("game tutorials", () => {
     }
   });
 
+  it("practises only signals Working With Duck sends", () => {
+    const sent = new Set<string>(
+      Object.values(WORKING_WITH_DUCK_TUTORIAL_SIGNALS)
+    );
+    for (const step of WORKING_WITH_DUCK_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
   it("practises only signals Monkey C Mayhem sends", () => {
     const sent = new Set<string>(Object.values(GARMIN_TUTORIAL_SIGNALS));
     for (const step of GARMIN_TUTORIAL.steps) {
@@ -264,6 +283,13 @@ describe("game tutorials", () => {
   it("practises only signals Patty's Drive-Thru sends", () => {
     const sent = new Set<string>(Object.values(PATTY_TUTORIAL_SIGNALS));
     for (const step of PATTY_TUTORIAL.steps) {
+      if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
+    }
+  });
+
+  it("practises only signals Quasi-Perfect Puzzler sends", () => {
+    const sent = new Set<string>(Object.values(QUASI_TUTORIAL_SIGNALS));
+    for (const step of QUASI_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
   });
@@ -282,5 +308,21 @@ describe("game tutorials", () => {
     for (const step of FOR_BETTER_OR_BULK_TUTORIAL.steps) {
       if (step.practice) expect(sent.has(step.practice.signal)).toBe(true);
     }
+  });
+
+  it("keeps Trial & Error's seven guided Blind steps as written", () => {
+    const [last, ...rest] = [...TRIAL_AND_ERROR_TUTORIAL.steps].reverse();
+    const guided = rest.reverse();
+    expect(guided.map((step) => [step.id, step.title, step.body])).toEqual(
+      TUTORIAL_STEPS.map((step) => [step.id, step.title, step.text])
+    );
+    // A table step practises its own id; the wrap-up waits for the result.
+    for (const [index, step] of guided.entries()) {
+      const table = TUTORIAL_STEPS[index];
+      expect(step.practice?.signal).toBe(
+        table.waitsFor === null ? undefined : table.id
+      );
+    }
+    expect(last.practice?.signal).toBe(TUTORIAL_RESULT_SIGNAL);
   });
 });

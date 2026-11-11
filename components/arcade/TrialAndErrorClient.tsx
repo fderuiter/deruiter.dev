@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { IconArrowLeft, IconTable } from "@tabler/icons-react";
@@ -13,6 +13,8 @@ import { useTeMotion } from "@/components/trial-and-error/useTeMotion";
 import { usePhone } from "@/components/arcade/mobile";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { requestTeAutoPause } from "@/components/trial-and-error/auto-pause";
+import { carryOverTutorialSeen } from "@/components/trial-and-error/tutorial-seen";
+import { TRIAL_AND_ERROR_TUTORIAL } from "@/lib/trial-and-error";
 
 const CardTableLoader = () =>
   import("@/components/trial-and-error/Tutorial").then(
@@ -42,6 +44,9 @@ export const TrialAndErrorClient: React.FC = () => {
   // An iPad in Split View reads as a phone by window width (507px, 678px) but
   // is wider and taller than any phone, so it keeps the fitted table.
   const tabletPane = useMediaQuery(TABLET_PANE_QUERY);
+  // Before the cabinet launches, so a returning player is not offered the
+  // guided Blind they already answered.
+  useEffect(() => carryOverTutorialSeen(), []);
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -96,6 +101,12 @@ export const TrialAndErrorClient: React.FC = () => {
             mobileLayout={phone && !tabletPane ? "scroll" : "fit"}
             // A hidden tab or a backgrounded app settles a hand still scoring.
             onAutoPause={requestTeAutoPause}
+            // The cabinet's Tutorial key and Setup sheet replay the guided
+            // Blind, so the Field Manual no longer has its own replay.
+            tutorial={TRIAL_AND_ERROR_TUTORIAL}
+            // The touch table has no header row to spare in an iPad Split
+            // View pane; Setup still offers the tutorial there.
+            tutorialKeyInTouchToolbar={false}
           >
             <DynamicCardTable />
           </PlayCabinet>

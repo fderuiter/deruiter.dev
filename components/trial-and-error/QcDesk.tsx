@@ -341,6 +341,7 @@ export function QcDesk({
                           key={cell.col}
                           role="gridcell"
                           data-coach={`cell-${cell.row}-${cell.col}`}
+                          data-tutorial-target={`cell-${cell.row}-${cell.col}`}
                           tabIndex={isActive ? 0 : -1}
                           ref={(el) => {
                             const key = `${cell.row}:${cell.col}`;
@@ -472,6 +473,7 @@ export function QcDesk({
               type="button"
               onClick={correct}
               data-coach="correct"
+              data-tutorial-target="correct"
               className={`${BUTTON_BASE} mt-2 w-full border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
             >
               Flag &amp; Correct [C]

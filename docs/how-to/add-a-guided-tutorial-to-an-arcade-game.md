@@ -44,6 +44,7 @@ Inside the cabinet, the game reads `useCabinetTutorial()` from `@/components/arc
 - Call `signal("jump")` wherever the action really happens. A signal the current step is not waiting for is dropped without a render, so it is safe in a game loop.
 - While `active` is true, keep the player safe and keep the practice out of saved progress. Laser Loon switches to its Sandbox, where nothing hurts the loon, and switches back when the tutorial ends. Monkey C Mayhem has no sandbox, so it clears the course of gaps and foes after every step of the run instead (`keepTutorialRunSafe` in `lib/garmin/tutorial.ts`).
 - `stepId` names the current step if the game needs to stage something for it.
+- A game modal that covers the stage, such as Trial & Error's Inspect view, carries `data-tutorial-covers="true"`. The card steps aside while it is open, so the game shows the current step inside the modal (`components/trial-and-error/Tutorial.tsx`).
 
 ## 3. Hand it to the cabinet
 

@@ -169,6 +169,12 @@ interface PlayCabinetProps {
    */
   tutorial?: TutorialScript;
   /**
+   * Leaves the Tutorial key out of the immersive touch toolbar, where the
+   * Setup sheet still offers the tutorial. For a game whose touch layout
+   * cannot spare the header room a fourth toolbar key costs (#3455).
+   */
+  tutorialKeyInTouchToolbar?: boolean;
+  /**
    * Replaces the Launch button with the game's own launch choices, such as
    * Resume and New run (#3466). It gets the cabinet's `launch` and the
    * engine `prefetch`; leave it out for the standard Launch button.
@@ -268,6 +274,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   views,
   setupItems,
   tutorial,
+  tutorialKeyInTouchToolbar = true,
   launchControl: LaunchControl,
   children,
 }) => {
@@ -398,8 +405,9 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   const immersive = isFullscreen || touchImmersive;
   // The touch toolbar's buttons: Fullscreen only where the API exists (iOS has
   // none), plus Setup and Power.
+  const touchTutorialKey = tutorialRun.available && tutorialKeyInTouchToolbar;
   const toolbarButtonCount =
-    (fullscreenSupported ? 1 : 0) + (tutorialRun.available ? 1 : 0) + 2;
+    (fullscreenSupported ? 1 : 0) + (touchTutorialKey ? 1 : 0) + 2;
   // iPhone has no element fullscreen, so its phone view shows no Fullscreen
   // control at all; the installed app already runs standalone (ADR 0062). A
   // narrow desktop window in the phone view keeps it.
@@ -1137,7 +1145,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                 variant="icon"
               />
             )}
-            {tutorialRun.available && (
+            {touchTutorialKey && (
               <button
                 type="button"
                 onClick={startTutorial}

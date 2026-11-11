@@ -489,3 +489,51 @@ test.describe("Quasi-Perfect Puzzler guided tutorial", () => {
     await expect.poll(() => step(page)).toBe("goal");
   });
 });
+
+test.describe("Trial & Error guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  async function openTable(page: Page) {
+    await page.goto("/arcade/trial-and-error");
+    await expect(async () => {
+      const launchButton = page.getByRole("button", {
+        name: /Launch Cabinet/i,
+      });
+      if (await launchButton.isVisible()) await launchButton.click();
+      await expect(page.getByTestId("hand")).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 30000 });
+  }
+
+  test("is offered once, deals the guided Blind, and leaves for the campaign", async ({
+    page,
+  }) => {
+    await openTable(page);
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+    await expect.poll(() => step(page)).toBe("welcome");
+    await expect(page.getByTestId("hand")).toContainText("(Guided)");
+    await page.getByRole("button", { name: "Leave the tutorial" }).click();
+    await expect(page.getByTestId("hand")).not.toContainText("(Guided)");
+
+    await openTable(page);
+    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+  });
+
+  test("is not offered to a player who answered the old guided Blind", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("te:tutorial-seen", "1");
+      } catch {}
+    });
+    await openTable(page);
+    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+    await page.locator('button[aria-label="Tutorial"]:visible').first().click();
+    await expect.poll(() => step(page)).toBe("welcome");
+  });
+});

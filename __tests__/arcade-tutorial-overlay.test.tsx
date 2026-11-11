@@ -149,6 +149,26 @@ describe("TutorialOverlay", () => {
     ).toBe("fire");
   });
 
+  it("steps aside while a game's own modal covers the stage (#3455)", async () => {
+    render(<Cabinet />);
+    fireEvent.click(screen.getByRole("button", { name: "Start the tutorial" }));
+    expect(screen.getByTestId("tutorial-card")).toBeTruthy();
+    const modal = document.createElement("div");
+    modal.setAttribute("data-tutorial-covers", "true");
+    act(() => {
+      document.body.appendChild(modal);
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId("tutorial-card")).toBeNull()
+    );
+    // The run carries on underneath, and the card returns with the modal gone.
+    expect(probe.game).toEqual({ active: true, stepId: "hello" });
+    act(() => modal.remove());
+    await waitFor(() =>
+      expect(screen.getByTestId("tutorial-card")).toBeTruthy()
+    );
+  });
+
   it("hands a practice step to the game, counts its signals and moves on", async () => {
     render(<Cabinet />);
     fireEvent.click(screen.getByRole("button", { name: "Start the tutorial" }));

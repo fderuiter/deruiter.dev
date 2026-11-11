@@ -35,6 +35,8 @@ export const PRACTICE_DONE_MS = 900;
 /** The card's distance from its control and from the stage's edges, in px. */
 const GAP_PX = 10;
 const EDGE_PX = 8;
+/** Room the fixed site header takes at the top of the window (scroll-mt-nav-24). */
+const HEADER_CLEARANCE_PX = 96;
 /**
  * The docked card's top on a touch cabinet, in px: below the floating
  * toolbar (48px keys in the stage's top right corner).
@@ -103,6 +105,23 @@ function place(
     top: Math.round(top),
     left: Math.round(clamp(centred, EDGE_PX, maxLeft)),
   };
+}
+
+/** Scrolls the window just enough to show the card below the site header. */
+function revealCard(card: HTMLElement | null) {
+  if (!card || typeof window.scrollBy !== "function") return;
+  const rect = card.getBoundingClientRect();
+  if (rect.height === 0) return;
+  // Measured as Meme Vault's room does, so the two never pull apart.
+  const header = document.querySelector("header")?.getBoundingClientRect();
+  const top = Math.max(0, header?.bottom ?? HEADER_CLEARANCE_PX) + EDGE_PX;
+  if (rect.top < top) {
+    window.scrollBy({ top: rect.top - top });
+  } else if (rect.bottom > window.innerHeight - EDGE_PX) {
+    const over = rect.bottom - window.innerHeight + EDGE_PX;
+    // Never push the card's top under the header to show its bottom.
+    window.scrollBy({ top: Math.min(over, rect.top - top) });
+  }
 }
 
 function findTarget(from: HTMLElement, name: string): HTMLElement | null {
@@ -202,6 +221,10 @@ export function TutorialOverlay({
     if (!running || covered || !placed) return;
     if (practising) focusGame(cardRef.current);
     else nextRef.current?.focus({ preventScroll: true });
+    // A cabinet taller than the window can leave a step's card above or
+    // below it (#3454), so each new step brings its card on screen once,
+    // clear of the site header. A card already on screen does not move.
+    revealCard(cardRef.current);
   }, [running, covered, placed, practising, state.index]);
 
   // A finished practice shows its tick briefly, then moves on.

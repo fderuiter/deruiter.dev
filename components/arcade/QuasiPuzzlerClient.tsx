@@ -7,6 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { IntentLink } from "@/components/ui/IntentLink";
+import { QUASI_TUTORIAL } from "@/lib/quasi-perfect/tutorial";
 import {
   IconBrain,
   IconCpu,
@@ -90,6 +91,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
             ]}
             importComponent={QuasiPerfectPuzzlerLoader}
             mobileLayout="fit"
+            tutorial={QUASI_TUTORIAL}
           >
             <DynamicQuasiPerfectPuzzler />
           </PlayCabinet>

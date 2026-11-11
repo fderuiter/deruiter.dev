@@ -710,3 +710,78 @@ test.describe("Study Director guided tutorial", () => {
     ).toBeEnabled();
   });
 });
+
+test.describe("Clinical Trial Chaos guided tutorial", () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Keyboard walkthrough on desktop Chrome"
+    );
+  });
+
+  test("runs a practice shift by doing, and can be replayed", async ({
+    page,
+  }) => {
+    test.setTimeout(90000);
+    await page.goto("/arcade/clinical-chaos");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Start the tutorial" }).click();
+
+    const card = page.getByTestId("tutorial-card");
+    const queue = page.locator('[data-tutorial-target="queue"]');
+    await expect.poll(() => step(page)).toBe("welcome");
+    await card.getByRole("button", { name: "Next" }).click();
+
+    // The practice shift is on the floor, and its queue holds still.
+    await expect.poll(() => step(page)).toBe("cycle");
+    await expect(queue).toBeVisible();
+    const opening = await queue.getByRole("button").count();
+    await page.keyboard.press("ArrowRight");
+
+    // Back to the first dossier, which has a flagged field, and open it.
+    await expect.poll(() => step(page)).toBe("open");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("Enter");
+
+    // Work through the answers until the right one lands.
+    await expect.poll(() => step(page)).toBe("validate");
+    await expect(async () => {
+      for (const key of ["1", "2", "3", "4"]) {
+        if ((await step(page)) !== "validate") break;
+        await page.keyboard.press(key);
+      }
+      expect(await step(page)).toBe("lifeline");
+    }).toPass({ timeout: 15000 });
+
+    // The Coffee Break always fires; Enter then routes and signs.
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.keyboard.press("q");
+    await expect.poll(() => step(page)).toBe("submit");
+    const signDialog = page.locator('[aria-labelledby="cc-sign-dialog-title"]');
+    await page.keyboard.press("Enter");
+    const routed = async () =>
+      (await signDialog.isVisible()) ? "signing" : await step(page);
+    await expect.poll(routed).not.toBe("submit");
+    if ((await routed()) === "signing") await page.keyboard.press("Enter");
+    await expect.poll(() => step(page)).toBe("auditor");
+
+    // No new dossier arrived while the clocks stood still.
+    expect(await queue.getByRole("button").count()).toBeLessThanOrEqual(
+      opening
+    );
+
+    await card.getByRole("button", { name: "Next" }).click();
+    await expect.poll(() => step(page)).toBe("done");
+    await card.getByRole("button", { name: "Finish" }).click();
+    await expect(card).toHaveCount(0);
+
+    // The Tutorial key replays it.
+    await page.getByTestId("cabinet-tutorial-key").click();
+    await expect.poll(() => step(page)).toBe("welcome");
+  });
+});

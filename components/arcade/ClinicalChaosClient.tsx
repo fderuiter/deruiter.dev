@@ -82,6 +82,9 @@ export const ClinicalChaosClient: React.FC = () => {
           <PlayCabinet
             gameId="clinical-chaos"
             tutorial={CLINICAL_CHAOS_TUTORIAL}
+            // The touch layout has no height to spare for another toolbar
+            // key on an iPad mini; Setup still offers the tutorial there.
+            tutorialKeyInTouchToolbar={false}
             singleTitleScreen={false}
             title="Clinical Trial Chaos: CDISC Compliance"
             subtitle="Clinical Data, Against the Clock"

@@ -268,4 +268,71 @@ describe("pipeline client in a worker", () => {
     ).rejects.toThrow();
     expect(client.mode()).toBe("main-thread");
   }, 60_000);
+
+  it("detaches onmessage and onerror handlers on the released worker to prevent leaks", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    const pending = client.request({ type: "run", seed: 1, nSubjects: 4 });
+    const [worker] = FakeWorker.instances;
+    expect(worker.onmessage).not.toBeNull();
+    expect(worker.onerror).not.toBeNull();
+
+    client.dispose();
+    expect(worker.terminated).toBe(true);
+    expect(worker.onmessage).toBeNull();
+    expect(worker.onerror).toBeNull();
+    await expect(pending).rejects.toBeInstanceOf(PipelineDisposedError);
+  });
+
+  it("settles heterogeneous requests mid-flight when cancel and dispose are triggered in rapid succession", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    const r1 = client.request({ type: "run", seed: 1, nSubjects: 4 });
+    const r2 = client.request({
+      type: "rows",
+      runId: 1,
+      key: "sdtm/DM",
+      offset: 0,
+      limit: 10,
+    });
+    const r3 = client.request({
+      type: "trace",
+      runId: 1,
+      origin: { kind: "activity", activityId: "act1" },
+      limit: 5,
+    });
+    const r4 = client.request({
+      type: "package",
+      runId: 1,
+      kind: "submission",
+    });
+
+    // Rapid cancellation followed immediately by disposal
+    client.cancel();
+    client.dispose();
+
+    const settled = await Promise.allSettled([r1, r2, r3, r4]);
+    expect(settled).toHaveLength(4);
+    for (const item of settled) {
+      expect(item.status).toBe("rejected");
+      if (item.status === "rejected") {
+        expect(item.reason).toBeInstanceOf(PipelineCancelledError);
+      }
+    }
+  });
+
+  it("cleans up pending waiter and rejects when worker postMessage throws synchronously", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    vi.spyOn(FakeWorker.prototype, "postMessage").mockImplementationOnce(() => {
+      throw new Error("Simulated postMessage DataCloneError");
+    });
+    await expect(
+      client.request({ type: "run", seed: 1, nSubjects: 4 })
+    ).rejects.toThrow("Simulated postMessage DataCloneError");
+
+    // Client should remain in a clean state after postMessage failure
+    expect(client.mode()).toBe("worker");
+    client.dispose();
+  });
 });

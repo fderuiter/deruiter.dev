@@ -2755,3 +2755,73 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
     expect(post.mock.calls[0][1]).toEqual({ v: 2 });
   });
 });
+
+describe("Study data pipeline disposal rejects pending requests (#3798)", () => {
+  it("rejects pending in-flight requests with PipelineDisposedError when disposed", async () => {
+    const {
+      createPipelineClient,
+      PipelineDisposedError,
+      PipelineCancelledError,
+    } = await import("@/components/study-data/pipeline-client");
+    const workers: {
+      onmessage: ((event: MessageEvent) => void) | null;
+      onerror: ((event: ErrorEvent) => void) | null;
+      posted: unknown[];
+      terminated: boolean;
+      postMessage(data: unknown): void;
+      terminate(): void;
+    }[] = [];
+
+    vi.stubGlobal(
+      "Worker",
+      class {
+        onmessage = null;
+        onerror = null;
+        posted: unknown[] = [];
+        terminated = false;
+        constructor() {
+          workers.push(this);
+        }
+        postMessage(data: unknown) {
+          this.posted.push(data);
+        }
+        terminate() {
+          this.terminated = true;
+        }
+      }
+    );
+
+    try {
+      const client = createPipelineClient();
+      const first = client.request({ type: "run", seed: 301, nSubjects: 10 });
+      const second = client.request({ type: "run", seed: 302, nSubjects: 10 });
+
+      expect(workers).toHaveLength(1);
+      expect(workers[0].terminated).toBe(false);
+
+      client.dispose();
+
+      expect(workers[0].terminated).toBe(true);
+      await expect(first).rejects.toBeInstanceOf(PipelineDisposedError);
+      await expect(first).rejects.toBeInstanceOf(PipelineCancelledError);
+      await expect(second).rejects.toBeInstanceOf(PipelineDisposedError);
+
+      // Settle attempt after disposal must not trigger second rejection or throw
+      workers[0].onmessage?.({
+        data: { id: 1, ok: true, result: "stale" },
+      } as MessageEvent);
+
+      // Client remains usable: subsequent request starts a fresh worker
+      const third = client.request({ type: "run", seed: 303, nSubjects: 10 });
+      expect(workers).toHaveLength(2);
+      expect(workers[1].terminated).toBe(false);
+
+      workers[1].onmessage?.({
+        data: { id: 3, ok: true, result: "fresh-result" },
+      } as MessageEvent);
+      await expect(third).resolves.toBe("fresh-result");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

@@ -105,7 +105,11 @@ export function createPipelineClient(): PipelineClient {
   const release = (error: Error) => {
     const released = worker;
     worker = null;
-    released?.terminate();
+    if (released) {
+      released.onmessage = null;
+      released.onerror = null;
+      released.terminate();
+    }
     rejectAll(error);
   };
 
@@ -156,7 +160,12 @@ export function createPipelineClient(): PipelineClient {
           resolve: (value) => resolve(value as StudyDataResults[T]),
           reject,
         });
-        target.postMessage(request);
+        try {
+          target.postMessage(request);
+        } catch (error) {
+          pending.delete(id);
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
       });
     },
     cancel() {

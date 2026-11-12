@@ -172,6 +172,9 @@ describe("ROI analytics worker client", () => {
       volume.dimensions,
       seed
     );
+    const firstRejection = expect(first).rejects.toSatisfy((err) =>
+      neuro.isRoiRequestSupersededError(err)
+    );
     const worker = FakeWorker.instances[0];
     const firstRequest = worker.lastRequest().message;
     const second = neuro.requestROISegmentationAsync(
@@ -214,11 +217,10 @@ describe("ROI analytics worker client", () => {
 
     await expect(second).resolves.toBe(freshResult);
 
-    // The superseded request is dropped: neither the stale worker result nor
-    // the timeout fallback ever reaches its caller.
+    // The superseded request settles with a typed supersession error;
+    // neither the stale worker result nor the timeout fallback ever reaches its caller (#3797).
     await vi.advanceTimersByTimeAsync(2000);
-    const outcome = Promise.race([first, Promise.resolve(PENDING)]);
-    await expect(outcome).resolves.toBe(PENDING);
+    await firstRejection;
   });
 
   it("falls back to the main thread when the worker reports failure", async () => {
@@ -372,5 +374,467 @@ describe("ROI analytics worker client", () => {
     void neuro.requestHistogramAsync(data);
     expect(FakeWorker.instances).toHaveLength(2);
     expect(FakeWorker.instances[1].posted).toHaveLength(1);
+  });
+
+  const freshHistogram = {
+    bins: new Uint32Array(256),
+    totalVoxels: 10,
+    min: 0,
+    max: 255,
+    mean: 128,
+    median: 128,
+    mode: 128,
+    stdDev: 10,
+    volumeMm3: 10,
+  };
+  const staleHistogram = {
+    bins: new Uint32Array(256),
+    totalVoxels: 1,
+    min: 0,
+    max: 0,
+    mean: 0,
+    median: 0,
+    mode: 0,
+    stdDev: 0,
+    volumeMm3: 1,
+  };
+
+  const freshSegmentation = {
+    stats: {
+      seed: { x: 48, y: 48, z: 48 },
+      voxelCount: 50,
+      volumeMm3: 50,
+      meanIntensity: 140,
+      stdDevIntensity: 5,
+      minIntensity: 120,
+      maxIntensity: 160,
+    },
+    contours: [],
+    roiMask: new Uint8Array(64),
+  };
+  const staleSegmentation = {
+    stats: {
+      seed: { x: 40, y: 40, z: 40 },
+      voxelCount: 10,
+      volumeMm3: 10,
+      meanIntensity: 90,
+      stdDevIntensity: 4,
+      minIntensity: 80,
+      maxIntensity: 100,
+    },
+    contours: [],
+    roiMask: new Uint8Array(64),
+  };
+
+  const freshContours = [
+    {
+      id: "fresh_contour",
+      isClosed: true,
+      segments: [],
+      svgPathData: "M 0 0 L 1 1",
+    },
+  ];
+  const staleContours = [
+    {
+      id: "stale_contour",
+      isClosed: false,
+      segments: [],
+      svgPathData: "M 0 0",
+    },
+  ];
+
+  const freshQA = {
+    qaAlerts: [
+      {
+        id: "alert_fresh",
+        type: "intensity_spike" as const,
+        sliceIndex: 1,
+        plane: "axial" as const,
+        severity: "critical" as const,
+        description: "Fresh anomaly",
+        suggestedAction: "Inspect voxel intensity",
+        voxelCoord: { x: 1, y: 1, z: 1 },
+        metricValue: 99,
+      },
+    ],
+    scanDurationMs: 42,
+  };
+  const staleQA = {
+    qaAlerts: [],
+    scanDurationMs: 5,
+  };
+
+  describe.each([
+    {
+      task: "histogram",
+      dispatch: (neuro: NeuroModule) =>
+        neuro.requestHistogramAsync(new Uint8Array([1, 2, 3])),
+      staleReply: {
+        type: "histogram" as const,
+        histogram: staleHistogram,
+      },
+      freshReply: {
+        type: "histogram" as const,
+        histogram: freshHistogram,
+      },
+      expectedFresh: freshHistogram,
+    },
+    {
+      task: "region_grow",
+      dispatch: (neuro: NeuroModule) => {
+        const v = smallVolume(neuro);
+        return neuro.requestROISegmentationAsync(
+          v.rawT1,
+          v.brainmask,
+          v.dimensions,
+          { x: 48, y: 48, z: 48 }
+        );
+      },
+      staleReply: {
+        type: "region_grow" as const,
+        segmentation: staleSegmentation,
+      },
+      freshReply: {
+        type: "region_grow" as const,
+        segmentation: freshSegmentation,
+      },
+      expectedFresh: freshSegmentation,
+    },
+    {
+      task: "marching_squares",
+      dispatch: (neuro: NeuroModule) =>
+        neuro.requestMarchingSquaresAsync(new Uint8Array([0, 1, 1, 0]), 2, 2, 0.5),
+      staleReply: {
+        type: "marching_squares" as const,
+        contours: staleContours,
+      },
+      freshReply: {
+        type: "marching_squares" as const,
+        contours: freshContours,
+      },
+      expectedFresh: freshContours,
+    },
+    {
+      task: "qa_scan",
+      dispatch: (neuro: NeuroModule) =>
+        neuro.requestVolumeQAScanAsync(smallVolume(neuro)),
+      staleReply: {
+        type: "qa_scan" as const,
+        ...staleQA,
+      },
+      freshReply: {
+        type: "qa_scan" as const,
+        ...freshQA,
+      },
+      expectedFresh: {
+        alerts: freshQA.qaAlerts,
+        scanDurationMs: freshQA.scanDurationMs,
+      },
+    },
+  ])(
+    "Task family supersession: $task (#3797)",
+    ({ dispatch, staleReply, freshReply, expectedFresh }) => {
+      it("settles superseded request when stale reply arrives before fallback timeout", async () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const neuro = await loadNeuro();
+        const first = dispatch(neuro);
+        const firstRejection = expect(first).rejects.toSatisfy((err) =>
+          neuro.isRoiRequestSupersededError(err)
+        );
+        const worker = FakeWorker.instances[0];
+        const firstReq = worker.lastRequest().message;
+
+        const second = dispatch(neuro);
+        const secondReq = worker.lastRequest().message;
+
+        // Deliver stale response for first
+        worker.respond({
+          id: firstReq.id,
+          seq: firstReq.seq,
+          ...staleReply,
+        });
+
+        // Deliver fresh response for second
+        worker.respond({
+          id: secondReq.id,
+          seq: secondReq.seq,
+          ...freshReply,
+        });
+
+        await firstRejection;
+        await expect(second).resolves.toEqual(expectedFresh);
+
+        // Verify timers: no late timers fire or leak
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+
+      it("settles superseded request on timeout when stale reply arrives after fallback timer", async () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const neuro = await loadNeuro();
+        const first = dispatch(neuro);
+        const firstRejection = expect(first).rejects.toSatisfy((err) =>
+          neuro.isRoiRequestSupersededError(err)
+        );
+        const worker = FakeWorker.instances[0];
+        const firstReq = worker.lastRequest().message;
+
+        // Advance by 500ms before dispatching second
+        await vi.advanceTimersByTimeAsync(500);
+
+        const second = dispatch(neuro);
+        const secondReq = worker.lastRequest().message;
+
+        // Advance 600ms more (1100ms total for first -> timed out; 600ms total for second -> still active)
+        await vi.advanceTimersByTimeAsync(600);
+
+        // First should have settled on timeout with supersession error, not fallback
+        await firstRejection;
+
+        // Stale response arrives late for first (clean no-op)
+        worker.respond({
+          id: firstReq.id,
+          seq: firstReq.seq,
+          ...staleReply,
+        });
+
+        // Second responds with fresh data
+        worker.respond({
+          id: secondReq.id,
+          seq: secondReq.seq,
+          ...freshReply,
+        });
+
+        await expect(second).resolves.toEqual(expectedFresh);
+
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+
+      it("settles superseded request when reply arrives out of order (second before first)", async () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const neuro = await loadNeuro();
+        const first = dispatch(neuro);
+        const firstRejection = expect(first).rejects.toSatisfy((err) =>
+          neuro.isRoiRequestSupersededError(err)
+        );
+        const worker = FakeWorker.instances[0];
+        const firstReq = worker.lastRequest().message;
+
+        const second = dispatch(neuro);
+        const secondReq = worker.lastRequest().message;
+
+        // Second arrives first
+        worker.respond({
+          id: secondReq.id,
+          seq: secondReq.seq,
+          ...freshReply,
+        });
+
+        await expect(second).resolves.toEqual(expectedFresh);
+
+        // First arrives second
+        worker.respond({
+          id: firstReq.id,
+          seq: firstReq.seq,
+          ...staleReply,
+        });
+
+        await firstRejection;
+
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+    }
+  );
+
+  describe("Interleaved multi-task family supersession & robustness (#3797)", () => {
+    it("preserves independent sequence counters across task families during worker crash", async () => {
+      const neuro = await loadNeuro();
+      const volume = smallVolume(neuro);
+
+      // Dispatch interleaved requests across two distinct task families:
+      // R1: region_grow (seq 1) - superseded by R2
+      // H1: histogram   (seq 2) - superseded by H2
+      // R2: region_grow (seq 3) - latest in region_grow
+      // H2: histogram   (seq 4) - latest in histogram
+      const r1 = neuro.requestROISegmentationAsync(
+        volume.rawT1,
+        volume.brainmask,
+        volume.dimensions,
+        { x: 40, y: 40, z: 40 }
+      );
+      const worker = FakeWorker.instances[0];
+
+      const h1 = neuro.requestHistogramAsync(new Uint8Array([1, 2, 3]));
+      const r2 = neuro.requestROISegmentationAsync(
+        volume.rawT1,
+        volume.brainmask,
+        volume.dimensions,
+        { x: 48, y: 48, z: 48 }
+      );
+      const h2 = neuro.requestHistogramAsync(new Uint8Array([4, 5, 6]));
+
+      expect(worker.posted).toHaveLength(4);
+
+      // Simulate unexpected worker crash
+      worker.onerror?.(new Error("Worker thread OOM panic"));
+
+      // Superseded callers must reject with typed error
+      await expect(r1).rejects.toSatisfy((err) =>
+        neuro.isRoiRequestSupersededError(err)
+      );
+      await expect(h1).rejects.toSatisfy((err) =>
+        neuro.isRoiRequestSupersededError(err)
+      );
+
+      // Latest callers in each family must settle cleanly through main-thread fallback
+      const r2Result = await r2;
+      expect(r2Result.stats.seed).toEqual({ x: 48, y: 48, z: 48 });
+
+      const h2Result = await h2;
+      expect(h2Result.bins).toHaveLength(256);
+
+      // Subsequent request must spin up a fresh worker
+      void neuro.requestHistogramAsync(new Uint8Array([7, 8, 9]));
+      expect(FakeWorker.instances).toHaveLength(2);
+    });
+
+    it("settles interleaved requests correctly when responses arrive completely out of order", async () => {
+      const neuro = await loadNeuro();
+      const volume = smallVolume(neuro);
+
+      const r1 = neuro.requestROISegmentationAsync(
+        volume.rawT1,
+        volume.brainmask,
+        volume.dimensions,
+        { x: 40, y: 40, z: 40 }
+      );
+      const worker = FakeWorker.instances[0];
+      const r1Req = worker.posted[0].message;
+
+      const h1 = neuro.requestHistogramAsync(new Uint8Array([1, 2, 3]));
+      const h1Req = worker.posted[1].message;
+
+      const r2 = neuro.requestROISegmentationAsync(
+        volume.rawT1,
+        volume.brainmask,
+        volume.dimensions,
+        { x: 48, y: 48, z: 48 }
+      );
+      const r2Req = worker.posted[2].message;
+
+      const h2 = neuro.requestHistogramAsync(new Uint8Array([4, 5, 6]));
+      const h2Req = worker.posted[3].message;
+
+      // 1. Reply to H2 first (fresh histogram)
+      worker.respond({
+        id: h2Req.id,
+        seq: h2Req.seq,
+        type: "histogram",
+        histogram: freshHistogram,
+      });
+      await expect(h2).resolves.toEqual(freshHistogram);
+
+      // 2. Reply to R1 second (stale region grow -> must be superseded)
+      worker.respond({
+        id: r1Req.id,
+        seq: r1Req.seq,
+        type: "region_grow",
+        segmentation: staleSegmentation,
+      });
+      await expect(r1).rejects.toSatisfy((err) =>
+        neuro.isRoiRequestSupersededError(err)
+      );
+
+      // 3. Reply to R2 third (fresh region grow)
+      worker.respond({
+        id: r2Req.id,
+        seq: r2Req.seq,
+        type: "region_grow",
+        segmentation: freshSegmentation,
+      });
+      await expect(r2).resolves.toEqual(freshSegmentation);
+
+      // 4. Reply to H1 fourth (stale histogram -> must be superseded)
+      worker.respond({
+        id: h1Req.id,
+        seq: h1Req.seq,
+        type: "histogram",
+        histogram: staleHistogram,
+      });
+      await expect(h1).rejects.toSatisfy((err) =>
+        neuro.isRoiRequestSupersededError(err)
+      );
+    });
+
+    it("settles superseded request when worker response omits or scrambles the type field", async () => {
+      const neuro = await loadNeuro();
+
+      const first = neuro.requestHistogramAsync(new Uint8Array([1, 2, 3]));
+      const worker = FakeWorker.instances[0];
+      const firstReq = worker.lastRequest().message;
+
+      const second = neuro.requestHistogramAsync(new Uint8Array([4, 5, 6]));
+      const secondReq = worker.lastRequest().message;
+
+      // Worker replies to first with undefined type (or untyped error payload)
+      worker.onmessage?.({
+        data: {
+          id: firstReq.id,
+          seq: firstReq.seq,
+          type: undefined as unknown as "histogram",
+          success: true,
+          histogram: staleHistogram,
+        },
+      });
+
+      // Must reject via pending.type tracking, not drop or apply stale histogram
+      await expect(first).rejects.toSatisfy((err) =>
+        neuro.isRoiRequestSupersededError(err)
+      );
+
+      // Second responds normally
+      worker.respond({
+        id: secondReq.id,
+        seq: secondReq.seq,
+        type: "histogram",
+        histogram: freshHistogram,
+      });
+      await expect(second).resolves.toEqual(freshHistogram);
+    });
+
+    it("falls back to main thread and cleans up pending state when worker.postMessage throws", async () => {
+      const neuro = await loadNeuro();
+      vi.spyOn(FakeWorker.prototype, "postMessage").mockImplementation(() => {
+        throw new Error("DataCloneError: buffer detached");
+      });
+
+      const data = new Uint8Array([1, 2, 3, 4]);
+      const result = await neuro.requestHistogramAsync(data);
+
+      expect(result).toEqual(neuro.compute256BinHistogram(data));
+    });
+
+    it("recognizes Error instances and serialized objects in isRoiRequestSupersededError", async () => {
+      const neuro = await loadNeuro();
+      const err = new neuro.RoiRequestSupersededError("custom msg");
+
+      expect(neuro.isRoiRequestSupersededError(err)).toBe(true);
+      expect(
+        neuro.isRoiRequestSupersededError({
+          name: "RoiRequestSupersededError",
+          message: "test",
+        })
+      ).toBe(true);
+      expect(
+        neuro.isRoiRequestSupersededError({
+          code: "ROI_REQUEST_SUPERSEDED",
+        })
+      ).toBe(true);
+      expect(neuro.isRoiRequestSupersededError(new Error("generic error"))).toBe(
+        false
+      );
+      expect(neuro.isRoiRequestSupersededError(null)).toBe(false);
+      expect(neuro.isRoiRequestSupersededError("string")).toBe(false);
+      expect(neuro.isRoiRequestSupersededError(undefined)).toBe(false);
+    });
   });
 });

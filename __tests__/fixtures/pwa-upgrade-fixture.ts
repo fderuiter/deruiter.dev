@@ -36,7 +36,7 @@ export class MockStorage implements Storage, RunSnapshotStorage {
     if (this._denyWrites) {
       throw new DOMException("Quota exceeded.", "QuotaExceededError");
     }
-    this.store.set(key, value);
+    this.store.set(key, String(value));
   }
 
   removeItem(key: string): void {
@@ -190,6 +190,7 @@ export interface BuildGenerationConfig {
   readonly featureChunk: string;
   readonly stylesheet: string;
   readonly fontAsset: string;
+  readonly sharedAsset: string;
   readonly htmlRoutes: Record<string, string>;
 }
 
@@ -211,6 +212,7 @@ export function deriveBuildRevision(manifest: (PrecacheEntry | string)[]): strin
 export interface PwaUpgradeAuditRecord {
   timestamp: number;
   phase: string;
+  browserCommand: string;
   controllerGeneration: BuildGenerationId | null;
   online: boolean;
   documentRoute: string;
@@ -237,6 +239,7 @@ export class MockSerwistWorker {
     this.manifest = [
       { url: config.stylesheet, revision: null },
       { url: config.fontAsset, revision: `${config.id}-font-hash` },
+      { url: config.sharedAsset, revision: "shared-font-hash-v1" },
       { url: config.shellScriptChunk, revision: null },
       { url: config.featureChunk, revision: null },
     ];
@@ -250,14 +253,36 @@ export class MockSerwistWorker {
     const scriptCache = await caches.open("offline-shell-scripts");
     await scriptCache.put(
       this.config.shellScriptChunk,
-      new SyntheticResponse(`/* generation ${this.generation} shell script */`)
+      new SyntheticResponse(`/* generation ${this.generation} shell script */`, {
+        headers: { "content-type": "application/javascript" },
+      })
     );
 
-    // Precache shell routes with revision: buildRevision
+    // Precache shell routes and static assets with revision: buildRevision
     const precache = await caches.open(`serwist-precache-${this.buildRevision}`);
     for (const [route, html] of Object.entries(this.config.htmlRoutes)) {
       await precache.put(route, new SyntheticResponse(html, { headers: { "content-type": "text/html" } }));
     }
+    // Precache stylesheets and fonts matching OFFLINE_SHELL_ASSET in app/sw.ts
+    await precache.put(
+      this.config.stylesheet,
+      new SyntheticResponse(`/* generation ${this.generation} stylesheet */`, {
+        headers: { "content-type": "text/css" },
+      })
+    );
+    await precache.put(
+      this.config.fontAsset,
+      new SyntheticResponse(`/* generation ${this.generation} font asset */`, {
+        headers: { "content-type": "font/woff2" },
+      })
+    );
+    await precache.put(
+      this.config.sharedAsset,
+      new SyntheticResponse("/* shared font asset inter-latin */", {
+        headers: { "content-type": "font/woff2" },
+      })
+    );
+
     this.state = "installed";
   }
 
@@ -279,7 +304,7 @@ export class MockSerwistWorker {
 
   async handleFetch(
     url: string,
-    destination: "document" | "script" | "style" | "fetch",
+    destination: "document" | "script" | "style" | "font" | "fetch",
     online: boolean,
     caches: MockCacheStorage
   ): Promise<SyntheticResponse> {
@@ -291,6 +316,21 @@ export class MockSerwistWorker {
         throw new TypeError("Failed to fetch (NetworkOnly route offline)");
       }
       return new SyntheticResponse(JSON.stringify({ status: "recorded" }));
+    }
+
+    // Requirement 2: Apply Cache-First runtime strategy for 3D model files
+    if (pathname.startsWith("/models/") || /\.(?:glb|gltf|obj)$/i.test(pathname)) {
+      const modelCache = await caches.open("3d-models-cache");
+      const matched = await modelCache.match(pathname);
+      if (matched) return matched;
+      if (!online) {
+        throw new TypeError(`Failed to fetch 3D model offline: ${pathname}`);
+      }
+      const response = new SyntheticResponse(`/* 3d model buffer for ${pathname} */`, {
+        headers: { "content-type": "model/gltf-binary" },
+      });
+      await modelCache.put(pathname, response);
+      return response;
     }
 
     // Scripts offline rule: (await caches.match(request)) ?? fetch(request)
@@ -320,6 +360,11 @@ export class MockSerwistWorker {
         return new SyntheticResponse(html, { headers: { "content-type": "text/html" } });
       }
     }
+
+    // Check precache for static styles / fonts
+    const precache = await caches.open(`serwist-precache-${this.buildRevision}`);
+    const precachedAsset = await precache.match(pathname);
+    if (precachedAsset) return precachedAsset;
 
     // General cache match
     const cached = await caches.match(pathname);
@@ -369,6 +414,7 @@ export class TwoGenerationPwaFixture {
     featureChunk: "/_next/static/chunks/feature-gen1.js",
     stylesheet: "/_next/static/css/theme-gen1.css",
     fontAsset: "/_next/static/media/font-gen1.woff2",
+    sharedAsset: "/_next/static/media/inter-latin.woff2",
     htmlRoutes: {
       "/": "<html><head><script src=\"/_next/static/chunks/app-shell-gen1.js\"></script></head><body><h1>Landing Gen1</h1></body></html>",
       "/stack": "<html><head><script src=\"/_next/static/chunks/app-shell-gen1.js\"></script></head><body><h1>Stack Gen1</h1></body></html>",
@@ -383,6 +429,7 @@ export class TwoGenerationPwaFixture {
     featureChunk: "/_next/static/chunks/feature-gen2.js",
     stylesheet: "/_next/static/css/theme-gen2.css",
     fontAsset: "/_next/static/media/font-gen2.woff2",
+    sharedAsset: "/_next/static/media/inter-latin.woff2",
     htmlRoutes: {
       "/": "<html><head><script src=\"/_next/static/chunks/app-shell-gen2.js\"></script></head><body><h1>Landing Gen2</h1></body></html>",
       "/stack": "<html><head><script src=\"/_next/static/chunks/app-shell-gen2.js\"></script></head><body><h1>Stack Gen2</h1></body></html>",
@@ -406,13 +453,13 @@ export class TwoGenerationPwaFixture {
   async setupInitialGeneration(): Promise<void> {
     await this.workerGen1.install(this.caches);
     await this.workerGen1.activate(this.caches, this.serviceWorker);
-    this.recordAudit("setup_initial_generation", "/", "gen-1");
+    this.recordAudit("setup_initial_generation", "/", "gen-1", "navigator.serviceWorker.register(/sw.js)");
   }
 
   seedArcadeRun<T>(slug: string, snapshot: RunSnapshot<T>): void {
     this.storage.setItem(runSnapshotKey(slug), JSON.stringify(snapshot));
     const stateObj = snapshot.state as Record<string, unknown> | undefined;
-    this.recordAudit("seed_arcade_run", "/arcade", "gen-1", {
+    this.recordAudit("seed_arcade_run", "/arcade", "gen-1", "storage.setItem(arcade_run)", {
       arcadeSaveIdentity: {
         slug,
         schema: snapshot.schema,
@@ -429,7 +476,7 @@ export class TwoGenerationPwaFixture {
       study,
     };
     this.storage.setItem(STUDY_DRAFT_STORAGE_KEY, JSON.stringify(envelope));
-    this.recordAudit("seed_clinical_draft", "/crf", "gen-1", {
+    this.recordAudit("seed_clinical_draft", "/crf", "gen-1", "storage.setItem(study_draft)", {
       clinicalDraftIdentity: {
         studyId: study.id,
         envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
@@ -439,27 +486,62 @@ export class TwoGenerationPwaFixture {
     });
   }
 
+  suspendActiveSession(onSuspendCb?: () => void): void {
+    onSuspendCb?.();
+    this.recordAudit(
+      "suspend_active_session",
+      "/arcade",
+      this.serviceWorker.controller?.generation ?? "gen-1",
+      "document.visibilitychange:hidden / window.pagehide"
+    );
+  }
+
+  resumeActiveSession(): void {
+    this.recordAudit(
+      "resume_active_session",
+      "/arcade",
+      this.serviceWorker.controller?.generation ?? "gen-1",
+      "document.visibilitychange:visible"
+    );
+  }
+
+  reloadBrowserPage(route: string): void {
+    this.recordAudit(
+      "reload_browser_page",
+      route,
+      this.serviceWorker.controller?.generation ?? "gen-2",
+      "window.location.reload()"
+    );
+  }
+
   async activateNextGeneration(): Promise<void> {
     // Gen 2 installs in background, updates offline-shell-scripts, skips waiting and claims clients
     await this.workerGen2.install(this.caches);
     await this.workerGen2.activate(this.caches, this.serviceWorker);
-    this.recordAudit("activate_next_generation", "/arcade", "gen-2");
+    this.recordAudit("activate_next_generation", "/arcade", "gen-2", "serviceWorker.skipWaiting / clientsClaim");
   }
 
   setOnline(online: boolean): void {
     this.online = online;
-    this.recordAudit(online ? "network_online" : "network_offline", "/arcade", this.serviceWorker.controller?.generation ?? "gen-1");
+    this.recordAudit(
+      online ? "network_online" : "network_offline",
+      "/arcade",
+      this.serviceWorker.controller?.generation ?? "gen-1",
+      online ? "window.dispatchEvent('online')" : "window.dispatchEvent('offline')"
+    );
   }
 
   recordAudit(
     phase: string,
     route: string,
     servedGen: BuildGenerationId | "offline-fallback" | "unavailable",
+    browserCommand = "none",
     extra?: Partial<PwaUpgradeAuditRecord>
   ): void {
     this.auditLog.push({
       timestamp: Date.now(),
       phase,
+      browserCommand,
       controllerGeneration: this.serviceWorker.controller?.generation ?? null,
       online: this.online,
       documentRoute: route,

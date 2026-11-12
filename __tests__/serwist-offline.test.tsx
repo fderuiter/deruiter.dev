@@ -24,6 +24,7 @@ import {
   getOncologyPresetSync,
   STUDY_DRAFT_STORAGE_KEY,
   STUDY_DRAFT_ENVELOPE_VERSION,
+  STUDY_DRAFT_CORRUPT_BACKUP_KEY,
   type StudyProtocol,
 } from "@/lib/crf";
 import {
@@ -302,7 +303,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       codelists: [],
     };
 
-    it("exercises a two-generation build upgrade with active arcade run and clinical studio draft across offline recovery", async () => {
+    it("exercises a two-generation build upgrade with active arcade run and clinical studio draft across suspend, upgrade, and offline recovery", async () => {
       const fixture = new TwoGenerationPwaFixture();
       await fixture.setupInitialGeneration();
 
@@ -322,6 +323,9 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(rawRun).not.toBeNull();
       const rawDraft = fixture.storage.getItem(STUDY_DRAFT_STORAGE_KEY);
       expect(rawDraft).not.toBeNull();
+
+      // Suspend active session (visitor switches tabs / minimizes browser before upgrade)
+      fixture.suspendActiveSession();
 
       // Activate Gen 2 while old page is open (skipWaiting + clientsClaim)
       let controllerChanged = false;
@@ -347,6 +351,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       fixture.setOnline(false);
 
       // Reload/resume /arcade offline
+      fixture.reloadBrowserPage("/arcade");
       const arcadeDoc = await fixture.workerGen2.handleFetch(
         "/arcade",
         "document",
@@ -381,7 +386,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         });
       }
 
-      fixture.recordAudit("restore_arcade_run", "/arcade", "gen-2", {
+      fixture.recordAudit("restore_arcade_run", "/arcade", "gen-2", "readRunSnapshot()", {
         arcadeSaveIdentity: {
           slug: "laser-loon",
           schema: 1,
@@ -392,6 +397,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       });
 
       // Reload /crf offline: non-precached route falls back to /offline
+      fixture.reloadBrowserPage("/crf");
       const crfDoc = await fixture.workerGen2.handleFetch(
         "/crf",
         "document",
@@ -401,7 +407,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(crfDoc.status).toBe(200);
       expect(await crfDoc.text()).toContain("Offline Shell Gen2");
 
-      fixture.recordAudit("render_offline_fallback", "/crf", "offline-fallback", {
+      fixture.recordAudit("render_offline_fallback", "/crf", "offline-fallback", "handleFetch(/crf)", {
         recoveryNotice: "This page isn’t available offline",
       });
 
@@ -433,7 +439,7 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(initialStudy.id).toBe("SYNTHETIC-STUDY-PWA-R10");
       expect(loadRecoveredDraftSavedAt()).toBe(savedAtTimestamp);
 
-      fixture.recordAudit("restore_clinical_draft", "/crf", "gen-2", {
+      fixture.recordAudit("restore_clinical_draft", "/crf", "gen-2", "loadStudyDraft()", {
         clinicalDraftIdentity: {
           studyId: "SYNTHETIC-STUDY-PWA-R10",
           envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
@@ -444,21 +450,51 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       });
 
       // Verify no mixed-build blank journey was accepted
-      expect(fixture.auditLog.length).toBeGreaterThanOrEqual(6);
+      expect(fixture.auditLog.length).toBeGreaterThanOrEqual(8);
       const finalAudit = fixture.auditLog[fixture.auditLog.length - 1];
       expect(finalAudit.controllerGeneration).toBe("gen-2");
       expect(finalAudit.clinicalDraftIdentity?.studyId).toBe("SYNTHETIC-STUDY-PWA-R10");
     });
 
-    it("handles unavailable old chunk request when active page requests old asset offline", async () => {
+    it("preserves compatible assets while rejecting unavailable old chunks on offline dynamic fetch", async () => {
       const fixture = new TwoGenerationPwaFixture();
       await fixture.setupInitialGeneration();
       fixture.seedArcadeRun("laser-loon", seededRun);
 
+      // Cache a 3D model asset online in 3d-models-cache before upgrade (Requirement 2 CacheFirst)
+      const cachedModel = await fixture.workerGen1.handleFetch(
+        "/models/brain-surface.glb",
+        "fetch",
+        true,
+        fixture.caches
+      );
+      expect(cachedModel.status).toBe(200);
+
+      // Upgrade to Gen 2
       await fixture.activateNextGeneration();
       fixture.setOnline(false);
 
-      // Old page holds reference to Gen 1 feature chunk and attempts dynamic import offline
+      // 1. Verify compatible shared font asset is resolvable offline in Gen 2
+      const sharedAssetRes = await fixture.workerGen2.handleFetch(
+        fixture.gen2Config.sharedAsset,
+        "font",
+        fixture.online,
+        fixture.caches
+      );
+      expect(sharedAssetRes.status).toBe(200);
+      expect(await sharedAssetRes.text()).toContain("shared font asset inter-latin");
+
+      // 2. Verify runtime-cached 3D model survived precache eviction and is served offline
+      const offlineModelRes = await fixture.workerGen2.handleFetch(
+        "/models/brain-surface.glb",
+        "fetch",
+        fixture.online,
+        fixture.caches
+      );
+      expect(offlineModelRes.status).toBe(200);
+      expect(await offlineModelRes.text()).toContain("3d model buffer");
+
+      // 3. Old page requests deprecated Gen 1 feature chunk offline -> rejected
       await expect(
         fixture.workerGen2.handleFetch(
           "/_next/static/chunks/feature-gen1.js",
@@ -468,17 +504,29 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         )
       ).rejects.toThrow(/Failed to fetch offline script/);
 
-      // Verify the failure does not corrupt or erase stored active workspace state
+      // 4. Old page requests deprecated Gen 1 stylesheet offline -> rejected (not in Gen 2 precache)
+      await expect(
+        fixture.workerGen2.handleFetch(
+          fixture.gen1Config.stylesheet,
+          "style",
+          fixture.online,
+          fixture.caches
+        )
+      ).rejects.toThrow(/Network unreachable offline/);
+
+      // 5. Verify the fetch rejections do not corrupt or erase stored active workspace state
       const runAfterFailedFetch = readRunSnapshot(fixture.storage, "laser-loon", arcadeFormat);
       expect(runAfterFailedFetch.status).toBe("ok");
 
-      fixture.recordAudit("chunk_fetch_failure_handled", "/arcade", "unavailable", {
-        recoveryNotice: "Old chunk unavailable offline; save preserved for page reload",
+      fixture.recordAudit("compatible_assets_verified", "/arcade", "gen-2", "handleFetch(sharedAssets)", {
+        recoveryNotice: "Compatible assets served; obsolete chunks safely rejected without state corruption",
       });
     });
 
-    it("safely discards outdated saved runs and reports clear notice when build bumps schema version", () => {
+    it("safely handles breaking schema evolution for both Arcade runs and Clinical Studio drafts", () => {
       const storage = new MockStorage();
+
+      // --- Part A: Arcade Run Schema Bump ---
       writeRunSnapshot(storage, "laser-loon", seededRun);
 
       // Generation 2 introduces breaking schema version 2
@@ -495,8 +543,29 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
 
       // Storage entry cleared so invalid state does not persist
       expect(storage.getItem(runSnapshotKey("laser-loon"))).toBeNull();
-      // Notice displayed to the user
       expect(DISCARDED_RUN_NOTICE).toBe("Your saved run could not be read, so it was cleared.");
+
+      // --- Part B: Clinical Studio Envelope Version Mismatch & Corrupt Draft ---
+      const obsoleteEnvelope = {
+        envelopeVersion: 999, // Incompatible future/past schema envelope
+        savedAt: "2026-11-12T10:00:00.000Z",
+        study: syntheticStudyDraft,
+      };
+      storage.setItem(STUDY_DRAFT_STORAGE_KEY, JSON.stringify(obsoleteEnvelope));
+
+      // loadStudyDraft preserves corrupt draft to backup key for operator recovery
+      const draftResult = loadStudyDraft(storage);
+      expect(draftResult.status).toBe("corrupt");
+      expect(storage.getItem(STUDY_DRAFT_CORRUPT_BACKUP_KEY)).toContain("999");
+
+      // loadInitialStudy falls back safely to oncology preset without crashing
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: storage,
+      });
+      const recoveredStudy = loadInitialStudy();
+      expect(recoveredStudy.id).toBe("study_onc_003");
+      expect(loadRecoveredDraftSavedAt()).toBeNull();
     });
 
     it("survives storage denial (SecurityError / QuotaExceededError) without unhandled exceptions or blank screens", () => {
@@ -527,13 +596,15 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(getOncologyPresetSync().id).toBe("study_onc_003");
     });
 
-    it("records audit trace of controller generations, document routes, save identities and recovery notices (Acceptance Check 4)", async () => {
+    it("records audit trace of browser commands, controller generations, document routes, save identities and recovery notices (Acceptance Check 4)", async () => {
       const fixture = new TwoGenerationPwaFixture();
       await fixture.setupInitialGeneration();
       fixture.seedArcadeRun("laser-loon", seededRun);
       fixture.seedClinicalStudyDraft(syntheticStudyDraft, "2026-11-12T10:00:00.000Z");
+      fixture.suspendActiveSession();
       await fixture.activateNextGeneration();
       fixture.setOnline(false);
+      fixture.reloadBrowserPage("/arcade");
 
       // Known device limitations documentation check
       const recordedLimitations = {
@@ -546,14 +617,23 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(recordedLimitations.safariScriptStorageEviction).toContain("7 days");
       expect(recordedLimitations.iosBackgroundTabSuspension).toContain("suspends background tabs");
 
-      // Verify audit transitions were recorded
+      // Verify audit transitions and explicit browser commands were recorded
       expect(fixture.auditLog.map((entry) => entry.phase)).toEqual([
         "setup_initial_generation",
         "seed_arcade_run",
         "seed_clinical_draft",
+        "suspend_active_session",
         "activate_next_generation",
         "network_offline",
+        "reload_browser_page",
       ]);
+
+      const browserCommands = fixture.auditLog.map((entry) => entry.browserCommand);
+      expect(browserCommands).toContain("navigator.serviceWorker.register(/sw.js)");
+      expect(browserCommands).toContain("document.visibilitychange:hidden / window.pagehide");
+      expect(browserCommands).toContain("serviceWorker.skipWaiting / clientsClaim");
+      expect(browserCommands).toContain("window.dispatchEvent('offline')");
+      expect(browserCommands).toContain("window.location.reload()");
     });
   });
 });

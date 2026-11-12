@@ -2755,3 +2755,74 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
     expect(post.mock.calls[0][1]).toEqual({ v: 2 });
   });
 });
+
+import { PlayCabinet } from "@/components/arcade/PlayCabinet";
+
+describe("Arcade cabinet launch recovery regression (#3794)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root?.unmount();
+    });
+    if (container.parentNode) {
+      document.body.removeChild(container);
+    }
+    vi.useRealTimers();
+  });
+
+  it("terminates launch in failed/retryable state when component import rejects instead of indefinite warmup", async () => {
+    const importError = new Error("Chunk load failed");
+    const importComponent = vi.fn().mockRejectedValue(importError);
+
+    await act(async () => {
+      root.render(
+        React.createElement(
+          PlayCabinet,
+          {
+            gameId: "test-game",
+            title: "Test Game",
+            icon: React.createElement("span", null, "🎮"),
+            instructions: "Instructions",
+            controls: [{ key: "Space", action: "Jump" }],
+            importComponent,
+          },
+          React.createElement("div", null, "Game Running")
+        )
+      );
+    });
+
+    const launchBtn = container.querySelector(
+      "button.arcade-launch-button"
+    ) as HTMLButtonElement;
+    expect(launchBtn).not.toBeNull();
+
+    await act(async () => {
+      launchBtn.click();
+      await Promise.resolve();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain("Failed to Load Game Module");
+    expect(alert?.textContent).toContain("Chunk load failed");
+
+    const buttons = Array.from(alert?.querySelectorAll("button") ?? []);
+    const retryBtn = buttons.find((btn) => btn.textContent?.includes("Retry"));
+    const exitBtn = buttons.find((btn) => btn.textContent?.includes("Exit"));
+    expect(retryBtn).toBeDefined();
+    expect(exitBtn).toBeDefined();
+  });
+});

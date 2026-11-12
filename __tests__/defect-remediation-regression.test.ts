@@ -2679,6 +2679,90 @@ describe("ROI analytics requests survive a worker crash (#2532)", () => {
   });
 });
 
+describe("Superseded ROI requests settle with typed supersession error without applying stale output (#3797)", () => {
+  it("settles an obsolete histogram request instead of leaving it pending when superseded", async () => {
+    const workers: {
+      onmessage: ((event: { data: unknown }) => void) | null;
+      onerror: ((event: unknown) => void) | null;
+      posted: unknown[];
+      terminated: boolean;
+    }[] = [];
+    vi.stubGlobal(
+      "Worker",
+      class {
+        onmessage = null;
+        onerror = null;
+        posted: unknown[] = [];
+        terminated = false;
+        constructor() {
+          workers.push(this);
+        }
+        postMessage(msg: unknown) {
+          this.posted.push(msg);
+        }
+        terminate() {
+          this.terminated = true;
+        }
+      }
+    );
+    try {
+      vi.resetModules();
+      const neuro = await import("@/lib/neuro");
+      const data1 = new Uint8Array([1, 2, 3]);
+      const data2 = new Uint8Array([4, 5, 6]);
+
+      const first = neuro.requestHistogramAsync(data1);
+      const firstRejection = expect(first).rejects.toSatisfy((err) =>
+        neuro.isRoiRequestSupersededError(err)
+      );
+      const firstReq = workers[0].posted[0] as {
+        id: string;
+        seq: number;
+        type: string;
+      };
+      const second = neuro.requestHistogramAsync(data2);
+      const secondReq = workers[0].posted[1] as {
+        id: string;
+        seq: number;
+        type: string;
+      };
+
+      const staleHist = neuro.compute256BinHistogram(data1);
+      const freshHist = neuro.compute256BinHistogram(data2);
+
+      // Reply to first after second has been dispatched (first is superseded)
+      workers[0].onmessage?.({
+        data: {
+          id: firstReq.id,
+          seq: firstReq.seq,
+          type: firstReq.type,
+          success: true,
+          histogram: staleHist,
+        },
+      });
+
+      // Reply to second
+      workers[0].onmessage?.({
+        data: {
+          id: secondReq.id,
+          seq: secondReq.seq,
+          type: secondReq.type,
+          success: true,
+          histogram: freshHist,
+        },
+      });
+
+      // First must settle by rejecting with supersession error (never hung pending)
+      await firstRejection;
+
+      // Second must resolve with its fresh output
+      await expect(second).resolves.toEqual(freshHist);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
 describe("Proof console autocomplete never offers whitespace (#2532)", () => {
   it("returns no suggestion after a bare connect, so Tab moves focus", () => {
     expect(getSuggestion("connect ")).toBe("");

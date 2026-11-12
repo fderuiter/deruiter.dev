@@ -50,10 +50,14 @@ export interface EmailDispatchResult {
  * `QUEUE_LEASE_FAILED` means no rows were leased, so nothing was attempted.
  * `QUEUE_UPDATE_FAILED` means a queue row could not be updated mid-run; rows
  * not yet updated keep their lease and become due again when it expires.
+ * `TRANSPORT_UNCONFIGURED` means production email transport credentials are
+ * absent or blank, so no provider dispatch can be attempted and queued
+ * messages remain recoverable for future retry.
  */
 export const EmailRetryErrorCode = z.enum([
   "QUEUE_LEASE_FAILED",
   "QUEUE_UPDATE_FAILED",
+  "TRANSPORT_UNCONFIGURED",
 ]);
 export type EmailRetryErrorCode = z.infer<typeof EmailRetryErrorCode>;
 
@@ -129,9 +133,17 @@ export interface EmailServiceHandler extends EmailServiceSpec {
  */
 let resendClient: Resend | null = null;
 
+function getEffectiveApiKey(): string | undefined {
+  const runtimeKey = getEnv().RESEND_API_KEY;
+  if (runtimeKey !== undefined) {
+    return runtimeKey;
+  }
+  return env.RESEND_API_KEY;
+}
+
 function getResendClient(): Resend | null {
   if (resendClient) return resendClient;
-  const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
+  const apiKey = getEffectiveApiKey();
   if (!apiKey || apiKey.trim() === "") return null;
   resendClient = new Resend(apiKey);
   return resendClient;
@@ -280,13 +292,21 @@ function shouldSimulateEmailDelivery(apiKey: string | undefined): boolean {
     return true;
   }
 
+  // Production deployments must never simulate outbound email (#3793).
+  if (
+    currentEnv.VERCEL_ENV === "production" ||
+    currentEnv.NODE_ENV === "production"
+  ) {
+    return false;
+  }
+
   // Unit tests use an obviously synthetic SDK key with a mocked transport.
   // A real inherited key must never turn the test process into a live sender.
   if (currentEnv.NODE_ENV === "test") {
     return !apiKey?.startsWith("re_test_");
   }
 
-  return !apiKey;
+  return false;
 }
 
 function getRetryDelayMs(queueId: string, attempt: number): number {
@@ -539,12 +559,29 @@ export class EmailService {
       );
     }
 
+    const apiKey = getEffectiveApiKey();
+    const isSimulated = shouldSimulateEmailDelivery(apiKey);
+    const client = getResendClient();
+
+    // Production configuration failure: missing or blank credentials must not
+    // consume queued messages as DELIVERED (#3793). Leased rows keep their lease
+    // and pending/retrying status so they remain recoverable on subsequent runs.
+    if (!client && !isSimulated) {
+      logger.error(
+        "Outbound email retry aborted: production transport is unconfigured (missing or blank RESEND_API_KEY)"
+      );
+      return createFailure(
+        "TRANSPORT_UNCONFIGURED",
+        "Production email transport is unconfigured (missing or blank RESEND_API_KEY)",
+        { details: { leased: items.length } }
+      );
+    }
+
     let succeeded = 0;
     let failed = 0;
 
     try {
       for (const item of items) {
-        const client = getResendClient();
         const rawOptions: RawEmailOptions = {
           to: item.to.includes(",")
             ? item.to.split(",").map((s) => s.trim())
@@ -584,10 +621,8 @@ export class EmailService {
           continue;
         }
 
-        const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
-        // Preview/development are always simulated, even if a production-like
-        // API key is accidentally attached to the deployment.
-        if (!client || shouldSimulateEmailDelivery(apiKey)) {
+        // Preview/development are explicitly simulated even if an API key is attached.
+        if (isSimulated) {
           await prisma.outboundEmailQueue.update({
             where: { id: item.id },
             data: { status: "DELIVERED", updatedAt: new Date() },
@@ -597,7 +632,7 @@ export class EmailService {
         }
 
         try {
-          const { error } = await client.emails.send(
+          const { error } = await client!.emails.send(
             {
               from: item.from,
               to: rawOptions.to,
@@ -794,9 +829,9 @@ export class EmailService {
     const fromAddress =
       options.from || env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
 
-    const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
-    // Missing credentials and every non-production deployment are simulated.
-    if (!client || shouldSimulateEmailDelivery(apiKey)) {
+    const apiKey = getEffectiveApiKey();
+    // Preview and development are explicitly simulated.
+    if (shouldSimulateEmailDelivery(apiKey)) {
       const simulatedId = generateId("sim_msg_");
 
       if (env.NODE_ENV === "development") {
@@ -809,6 +844,31 @@ export class EmailService {
         success: true,
         data: { id: simulatedId },
         simulated: true,
+      };
+    }
+
+    if (!client) {
+      const errorMsg =
+        "Production email transport is unconfigured (missing or blank RESEND_API_KEY)";
+      logger.error(errorMsg);
+
+      if (!options.skipQueue) {
+        const queueId = await this.queueOutboundEmail(
+          options,
+          fromAddress,
+          errorMsg
+        );
+        return {
+          success: false,
+          error: errorMsg,
+          queued: Boolean(queueId),
+          queueId: queueId ?? undefined,
+        };
+      }
+
+      return {
+        success: false,
+        error: errorMsg,
       };
     }
 

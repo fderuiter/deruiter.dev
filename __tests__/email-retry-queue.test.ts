@@ -580,4 +580,151 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       );
     });
   });
+
+  describe("Production Transport Unconfigured Preservation (#3793)", () => {
+    it("preserves due queue row and returns TRANSPORT_UNCONFIGURED when RESEND_API_KEY is absent in production", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("RESEND_API_KEY", "");
+      EmailService.resetClient();
+
+      const queueId = "queue_unconfigured_prod";
+      const now = new Date(10000);
+      mockQueueStore.set(queueId, {
+        id: queueId,
+        to: "recoverable@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Preserved queued mail",
+        html: "<p>Wait for credentials</p>",
+        text: null,
+        tags: null,
+        attempts: 1,
+        status: "RETRYING",
+        nextRetryAt: new Date(now.getTime() - 1000), // due
+        lastError: "Initial attempt failed",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      const result = await EmailService.processRetryQueue({ now });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
+      }
+
+      // Acceptance check: Production + absent/blank credential + one due row makes no provider call and never writes DELIVERED
+      expect(mockSendFn).not.toHaveBeenCalled();
+
+      const item = mockQueueStore.get(queueId);
+      expect(item).toBeDefined();
+      expect(item?.status).toBe("RETRYING"); // Retains pending/retrying status
+      expect(item?.status).not.toBe("DELIVERED");
+      expect(item?.status).not.toBe("FAILED");
+      expect(item?.attempts).toBe(1); // Retry caps preserved: not incremented
+      // Lease ownership preserved: nextRetryAt moved into lease window (5 minutes from now)
+      expect(item?.nextRetryAt.getTime()).toBe(now.getTime() + 5 * 60 * 1000);
+    });
+
+    it("preserves due queue row when RESEND_API_KEY is blank in production", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("RESEND_API_KEY", "   ");
+      EmailService.resetClient();
+
+      const queueId = "queue_blank_key_prod";
+      const now = new Date(10000);
+      mockQueueStore.set(queueId, {
+        id: queueId,
+        to: "recoverable-blank@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Blank key preservation",
+        html: "<p>Wait for valid credentials</p>",
+        text: null,
+        tags: null,
+        attempts: 2,
+        status: "PENDING",
+        nextRetryAt: new Date(now.getTime() - 2000), // due
+        lastError: null,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      const result = await EmailService.processRetryQueue({ now });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
+      }
+
+      expect(mockSendFn).not.toHaveBeenCalled();
+
+      const item = mockQueueStore.get(queueId);
+      expect(item?.status).toBe("PENDING");
+      expect(item?.attempts).toBe(2);
+      expect(item?.nextRetryAt.getTime()).toBe(now.getTime() + 5 * 60 * 1000);
+    });
+
+    it("recovers and delivers the preserved queue row once credentials become available", async () => {
+      // Step 1: In production without key, mail is preserved
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("RESEND_API_KEY", "");
+      EmailService.resetClient();
+
+      const queueId = "queue_recovering_prod";
+      const initialTime = new Date(10000);
+      mockQueueStore.set(queueId, {
+        id: queueId,
+        to: "recovering@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Recovery test",
+        html: "<p>Will be recovered</p>",
+        text: null,
+        tags: null,
+        attempts: 1,
+        status: "RETRYING",
+        nextRetryAt: new Date(initialTime.getTime() - 500),
+        lastError: "Waiting for transport",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      const unconfiguredResult = await EmailService.processRetryQueue({
+        now: initialTime,
+      });
+      expect(unconfiguredResult.success).toBe(false);
+      expect(mockSendFn).not.toHaveBeenCalled();
+
+      // Row is still RETRYING, leased until initialTime + 5 minutes
+      const unconfiguredItem = mockQueueStore.get(queueId);
+      expect(unconfiguredItem?.status).toBe("RETRYING");
+      const leaseExpiry = unconfiguredItem!.nextRetryAt;
+
+      // Step 2: Operator provisions the API key
+      vi.stubEnv("RESEND_API_KEY", "re_test_mock_api_key");
+      EmailService.resetClient();
+      mockSendFn.mockResolvedValueOnce({
+        data: { id: "resend_recovered_success" },
+        error: null,
+      });
+
+      // Advance clock past the lease window
+      const recoveryTime = new Date(leaseExpiry.getTime() + 1000);
+      const configuredResult = await retryCounts(
+        EmailService.processRetryQueue({ now: recoveryTime })
+      );
+
+      expect(configuredResult.processed).toBe(1);
+      expect(configuredResult.succeeded).toBe(1);
+      expect(configuredResult.failed).toBe(0);
+      expect(mockSendFn).toHaveBeenCalledWith(
+        expect.objectContaining({ to: "recovering@example.com" }),
+        { idempotencyKey: `portfolio-email-${queueId}` }
+      );
+
+      const deliveredItem = mockQueueStore.get(queueId);
+      expect(deliveredItem?.status).toBe("DELIVERED");
+    });
+  });
 });

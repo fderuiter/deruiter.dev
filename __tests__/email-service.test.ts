@@ -52,6 +52,103 @@ describe("EmailService (Spec & Handler)", () => {
     });
   });
 
+  describe("Production Transport Unconfigured Mode (#3793)", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      EmailService.resetClient();
+    });
+
+    it("should return configuration failure and queue outbound email when RESEND_API_KEY is absent in production", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("RESEND_API_KEY", "");
+      EmailService.resetClient();
+
+      const queueSpy = vi
+        .spyOn(EmailService, "queueOutboundEmail")
+        .mockResolvedValueOnce("queue_msg_prod_123");
+
+      const result = await EmailService.sendRawEmail({
+        to: "recipient@example.com",
+        subject: "Unconfigured Production Test",
+        html: "<p>Important message</p>",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.simulated).toBeUndefined();
+      expect(result.queued).toBe(true);
+      expect(result.queueId).toBe("queue_msg_prod_123");
+      expect(result.error).toContain("unconfigured");
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(queueSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ to: "recipient@example.com" }),
+        expect.any(String),
+        expect.stringContaining("unconfigured")
+      );
+    });
+
+    it("should return configuration failure and queue outbound email when RESEND_API_KEY is blank in production", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("RESEND_API_KEY", "   ");
+      EmailService.resetClient();
+
+      const queueSpy = vi
+        .spyOn(EmailService, "queueOutboundEmail")
+        .mockResolvedValueOnce("queue_msg_blank_123");
+
+      const result = await EmailService.sendRawEmail({
+        to: "recipient@example.com",
+        subject: "Blank Key Production Test",
+        html: "<p>Important message</p>",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.simulated).toBeUndefined();
+      expect(result.queued).toBe(true);
+      expect(result.queueId).toBe("queue_msg_blank_123");
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(queueSpy).toHaveBeenCalled();
+    });
+
+    it("should return configuration failure without queueing when skipQueue is true in production", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("RESEND_API_KEY", "");
+      EmailService.resetClient();
+
+      const queueSpy = vi.spyOn(EmailService, "queueOutboundEmail");
+
+      const result = await EmailService.sendRawEmail({
+        to: "recipient@example.com",
+        subject: "Unconfigured SkipQueue Test",
+        html: "<p>Important message</p>",
+        skipQueue: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.simulated).toBeUndefined();
+      expect(result.queued).toBeUndefined();
+      expect(result.error).toContain("unconfigured");
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(queueSpy).not.toHaveBeenCalled();
+    });
+
+    it("should force simulated delivery in preview even when a production-like API key is configured", async () => {
+      vi.stubEnv("VERCEL_ENV", "preview");
+      vi.stubEnv("RESEND_API_KEY", "re_live_key_attached_to_preview");
+      EmailService.resetClient();
+
+      const result = await EmailService.sendRawEmail({
+        to: "preview-visitor@example.com",
+        subject: "Preview Isolated",
+        html: "<p>Preview content</p>",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.simulated).toBe(true);
+      expect(result.data?.id).toMatch(/^sim_msg_/);
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+  });
+
   describe("Live Resend API Mode", () => {
     it("should call resend.emails.send and return message ID on success", async () => {
       (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "re_test_123456";

@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   PipelineCancelledError,
+  PipelineDisposedError,
   createPipelineClient,
 } from "@/components/study-data/pipeline-client";
 import type {
@@ -155,13 +156,95 @@ describe("pipeline client in a worker", () => {
     expect(client.mode()).toBe("idle");
   });
 
-  it("releases the worker on dispose", () => {
+  it("releases the worker on dispose", async () => {
     useFakeWorker();
     const client = createPipelineClient();
-    void client.request({ type: "run", seed: 1, nSubjects: 4 });
+    const pending = client.request({ type: "run", seed: 1, nSubjects: 4 });
     client.dispose();
     expect(FakeWorker.instances[0].terminated).toBe(true);
     expect(client.mode()).toBe("idle");
+    await pending.catch(() => undefined);
+  });
+
+  // #3798: disposal must settle every waiter, not just forget it.
+  it("rejects a pending request on dispose with a typed disposal error", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    const pending = client.request({ type: "run", seed: 1, nSubjects: 4 });
+    client.dispose();
+    const error = await pending.catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(PipelineDisposedError);
+    // Existing `instanceof PipelineCancelledError` guards treat it as expected.
+    expect(error).toBeInstanceOf(PipelineCancelledError);
+    expect((error as Error).name).toBe("PipelineDisposedError");
+  });
+
+  it("rejects every pending request exactly once on dispose", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    const onRejected = vi.fn();
+    const onResolved = vi.fn();
+    const requests = [1, 2, 3].map((seed) =>
+      client
+        .request({ type: "run", seed, nSubjects: 4 })
+        .then(onResolved, onRejected)
+    );
+    const [worker] = FakeWorker.instances;
+    const posted = [...worker.posted];
+
+    client.dispose();
+    client.dispose();
+    // A reply that arrives after disposal settles nothing a second time.
+    for (const request of posted) {
+      worker.reply({ id: request.id, ok: true, result: "late" });
+    }
+    await Promise.all(requests);
+
+    expect(onResolved).not.toHaveBeenCalled();
+    expect(onRejected).toHaveBeenCalledTimes(3);
+    for (const [error] of onRejected.mock.calls) {
+      expect(error).toBeInstanceOf(PipelineDisposedError);
+    }
+  });
+
+  it("serves a fresh worker after dispose and ignores the old one (setup, cleanup, setup)", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    const stale = client.request({ type: "run", seed: 1, nSubjects: 4 });
+    const [oldWorker] = FakeWorker.instances;
+    client.dispose();
+    await expect(stale).rejects.toBeInstanceOf(PipelineDisposedError);
+
+    const fresh = client.request({ type: "run", seed: 2, nSubjects: 4 });
+    expect(FakeWorker.instances).toHaveLength(2);
+    expect(client.mode()).toBe("worker");
+    const newWorker = FakeWorker.instances[1];
+
+    // Late traffic from the released worker must not touch the new run.
+    oldWorker.reply({ id: newWorker.posted[0].id, ok: true, result: "stale" });
+    oldWorker.fail("old worker died");
+    expect(newWorker.terminated).toBe(false);
+    expect(client.mode()).toBe("worker");
+
+    newWorker.reply({ id: newWorker.posted[0].id, ok: true, result: "fresh" });
+    await expect(fresh).resolves.toBe("fresh");
+  });
+
+  it("ignores late traffic from a worker released by cancel", async () => {
+    useFakeWorker();
+    const client = createPipelineClient();
+    const first = client.request({ type: "run", seed: 1, nSubjects: 4 });
+    const [oldWorker] = FakeWorker.instances;
+    client.cancel();
+    await expect(first).rejects.toBeInstanceOf(PipelineCancelledError);
+
+    const next = client.request({ type: "run", seed: 2, nSubjects: 4 });
+    const newWorker = FakeWorker.instances[1];
+    oldWorker.fail("old worker died");
+    expect(newWorker.terminated).toBe(false);
+
+    newWorker.reply({ id: newWorker.posted[0].id, ok: true, result: "next" });
+    await expect(next).resolves.toBe("next");
   });
 
   it("falls back to the main thread when the worker cannot be created", async () => {

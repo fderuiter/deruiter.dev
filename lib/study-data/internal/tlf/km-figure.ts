@@ -87,6 +87,12 @@ function describeCurve(curve: TlfKmCurve): string {
   return `${curve.label}: ${subjects} subject${subjects === 1 ? "" : "s"}, ${events} event${events === 1 ? "" : "s"}, ${subjects - events} censored; estimated probability of no event ${last.survivalText} at day ${last.time}, the last observed time.`;
 }
 
+function formatLogRankPValueClause(formattedValue: string): string {
+  return formattedValue.startsWith("<")
+    ? `< ${formattedValue.slice(1)}`
+    : `= ${formattedValue}`;
+}
+
 /**
  * Figure 14.2.2: Kaplan-Meier estimate of time to first TEAE leading to
  * discontinuation by treatment received, Safety Set, with the number at
@@ -135,7 +141,7 @@ export function buildKmFigure(
   const testText =
     chiSquare.rawValue === undefined
       ? "Log-rank test: not estimable (no events, or fewer than two treatment groups with subjects at risk at an event time)."
-      : `Log-rank chi-square = ${chiSquare.formattedValue} on ${degrees.formattedValue} degree${degrees.formattedValue === "1" ? "" : "s"} of freedom, p ${pValue.formattedValue.startsWith("<") ? pValue.formattedValue.replace("<", "< ") : `= ${pValue.formattedValue}`}.`;
+      : `Log-rank chi-square = ${chiSquare.formattedValue} on ${degrees.formattedValue} degree${degrees.formattedValue === "1" ? "" : "s"} of freedom, p ${formatLogRankPValueClause(pValue.formattedValue)}.`;
   const summary = [
     "Kaplan-Meier curves of the probability of no TEAE leading to discontinuation, by study day, one curve per treatment group.",
     ...curves.map(describeCurve),

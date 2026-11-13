@@ -1,11 +1,67 @@
 // @vitest-environment node
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ENGINEERING_BRIDGES } from "@/lib/engineering-bridges";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
+import { resolveBaseUrl } from "@/lib/domain";
 import { OG_IMAGE_MAX_BYTES, OG_IMAGE_SIZE } from "@/lib/og-image";
+import { SITE_BASE_URL } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
+
+/**
+ * Resolves the canonical production base URL via `resolveBaseUrl()` without
+ * mutating `process.env` outside this helper.
+ */
+function resolveCanonicalManifestBaseUrl(): string {
+  vi.stubEnv("VERCEL_ENV", "production");
+  vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+  try {
+    return resolveBaseUrl();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+}
+
+/**
+ * Extracts complete URL tokens from a markdown/text manifest, stripping only
+ * trailing sentence punctuation so userinfo, ports, paths, and query strings
+ * remain attached to a single token.
+ */
+function extractManifestUrls(manifest: string): string[] {
+  const matches = manifest.match(/https?:\/\/[^\s)>]+/gi) ?? [];
+  return matches.map((token) => token.replace(/[.,;]+$/, ""));
+}
+
+/**
+ * Enforces HTTPS, empty userinfo, empty port, and an exact origin/hostname
+ * match against the canonical base URL or GitHub (`https://github.com`).
+ */
+function isAllowedManifestUrl(
+  rawUrl: string,
+  canonicalBaseUrl: string = resolveCanonicalManifestBaseUrl()
+): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    const canonical = new URL(canonicalBaseUrl);
+
+    if (parsed.protocol !== "https:") return false;
+    if (parsed.username !== "" || parsed.password !== "") return false;
+    if (parsed.port !== "") return false;
+
+    const isCanonicalOrigin =
+      canonical.protocol === "https:" &&
+      parsed.hostname === canonical.hostname &&
+      parsed.origin === canonical.origin;
+    const isGitHubOrigin =
+      parsed.hostname === "github.com" &&
+      parsed.origin === "https://github.com";
+
+    return isCanonicalOrigin || isGitHubOrigin;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Regression guard for SEO and social preview integrity (ADR 0053, #1256).
@@ -82,16 +138,98 @@ describe("llms manifests list the canonical routes (#1256)", () => {
     expect(full).toContain(`(https://deruiter.dev${config.path})`);
   });
 
-  it("links only to the canonical origin", () => {
+  it("points every URL in both manifests at the canonical domain or GitHub", () => {
+    expect(SITE_BASE_URL).toBe(resolveBaseUrl());
+    const canonicalBaseUrl = resolveCanonicalManifestBaseUrl();
+    expect(canonicalBaseUrl).toBe("https://deruiter.dev");
+
     for (const manifest of [llms, full]) {
-      const origins = manifest.match(/https?:\/\/[a-z0-9.-]*[a-z0-9]/gi) ?? [];
-      const foreign = origins.filter(
-        (origin) =>
-          origin !== "https://deruiter.dev" &&
-          !origin.startsWith("https://github.com")
+      const urls = extractManifestUrls(manifest);
+      expect(urls.length).toBeGreaterThan(0);
+      const foreign = urls.filter(
+        (url) => !isAllowedManifestUrl(url, canonicalBaseUrl)
       );
       expect(foreign).toEqual([]);
     }
+  });
+
+  it("extractManifestUrls preserves full URL tokens and strips trailing sentence punctuation", () => {
+    const sample = [
+      "Canonical origin: https://deruiter.dev.",
+      "Index: [llms](https://deruiter.dev/llms.txt).",
+      "Nested query: https://evil.invalid/?ref=https://deruiter.dev,",
+      "Nested path: <https://evil.invalid/https://github.com/fderuiter>;",
+      "Userinfo: https://github.com@evil.invalid/ and port https://deruiter.dev:8443/path.",
+    ].join(" ");
+
+    const extracted = extractManifestUrls(sample);
+    expect(extracted).toEqual([
+      "https://deruiter.dev",
+      "https://deruiter.dev/llms.txt",
+      "https://evil.invalid/?ref=https://deruiter.dev",
+      "https://evil.invalid/https://github.com/fderuiter",
+      "https://github.com@evil.invalid/",
+      "https://deruiter.dev:8443/path",
+    ]);
+
+    const rejected = extracted.filter((url) => !isAllowedManifestUrl(url));
+    expect(rejected).toEqual([
+      "https://evil.invalid/?ref=https://deruiter.dev",
+      "https://evil.invalid/https://github.com/fderuiter",
+      "https://github.com@evil.invalid/",
+      "https://deruiter.dev:8443/path",
+    ]);
+  });
+
+  it.each([
+    "https://deruiter.dev",
+    "https://deruiter.dev/clinical",
+    "https://github.com/fderuiter/deruiter.dev",
+    "HTTPS://DERUITER.DEV/proof",
+    "https://GitHub.com/fderuiter/deruiter.dev",
+  ])("isAllowedManifestUrl accepts %s", (candidate) => {
+    expect(isAllowedManifestUrl(candidate)).toBe(true);
+  });
+
+  it.each([
+    // Suffix lookalikes
+    "https://github.com.evil.invalid/repo",
+    "https://deruiter.dev.evil.invalid/clinical",
+    // Subdomain and prefix lookalikes
+    "https://www.deruiter.dev/",
+    "https://sub.github.com/",
+    "https://evil-github.com/",
+    // Userinfo / embedded credentials
+    "https://github.com@evil.invalid/",
+    "https://user:pass@deruiter.dev/",
+    "https://user@github.com/",
+    // Query and path mentions of trusted origins
+    "https://evil.invalid/?ref=https://deruiter.dev",
+    "https://evil.invalid/https://github.com/fderuiter",
+    // Unintended ports
+    "https://deruiter.dev:8443/",
+    "https://github.com:8080/",
+    // Protocol variants
+    "http://deruiter.dev/",
+    "http://github.com/fderuiter",
+    "javascript:alert(1)",
+    "ftp://deruiter.dev/",
+    // Malformed and relative inputs
+    "https://",
+    "not-a-url",
+    "/clinical",
+    "//github.com/fderuiter",
+  ])("isAllowedManifestUrl rejects %s", (candidate) => {
+    expect(isAllowedManifestUrl(candidate)).toBe(false);
+  });
+
+  it("isAllowedManifestUrl rejects non-https canonical bases", () => {
+    expect(
+      isAllowedManifestUrl("http://localhost:3000/clinical", "http://localhost:3000")
+    ).toBe(false);
+    expect(
+      isAllowedManifestUrl("https://localhost/clinical", "http://localhost:3000")
+    ).toBe(false);
   });
 });
 

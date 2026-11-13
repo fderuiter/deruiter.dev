@@ -133,7 +133,7 @@ describe("EmailService (Spec & Handler)", () => {
 
     it("should force simulated delivery in preview even when a production-like API key is configured", async () => {
       vi.stubEnv("VERCEL_ENV", "preview");
-      vi.stubEnv("RESEND_API_KEY", "re_live_key_attached_to_preview");
+      vi.stubEnv("RESEND_API_KEY", "re_live_preview");
       EmailService.resetClient();
 
       const result = await EmailService.sendRawEmail({

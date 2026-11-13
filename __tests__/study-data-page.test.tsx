@@ -10,11 +10,17 @@ import {
   within,
 } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { StrictMode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import StudyDataPage from "@/app/study-data/page";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
 import { findClinicalClaims } from "@/lib/clinical-platform";
 import { DEMO_301_STUDY, SUBJECT_COUNT_LIMITS } from "@/lib/study-data";
+import {
+  SessionWorker,
+  collectUnhandledRejections,
+  useSessionWorker,
+} from "./helpers/study-data-session-worker";
 
 const { design } = DEMO_301_STUDY;
 const RUN_TIMEOUT = { timeout: 30_000 };
@@ -356,6 +362,51 @@ describe("/study-data workbench", () => {
     expect(findClinicalClaims(text)).toEqual([]);
     expect(text).not.toMatch(FORBIDDEN_CLAIMS);
   });
+});
+
+describe("/study-data workbench lifecycle in a worker (#3798)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("survives Strict Mode setup, cleanup, setup without a stale error, and releases the worker on unmount", async () => {
+    useSessionWorker();
+    const unhandled = await collectUnhandledRejections(async () => {
+      const view = render(
+        <StrictMode>
+          <StudyDataWorkbench
+            design={scheduleDesign}
+            definitionCounts={{
+              arms: design.arms.length,
+              visits: design.visits.length,
+              activities: design.activities.length,
+              scheduled: design.schedule.length,
+            }}
+            limits={SUBJECT_COUNT_LIMITS}
+            defaults={{ seed: 301, nSubjects: 30 }}
+          />
+        </StrictMode>
+      );
+
+      await waitFor(
+        () =>
+          expect(
+            screen.getByText(/^Run 1: 30 subjects.*in a Web Worker\.$/)
+          ).toBeTruthy(),
+        RUN_TIMEOUT
+      );
+      // The first setup's worker was released by its cleanup; the second
+      // setup's run came from a fresh worker on the same client.
+      expect(SessionWorker.instances).toHaveLength(2);
+      expect(SessionWorker.instances[0].terminated).toBe(true);
+      expect(SessionWorker.instances[1].terminated).toBe(false);
+      expect(screen.queryByText(/disposed|cancelled/i)).toBeNull();
+
+      view.unmount();
+      expect(SessionWorker.instances[1].terminated).toBe(true);
+    });
+    expect(unhandled).toEqual([]);
+  }, 60_000);
 });
 
 describe("/study-data page copy", () => {

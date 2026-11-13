@@ -23,11 +23,28 @@ type RequestOf<T extends StudyDataRequest["type"]> = Extract<
   { type: T }
 >;
 
-/** Raised for a request the page cancelled by starting another run. */
+/**
+ * Raised for a request that was stopped on purpose rather than failed: the
+ * page cancelled it by starting another run, or (as the subclass
+ * {@link PipelineDisposedError}) its client was disposed. Callers treat it as
+ * expected and show no error.
+ */
 export class PipelineCancelledError extends Error {
-  constructor() {
-    super("The pipeline run was cancelled.");
+  constructor(message = "The pipeline run was cancelled.") {
+    super(message);
     this.name = "PipelineCancelledError";
+  }
+}
+
+/**
+ * Raised for a request still pending when its client was disposed (#3798).
+ * It extends {@link PipelineCancelledError}, so handlers that already treat
+ * cancellation as expected treat disposal the same way.
+ */
+export class PipelineDisposedError extends PipelineCancelledError {
+  constructor() {
+    super("The pipeline client was disposed.");
+    this.name = "PipelineDisposedError";
   }
 }
 
@@ -43,7 +60,12 @@ export interface PipelineClient {
    * which holds no run until it is asked for one.
    */
   cancel(): void;
-  /** Releases the worker, if any. */
+  /**
+   * Releases the worker, if any, and rejects every pending worker request
+   * with {@link PipelineDisposedError}. Calling it again does nothing. The
+   * client stays usable: the next request starts a fresh worker, so an owner
+   * that sets up again (as React Strict Mode does) can keep the same client.
+   */
   dispose(): void;
   /** Where requests run: in a worker, on the main thread, or not yet known. */
   mode(): "worker" | "main-thread" | "idle";
@@ -73,28 +95,45 @@ export function createPipelineClient(): PipelineClient {
   const pending = new Map<number, Waiter>();
 
   const rejectAll = (error: Error) => {
-    for (const waiter of pending.values()) waiter.reject(error);
+    // Clear first so a waiter that throws cannot leave others behind.
+    const waiters = [...pending.values()];
     pending.clear();
+    for (const waiter of waiters) waiter.reject(error);
+  };
+
+  /** Terminates the current worker, if any, and settles its waiters. */
+  const release = (error: Error) => {
+    const released = worker;
+    worker = null;
+    if (released) {
+      released.onmessage = null;
+      released.onerror = null;
+      released.terminate();
+    }
+    rejectAll(error);
   };
 
   const ensureWorker = (): Worker | null => {
     if (worker) return worker;
-    worker = createWorker();
-    if (!worker) return null;
-    worker.onmessage = (message: MessageEvent<StudyDataResponse>) => {
+    const created = createWorker();
+    if (!created) return null;
+    worker = created;
+    // A released worker may still deliver a message or error; only the
+    // current one may settle waiters or tear the client down.
+    created.onmessage = (message: MessageEvent<StudyDataResponse>) => {
+      if (worker !== created) return;
       const waiter = pending.get(message.data.id);
       if (!waiter) return;
       pending.delete(message.data.id);
       if (message.data.ok) waiter.resolve(message.data.result);
       else waiter.reject(new Error(message.data.error));
     };
-    worker.onerror = (event) => {
+    created.onerror = (event) => {
       event.preventDefault();
-      rejectAll(new Error(event.message || "The pipeline worker failed."));
-      worker?.terminate();
-      worker = null;
+      if (worker !== created) return;
+      release(new Error(event.message || "The pipeline worker failed."));
     };
-    return worker;
+    return created;
   };
 
   const runInThread = async (request: StudyDataRequest) => {
@@ -121,19 +160,20 @@ export function createPipelineClient(): PipelineClient {
           resolve: (value) => resolve(value as StudyDataResults[T]),
           reject,
         });
-        target.postMessage(request);
+        try {
+          target.postMessage(request);
+        } catch (error) {
+          pending.delete(id);
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
       });
     },
     cancel() {
       if (!worker) return;
-      worker.terminate();
-      worker = null;
-      rejectAll(new PipelineCancelledError());
+      release(new PipelineCancelledError());
     },
     dispose() {
-      worker?.terminate();
-      worker = null;
-      pending.clear();
+      release(new PipelineDisposedError());
     },
     mode() {
       if (worker) return "worker";

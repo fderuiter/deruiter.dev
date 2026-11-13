@@ -32,11 +32,52 @@ function githubLinkName(
   return `${shown.join(" ")}: view on GitHub${spelled.length ? `, ${spelled.join(", ")}` : ""}`;
 }
 
+type ExternalPlatformType = "github" | "kaggle" | "pypi" | "npm";
+
+const KAGGLE_HOSTS = new Set(["kaggle.com", "www.kaggle.com"]);
+
+const PLATFORM_TYPE_HOSTS: Record<ExternalPlatformType, Set<string>> = {
+  github: new Set(["github.com", "www.github.com"]),
+  pypi: new Set(["pypi.org", "www.pypi.org"]),
+  npm: new Set(["npmjs.com", "www.npmjs.com"]),
+  kaggle: KAGGLE_HOSTS,
+};
+
+function parseValidExternalPlatformUrl(
+  rawUrl: string | null | undefined
+): { url: URL; href: string } | null {
+  if (typeof rawUrl !== "string") {
+    return null;
+  }
+
+  const trimmed = rawUrl.trim();
+  if (trimmed === "") {
+    return null;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "https:") {
+    return null;
+  }
+
+  if (parsed.username !== "" || parsed.password !== "") {
+    return null;
+  }
+
+  return { url: parsed, href: trimmed };
+}
+
 interface CaseStudyHeroActionsProps {
   slug?: string;
   githubUrl?: string | null;
   externalPlatformUrl?: string | null;
-  externalPlatformType?: "github" | "kaggle" | "pypi" | "npm" | null;
+  externalPlatformType?: ExternalPlatformType | null;
   interactiveUrl?: string | null;
   interactiveLabel?: string | null;
   primaryLanguage?: string | null;
@@ -55,9 +96,21 @@ export function CaseStudyHeroActions({
   const parsed = githubUrl ? parseGitHubUrl(githubUrl) : null;
   const repoDisplay = parsed ? `${parsed.owner}/${parsed.repo}` : githubUrl;
 
+  const validatedExternalPlatform =
+    parseValidExternalPlatformUrl(externalPlatformUrl);
   const isKaggle =
-    externalPlatformType === "kaggle" ||
-    externalPlatformUrl?.includes("kaggle.com");
+    validatedExternalPlatform !== null &&
+    KAGGLE_HOSTS.has(validatedExternalPlatform.url.hostname);
+  const genericPlatformLabel =
+    validatedExternalPlatform &&
+    !isKaggle &&
+    externalPlatformType != null &&
+    externalPlatformType !== "kaggle" &&
+    PLATFORM_TYPE_HOSTS[externalPlatformType]?.has(
+      validatedExternalPlatform.url.hostname
+    ) === true
+      ? `View on ${externalPlatformType.toUpperCase()}`
+      : "External Resource";
 
   return (
     <div className="flex flex-wrap items-center gap-3 my-6">
@@ -92,9 +145,9 @@ export function CaseStudyHeroActions({
       )}
 
       {/* External Platform: Kaggle Notebook or Registry */}
-      {externalPlatformUrl && isKaggle && (
+      {validatedExternalPlatform && isKaggle && (
         <a
-          href={externalPlatformUrl}
+          href={validatedExternalPlatform.href}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/30 hover:border-amber-400/50 text-amber-200 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-amber-400/50 active:scale-[0.98]"
@@ -108,18 +161,16 @@ export function CaseStudyHeroActions({
       )}
 
       {/* External Platform: Generic / Other */}
-      {externalPlatformUrl && !isKaggle && (
+      {validatedExternalPlatform && !isKaggle && (
         <a
-          href={externalPlatformUrl}
+          href={validatedExternalPlatform.href}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-zinc-400/50 active:scale-[0.98]"
         >
           <IconExternalLink className="w-4 h-4 text-zinc-400" />
           <span className="text-xs md:text-sm font-semibold">
-            {externalPlatformType
-              ? `View on ${externalPlatformType.toUpperCase()}`
-              : "External Resource"}
+            {genericPlatformLabel}
           </span>
         </a>
       )}

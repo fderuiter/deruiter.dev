@@ -426,6 +426,35 @@ describe("Universal CRF Specification & Schema Engine", () => {
       ]);
     });
 
+    // #3813: the calculation branch uses the same serializer.
+    it.each([...hostile, "IF($WEIGHT > 0, \\\"x\\\" & 'y', ((1)))"])(
+      "keeps calculation formula %j literal",
+      (formula) => {
+        const field: CRFField = {
+          id: "fld_c",
+          variableName: "BMI",
+          label: "",
+          dataType: "number",
+          columnSpan: 6,
+          required: false,
+          calculationFormula: formula,
+        };
+        const argv = shellArgv(generateCliCommandForField("VS", field));
+        expect(argv).toEqual([
+          "crf",
+          "add",
+          "field",
+          "VS",
+          "--var",
+          "BMI",
+          "--type",
+          "number",
+          "--calc",
+          formula,
+        ]);
+      }
+    );
+
     it("drops a column span that is not a whole number", () => {
       const field = {
         id: "fld_z",

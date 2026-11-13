@@ -869,7 +869,7 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
  *
  * Every value is serialized as one literal POSIX shell word, so a label or
  * unit cannot run a substitution or add a second command when the line is
- * pasted into a shell (CodeQL alert 3, #3812).
+ * pasted into a shell (CodeQL alerts 3 and 4, #3812 and #3813).
  */
 export function generateCliCommandForField(
   domain: string,
@@ -897,12 +897,10 @@ export function generateCliCommandForField(
   if (Number.isInteger(field.columnSpan) && field.columnSpan !== 6) {
     argv.push("--span", String(field.columnSpan));
   }
-  const command = formatPosixCommand(argv);
-  // The calculation branch moves onto the same serializer in #3813.
   if (field.calculationFormula) {
-    return `${command} --calc "${field.calculationFormula.replace(/"/g, '\\"')}"`;
+    argv.push("--calc", field.calculationFormula);
   }
-  return command;
+  return formatPosixCommand(argv);
 }
 
 /**

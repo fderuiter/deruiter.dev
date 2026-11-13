@@ -480,12 +480,16 @@ async function main(): Promise<void> {
     ) as Parameters<typeof executeAddFieldCommand>[2]["dataType"];
     // A flag only counts where it is not the value of a valued option, so a
     // label such as "--required" stays a label (#3812).
+    // --span and --calc are emitted by the copied command, so their values
+    // must not be read as a flag or as the study file either.
     const valuedOptions = new Set([
       "--var",
       "--type",
       "--unit",
       "--label",
       "--tier",
+      "--span",
+      "--calc",
     ]);
     const hasFlag = (...names: string[]) =>
       args.some(
@@ -512,13 +516,7 @@ async function main(): Promise<void> {
 
     const fileArg = args.find(
       (a, i) =>
-        i > 2 &&
-        !a.startsWith("--") &&
-        args[i - 1] !== "--var" &&
-        args[i - 1] !== "--type" &&
-        args[i - 1] !== "--unit" &&
-        args[i - 1] !== "--label" &&
-        args[i - 1] !== "--tier"
+        i > 2 && !a.startsWith("--") && !valuedOptions.has(args[i - 1] ?? "")
     );
     const loaded = loadProtocol(fileArg);
     const { study } = loaded;

@@ -169,4 +169,42 @@ describe("CRF CLI field command round trip (#3812)", () => {
     });
     expect(added.required).toBeFalsy();
   }, 60_000);
+
+  it("reads span and calc values as values when the study file comes last", () => {
+    const file = path.join(dir, "study.crf.json");
+    fs.writeFileSync(file, exportUniversalCrfJson(getOncologyPresetSync()));
+    const field: CRFField = {
+      id: "fld_span",
+      variableName: "SPANVAR",
+      label: "Span check",
+      dataType: "number",
+      columnSpan: 4,
+      required: false,
+      calculationFormula: "--sdv",
+    };
+    const command = generateCliCommandForField("DM", field);
+    const parsed = spawnSync("sh", ["-c", `printf '%s\\0' ${command}`], {
+      encoding: "utf8",
+    });
+    const argv = parsed.stdout.split("\0").slice(0, -1);
+    expect(argv).toContain("--span");
+
+    const run = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "scripts/crf.ts",
+        ...argv.slice(1),
+        file,
+        "--dry-run",
+        "--json",
+      ],
+      { cwd: process.cwd(), encoding: "utf8", timeout: 60_000 }
+    );
+    expect(run.status).toBe(0);
+    const added = JSON.parse(run.stdout.slice(run.stdout.indexOf("{")));
+    expect(added).toMatchObject({ variableName: "SPANVAR" });
+    expect(added.requiresSdv).toBeFalsy();
+  }, 60_000);
 });

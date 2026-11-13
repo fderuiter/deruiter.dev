@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { execFileSync } from "node:child_process";
 import {
   CRFField,
   CRFForm,
@@ -334,7 +335,7 @@ describe("Universal CRF Specification & Schema Engine", () => {
 
     const cliCmd = generateCliCommandForField("VS", field);
     expect(cliCmd).toBe(
-      'crf add field VS --var SYSBP --type number --label "Systolic Blood Pressure" --required --unit "mmHg"'
+      "crf add field VS --var SYSBP --type number --label 'Systolic Blood Pressure' --required --unit mmHg"
     );
 
     const form: CRFForm = {
@@ -349,6 +350,95 @@ describe("Universal CRF Specification & Schema Engine", () => {
 
     const formCmd = generateCliCommandForForm(form);
     expect(formCmd).toBe('crf add form DM --name "Demographics"');
+  });
+
+  describe("field command quoting (CodeQL alert 3, #3812)", () => {
+    // Parses the generated command with a real POSIX shell and prints each
+    // resulting argv entry NUL-separated. printf is the only command run, and
+    // the payloads below are inert (`printf AUDIT_ONLY`), so a quoting
+    // failure shows up as wrong argv text, never as a side effect.
+    const shellArgv = (command: string): string[] => {
+      const out = execFileSync("sh", ["-c", `printf '%s\\0' ${command}`], {
+        encoding: "utf8",
+      });
+      return out.split("\0").slice(0, -1);
+    };
+
+    const hostile = [
+      "$(printf AUDIT_ONLY)",
+      "`printf AUDIT_ONLY`",
+      'it\'s "quoted" \\ here',
+      "a; printf AUDIT_ONLY",
+      "line one\nline two",
+      "--required",
+      "  spaced  out  ",
+    ];
+
+    it.each(hostile)("keeps %j as one literal argv entry", (text) => {
+      const field: CRFField = {
+        id: "fld_x",
+        variableName: "VAR1",
+        label: text,
+        dataType: "text",
+        columnSpan: 4,
+        required: false,
+        unit: text,
+      };
+      const argv = shellArgv(generateCliCommandForField(text, field));
+      expect(argv).toEqual([
+        "crf",
+        "add",
+        "field",
+        text,
+        "--var",
+        "VAR1",
+        "--type",
+        "text",
+        "--label",
+        text,
+        "--unit",
+        text,
+        "--span",
+        "4",
+      ]);
+    });
+
+    it("quotes the variable name and type too", () => {
+      const field = {
+        id: "fld_y",
+        variableName: "X $(printf AUDIT_ONLY)",
+        label: "",
+        dataType: "text; printf AUDIT_ONLY",
+        columnSpan: 6,
+        required: true,
+      } as unknown as CRFField;
+      const argv = shellArgv(generateCliCommandForField("VS", field));
+      expect(argv).toEqual([
+        "crf",
+        "add",
+        "field",
+        "VS",
+        "--var",
+        "X $(printf AUDIT_ONLY)",
+        "--type",
+        "text; printf AUDIT_ONLY",
+        "--required",
+      ]);
+    });
+
+    it("drops a column span that is not a whole number", () => {
+      const field = {
+        id: "fld_z",
+        variableName: "VAR2",
+        label: "",
+        dataType: "text",
+        columnSpan: "3; printf AUDIT_ONLY",
+        required: false,
+      } as unknown as CRFField;
+      expect(generateCliCommandForField("VS", field)).toBe(
+        "crf add field VS --var VAR2 --type text"
+      );
+    });
   });
 
   it("computes semantic protocol diffs between two study versions", () => {

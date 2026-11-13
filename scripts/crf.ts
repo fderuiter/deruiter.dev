@@ -478,7 +478,20 @@ async function main(): Promise<void> {
     const dataType = (
       typeIdx !== -1 && args[typeIdx + 1] ? args[typeIdx + 1] : "text"
     ) as Parameters<typeof executeAddFieldCommand>[2]["dataType"];
-    const req = args.includes("--required");
+    // A flag only counts where it is not the value of a valued option, so a
+    // label such as "--required" stays a label (#3812).
+    const valuedOptions = new Set([
+      "--var",
+      "--type",
+      "--unit",
+      "--label",
+      "--tier",
+    ]);
+    const hasFlag = (...names: string[]) =>
+      args.some(
+        (a, i) => names.includes(a) && !valuedOptions.has(args[i - 1] ?? "")
+      );
+    const req = hasFlag("--required");
     const unitIdx = args.indexOf("--unit");
     const unit =
       unitIdx !== -1 && args[unitIdx + 1] ? args[unitIdx + 1] : undefined;
@@ -491,14 +504,11 @@ async function main(): Promise<void> {
       tierIdx !== -1 && args[tierIdx + 1]
         ? (args[tierIdx + 1] as "optional" | "hard_stop" | "auto_query")
         : undefined;
-    const allowPartial =
-      args.includes("--allow-partial") || args.includes("--partial");
-    const preventFutureDate =
-      args.includes("--prevent-future-date") || args.includes("--no-future");
-    const allowNullFlavor =
-      args.includes("--null-flavor") || args.includes("--null-flavors");
-    const requiresSdv = args.includes("--sdv");
-    const isBlinded = args.includes("--blinded");
+    const allowPartial = hasFlag("--allow-partial", "--partial");
+    const preventFutureDate = hasFlag("--prevent-future-date", "--no-future");
+    const allowNullFlavor = hasFlag("--null-flavor", "--null-flavors");
+    const requiresSdv = hasFlag("--sdv");
+    const isBlinded = hasFlag("--blinded");
 
     const fileArg = args.find(
       (a, i) =>

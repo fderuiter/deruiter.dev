@@ -7,6 +7,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ExportImportModal } from "@/components/crf/Modes/ExportImportModal";
 import {
@@ -21,6 +22,11 @@ import {
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
 import { CNS_NEURO_PRESET, exportStudyToUsdmObject } from "@/lib/crf";
 import { DEMO_301_STUDY, SUBJECT_COUNT_LIMITS } from "@/lib/study-data";
+import {
+  SessionWorker,
+  collectUnhandledRejections,
+  useSessionWorker,
+} from "./helpers/study-data-session-worker";
 
 const RUN_TIMEOUT = { timeout: 30_000 };
 
@@ -196,6 +202,46 @@ describe("/study-data with a study handed over from CRF Studio", () => {
     ).toBeNull();
     expect(storage.getItem(STUDY_DATA_HANDOFF_KEY)).not.toBeNull();
   });
+
+  // #3798: Strict Mode's cleanup disposes the client while the first setup's
+  // prepare is pending; the second setup re-checks the same taken study on a
+  // fresh worker, and the disposed request shows nothing.
+  it("checks the handed-over study once more after a Strict Mode remount, with no stale notice", async () => {
+    storeStudyHandoff(exportStudyToUsdmObject(CNS_NEURO_PRESET));
+    openWithHandoff();
+    useSessionWorker();
+    try {
+      const unhandled = await collectUnhandledRejections(async () => {
+        const view = render(
+          <StrictMode>
+            <StudyDataWorkbench
+              design={toScheduleDesign(DEMO_301_STUDY)}
+              definitionCounts={toDefinitionCounts(DEMO_301_STUDY)}
+              limits={SUBJECT_COUNT_LIMITS}
+              defaults={{ seed: 301, nSubjects: 30 }}
+            />
+          </StrictMode>
+        );
+        expect(
+          await screen.findByRole(
+            "region",
+            { name: /Study from CRF Studio: NEURO-2026-401/ },
+            RUN_TIMEOUT
+          )
+        ).toBeTruthy();
+        expect(SessionWorker.instances).toHaveLength(2);
+        expect(SessionWorker.instances[0].terminated).toBe(true);
+        expect(screen.queryByText(/could not be checked|disposed/)).toBeNull();
+        expect(screen.queryByText(/^Run 1:/)).toBeNull();
+
+        view.unmount();
+        expect(SessionWorker.instances[1].terminated).toBe(true);
+      });
+      expect(unhandled).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  }, 60_000);
 });
 
 describe("CRF Studio USDM export handoff", () => {

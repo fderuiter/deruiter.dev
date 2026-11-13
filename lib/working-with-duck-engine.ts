@@ -43,6 +43,7 @@ export type DuckAccessory =
   | "bandana"
   | "rain-boots"
   | "graduation-hat"
+  | "blue-cone"
   | "duck-costume"
   | "witch-hat"
   | "vampire-cape";
@@ -738,7 +739,8 @@ export type SoundCue =
   | "water-lap"
   | "crunch-kibble"
   | "code-type"
-  | "frisbee-throw";
+  | "frisbee-throw"
+  | "cone-bonk";
 
 export interface OfficeStations {
   waterLevel: number; // 0 to 100%
@@ -997,6 +999,7 @@ export function createInitialDuckGameState(
       "none",
       ...preservedAccessories,
       level >= 1 ? "bucket-hat" : "none",
+      level >= 1 ? "blue-cone" : "none",
       level >= 2 ? "bowtie" : "none",
       level >= 3 ? "bandana" : "none",
       level >= 4 ? "rain-boots" : "none",
@@ -1233,10 +1236,16 @@ export function stepDuckGame(
   const baseMultiplier = calculateGoodBoyMultiplier(state.naughtyVsGood);
   const comboBonus =
     state.comboStreak >= 2 ? 0.3 * Math.min(3, state.comboStreak) : 0;
-  // Accessory perks (#2050): bowtie +0.2 multiplier, bandana slower
-  // excitement, bucket hat slower thirst, graduation hat half neglect drain.
+  // Accessory perks (#2050): bowtie +0.2 multiplier, blue-cone +0.15
+  // ("Satellite Dish Wi-Fi") + chew shield, bandana slower excitement,
+  // bucket hat slower thirst, graduation hat half neglect drain.
   // Rain boots work at the Dog Park (mud immunity).
-  const accessoryBonus = state.activeAccessory === "bowtie" ? 0.2 : 0;
+  const accessoryBonus =
+    state.activeAccessory === "bowtie"
+      ? 0.2
+      : state.activeAccessory === "blue-cone"
+        ? 0.15
+        : 0;
   const effectiveMultiplier =
     (nextCalmBuff > 0 ? baseMultiplier + 0.5 : baseMultiplier) +
     comboBonus +
@@ -1693,6 +1702,29 @@ export function stepDuckGame(
         duck.maxStateTimer = duck.stateTimer;
       }
 
+      // Blue Cone comedic recovery status quips every ~6 seconds in idle roam
+      if (
+        state.activeAccessory === "blue-cone" &&
+        nextTicks > 0 &&
+        nextTicks % 360 === 0
+      ) {
+        const coneQuips = [
+          "📡 Cone Dish: +1 bar of Wi-Fi",
+          "🔵 *thump* Clipped the doorframe",
+          "🏥 Cone of Shame: Zero regrets",
+          "📡 Receiving NASA puppy telemetry",
+        ];
+        alerts.push({
+          id: state.nextAlertId + 15,
+          x: duck.x,
+          y: duck.y - 32,
+          text: coneQuips[(nextTicks / 360) % coneQuips.length],
+          color: "#38bdf8",
+          alpha: 1,
+          vy: -0.9,
+        });
+      }
+
       // Periodic random impulse generation (persisting lastImpulseTick)
       if (nextTicks - state.lastImpulseTick > impulseRate) {
         nextLastImpulseTick = nextTicks;
@@ -1783,6 +1815,18 @@ export function stepDuckGame(
         }
 
         if (duck.stateTimer <= 0 || nextThirst <= 5) {
+          if (state.activeAccessory === "blue-cone") {
+            soundCues.push("cone-bonk");
+            alerts.push({
+              id: state.nextAlertId + 16,
+              x: duck.x,
+              y: duck.y - 24,
+              text: "🔵 *CLANK!* Bowl wedged in cone!",
+              color: "#38bdf8",
+              alpha: 1,
+              vy: -1.1,
+            });
+          }
           duck.state = "IDLE_ROAM";
           duck.stateTimer = 100;
           duck.maxStateTimer = 100;
@@ -1815,6 +1859,18 @@ export function stepDuckGame(
         }
 
         if (duck.stateTimer <= 0 || nextHunger <= 5) {
+          if (state.activeAccessory === "blue-cone") {
+            soundCues.push("cone-bonk");
+            alerts.push({
+              id: state.nextAlertId + 17,
+              x: duck.x,
+              y: duck.y - 24,
+              text: "🔵 *CLANK!* Cone full of kibble!",
+              color: "#38bdf8",
+              alpha: 1,
+              vy: -1.1,
+            });
+          }
           duck.state = "IDLE_ROAM";
           duck.stateTimer = 100;
           duck.maxStateTimer = 100;
@@ -1898,22 +1954,57 @@ export function stepDuckGame(
           // Reached item, start chewing!
           duck.stateTimer -= 1;
           if (duck.stateTimer <= 0) {
-            targetHazard.isChewed = true;
-            nextNaughtyVsGood = Math.max(-100, nextNaughtyVsGood - 25);
-            duck.state = "IDLE_ROAM";
-            duck.stateTimer = 90;
-            duck.maxStateTimer = 90;
-            activeHazardTarget = null;
-            soundCues.push("fail");
-            alerts.push({
-              id: state.nextAlertId + 4,
-              x: duck.x,
-              y: duck.y - 25,
-              text: `💥 Chewed ${targetHazard.name}! (-25 pts)`,
-              color: "#ef4444",
-              alpha: 1,
-              vy: -1.5,
-            });
+            if (state.activeAccessory === "blue-cone") {
+              nextNaughtyVsGood = Math.min(100, nextNaughtyVsGood + 5);
+              nextScore += 25;
+              nextExcitement = Math.min(100, nextExcitement + 3);
+              duck.state = "IDLE_ROAM";
+              duck.stateTimer = 90;
+              duck.maxStateTimer = 90;
+              activeHazardTarget = null;
+              soundCues.push("cone-bonk");
+              for (let i = 0; i < 4; i++) {
+                const angle = (Math.PI * 2 * i) / 4;
+                particles.push({
+                  id: state.nextParticleId + particles.length,
+                  x: duck.x,
+                  y: duck.y - 8,
+                  vx: Math.cos(angle) * 1.6,
+                  vy: Math.sin(angle) * 1.6 - 0.5,
+                  alpha: 1,
+                  color: "#38bdf8",
+                  decay: 0.04,
+                  size: 7,
+                  shape: "star",
+                });
+              }
+              alerts.push({
+                id: state.nextAlertId + 4,
+                x: duck.x,
+                y: duck.y - 25,
+                text: `🔵 *CLONK!* Cone blocked ${targetHazard.name} chew! (+25 pts)`,
+                color: "#38bdf8",
+                alpha: 1,
+                vy: -1.5,
+              });
+            } else {
+              targetHazard.isChewed = true;
+              nextNaughtyVsGood = Math.max(-100, nextNaughtyVsGood - 25);
+              duck.state = "IDLE_ROAM";
+              duck.stateTimer = 90;
+              duck.maxStateTimer = 90;
+              activeHazardTarget = null;
+              soundCues.push("fail");
+              alerts.push({
+                id: state.nextAlertId + 4,
+                x: duck.x,
+                y: duck.y - 25,
+                text: `💥 Chewed ${targetHazard.name}! (-25 pts)`,
+                color: "#ef4444",
+                alpha: 1,
+                vy: -1.5,
+              });
+            }
           }
         }
       } else {
@@ -1985,24 +2076,57 @@ export function stepDuckGame(
       duck.y += duck.vy;
 
       // Bounce off walls
+      let hitWall = false;
       if (duck.x <= 50) {
         duck.x = 50;
         duck.vx = Math.abs(duck.vx);
-        soundCues.push("bark");
+        hitWall = true;
       } else if (duck.x >= CANVAS_WIDTH - 50) {
         duck.x = CANVAS_WIDTH - 50;
         duck.vx = -Math.abs(duck.vx);
-        soundCues.push("bark");
+        hitWall = true;
       }
 
       if (duck.y <= 50) {
         duck.y = 50;
         duck.vy = Math.abs(duck.vy);
-        soundCues.push("bark");
+        hitWall = true;
       } else if (duck.y >= CANVAS_HEIGHT - 50) {
         duck.y = CANVAS_HEIGHT - 50;
         duck.vy = -Math.abs(duck.vy);
-        soundCues.push("bark");
+        hitWall = true;
+      }
+
+      if (hitWall) {
+        if (state.activeAccessory === "blue-cone") {
+          soundCues.push("cone-bonk");
+          for (let i = 0; i < 3; i++) {
+            const angle = (Math.PI * 2 * i) / 3;
+            particles.push({
+              id: state.nextParticleId + particles.length,
+              x: duck.x,
+              y: duck.y - 10,
+              vx: Math.cos(angle) * 1.4,
+              vy: Math.sin(angle) * 1.4 - 0.4,
+              alpha: 1,
+              color: "#38bdf8",
+              decay: 0.05,
+              size: 7,
+              shape: "star",
+            });
+          }
+          alerts.push({
+            id: state.nextAlertId + 12,
+            x: duck.x,
+            y: duck.y - 26,
+            text: "🔵 *BONK!* Cone wall-slam!",
+            color: "#38bdf8",
+            alpha: 1,
+            vy: -1.3,
+          });
+        } else {
+          soundCues.push("bark");
+        }
       }
 
       duck.angle = Math.atan2(duck.vy, duck.vx);
@@ -2883,6 +3007,26 @@ export function equipAccessory(
     return state;
   }
 
+  if (accessory === "blue-cone") {
+    return {
+      ...state,
+      activeAccessory: accessory,
+      floatingAlerts: [
+        ...state.floatingAlerts,
+        {
+          id: state.nextAlertId + 2,
+          x: state.duck.x,
+          y: state.duck.y - 30,
+          text: "🔵 Cone of Shame fitted! (Chew shield ON)",
+          color: "#38bdf8",
+          alpha: 1,
+          vy: -1.1,
+        },
+      ],
+      soundCueQueue: [...state.soundCueQueue, "ding", "cone-bonk"],
+    };
+  }
+
   return {
     ...state,
     activeAccessory: accessory,
@@ -3545,6 +3689,7 @@ export function stepParkGame(
   const nextTicks = state.ticks + 1;
   const park = { ...state.parkState };
   const soundCues: Array<SoundCue> = [];
+  const newParkAlerts: WorkingWithDuckState["floatingAlerts"] = [];
   let nextScore = state.totalScore;
   let bonesCollected = park.bonesCollected;
   let hurdlesCleared = park.hurdlesCleared;
@@ -3609,15 +3754,28 @@ export function stepParkGame(
       park.duckY += (dy / dist) * 2.4;
       park.duckAngle = Math.atan2(dy, dx);
 
-      // Bone collections
+      // Bone collections (Blue Cone funnels a wider pickup scoop radius!)
+      const boneRadius = state.activeAccessory === "blue-cone" ? 52 : 30;
       for (const bone of bones) {
         if (!bone.collected) {
           const bDist = Math.hypot(park.duckX - bone.x, park.duckY - bone.y);
-          if (bDist < 30) {
+          if (bDist < boneRadius) {
             bone.collected = true;
             bonesCollected += 1;
             nextScore += 50;
             soundCues.push("ding");
+            if (state.activeAccessory === "blue-cone") {
+              soundCues.push("cone-bonk");
+              newParkAlerts.push({
+                id: state.nextAlertId + bonesCollected + 20,
+                x: park.duckX,
+                y: park.duckY - 26,
+                text: "🔵 Cone scooped a bone! (+50 pts)",
+                color: "#38bdf8",
+                alpha: 1,
+                vy: -1.1,
+              });
+            }
           }
         }
       }
@@ -3690,7 +3848,7 @@ export function stepParkGame(
       friends,
     },
     particles,
-    floatingAlerts: alerts,
+    floatingAlerts: [...alerts, ...newParkAlerts],
     soundCueQueue: [...state.soundCueQueue, ...soundCues],
   };
 }

@@ -569,6 +569,66 @@ function paintHud(ctx: Ctx, lather: number, rinse: number) {
   ctx.restore();
 }
 
+/** Draws the removed Blue Vet Cone resting beside the bath mat during bath time. */
+function paintRestingCone(ctx: Ctx) {
+  ctx.save();
+  ctx.translate(566, 434);
+  ctx.rotate(-0.18);
+
+  // Soft floor shadow beneath cone base
+  ctx.fillStyle = "rgba(60, 45, 30, 0.2)";
+  ellipse(ctx, 2, 16, 26, 8);
+  ctx.fill();
+
+  // Inner blue cone funnel cup
+  ctx.fillStyle = "rgba(2, 132, 199, 0.55)";
+  ctx.strokeStyle = "#0369a1";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-25, 12);
+  ctx.lineTo(-12, -16);
+  ctx.quadraticCurveTo(0, -21, 12, -16);
+  ctx.lineTo(25, 12);
+  ctx.quadraticCurveTo(0, 22, -25, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Translucent plastic sheen
+  ctx.fillStyle = "rgba(125, 211, 252, 0.28)";
+  ctx.beginPath();
+  ctx.moveTo(-22, 11);
+  ctx.lineTo(-10, -15);
+  ctx.lineTo(2, -17);
+  ctx.lineTo(-4, 16);
+  ctx.closePath();
+  ctx.fill();
+
+  // Wide white padded rim sitting on floor & narrow neck cuff at top
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-25, 12);
+  ctx.quadraticCurveTo(0, 22, 25, 12);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(-12, -16);
+  ctx.quadraticCurveTo(0, -12, 12, -16);
+  ctx.stroke();
+
+  // Snap buttons & clinic patch
+  ctx.fillStyle = "#e2e8f0";
+  ellipse(ctx, 4, -8, 2, 2);
+  ctx.fill();
+  ctx.fillStyle = "#fbbf24";
+  roundRect(ctx, 7, -4, 10, 7, 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 /**
  * Paints the bathtub minigame for one frame. Mud shows until Duck is
  * rinsed, lather grows with scrubbing and washes off with the rinse, and a
@@ -583,6 +643,7 @@ export function drawBathtubScene(ctx: Ctx, state: WorkingWithDuckState) {
   const clean = bath.status === "clean" || bath.rinseLevel >= 100;
 
   paintRoom(ctx);
+  if (state.activeAccessory === "blue-cone") paintRestingCone(ctx);
   paintWater(ctx, state.ticks, calm);
   paintWetDuck(ctx, mud, lather, clean, state.ticks, calm);
   paintSprayer(ctx, bath.soapLather >= 100 && bath.rinseLevel > 0 && !clean);

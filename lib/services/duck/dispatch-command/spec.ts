@@ -10,6 +10,7 @@ export const DuckAccessorySchema = z.enum([
   "bandana",
   "rain-boots",
   "graduation-hat",
+  "blue-cone",
   "duck-costume",
   "witch-hat",
   "vampire-cape",

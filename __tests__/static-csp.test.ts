@@ -33,7 +33,39 @@ import {
   SECURITY_HEADERS,
   WASM_POLICY_SOURCES,
 } from "@/lib/security-headers";
+import { SITE_BASE_URL } from "@/lib/seo";
 import RootLayout from "@/app/layout";
+
+const OBSOLETE_VERCEL_TELEMETRY_HOST = "va.vercel-scripts.com";
+
+/**
+ * Returns `true` only when `src` resolves to the obsolete external Vercel
+ * telemetry host (`va.vercel-scripts.com`) over HTTP(S). Returning `false`
+ * for lookalike hosts or non-HTTP(S) schemes means the input is not that
+ * specific forbidden host — it does not approve `src` under CSP.
+ */
+function isObsoleteVercelTelemetrySrc(
+  src: unknown,
+  baseUrl: string = SITE_BASE_URL
+): boolean {
+  if (typeof src !== "string") {
+    return false;
+  }
+  const trimmed = src.trim();
+  if (trimmed === "") {
+    return false;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed, baseUrl);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return false;
+  }
+  return parsed.hostname === OBSOLETE_VERCEL_TELEMETRY_HOST;
+}
 
 function parseDirectives(policy: string): Record<string, string[]> {
   return Object.fromEntries(
@@ -213,12 +245,62 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     // place (#2969), so none may come back.
     const vercelScriptTags = headChildren.filter(
       (c: { props?: { src?: unknown } }) =>
-        typeof c?.props?.src === "string" &&
-        c.props.src.startsWith("https://va.vercel-scripts.com")
+        isObsoleteVercelTelemetrySrc(c?.props?.src)
     );
     expect(vercelScriptTags).toEqual([]);
     for (const child of headChildren) {
       expect(child?.props?.nonce).toBeUndefined();
+    }
+  });
+
+  it("detects obsolete Vercel telemetry URLs strictly by parsed hostname (#3845)", () => {
+    for (const obsoleteSrc of [
+      "https://va.vercel-scripts.com/v1/script.debug.js",
+      "http://va.vercel-scripts.com/v1/script.js",
+      "//va.vercel-scripts.com/v1/script.js",
+      "https://VA.Vercel-Scripts.COM/v1/script.js",
+      "https://va.vercel-scripts.com:443/v1/script.js?debug=1",
+    ]) {
+      expect(isObsoleteVercelTelemetrySrc(obsoleteSrc), obsoleteSrc).toBe(true);
+    }
+
+    // Same-origin /_vercel and local scripts are not the obsolete external host.
+    for (const sameOriginSrc of [
+      "/_vercel/insights/script.js",
+      "/_vercel/speed-insights/script.js",
+      "/scripts/app.js",
+    ]) {
+      expect(isObsoleteVercelTelemetrySrc(sameOriginSrc), sameOriginSrc).toBe(
+        false
+      );
+    }
+
+    // Lookalike hosts are not va.vercel-scripts.com; returning false only means
+    // this negative-assertion helper did not match that host (not CSP approval).
+    for (const lookalikeSrc of [
+      "https://va.vercel-scripts.com.evil.invalid/v1/script.js",
+      "https://evil-va.vercel-scripts.com/v1/script.js",
+      "https://evil.invalid/https://va.vercel-scripts.com",
+      "https://evil.invalid/?src=https://va.vercel-scripts.com",
+    ]) {
+      expect(isObsoleteVercelTelemetrySrc(lookalikeSrc), lookalikeSrc).toBe(
+        false
+      );
+    }
+
+    for (const invalidOrNonHttp of [
+      "http://[::1",
+      "",
+      "   ",
+      null,
+      undefined,
+      "javascript:alert(1)",
+      "data:text/javascript,alert(1)",
+    ]) {
+      expect(
+        isObsoleteVercelTelemetrySrc(invalidOrNonHttp),
+        String(invalidOrNonHttp)
+      ).toBe(false);
     }
   });
 });

@@ -110,7 +110,7 @@ export function TrophyShelf({
                   {ach.title}
                 </h3>
                 <span
-                  className={`rounded-sm border px-1.5 py-px font-mono text-[10px] pointer-coarse:text-xs font-semibold uppercase tracking-wider ${
+                  className={`rounded-sm border px-1.5 py-px font-mono text-[10px] pointer-coarse:text-xs max-md:text-xs font-semibold uppercase tracking-wider ${
                     unlocked
                       ? "border-emerald-500/40 text-emerald-400"
                       : "border-white/[0.08] text-zinc-400"
@@ -123,7 +123,7 @@ export function TrophyShelf({
                 {ach.description}
               </p>
               {!unlocked && (
-                <p className="mt-2 break-words font-sans text-[11px] pointer-coarse:text-xs leading-relaxed text-amber-400/90">
+                <p className="mt-2 break-words font-sans text-[11px] pointer-coarse:text-xs max-md:text-xs leading-relaxed text-amber-400/90">
                   Hint: {ach.hint}
                   {ach.hintLink && (
                     <>

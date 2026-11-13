@@ -92,7 +92,8 @@ function samePlacement(a: Placement | null, b: Placement | null): boolean {
 /**
  * Where the card goes: above its control when that fits, else below it,
  * else docked at the top right of the stage's part on screen, clear of the
- * game's left side where most games put the player.
+ * game's left side where most games put the player. A control on the right
+ * that the card cannot clear docks the card at the top left instead.
  */
 function place(
   card: HTMLElement,
@@ -129,7 +130,13 @@ function place(
   let top: number;
   if (above >= scrollTop + EDGE_PX) top = above;
   else if (below + height <= scrollTop + box.height - EDGE_PX) top = below;
-  else return { ...docked, ring };
+  else {
+    // The control is too tall for the card to clear it (a phone's action
+    // column in landscape): dock on the side away from it, so it stays
+    // free to press.
+    const onRight = ring.left + ring.width / 2 > box.width / 2;
+    return onRight ? { ...docked, ring, left: EDGE_PX } : { ...docked, ring };
+  }
   const centred = ring.left + ring.width / 2 - width / 2;
   const maxLeft = Math.max(EDGE_PX, box.width - width - EDGE_PX);
   return {

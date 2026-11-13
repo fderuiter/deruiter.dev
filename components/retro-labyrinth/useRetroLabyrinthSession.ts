@@ -32,6 +32,8 @@ import {
   saveCRTCalibration,
 } from "@/lib/arcade/crt-pipeline";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import type { CabinetTutorialValue } from "@/components/arcade/tutorial";
+import { RETRO_LABYRINTH_TUTORIAL_SIGNALS } from "@/lib/retro-labyrinth";
 import { resolveLabyrinthCrt } from "@/components/retro-labyrinth/labyrinth-crt";
 import {
   patrolThreat,
@@ -409,6 +411,12 @@ interface RetroLabyrinthSessionOptions {
    * gives coarse pointers their assists.
    */
   readonly tuning?: { readonly input: "fine" | "coarse" };
+  /**
+   * The cabinet's tutorial (#3459). While it runs the session plays a
+   * practice Room 01 that nothing can hurt and that is never saved or
+   * scored.
+   */
+  readonly tutorial?: CabinetTutorialValue;
 }
 
 /** What {@link useRetroLabyrinthSession} returns. */
@@ -448,7 +456,13 @@ const getHighScoreServerSnapshot = () => "0";
 export function useRetroLabyrinthSession(
   options: RetroLabyrinthSessionOptions
 ): RetroLabyrinthSession {
-  const { active, reducedMotion } = options;
+  const { active, reducedMotion, tutorial } = options;
+  const practising = tutorial?.active ?? false;
+  const tutorialSignal = tutorial?.signal;
+  // Read by the save, score and damage paths, which run outside render.
+  const practisingRef = useRef(false);
+  // The saved run set aside while the tutorial runs, put back after it.
+  const setAsideRunRef = useRef<RetroLabyrinthRunSave | null>(null);
   const rawHighScore = useSyncExternalStore(
     subscribeHighScore,
     getHighScoreSnapshot,
@@ -1090,6 +1104,11 @@ export function useRetroLabyrinthSession(
 
   /** Saves the current roguelike room as it was entered (#3466). */
   const writeRoomSave = useCallback(() => {
+    // Practice is never saved; the run it set aside is kept as it was.
+    if (practisingRef.current) {
+      if (setAsideRunRef.current) saveRun(setAsideRunRef.current);
+      return;
+    }
     const src = saveSourceRef.current;
     if (src.gameMode !== "roguelike") return;
     if (src.runRoute === placeholderRouteRef.current) return;
@@ -1284,6 +1303,7 @@ export function useRetroLabyrinthSession(
   const takeContactHit = useCallback(
     (damage: number, cause: string, at: { x: number; y: number }) => {
       const now = performance.now();
+      if (practisingRef.current) return false;
       if (now < contactImmuneUntilRef.current) return false;
       contactImmuneUntilRef.current = now + CONTACT_IMMUNITY_MS;
       setLastHitBy(cause);
@@ -1550,6 +1570,8 @@ export function useRetroLabyrinthSession(
           retroAudio.playHackSuccess();
           const finalScore = computeRoomExitScore(score, nextMoves, roomCrypto);
           setScore(finalScore);
+          // A practice room keeps no score, profile, trophy or telemetry.
+          if (practisingRef.current) return;
           if (finalScore > effectiveHighScore) {
             setHighScore(finalScore);
             // Bare numeric string, written raw to keep the stored bytes.
@@ -2063,7 +2085,9 @@ export function useRetroLabyrinthSession(
         gameStatus !== "firmware_bay"
       ) {
         overlayReturnStatusRef.current =
-          gameStatus === "playing" ? "paused" : gameStatus;
+          gameStatus === "playing" && !practisingRef.current
+            ? "paused"
+            : gameStatus;
       }
       setGameStatus(overlay);
     },
@@ -2297,7 +2321,7 @@ export function useRetroLabyrinthSession(
         // Under reduced motion the boss mesh holds its angle (#2291).
         setBoss(reducedMotion ? holdBossSpin(boss, updatedBoss) : updatedBoss);
 
-        if (spawnedDamage > 0) {
+        if (spawnedDamage > 0 && !practisingRef.current) {
           bossHitThisRoomRef.current = true;
           setRunDamage((total) => total + spawnedDamage);
           setLastHitBy(bossVolleyHitLine(boss));
@@ -2569,10 +2593,13 @@ export function useRetroLabyrinthSession(
     hexPuzzle,
     hackingFeedback,
     // The Market trades only at the rest stop the route map labels (#2291).
-    marketOpen: isMarketOpen(
-      gameMode,
-      gameMode === "roguelike" ? campaignRooms[roomIndex] : undefined
-    ),
+    // Practice opens it anywhere, so the tutorial can show it.
+    marketOpen:
+      practising ||
+      isMarketOpen(
+        gameMode,
+        gameMode === "roguelike" ? campaignRooms[roomIndex] : undefined
+      ),
     marketRows,
     route: {
       seed: runRoute.seed,
@@ -2612,11 +2639,57 @@ export function useRetroLabyrinthSession(
     (classicStage: 1 | 2) => switchStage(classicStage),
     [switchStage]
   );
+  // The guided tutorial (#3459). Starting it sets the saved run aside and
+  // deals a fresh Room 01 to practise in; ending it resumes the saved run,
+  // or starts a new one, so nothing practised is kept.
+  useEffect(() => {
+    if (practising === practisingRef.current) return;
+    practisingRef.current = practising;
+    if (practising) {
+      const saved = loadRun();
+      setAsideRunRef.current = saved;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the tutorial's start is an external event the room follows
+      startRoguelikeCampaign();
+      // Starting a run drops the stored save; keep it stored meanwhile.
+      if (saved) saveRun(saved);
+      return;
+    }
+    const saved = setAsideRunRef.current;
+    setAsideRunRef.current = null;
+    if (saved) resumeRun(saved);
+    else startRoguelikeCampaign();
+  }, [practising, startRoguelikeCampaign, resumeRun]);
+
+  // The practice steps hear what the player did while the room plays.
+  const practise = (name: string) => {
+    if (practising && gameStatus === "playing") tutorialSignal?.(name);
+  };
+  // Reaching the exit and opening the Market are heard from the status they
+  // lead to: a phone opens the Market from its More sheet, which pauses the
+  // room while it is open.
+  useEffect(() => {
+    if (!practising) return;
+    if (gameStatus === "victory") {
+      tutorialSignal?.(RETRO_LABYRINTH_TUTORIAL_SIGNALS.clear);
+    } else if (gameStatus === "darknet_shop") {
+      tutorialSignal?.(RETRO_LABYRINTH_TUTORIAL_SIGNALS.market);
+    }
+  }, [practising, gameStatus, tutorialSignal]);
+
   const intents: LabyrinthIntents = {
-    move,
-    fireTool,
+    move: (direction) => {
+      practise(RETRO_LABYRINTH_TUTORIAL_SIGNALS.move);
+      move(direction);
+    },
+    fireTool: (slot) => {
+      if (slot < 3) practise(RETRO_LABYRINTH_TUTORIAL_SIGNALS.tool);
+      fireTool(slot);
+    },
     fireActive,
-    emp,
+    emp: () => {
+      practise(RETRO_LABYRINTH_TUTORIAL_SIGNALS.emp);
+      emp();
+    },
     exploit: cycleWeapon,
     openOverlay,
     closeOverlay,

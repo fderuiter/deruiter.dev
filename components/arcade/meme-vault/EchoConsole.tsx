@@ -87,7 +87,7 @@ export function EchoConsole({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <dl className="flex gap-3 font-mono text-[11px] pointer-coarse:text-xs tabular-nums">
+          <dl className="flex gap-3 font-mono text-[11px] pointer-coarse:text-xs max-md:text-xs tabular-nums">
             <div className="flex items-baseline gap-1.5">
               <dt className="uppercase tracking-wider text-zinc-400">Streak</dt>
               <dd className="text-zinc-100" data-testid="meme-echo-streak">

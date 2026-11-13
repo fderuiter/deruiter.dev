@@ -4,7 +4,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { exportUniversalCrfJson } from "@/lib/crf";
+import {
+  exportUniversalCrfJson,
+  generateCliCommandForField,
+  type CRFField,
+} from "@/lib/crf";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
 import {
   CrfInputError,
@@ -106,5 +110,101 @@ describe("CRF CLI study file input (#3091)", () => {
     expect(run.status).toBe(1);
     expect(run.stderr).toContain(`${file} does not exist.`);
     expect(run.stderr).not.toContain("Fatal error");
+  }, 60_000);
+});
+
+// #3812: a copied field command must parse back into the same field. The
+// generated line goes through a real POSIX shell (printf only, inert
+// payloads) and the resulting argv is handed to the CLI in dry-run mode.
+describe("CRF CLI field command round trip (#3812)", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "crf-cli-argv-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("keeps a hostile label as the label, not a flag or command", () => {
+    const file = path.join(dir, "study.crf.json");
+    fs.writeFileSync(file, exportUniversalCrfJson(getOncologyPresetSync()));
+    const field: CRFField = {
+      id: "fld_rt",
+      variableName: "RTVAR",
+      label: "--required",
+      dataType: "text",
+      columnSpan: 6,
+      required: false,
+      unit: "$(printf AUDIT_ONLY); it's",
+    };
+    const command = generateCliCommandForField("DM", field);
+    const parsed = spawnSync("sh", ["-c", `printf '%s\\0' ${command}`], {
+      encoding: "utf8",
+    });
+    const argv = parsed.stdout.split("\0").slice(0, -1);
+    expect(argv[0]).toBe("crf");
+
+    const run = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "scripts/crf.ts",
+        ...argv.slice(1, 4),
+        file,
+        ...argv.slice(4),
+        "--dry-run",
+        "--json",
+      ],
+      { cwd: process.cwd(), encoding: "utf8", timeout: 60_000 }
+    );
+    expect(run.status).toBe(0);
+    const added = JSON.parse(run.stdout.slice(run.stdout.indexOf("{")));
+    expect(added).toMatchObject({
+      variableName: "RTVAR",
+      label: "--required",
+      unit: "$(printf AUDIT_ONLY); it's",
+    });
+    expect(added.required).toBeFalsy();
+  }, 60_000);
+
+  it("reads span and calc values as values when the study file comes last", () => {
+    const file = path.join(dir, "study.crf.json");
+    fs.writeFileSync(file, exportUniversalCrfJson(getOncologyPresetSync()));
+    const field: CRFField = {
+      id: "fld_span",
+      variableName: "SPANVAR",
+      label: "Span check",
+      dataType: "number",
+      columnSpan: 4,
+      required: false,
+      calculationFormula: "--sdv",
+    };
+    const command = generateCliCommandForField("DM", field);
+    const parsed = spawnSync("sh", ["-c", `printf '%s\\0' ${command}`], {
+      encoding: "utf8",
+    });
+    const argv = parsed.stdout.split("\0").slice(0, -1);
+    expect(argv).toContain("--span");
+
+    const run = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "scripts/crf.ts",
+        ...argv.slice(1),
+        file,
+        "--dry-run",
+        "--json",
+      ],
+      { cwd: process.cwd(), encoding: "utf8", timeout: 60_000 }
+    );
+    expect(run.status).toBe(0);
+    const added = JSON.parse(run.stdout.slice(run.stdout.indexOf("{")));
+    expect(added).toMatchObject({ variableName: "SPANVAR" });
+    expect(added.requiresSdv).toBeFalsy();
   }, 60_000);
 });

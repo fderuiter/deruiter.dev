@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { resolveBaseUrl } from "@/lib/domain";
 import type { StudyProtocol, CRFForm, CRFField } from "../types";
+import { formatPosixCommand } from "./cli-argv";
 
 const UNIVERSAL_CRF_SCHEMA_PATH = "/schemas/crf/v1/universal-crf.schema.json";
 
@@ -864,34 +865,42 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
 // 11. CLI Command Generation Helpers
 
 /**
- * Generates the CLI subcommand string to add this field via terminal
+ * Generates the CLI subcommand string to add this field via terminal.
+ *
+ * Every value is serialized as one literal POSIX shell word, so a label or
+ * unit cannot run a substitution or add a second command when the line is
+ * pasted into a shell (CodeQL alerts 3 and 4, #3812 and #3813).
  */
 export function generateCliCommandForField(
   domain: string,
   field: CRFField
 ): string {
-  const parts = [
-    `crf add field ${domain}`,
-    `--var ${field.variableName}`,
-    `--type ${field.dataType}`,
+  const argv = [
+    "crf",
+    "add",
+    "field",
+    domain,
+    "--var",
+    field.variableName,
+    "--type",
+    field.dataType,
   ];
   if (field.label) {
-    const safeLabel = field.label.replace(/"/g, '\\"');
-    parts.push(`--label "${safeLabel}"`);
+    argv.push("--label", field.label);
   }
   if (field.required) {
-    parts.push("--required");
+    argv.push("--required");
   }
   if (field.unit) {
-    parts.push(`--unit "${field.unit}"`);
+    argv.push("--unit", field.unit);
   }
-  if (field.columnSpan && field.columnSpan !== 6) {
-    parts.push(`--span ${field.columnSpan}`);
+  if (Number.isInteger(field.columnSpan) && field.columnSpan !== 6) {
+    argv.push("--span", String(field.columnSpan));
   }
   if (field.calculationFormula) {
-    parts.push(`--calc "${field.calculationFormula.replace(/"/g, '\\"')}"`);
+    argv.push("--calc", field.calculationFormula);
   }
-  return parts.join(" ");
+  return formatPosixCommand(argv);
 }
 
 /**

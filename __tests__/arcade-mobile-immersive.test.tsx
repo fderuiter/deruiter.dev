@@ -744,15 +744,25 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   it("attaches no modality listeners to a desktop cabinet", async () => {
     installMatchMedia([]);
     const add = vi.spyOn(window, "addEventListener");
+    const remove = vi.spyOn(window, "removeEventListener");
     try {
       renderCabinet();
       await launch();
+      // The warmup's Escape handler (#3794) is attached only while the
+      // cabinet loads and is removed at launch, so count the keydown
+      // listeners still attached once the game is running.
+      const removed = new Set(
+        remove.mock.calls
+          .filter(([type]) => type === "keydown")
+          .map(([, listener]) => listener)
+      );
       const keyListeners = add.mock.calls.filter(
-        ([type]) => type === "keydown"
+        ([type, listener]) => type === "keydown" && !removed.has(listener)
       );
       expect(keyListeners).toHaveLength(0);
     } finally {
       add.mockRestore();
+      remove.mockRestore();
     }
   });
 });
@@ -781,16 +791,14 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
     const toolbar = screen.getByTestId("cabinet-touch-toolbar");
     expect(toolbar.className).toContain("absolute");
     expect(toolbar.style.right).toContain("8px");
-    expect(
-      screen.getByRole("button", { name: "Setup" }).textContent
-    ).toBe("");
+    expect(screen.getByRole("button", { name: "Setup" }).textContent).toBe("");
     expect(
       screen.getByRole("button", { name: "Reset / Power Off Cabinet" })
         .textContent
     ).toBe("");
-    expect(
-      screen.getByRole("button", { name: "Setup" }).className
-    ).toContain("h-12 w-12");
+    expect(screen.getByRole("button", { name: "Setup" }).className).toContain(
+      "h-12 w-12"
+    );
   });
 
   it("hides Fullscreen when the Fullscreen API is missing (iOS)", async () => {

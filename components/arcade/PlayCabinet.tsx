@@ -18,7 +18,10 @@ import {
   IconTerminal,
   IconAdjustments,
   IconSchool,
+  IconAlertTriangle,
+  IconRefresh,
 } from "@tabler/icons-react";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useInterval } from "@/hooks/useInterval";
@@ -83,6 +86,14 @@ import {
   type TutorialScript,
 } from "@/lib/arcade";
 
+/** Lifecycle phases of the arcade cabinet launch gate (#3794). */
+type CabinetLaunchPhase =
+  | "attract"
+  | "loading"
+  | "warming"
+  | "launched"
+  | "failed";
+
 interface ControlItem {
   key: string;
   action: string;
@@ -100,7 +111,7 @@ interface PlayCabinetProps {
   gameId?: string;
   title: string;
   subtitle?: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   instructions: string;
   controls: ControlItem[];
   importComponent: () => Promise<unknown>;
@@ -279,11 +290,22 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
-  const [isLaunched, setIsLaunched] = useState(false);
+  const [phase, setPhase] = useState<CabinetLaunchPhase>("attract");
   const [isPrefetched, setIsPrefetched] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const isLaunched = phase === "launched";
+  const isWarmingUp = phase === "loading" || phase === "warming";
+
+  const { announce } = useAnnouncer();
+  const launchAttemptRef = useRef(0);
+  const isLaunchingRef = useRef(false);
+  const inFlightRef = useRef<Promise<{ ok: boolean; error?: unknown }> | null>(
+    null
+  );
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
   // Any touch device, phone or tablet, gets the immersive cabinet once it is
   // launched (ADR 0061). Desktop never sets it, so its markup stays as it was.
   // The device class is latched at Launch and held until exit, so an iPad that
@@ -487,6 +509,14 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     },
     []
   );
+
+  // An unmounted cabinet discards delayed import callbacks (#3794).
+  useEffect(() => {
+    return () => {
+      launchAttemptRef.current += 1;
+      inFlightRef.current = null;
+    };
+  }, []);
   useLayoutEffect(() => {
     if (!touchImmersive || isFullscreen) return;
     const body = document.body;
@@ -649,19 +679,62 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     return () => observer.disconnect();
   }, [isLaunched, immersive]);
 
-  const handlePrefetch = () => {
-    if (!isPrefetched) {
-      setIsPrefetched(true);
-      importComponent()
-        .then(() => {
-          setIsLoaded(true);
-        })
-        .catch((err) => {
-          logger.error("Prefetch failed:", err);
-          setIsPrefetched(false);
+  const loadEngine = useCallback(
+    (attemptForLaunch?: number) => {
+      if (isLoaded) {
+        if (attemptForLaunch && launchAttemptRef.current === attemptForLaunch) {
+          setPhase("warming");
+        }
+        return;
+      }
+
+      if (!inFlightRef.current) {
+        setIsPrefetched(true);
+        inFlightRef.current = Promise.resolve()
+          .then(() => importComponent())
+          .then(() => {
+            setIsLoaded(true);
+            inFlightRef.current = null;
+            return { ok: true as const };
+          })
+          .catch((err: unknown) => {
+            inFlightRef.current = null;
+            setIsPrefetched(false);
+            logger.error("Component import failed:", err);
+            return { ok: false as const, error: err };
+          });
+      }
+
+      if (attemptForLaunch !== undefined) {
+        inFlightRef.current.then((outcome) => {
+          if (launchAttemptRef.current !== attemptForLaunch) return;
+          if (outcome.ok) {
+            setPhase("warming");
+          } else {
+            isLaunchingRef.current = false;
+            setPhase("failed");
+            const msg =
+              outcome.error instanceof Error
+                ? outcome.error.message
+                : typeof outcome.error === "string" &&
+                    outcome.error.trim().length > 0
+                  ? outcome.error
+                  : "Failed to load game module";
+            setErrorMessage(msg);
+            announce(
+              `Failed to load cabinet: ${msg}. Press Retry to try again or Exit to return.`,
+              "assertive"
+            );
+          }
         });
-    }
-  };
+      }
+    },
+    [importComponent, isLoaded, announce]
+  );
+
+  const handlePrefetch = useCallback(() => {
+    loadEngine();
+  }, [loadEngine]);
 
   // Scroll anchoring moves the page when the preview becomes the warming-up
   // cabinet, which is before the body pin can record an offset. A touch launch
@@ -674,13 +747,15 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     document.documentElement.style.overflowAnchor = saved;
   }, []);
   useEffect(() => {
-    if (!isLaunched) restoreAnchor();
-  }, [isLaunched, restoreAnchor]);
+    if (phase === "attract") restoreAnchor();
+  }, [phase, restoreAnchor]);
   // A cabinet that unmounts while launched, even mid-warmup, gives the page
   // its scroll anchoring back.
   useEffect(() => restoreAnchor, [restoreAnchor]);
 
   const handleLaunch = () => {
+    if (phase !== "attract" || isLaunchingRef.current) return;
+    isLaunchingRef.current = true;
     if (isTouchDevice && anchorBeforeLaunchRef.current === null) {
       anchorBeforeLaunchRef.current =
         document.documentElement.style.overflowAnchor;
@@ -689,9 +764,34 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     setLaunchedOnTouch(isTouchDevice);
     setBackArmed(false);
     cabinetHistory.push();
-    handlePrefetch();
-    setIsWarmingUp(true);
+    const attemptId = ++launchAttemptRef.current;
     setBootProgress(0);
+    setErrorMessage(null);
+    if (isLoaded) {
+      setPhase("warming");
+    } else {
+      setPhase("loading");
+      loadEngine(attemptId);
+    }
+    onLaunch?.();
+  };
+
+  const handleRetry = () => {
+    if (phase !== "failed" || isLaunchingRef.current) return;
+    isLaunchingRef.current = true;
+    if (isTouchDevice && anchorBeforeLaunchRef.current === null) {
+      anchorBeforeLaunchRef.current =
+        document.documentElement.style.overflowAnchor;
+      document.documentElement.style.overflowAnchor = "none";
+    }
+    setLaunchedOnTouch(isTouchDevice);
+    setBackArmed(false);
+    cabinetHistory.push();
+    const attemptId = ++launchAttemptRef.current;
+    setBootProgress(0);
+    setErrorMessage(null);
+    setPhase("loading");
+    loadEngine(attemptId);
     onLaunch?.();
   };
 
@@ -699,12 +799,12 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   useInterval(
     () => {
       setBootProgress((prev) => {
-        if (isLoaded) {
+        if (phase === "warming") {
           const next = prev + Math.floor(Math.random() * 30) + 25;
           if (next >= 100) {
-            setIsLaunched(true);
+            isLaunchingRef.current = false;
+            setPhase("launched");
             setShowWizard(false); // Quick-play instant start per ADR 0031
-            setIsWarmingUp(false);
             return 100;
           }
           return next;
@@ -716,7 +816,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
         }
       });
     },
-    isWarmingUp ? 60 : null
+    phase === "loading" || phase === "warming" ? 60 : null
   );
 
   // On launch, bring the cabinet into view and hand keyboard focus to the
@@ -833,7 +933,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     };
   }, [isLaunched]);
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     // Exiting by the cabinet's own controls pops the launch's history entry;
     // after a Back it is already gone.
     cabinetHistory.release();
@@ -844,13 +944,15 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     pauseController.resume();
     pauseController.resume("sheet");
     pauseController.resume("setup");
-    setIsLaunched(false);
+    launchAttemptRef.current += 1;
+    isLaunchingRef.current = false;
+    setPhase("attract");
     setLaunchedOnTouch(false);
-    setIsWarmingUp(false);
     void exitFullscreen();
     setBootProgress(0);
+    setErrorMessage(null);
     onExit?.();
-  };
+  }, [cabinetHistory, pauseController, exitFullscreen, onExit]);
 
   // Closes a sheet the way its own Escape does: the press goes to the sheet
   // (or the control focused in it), and the cabinet's key rules ignore it.
@@ -941,13 +1043,35 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
 
   // Focus goes back to Launch when the cabinet closes (AGENTS.md section 10).
   useEffect(() => {
-    if (isLaunched || isWarmingUp || !focusTriggerOnExitRef.current) return;
+    if (phase !== "attract" || !focusTriggerOnExitRef.current) return;
     focusTriggerOnExitRef.current = false;
     const target =
       launchButtonRef.current ??
       launchControlRef.current?.querySelector<HTMLElement>("button");
     target?.focus({ preventScroll: true });
-  }, [isLaunched, isWarmingUp]);
+  }, [phase]);
+
+  // Focus moves to Retry when a launch attempt fails (#3794).
+  useEffect(() => {
+    if (phase === "failed") {
+      retryButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [phase]);
+
+  // Escape cancels launch warmup or exits the failure screen back to attract mode (#3794).
+  // Catches Escape globally regardless of whether focus sits on document.body.
+  useEffect(() => {
+    if (phase !== "loading" && phase !== "warming" && phase !== "failed") return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        handleExit();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [phase, handleExit]);
 
   if (isLaunched) {
     const bezelClasses =
@@ -1538,7 +1662,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
       >
         {/* The game's own preview still, dimmed behind the title so the
             attract screen shows what the game looks like. */}
-        {!isWarmingUp && (
+        {phase === "attract" && (
           <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <Image
               src={`/images/arcade/previews/${gameId}.webp`}
@@ -1566,7 +1690,16 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
 
         {isWarmingUp ? (
           /* CRT Warming up / Booting Screen */
-          <div className="flex-1 flex flex-col justify-between font-mono text-xs text-emerald-400 z-10 p-2">
+          <div
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                handleExit();
+              }
+            }}
+            className="flex-1 flex flex-col justify-between font-mono text-xs text-emerald-400 z-10 p-2"
+          >
             <div className="space-y-1.5 uppercase tracking-wide">
               <div className="cabinet-standby-text flex items-center gap-2 text-[10px]">
                 <IconTerminal className="w-4 h-4 text-emerald-500" />
@@ -1599,7 +1732,9 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               {bootProgress > 75 && (
                 <div>
                   &gt; DYNAMICALLY MOUNTING GAME CHUNK...{" "}
-                  <span className="text-emerald-500">MOUNTED</span>
+                  <span className="text-emerald-500">
+                    {phase === "warming" ? "MOUNTED" : "LOADING..."}
+                  </span>
                 </div>
               )}
             </div>
@@ -1621,6 +1756,66 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                   }}
                 />
               </div>
+            </div>
+          </div>
+        ) : phase === "failed" ? (
+          /* CRT Load Failure & Recovery Screen (#3794) */
+          <div
+            role="alert"
+            aria-live="assertive"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                handleExit();
+              }
+            }}
+            className="flex-1 flex flex-col justify-between font-mono text-xs z-10 p-2 sm:p-4"
+          >
+            {/* Header / Diagnostic Tag */}
+            <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-3 text-[10px] text-zinc-400">
+              <div className="flex items-center gap-2 text-rose-400">
+                <IconAlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="uppercase tracking-wider font-bold">
+                  System Diagnostic: Load Failed
+                </span>
+              </div>
+              <span className="uppercase tracking-widest text-[9px] text-zinc-500">
+                ERR_MODULE_IMPORT
+              </span>
+            </div>
+
+            {/* Error Message & Details */}
+            <div className="flex-1 flex flex-col items-center justify-center text-center my-6 max-w-md mx-auto">
+              <div className="p-3 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 mb-4">
+                <IconAlertTriangle className="w-8 h-8" aria-hidden="true" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold font-mono text-white tracking-[-0.035em]">
+                Failed to Load Game Module
+              </h3>
+              <p className="text-xs text-zinc-400 font-mono mt-2 leading-relaxed">
+                {errorMessage ||
+                  "The game chunk could not be retrieved. Please verify your connection and try again."}
+              </p>
+            </div>
+
+            {/* Actions: Retry and Exit */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-zinc-800/60">
+              <button
+                ref={retryButtonRef}
+                type="button"
+                onClick={handleRetry}
+                className="min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] text-amber-300 font-bold font-mono text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+              >
+                <IconRefresh className="w-4 h-4" aria-hidden="true" />
+                <span>Retry</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExit}
+                className="min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 hover:border-zinc-600 active:scale-[0.98] text-zinc-300 font-bold font-mono text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-400"
+              >
+                <span>Exit</span>
+              </button>
             </div>
           </div>
         ) : (
@@ -1647,9 +1842,11 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
 
             {/* Cabinet Game Display Details */}
             <div className="flex-1 flex flex-col items-center justify-center text-center my-6 [@media(max-height:500px)]:my-2 [@media(max-height:500px)]:min-h-0 [@media(max-height:500px)]:justify-start [@media(max-height:500px)]:overflow-y-auto max-w-xl mx-auto z-10">
-              <div className="arcade-accent-text p-3 rounded-full bg-zinc-950/80 border border-zinc-700/80 mb-4 [@media(max-height:500px)]:hidden">
-                {icon}
-              </div>
+              {icon && (
+                <div className="arcade-accent-text p-3 rounded-full bg-zinc-950/80 border border-zinc-700/80 mb-4 [@media(max-height:500px)]:hidden">
+                  {icon}
+                </div>
+              )}
               <h2 className="text-2xl sm:text-4xl [@media(max-height:500px)]:text-xl font-extrabold font-mono text-white tracking-[-0.035em] text-balance [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
                 {title}
               </h2>

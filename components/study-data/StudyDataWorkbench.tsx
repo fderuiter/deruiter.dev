@@ -382,7 +382,9 @@ export function StudyDataWorkbench({
           );
         })
         .catch((error: unknown) => {
-          if (error instanceof PipelineCancelledError) return;
+          // A torn-down effect shows nothing, and cleanup's dispose rejects
+          // this request with PipelineDisposedError, which is expected.
+          if (!live || error instanceof PipelineCancelledError) return;
           setStatus("running");
           fallBack(
             `The study handed over from CRF Studio could not be checked (${error instanceof Error ? error.message : String(error)}), so the page runs DEMO-301.`
@@ -530,6 +532,10 @@ export function StudyDataWorkbench({
         });
       })
       .catch((error: unknown) => {
+        if (error instanceof PipelineCancelledError) {
+          setDownload({ busy: null, message: "" });
+          return;
+        }
         setDownload({
           busy: null,
           message:

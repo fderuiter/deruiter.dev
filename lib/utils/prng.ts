@@ -25,6 +25,20 @@ export function mulberry32(state: number): number {
 }
 
 /**
+ * A stream of uniform values in [0, 1) from a 32-bit seed: each call takes
+ * the next Mulberry32 step. The canvas art modules use it so a seed always
+ * paints the same scene.
+ */
+export function mulberry32Stream(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    const value = mulberry32(state);
+    state = (state + 0x6d2b79f5) >>> 0;
+    return value / 0x100000000;
+  };
+}
+
+/**
  * The uniform value in [0, 1) at `drawIndex` for `seed`. Throws RangeError
  * on a negative or fractional draw index.
  */

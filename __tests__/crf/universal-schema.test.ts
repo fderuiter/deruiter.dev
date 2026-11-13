@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
+import { fromAny } from "@total-typescript/shoehorn";
 import {
   CRFField,
   CRFForm,
@@ -404,14 +405,14 @@ describe("Universal CRF Specification & Schema Engine", () => {
     });
 
     it("quotes the variable name and type too", () => {
-      const field = {
+      const field = fromAny<CRFField, unknown>({
         id: "fld_y",
         variableName: "X $(printf AUDIT_ONLY)",
         label: "",
         dataType: "text; printf AUDIT_ONLY",
         columnSpan: 6,
         required: true,
-      } as unknown as CRFField;
+      });
       const argv = shellArgv(generateCliCommandForField("VS", field));
       expect(argv).toEqual([
         "crf",
@@ -456,14 +457,14 @@ describe("Universal CRF Specification & Schema Engine", () => {
     );
 
     it("drops a column span that is not a whole number", () => {
-      const field = {
+      const field = fromAny<CRFField, unknown>({
         id: "fld_z",
         variableName: "VAR2",
         label: "",
         dataType: "text",
         columnSpan: "3; printf AUDIT_ONLY",
         required: false,
-      } as unknown as CRFField;
+      });
       expect(generateCliCommandForField("VS", field)).toBe(
         "crf add field VS --var VAR2 --type text"
       );

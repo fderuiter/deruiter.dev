@@ -213,6 +213,26 @@ describe("standards watch parsers", () => {
     expect(nodes.join(" ")).not.toContain("9.9");
   });
 
+  // CodeQL alert 27 (#3815): a malformed closing tag let hidden text through
+  // the old regex filters and pose as a release label.
+  it.each([
+    "<script>SDTMIG v999.0</script bogus><p>SDTMIG v3.4</p>",
+    "<style>SDTMIG v999.0</style bogus><p>SDTMIG v3.4</p>",
+    "<SCRIPT type=x>SDTMIG v999.0</SCRIPT\t><p>SDTMIG v3.4</p>",
+    "<body><noscript><p>SDTMIG v999.0</p></noscript><p>SDTMIG v3.4</p>",
+    "<template><p>SDTMIG v999.0</p></template><p>SDTMIG v3.4</p>",
+    "<!-- <p>SDTMIG v999.0</p> --><p>SDTMIG v3.4</p>",
+  ])("ignores hidden text in %j", (html) => {
+    expect(textNodes(html)).toEqual(["SDTMIG v3.4"]);
+    expect(siteVersion(html, ["SDTMIG"])).toBe("3.4");
+  });
+
+  it("decodes entities exactly once", () => {
+    expect(textNodes("<p>A&amp;amp;B&nbsp;v1&#39;s</p>")).toEqual([
+      "A&amp;B v1's",
+    ]);
+  });
+
   it("takes the highest version listed under a label, and nothing else", () => {
     expect(siteVersion(page, ["SDTMIG"])).toBe("3.10");
     expect(siteVersion(page, ["SDTM and SDTMIG Conformance Rules"])).toBe(

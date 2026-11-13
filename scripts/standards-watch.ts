@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { JSDOM } from "jsdom";
 import {
   STANDARDS_BOM_SPECS,
   compareVersions,
@@ -40,34 +41,34 @@ const COMMENT =
 const VERSION = /^v?\d+(\.\d+)*$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-const ENTITIES: Record<string, string> = {
-  "&amp;": "&",
-  "&nbsp;": " ",
-  "&#039;": "'",
-  "&#39;": "'",
-  "&quot;": '"',
-  "&lt;": "<",
-  "&gt;": ">",
-};
+/**
+ * Elements whose text a reader never sees on the page. Their text is left
+ * out so it cannot pose as a release label (CodeQL alert 27, #3815).
+ */
+const HIDDEN_SELECTOR = "script, style, noscript, template";
 
 /**
  * The text nodes of an HTML page, trimmed, with spaces collapsed.
+ *
+ * The page is parsed by jsdom, which never runs its scripts here, and the
+ * text nodes are walked in document order. Text anywhere inside script,
+ * style, noscript and template elements is skipped, however the tags are
+ * written, and comments are not text nodes. The parser decodes entities
+ * once.
  *
  * @param html - The page.
  * @returns Each non-empty text node.
  */
 export function textNodes(html: string): string[] {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .split(/<[^>]*>/)
-    .map((t) =>
-      t
-        .replace(/&[#\w]+;/g, (e) => ENTITIES[e] ?? e)
-        .replace(/\s+/g, " ")
-        .trim()
-    )
-    .filter(Boolean);
+  const { document, NodeFilter } = new JSDOM(html).window;
+  const walker = document.createTreeWalker(document, NodeFilter.SHOW_TEXT);
+  const nodes: string[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.parentElement?.closest(HIDDEN_SELECTOR)) continue;
+    const text = (node.nodeValue ?? "").replace(/\s+/g, " ").trim();
+    if (text) nodes.push(text);
+  }
+  return nodes;
 }
 
 /**

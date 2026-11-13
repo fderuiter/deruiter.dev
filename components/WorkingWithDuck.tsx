@@ -398,6 +398,19 @@ function drawDogParkScene(
       50
     );
   }
+
+  // Render floating alerts (e.g. cone bone scoops) in the park too
+  for (const alert of state.floatingAlerts) {
+    ctx.save();
+    ctx.globalAlpha = alert.alpha;
+    ctx.fillStyle = alert.color;
+    ctx.font = gameFont(12, "bold");
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#000000";
+    ctx.shadowBlur = 6;
+    ctx.fillText(alert.text, alert.x, alert.y);
+    ctx.restore();
+  }
 }
 
 function drawCanvas(
@@ -1024,7 +1037,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   /** One wardrobe row: an accessory or a costume, as a radio. */
   const renderWardrobeItem = (
-    acc: { id: DuckAccessory; name: string; desc: string; icon: string },
+    acc: {
+      id: DuckAccessory;
+      name: string;
+      desc: string;
+      icon: string;
+      previewSvg?: string;
+    },
     isUnlocked: boolean
   ) => {
     const isSelected = uiState.activeAccessory === acc.id;
@@ -1044,7 +1063,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         }`}
       >
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <span className="text-xl sm:text-2xl shrink-0">{acc.icon}</span>
+          {acc.previewSvg ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={acc.previewSvg}
+                alt=""
+                aria-hidden="true"
+                className="w-8 h-8 rounded-xl bg-sky-950/60 border border-sky-400/40 object-contain shrink-0"
+              />
+            </>
+          ) : (
+            <span className="text-xl sm:text-2xl shrink-0">{acc.icon}</span>
+          )}
           <div>
             <div className="text-xs font-bold flex items-center gap-2">
               <span>{acc.name}</span>
@@ -1404,6 +1435,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         } else if (cue === "frisbee-throw") {
           playNote(700, 0.08);
           setTimeout(() => playNote(950, 0.08), 50);
+        } else if (cue === "cone-bonk") {
+          // Hollow plastic e-collar *clonk-boing* sound cue
+          playNote(195, 0.055);
+          setTimeout(() => playNote(145, 0.08), 35);
+          setTimeout(() => playNote(260, 0.045), 75);
         }
       } catch {}
     },

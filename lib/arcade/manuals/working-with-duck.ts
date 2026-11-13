@@ -82,7 +82,7 @@ export const WORKING_WITH_DUCK_MANUAL: FieldManualData = {
     {
       title: "5-Sprint Campaign & Accessories",
       detail:
-        "Progress across 5 story-driven sprints to unlock wearable cosmetics: Adidas Bucket Hat, Tech CEO Bowtie, Adventure Bandana, and Yellow Mud Boots.",
+        "Progress across 5 story-driven sprints to unlock wearable cosmetics: Adidas Bucket Hat, Blue Vet Cone (available right away for post-neuter recovery shenanigans), Tech CEO Bowtie, Adventure Bandana, and Yellow Mud Boots.",
       badge: "Wardrobe Unlocks",
     },
     {
@@ -112,6 +112,7 @@ export const WORKING_WITH_DUCK_MANUAL: FieldManualData = {
   ],
   proTips: [
     "Use 'Drop It!' (E) as soon as Duck targets a hazard to save items without switching toys.",
+    "Equip the Blue Vet Cone right away if cables keep getting chewed: the plastic rim blocks chews with a *CLONK!* and widens bone-scooping at the Dog Park.",
     "Wear Yellow Mud Boots to provide complete mud puddle immunity at the Dog Park.",
     "Equip the Tech CEO Bowtie for an extra 0.2x speed boost during active sprint crunch periods.",
   ],

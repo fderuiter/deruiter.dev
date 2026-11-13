@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="creamBodyCone" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="60%" stop-color="#faf8f5" />
+      <stop offset="100%" stop-color="#f5efe6" />
+    </linearGradient>
+    <linearGradient id="earGradLeftCone" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#faf5ee" />
+      <stop offset="70%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#fcd34d" />
+    </linearGradient>
+    <linearGradient id="earGradRightCone" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#faf5ee" />
+      <stop offset="70%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#fcd34d" />
+    </linearGradient>
+    <radialGradient id="noseGradCone" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#3f3f46" />
+      <stop offset="60%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </radialGradient>
+    <linearGradient id="tongueGradCone" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185" />
+      <stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+    <radialGradient id="coneInsideGrad" cx="50%" cy="68%" r="60%">
+      <stop offset="0%" stop-color="#075985" />
+      <stop offset="55%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </radialGradient>
+    <linearGradient id="coneFrontGrad" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.48" />
+      <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.34" />
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0.48" />
+    </linearGradient>
+    <linearGradient id="coneSheenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <filter id="coneShadow" x="-12%" y="-12%" width="124%" height="124%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Soft Clinic Blue Sunburst Background -->
+  <circle cx="250" cy="250" r="230" fill="#eff6ff" opacity="0.7" />
+  <circle cx="250" cy="250" r="185" fill="#bae6fd" opacity="0.35" />
+
+  <!-- Ground Shadow -->
+  <ellipse cx="250" cy="458" rx="135" ry="20" fill="#000000" opacity="0.16" />
+
+  <g filter="url(#coneShadow)">
+    <!-- Back Interior Dish of the Blue Vet Cone (layered behind head & chest) -->
+    <ellipse cx="250" cy="222" rx="176" ry="154" fill="url(#coneInsideGrad)" stroke="#0369a1" stroke-width="5" />
+    <ellipse cx="250" cy="222" rx="170" ry="148" fill="none" stroke="#f8fafc" stroke-width="4" stroke-dasharray="6 0" opacity="0.92" />
+
+    <!-- Subtle plastic seam lines inside cone -->
+    <path d="M 150 96 L 204 282" stroke="#7dd3fc" stroke-width="2" opacity="0.45" />
+    <path d="M 350 96 L 296 282" stroke="#7dd3fc" stroke-width="2" opacity="0.45" />
+
+    <!-- Seated Marshmallow Body -->
+    <path d="M 164 334 C 148 378 172 434 250 434 C 328 434 352 378 336 334 Z" fill="url(#creamBodyCone)" stroke="#fde68a" stroke-width="1.5" />
+    <!-- Chest Ruff -->
+    <ellipse cx="250" cy="378" rx="46" ry="34" fill="#ffffff" opacity="0.8" />
+
+    <!-- Red Collar & Gold ID Tag -->
+    <path d="M 186 318 C 215 344 285 344 314 318 L 320 338 C 285 362 215 362 180 338 Z" fill="#dc2626" stroke="#991b1b" stroke-width="2" />
+    <circle cx="250" cy="356" r="11" fill="#fbbf24" stroke="#b45309" stroke-width="2" />
+    <circle cx="250" cy="356" r="6" fill="#fef08a" opacity="0.65" />
+
+    <!-- Front Paws -->
+    <ellipse cx="204" cy="444" rx="22" ry="12" fill="#ffffff" stroke="#fde68a" stroke-width="2" />
+    <ellipse cx="296" cy="444" rx="22" ry="12" fill="#ffffff" stroke="#fde68a" stroke-width="2" />
+
+    <!-- Floppy Ears (slightly tucked inside cone walls) -->
+    <path d="M 168 184 C 128 192 114 252 132 302 C 144 322 164 326 174 305 C 184 278 180 232 178 196 Z" fill="url(#earGradLeftCone)" stroke="#fde68a" stroke-width="2" />
+    <path d="M 332 184 C 372 192 386 252 368 302 C 356 322 336 326 326 305 C 316 278 320 232 322 196 Z" fill="url(#earGradRightCone)" stroke="#fde68a" stroke-width="2" />
+
+    <!-- Puppy Head -->
+    <path d="M 166 184 C 148 242 166 298 204 314 C 224 320 276 320 296 314 C 334 298 352 242 334 184 C 314 128 186 128 166 184 Z" fill="url(#creamBodyCone)" stroke="#fde68a" stroke-width="1.5" />
+
+    <!-- Soft Muzzle -->
+    <ellipse cx="250" cy="268" rx="50" ry="36" fill="#ffffff" stroke="#fef08a" stroke-width="1" />
+
+    <!-- Little Blep Tongue (mildly tragic vet recovery blep) -->
+    <path d="M 234 287 C 236 312 264 312 266 287 Z" fill="#450a0a" />
+    <path d="M 238 290 C 237 322 263 322 262 290 Z" fill="url(#tongueGradCone)" />
+    <path d="M 250 290 L 250 315" stroke="#f43f5e" stroke-width="1.8" />
+
+    <!-- Mouth Smile / Pout -->
+    <path d="M 218 278 C 234 288 250 284 250 276 C 250 284 266 288 282 278" fill="none" stroke="#1c1917" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Glossy Dark Nose -->
+    <path d="M 227 248 C 227 234 273 234 273 248 C 273 268 256 274 250 274 C 244 274 227 268 227 248 Z" fill="url(#noseGradCone)" />
+    <ellipse cx="242" cy="244" rx="6" ry="3" fill="#ffffff" opacity="0.55" />
+
+    <!-- Soulful "Why Did You Do This To Me" Puppy Eyes -->
+    <circle cx="208" cy="218" r="14" fill="#29170b" />
+    <circle cx="212" cy="213" r="5" fill="#ffffff" />
+    <circle cx="204" cy="222" r="2.2" fill="#ffffff" opacity="0.7" />
+    <circle cx="292" cy="218" r="14" fill="#29170b" />
+    <circle cx="296" cy="213" r="5" fill="#ffffff" />
+    <circle cx="288" cy="222" r="2.2" fill="#ffffff" opacity="0.7" />
+
+    <!-- Expressive Upward Slanted Puppy Eyebrows -->
+    <path d="M 190 198 C 202 192 214 190 223 196" fill="none" stroke="#d97706" stroke-width="3.2" stroke-linecap="round" />
+    <path d="M 310 198 C 298 192 286 190 277 196" fill="none" stroke="#d97706" stroke-width="3.2" stroke-linecap="round" />
+
+    <!-- Foreground Translucent Cone Wall & Throat Cuff (frames his face inside) -->
+    <path
+      d="M 110 318 C 145 366 355 366 390 318 L 315 338 C 280 356 220 356 185 338 Z"
+      fill="url(#coneFrontGrad)"
+    />
+    <!-- Full Outer Rim Flare Overlay (semi-transparent plastic rim highlight) -->
+    <path
+      d="M 86 276 C 118 358 382 358 414 276 C 402 336 336 376 250 376 C 164 376 98 336 86 276 Z"
+      fill="url(#coneFrontGrad)"
+    />
+    <!-- Padded White Trim Piping around Front Opening & Neck Cuff -->
+    <ellipse cx="250" cy="222" rx="176" ry="154" fill="none" stroke="#f8fafc" stroke-width="7" />
+    <ellipse cx="250" cy="222" rx="176" ry="154" fill="none" stroke="#0284c7" stroke-width="2" />
+    <path d="M 178 326 C 214 352 286 352 322 326" fill="none" stroke="#f8fafc" stroke-width="6" stroke-linecap="round" />
+    <path d="M 178 326 C 214 352 286 352 322 326" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round" />
+
+    <!-- Glossy Plastic Highlights & Snap Tabs -->
+    <path d="M 114 156 C 138 118 176 96 218 88" fill="none" stroke="url(#coneSheenGrad)" stroke-width="10" stroke-linecap="round" />
+    <path d="M 102 286 C 118 318 144 338 172 348" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.5" />
+    <circle cx="195" cy="336" r="4.5" fill="#e2e8f0" stroke="#475569" stroke-width="1.5" />
+    <circle cx="305" cy="336" r="4.5" fill="#e2e8f0" stroke="#475569" stroke-width="1.5" />
+
+    <!-- Clinic "Vet RX" Star Badge Sticker on Side of Cone -->
+    <g transform="translate(364, 248) rotate(14)">
+      <rect x="-24" y="-14" width="48" height="28" rx="8" fill="#fbbf24" stroke="#f8fafc" stroke-width="2" />
+      <text x="0" y="-1" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#78350f">VET RX</text>
+      <text x="0" y="9" text-anchor="middle" font-family="monospace" font-size="8" font-weight="bold" fill="#0369a1">NO LICK</text>
+    </g>
+
+    <!-- Satellite Dish Wi-Fi Bars Above the Cone -->
+    <g transform="translate(250, 56)" opacity="0.85">
+      <path d="M -28 -4 Q 0 -22 28 -4" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round" />
+      <path d="M -18 4 Q 0 -8 18 4" fill="none" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round" />
+      <circle cx="0" cy="12" r="3.5" fill="#38bdf8" />
+    </g>
+  </g>
+</svg>

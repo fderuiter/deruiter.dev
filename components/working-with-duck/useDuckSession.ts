@@ -152,6 +152,7 @@ export const WARDROBE: ReadonlyArray<{
   name: string;
   desc: string;
   icon: string;
+  previewSvg?: string;
 }> = [
   {
     id: "none",
@@ -164,6 +165,13 @@ export const WARDROBE: ReadonlyArray<{
     name: "Adidas Bucket Hat",
     desc: "Shade on his head · Thirst rises 25% slower",
     icon: "🧢",
+  },
+  {
+    id: "blue-cone",
+    name: "Blue Vet Cone",
+    desc: "Post-neuter recovery · Blocks cable chews (*CLONK!*), +0.15× Wi-Fi & wider park bone scoop",
+    icon: "🛰️",
+    previewSvg: "/duck/duck-cone.svg",
   },
   {
     id: "bowtie",

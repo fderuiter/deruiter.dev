@@ -1183,6 +1183,98 @@ function head(
   ctx.restore();
 }
 
+function drawConeBack(ctx: Ctx, x: number, y: number, tilt = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+
+  // Far/interior cup of the recovery cone (layered behind head & ears)
+  ctx.fillStyle = "rgba(3, 105, 161, 0.72)";
+  ctx.strokeStyle = "#0369a1";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-10, -11);
+  ctx.lineTo(18, -20);
+  ctx.ellipse(18, 2, 8.5, 22, 0, -Math.PI / 2, Math.PI / 2, true);
+  ctx.lineTo(-10, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Subtle plastic seam & far padded trim edge
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.ellipse(18, 2, 8.5, 22, 0, -Math.PI / 2, Math.PI / 2, true);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawConeFront(ctx: Ctx, x: number, y: number, tilt = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+
+  // Near translucent plastic cone shield framing head & snout
+  ctx.fillStyle = "rgba(56, 189, 248, 0.28)";
+  ctx.beginPath();
+  ctx.moveTo(-10, -11);
+  ctx.lineTo(18, -20);
+  ctx.ellipse(18, 2, 8.5, 22, 0, -Math.PI / 2, Math.PI / 2, false);
+  ctx.lineTo(-10, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  // Diagonal glossy highlight along the outer cone wall
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.48)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-4, -9);
+  ctx.lineTo(14, -14);
+  ctx.stroke();
+
+  // Padded white cloth rim along the near front arc + subtle blue outline
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.ellipse(18, 2, 8.5, 22, 0, -Math.PI / 2, Math.PI / 2, false);
+  ctx.stroke();
+  ctx.strokeStyle = "#0284c7";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Neck cuff & silver Velcro snap buttons
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-10, -11);
+  ctx.lineTo(-10, 12);
+  ctx.stroke();
+  ctx.fillStyle = "#e2e8f0";
+  ellipse(ctx, -7, -4, 1.4, 1.4);
+  ctx.fill();
+  ellipse(ctx, -7, 4, 1.4, 1.4);
+  ctx.fill();
+
+  // Tiny golden VET RX patch on lower cheek of cone
+  ctx.fillStyle = "#fbbf24";
+  roundRect(ctx, 1, 10, 8, 4.5, 1.5);
+  ctx.fill();
+
+  // Subtle Satellite Dish Wi-Fi arcs above the cone flare
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.72)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(8, -22, 4, -Math.PI * 0.85, -Math.PI * 0.15);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(8, -22, 7.5, -Math.PI * 0.85, -Math.PI * 0.15);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function collar(ctx: Ctx, x: number, y: number, tilt = 0) {
   ctx.save();
   ctx.translate(x, y);
@@ -1273,6 +1365,10 @@ function accessory(
     ellipse(ctx, 10, 7, 1.8, 2.4);
     ctx.fill();
     ctx.restore();
+    return;
+  }
+  if (kind === "blue-cone") {
+    drawConeFront(ctx, anchors.head[0], anchors.head[1], anchors.headTilt ?? 0);
     return;
   }
   const [nx, ny] = anchors.neck;
@@ -1433,6 +1529,9 @@ function drawStanding(
   const hy = sniff ? 2 + bob : -16 + bob;
   const headTilt = sniff ? 0.55 : run ? 0.12 : 0;
   collar(ctx, 21, -4 + bob + (sniff ? 6 : 0), sniff ? 0.6 : -0.2);
+  if (opts.accessory === "blue-cone") {
+    drawConeBack(ctx, hx, hy, headTilt);
+  }
   head(ctx, fur, hx, hy, {
     tilt: headTilt,
     tongue: opts.tongue,
@@ -1525,6 +1624,9 @@ function drawSitting(
   ellipse(ctx, 10, -2, 8, 11);
   ctx.fill();
   collar(ctx, 11, -16, -0.1);
+  if (opts.accessory === "blue-cone") {
+    drawConeBack(ctx, 16, -28, beg ? -0.12 : 0);
+  }
   head(ctx, fur, 16, -28, {
     tilt: beg ? -0.12 : 0,
     tongue: opts.tongue,
@@ -1575,6 +1677,9 @@ function drawNap(
   ctx.fillStyle = fur.light;
   ellipse(ctx, 24, 14, 10, 4);
   ctx.fill();
+  if (accessoryKind === "blue-cone") {
+    drawConeBack(ctx, 20, 2, 0.35);
+  }
   head(ctx, fur, 20, 2, { tilt: 0.35, eyes: "closed" });
   accessory(ctx, accessoryKind, {
     head: [20, 2],
@@ -1587,7 +1692,13 @@ function drawNap(
   });
 }
 
-function drawFlop(ctx: Ctx, fur: Fur, ticks: number, calm: boolean) {
+function drawFlop(
+  ctx: Ctx,
+  fur: Fur,
+  ticks: number,
+  calm: boolean,
+  accessoryKind: DuckAccessory
+) {
   const kick = calm ? 0 : Math.sin(ticks * 0.3) * 0.15;
   const pawUp = (px: number, py: number, rot: number) => {
     ctx.save();
@@ -1618,7 +1729,13 @@ function drawFlop(ctx: Ctx, fur: Fur, ticks: number, calm: boolean) {
   ctx.fill();
   pawUp(-22, -8, -0.8);
   pawUp(18, -6, 0.9);
+  if (accessoryKind === "blue-cone") {
+    drawConeBack(ctx, 34, 6, 1.2);
+  }
   head(ctx, fur, 34, 6, { tilt: 1.2, eyes: "happy", tongue: true });
+  if (accessoryKind === "blue-cone") {
+    drawConeFront(ctx, 34, 6, 1.2);
+  }
 }
 
 /**
@@ -1684,7 +1801,7 @@ export function drawDuck(ctx: Ctx, duck: DuckSprite, options: DuckDrawOptions) {
     duck.state === "PERFORMING_TRICK";
 
   if (pose === "flop") {
-    drawFlop(ctx, fur, ticks, calm);
+    drawFlop(ctx, fur, ticks, calm, accessoryKind);
   } else if (pose === "nap") {
     drawNap(ctx, fur, calm ? 0 : Math.sin(ticks * 0.05) * 0.03, accessoryKind);
   } else if (pose === "sit" || pose === "beg") {

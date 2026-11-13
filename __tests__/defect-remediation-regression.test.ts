@@ -114,6 +114,8 @@ import {
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 import { evaluateCanaryRollout } from "@/scripts/canary-analyzer";
 import { CaseStudyService } from "@/lib/services/case-study-service";
+import { EmailService } from "@/lib/services/email-service";
+import { prisma } from "@/lib/db";
 import {
   exportToCDISCODMXML,
   generateSDTMDataset,
@@ -2837,6 +2839,66 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
 
     expect(post).toHaveBeenCalledTimes(1);
     expect(post.mock.calls[0][1]).toEqual({ v: 2 });
+  });
+});
+
+describe("Email queue preservation when production transport is unconfigured (#3793)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    EmailService.resetClient();
+    vi.restoreAllMocks();
+  });
+
+  it("never marks queued mail DELIVERED and returns TRANSPORT_UNCONFIGURED failure when production transport credentials are absent", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("RESEND_API_KEY", "");
+    EmailService.resetClient();
+
+    const now = new Date(10000);
+    const mockRow = {
+      id: "queue_regression_3793",
+      to: "client@example.com",
+      from: "Frederick de Ruiter <notifications@deruiter.dev>",
+      replyTo: null,
+      subject: "Preserve queued message",
+      html: "<p>Durable</p>",
+      text: null,
+      tags: null,
+      headers: null,
+      attempts: 1,
+      status: "RETRYING" as const,
+      nextRetryAt: new Date(now.getTime() - 1000),
+      lastError: null,
+      dueAt: new Date(now.getTime() - 1000),
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    };
+
+    const querySpy = vi
+      .spyOn(prisma, "$queryRaw")
+      .mockResolvedValue([mockRow] as never);
+    const updateSpy = vi
+      .spyOn(prisma.outboundEmailQueue, "update")
+      .mockResolvedValue(mockRow as never);
+
+    const result = await EmailService.processRetryQueue({ now });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
+    }
+    expect(querySpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy).not.toHaveBeenCalled();
+
+    const rawResult = await EmailService.sendRawEmail({
+      to: "client@example.com",
+      subject: "Direct send attempt",
+      html: "<p>Unconfigured inline send</p>",
+      skipQueue: true,
+    });
+    expect(rawResult.success).toBe(false);
+    expect(rawResult.simulated).toBeUndefined();
+    expect(rawResult.error).toContain("unconfigured");
   });
 });
 

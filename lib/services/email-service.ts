@@ -42,7 +42,21 @@ export interface EmailDispatchResult {
   simulated?: boolean;
   queued?: boolean;
   queueId?: string;
+  /**
+   * Set when nothing was sent because production has no Resend API key
+   * (#3793). The message is queued for a later run when queueing is allowed.
+   */
+  errorCode?: typeof EMAIL_TRANSPORT_UNCONFIGURED;
 }
+
+/**
+ * Error code for a production send attempted without a Resend API key. The
+ * message is not sent and is not recorded as delivered (#3793).
+ */
+export const EMAIL_TRANSPORT_UNCONFIGURED = "EMAIL_TRANSPORT_UNCONFIGURED";
+
+const UNCONFIGURED_TRANSPORT_MESSAGE =
+  "Email transport is not configured (RESEND_API_KEY is missing); message not sent";
 
 /**
  * Error codes returned by {@link EmailService.processRetryQueue} (ADR 0028).
@@ -270,23 +284,37 @@ async function leaseDueQueueRows(args: {
  */
 export const EMAIL_RETRY_BATCH_SIZE = 15;
 
-function shouldSimulateEmailDelivery(apiKey: string | undefined): boolean {
+/**
+ * How a send is carried out: a real provider call, an explicit simulation for
+ * development, preview and test harnesses, or nothing at all because
+ * production has no API key (#3793). Simulation and missing configuration are
+ * different outcomes: only the first may report success.
+ */
+type EmailTransportMode = "live" | "simulated" | "unconfigured";
+
+function resolveEmailTransport(
+  apiKey: string | undefined,
+  hasClient: boolean
+): EmailTransportMode {
   const currentEnv = getEnv();
+  // Preview/development are always simulated, even if a production-like
+  // API key is accidentally attached to the deployment.
   if (
     currentEnv.NODE_ENV === "development" ||
     currentEnv.VERCEL_ENV === "preview" ||
-    currentEnv.VERCEL_ENV === "development"
+    currentEnv.VERCEL_ENV === "development" ||
+    currentEnv.PLAYWRIGHT_TEST === "true"
   ) {
-    return true;
+    return "simulated";
   }
 
   // Unit tests use an obviously synthetic SDK key with a mocked transport.
   // A real inherited key must never turn the test process into a live sender.
   if (currentEnv.NODE_ENV === "test") {
-    return !apiKey?.startsWith("re_test_");
+    return hasClient && apiKey?.startsWith("re_test_") ? "live" : "simulated";
   }
 
-  return !apiKey;
+  return hasClient && apiKey?.trim() ? "live" : "unconfigured";
 }
 
 function getRetryDelayMs(queueId: string, attempt: number): number {
@@ -585,9 +613,19 @@ export class EmailService {
         }
 
         const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
-        // Preview/development are always simulated, even if a production-like
-        // API key is accidentally attached to the deployment.
-        if (!client || shouldSimulateEmailDelivery(apiKey)) {
+        const transport = resolveEmailTransport(apiKey, client !== null);
+        if (transport === "unconfigured") {
+          // Production without a key: keep the row's status and attempts so
+          // it is sent once the key is configured. The lease already moved
+          // nextRetryAt forward, so the next run picks it up again (#3793).
+          await prisma.outboundEmailQueue.update({
+            where: { id: item.id },
+            data: { lastError: UNCONFIGURED_TRANSPORT_MESSAGE },
+          });
+          failed++;
+          continue;
+        }
+        if (transport === "simulated" || !client) {
           await prisma.outboundEmailQueue.update({
             where: { id: item.id },
             data: { status: "DELIVERED", updatedAt: new Date() },
@@ -795,8 +833,40 @@ export class EmailService {
       options.from || env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
 
     const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
-    // Missing credentials and every non-production deployment are simulated.
-    if (!client || shouldSimulateEmailDelivery(apiKey)) {
+    const transport = resolveEmailTransport(apiKey, client !== null);
+
+    if (transport === "unconfigured") {
+      // Production without a key never reports a send (#3793). Queue the
+      // message so it goes out once the key is configured.
+      logger.error(
+        "EmailService transport unconfigured:",
+        new Error(UNCONFIGURED_TRANSPORT_MESSAGE)
+      );
+      if (!options.skipQueue) {
+        const queueId = await this.queueOutboundEmail(
+          options,
+          fromAddress,
+          UNCONFIGURED_TRANSPORT_MESSAGE
+        );
+        if (queueId) {
+          return {
+            success: true,
+            queued: true,
+            queueId,
+            data: { id: queueId },
+            errorCode: EMAIL_TRANSPORT_UNCONFIGURED,
+          };
+        }
+      }
+      return {
+        success: false,
+        error: UNCONFIGURED_TRANSPORT_MESSAGE,
+        errorCode: EMAIL_TRANSPORT_UNCONFIGURED,
+      };
+    }
+
+    // Development, preview and test harnesses are explicitly simulated.
+    if (transport === "simulated" || !client) {
       const simulatedId = generateId("sim_msg_");
 
       if (env.NODE_ENV === "development") {

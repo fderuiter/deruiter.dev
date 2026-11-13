@@ -60,6 +60,25 @@ function parseInterfaceFields(
   return fields;
 }
 
+// Helper to extract permitted HTML tag names from CMS guideline lines
+function extractPermittedGuidelineTags(guidelinesContent: string): string[] {
+  const permittedTags: string[] = [];
+  for (const line of guidelinesContent.split("\n")) {
+    if (!line.includes("Permitted")) continue;
+    for (const match of line.matchAll(/<([a-zA-Z0-9]+)/g)) {
+      permittedTags.push(match[1]);
+    }
+  }
+  return permittedTags;
+}
+
+// Helper to extract ALLOWED_TAGS entries from RichNarrative.tsx
+function extractRichNarrativeAllowedTags(componentContent: string): string[] {
+  const tagsMatch = componentContent.match(/ALLOWED_TAGS:\s*\[([\s\S]*?)\]/);
+  expect(tagsMatch).not.toBeNull();
+  return Array.from(tagsMatch![1].matchAll(/"([^"]+)"/g), (m) => m[1]).sort();
+}
+
 // Helper to recursively find markdown files
 function findMdFiles(dir: string): string[] {
   let results: string[] = [];
@@ -227,15 +246,7 @@ describe("Programmatic Integrity Gates", () => {
       const guidelinesContent = fs.readFileSync(guidelinesPath, "utf8");
 
       // 1. Extract allowed tags from components/RichNarrative.tsx
-      const tagsMatch = componentContent.match(
-        /ALLOWED_TAGS:\s*\[([\s\S]*?)\]/
-      );
-      expect(tagsMatch).not.toBeNull();
-      const componentTags =
-        tagsMatch![1]
-          .match(/"([^"]+)"/g)
-          ?.map((t) => t.replace(/"/g, ""))
-          .sort() || [];
+      const componentTags = extractRichNarrativeAllowedTags(componentContent);
 
       // 2. Extract allowed attributes from components/RichNarrative.tsx
       const attrsMatch = componentContent.match(
@@ -250,29 +261,19 @@ describe("Programmatic Integrity Gates", () => {
 
       // 3. Extract permitted tags and attributes from docs/reference/cms-guidelines.md
       const guidelineLines = guidelinesContent.split("\n");
-      const guidelinePermittedTags: string[] = [];
+      const guidelinePermittedTags =
+        extractPermittedGuidelineTags(guidelinesContent);
       const guidelinePermittedAttrs: string[] = [];
 
       for (const line of guidelineLines) {
-        if (line.includes("Permitted")) {
-          // Extract tags (e.g. <h2>, <h3>, etc.)
-          const tagMatches = line.match(/<([a-zA-Z0-9]+)/g);
-          if (tagMatches) {
-            for (const tagMatch of tagMatches) {
-              const cleanTag = tagMatch.replace("<", "");
-              guidelinePermittedTags.push(cleanTag);
-            }
-          }
-
+        if (line.includes("Permitted") && line.includes("attributes")) {
           // Extract attributes if the line describes optional attributes
-          if (line.includes("attributes")) {
-            const backtickMatches = line.match(/`([^`]+)`/g);
-            if (backtickMatches) {
-              for (const match of backtickMatches) {
-                const cleanWord = match.replace(/`/g, "");
-                if (!cleanWord.includes("<") && !cleanWord.includes(">")) {
-                  guidelinePermittedAttrs.push(cleanWord);
-                }
+          const backtickMatches = line.match(/`([^`]+)`/g);
+          if (backtickMatches) {
+            for (const match of backtickMatches) {
+              const cleanWord = match.replace(/`/g, "");
+              if (!cleanWord.includes("<") && !cleanWord.includes(">")) {
+                guidelinePermittedAttrs.push(cleanWord);
               }
             }
           }
@@ -299,6 +300,44 @@ describe("Programmatic Integrity Gates", () => {
       for (const forbidden of forbiddenTags) {
         expect(componentTags).not.toContain(forbidden);
       }
+    });
+
+    it("extracts multiple adjacent tags on a single Permitted line", () => {
+      expect(
+        extractPermittedGuidelineTags(
+          "Permitted inline: <strong><em><code><span>"
+        )
+      ).toEqual(["strong", "em", "code", "span"]);
+    });
+
+    it("preserves case-sensitive tag captures and rejects uppercase tags against ALLOWED_TAGS", () => {
+      const captured = extractPermittedGuidelineTags(
+        "Permitted headings: <H2>, <Sub>, <Strong>"
+      );
+      expect(captured).toEqual(["H2", "Sub", "Strong"]);
+
+      const componentPath = path.join(rootDir, "components/RichNarrative.tsx");
+      const componentContent = fs.readFileSync(componentPath, "utf8");
+      const allowedTags = extractRichNarrativeAllowedTags(componentContent);
+
+      for (const tag of captured) {
+        expect(allowedTags).not.toContain(tag);
+      }
+    });
+
+    it("extracts tag names cleanly from double leading angle brackets and malformed delimiters", () => {
+      expect(
+        extractPermittedGuidelineTags("Permitted: <<script> and <p>")
+      ).toEqual(["script", "p"]);
+    });
+
+    it("ignores non-Permitted lines containing angle-bracket tags", () => {
+      const guidelines = [
+        "- **Forbidden Elements:** Prohibits `<script>`, `<iframe>`, `<div>`.",
+        "Regular prose mentioning <span> or <strong> without the keyword.",
+      ].join("\n");
+
+      expect(extractPermittedGuidelineTags(guidelines)).toEqual([]);
     });
   });
 });

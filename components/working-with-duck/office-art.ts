@@ -43,6 +43,7 @@ import {
   drawHalloweenOffice,
   drawTrickOrTreaters,
 } from "./halloween-art";
+import { mulberry32Stream } from "@/lib/utils/prng";
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -70,17 +71,6 @@ export function prefersReducedMotion(): boolean {
         : null;
   }
   return reducedMotionQuery?.matches ?? false;
-}
-
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 function ellipse(ctx: Ctx, x: number, y: number, rx: number, ry: number) {
@@ -147,7 +137,7 @@ function pill(
 // --- The room, painted once per pixel ratio ---
 
 function paintFloor(g: Ctx) {
-  const rnd = mulberry32(1675);
+  const rnd = mulberry32Stream(1675);
   const plankH = 28;
   const tones = ["#4d3524", "#523927", "#48321f", "#553b28"];
   for (let row = 0, y = 0; y < CANVAS_HEIGHT; row++, y += plankH) {
@@ -209,7 +199,7 @@ function paintWall(g: Ctx) {
     "#15803d",
     "#9a3412",
   ];
-  const rnd = mulberry32(42);
+  const rnd = mulberry32Stream(42);
   let bx = 47;
   while (bx < 200) {
     const w = 6 + Math.floor(rnd() * 6);
@@ -2003,7 +1993,7 @@ export function drawOfficeScene(
     ellipse(ctx, fx, fy, 16 * food, 11 * food);
     ctx.fill();
     ctx.fillStyle = "#b07a3e";
-    const rnd = mulberry32(7);
+    const rnd = mulberry32Stream(7);
     for (let i = 0; i < 14; i++) {
       const a = rnd() * Math.PI * 2;
       const r = Math.sqrt(rnd()) * 0.85;

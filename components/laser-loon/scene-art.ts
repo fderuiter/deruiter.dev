@@ -8,6 +8,7 @@
  * at a parallax offset. With motion reduced, the offsets stay at zero.
  */
 import type { CampaignAct, CivicEnemyType, Target } from "@/lib/laser-loon";
+import { mulberry32Stream } from "@/lib/utils/prng";
 
 type Ctx = CanvasRenderingContext2D;
 type BackdropTheme = CampaignAct["backgroundTheme"];
@@ -22,16 +23,6 @@ interface ThemeSpec {
 
 /** Parallax speeds for the far, mid and near layers, in px per second. */
 const LAYER_SPEEDS = [4, 11, 24] as const;
-
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 /** Draws `draw` at x, x - w and x + w so a layer tiles without a seam. */
 function wrapped(w: number, x: number, draw: (x: number) => void) {
@@ -351,7 +342,7 @@ function getBackdrop(
   const painters = [spec.far, spec.mid, spec.near];
   const layers: HTMLCanvasElement[] = [];
   for (let i = 0; i < painters.length; i++) {
-    const rnd = mulberry32(1597 + i * 101 + theme.length * 7);
+    const rnd = mulberry32Stream(1597 + i * 101 + theme.length * 7);
     const layer = makeLayer(w, h, scale, (g) => painters[i](g, w, h, rnd));
     if (!layer) return null;
     layers.push(layer);

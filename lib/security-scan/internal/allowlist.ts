@@ -122,12 +122,21 @@ const SAFE_FILE_VALUES = new Map<string, Set<string>>([
  *   password was reset on 2026-09-24.
  * - `__tests__/triage-security-issue.test.ts` & `lib/security-scan/internal/allowlist.ts`:
  *   historic synthetic GHP token fixture from earlier revisions in immutable Git history.
+ * - `__tests__/email-service.test.ts`: a synthetic, never-issued Resend key used
+ *   as a "production-like" preview fixture in b5367d3 (#3793). The test now uses
+ *   a short literal below the detector's length threshold.
  */
 const ROTATED_CREDENTIAL_FINGERPRINTS = new Map<string, ReadonlySet<string>>([
   [
     "__tests__/dx-tooling.test.ts",
     new Set([
       "71a564baa010cb4cb8ab1c6503c326d2e8bb1cf9b6d2c5c3d70bbc8fe2fc4925",
+    ]),
+  ],
+  [
+    "__tests__/email-service.test.ts",
+    new Set([
+      "4e94414c7005f6f9baf35178651eea3717c2764498bdfa2cfa16111091b619d1",
     ]),
   ],
   [

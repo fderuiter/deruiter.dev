@@ -1785,6 +1785,22 @@ describe("Custom Proof session regression (#1225)", () => {
   });
 });
 
+describe("Mermaid proof export encodes labels (#3827)", () => {
+  it("cannot let a quote in a label end the node and add syntax", async () => {
+    const { THEOREMS } = await import("@/lib/proof");
+    const base = THEOREMS["modus-ponens"];
+    const output = exportWorkspaceProof("mermaid", [], {
+      ...base,
+      nodes: [{ ...base.nodes[0], id: "A", label: 'P"] --> X["owned' }],
+    });
+    expect(output).toContain(
+      'Node_A["✔ [Node A] P#quot;] --#62; X[#quot;owned'
+    );
+    expect(output).not.toContain("Node_X");
+    expect(output).not.toContain('\\"');
+  });
+});
+
 describe("Garmin setup options reach the engine (#1209)", () => {
   it("maps difficulty and loadout ids to distinct, testable engine parameters", async () => {
     const { resolveRunTuning, DEFAULT_RUN_TUNING } =

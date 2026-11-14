@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -8,38 +8,11 @@ import {
   type EdgeProps,
 } from "@xyflow/react";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import { useProtocolDriftStore } from "./store";
 
-const QUERY = "(prefers-reduced-motion: reduce)";
 const SAMPLES = 14;
 const TOKEN_MS = 900;
-
-function subscribe(onChange: () => void): () => void {
-  if (
-    typeof window === "undefined" ||
-    typeof window.matchMedia !== "function"
-  ) {
-    return () => {};
-  }
-  const media = window.matchMedia(QUERY);
-  media.addEventListener?.("change", onChange);
-  return () => media.removeEventListener?.("change", onChange);
-}
-
-function snapshot(): boolean {
-  if (
-    typeof window === "undefined" ||
-    typeof window.matchMedia !== "function"
-  ) {
-    return false;
-  }
-  return window.matchMedia(QUERY).matches;
-}
-
-/** True when the visitor prefers reduced motion. */
-export function useReducedMotion(): boolean {
-  return useSyncExternalStore(subscribe, snapshot, () => false);
-}
 
 /**
  * A wire. Fresh packets glide along the curve as small tokens that animate
@@ -58,7 +31,7 @@ export function PacketEdgeView({
   targetPosition,
   selected,
 }: EdgeProps) {
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   // On touch a wire is a finger-wide tap target, not a 20-unit hairline.
   const touch = useCabinetTouch();
   const allTokens = useProtocolDriftStore((s) => s.tokens);

@@ -284,16 +284,15 @@ describe("EmailService (Spec & Handler)", () => {
       expect(result.has("clean@example.com")).toBe(false);
     });
 
-    it("fails open and returns an empty set when database throws", async () => {
+    it("propagates database rejections so caller can handle unknown eligibility (#3806)", async () => {
       const { prisma } = await import("@/lib/db");
       vi.spyOn(prisma.suppressionList, "findMany").mockRejectedValueOnce(
         new Error("Neon connection terminated")
       );
 
-      const result = await EmailService.getSuppressedEmails([
-        "user@example.com",
-      ]);
-      expect(result.size).toBe(0);
+      await expect(
+        EmailService.getSuppressedEmails(["user@example.com"])
+      ).rejects.toThrow("Neon connection terminated");
     });
   });
 });

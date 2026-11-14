@@ -33,12 +33,11 @@ import {
  */
 export const NEWSLETTER_DISPATCH_CAP = 10;
 
-class EnqueueError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EnqueueError";
-  }
-}
+/**
+ * Sentinel error used to abort an interactive delivery transaction when outbound enqueue fails.
+ * Internal to NewsletterService; caught within runDispatch and mapped to createFailure("ENQUEUE_FAILED").
+ */
+const ENQUEUE_ROLLBACK_SENTINEL = new Error("ENQUEUE_ROLLBACK_SENTINEL");
 
 /**
  * Posts published this recently without a dispatch are announced even when
@@ -97,6 +96,32 @@ export type NewsletterDispatchErrorCode = z.infer<
 export type NewsletterDispatchResult = ServiceResult<
   NewsletterDispatchCounts,
   NewsletterDispatchErrorCode
+>;
+
+/**
+ * Diagnostic record classifying legacy `queueId: null` delivery rows into
+ * intentional skips (suppressed) and orphaned claims (#3801 Step 3).
+ */
+export interface NullQueueDeliveriesAudit {
+  totalNullQueue: number;
+  intentionalSkips: Array<{
+    deliveryId: string;
+    dispatchId: string;
+    subscriberId: string;
+    email: string;
+    suppressionReason?: string;
+  }>;
+  orphanedClaims: Array<{
+    deliveryId: string;
+    dispatchId: string;
+    subscriberId: string;
+    email: string;
+  }>;
+}
+
+export type NullQueueAuditResult = ServiceResult<
+  NullQueueDeliveriesAudit,
+  "AUDIT_FAILED"
 >;
 
 function newToken(): string {
@@ -344,11 +369,9 @@ export class NewsletterService {
       },
       select: { id: true },
     });
-    await Promise.all(
-      unannounced.map((post) =>
-        NewsletterService.queuePostAnnouncement(post.id)
-      )
-    );
+    for (const post of unannounced) {
+      await NewsletterService.queuePostAnnouncement(post.id);
+    }
 
     const pendingInQueue = await prisma.outboundEmailQueue.count({
       where: { status: { in: ["PENDING", "RETRYING"] } },
@@ -400,28 +423,20 @@ export class NewsletterService {
         take: remaining,
       });
 
-      if (recipients.length === 0) {
-        const outstanding = await prisma.newsletterSubscriber.count({
-          where: {
-            status: "CONFIRMED",
-            confirmedAt: { lte: dispatch.createdAt },
-            deliveries: { none: { dispatchId: dispatch.id } },
-          },
-        });
-        if (outstanding === 0) {
-          await prisma.newsletterDispatch.update({
-            where: { id: dispatch.id },
-            data: { completedAt: now },
-          });
-          counts.completedDispatches++;
-        }
-        continue;
+      // Check suppression for all batch recipients in a single round trip.
+      // Deliberately fail the phase if lookup is unavailable instead of assuming eligible (#3806).
+      let suppressedEmails: Set<string>;
+      try {
+        suppressedEmails = await EmailService.getSuppressedEmails(
+          recipients.map((r) => r.email)
+        );
+      } catch (error) {
+        return createFailure(
+          "DISPATCH_FAILED",
+          error instanceof Error ? error.message : "Suppression lookup failed",
+          { details: { dispatchId: dispatch.id, counts, error } }
+        );
       }
-
-      // Check suppression for all batch recipients in a single round trip
-      const suppressedEmails = await EmailService.getSuppressedEmails(
-        recipients.map((r) => r.email)
-      );
       const suppressedRecipients = recipients.filter((subscriber) =>
         suppressedEmails.has(subscriber.email.toLowerCase().trim())
       );
@@ -437,6 +452,7 @@ export class NewsletterService {
             dispatchId: dispatch.id,
             subscriberId: subscriber.id,
           })),
+          skipDuplicates: true,
         });
         counts.skippedSuppressed += suppressedRecipients.length;
       }
@@ -473,11 +489,7 @@ export class NewsletterService {
               tx
             );
             if (!queueId) {
-              return Promise.reject(
-                new EnqueueError(
-                  "Could not enqueue a newsletter dispatch email"
-                )
-              );
+              throw ENQUEUE_ROLLBACK_SENTINEL; // createFailure rollback sentinel
             }
             await tx.newsletterDelivery.update({
               where: { id: delivery.id },
@@ -485,7 +497,7 @@ export class NewsletterService {
             });
           });
         } catch (error) {
-          if (error instanceof EnqueueError) {
+          if (error === ENQUEUE_ROLLBACK_SENTINEL) {
             return createFailure(
               "ENQUEUE_FAILED",
               "Could not enqueue a newsletter dispatch email",
@@ -527,5 +539,92 @@ export class NewsletterService {
       );
     }
     return createSuccess(counts);
+  }
+
+  /**
+   * Diagnostic and audit utility for legacy `NewsletterDelivery` records where `queueId` is null (#3801 Step 3).
+   *
+   * Before transactional claims were introduced, a process crash after creating a delivery claim
+   * but before enqueueing left an orphaned claim (`queueId: null`) that was indistinguishable from
+   * an intentional skip (suppressed address).
+   *
+   * This read-only query inspects all `queueId: null` deliveries, joins the subscriber, and checks
+   * the `SuppressionList`:
+   * - Intentional skips: The subscriber's email exists in the suppression list (bounced, complaint,
+   *   or unsubscribed).
+   * - Orphaned claims: The subscriber's email is NOT suppressed, meaning the claim was created during
+   *   a failed non-transactional run and never had an outbound email queued.
+   *
+   * Purely read-only: does not modify or requeue records.
+   */
+  static async auditNullQueueDeliveries(): Promise<
+    ServiceResult<NullQueueDeliveriesAudit>
+  > {
+    try {
+      const nullDeliveries = await prisma.newsletterDelivery.findMany({
+        where: { queueId: null },
+        include: {
+          subscriber: true,
+        },
+      });
+
+      const intentionalSkips: NullQueueDeliveriesAudit["intentionalSkips"] = [];
+      const orphanedClaims: NullQueueDeliveriesAudit["orphanedClaims"] = [];
+
+      if (nullDeliveries.length === 0) {
+        return createSuccess({
+          totalNullQueue: 0,
+          intentionalSkips,
+          orphanedClaims,
+        });
+      }
+
+      const emails = [
+        ...new Set(
+          nullDeliveries.map((d) => d.subscriber.email.toLowerCase().trim())
+        ),
+      ];
+      const suppressions = await prisma.suppressionList.findMany({
+        where: { email: { in: emails } },
+      });
+      const suppressionMap = new Map(
+        suppressions.map((s) => [s.email.toLowerCase().trim(), s.reason])
+      );
+
+      for (const delivery of nullDeliveries) {
+        const normalizedEmail = delivery.subscriber.email.toLowerCase().trim();
+        const reason = suppressionMap.get(normalizedEmail);
+        if (reason) {
+          intentionalSkips.push({
+            deliveryId: delivery.id,
+            dispatchId: delivery.dispatchId,
+            subscriberId: delivery.subscriberId,
+            email: delivery.subscriber.email,
+            suppressionReason: reason,
+          });
+        } else {
+          orphanedClaims.push({
+            deliveryId: delivery.id,
+            dispatchId: delivery.dispatchId,
+            subscriberId: delivery.subscriberId,
+            email: delivery.subscriber.email,
+          });
+        }
+      }
+
+      return createSuccess({
+        totalNullQueue: nullDeliveries.length,
+        intentionalSkips,
+        orphanedClaims,
+      });
+    } catch (error) {
+      return createFailure(
+        "AUDIT_FAILED",
+        error instanceof Error
+          ? error.message
+          : "Failed to audit null deliveries",
+        { details: error }
+      );
+    }
   }
 }

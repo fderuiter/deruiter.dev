@@ -378,23 +378,19 @@ export class EmailService {
    * Queries suppression records for a batch of email addresses in a single database round trip.
    *
    * Normalizes addresses and returns a set containing each suppressed address in lower case.
-   * Defensively fails open with an empty set if the database is offline or unseeded in tests.
+   * Deliberately lets database failures propagate instead of failing open (#3806), so callers
+   * can handle unknown eligibility with an explicit typed failure before claiming or queueing.
    */
   static async getSuppressedEmails(emails: string[]): Promise<Set<string>> {
     if (emails.length === 0) {
       return new Set();
     }
-    try {
-      const normalized = emails.map((e) => e.toLowerCase().trim());
-      const records = await prisma.suppressionList.findMany({
-        where: { email: { in: normalized } },
-        select: { email: true },
-      });
-      return new Set(records.map((r) => r.email.toLowerCase().trim()));
-    } catch {
-      // If database is offline or unseeded in tests, defensively fail open
-      return new Set();
-    }
+    const normalized = emails.map((e) => e.toLowerCase().trim());
+    const records = await prisma.suppressionList.findMany({
+      where: { email: { in: normalized } },
+      select: { email: true },
+    });
+    return new Set(records.map((r) => r.email.toLowerCase().trim()));
   }
 
   /**

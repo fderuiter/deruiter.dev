@@ -597,10 +597,18 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).not.toMatch(/^\s*python3 /m);
   });
 
-  it("configures pip caching keyed on the CORE constraints file", () => {
-    expect(workflow).toContain('cache: "pip"');
-    expect(workflow).toContain(
+  it("configures pip caching keyed on the CORE constraints file under Setup Python", () => {
+    const setupPythonStep = workflow
+      .split(/\n\s+-\s+name:\s+/)
+      .find((step) => step.startsWith("Setup Python"));
+    expect(setupPythonStep).toBeDefined();
+    expect(setupPythonStep).toMatch(/uses: actions\/setup-python@/);
+    expect(setupPythonStep).toContain('cache: "pip"');
+    expect(setupPythonStep).toContain(
       'cache-dependency-path: "scripts/study-data-core-constraints.txt"'
+    );
+    expect(setupPythonStep).toMatch(
+      /with:\n\s+python-version: "3\.12"\n\s+cache: "pip"\n\s+cache-dependency-path: "scripts\/study-data-core-constraints\.txt"/
     );
   });
 

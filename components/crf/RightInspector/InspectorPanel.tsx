@@ -167,6 +167,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             onClick={onClose}
             className="p-1 text-zinc-500 hover:text-white rounded hover:bg-zinc-800 transition-colors"
             title="Deselect"
+            aria-label="Deselect"
           >
             <IconX className="w-4 h-4" />
           </button>

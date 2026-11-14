@@ -360,7 +360,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       runCommand("imednet records search --study ONCO-9");
       expect(getLog().textContent).toContain('"ONCO-9"');
 
-      fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+      fireEvent.click(screen.getByRole("button", { name: "Reset sequence" }));
       runCommand("imednet records search");
       expect(getLog().textContent).toContain('"BRIGHT-01"');
     });

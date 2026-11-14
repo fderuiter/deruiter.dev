@@ -106,6 +106,7 @@ export const FreeSurferTerminal: React.FC<FreeSurferTerminalProps> = ({
           <button
             onClick={onClearLogs}
             title="Clear terminal buffer"
+            aria-label="Clear terminal buffer"
             className="p-1.5 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
           >
             <IconTrash className="w-3.5 h-3.5" />

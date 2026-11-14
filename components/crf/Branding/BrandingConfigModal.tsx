@@ -136,6 +136,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
         </div>
         <button
           onClick={onClose}
+          aria-label="Close branding modal"
           className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
         >
           <IconX className="w-5 h-5" />

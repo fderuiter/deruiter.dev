@@ -291,6 +291,7 @@ export interface CRFForm {
   isLocked?: boolean; // PI Data Lock flag
   lockedBy?: string;
   lockedAt?: string;
+  needsReview?: boolean; // Form review flag (e.g. unassigned SDTM domain)
 }
 
 export interface StudyVisit {

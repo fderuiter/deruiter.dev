@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { importStudyFromCsvSpec } from "@/lib/crf";
+import {
+  importStudyFromCsvSpec,
+  isRedcapHeader,
+  isRedcapCsv,
+  detectCsvDialect,
+} from "@/lib/crf";
 
 describe("CRF Studio - CSV Study Specification Parser", () => {
   it("parses structured CSV study specifications into valid StudyProtocol", () => {
@@ -78,29 +83,43 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
       );
       expect(parsed.forms.length).toBe(2);
 
-      // Verify Demographics Form
-      const dmForm = parsed.forms.find((f) => f.domain === "DM");
+      // Verify Demographics Form - domain left unassigned and flagged for review
+      const dmForm = parsed.forms.find((f) => f.name === "Demographics");
       expect(dmForm).toBeDefined();
-      expect(dmForm?.name).toBe("Demographics");
+      expect(dmForm?.domain).toBe("");
+      expect(dmForm?.needsReview).toBe(true);
+      expect(dmForm?.description).toContain(
+        "Flagged for review: SDTM domain unassigned"
+      );
       expect(dmForm?.sections.length).toBe(1);
       expect(dmForm?.sections[0].title).toBe("Participant Demographics");
       expect(dmForm?.sections[0].fields.length).toBe(7);
 
-      // Verify Vital Signs Form with multiple sections
-      const vsForm = parsed.forms.find((f) => f.domain === "VS");
+      // Verify Vital Signs Form with multiple sections - domain left unassigned
+      const vsForm = parsed.forms.find((f) => f.name === "Vital Signs");
       expect(vsForm).toBeDefined();
-      expect(vsForm?.name).toBe("Vital Signs");
+      expect(vsForm?.domain).toBe("");
+      expect(vsForm?.needsReview).toBe(true);
       expect(vsForm?.sections.length).toBe(2);
       expect(vsForm?.sections[0].title).toBe("Vital Signs Measurements");
       expect(vsForm?.sections[0].fields.length).toBe(2); // sysbp, diabp
       expect(vsForm?.sections[1].title).toBe("Anthropometrics");
       expect(vsForm?.sections[1].fields.length).toBe(6); // height, weight, bmi, pain, symptoms, advanced_logic
+
+      // Verify open review threads created to flag forms for SDTM domain assignment
+      expect(parsed.reviewThreads?.length).toBe(2);
+      expect(parsed.reviewThreads?.[0].target.formName).toBe("Demographics");
+      const firstEvent = parsed.reviewThreads?.[0].events[0];
+      expect(firstEvent?.type).toBe("comment");
+      if (firstEvent && firstEvent.type === "comment") {
+        expect(firstEvent.body).toContain("unassigned SDTM domain");
+      }
     });
 
     it("correctly maps REDCap field types and validation constraints", () => {
       const parsed = importStudyFromCsvSpec(redcapCsv);
-      const dmForm = parsed.forms.find((f) => f.domain === "DM")!;
-      const vsForm = parsed.forms.find((f) => f.domain === "VS")!;
+      const dmForm = parsed.forms.find((f) => f.name === "Demographics")!;
+      const vsForm = parsed.forms.find((f) => f.name === "Vital Signs")!;
 
       const fieldsMap = new Map(
         [...dmForm.sections, ...vsForm.sections]
@@ -164,7 +183,7 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
       const parsed = importStudyFromCsvSpec(redcapCsv);
 
       // Gender and Sex At Birth have the same choices and should share a codelist
-      const dmForm = parsed.forms.find((f) => f.domain === "DM")!;
+      const dmForm = parsed.forms.find((f) => f.name === "Demographics")!;
       const gender = dmForm.sections[0].fields.find(
         (f) => f.variableName === "gender"
       )!;
@@ -192,7 +211,7 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
 
     it("parses compatible branching logic into AstCondition rules", () => {
       const parsed = importStudyFromCsvSpec(redcapCsv);
-      const dmForm = parsed.forms.find((f) => f.domain === "DM")!;
+      const dmForm = parsed.forms.find((f) => f.name === "Demographics")!;
 
       const rule = dmForm.rules.find((r) => r.targetFieldId === "fld_pregnant");
       expect(rule).toBeDefined();
@@ -208,7 +227,7 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
 
     it("preserves unsupported branching logic expressions without throwing", () => {
       const parsed = importStudyFromCsvSpec(redcapCsv);
-      const vsForm = parsed.forms.find((f) => f.domain === "VS")!;
+      const vsForm = parsed.forms.find((f) => f.name === "Vital Signs")!;
 
       const rule = vsForm.rules.find(
         (r) => r.targetFieldId === "fld_advanced_logic"
@@ -226,6 +245,45 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
         "REDCap CSV Data Dictionary"
       );
       expect(parsed.forms.length).toBe(2);
+    });
+
+    it("tightens dialect detection to the exact 4 REDCap signature headers and rejects ambiguous CDISC specs", () => {
+      // Missing 'Field Type' and 'Variable / Field Name' -> must NOT match REDCap
+      const cdiscLikeHeaders = [
+        "Domain",
+        "Form Name",
+        "Variable",
+        "Field Label",
+        "Data Type",
+      ];
+      expect(isRedcapHeader(cdiscLikeHeaders)).toBe(false);
+
+      // Score-based trick: header having section, choices, and branching but not exact required headers
+      const looseHeaders = [
+        "Form Name",
+        "Section Header",
+        "Choices",
+        "Branching Logic",
+      ];
+      expect(isRedcapHeader(looseHeaders)).toBe(false);
+
+      // Exact 4 REDCap signature headers present
+      const exactHeaders = [
+        "Variable / Field Name",
+        "Form Name",
+        "Field Type",
+        "Field Label",
+      ];
+      expect(isRedcapHeader(exactHeaders)).toBe(true);
+
+      // Dialect detection routing test
+      const cdiscCsv = `Domain,Form Name,Variable,Field Label,Data Type\nDM,Demographics,AGE,Age in Years,integer`;
+      expect(detectCsvDialect(cdiscCsv)).toBe("cdisc_spec");
+      expect(isRedcapCsv(cdiscCsv)).toBe(false);
+
+      const redcapMinimalCsv = `"Variable / Field Name","Form Name","Field Type","Field Label"\n"pt_id","demographics","text","Patient ID"`;
+      expect(detectCsvDialect(redcapMinimalCsv)).toBe("redcap");
+      expect(isRedcapCsv(redcapMinimalCsv)).toBe(true);
     });
 
     it("safely decodes HTML entities without double-unescaping vulnerabilities", () => {
@@ -247,6 +305,128 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
       // Verify custom choices
       expect(field?.customOptions?.[0].label).toBe("Option & Choice");
       expect(field?.customOptions?.[1].label).toBe("Less < More");
+    });
+
+    it("parses and validates against a real public REDCap dictionary (OuhscBbmc/REDCapR simple project)", () => {
+      // Real public REDCap Data Dictionary from REDCapR project
+      // Source: https://github.com/OuhscBbmc/REDCapR/blob/main/inst/test-data/projects/simple/dictionary.csv
+      // Licence: MIT (https://github.com/OuhscBbmc/REDCapR/blob/main/LICENSE)
+      // Copyright (c) 2013-2024, University of Oklahoma Health Sciences Center (OUHSC) BBMC
+      const realPublicRedcapCsv = `"Variable / Field Name","Form Name","Section Header","Field Type","Field Label","Choices, Calculations, OR Slider Labels","Field Note","Text Validation Type OR Show Slider Number","Text Validation Min","Text Validation Max",Identifier?,"Branching Logic (Show field only if...)","Required Field?","Custom Alignment","Question Number (surveys only)","Matrix Group Name","Matrix Ranking?","Field Annotation"
+record_id,demographics,,text,"Study ID",,,,,,,,,,,,,
+name_first,demographics,"Contact Information",text,"First Name",,,,,,y,,,,,,,
+name_last,demographics,,text,"Last Name",,,,,,y,,,,,,,
+address,demographics,,notes,"Street, City, State, ZIP",,,,,,y,,,,,,,
+telephone,demographics,,text,"Phone number",,"Include Area Code",phone,,,y,,,,,,,
+email,demographics,,text,E-mail,,,email,,,y,,,,,,,
+dob,demographics,,text,"Date of birth",,,date_ymd,,,y,,,,,,,
+age,demographics,,text,"Age (years)",,,,,,,,,,,,,
+sex,demographics,,radio,Gender,"0, Female | 1, Male",,,,,,,,,,,,
+height,health,,text,"Height (cm)",,,number,130,215,,,,,,,,
+weight,health,,text,"Weight (kilograms)",,,integer,35,200,,,,,,,,
+bmi,health,,calc,BMI,"round(([weight]*10000)/(([height])^(2)),1)",,,,,,,,,,,,
+comments,health,"General Comments",notes,Comments,,,,,,,,,,,,,
+mugshot,health,,file,Mugshot,,,,,,,,,,,,,
+race,race_and_ethnicity,,checkbox,"Race (Select all that apply)","1, American Indian/Alaska Native | 2, Asian | 3, Native Hawaiian or Other Pacific Islander | 4, Black or African American | 5, White | 6, Unknown / Not Reported",,,,,,,,,,,,
+ethnicity,race_and_ethnicity,,radio,Ethnicity,"0, Unknown / Not Reported | 1, NOT Hispanic or Latino | 2, Hispanic or Latino",,,,,,,,,,,,`;
+
+      expect(isRedcapCsv(realPublicRedcapCsv)).toBe(true);
+      expect(detectCsvDialect(realPublicRedcapCsv)).toBe("redcap");
+
+      const study = importStudyFromCsvSpec(realPublicRedcapCsv);
+
+      expect(study.provenance?.sourceFormat).toBe("REDCap CSV Data Dictionary");
+      // 3 distinct instruments/forms in this dictionary
+      expect(study.forms.length).toBe(3);
+
+      const demoForm = study.forms.find((f) => f.name === "Demographics");
+      const healthForm = study.forms.find((f) => f.name === "Health");
+      const raceForm = study.forms.find((f) => f.name === "Race And Ethnicity");
+
+      expect(demoForm).toBeDefined();
+      expect(healthForm).toBeDefined();
+      expect(raceForm).toBeDefined();
+
+      // All forms have unassigned domain and are flagged for review
+      for (const form of [demoForm!, healthForm!, raceForm!]) {
+        expect(form.domain).toBe("");
+        expect(form.needsReview).toBe(true);
+        expect(form.description).toContain(
+          "Flagged for review: SDTM domain unassigned"
+        );
+      }
+
+      // Review threads created for all 3 forms
+      expect(study.reviewThreads?.length).toBe(3);
+
+      // Verify Demographics sections and fields
+      expect(demoForm?.sections.length).toBe(2);
+      expect(demoForm?.sections[0].title).toBe("Demographics Details");
+      expect(demoForm?.sections[0].fields[0].variableName).toBe("record_id");
+      expect(demoForm?.sections[1].title).toBe("Contact Information");
+
+      const demoFields = demoForm!.sections.flatMap((s) => s.fields);
+      const recordId = demoFields.find((f) => f.variableName === "record_id")!;
+      expect(recordId.dataType).toBe("text");
+      expect(recordId.label).toBe("Study ID");
+
+      const dob = demoFields.find((f) => f.variableName === "dob")!;
+      expect(dob.dataType).toBe("date");
+      expect(dob.required).toBe(false);
+
+      const address = demoFields.find((f) => f.variableName === "address")!;
+      expect(address.dataType).toBe("textarea");
+
+      const sex = demoFields.find((f) => f.variableName === "sex")!;
+      expect(sex.dataType).toBe("radio");
+      expect(sex.customOptions?.length).toBe(2);
+      expect(sex.customOptions?.[0]).toEqual({
+        code: "0",
+        label: "Female",
+        order: 1,
+      });
+      expect(sex.customOptions?.[1]).toEqual({
+        code: "1",
+        label: "Male",
+        order: 2,
+      });
+
+      // Verify Health form sections, validation ranges and calculation formula
+      expect(healthForm?.sections.length).toBe(2);
+      expect(healthForm?.sections[1].title).toBe("General Comments");
+
+      const healthFields = healthForm!.sections.flatMap((s) => s.fields);
+      const height = healthFields.find((f) => f.variableName === "height")!;
+      expect(height.dataType).toBe("number");
+      expect(height.minValue).toBe(130);
+      expect(height.maxValue).toBe(215);
+
+      const weight = healthFields.find((f) => f.variableName === "weight")!;
+      expect(weight.dataType).toBe("integer");
+      expect(weight.minValue).toBe(35);
+      expect(weight.maxValue).toBe(200);
+
+      const bmi = healthFields.find((f) => f.variableName === "bmi")!;
+      expect(bmi.dataType).toBe("calculated");
+      expect(bmi.calculationFormula).toBe(
+        "round(([weight]*10000)/(([height])^(2)),1)"
+      );
+
+      const comments = healthFields.find((f) => f.variableName === "comments")!;
+      expect(comments.dataType).toBe("textarea");
+
+      // Verify Race & Ethnicity form
+      const raceFields = raceForm!.sections.flatMap((s) => s.fields);
+      const race = raceFields.find((f) => f.variableName === "race")!;
+      expect(race.dataType).toBe("checkbox");
+      expect(race.customOptions?.length).toBe(6);
+
+      const ethnicity = raceFields.find((f) => f.variableName === "ethnicity")!;
+      expect(ethnicity.dataType).toBe("radio");
+      expect(ethnicity.customOptions?.length).toBe(3);
+
+      // Verify study codelists are populated
+      expect(study.codelists.length).toBeGreaterThanOrEqual(3);
     });
   });
 });

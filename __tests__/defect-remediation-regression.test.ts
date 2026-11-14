@@ -3068,6 +3068,8 @@ describe("REDCap CSV parser HTML entity decoding regression (#3899)", () => {
     const study = importStudyFromCsvSpec(csvContent);
     const form = study.forms[0];
     expect(form.sections[0].title).toBe("Adverse Events & Reactions");
+    expect(form.domain).toBe("");
+    expect(form.needsReview).toBe(true);
 
     const field = form.sections[0].fields[0];
     expect(field.label).toBe("Reported &lt;Term&gt;");

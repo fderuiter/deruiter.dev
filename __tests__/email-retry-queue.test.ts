@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   EmailService,
   RawEmailOptions,
+  EMAIL_RETRY_CONCURRENCY,
+  runWithBoundedConcurrency,
   type EmailRetryCounts,
   type EmailRetryResult,
 } from "@/lib/services/email-service";
@@ -725,6 +727,304 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
 
       const deliveredItem = mockQueueStore.get(queueId);
       expect(deliveredItem?.status).toBe("DELIVERED");
+    });
+  });
+
+  describe("Bounded Parallel Queue Dispatch (#283)", () => {
+    const seedDueItem = (
+      id: string,
+      options?: {
+        dueAt?: Date;
+        attempts?: number;
+        to?: string;
+      }
+    ) =>
+      mockQueueStore.set(id, {
+        id,
+        to: options?.to || `${id}@example.com`,
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: `Subject ${id}`,
+        html: "<p>Bounded dispatch test</p>",
+        text: null,
+        tags: null,
+        attempts: options?.attempts ?? 1,
+        status: "RETRYING",
+        nextRetryAt: options?.dueAt ?? new Date(0),
+        lastError: "temporary",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+    it("dispatches leased queue items with bounded concurrency (default EMAIL_RETRY_CONCURRENCY = 5)", async () => {
+      for (let i = 0; i < 12; i++) {
+        seedDueItem(`concurrent-${i}`);
+      }
+
+      let currentConcurrent = 0;
+      let maxObservedConcurrent = 0;
+
+      mockSendFn.mockImplementation(async () => {
+        currentConcurrent++;
+        maxObservedConcurrent = Math.max(
+          maxObservedConcurrent,
+          currentConcurrent
+        );
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        currentConcurrent--;
+        return { data: { id: "msg_ok" }, error: null };
+      });
+
+      const summary = await retryCounts(EmailService.processRetryQueue());
+
+      expect(maxObservedConcurrent).toBeLessThanOrEqual(
+        EMAIL_RETRY_CONCURRENCY
+      );
+      expect(maxObservedConcurrent).toBe(EMAIL_RETRY_CONCURRENCY);
+      expect(summary).toEqual({
+        processed: 12,
+        succeeded: 12,
+        failed: 0,
+      });
+
+      for (let i = 0; i < 12; i++) {
+        expect(mockQueueStore.get(`concurrent-${i}`)?.status).toBe("DELIVERED");
+      }
+    });
+
+    it("supports custom bounded concurrency via options.concurrency", async () => {
+      for (let i = 0; i < 6; i++) {
+        seedDueItem(`custom-concurrency-${i}`);
+      }
+
+      let currentConcurrent = 0;
+      let maxObservedConcurrent = 0;
+
+      mockSendFn.mockImplementation(async () => {
+        currentConcurrent++;
+        maxObservedConcurrent = Math.max(
+          maxObservedConcurrent,
+          currentConcurrent
+        );
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        currentConcurrent--;
+        return { data: { id: "msg_ok" }, error: null };
+      });
+
+      const summary = await retryCounts(
+        EmailService.processRetryQueue({ concurrency: 2 })
+      );
+
+      expect(maxObservedConcurrent).toBeLessThanOrEqual(2);
+      expect(maxObservedConcurrent).toBe(2);
+      expect(summary).toEqual({
+        processed: 6,
+        succeeded: 6,
+        failed: 0,
+      });
+    });
+
+    it("aggregates succeeded and failed counts accurately across concurrent workers", async () => {
+      seedDueItem("item-succeed-1");
+      seedDueItem("item-succeed-2");
+      seedDueItem("item-succeed-3");
+      seedDueItem("item-fail-429-1");
+      seedDueItem("item-fail-429-2");
+      seedDueItem("item-fail-500");
+
+      mockSendFn.mockImplementation(async ({ to }: { to: string }) => {
+        if (to.includes("429")) {
+          return {
+            data: null,
+            error: { message: "Too many requests (429 rate limit exceeded)" },
+          };
+        }
+        if (to.includes("500")) {
+          return {
+            data: null,
+            error: { message: "Internal server error" },
+          };
+        }
+        return { data: { id: `msg_${to}` }, error: null };
+      });
+
+      const summary = await retryCounts(EmailService.processRetryQueue());
+
+      expect(summary).toEqual({
+        processed: 6,
+        succeeded: 3,
+        failed: 3,
+      });
+
+      expect(mockQueueStore.get("item-succeed-1")?.status).toBe("DELIVERED");
+      expect(mockQueueStore.get("item-succeed-2")?.status).toBe("DELIVERED");
+      expect(mockQueueStore.get("item-succeed-3")?.status).toBe("DELIVERED");
+      expect(mockQueueStore.get("item-fail-429-1")?.status).toBe("RETRYING");
+      expect(mockQueueStore.get("item-fail-429-2")?.status).toBe("RETRYING");
+      expect(mockQueueStore.get("item-fail-500")?.status).toBe("RETRYING");
+    });
+
+    it("handles suppression list matches concurrently without failing the whole batch", async () => {
+      seedDueItem("clean-1", { to: "clean1@example.com" });
+      seedDueItem("suppressed-1", { to: "bounced@example.com" });
+      seedDueItem("clean-2", { to: "clean2@example.com" });
+      seedDueItem("suppressed-2", { to: "complained@example.com" });
+
+      mockSuppressionStore.set("bounced@example.com", {
+        email: "bounced@example.com",
+        reason: "HARD_BOUNCE",
+      });
+      mockSuppressionStore.set("complained@example.com", {
+        email: "complained@example.com",
+        reason: "COMPLAINT",
+      });
+
+      mockSendFn.mockResolvedValue({
+        data: { id: "msg_clean" },
+        error: null,
+      });
+
+      const summary = await retryCounts(EmailService.processRetryQueue());
+
+      expect(summary).toEqual({
+        processed: 4,
+        succeeded: 2,
+        failed: 2,
+      });
+
+      expect(mockQueueStore.get("clean-1")?.status).toBe("DELIVERED");
+      expect(mockQueueStore.get("clean-2")?.status).toBe("DELIVERED");
+      expect(mockQueueStore.get("suppressed-1")?.status).toBe("FAILED");
+      expect(mockQueueStore.get("suppressed-1")?.lastError).toContain(
+        "suppression list"
+      );
+      expect(mockQueueStore.get("suppressed-2")?.status).toBe("FAILED");
+      expect(mockQueueStore.get("suppressed-2")?.lastError).toContain(
+        "suppression list"
+      );
+      expect(mockSendFn).toHaveBeenCalledTimes(2);
+    });
+
+    it("resiliently applies exponential backoff when Resend returns 429 rate limits", async () => {
+      const now = new Date(1000000);
+      seedDueItem("rl-1", { attempts: 1 });
+      seedDueItem("rl-2", { attempts: 2 });
+
+      mockSendFn.mockResolvedValue({
+        data: null,
+        error: { message: "Too many requests (429 rate limit exceeded)" },
+      });
+
+      const summary = await retryCounts(
+        EmailService.processRetryQueue({ now })
+      );
+
+      expect(summary).toEqual({
+        processed: 2,
+        succeeded: 0,
+        failed: 2,
+      });
+
+      const item1 = mockQueueStore.get("rl-1");
+      expect(item1?.status).toBe("RETRYING");
+      expect(item1?.attempts).toBe(2);
+      expect(item1?.lastError).toContain("429 rate limit exceeded");
+      expect(item1?.nextRetryAt.getTime()).toBeGreaterThan(now.getTime());
+
+      const item2 = mockQueueStore.get("rl-2");
+      expect(item2?.status).toBe("RETRYING");
+      expect(item2?.attempts).toBe(3);
+      expect(item2?.lastError).toContain("429 rate limit exceeded");
+      expect(item2?.nextRetryAt.getTime()).toBeGreaterThan(now.getTime());
+    });
+
+    it("handles empty queue batches without spawning worker promises", async () => {
+      mockQueueStore.clear();
+
+      const result = await EmailService.processRetryQueue();
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual({
+          processed: 0,
+          succeeded: 0,
+          failed: 0,
+        });
+      }
+      expect(mockSendFn).not.toHaveBeenCalled();
+    });
+
+    it("records individual database update failures while allowing other concurrent workers to complete", async () => {
+      seedDueItem("db-ok-1");
+      seedDueItem("db-broken-2");
+      seedDueItem("db-ok-3");
+
+      mockSendFn.mockResolvedValue({ data: { id: "msg_ok" }, error: null });
+
+      vi.mocked(prisma.outboundEmailQueue.update).mockImplementation(
+        (async (args: {
+          where: { id?: string };
+          data: Partial<MockQueueItem>;
+        }) => {
+          if (args.where.id === "db-broken-2") {
+            throw new Error("Neon database connection severed");
+          }
+          const existing = mockQueueStore.get(args.where.id!);
+          if (!existing)
+            throw new Error(`Record ${args.where.id} not found in mock queue`);
+          const updated: MockQueueItem = {
+            ...existing,
+            ...args.data,
+            updatedAt: new Date(),
+          };
+          mockQueueStore.set(args.where.id!, updated);
+          return updated;
+        }) as unknown as typeof prisma.outboundEmailQueue.update
+      );
+
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+
+      const result = await EmailService.processRetryQueue();
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe("QUEUE_UPDATE_FAILED");
+        expect(result.error.details).toMatchObject({
+          succeeded: 2,
+          failed: 0,
+          leased: 3,
+        });
+      }
+
+      // Concurrent workers for the non-failing items were allowed to finish and succeeded
+      expect(mockQueueStore.get("db-ok-1")?.status).toBe("DELIVERED");
+      expect(mockQueueStore.get("db-ok-3")?.status).toBe("DELIVERED");
+
+      consoleError.mockRestore();
+    });
+
+    it("runWithBoundedConcurrency handles empty batches and preserves execution result ordering", async () => {
+      const emptyResult = await runWithBoundedConcurrency(
+        [],
+        5,
+        async () => "never"
+      );
+      expect(emptyResult).toEqual([]);
+
+      const inputs = [10, 20, 30, 40, 50];
+      const results = await runWithBoundedConcurrency(
+        inputs,
+        3,
+        async (num) => {
+          // Variable delays
+          await new Promise((resolve) => setTimeout(resolve, (60 - num) / 2));
+          return num * 10;
+        }
+      );
+
+      expect(results).toEqual([100, 200, 300, 400, 500]);
     });
   });
 });

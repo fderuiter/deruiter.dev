@@ -104,6 +104,7 @@ export interface EmailServiceSpec {
     maxBatchSize?: number;
     now?: Date;
     queueId?: string;
+    concurrency?: number;
   }): Promise<EmailRetryResult>;
   getRetryQueueHealth(now?: Date): Promise<{
     retryingCount: number;
@@ -216,7 +217,7 @@ const RETRY_LEASE_MS = 5 * 60 * 1000;
 const MAX_RETRY_BATCH_SIZE = 20;
 
 /** One OutboundEmailQueue row as the lease statement returns it. */
-interface LeasedQueueRow {
+export interface LeasedQueueRow {
   id: string;
   to: string;
   from: string;
@@ -233,6 +234,17 @@ interface LeasedQueueRow {
   /** When the row fell due, before the lease moved nextRetryAt (#1116). */
   dueAt: Date;
 }
+
+export interface RetryDispatchContext {
+  now: Date;
+  isSimulated: boolean;
+  client: Resend | null;
+}
+
+export type RetryItemResult =
+  | { status: "succeeded" }
+  | { status: "failed" }
+  | { status: "db_error"; error: unknown };
 
 /**
  * Selects and leases due queue rows in one statement (#1116).
@@ -281,6 +293,190 @@ async function leaseDueQueueRows(args: {
  * share of Resend's 100 emails a day (#841).
  */
 export const EMAIL_RETRY_BATCH_SIZE = 15;
+
+/**
+ * Concurrency limit for processing leased outbound email retry queue rows.
+ * Kept bounded to avoid overwhelming Resend API rate limits while keeping
+ * retry phase execution well within the maintenance cron deadline.
+ */
+export const EMAIL_RETRY_CONCURRENCY = 5;
+
+/**
+ * Runs item tasks across a bounded worker pool and records item results.
+ * For an empty batch, returns an empty array immediately without spawning worker promises.
+ */
+export async function runWithBoundedConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  task: (item: T) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const workerCount = clamp(concurrency, 1, items.length);
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      try {
+        results[index] = await task(items[index]);
+      } catch (err) {
+        results[index] = { status: "db_error", error: err } as R;
+      }
+    }
+  }
+
+  const workers: Promise<void>[] = [];
+  for (let i = 0; i < workerCount; i++) {
+    workers.push(worker());
+  }
+
+  await Promise.all(workers);
+  return results;
+}
+
+export const boundedWorkerPool = runWithBoundedConcurrency;
+
+/**
+ * Dispatches a single leased retry queue row: checks recipient suppression,
+ * executes Resend transmission (or simulated delivery), and persists the
+ * resulting DELIVERED, RETRYING, or FAILED status back to Prisma.
+ */
+export async function dispatchRetryItem(
+  item: LeasedQueueRow,
+  context: RetryDispatchContext
+): Promise<RetryItemResult> {
+  const { now, isSimulated, client } = context;
+  try {
+    const rawOptions: RawEmailOptions = {
+      to: item.to.includes(",")
+        ? item.to.split(",").map((s) => s.trim())
+        : item.to,
+      from: item.from,
+      replyTo: item.replyTo || undefined,
+      subject: item.subject,
+      html: item.html,
+      text: item.text || undefined,
+      tags: EmailService.parseQueuedTags(item.tags),
+      headers: EmailService.parseQueuedHeaders(item.headers),
+      skipQueue: true,
+    };
+
+    // Suppression check
+    const toRecipients = Array.isArray(rawOptions.to)
+      ? rawOptions.to
+      : [rawOptions.to];
+    let isAnySuppressed = false;
+    for (const rec of toRecipients) {
+      const check = await EmailService.isSuppressed(rec);
+      if (check.suppressed) {
+        isAnySuppressed = true;
+        break;
+      }
+    }
+
+    if (isAnySuppressed) {
+      await prisma.outboundEmailQueue.update({
+        where: { id: item.id },
+        data: {
+          status: "FAILED",
+          lastError: "Recipient is on suppression list",
+        },
+      });
+      return { status: "failed" };
+    }
+
+    // Preview/development are explicitly simulated even if an API key is attached.
+    if (isSimulated) {
+      await prisma.outboundEmailQueue.update({
+        where: { id: item.id },
+        data: { status: "DELIVERED", updatedAt: new Date() },
+      });
+      return { status: "succeeded" };
+    }
+
+    try {
+      const { error } = await client!.emails.send(
+        {
+          from: item.from,
+          to: rawOptions.to,
+          replyTo: item.replyTo || undefined,
+          subject: item.subject,
+          html: item.html,
+          text: item.text || undefined,
+          tags: rawOptions.tags,
+          headers: rawOptions.headers,
+        },
+        { idempotencyKey: `portfolio-email-${item.id}` }
+      );
+
+      if (error) {
+        const nextAttempts = item.attempts + 1;
+        if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
+          await prisma.outboundEmailQueue.update({
+            where: { id: item.id },
+            data: {
+              status: "FAILED",
+              attempts: nextAttempts,
+              lastError: error.message,
+            },
+          });
+          return { status: "failed" };
+        } else {
+          const delay = getRetryDelayMs(item.id, nextAttempts);
+          await prisma.outboundEmailQueue.update({
+            where: { id: item.id },
+            data: {
+              status: "RETRYING",
+              attempts: nextAttempts,
+              nextRetryAt: new Date(now.getTime() + delay),
+              lastError: error.message,
+            },
+          });
+          return { status: "failed" };
+        }
+      } else {
+        await prisma.outboundEmailQueue.update({
+          where: { id: item.id },
+          data: { status: "DELIVERED", updatedAt: new Date() },
+        });
+        return { status: "succeeded" };
+      }
+    } catch (sendErr) {
+      const nextAttempts = item.attempts + 1;
+      const msg =
+        sendErr instanceof Error ? sendErr.message : "Network dispatch failure";
+      if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
+        await prisma.outboundEmailQueue.update({
+          where: { id: item.id },
+          data: {
+            status: "FAILED",
+            attempts: nextAttempts,
+            lastError: msg,
+          },
+        });
+        return { status: "failed" };
+      } else {
+        const delay = getRetryDelayMs(item.id, nextAttempts);
+        await prisma.outboundEmailQueue.update({
+          where: { id: item.id },
+          data: {
+            status: "RETRYING",
+            attempts: nextAttempts,
+            nextRetryAt: new Date(now.getTime() + delay),
+            lastError: msg,
+          },
+        });
+        return { status: "failed" };
+      }
+    }
+  } catch (dbErr) {
+    return { status: "db_error", error: dbErr };
+  }
+}
 
 function shouldSimulateEmailDelivery(apiKey: string | undefined): boolean {
   const currentEnv = getEnv();
@@ -402,7 +598,7 @@ export class EmailService {
    * natively, a JSON-encoded string. Anything unrecognizable yields undefined
    * so a malformed column never reaches the provider.
    */
-  private static parseQueuedTags(
+  static parseQueuedTags(
     raw: unknown
   ): Array<{ name: string; value: string }> | undefined {
     let value = raw;
@@ -428,9 +624,7 @@ export class EmailService {
    * Reads a queued row's `headers` column back into a string map. Anything
    * that is not a flat object of strings is dropped.
    */
-  private static parseQueuedHeaders(
-    raw: unknown
-  ): Record<string, string> | undefined {
+  static parseQueuedHeaders(raw: unknown): Record<string, string> | undefined {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
     const entries = Object.entries(raw as Record<string, unknown>).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string"
@@ -522,6 +716,13 @@ export class EmailService {
     }
   }
 
+  static async dispatchRetryItem(
+    item: LeasedQueueRow,
+    context: RetryDispatchContext
+  ): Promise<RetryItemResult> {
+    return dispatchRetryItem(item, context);
+  }
+
   /**
    * Processes due items from OutboundEmailQueue with exponential backoff.
    *
@@ -533,9 +734,16 @@ export class EmailService {
     now?: Date;
     /** Restrict the run to one queue row (QStash-targeted retry). */
     queueId?: string;
+    /** Bounded worker concurrency. Defaults to EMAIL_RETRY_CONCURRENCY (5). */
+    concurrency?: number;
   }): Promise<EmailRetryResult> {
     const limit = clamp(
       options?.maxBatchSize || MAX_RETRY_BATCH_SIZE,
+      1,
+      MAX_RETRY_BATCH_SIZE
+    );
+    const concurrency = clamp(
+      options?.concurrency ?? EMAIL_RETRY_CONCURRENCY,
       1,
       MAX_RETRY_BATCH_SIZE
     );
@@ -577,144 +785,49 @@ export class EmailService {
       );
     }
 
+    if (items.length === 0) {
+      return createSuccess({ processed: 0, succeeded: 0, failed: 0 });
+    }
+
+    const results = await runWithBoundedConcurrency(
+      items,
+      concurrency,
+      (item) =>
+        EmailService.dispatchRetryItem(item, { now, isSimulated, client })
+    );
+
     let succeeded = 0;
     let failed = 0;
+    let firstDbError: unknown = null;
 
-    try {
-      for (const item of items) {
-        const rawOptions: RawEmailOptions = {
-          to: item.to.includes(",")
-            ? item.to.split(",").map((s) => s.trim())
-            : item.to,
-          from: item.from,
-          replyTo: item.replyTo || undefined,
-          subject: item.subject,
-          html: item.html,
-          text: item.text || undefined,
-          tags: this.parseQueuedTags(item.tags),
-          headers: this.parseQueuedHeaders(item.headers),
-          skipQueue: true,
-        };
-
-        // Suppression check
-        const toRecipients = Array.isArray(rawOptions.to)
-          ? rawOptions.to
-          : [rawOptions.to];
-        let isAnySuppressed = false;
-        for (const rec of toRecipients) {
-          const check = await this.isSuppressed(rec);
-          if (check.suppressed) {
-            isAnySuppressed = true;
-            break;
-          }
-        }
-
-        if (isAnySuppressed) {
-          await prisma.outboundEmailQueue.update({
-            where: { id: item.id },
-            data: {
-              status: "FAILED",
-              lastError: "Recipient is on suppression list",
-            },
-          });
-          failed++;
-          continue;
-        }
-
-        // Preview/development are explicitly simulated even if an API key is attached.
-        if (isSimulated) {
-          await prisma.outboundEmailQueue.update({
-            where: { id: item.id },
-            data: { status: "DELIVERED", updatedAt: new Date() },
-          });
-          succeeded++;
-          continue;
-        }
-
-        try {
-          const { error } = await client!.emails.send(
-            {
-              from: item.from,
-              to: rawOptions.to,
-              replyTo: item.replyTo || undefined,
-              subject: item.subject,
-              html: item.html,
-              text: item.text || undefined,
-              tags: rawOptions.tags,
-              headers: rawOptions.headers,
-            },
-            { idempotencyKey: `portfolio-email-${item.id}` }
-          );
-
-          if (error) {
-            const nextAttempts = item.attempts + 1;
-            if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
-              await prisma.outboundEmailQueue.update({
-                where: { id: item.id },
-                data: {
-                  status: "FAILED",
-                  attempts: nextAttempts,
-                  lastError: error.message,
-                },
-              });
-              failed++;
-            } else {
-              const delay = getRetryDelayMs(item.id, nextAttempts);
-              await prisma.outboundEmailQueue.update({
-                where: { id: item.id },
-                data: {
-                  status: "RETRYING",
-                  attempts: nextAttempts,
-                  nextRetryAt: new Date(now.getTime() + delay),
-                  lastError: error.message,
-                },
-              });
-              failed++;
-            }
-          } else {
-            await prisma.outboundEmailQueue.update({
-              where: { id: item.id },
-              data: { status: "DELIVERED", updatedAt: new Date() },
-            });
-            succeeded++;
-          }
-        } catch (sendErr) {
-          const nextAttempts = item.attempts + 1;
-          const msg =
-            sendErr instanceof Error
-              ? sendErr.message
-              : "Network dispatch failure";
-          if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
-            await prisma.outboundEmailQueue.update({
-              where: { id: item.id },
-              data: {
-                status: "FAILED",
-                attempts: nextAttempts,
-                lastError: msg,
-              },
-            });
-            failed++;
-          } else {
-            const delay = getRetryDelayMs(item.id, nextAttempts);
-            await prisma.outboundEmailQueue.update({
-              where: { id: item.id },
-              data: {
-                status: "RETRYING",
-                attempts: nextAttempts,
-                nextRetryAt: new Date(now.getTime() + delay),
-                lastError: msg,
-              },
-            });
-            failed++;
-          }
+    for (const result of results) {
+      if (result.status === "succeeded") {
+        succeeded++;
+      } else if (result.status === "failed") {
+        failed++;
+      } else if (result.status === "db_error") {
+        if (!firstDbError) {
+          firstDbError = result.error;
         }
       }
-    } catch (err) {
-      logger.error("Error updating OutboundEmailQueue during retry:", err);
+    }
+
+    if (firstDbError) {
+      logger.error(
+        "Error updating OutboundEmailQueue during retry:",
+        firstDbError
+      );
       return createFailure(
         "QUEUE_UPDATE_FAILED",
         "An outbound email queue row could not be updated during retry",
-        { details: { error: err, succeeded, failed, leased: items.length } }
+        {
+          details: {
+            error: firstDbError,
+            succeeded,
+            failed,
+            leased: items.length,
+          },
+        }
       );
     }
 

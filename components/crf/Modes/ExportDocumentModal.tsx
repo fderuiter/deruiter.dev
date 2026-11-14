@@ -1,7 +1,7 @@
 "use client";
 
 import { standardCitation } from "@/lib/clinical-standards";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useReducer } from "react";
 import { StudyProtocol, StudyBranding } from "@/lib/crf/types";
 import { getStudyBranding } from "@/lib/crf";
 import { ModalContainer } from "@/components/ui/ModalContainer";
@@ -23,6 +23,59 @@ import {
   IconAlertTriangle,
   IconRefresh,
 } from "@tabler/icons-react";
+
+type ExportFormat = "docx" | "pdf";
+
+type ExportModalState =
+  | { status: "idle" }
+  | { status: "exporting"; format: ExportFormat }
+  | { status: "success"; format: ExportFormat }
+  | { status: "error"; format: ExportFormat; message: string };
+
+type ExportAction =
+  | { type: "START_EXPORT"; format: ExportFormat }
+  | { type: "EXPORT_SUCCESS"; format: ExportFormat }
+  | { type: "EXPORT_ERROR"; format: ExportFormat; message: string }
+  | { type: "CLEAR_ERROR" }
+  | { type: "RESET" };
+
+const initialExportState: ExportModalState = { status: "idle" };
+
+function exportModalReducer(
+  state: ExportModalState,
+  action: ExportAction
+): ExportModalState {
+  switch (action.type) {
+    case "START_EXPORT":
+      if (state.status === "exporting") {
+        return state;
+      }
+      return { status: "exporting", format: action.format };
+    case "EXPORT_SUCCESS":
+      if (state.status !== "exporting" || state.format !== action.format) {
+        return state;
+      }
+      return { status: "success", format: action.format };
+    case "EXPORT_ERROR":
+      if (state.status !== "exporting" || state.format !== action.format) {
+        return state;
+      }
+      return {
+        status: "error",
+        format: action.format,
+        message: action.message,
+      };
+    case "CLEAR_ERROR":
+      if (state.status !== "error") {
+        return state;
+      }
+      return { status: "idle" };
+    case "RESET":
+      return { status: "idle" };
+    default:
+      return state;
+  }
+}
 
 interface ExportDocumentModalProps {
   study: StudyProtocol;
@@ -46,27 +99,45 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
   ]);
   const [includeTableOfContents, setIncludeTableOfContents] = useState(true);
   const [includeSdtmAppendix, setIncludeSdtmAppendix] = useState(true);
-  const [isExportingDocx, setIsExportingDocx] = useState(false);
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [docxSuccess, setDocxSuccess] = useState(false);
-  const [pdfSuccess, setPdfSuccess] = useState(false);
-  const [exportError, setExportError] = useState<{
-    message: string;
-    format: "docx" | "pdf";
-  } | null>(null);
 
+  const [state, dispatch] = useReducer(exportModalReducer, initialExportState);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
+
+  const clearSuccessTimer = () => {
+    if (successTimerRef.current !== null) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+  };
+
   useEffect(() => {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
+      clearSuccessTimer();
     };
   }, []);
 
   const handleClose = () => {
-    setExportError(null);
+    clearSuccessTimer();
+    dispatch({ type: "RESET" });
     onClose();
   };
+
+  const isExporting = state.status === "exporting";
+  const isBusy = isExporting || isPrinting;
+  const isExportingDocx =
+    state.status === "exporting" && state.format === "docx";
+  const isExportingPdf = state.status === "exporting" && state.format === "pdf";
+  const docxSuccess = state.status === "success" && state.format === "docx";
+  const pdfSuccess = state.status === "success" && state.format === "pdf";
+  const exportError =
+    state.status === "error"
+      ? { message: state.message, format: state.format }
+      : null;
 
   const branding: StudyBranding = getStudyBranding(study);
   const activeForm =
@@ -95,91 +166,106 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
   });
 
   const handleDownloadDocx = async () => {
+    if (isBusy) return;
     try {
+      clearSuccessTimer();
       if (isMounted.current) {
-        setIsExportingDocx(true);
-        setExportError(null);
+        dispatch({ type: "START_EXPORT", format: "docx" });
       }
       recordEvent("crf", "project_click");
       const options = getEffectiveOptions();
       const { generateStudyDocx } = await import("@/lib/crf/export-docx");
       const blob = await generateStudyDocx(study, options);
+      if (!isMounted.current) return;
       const filename = `${study.protocolNumber}-${exportMode === "annotated" ? "aCRF" : "CRF"}-book.docx`;
       downloadFile(blob, filename);
       if (isMounted.current) {
-        setDocxSuccess(true);
-        setTimeout(() => {
-          if (isMounted.current) setDocxSuccess(false);
+        clearSuccessTimer();
+        dispatch({ type: "EXPORT_SUCCESS", format: "docx" });
+        successTimerRef.current = setTimeout(() => {
+          if (isMounted.current) {
+            dispatch({ type: "RESET" });
+          }
+          successTimerRef.current = null;
         }, 2500);
       }
     } catch (err) {
       logger.error("Failed to generate Word document:", err);
       if (isMounted.current) {
-        setExportError({
+        dispatch({
+          type: "EXPORT_ERROR",
+          format: "docx",
           message:
             "Failed to generate Word document (.docx). Please check study configuration and retry.",
-          format: "docx",
         });
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsExportingDocx(false);
       }
     }
   };
 
   const handleDownloadPdf = async () => {
+    if (isBusy) return;
     try {
+      clearSuccessTimer();
       if (isMounted.current) {
-        setIsExportingPdf(true);
-        setExportError(null);
+        dispatch({ type: "START_EXPORT", format: "pdf" });
       }
       recordEvent("crf", "project_click");
       const options = getEffectiveOptions();
       const { generateStudyPdf } = await import("@/lib/crf/export-pdf");
       const blob = await generateStudyPdf(study, options);
+      if (!isMounted.current) return;
       const filename = `${study.protocolNumber}-${exportMode === "annotated" ? "aCRF" : "CRF"}-book.pdf`;
       downloadFile(blob, filename);
       if (isMounted.current) {
-        setPdfSuccess(true);
-        setTimeout(() => {
-          if (isMounted.current) setPdfSuccess(false);
+        clearSuccessTimer();
+        dispatch({ type: "EXPORT_SUCCESS", format: "pdf" });
+        successTimerRef.current = setTimeout(() => {
+          if (isMounted.current) {
+            dispatch({ type: "RESET" });
+          }
+          successTimerRef.current = null;
         }, 2500);
       }
     } catch (err) {
       logger.error("Failed to generate PDF document:", err);
       if (isMounted.current) {
-        setExportError({
+        dispatch({
+          type: "EXPORT_ERROR",
+          format: "pdf",
           message:
             "Failed to generate PDF document (.pdf). Please check study configuration and retry.",
-          format: "pdf",
         });
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsExportingPdf(false);
       }
     }
   };
 
   const handlePrint = async () => {
-    recordEvent("crf", "project_click");
-    const { generateAcrfHtml, generateStudyAcrfBookHtml } =
-      await import("@/lib/crf");
-    const htmlContent =
-      scope === "single" && activeForm
-        ? generateAcrfHtml(activeForm, study, { mode: exportMode, branding })
-        : generateStudyAcrfBookHtml(study, { mode: exportMode, branding });
+    if (isBusy) return;
+    setIsPrinting(true);
+    try {
+      recordEvent("crf", "project_click");
+      const { generateAcrfHtml, generateStudyAcrfBookHtml } =
+        await import("@/lib/crf");
+      if (!isMounted.current) return;
+      const htmlContent =
+        scope === "single" && activeForm
+          ? generateAcrfHtml(activeForm, study, { mode: exportMode, branding })
+          : generateStudyAcrfBookHtml(study, { mode: exportMode, branding });
 
-    if (!htmlContent) return;
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(htmlContent);
-      win.document.close();
-      win.focus();
-      setTimeout(() => {
-        win.print();
-      }, 400);
+      if (!htmlContent || !isMounted.current) return;
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.write(htmlContent);
+        win.document.close();
+        win.focus();
+        setTimeout(() => {
+          win.print();
+        }, 400);
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsPrinting(false);
+      }
     }
   };
 
@@ -219,6 +305,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
         </div>
         <button
           onClick={handleClose}
+          aria-label="Close export modal"
           className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
         >
           <IconX className="w-5 h-5" />
@@ -247,7 +334,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
                     handleDownloadPdf();
                   }
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-900/60 hover:bg-red-800/80 border border-red-700/60 text-red-100 font-mono text-xs font-bold transition-colors"
+                disabled={isBusy}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-900/60 hover:bg-red-800/80 border border-red-700/60 text-red-100 font-mono text-xs font-bold transition-colors disabled:opacity-50"
               >
                 <IconRefresh className="w-3.5 h-3.5" />
                 <span>Retry</span>
@@ -255,7 +343,10 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
               <button
                 type="button"
                 aria-label="Dismiss error"
-                onClick={() => setExportError(null)}
+                onClick={() => {
+                  clearSuccessTimer();
+                  dispatch({ type: "CLEAR_ERROR" });
+                }}
                 className="p-1 rounded-lg text-red-400 hover:text-red-200 hover:bg-red-900/40 transition-colors"
               >
                 <IconX className="w-4 h-4" />
@@ -448,7 +539,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-mono text-xs transition-colors"
+            disabled={isBusy}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-mono text-xs transition-colors disabled:opacity-50"
           >
             <IconPrinter className="w-4 h-4" />
             <span>Print / Preview</span>
@@ -470,7 +562,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           <button
             type="button"
             onClick={handleDownloadDocx}
-            disabled={isExportingDocx || isExportingPdf}
+            disabled={isBusy}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold transition-all shadow-md disabled:opacity-50"
           >
             {isExportingDocx ? (
@@ -491,7 +583,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           <button
             type="button"
             onClick={handleDownloadPdf}
-            disabled={isExportingDocx || isExportingPdf}
+            disabled={isBusy}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-cyan text-black hover:bg-white font-mono text-xs font-bold transition-all shadow-md disabled:opacity-50"
           >
             {isExportingPdf ? (

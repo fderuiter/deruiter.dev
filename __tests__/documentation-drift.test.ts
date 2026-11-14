@@ -372,6 +372,83 @@ describe("documentation index parity checking", () => {
       true
     );
   });
+
+  it("reports failure when reading an index file fails", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(path.join(docs, "README.md"), "# Documentation\n", "utf8");
+    const readSpy = vi
+      .spyOn(fs, "readFileSync")
+      .mockImplementation((file, ...args) => {
+        if (String(file).endsWith("README.md")) {
+          throw new Error("EACCES: permission denied");
+        }
+        return Reflect.apply(fs.readFileSync, fs, [file, ...args]);
+      });
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(
+      result.details?.some(
+        (d) =>
+          d.includes("Failed to read index file") &&
+          d.includes("permission denied")
+      )
+    ).toBe(true);
+    readSpy.mockRestore();
+  });
+
+  it("reports failure when scanning a directory fails", () => {
+    const { root } = createFixture();
+    const readdirSpy = vi
+      .spyOn(fs, "readdirSync")
+      .mockImplementation((dir, ...args) => {
+        if (String(dir).includes("docs")) {
+          throw new Error("EACCES: permission denied");
+        }
+        return Reflect.apply(fs.readdirSync, fs, [dir, ...args]);
+      });
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(
+      result.details?.some(
+        (d) =>
+          d.includes("Failed to read directory") &&
+          d.includes("permission denied")
+      )
+    ).toBe(true);
+    readdirSpy.mockRestore();
+  });
+
+  it("reports failure when stating a linked target fails", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(
+      path.join(docs, "README.md"),
+      "# Documentation\n\n- [Sub](sub)\n",
+      "utf8"
+    );
+    const subDir = path.join(docs, "sub");
+    fs.mkdirSync(subDir, { recursive: true });
+    fs.writeFileSync(path.join(subDir, "README.md"), "# Sub\n", "utf8");
+
+    const statSpy = vi
+      .spyOn(fs, "statSync")
+      .mockImplementation((target, ...args) => {
+        if (String(target).endsWith("sub")) {
+          throw new Error("EIO: i/o error");
+        }
+        return Reflect.apply(fs.statSync, fs, [target, ...args]);
+      });
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(
+      result.details?.some(
+        (d) => d.includes("Failed to stat path") && d.includes("EIO: i/o error")
+      )
+    ).toBe(true);
+    statSpy.mockRestore();
+  });
 });
 
 /**

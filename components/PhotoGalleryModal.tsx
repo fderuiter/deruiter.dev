@@ -61,7 +61,6 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
   }, [initialPhotoId]);
 
   const triggerThumbnailRef = useRef<HTMLButtonElement | null>(null);
-  const backButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -69,9 +68,7 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
       return;
     }
 
-    if (activePhoto) {
-      backButtonRef.current?.focus();
-    } else {
+    if (!activePhoto) {
       triggerThumbnailRef.current?.focus();
     }
   }, [activePhoto, isOpen]);
@@ -304,8 +301,8 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
 
                 <div className="pt-2">
                   <button
-                    ref={backButtonRef}
                     type="button"
+                    autoFocus
                     onClick={() => setActivePhoto(null)}
                     aria-label="Back to all photos"
                     className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"

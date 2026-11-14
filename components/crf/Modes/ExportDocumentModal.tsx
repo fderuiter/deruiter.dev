@@ -39,9 +39,9 @@ type ExportAction =
   | { type: "CLEAR_ERROR" }
   | { type: "RESET" };
 
-export const initialExportState: ExportModalState = { status: "idle" };
+const initialExportState: ExportModalState = { status: "idle" };
 
-export function exportModalReducer(
+function exportModalReducer(
   state: ExportModalState,
   action: ExportAction
 ): ExportModalState {
@@ -105,7 +105,6 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
-  const isBusyRef = useRef(false);
 
   const clearSuccessTimer = () => {
     if (successTimerRef.current !== null) {
@@ -167,8 +166,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
   });
 
   const handleDownloadDocx = async () => {
-    if (isBusyRef.current || state.status === "exporting" || isPrinting) return;
-    isBusyRef.current = true;
+    if (isBusy) return;
     try {
       clearSuccessTimer();
       if (isMounted.current) {
@@ -201,14 +199,11 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
             "Failed to generate Word document (.docx). Please check study configuration and retry.",
         });
       }
-    } finally {
-      isBusyRef.current = false;
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (isBusyRef.current || state.status === "exporting" || isPrinting) return;
-    isBusyRef.current = true;
+    if (isBusy) return;
     try {
       clearSuccessTimer();
       if (isMounted.current) {
@@ -241,13 +236,11 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
             "Failed to generate PDF document (.pdf). Please check study configuration and retry.",
         });
       }
-    } finally {
-      isBusyRef.current = false;
     }
   };
 
   const handlePrint = async () => {
-    if (isBusyRef.current || state.status === "exporting" || isPrinting) return;
+    if (isBusy) return;
     setIsPrinting(true);
     try {
       recordEvent("crf", "project_click");

@@ -369,13 +369,19 @@ export function ContactForm({
         >
           {SELECTABLE_INTENTS.map((item, index) => {
             const isSelected = intent === item;
+            // A saved draft can still hold a retired intent, which leaves no
+            // radio checked. The first radio then takes the tab stop so the
+            // group stays reachable from the keyboard.
+            const isTabStop =
+              isSelected ||
+              (index === 0 && !SELECTABLE_INTENTS.includes(intent));
             return (
               <button
                 key={item}
                 type="button"
                 role="radio"
                 aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
+                tabIndex={isTabStop ? 0 : -1}
                 onKeyDown={(e) => {
                   const step =
                     e.key === "ArrowRight" || e.key === "ArrowDown"

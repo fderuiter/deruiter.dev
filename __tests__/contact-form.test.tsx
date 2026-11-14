@@ -96,6 +96,20 @@ describe("ContactForm Component", () => {
     expect(document.activeElement).toBe(generalRadio);
   });
 
+  it("keeps the intent group reachable when no radio is checked", () => {
+    // A saved draft or an older link can still carry the retired intent.
+    render(<ContactForm initialIntent="recruiting" />);
+
+    const radios = screen.getAllByRole("radio");
+    expect(
+      radios.every((r) => r.getAttribute("aria-checked") === "false")
+    ).toBe(true);
+    expect(radios.map((r) => r.getAttribute("tabindex"))).toEqual([
+      "0",
+      ...radios.slice(1).map(() => "-1"),
+    ]);
+  });
+
   it("renders with zero axe violations", async () => {
     const computed = window.getComputedStyle;
     const spy = vi

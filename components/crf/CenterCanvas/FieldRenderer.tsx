@@ -254,41 +254,12 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             </button>
           </div>
 
-          {/* Touch Move Up/Down Controls for touch devices & smaller screens */}
-          {onMoveUp && canMoveUp && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoveUp();
-              }}
-              className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white inline-flex items-center justify-center sm:hidden pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-              title="Move Up"
-              aria-label="Move Field Up"
-            >
-              <IconArrowUp className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {onMoveDown && canMoveDown && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoveDown();
-              }}
-              className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white inline-flex items-center justify-center sm:hidden pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-              title="Move Down"
-              aria-label="Move Field Down"
-            >
-              <IconArrowDown className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* Desktop Hover Actions */}
+          {/* Responsive Action Buttons (Single Pair of Move Buttons) */}
           <div
-            className={`hidden sm:flex items-center gap-0.5 transition-opacity ${
+            className={`flex sm:flex items-center gap-0.5 transition-opacity ${
               isSelected
                 ? "opacity-100"
-                : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+                : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
             }`}
           >
             {onMoveUp && (
@@ -299,7 +270,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   onMoveUp();
                 }}
                 disabled={!canMoveUp}
-                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors"
+                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
                 title="Move Field Up"
                 aria-label="Move Field Up"
               >
@@ -314,7 +285,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   onMoveDown();
                 }}
                 disabled={!canMoveDown}
-                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors"
+                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
                 title="Move Field Down"
                 aria-label="Move Field Down"
               >
@@ -322,6 +293,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               </button>
             )}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (isInlineEditing) {
@@ -332,8 +304,9 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   setIsInlineEditing(true);
                 }
               }}
-              className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-brand-cyan transition-colors"
+              className="hidden sm:inline-flex p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-brand-cyan transition-colors"
               title={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
+              aria-label={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
             >
               {isInlineEditing ? (
                 <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -342,22 +315,26 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               )}
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDuplicate();
               }}
-              className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              className="hidden sm:inline-flex p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
               title="Duplicate Field"
+              aria-label="Duplicate Field"
             >
               <IconCopy className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
-              className="p-1 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
+              className="hidden sm:inline-flex p-1 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
               title="Delete Field"
+              aria-label="Delete Field"
             >
               <IconTrash className="w-3.5 h-3.5" />
             </button>

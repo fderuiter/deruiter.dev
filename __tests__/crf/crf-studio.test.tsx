@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { liveAnnouncer } from "@/components/providers/A11yProvider";
 
 /**
  * This file tests CRFStudioContainer's own tab-routing and preset-switching
@@ -565,12 +566,20 @@ describe("CRFStudioContainer Component", () => {
     expect(initialFirstId).toBeTruthy();
     expect(initialSecondId).toBeTruthy();
 
-    // In the desktop toolbar (.sm:flex), find Move Up and Move Down buttons
+    // Verify each field has exactly ONE responsive pair of move buttons (no duplicate touch/desktop pairs)
+    expect(
+      firstField.querySelectorAll('button[aria-label="Move Field Up"]').length
+    ).toBe(1);
+    expect(
+      firstField.querySelectorAll('button[aria-label="Move Field Down"]').length
+    ).toBe(1);
+
+    // In the responsive actions bar, find Move Up and Move Down buttons
     const firstMoveUp = firstField.querySelector(
-      '.sm\\:flex button[aria-label="Move Field Up"]'
+      'button[aria-label="Move Field Up"]'
     ) as HTMLButtonElement;
     const firstMoveDown = firstField.querySelector(
-      '.sm\\:flex button[aria-label="Move Field Down"]'
+      'button[aria-label="Move Field Down"]'
     ) as HTMLButtonElement;
 
     expect(firstMoveUp).toBeTruthy();
@@ -582,7 +591,7 @@ describe("CRFStudioContainer Component", () => {
 
     // Second field has Move Up enabled
     const secondMoveUp = secondField.querySelector(
-      '.sm\\:flex button[aria-label="Move Field Up"]'
+      'button[aria-label="Move Field Up"]'
     ) as HTMLButtonElement;
     expect(secondMoveUp).toBeTruthy();
     expect(secondMoveUp.disabled).toBe(false);
@@ -603,9 +612,22 @@ describe("CRFStudioContainer Component", () => {
       initialFirstId
     );
 
+    const getLatestAnnouncement = () =>
+      liveAnnouncer.getSnapshot().politeQueue[0]?.text ??
+      liveAnnouncer.getSnapshot().activePolite?.text;
+
+    // Verify live announcer announced the new position (e.g. "Moved to 2 of 2")
+    expect(getLatestAnnouncement()).toBe(`Moved to 2 of ${fieldEls.length}`);
+
+    // Because field moved to the last index (2 of 2), Move Down became disabled, so focus falls back to Move Up on the moved field
+    const movedFieldUpBtn = reorderedFieldEls[1].querySelector(
+      'button[aria-label="Move Field Up"]'
+    );
+    expect(document.activeElement).toBe(movedFieldUpBtn);
+
     // Now on index 1 (which was the original first field), click Move Up
     const reorderedMoveUp = reorderedFieldEls[1].querySelector(
-      '.sm\\:flex button[aria-label="Move Field Up"]'
+      'button[aria-label="Move Field Up"]'
     ) as HTMLButtonElement;
     expect(reorderedMoveUp).toBeTruthy();
     expect(reorderedMoveUp.disabled).toBe(false);
@@ -625,10 +647,19 @@ describe("CRFStudioContainer Component", () => {
       initialSecondId
     );
 
+    // Verify live announcer announced the restored position
+    expect(getLatestAnnouncement()).toBe(`Moved to 1 of ${fieldEls.length}`);
+
+    // Because field moved to index 0, Move Up became disabled, so focus falls back to Move Down on the moved field
+    const restoredMoveDown = restoredFieldEls[0].querySelector(
+      'button[aria-label="Move Field Down"]'
+    );
+    expect(document.activeElement).toBe(restoredMoveDown);
+
     // Last field in section disables Move Down
     const lastField = restoredFieldEls[restoredFieldEls.length - 1];
     const lastMoveDown = lastField.querySelector(
-      '.sm\\:flex button[aria-label="Move Field Down"]'
+      'button[aria-label="Move Field Down"]'
     ) as HTMLButtonElement;
     expect(lastMoveDown).toBeTruthy();
     expect(lastMoveDown.disabled).toBe(true);

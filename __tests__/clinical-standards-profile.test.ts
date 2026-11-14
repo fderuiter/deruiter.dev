@@ -89,6 +89,36 @@ describe("clinical standards profile", () => {
       });
     expect(offenders).toEqual([]);
   });
+
+  it("names the CDISC CORE version only through its one pin", () => {
+    // The pin lives in CDISC_CORE_PIN. The dated blog post says which CORE
+    // release the pipeline used when it was written, so it stays as history.
+    const pin = "lib/clinical-standards/bom.ts";
+    const history = [
+      ["lib/fallback-blog-posts.ts", "CORE, pinned to v0.17.1, in a separate"],
+    ];
+    const coreVersion =
+      /CORE[^\n]{0,30}v\d+\.\d+\.\d+|v\d+\.\d+\.\d+[^\n]{0,30}CORE/;
+    expect(
+      coreVersion.test(" * CORE v9.9.9 checks IE against TI."),
+      "the scanner flags a seeded CORE version literal"
+    ).toBe(true);
+    const offenders = ["lib", "components", "app"]
+      .flatMap((dir) => sourceFiles(resolve(ROOT, dir)))
+      .flatMap((file) => {
+        const path = relative(ROOT, file).replace(/\\/g, "/");
+        if (path === pin) return [];
+        return readFileSync(file, "utf8")
+          .split("\n")
+          .flatMap((line, index) =>
+            coreVersion.test(line) &&
+            !history.some(([at, text]) => at === path && line.includes(text))
+              ? [`${path}:${index + 1}: ${line.trim()}`]
+              : []
+          );
+      });
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe("arcade controlled terminology", () => {

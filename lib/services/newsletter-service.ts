@@ -33,6 +33,13 @@ import {
  */
 export const NEWSLETTER_DISPATCH_CAP = 10;
 
+class EnqueueError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EnqueueError";
+  }
+}
+
 /**
  * Posts published this recently without a dispatch are announced even when
  * they were published outside `BlogPostService` (for example directly in the
@@ -337,9 +344,11 @@ export class NewsletterService {
       },
       select: { id: true },
     });
-    for (const post of unannounced) {
-      await NewsletterService.queuePostAnnouncement(post.id);
-    }
+    await Promise.all(
+      unannounced.map((post) =>
+        NewsletterService.queuePostAnnouncement(post.id)
+      )
+    );
 
     const pendingInQueue = await prisma.outboundEmailQueue.count({
       where: { status: { in: ["PENDING", "RETRYING"] } },
@@ -391,16 +400,49 @@ export class NewsletterService {
         take: remaining,
       });
 
-      for (const subscriber of recipients) {
-        const suppressed = await EmailService.isSuppressed(subscriber.email);
-        if (suppressed.suppressed) {
-          // Recorded so the dispatch can complete, but nothing is sent.
-          await prisma.newsletterDelivery.create({
-            data: { dispatchId: dispatch.id, subscriberId: subscriber.id },
+      if (recipients.length === 0) {
+        const outstanding = await prisma.newsletterSubscriber.count({
+          where: {
+            status: "CONFIRMED",
+            confirmedAt: { lte: dispatch.createdAt },
+            deliveries: { none: { dispatchId: dispatch.id } },
+          },
+        });
+        if (outstanding === 0) {
+          await prisma.newsletterDispatch.update({
+            where: { id: dispatch.id },
+            data: { completedAt: now },
           });
-          counts.skippedSuppressed++;
-          continue;
+          counts.completedDispatches++;
         }
+        continue;
+      }
+
+      // Check suppression for all batch recipients in a single round trip
+      const suppressedEmails = await EmailService.getSuppressedEmails(
+        recipients.map((r) => r.email)
+      );
+      const suppressedRecipients = recipients.filter((subscriber) =>
+        suppressedEmails.has(subscriber.email.toLowerCase().trim())
+      );
+      const eligibleRecipients = recipients.filter(
+        (subscriber) =>
+          !suppressedEmails.has(subscriber.email.toLowerCase().trim())
+      );
+
+      // Record skipped deliveries in batch
+      if (suppressedRecipients.length > 0) {
+        await prisma.newsletterDelivery.createMany({
+          data: suppressedRecipients.map((subscriber) => ({
+            dispatchId: dispatch.id,
+            subscriberId: subscriber.id,
+          })),
+        });
+        counts.skippedSuppressed += suppressedRecipients.length;
+      }
+
+      for (const subscriber of eligibleRecipients) {
+        if (remaining <= 0) break;
 
         const template = renderNewsletterDispatchEmail({
           title: dispatch.blogPost.title,
@@ -408,37 +450,49 @@ export class NewsletterService {
           postUrl: `${resolveBaseUrl()}/blog/${dispatch.blogPost.slug}`,
           unsubscribeUrl: unsubscribeUrl(subscriber.unsubscribeToken),
         });
-        // Claim the pair first: the unique (dispatch, subscriber) key makes a
-        // concurrent or replayed run fail here instead of sending twice.
-        const delivery = await prisma.newsletterDelivery.create({
-          data: { dispatchId: dispatch.id, subscriberId: subscriber.id },
-        });
-        const queueId = await EmailService.enqueueEmail({
-          to: subscriber.email,
-          subject: template.subject,
-          html: template.html,
-          text: template.text,
-          headers: listUnsubscribeHeaders(subscriber.unsubscribeToken),
-          tags: [
-            { name: "category", value: "newsletter-dispatch" },
-            { name: "dispatch", value: dispatch.id },
-          ],
-        });
-        if (!queueId) {
-          // Release the claim so the next run retries this recipient.
-          await prisma.newsletterDelivery.delete({
-            where: { id: delivery.id },
+
+        // Wrap queue creation and delivery creation inside an atomic transaction per recipient.
+        // If queue insertion fails or rolls back, the delivery claim is automatically reverted.
+        try {
+          await prisma.$transaction(async (tx) => {
+            const delivery = await tx.newsletterDelivery.create({
+              data: { dispatchId: dispatch.id, subscriberId: subscriber.id },
+            });
+            const queueId = await EmailService.enqueueEmail(
+              {
+                to: subscriber.email,
+                subject: template.subject,
+                html: template.html,
+                text: template.text,
+                headers: listUnsubscribeHeaders(subscriber.unsubscribeToken),
+                tags: [
+                  { name: "category", value: "newsletter-dispatch" },
+                  { name: "dispatch", value: dispatch.id },
+                ],
+              },
+              tx
+            );
+            if (!queueId) {
+              throw new EnqueueError(
+                "Could not enqueue a newsletter dispatch email"
+              );
+            }
+            await tx.newsletterDelivery.update({
+              where: { id: delivery.id },
+              data: { queueId },
+            });
           });
-          return createFailure(
-            "ENQUEUE_FAILED",
-            "Could not enqueue a newsletter dispatch email",
-            { details: { dispatchId: dispatch.id, counts } }
-          );
+        } catch (error) {
+          if (error instanceof EnqueueError) {
+            return createFailure(
+              "ENQUEUE_FAILED",
+              "Could not enqueue a newsletter dispatch email",
+              { details: { dispatchId: dispatch.id, counts } }
+            );
+          }
+          throw error;
         }
-        await prisma.newsletterDelivery.update({
-          where: { id: delivery.id },
-          data: { queueId },
-        });
+
         counts.queued++;
         remaining--;
       }

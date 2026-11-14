@@ -248,4 +248,52 @@ describe("EmailService (Spec & Handler)", () => {
       );
     });
   });
+
+  describe("getSuppressedEmails", () => {
+    it("returns empty set when given an empty list without querying database", async () => {
+      const { prisma } = await import("@/lib/db");
+      const findManySpy = vi.spyOn(prisma.suppressionList, "findMany");
+      const result = await EmailService.getSuppressedEmails([]);
+      expect(result.size).toBe(0);
+      expect(findManySpy).not.toHaveBeenCalled();
+    });
+
+    it("queries suppressionList with normalized emails and returns matching lowercase emails", async () => {
+      const { prisma } = await import("@/lib/db");
+      const findManySpy = vi
+        .spyOn(prisma.suppressionList, "findMany")
+        .mockResolvedValueOnce([
+          {
+            id: "sup_1",
+            email: "bounced@example.com",
+            reason: "BOUNCE",
+            createdAt: new Date(),
+          },
+        ]);
+
+      const result = await EmailService.getSuppressedEmails([
+        "  Bounced@Example.com ",
+        "clean@example.com",
+      ]);
+
+      expect(findManySpy).toHaveBeenCalledWith({
+        where: { email: { in: ["bounced@example.com", "clean@example.com"] } },
+        select: { email: true },
+      });
+      expect(result.has("bounced@example.com")).toBe(true);
+      expect(result.has("clean@example.com")).toBe(false);
+    });
+
+    it("fails open and returns an empty set when database throws", async () => {
+      const { prisma } = await import("@/lib/db");
+      vi.spyOn(prisma.suppressionList, "findMany").mockRejectedValueOnce(
+        new Error("Neon connection terminated")
+      );
+
+      const result = await EmailService.getSuppressedEmails([
+        "user@example.com",
+      ]);
+      expect(result.size).toBe(0);
+    });
+  });
 });

@@ -72,208 +72,279 @@ vi.mock("@/lib/db", () => {
       return false;
     return true;
   };
-  return {
-    prisma: {
-      newsletterSubscriber: {
-        findUnique: vi.fn(async ({ where }: { where: Where }) => {
-          const [key, value] = Object.entries(where)[0];
-          return (
-            db.subscribers.find((s) => s[key as keyof Subscriber] === value) ??
-            null
-          );
-        }),
-        create: vi.fn(async ({ data }: { data: Partial<Subscriber> }) => {
-          const row = {
-            id: id("sub"),
-            confirmedAt: null,
-            unsubscribedAt: null,
-            confirmationSentAt: null,
-            confirmationToken: null,
-            ...data,
-          } as Subscriber;
-          db.subscribers.push(row);
+  const prisma = {
+    newsletterSubscriber: {
+      findUnique: vi.fn(async ({ where }: { where: Where }) => {
+        const [key, value] = Object.entries(where)[0];
+        return (
+          db.subscribers.find((s) => s[key as keyof Subscriber] === value) ??
+          null
+        );
+      }),
+      create: vi.fn(async ({ data }: { data: Partial<Subscriber> }) => {
+        const row = {
+          id: id("sub"),
+          confirmedAt: null,
+          unsubscribedAt: null,
+          confirmationSentAt: null,
+          confirmationToken: null,
+          ...data,
+        } as Subscriber;
+        db.subscribers.push(row);
+        return row;
+      }),
+      update: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string };
+          data: Partial<Subscriber>;
+        }) => {
+          const row = db.subscribers.find((s) => s.id === where.id)!;
+          Object.assign(row, data);
           return row;
-        }),
-        update: vi.fn(
-          async ({
-            where,
-            data,
-          }: {
-            where: { id: string };
-            data: Partial<Subscriber>;
-          }) => {
-            const row = db.subscribers.find((s) => s.id === where.id)!;
-            Object.assign(row, data);
-            return row;
-          }
-        ),
-        updateMany: vi.fn(
-          async ({
-            where,
-            data,
-          }: {
-            where: { id: string; confirmationToken: string };
-            data: Partial<Subscriber>;
-          }) => {
-            const rows = db.subscribers.filter(
-              (s) =>
-                s.id === where.id &&
-                s.confirmationToken === where.confirmationToken
-            );
-            rows.forEach((r) => Object.assign(r, data));
-            return { count: rows.length };
-          }
-        ),
-        findMany: vi.fn(
-          async ({ where, take }: { where: Where; take?: number }) =>
-            db.subscribers
-              .filter((s) => matchSubscriber(s, where))
-              .sort(
-                (a, b) =>
-                  (a.confirmedAt?.getTime() ?? 0) -
-                  (b.confirmedAt?.getTime() ?? 0)
-              )
-              .slice(0, take ?? Infinity)
-        ),
-        count: vi.fn(
-          async ({ where }: { where: Where }) =>
-            db.subscribers.filter((s) => matchSubscriber(s, where)).length
-        ),
-      },
-      newsletterDispatch: {
-        upsert: vi.fn(async ({ where }: { where: { blogPostId: string } }) => {
-          const found = db.dispatches.find(
-            (d) => d.blogPostId === where.blogPostId
+        }
+      ),
+      updateMany: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string; confirmationToken: string };
+          data: Partial<Subscriber>;
+        }) => {
+          const rows = db.subscribers.filter(
+            (s) =>
+              s.id === where.id &&
+              s.confirmationToken === where.confirmationToken
           );
-          if (found) return found;
-          const row = {
-            id: id("dsp"),
-            blogPostId: where.blogPostId,
-            createdAt: new Date(),
-            completedAt: null,
-          };
-          db.dispatches.push(row);
-          return row;
-        }),
-        findMany: vi.fn(async () =>
-          db.dispatches
-            .filter((d) => d.completedAt === null)
-            .map((d) => ({ ...d, blogPost: db.posts.get(d.blogPostId)! }))
-        ),
-        update: vi.fn(
-          async ({
-            where,
-            data,
-          }: {
-            where: { id: string };
-            data: Partial<Dispatch>;
-          }) => {
-            const row = db.dispatches.find((d) => d.id === where.id)!;
-            Object.assign(row, data);
-            return row;
-          }
-        ),
-      },
-      newsletterDelivery: {
-        create: vi.fn(
-          async ({
-            data,
-          }: {
-            data: { dispatchId: string; subscriberId: string };
-          }) => {
-            if (
-              db.deliveries.some(
-                (d) =>
-                  d.dispatchId === data.dispatchId &&
-                  d.subscriberId === data.subscriberId
-              )
+          rows.forEach((r) => Object.assign(r, data));
+          return { count: rows.length };
+        }
+      ),
+      findMany: vi.fn(
+        async ({ where, take }: { where: Where; take?: number }) =>
+          db.subscribers
+            .filter((s) => matchSubscriber(s, where))
+            .sort(
+              (a, b) =>
+                (a.confirmedAt?.getTime() ?? 0) -
+                (b.confirmedAt?.getTime() ?? 0)
             )
-              throw new Error("Unique constraint failed");
-            const row = { id: id("dlv"), queueId: null, ...data };
-            db.deliveries.push(row);
-            return row;
-          }
-        ),
-        update: vi.fn(
-          async ({
-            where,
-            data,
-          }: {
-            where: { id: string };
-            data: Partial<Delivery>;
-          }) => {
-            const row = db.deliveries.find((d) => d.id === where.id)!;
-            Object.assign(row, data);
-            return row;
-          }
-        ),
-        delete: vi.fn(async ({ where }: { where: { id: string } }) => {
-          db.deliveries = db.deliveries.filter((d) => d.id !== where.id);
-        }),
-        findMany: vi.fn(
-          async ({ where }: { where: { subscriberId: string } }) =>
-            db.deliveries.filter(
-              (d) => d.subscriberId === where.subscriberId && d.queueId
-            )
-        ),
-      },
-      outboundEmailQueue: {
-        count: vi.fn(
-          async () =>
-            db.queue.filter((q) => ["PENDING", "RETRYING"].includes(q.status))
-              .length
-        ),
-        create: vi.fn(
-          async ({
-            data,
-          }: {
-            data: Omit<QueueRow, "id"> & { headers?: Record<string, string> };
-          }) => {
-            const row = { ...data, id: id("q") };
-            db.queue.push(row);
-            return row;
-          }
-        ),
-        updateMany: vi.fn(
-          async ({
-            where,
-            data,
-          }: {
-            where: { id: { in: string[] } };
-            data: Partial<QueueRow>;
-          }) => {
-            const rows = db.queue.filter(
-              (q) =>
-                where.id.in.includes(q.id) &&
-                ["PENDING", "RETRYING"].includes(q.status)
-            );
-            rows.forEach((r) => Object.assign(r, data));
-            return { count: rows.length };
-          }
-        ),
-      },
-      blogPost: {
-        findMany: vi.fn(
-          async ({ where }: { where: { created_at: { gte: Date } } }) =>
-            [...db.posts.entries()]
-              .filter(
-                ([id, post]) =>
-                  post.published &&
-                  (post.created_at ?? new Date(0)) >= where.created_at.gte &&
-                  !db.dispatches.some((d) => d.blogPostId === id)
-              )
-              .map(([id]) => ({ id }))
-        ),
-      },
-      suppressionList: {
-        findUnique: vi.fn(async ({ where }: { where: { email: string } }) =>
-          db.suppressed.has(where.email)
-            ? { email: where.email, reason: "BOUNCE" }
-            : null
-        ),
-      },
+            .slice(0, take ?? Infinity)
+      ),
+      count: vi.fn(
+        async ({ where }: { where: Where }) =>
+          db.subscribers.filter((s) => matchSubscriber(s, where)).length
+      ),
     },
+    newsletterDispatch: {
+      upsert: vi.fn(async ({ where }: { where: { blogPostId: string } }) => {
+        const found = db.dispatches.find(
+          (d) => d.blogPostId === where.blogPostId
+        );
+        if (found) return found;
+        const row = {
+          id: id("dsp"),
+          blogPostId: where.blogPostId,
+          createdAt: new Date(),
+          completedAt: null,
+        };
+        db.dispatches.push(row);
+        return row;
+      }),
+      findMany: vi.fn(async () =>
+        db.dispatches
+          .filter((d) => d.completedAt === null)
+          .map((d) => ({ ...d, blogPost: db.posts.get(d.blogPostId)! }))
+      ),
+      update: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string };
+          data: Partial<Dispatch>;
+        }) => {
+          const row = db.dispatches.find((d) => d.id === where.id)!;
+          Object.assign(row, data);
+          return row;
+        }
+      ),
+    },
+    newsletterDelivery: {
+      create: vi.fn(
+        async ({
+          data,
+        }: {
+          data: {
+            dispatchId: string;
+            subscriberId: string;
+            queueId?: string | null;
+          };
+        }) => {
+          if (
+            db.deliveries.some(
+              (d) =>
+                d.dispatchId === data.dispatchId &&
+                d.subscriberId === data.subscriberId
+            )
+          )
+            throw new Error("Unique constraint failed");
+          const row = { id: id("dlv"), queueId: null, ...data };
+          db.deliveries.push(row);
+          return row;
+        }
+      ),
+      createMany: vi.fn(
+        async ({
+          data,
+        }: {
+          data: Array<{
+            dispatchId: string;
+            subscriberId: string;
+            queueId?: string | null;
+          }>;
+        }) => {
+          let count = 0;
+          for (const item of data) {
+            if (
+              !db.deliveries.some(
+                (d) =>
+                  d.dispatchId === item.dispatchId &&
+                  d.subscriberId === item.subscriberId
+              )
+            ) {
+              db.deliveries.push({ id: id("dlv"), queueId: null, ...item });
+              count++;
+            }
+          }
+          return { count };
+        }
+      ),
+      update: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string };
+          data: Partial<Delivery>;
+        }) => {
+          const row = db.deliveries.find((d) => d.id === where.id)!;
+          Object.assign(row, data);
+          return row;
+        }
+      ),
+      delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+        db.deliveries = db.deliveries.filter((d) => d.id !== where.id);
+      }),
+      findMany: vi.fn(async ({ where }: { where: { subscriberId: string } }) =>
+        db.deliveries.filter(
+          (d) => d.subscriberId === where.subscriberId && d.queueId
+        )
+      ),
+    },
+    outboundEmailQueue: {
+      count: vi.fn(
+        async () =>
+          db.queue.filter((q) => ["PENDING", "RETRYING"].includes(q.status))
+            .length
+      ),
+      create: vi.fn(
+        async ({
+          data,
+        }: {
+          data: Omit<QueueRow, "id"> & { headers?: Record<string, string> };
+        }) => {
+          const row = { ...data, id: id("q") };
+          db.queue.push(row);
+          return row;
+        }
+      ),
+      updateMany: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: { in: string[] } };
+          data: Partial<QueueRow>;
+        }) => {
+          const rows = db.queue.filter(
+            (q) =>
+              where.id.in.includes(q.id) &&
+              ["PENDING", "RETRYING"].includes(q.status)
+          );
+          rows.forEach((r) => Object.assign(r, data));
+          return { count: rows.length };
+        }
+      ),
+    },
+    blogPost: {
+      findMany: vi.fn(
+        async ({ where }: { where: { created_at: { gte: Date } } }) =>
+          [...db.posts.entries()]
+            .filter(
+              ([id, post]) =>
+                post.published &&
+                (post.created_at ?? new Date(0)) >= where.created_at.gte &&
+                !db.dispatches.some((d) => d.blogPostId === id)
+            )
+            .map(([id]) => ({ id }))
+      ),
+    },
+    suppressionList: {
+      findUnique: vi.fn(async ({ where }: { where: { email: string } }) => {
+        const email = where.email.toLowerCase().trim();
+        return db.suppressed.has(email) || db.suppressed.has(where.email)
+          ? { email: where.email, reason: "BOUNCE" }
+          : null;
+      }),
+      findMany: vi.fn(
+        async ({
+          where,
+          select,
+        }: {
+          where?: { email?: { in?: string[] } };
+          select?: { email?: boolean };
+        } = {}) => {
+          const inList = where?.email?.in ?? [];
+          return inList
+            .filter(
+              (e) =>
+                db.suppressed.has(e) ||
+                db.suppressed.has(e.toLowerCase().trim())
+            )
+            .map((e) =>
+              select?.email ? { email: e } : { email: e, reason: "BOUNCE" }
+            );
+        }
+      ),
+    },
+    $transaction: vi.fn(async (cb: unknown) => {
+      if (typeof cb === "function") {
+        const snapshot = {
+          deliveries: [...db.deliveries],
+          queue: [...db.queue],
+          subscribers: [...db.subscribers],
+          dispatches: [...db.dispatches],
+        };
+        try {
+          return await (cb as (tx: typeof prisma) => Promise<unknown>)(prisma);
+        } catch (err) {
+          db.deliveries = snapshot.deliveries;
+          db.queue = snapshot.queue;
+          db.subscribers = snapshot.subscribers;
+          db.dispatches = snapshot.dispatches;
+          throw err;
+        }
+      }
+      if (Array.isArray(cb)) {
+        return Promise.all(cb);
+      }
+    }),
   };
+  return { prisma };
 });
 
 import { EmailService } from "@/lib/services/email-service";
@@ -586,6 +657,93 @@ describe("NewsletterService (#841)", () => {
       const counts = await dispatchCounts();
       expect(counts).toMatchObject({ queued: 0, completedDispatches: 1 });
       expect(db.dispatches[0].completedAt).not.toBeNull();
+    });
+
+    it("batches suppression lookups and records skipped deliveries in batch", async () => {
+      publishPost("p1");
+      confirmed("user1@example.com", new Date(0));
+      confirmed("user2@example.com", new Date(0));
+      confirmed("user3@example.com", new Date(0));
+      db.suppressed.add("user2@example.com");
+
+      const getSuppressedSpy = vi.spyOn(EmailService, "getSuppressedEmails");
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      const counts = await dispatchCounts();
+
+      expect(getSuppressedSpy).toHaveBeenCalledTimes(1);
+      expect(getSuppressedSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          "user1@example.com",
+          "user2@example.com",
+          "user3@example.com",
+        ])
+      );
+
+      expect(counts).toMatchObject({
+        queued: 2,
+        skippedSuppressed: 1,
+        completedDispatches: 1,
+      });
+
+      const user2Delivery = db.deliveries.find(
+        (d) => d.subscriberId === "sub_user2@example.com"
+      );
+      expect(user2Delivery).toBeDefined();
+      expect(user2Delivery?.queueId).toBeNull();
+
+      expect(db.queue.map((q) => q.to).sort()).toEqual([
+        "user1@example.com",
+        "user3@example.com",
+      ]);
+    });
+
+    it("completes dispatch when all recipients in a batch are suppressed without queueing emails", async () => {
+      publishPost("p1");
+      confirmed("all1@example.com", new Date(0));
+      confirmed("all2@example.com", new Date(0));
+      db.suppressed.add("all1@example.com");
+      db.suppressed.add("all2@example.com");
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      const counts = await dispatchCounts();
+
+      expect(counts).toMatchObject({
+        queued: 0,
+        skippedSuppressed: 2,
+        completedDispatches: 1,
+      });
+      expect(db.queue).toHaveLength(0);
+      expect(db.deliveries).toHaveLength(2);
+      expect(db.dispatches[0].completedAt).not.toBeNull();
+    });
+
+    it("rolls back delivery claim inside the transaction when enqueue write fails", async () => {
+      publishPost("p1");
+      confirmed("reader@example.com", new Date(0));
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      const { prisma } = await import("@/lib/db");
+      const transactionSpy = vi.spyOn(prisma, "$transaction");
+
+      vi.spyOn(prisma.outboundEmailQueue, "create").mockRejectedValueOnce(
+        new Error("Queue write failure")
+      );
+
+      const result = await NewsletterService.dispatchDue();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: {
+          code: "ENQUEUE_FAILED",
+          message: "Could not enqueue a newsletter dispatch email",
+        },
+      });
+
+      expect(transactionSpy).toHaveBeenCalled();
+      expect(db.deliveries).toHaveLength(0);
+      expect(db.queue).toHaveLength(0);
+      expect(db.dispatches[0].completedAt ?? null).toBeNull();
     });
   });
 });

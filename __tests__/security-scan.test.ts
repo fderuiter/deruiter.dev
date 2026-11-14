@@ -11,6 +11,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from "vitest";
 import {
   SECRET_DETECTORS,
@@ -293,6 +294,35 @@ describe("isAllowlistedSecretValue: allowlisting rules", () => {
       isAllowlistedSecretValue(value, "__tests__/migration-replay.test.ts")
     ).toBe(true);
     expect(isAllowlistedSecretValue(value, "app/random-file.ts")).toBe(false);
+  });
+
+  it("bypasses URL parsing for non-URL candidate strings without protocol schemes", () => {
+    const urlSpy = vi.spyOn(globalThis, "URL");
+    try {
+      const nonUrlValues = [
+        "AKIAIOSFODNN7EXAMPLE",
+        ["ghp_", "123456789012345678901234567890123456"].join(""),
+        ["npg_", "SecretPass1234"].join(""),
+        ["re_", "123456789012345678901234567890"].join(""),
+        ["sk-ant-", "12345678901234567890"].join(""),
+        "random_token_without_scheme",
+      ];
+      for (const val of nonUrlValues) {
+        urlSpy.mockClear();
+        isAllowlistedSecretValue(val);
+        expect(urlSpy).not.toHaveBeenCalled();
+      }
+    } finally {
+      urlSpy.mockRestore();
+    }
+  });
+
+  it("safely catches malformed candidate values with protocol markers without throwing", () => {
+    expect(isAllowlistedSecretValue("postgresql://")).toBe(false);
+    expect(isAllowlistedSecretValue("https://:invalid-host")).toBe(false);
+    expect(isAllowlistedSecretValue("custom-scheme://[invalid-ipv6")).toBe(
+      false
+    );
   });
 });
 

@@ -159,6 +159,8 @@ function isRotatedCredential(value: string, file: string): boolean {
   return fingerprints.has(createHash("sha256").update(value).digest("hex"));
 }
 
+const URL_PROTOCOL_REGEX = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+
 /**
  * Whether a detected candidate value is a known-safe fixture/example rather
  * than a real secret, given the (repo-relative, forward-slash) file it was
@@ -171,12 +173,14 @@ export function isAllowlistedSecretValue(value: string, file = ""): boolean {
   if (SAFE_FILE_VALUES.get(normalizedFile)?.has(value)) return true;
   if (isRotatedCredential(value, normalizedFile)) return true;
 
-  try {
-    const host = new URL(value).hostname;
-    if (host === "localhost" || host === "127.0.0.1") return true;
-    if (host.endsWith(".example.com")) return true;
-  } catch {
-    // Non-URL detectors continue through the explicit fixture rules above.
+  if (URL_PROTOCOL_REGEX.test(value)) {
+    try {
+      const host = new URL(value).hostname;
+      if (host === "localhost" || host === "127.0.0.1") return true;
+      if (host.endsWith(".example.com")) return true;
+    } catch {
+      // Non-URL detectors continue through the explicit fixture rules above.
+    }
   }
 
   return (

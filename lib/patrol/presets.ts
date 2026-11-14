@@ -19,13 +19,6 @@ export const PATROL_SCENARIOS: PatrolScenario[] = [
 ];
 
 /**
- * Sample clinical OEC scenario retained for backward compatibility with the
- * M5 vertical-slice demo; superseded by the three MVP scenarios above.
- * // PLACEHOLDER — needs OEC/NSP content review, see #744
- */
-export const OEC_SAMPLE_SCENARIO_PRESET: PatrolScenario = OEC_SAMPLE_SCENARIO;
-
-/**
  * Comprehensive list of all scenarios registered across milestones, MVP
  * scenarios first so they are preferred by default scenario selection.
  */

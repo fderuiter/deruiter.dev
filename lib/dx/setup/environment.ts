@@ -244,14 +244,21 @@ export function parseEnvValues(content: string): Record<string, string> {
 }
 
 /**
- * Formats one assignment. Values are double-quoted, with `$` escaped so
- * Next.js's dotenv expansion leaves passwords containing `$` intact. A value
- * holding a quote or a line break cannot round-trip safely and is refused.
+ * Formats one assignment for the dotenv files Next.js loads (`@next/env`:
+ * dotenv, then dotenv-expand).
+ *
+ * Values are double-quoted, with `$` escaped so expansion leaves passwords
+ * containing `$` intact. Inside double quotes dotenv turns the two
+ * characters `\n` and `\r` into a line break, and no escape keeps them
+ * literal, so a value holding them is refused, as is a value holding a
+ * quote or a real line break. Every other value, including backslashes and
+ * a trailing backslash, loads back byte for byte. The error names the key,
+ * never the value.
  */
 export function formatEnvAssignment(key: string, value: string): string {
-  if (/["\r\n]/.test(value)) {
+  if (/["\r\n]|\\[nr]/.test(value)) {
     throw new Error(
-      `${key} contains a quote or line break and cannot be written safely; edit .env.local by hand.`
+      `${key} contains a quote, a line break or a backslash escape (\\n or \\r) and cannot be written safely; edit .env.local by hand.`
     );
   }
   return `${key}="${value.replace(/\$/g, "\\$")}"`;

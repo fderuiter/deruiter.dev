@@ -40,7 +40,38 @@ if [ -n "$crf_inputs" ] && [ -z "$crf_reports" ]; then
 fi
 
 core() { (cd "$core_dir" && "$python" core.py "$@"); }
-export -f core
+
+# CORE v1.0.0 keeps one cache in a multiprocessing manager, and its LRUCache
+# is not thread-safe, so a rule now and then fails with "OrderedDict mutated
+# during iteration" (#3869). That is the engine, not the data, and the
+# recorded-findings comparison would read it as a changed finding. Every
+# CORE run goes through this: it runs `core validate` with the given
+# arguments, writing its log to <log>, and runs it again (three tries in
+# all) while the JSON report at <report> carries that error. The inputs are
+# the same each time, so a retry can never hide a data finding. A CORE exit
+# failure is not retried; it prints the log and fails.
+#
+# Usage: validate_with_retry <label> <report> <log> <core validate args...>
+validate_with_retry() {
+  local label="$1" report="$2" log="$3"
+  shift 3
+  local attempt
+  for attempt in 1 2 3; do
+    if ! core validate "$@" > "$log" 2>&1; then
+      echo "::error::CORE failed on $label; see $log"
+      cat "$log" >&2
+      return 1
+    fi
+    if ! grep -q 'mutated during iteration' "$report"; then
+      echo "$label done"
+      return 0
+    fi
+    echo "$label hit the engine's cache race (try $attempt of 3)"
+  done
+  echo "::error::CORE hit its cache race on $label three times (#3869)."
+  return 1
+}
+export -f core validate_with_retry
 export core_dir python inputs reports
 
 sdtm() {
@@ -53,28 +84,10 @@ sdtm() {
   local paths=()
   while IFS= read -r file; do paths+=(-dp "$file"); done \
     < <(find "$sdtm_dir" -maxdepth 1 -name '*.json' | LC_ALL=C sort)
-  # CORE v1.0.0 keeps one cache in a multiprocessing manager, and its
-  # LRUCache is not thread-safe, so a rule now and then fails with
-  # "OrderedDict mutated during iteration". That is the engine, not the
-  # data, so run the view again (#3869). Three tries, then fail loudly.
-  local attempt
-  for attempt in 1 2 3; do
-    if ! core validate -s sdtmig -v 3-4 -ft json \
-      "${paths[@]}" -dxp "$sdtm_dir/define.xml" \
-      -o "$reports/$view/sdtm" -of json -p disabled \
-      > "$reports/$view/sdtm.log" 2>&1; then
-      echo "::error::CORE failed on the $view view; see $reports/$view/sdtm.log"
-      cat "$reports/$view/sdtm.log" >&2
-      return 1
-    fi
-    if ! grep -q 'mutated during iteration' "$reports/$view/sdtm.json"; then
-      echo "CORE SDTMIG 3.4: $view done"
-      return 0
-    fi
-    echo "CORE SDTMIG 3.4: $view hit the engine's cache race (try $attempt of 3)"
-  done
-  echo "::error::CORE hit its cache race on the $view view three times (#3869)."
-  return 1
+  validate_with_retry "CORE SDTMIG 3.4: $view" \
+    "$reports/$view/sdtm.json" "$reports/$view/sdtm.log" \
+    -s sdtmig -v 3-4 -ft json "${paths[@]}" -dxp "$sdtm_dir/define.xml" \
+    -o "$reports/$view/sdtm" -of json -p disabled
 }
 export -f sdtm
 
@@ -83,13 +96,18 @@ find "$inputs" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort |
 
 default_in="$inputs/default"
 default_out="$reports/default"
-core validate -s usdm -v 4-0 -ft json -d "$default_in/usdm" \
+mkdir -p "$default_out"
+validate_with_retry "CORE USDM 4.0: default" \
+  "$default_out/usdm.json" "$default_out/usdm.log" \
+  -s usdm -v 4-0 -ft json -d "$default_in/usdm" \
   -o "$default_out/usdm" -of json -p disabled
 rules="$(core list-rules -s adamig -v 1-3 2>/dev/null | "$python" -c 'import json, sys; print(len(json.load(sys.stdin)))')"
 if [ "$rules" = "0" ]; then
   echo "CDISC CORE publishes no ADaMIG 1.3 rules." > "$default_out/adam.skipped"
 else
-  core validate -s adamig -v 1-3 -ft json \
+  validate_with_retry "CORE ADaMIG 1.3: default" \
+    "$default_out/adam.json" "$default_out/adam.log" \
+    -s adamig -v 1-3 -ft json \
     -d "$default_in/m5/datasets/analysis/adam" \
     -dxp "$default_in/m5/datasets/analysis/adam/define.xml" \
     -o "$default_out/adam" -of json -p disabled
@@ -102,14 +120,9 @@ if [ -n "$crf_inputs" ]; then
   for preset_dir in "$crf_inputs"/*/; do
     preset="$(basename "$preset_dir")"
     mkdir -p "$crf_reports/$preset"
-    if core validate -s usdm -v 4-0 -ft json -d "$preset_dir/usdm" \
-      -o "$crf_reports/$preset/usdm" -of json -p disabled \
-      > "$crf_reports/$preset/usdm.log" 2>&1; then
-      echo "CORE USDM 4.0: CRF preset $preset done"
-    else
-      echo "::error::CORE failed on the $preset CRF export; see $crf_reports/$preset/usdm.log"
-      cat "$crf_reports/$preset/usdm.log" >&2
-      exit 1
-    fi
+    validate_with_retry "CORE USDM 4.0: CRF preset $preset" \
+      "$crf_reports/$preset/usdm.json" "$crf_reports/$preset/usdm.log" \
+      -s usdm -v 4-0 -ft json -d "$preset_dir/usdm" \
+      -o "$crf_reports/$preset/usdm" -of json -p disabled
   done
 fi

@@ -34,7 +34,7 @@ jobs:
 
       - name: Execute Security Audit Gate
         id: audit
-        run: npm run audit:security
+        run: npm run audit:security -- --fail-on-warning --severity=moderate
         continue-on-error: true
 
       - name: Triage Security Issue Escalation

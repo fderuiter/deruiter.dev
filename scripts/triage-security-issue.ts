@@ -10,7 +10,7 @@ import {
 import type { AuditReport, VulnerabilityInfo } from "./security-audit";
 
 export interface SecurityTriageItem {
-  type: "unhandled" | "expired_rule" | "invalid_rule";
+  type: "unhandled" | "expired_rule" | "invalid_rule" | "expiring_rule";
   advisoryId: string;
   pkgName?: string;
   severity: "critical" | "high" | "moderate";
@@ -19,6 +19,8 @@ export interface SecurityTriageItem {
   range?: string;
   reason?: string;
   validationError?: string;
+  remainingDays?: number;
+  expiresAt?: string;
 }
 
 export function collectTriageItems(
@@ -43,6 +45,16 @@ export function collectTriageItems(
         pkgName: rule.package,
         severity: rule.severity || "critical",
         reason: rule.reason,
+      });
+    } else if (rule.isApproachingExpiration) {
+      items.push({
+        type: "expiring_rule",
+        advisoryId: rule.advisory,
+        pkgName: rule.package,
+        severity: rule.severity || "critical",
+        reason: rule.reason,
+        remainingDays: rule.remainingDays,
+        expiresAt: rule.expiresAt,
       });
     }
   }
@@ -90,7 +102,11 @@ export function collectTriageItems(
       const vuln = info as VulnerabilityInfo;
       const rawSeverity = (vuln.severity || "").toLowerCase();
 
-      if (rawSeverity === "high" || rawSeverity === "critical") {
+      if (
+        rawSeverity === "critical" ||
+        rawSeverity === "high" ||
+        rawSeverity === "moderate"
+      ) {
         if (!isPretextRelated(pkgName, vuln)) {
           const advisories = collectAdvisoriesForVulnerability(
             pkgName,
@@ -105,8 +121,12 @@ export function collectTriageItems(
             if (!matchingRule) {
               const advId =
                 getAdvisoryIdentifiers(adv)[0] || adv.title || "Unknown";
-              const severity: "critical" | "high" =
-                rawSeverity === "critical" ? "critical" : "high";
+              const severity: "critical" | "high" | "moderate" =
+                rawSeverity === "critical"
+                  ? "critical"
+                  : rawSeverity === "high"
+                    ? "high"
+                    : "moderate";
 
               items.push({
                 type: "unhandled",
@@ -373,6 +393,18 @@ export async function triageSecurityIssues(options?: {
         rawBodyLines.push(`- **Previous Reason:** ${item.reason || "N/A"}`);
         rawBodyLines.push(
           "The temporary override rule for this advisory has expired and must be remediated or re-approved."
+        );
+      } else if (item.type === "expiring_rule") {
+        rawBodyLines.push("### Approaching Override Expiration Details");
+        rawBodyLines.push(`- **Active Reason:** ${item.reason || "N/A"}`);
+        if (item.remainingDays !== undefined) {
+          rawBodyLines.push(`- **Remaining Days:** ${item.remainingDays}`);
+        }
+        if (item.expiresAt) {
+          rawBodyLines.push(`- **Expiration Date:** \`${item.expiresAt}\``);
+        }
+        rawBodyLines.push(
+          "The temporary override rule for this advisory is within its pre-expiration warning window and must be remediated or renewed before expiration."
         );
       } else if (item.type === "invalid_rule") {
         rawBodyLines.push("### Invalid Override Rule Details");

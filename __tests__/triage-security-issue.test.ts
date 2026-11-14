@@ -117,6 +117,88 @@ describe("Triage Security Issue Script", () => {
       expect(items[0].severity).toBe("critical");
       expect(items[0].pkgName).toBe("unhandled-pkg");
     });
+
+    it("returns active rules nearing expiration as expiring_rule items within tiered warning window", () => {
+      const fixedNow = new Date("2026-11-20T12:00:00Z");
+      const rawIgnoreData = [
+        {
+          advisory: "GHSA-expiring-soon-1",
+          package: "pkg-soon-1",
+          expiresAt: "2026-11-25T12:00:00Z", // 5 days remaining, moderate (threshold 14d)
+          severity: "moderate",
+          reason: "Upstream fix in progress",
+          owner: "owner",
+          followUp: "#10",
+        },
+        {
+          advisory: "GHSA-safe-future-2",
+          package: "pkg-safe-2",
+          expiresAt: "2026-12-20T12:00:00Z", // 30 days remaining, moderate (threshold 14d) -> outside window
+          severity: "moderate",
+          reason: "Longer waiver",
+          owner: "owner",
+          followUp: "#11",
+        },
+      ];
+
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(rawIgnoreData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      const items = collectTriageItems(fixedNow);
+      expect(items).toHaveLength(1);
+      expect(items[0].type).toBe("expiring_rule");
+      expect(items[0].advisoryId).toBe("GHSA-expiring-soon-1");
+      expect(items[0].severity).toBe("moderate");
+      expect(items[0].pkgName).toBe("pkg-soon-1");
+      expect(items[0].remainingDays).toBe(5);
+      expect(items[0].expiresAt).toBe("2026-11-25T12:00:00Z");
+    });
+
+    it("returns unhandled moderate vulnerabilities from npm audit", () => {
+      const fixedNow = new Date("2026-08-19T12:00:00Z");
+      vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              "moderate-pkg": {
+                name: "moderate-pkg",
+                severity: "moderate",
+                via: [
+                  {
+                    source: "GHSA-moderate-222",
+                    title: "Moderate ReDoS",
+                    url: "https://example.com/mod",
+                    range: "<3.0.0",
+                  },
+                ],
+              },
+            },
+          }),
+        })
+      );
+
+      const items = collectTriageItems(fixedNow);
+      expect(items).toHaveLength(1);
+      expect(items[0].type).toBe("unhandled");
+      expect(items[0].advisoryId).toBe("ghsa-moderate-222");
+      expect(items[0].severity).toBe("moderate");
+      expect(items[0].pkgName).toBe("moderate-pkg");
+    });
   });
 
   describe("sanitizeLogDetails", () => {
@@ -392,6 +474,72 @@ describe("Triage Security Issue Script", () => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("rate limit hit")
       );
+    });
+
+    it("creates an issue explaining approaching override expiration for expiring rules", async () => {
+      const fixedNow = new Date("2026-11-20T12:00:00Z");
+      const rawIgnoreData = [
+        {
+          advisory: "GHSA-expiring-alert-99",
+          package: "expiring-dep",
+          expiresAt: "2026-11-25T12:00:00Z",
+          severity: "moderate",
+          reason: "Temporary waiver pending upstream release",
+          owner: "owner",
+          followUp: "#99",
+        },
+      ];
+
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(rawIgnoreData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      globalFetchSpy
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => ({ number: 99 }),
+          })
+        );
+
+      const result = await triageSecurityIssues({
+        token: "example_dev_token",
+        repo: "fderuiter/portfolio",
+        now: fixedNow,
+      });
+
+      expect(result).toEqual({ created: 1, updated: 0, closed: 0 });
+
+      const createCall = globalFetchSpy.mock.calls[3];
+      const postBody = JSON.parse((createCall[1]?.body as string) || "{}");
+      expect(postBody.title).toContain(
+        "MODERATE Advisory: GHSA-expiring-alert-99"
+      );
+      expect(postBody.body).toContain(
+        "### Approaching Override Expiration Details"
+      );
+      expect(postBody.body).toContain("Remaining Days:** 5");
+      expect(postBody.body).toContain("pre-expiration warning window");
+      expect(postBody.body).toContain("2026-11-25T12:00:00Z");
     });
   });
 });

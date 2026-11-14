@@ -241,6 +241,35 @@ describe("Proof Studio canvas controls", () => {
     expect(redoBtn.disabled).toBe(true);
   });
 
+  it("ignores Mod+z and Mod+Shift+z hotkeys when a modal is open", () => {
+    render(<ProofWorkspaceClient />);
+    const undoBtn = screen.getByRole("button", {
+      name: "Undo proof step",
+    }) as HTMLButtonElement;
+
+    runCommand("connect C E");
+    expect(undoBtn.disabled).toBe(false);
+
+    // Open Custom Studio modal which activates a modal dialog and focus trap
+    fireEvent.click(screen.getByRole("button", { name: /^Custom Studio$/ }));
+    expect(
+      screen.getByRole("button", { name: "Load into Workspace" })
+    ).toBeTruthy();
+
+    // Hotkey should be ignored while modal is open
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(undoBtn.disabled).toBe(false);
+
+    // Close modal
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close Custom Studio Modal" })
+    );
+
+    // Now hotkey works again
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(undoBtn.disabled).toBe(true);
+  });
+
   it("Escape in the terminal moves focus to the console toggle", () => {
     render(<ProofWorkspaceClient />);
     const input = screen.getByPlaceholderText(/Enter logic command/i);

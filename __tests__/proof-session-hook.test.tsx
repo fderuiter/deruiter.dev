@@ -666,4 +666,39 @@ describe("useProofSession: history stack and undo/redo", () => {
     expect(lastLog(result.current).text).toBe("✔ Redid proof step.");
     expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE"]);
   });
+
+  it("treats rollback as an undoable mutation that undo can reverse", () => {
+    const { result } = setup();
+    act(() => result.current.connectNodes("C", "E"));
+    // Attempt invalid connection to trigger fallacy
+    act(() => result.current.connectNodes("A", "E"));
+    expect(result.current.currentFallacy).not.toBeNull();
+
+    // Rollback the invalid step
+    act(() => result.current.handleRollback());
+    expect(result.current.currentFallacy).toBeNull();
+    expect(result.current.canUndo).toBe(true);
+
+    // Undo should restore the state prior to rollback
+    act(() => result.current.handleUndo());
+    expect(result.current.edges).toEqual([
+      ...MP.initialEdges,
+      { source: "C", target: "E" },
+    ]);
+  });
+
+  it("executes rollback via terminal CLI and reports if no fallacy is active", () => {
+    const { result } = setup();
+    act(() => result.current.runCommand("rollback"));
+    expect(lastLog(result.current).text).toBe(
+      "No active fallacy diagnosis to roll back. Use 'undo' to reverse the last proof step."
+    );
+
+    act(() => result.current.connectNodes("A", "E")); // fallacy triggered
+    expect(result.current.currentFallacy).not.toBeNull();
+
+    act(() => result.current.runCommand("rollback"));
+    expect(result.current.currentFallacy).toBeNull();
+    expect(lastLog(result.current).text).toContain("[ROLLBACK]");
+  });
 });

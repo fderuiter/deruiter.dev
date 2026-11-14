@@ -18,6 +18,7 @@ type ProofCommand =
   | { op: "autostep" }
   | { op: "undo" }
   | { op: "redo" }
+  | { op: "rollback" }
   | { op: "connect"; source: string; target: string }
   | { op: "disconnect"; source: string; target: string }
   | { op: "prune"; target: string }
@@ -85,6 +86,7 @@ export function parseProofCommand(rawInput: string): ProofCommand | null {
     case "ledger":
     case "undo":
     case "redo":
+    case "rollback":
       return { op };
     case "autostep":
     case "solve":
@@ -162,8 +164,9 @@ export const PROOF_HELP_TEXT = `Interactive Proof Workspace CLI v3.0 Commands:
   delete-step <n>        Delete a derived deduction step by line number
   apply <rule> <nodes..> Apply an inference rule (mp, mt, hs, ds, res, and_intro)
   autostep               Automatically advance the next valid inference step
-  undo                   Undo the last graph modification
+  undo                   Undo the last graph modification (including a rolled back step)
   redo                   Redo the previously undone graph modification
+  rollback               Roll back the invalid step and clear the active fallacy diagnosis
   list                   List all nodes and active edges in graph
   inspect <nodeId>       Inspect details of a specific node
   theorem <id>           Switch theorem scenario (mp, mt, hs, ds, res, 2pc, quorum, cache)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useHistory } from "@/hooks/useHistory";
 import {
   applyRuleToAsts,
   areAstsEqual,
@@ -103,9 +104,14 @@ export function useProofSession(options: ProofSessionOptions) {
   const { toast, announce, playSuccess, playAutocomplete, playHover } =
     feedback;
 
-  const [edges, setEdges] = useState<Edge[]>(theorem.initialEdges);
-  const [past, setPast] = useState<Edge[][]>([]);
-  const [future, setFuture] = useState<Edge[][]>([]);
+  const history = useHistory<Edge[]>(theorem.initialEdges, {
+    capacity: MAX_HISTORY,
+  });
+  const edges = history.state;
+  const past = history.past;
+  const future = history.future;
+  const canUndo = history.canUndo;
+  const canRedo = history.canRedo;
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [currentFallacy, setCurrentFallacy] = useState<FallacyDiagnosis | null>(
@@ -143,51 +149,41 @@ export function useProofSession(options: ProofSessionOptions) {
   );
 
   /** Puts the graph back to `initialEdges` and drops the selection, diagnosis, and history stacks. */
-  const resetGraph = useCallback((initialEdges: Edge[]) => {
-    setEdges(initialEdges);
-    setPast([]);
-    setFuture([]);
-    setSelectedNodeIds([]);
-    setCurrentFallacy(null);
-  }, []);
+  const resetGraph = useCallback(
+    (initialEdges: Edge[]) => {
+      history.reset(initialEdges);
+      setSelectedNodeIds([]);
+      setCurrentFallacy(null);
+    },
+    [history]
+  );
 
   const applyEdgeMutation = useCallback(
-    (nextEdges: Edge[]) => {
-      setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), edges]);
-      setFuture([]);
-      setEdges(nextEdges);
+    (updater: Edge[] | ((prev: Edge[]) => Edge[])) => {
+      history.set(updater);
     },
-    [edges]
+    [history]
   );
 
   const handleUndo = useCallback(() => {
-    if (past.length === 0) return;
-    const previousEdges = past[past.length - 1];
-    setPast((prev) => prev.slice(0, -1));
-    setFuture((prev) => [edges, ...prev].slice(0, MAX_HISTORY));
-    setEdges(previousEdges);
+    if (!history.canUndo) return;
+    history.undo();
     setCurrentFallacy(null);
     play(playAutocomplete);
     toast("Undid last proof modification.", "info", { announce: false });
     announce("Undid last proof modification.");
     appendLog("undo", "info", "✔ Undid last proof step.");
-  }, [past, edges, playAutocomplete, toast, announce, appendLog]);
+  }, [history, playAutocomplete, toast, announce, appendLog]);
 
   const handleRedo = useCallback(() => {
-    if (future.length === 0) return;
-    const nextEdges = future[0];
-    setFuture((prev) => prev.slice(1));
-    setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), edges]);
-    setEdges(nextEdges);
+    if (!history.canRedo) return;
+    history.redo();
     setCurrentFallacy(null);
     play(playAutocomplete);
     toast("Redid proof step.", "info", { announce: false });
     announce("Redid proof step.");
     appendLog("redo", "info", "✔ Redid proof step.");
-  }, [future, edges, playAutocomplete, toast, announce, appendLog]);
-
-  const canUndo = past.length > 0;
-  const canRedo = future.length > 0;
+  }, [history, playAutocomplete, toast, announce, appendLog]);
 
   const diagnose = (sourceId: string, targetId: string) => {
     const fallacy = getFallacyDiagnosis(sourceId, targetId, edges, theorem);
@@ -215,7 +211,10 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    applyEdgeMutation([...edges, { source: sourceId, target: targetId }]);
+    applyEdgeMutation((prev) => [
+      ...prev,
+      { source: sourceId, target: targetId },
+    ]);
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
     play(playSuccess);
@@ -246,7 +245,10 @@ export function useProofSession(options: ProofSessionOptions) {
     targetId: string,
     ruleBadge: string | undefined
   ) => {
-    applyEdgeMutation([...edges, { source: sourceId, target: targetId }]);
+    applyEdgeMutation((prev) => [
+      ...prev,
+      { source: sourceId, target: targetId },
+    ]);
     play(playSuccess);
     toast(
       `Connected Node ${sourceId} to Node ${targetId} (${ruleBadge || "Inference"})`,
@@ -376,7 +378,7 @@ export function useProofSession(options: ProofSessionOptions) {
       }));
 
     if (newEdges.length > 0) {
-      applyEdgeMutation([...edges, ...newEdges]);
+      applyEdgeMutation((prev) => [...prev, ...newEdges]);
     }
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
@@ -405,7 +407,7 @@ export function useProofSession(options: ProofSessionOptions) {
     const newEdges = autoStep.success ? (autoStep.newEdges ?? []) : [];
 
     if (newEdges.length > 0) {
-      applyEdgeMutation([...edges, ...newEdges]);
+      applyEdgeMutation((prev) => [...prev, ...newEdges]);
       toast(
         `Auto-Step: Connected premises to Node ${autoStep.targetNodeId} (${autoStep.explanation})`,
         "success"
@@ -443,40 +445,47 @@ export function useProofSession(options: ProofSessionOptions) {
     appendLog("prune", "info", `✔ ${result.reason}`);
   };
 
-  /** Undoes the step the current diagnosis is about, then clears the diagnosis. */
+  /**
+   * Undoes the step the current diagnosis is about as an undoable mutation,
+   * then clears the diagnosis. The rollback itself is recorded in history,
+   * so 'undo' can reverse it.
+   */
   const handleRollback = () => {
     if (!currentFallacy) return;
 
     const sId = currentFallacy.sourceId;
     const tId = currentFallacy.targetId;
-    const withoutPair = (a: string, b: string) =>
-      edges.filter((e) => !edgeJoins(e, a, b, true));
+    const withoutPair = (edgeList: Edge[], a: string, b: string) =>
+      edgeList.filter((e) => !edgeJoins(e, a, b, true));
 
-    let updatedEdges = [...edges];
+    applyEdgeMutation((prev) => {
+      let updatedEdges = [...prev];
 
-    if (tId) {
-      const targetNode = theorem.nodes.find(
-        (n) => n.id.toUpperCase() === tId.toUpperCase()
-      );
-      const isPremise =
-        targetNode?.type === "premise" ||
-        ["A", "B", "D"].includes(tId.toUpperCase());
+      if (tId) {
+        const targetNode = theorem.nodes.find(
+          (n) => n.id.toUpperCase() === tId.toUpperCase()
+        );
+        const isPremise =
+          targetNode?.type === "premise" ||
+          ["A", "B", "D"].includes(tId.toUpperCase());
 
-      if (!isPremise && targetNode) {
-        const pruneRes = pruneStepOrNode(tId, edges, theorem);
-        if (pruneRes.success) {
-          updatedEdges = pruneRes.newEdges;
+        if (!isPremise && targetNode) {
+          const pruneRes = pruneStepOrNode(tId, prev, theorem);
+          if (pruneRes.success) {
+            updatedEdges = pruneRes.newEdges;
+          } else if (sId) {
+            updatedEdges = withoutPair(prev, sId, tId);
+          }
         } else if (sId) {
-          updatedEdges = withoutPair(sId, tId);
+          updatedEdges = withoutPair(prev, sId, tId);
         }
-      } else if (sId) {
-        updatedEdges = withoutPair(sId, tId);
+      } else if (updatedEdges.length > 0) {
+        updatedEdges = updatedEdges.slice(0, -1);
       }
-    } else if (updatedEdges.length > 0) {
-      updatedEdges = updatedEdges.slice(0, -1);
-    }
 
-    applyEdgeMutation(updatedEdges);
+      return updatedEdges;
+    });
+
     setCurrentFallacy(null);
 
     const rollbackMsg =
@@ -516,10 +525,9 @@ export function useProofSession(options: ProofSessionOptions) {
         return;
       case "disconnect": {
         const { source, target } = command;
-        const remaining = edges.filter((e) => !edgeJoins(e, source, target));
-        if (remaining.length !== edges.length) {
-          applyEdgeMutation(remaining);
-        }
+        applyEdgeMutation((prev) =>
+          prev.filter((e) => !edgeJoins(e, source, target))
+        );
         appendLog(
           "disc",
           "info",
@@ -543,6 +551,18 @@ export function useProofSession(options: ProofSessionOptions) {
           return;
         }
         handleRedo();
+        return;
+      case "rollback":
+        if (!currentFallacy) {
+          appendLog(
+            "rollback",
+            "info",
+            "No active fallacy diagnosis to roll back. Use 'undo' to reverse the last proof step."
+          );
+          announce("No active fallacy diagnosis to roll back.");
+          return;
+        }
+        handleRollback();
         return;
       case "prune":
         handleDeleteStep(command.target);

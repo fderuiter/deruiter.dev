@@ -306,10 +306,12 @@ export function ProofWorkspaceClient() {
 
   useHotkeys("Mod+z", () => session.handleUndo(), {
     preventDefault: true,
+    ignoreWhenModalOpen: true,
   });
 
   useHotkeys("Mod+Shift+z", () => session.handleRedo(), {
     preventDefault: true,
+    ignoreWhenModalOpen: true,
   });
 
   const toggleConsole = useCallback(() => {

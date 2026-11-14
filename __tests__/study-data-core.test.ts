@@ -597,6 +597,13 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).not.toMatch(/^\s*python3 /m);
   });
 
+  it("configures pip caching keyed on the CORE constraints file", () => {
+    expect(workflow).toContain('cache: "pip"');
+    expect(workflow).toContain(
+      'cache-dependency-path: "scripts/study-data-core-constraints.txt"'
+    );
+  });
+
   it("runs on study data changes and weekly, bounded, and outside ci.yml", () => {
     expect(workflow).toContain('- "lib/study-data/**"');
     expect(workflow).toMatch(/schedule:\n\s+- cron:/);

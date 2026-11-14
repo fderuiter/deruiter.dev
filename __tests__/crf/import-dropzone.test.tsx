@@ -138,4 +138,45 @@ describe("ImportDropzone - Drag and Drop File Upload Component", () => {
       expect.stringContaining("exceeds maximum supported limit of 50MB")
     );
   });
+
+  it("displays REDCap CSV Data Dictionary label upon successful ingestion of REDCap CSV", async () => {
+    const handleParsed = vi.fn();
+    const handleError = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <ImportDropzone onFileParsed={handleParsed} onError={handleError} />
+      );
+    });
+
+    const dropzone = container.querySelector(
+      '[role="button"]'
+    ) as HTMLDivElement;
+
+    const redcapCsv = `"Variable / Field Name","Form Name","Section Header","Field Type","Field Label","Choices, Calculations, OR Slider Labels","Field Note","Text Validation Type OR Show Slider Number","Text Validation Min","Text Validation Max","Identifier?","Branching Logic (Show field only if...)","Required?","Custom Alignment","Question Number (surveys only)","Matrix Group Name","Matrix Ranking?","Field Annotation"
+"record_id","demographics","Subject Info","text","Record ID","","","","","","","","y","","","","",""
+"gender","demographics","","radio","Gender","1, Male | 2, Female","","","","","","","y","","","","",""`;
+
+    const csvBlob = new Blob([redcapCsv], { type: "text/csv" });
+    const csvFile = new File([csvBlob], "redcap_instrument.csv", {
+      type: "text/csv",
+    });
+
+    const dropEvent: DragEvent = fromAny(new Event("drop", { bubbles: true }));
+    Object.defineProperty(dropEvent, "dataTransfer", {
+      value: {
+        files: [csvFile],
+        clearData: vi.fn(),
+      },
+    });
+
+    await act(async () => {
+      dropzone.dispatchEvent(dropEvent);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(handleParsed).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("REDCap CSV Data Dictionary");
+  });
 });

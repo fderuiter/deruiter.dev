@@ -7,12 +7,13 @@ import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import { StudyProtocol } from "../types";
 import { importStudyFromUsdm } from "./usdm-adapter";
 import { importStudyFromCdiscOdmXml } from "./odm-xml-parser";
-import { importStudyFromCsvSpec } from "./csv-spec-parser";
+import { importStudyFromCsvSpec, isRedcapCsv } from "./csv-spec-parser";
 import { isUniversalCrfSchemaUrl } from "./universal-schema";
 
 export interface ParsedStudyFileResult {
   study: StudyProtocol;
-  format: "json_usdm" | "json_universal" | "xml_odm" | "csv_spec";
+  format:
+    "json_usdm" | "json_universal" | "xml_odm" | "csv_spec" | "csv_redcap";
   formatLabel: string;
   fileSize: number;
   fileName: string;
@@ -107,17 +108,23 @@ export function detectAndParseStudyFile(
   ) {
     try {
       const study = importStudyFromCsvSpec(fileContent);
+      const isRedCap =
+        study.provenance?.sourceFormat === "REDCap CSV Data Dictionary";
       return {
         study,
-        format: "csv_spec",
-        formatLabel: "CSV Study Specification",
+        format: isRedCap ? "csv_redcap" : "csv_spec",
+        formatLabel: isRedCap
+          ? "REDCap CSV Data Dictionary"
+          : "CSV Study Specification",
         fileSize: fileSize || fileContent.length,
         fileName,
       };
     } catch (err: unknown) {
-      throw new Error(
-        `CSV Study Specification Parsing Error: ${(err as Error).message}`
-      );
+      const isRedCap = isRedcapCsv(fileContent);
+      const prefix = isRedCap
+        ? "REDCap CSV Data Dictionary Parsing Error"
+        : "CSV Study Specification Parsing Error";
+      throw new Error(`${prefix}: ${(err as Error).message}`);
     }
   }
 

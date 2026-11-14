@@ -194,28 +194,16 @@ describe("CRF Studio shortcuts on useHotkeys (#1589)", () => {
     expect(press(window, "z").defaultPrevented).toBe(false);
   });
 
-  it("runs studio shortcuts inside its own keyboard boundary but halts inside editable inputs", () => {
+  it("keeps studio shortcuts out of its own keyboard boundary, as before", () => {
     render(<CRFStudioContainer />);
     const button = document.createElement("button");
     studioRoot().appendChild(button);
     button.focus();
 
     press(button, "3");
-    expect(modeTab("Logic & AST Rules").getAttribute("aria-selected")).toBe(
-      "true"
-    );
-    expect(press(button, "\\", { ctrlKey: true }).defaultPrevented).toBe(true);
-    expect(testDockToggle().getAttribute("aria-checked")).toBe("true");
-
-    const input = document.createElement("input");
-    studioRoot().appendChild(input);
-    input.focus();
-
-    press(input, "1");
-    expect(modeTab("Logic & AST Rules").getAttribute("aria-selected")).toBe(
-      "true"
-    );
-    expect(press(input, "\\", { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(modeTab("Form Designer").getAttribute("aria-selected")).toBe("true");
+    expect(press(button, "\\", { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(testDockToggle().getAttribute("aria-checked")).toBe("false");
   });
 
   it("stops listening after unmount", () => {

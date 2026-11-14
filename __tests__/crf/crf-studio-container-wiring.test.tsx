@@ -826,4 +826,47 @@ describe("CRF Studio shortcuts", () => {
     inputKey({ key: "i", ctrlKey: true });
     expect(props("StudioHeader").isRightInspectorOpen).toBe(true);
   });
+
+  it("keeps digit hotkeys off when buttons have focus, but switches modes when canvas itself has focus", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    const button = document.createElement("button");
+    canvas.appendChild(button);
+    button.focus();
+
+    // Plain digit key when button has focus: does NOT switch mode
+    fireEvent.keyDown(button, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+
+    // Plain digit key when canvas itself receives keydown: switches mode
+    fireEvent.keyDown(canvas, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("rules");
+  });
+
+  it("skips nested keyboard boundaries so FormTestDock retains complete isolation", () => {
+    press("StudioHeader.onToggleTestDock");
+    expect(props("FormTestDock").isOpen).toBe(true);
+
+    const dock = screen.getByTestId("stub-FormTestDock");
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    // Keystrokes inside FormTestDock boundary must not trigger studio hotkeys
+    fireEvent.keyDown(dock, { key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    fireEvent.keyDown(dock, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+  });
+
+  it("suppresses studio hotkeys behind open dialogs", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    press("StudioHeader.onOpenWizard");
+    expect(props("WorkflowWizardModal").isOpen).toBe(true);
+
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+    fireEvent.keyDown(canvas, { key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    fireEvent.keyDown(canvas, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+  });
 });

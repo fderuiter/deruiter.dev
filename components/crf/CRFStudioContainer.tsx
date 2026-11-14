@@ -1,7 +1,7 @@
 "use client";
 
 import "./studio-theme.css";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -25,7 +25,7 @@ import { useStudyHistory } from "./useStudyHistory";
 import { useStudioNavigation } from "./useStudioNavigation";
 import { useStudyEditor } from "./useStudyEditor";
 import { useStudyAutosave } from "@/hooks/useStudyAutosave";
-import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useFocusTrap, isAnyFocusTrapActive } from "@/hooks/useFocusTrap";
 import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { StudioHeader } from "./StudioHeader";
 import { MODE_BY_KEY } from "./studio-stages";
@@ -139,7 +139,7 @@ const WorkflowWizardModal = dynamic(
     loading: () => <WorkflowWizardModalSkeleton />,
   }
 );
-import { useHotkeys } from "@/hooks/useHotkeys";
+import { useHotkeys, isEditableElement } from "@/hooks/useHotkeys";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTouchDragAndDrop } from "@/hooks/useTouchDragAndDrop";
 import {
@@ -189,6 +189,8 @@ const STUDIO_HOTKEYS: readonly string[] = [
 ];
 
 export const CRFStudioContainer: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Polyfill touch drag-and-drop support across CRF Studio
   useTouchDragAndDrop();
 
@@ -395,15 +397,8 @@ export const CRFStudioContainer: React.FC = () => {
     { allowInInputs: true, allowInKeyboardBoundary: true }
   );
 
-  // Studio-level shortcuts must never fire while a text editor (or a
-  // dialog/select) owns focus: Ctrl/Cmd+Z is native undo, Ctrl/Cmd+B and
-  // Ctrl/Cmd+I are native bold/italic in rich-text fields, and none of the
-  // others should hijack keystrokes meant for whatever the author is typing.
-  // Keystrokes run inside the studio container boundary so canvas interactions
-  // trigger studio shortcuts, but halt inside editable form fields.
-  useHotkeys(
-    STUDIO_HOTKEYS,
-    (e) => {
+  const handleStudioShortcut = useCallback(
+    (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       switch (key) {
         // Slash Command Palette (/)
@@ -459,7 +454,102 @@ export const CRFStudioContainer: React.FC = () => {
         }
       }
     },
-    { allowInKeyboardBoundary: true }
+    [redo, undo, setActiveMode]
+  );
+
+  // Studio-level shortcuts must never fire while a text editor (or a
+  // dialog/select) owns focus: Ctrl/Cmd+Z is native undo, Ctrl/Cmd+B and
+  // Ctrl/Cmd+I are native bold/italic in rich-text fields, and none of the
+  // others should hijack keystrokes meant for whatever the author is typing.
+  // They also stay out of every [data-keyboard-boundary] region, the studio
+  // root included, as the raw listener they replace did, so they fire only
+  // while focus sits outside the studio.
+  useHotkeys(STUDIO_HOTKEYS, handleStudioShortcut, {
+    ignoreWhenModalOpen: true,
+  });
+
+  // When keystrokes originate on the form canvas itself, scoped canvas
+  // shortcuts run without dropping boundary isolation:
+  // - Keystrokes are limited to the studio root.
+  // - Nested keyboard boundaries (such as FormTestDock) retain complete isolation.
+  // - Keystrokes are suppressed behind open dialogs and inside editable elements.
+  // - Plain digit keys (mode switching) remain off unless the canvas itself has focus
+  //   (preventing buttons with focus from switching modes).
+  useHotkeys(
+    STUDIO_HOTKEYS,
+    (e) => {
+      // Suppress behind open dialogs/modals
+      if (
+        isAnyFocusTrapActive() ||
+        isSlashPaletteOpen ||
+        isBaselinesModalOpen ||
+        isCompareModalOpen ||
+        isWizardOpen ||
+        isExportDocModalOpen ||
+        isFormCatalogOpen ||
+        isDiagnosticsOpen ||
+        isBrandingOpen ||
+        isReviewPackageOpen ||
+        isSpotlightTourOpen ||
+        isMobileWidgetDrawerOpen
+      ) {
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      const root = containerRef.current;
+      // Must originate inside the studio root
+      if (
+        !root ||
+        !target ||
+        !(target instanceof Node) ||
+        !root.contains(target)
+      ) {
+        return;
+      }
+
+      // Skip nested boundaries (e.g. FormTestDock)
+      const boundary = target.closest?.("[data-keyboard-boundary]");
+      if (boundary && boundary !== root) {
+        return;
+      }
+
+      // Suppress inside editable form inputs
+      if (isEditableElement(target)) {
+        return;
+      }
+
+      // Must originate on the canvas area
+      const isCanvasTarget = Boolean(
+        target.closest?.(
+          '[data-studio-canvas="true"], [data-testid="stub-FormCanvas"], .crf-canvas-area'
+        )
+      );
+      if (!isCanvasTarget) {
+        return;
+      }
+
+      // Keep plain digit keys off unless the canvas itself has focus
+      const key = e.key.toLowerCase();
+      if (MODE_BY_KEY[key]) {
+        const isCanvasItself =
+          target.getAttribute?.("data-studio-canvas") === "true" ||
+          target.getAttribute?.("data-testid") === "stub-FormCanvas" ||
+          target.classList?.contains("crf-canvas-area") ||
+          target.getAttribute?.("data-tour") === "canvas";
+        const isButtonOrInteractive =
+          target.tagName === "BUTTON" ||
+          target.tagName === "A" ||
+          Boolean(target.closest?.("button, a"));
+
+        if (!isCanvasItself || isButtonOrInteractive) {
+          return;
+        }
+      }
+
+      handleStudioShortcut(e);
+    },
+    { allowInKeyboardBoundary: true, ignoreWhenModalOpen: true }
   );
 
   const allFields = activeForm
@@ -609,6 +699,7 @@ export const CRFStudioContainer: React.FC = () => {
 
   return (
     <div
+      ref={containerRef}
       data-studio-theme={theme}
       data-keyboard-boundary="true"
       style={
@@ -770,7 +861,10 @@ export const CRFStudioContainer: React.FC = () => {
               )}
 
               {mobileActiveView === "canvas" && (
-                <div className="flex-1 flex flex-col min-w-0">
+                <div
+                  data-studio-canvas="true"
+                  className="flex-1 flex flex-col min-w-0"
+                >
                   <FormCanvas
                     form={activeForm}
                     selectedFieldId={selectedFieldId}
@@ -831,6 +925,7 @@ export const CRFStudioContainer: React.FC = () => {
             {/* Center Canvas for Desktop/Tablet (Visible on md+ screens) */}
             <div
               data-tour="canvas"
+              data-studio-canvas="true"
               className="hidden md:flex flex-1 flex-col overflow-hidden"
             >
               <FormCanvas

@@ -19,7 +19,12 @@ export function stubComponent(name: string) {
   function Stub(props: Record<string, unknown>) {
     stubProps[name] = props;
     return (
-      <div data-testid={`stub-${name}`}>
+      <div
+        data-testid={`stub-${name}`}
+        {...(name === "FormTestDock"
+          ? { "data-keyboard-boundary": "true" }
+          : {})}
+      >
         {Object.entries(props)
           .filter(([, value]) => typeof value === "function")
           .map(([key, value]) => (

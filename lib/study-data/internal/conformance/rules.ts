@@ -688,8 +688,8 @@ function unitRule(id: string, domain: "VS" | "LB" | "EG"): ConformanceRule {
  * IE and disposition disagree about who failed screening. IE records the
  * criteria a subject did not meet, so a SCREEN FAILURE disposition needs at
  * least one IE record, and a subject who was not a screen failure needs none
- * (SDTMIG 3.4 section 6.3.4). CORE v0.17.1 checks IE against TI but has no
- * rule relating IE to disposition.
+ * (SDTMIG 3.4 section 6.3.4). The pinned CORE release (`CDISC_CORE_PIN`)
+ * checks IE against TI but has no rule relating IE to disposition.
  */
 function eligibilityRule(id: string): ConformanceRule {
   return {

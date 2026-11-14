@@ -9,7 +9,8 @@ const SCRIPT = path.resolve(process.cwd(), "scripts/study-data-core-views.sh");
 
 /**
  * A stand-in for CORE's core.py. `validate` writes `<-o>.json` and counts
- * its calls per report in calls.json. While a report's call count is below
+ * its calls per report, one counter file per report under calls/, because the
+ * script runs views in parallel and a shared counter file would race. While a report's call count is below
  * its entry in race.json, the report carries the engine's cache-race error,
  * the way CORE v1.0.0 records it (#3869). `list-rules` prints one rule.
  * An output path listed in fail.json makes validate exit 1.
@@ -26,14 +27,15 @@ if args[0] == "list-rules":
     sys.exit(0)
 out = args[args.index("-o") + 1]
 key = os.path.basename(os.path.dirname(out)) + "/" + os.path.basename(out)
-calls = load("calls.json", {})
-calls[key] = calls.get(key, 0) + 1
-json.dump(calls, open(os.path.join(here, "calls.json"), "w"))
+counter = os.path.join(here, "calls", key.replace("/", "__"))
+os.makedirs(os.path.dirname(counter), exist_ok=True)
+count = int(open(counter).read()) + 1 if os.path.exists(counter) else 1
+open(counter, "w").write(str(count))
 if key in load("fail.json", []):
     print("engine crashed")
     sys.exit(1)
 issues = []
-if calls[key] <= load("race.json", {}).get(key, 0):
+if count <= load("race.json", {}).get(key, 0):
     issues.append({"error": "OrderedDict mutated during iteration"})
 json.dump({"Issue_Details": issues}, open(out + ".json", "w"))
 print("ran", key)
@@ -89,10 +91,16 @@ function setup(options: { race?: Record<string, number>; fail?: string[] }) {
       ],
       { encoding: "utf8" }
     );
-  const calls = () =>
-    JSON.parse(
-      fs.readFileSync(path.join(coreDir, "calls.json"), "utf8")
-    ) as Record<string, number>;
+  const calls = () => {
+    const dir = path.join(coreDir, "calls");
+    const counts: Record<string, number> = {};
+    for (const name of fs.existsSync(dir) ? fs.readdirSync(dir) : []) {
+      counts[name.replace("__", "/")] = Number(
+        fs.readFileSync(path.join(dir, name), "utf8")
+      );
+    }
+    return counts;
+  };
   return { run, calls };
 }
 

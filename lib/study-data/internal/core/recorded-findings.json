@@ -6105,20 +6105,14 @@
     "lab-retest-same-day": {
       "inputSha256": "3b7d827acbd838cb938ca0d4746a41d60b9fe33737b54811adbcc61613e97830",
       "added": {
-        "lines": [
-          "CORE-002123 LB -#- -"
-        ],
-        "counts": {
-          "CORE-002123 LB": 1
-        }
+        "lines": [],
+        "counts": {}
       },
       "removed": {
         "lines": [],
         "counts": {}
       },
-      "status": {
-        "CORE-002123": "EXECUTION ERROR"
-      }
+      "status": {}
     },
     "unscheduled-visit-in-window": {
       "inputSha256": "023c0828d9e6a64dc643ccce6818f498748b04d696a5972c08a3a56d3dfd2e85",

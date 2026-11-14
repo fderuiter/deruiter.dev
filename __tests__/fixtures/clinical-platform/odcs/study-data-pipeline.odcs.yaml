@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.15.1"
+version: "2.16.0"
 status: active
 domain: "Study data"
 tags:
@@ -1401,6 +1401,12 @@ schema:
         description: "Body System or Organ Class"
         required: false
         classification: confidential
+      - name: MHBDSYCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Body System or Organ Class Code"
+        required: false
+        classification: confidential
       - name: MHDTC
         logicalType: string
         logicalTypeOptions:
@@ -2606,6 +2612,121 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, USUBJID, COSEQ) identifies one row."
+  - id: SUPPAE
+    name: SUPPAE
+    physicalName: "m5/datasets/tabulations/sdtm/suppae.json"
+    physicalType: file
+    logicalType: object
+    description: "Supplemental Qualifiers for AE"
+    dataGranularityDescription: "One record per supplemental qualifier per adverse event"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: RDOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Related Domain Abbreviation"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: IDVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        classification: confidential
+      - name: IDVARVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable Value"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 5
+        classification: confidential
+      - name: QNAM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Qualifier Variable Name"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 6
+        classification: confidential
+      - name: QLABEL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Qualifier Variable Label"
+        required: false
+        classification: confidential
+      - name: QVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Data Value"
+        required: false
+        classification: confidential
+      - name: QORIG
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Origin
+        required: false
+        classification: confidential
+      - name: QEVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Evaluator
+        required: false
+        classification: confidential
+    quality:
+      - id: SUPPAE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - RDOMAIN
+            - USUBJID
+            - IDVAR
+            - IDVARVAL
+            - QNAM
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, RDOMAIN, USUBJID, IDVAR, IDVARVAL, QNAM) identifies one row."
   - id: ADSL
     name: ADSL
     physicalName: "m5/datasets/analysis/adam/adsl.json"

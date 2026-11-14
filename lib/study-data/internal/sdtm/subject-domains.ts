@@ -33,6 +33,7 @@ type SubjectDomain =
   | "EG"
   | "DS"
   | "SUPPDM"
+  | "SUPPAE"
   | "RELREC"
   | "SE"
   | "CO"
@@ -410,6 +411,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "MH_DICTIONARY_CODING",
         "Record Qualifier"
       ),
+      coded("MHBDSYCD", "Body System or Organ Class Code", "integer"),
       collected(
         "MHDTC",
         "Date/Time of History Collection",
@@ -863,6 +865,29 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "QVAL",
         "Data Value",
         "DM.SCREENFL or DM.RANDFL",
+        "Result Qualifier"
+      ),
+      assigned("QORIG", "Origin", "Record Qualifier"),
+      assigned("QEVAL", "Evaluator", "Record Qualifier"),
+    ],
+  },
+  SUPPAE: {
+    label: "Supplemental Qualifiers for AE",
+    class: "Relationships",
+    structure: "One record per supplemental qualifier per adverse event",
+    keys: ["STUDYID", "RDOMAIN", "USUBJID", "IDVAR", "IDVARVAL", "QNAM"],
+    columns: [
+      assigned("STUDYID", "Study Identifier"),
+      assigned("RDOMAIN", "Related Domain Abbreviation"),
+      assigned("USUBJID", "Unique Subject Identifier"),
+      assigned("IDVAR", "Identifying Variable"),
+      assigned("IDVARVAL", "Identifying Variable Value"),
+      assigned("QNAM", "Qualifier Variable Name", "Topic"),
+      assigned("QLABEL", "Qualifier Variable Label", "Synonym Qualifier"),
+      derived(
+        "QVAL",
+        "Data Value",
+        "ADAE_TREATMENT_EMERGENT",
         "Result Qualifier"
       ),
       assigned("QORIG", "Origin", "Record Qualifier"),
@@ -1448,6 +1473,7 @@ export function deriveSubjectDomains(
         MHDECOD: coding?.pt ?? null,
         MHCAT: record.MHCAT,
         MHBODSYS: coding?.soc ?? null,
+        MHBDSYCD: coding?.soccd ?? null,
         MHDTC: record.MHDTC,
         MHSTDTC: record.MHSTDTC,
         MHENDTC: record.MHENDTC,
@@ -1736,4 +1762,45 @@ export function deriveSubjectDomains(
     ...(source.has("CE") ? [numbered("CE", ce)] : []),
     ...(source.has("QS") ? [numbered("QS", qs)] : []),
   ];
+}
+
+/**
+ * The treatment-emergent flag for each adverse event, as a SUPPAE record with
+ * QNAM AETRTEM (#3719). The flag is not a collected AE variable, so SDTMIG
+ * carries it as a supplemental qualifier. Its value is the ADaM TRTEMFL of the
+ * same adverse event, so the SDTM record and the analysis flag come from one
+ * derivation.
+ */
+export function deriveSupplementalAe(
+  studyId: string,
+  ae: Dataset | undefined,
+  adae: Dataset | undefined
+): Dataset {
+  const flags = new Map<string, CellValue>();
+  for (let index = 0; index < (adae?.rowCount ?? 0); index += 1) {
+    const key = `${String(adae!.columns.USUBJID?.[index])}|${String(
+      adae!.columns.ASEQ?.[index]
+    )}`;
+    flags.set(key, adae!.columns.TRTEMFL?.[index] ?? null);
+  }
+  const entries = Array.from({ length: ae?.rowCount ?? 0 }, (_, index) => {
+    const subject = ae!.columns.USUBJID?.[index] ?? null;
+    const seq = ae!.columns.AESEQ?.[index] ?? null;
+    return {
+      row: {
+        STUDYID: studyId,
+        RDOMAIN: "AE",
+        USUBJID: subject,
+        IDVAR: "AESEQ",
+        IDVARVAL: seq === null ? null : String(seq),
+        QNAM: "AETRTEM",
+        QLABEL: "Treatment Emergent Flag",
+        QVAL: flags.get(`${String(subject)}|${String(seq)}`) ?? null,
+        QORIG: "DERIVED",
+        QEVAL: null,
+      },
+      sourceIds: ae!.lineage?.[index] ?? [],
+    };
+  });
+  return table("SUPPAE", entries);
 }

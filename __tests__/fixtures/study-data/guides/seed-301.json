@@ -245,6 +245,15 @@
         "keys": ["STUDYID", "USUBJID", "COSEQ"],
         "records": 26,
         "file": "co.xpt"
+      },
+      {
+        "name": "SUPPAE",
+        "label": "Supplemental Qualifiers for AE",
+        "class": "Relationships",
+        "structure": "One record per supplemental qualifier per adverse event",
+        "keys": ["STUDYID", "RDOMAIN", "USUBJID", "IDVAR", "IDVARVAL", "QNAM"],
+        "records": 44,
+        "file": "suppae.xpt"
       }
     ],
     "conformance": {
@@ -438,7 +447,8 @@
           "AE.AEHLGTCD",
           "AE.AEBDSYCD",
           "AE.AESOC",
-          "AE.AESOCCD"
+          "AE.AESOCCD",
+          "MH.MHBDSYCD"
         ]
       },
       {
@@ -544,6 +554,11 @@
         "id": "COMMENT_TARGET",
         "text": "The record the site attached the comment to, named on the comments form by its collected source ID: RDOMAIN is that record's domain, IDVAR its --SEQ, or VISITNUM for a visit in SV, and IDVARVAL the value. A comment whose record was not tabulated is not written.",
         "variables": ["CO.RDOMAIN", "CO.IDVAR", "CO.IDVARVAL"]
+      },
+      {
+        "id": "ADAE_TREATMENT_EMERGENT",
+        "text": "Y when the adverse event starts on or after the first dose and on or before the end of the on-treatment window: 14 days after the last dose, or the last contact date when that is earlier. N otherwise, including for a subject never dosed. The start date is imputed as in ADaM ASTDT. This is the same rule as the ADaM TRTEMFL flag.",
+        "variables": ["SUPPAE.QVAL"]
       }
     ]
   },

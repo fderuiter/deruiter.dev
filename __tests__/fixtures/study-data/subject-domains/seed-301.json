@@ -21,7 +21,7 @@
   },
   "MH": {
     "rows": 152,
-    "sha256": "1dd1f54f8965346d4e5d501c66cd66204cf989d355365e9b891e5c57b0b9209c"
+    "sha256": "21ed63297a6db09ea63c784667a2ca8eade6bd325dba1dad36d513b34eb9f5b0"
   },
   "IE": {
     "rows": 11,
@@ -58,5 +58,9 @@
   "CO": {
     "rows": 26,
     "sha256": "836cf7863db5e9c822f38208b4028763d19fac6316a404053f922813da8a2c9f"
+  },
+  "SUPPAE": {
+    "rows": 44,
+    "sha256": "29b9e9d0580b31584b33acd2151bba42667922750a52ec7effaf84c945f4785d"
   }
 }

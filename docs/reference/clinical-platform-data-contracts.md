@@ -77,7 +77,7 @@ would carry.
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | Spend forecast facts | `gold.fct_spend_forecast` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.1.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.15.1 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.16.0 |
 
 ## Retention
 
@@ -146,7 +146,7 @@ would carry.
 | EX | Exposure | One record per constant-dosing interval per subject | STUDYID, USUBJID, EXSEQ | 13 |
 | CM | Concomitant/Prior Medications | One record per recorded intervention occurrence or constant-dosing interval per subject | STUDYID, USUBJID, CMSEQ | 21 |
 | AE | Adverse Events | One record per adverse event per subject | STUDYID, USUBJID, AESEQ | 31 |
-| MH | Medical History | One record per medical history event per subject | STUDYID, USUBJID, MHSEQ | 14 |
+| MH | Medical History | One record per medical history event per subject | STUDYID, USUBJID, MHSEQ | 15 |
 | IE | Inclusion/Exclusion Criteria Not Met | One record per inclusion/exclusion criterion not met per subject | STUDYID, USUBJID, IETESTCD | 13 |
 | VS | Vital Signs | One record per vital sign measurement per visit per subject | STUDYID, USUBJID, VSSEQ | 17 |
 | LB | Laboratory Test Results | One record per lab test per visit per subject | STUDYID, USUBJID, LBSEQ | 23 |
@@ -156,6 +156,7 @@ would carry.
 | RELREC | Related Records | One record per related record per relationship | STUDYID, RDOMAIN, USUBJID, IDVAR, IDVARVAL, RELID | 7 |
 | SE | Subject Elements | One record per actual Element per subject | STUDYID, USUBJID, ETCD, SESTDTC | 13 |
 | CO | Comments | One record per comment per subject | STUDYID, USUBJID, COSEQ | 8 |
+| SUPPAE | Supplemental Qualifiers for AE | One record per supplemental qualifier per adverse event | STUDYID, RDOMAIN, USUBJID, IDVAR, IDVARVAL, QNAM | 10 |
 | ADSL | Subject-Level Analysis Dataset | One record per subject | STUDYID, USUBJID | 26 |
 | ADVS | Vital Signs Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
 | ADLB | Laboratory Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |

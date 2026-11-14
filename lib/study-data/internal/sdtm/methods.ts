@@ -20,6 +20,8 @@ export const SDTM_METHODS = {
     "Why ARMCD or ACTARMCD is missing, as an Arm Null Reason (C142179) term: SCREEN FAILURE for a subject never randomized or dosed, NOT ASSIGNED for one dosed without being randomized, ASSIGNED, NOT TREATED for one randomized and never dosed, and UNPLANNED TREATMENT for one dosed with a treatment no arm plans. Missing when both arms are known.",
   UNPLANNED_ARM:
     "The treatment a subject received (EXTRT) when no planned arm names it, so ACTARMCD is missing with ARMNRS = UNPLANNED TREATMENT; missing for every other subject.",
+  ADAE_TREATMENT_EMERGENT:
+    "Y when the adverse event starts on or after the first dose and on or before the end of the on-treatment window: 14 days after the last dose, or the last contact date when that is earlier. N otherwise, including for a subject never dosed. The start date is imputed as in ADaM ASTDT. This is the same rule as the ADaM TRTEMFL flag.",
   ACTUAL_ELEMENT_FROM_TA_TE:
     "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch, and so does a medication started before informed consent.",
   PLANNED_VISIT:

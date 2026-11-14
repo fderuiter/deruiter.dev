@@ -48,7 +48,7 @@ export const CLINICAL_STUDIES: Readonly<
     id: DEMO_STUDY_ID,
     title: DEMO_301_STUDY.title,
     forms: DEMO_301_STUDY.design.activities.length,
-    datasets: 28,
+    datasets: 29,
     tlfs: 5,
   }),
 });

@@ -158,6 +158,9 @@ describe("Pre-commit test scope for non-importable paths", () => {
       for (const name of [
         "vitest-config-esm.test.ts",
         "coverage-policy-governance.test.ts",
+        "ci-gate-ordering.test.ts",
+        "package-manager-config.test.ts",
+        "dx-tooling.test.ts",
       ])
         fs.writeFileSync(path.join(repo, "__tests__", name), "");
       execFileSync("git", ["add", "vitest.config.mts"], { cwd: repo, env });
@@ -187,6 +190,9 @@ describe("Pre-commit test scope for non-importable paths", () => {
       expect(args).not.toContain("vitest.config.mts");
       expect(args).toContain("__tests__/vitest-config-esm.test.ts");
       expect(args).toContain("__tests__/coverage-policy-governance.test.ts");
+      expect(args).toContain("__tests__/ci-gate-ordering.test.ts");
+      expect(args).toContain("__tests__/package-manager-config.test.ts");
+      expect(args).toContain("__tests__/dx-tooling.test.ts");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -198,7 +204,25 @@ describe("Pre-commit test scope for non-importable paths", () => {
     ]);
     expect(selected).toContain("__tests__/vitest-config-esm.test.ts");
     expect(selected).toContain("__tests__/coverage-policy-governance.test.ts");
+    expect(selected).toContain("__tests__/ci-gate-ordering.test.ts");
+    expect(selected).toContain("__tests__/package-manager-config.test.ts");
+    expect(selected).toContain("__tests__/dx-tooling.test.ts");
     expect(selected.length).toBeLessThan(40);
+  });
+
+  it("deduplicates tests when vitest.config.mts and other root config files are staged together", () => {
+    const selected = resolveNonImportableTests(workspaceRoot, [
+      "vitest.config.mts",
+      "package.json",
+      "tsconfig.json",
+    ]);
+    const unique = Array.from(new Set(selected));
+    expect(selected).toEqual(unique);
+    expect(selected).toContain("__tests__/vitest-config-esm.test.ts");
+    expect(selected).toContain("__tests__/coverage-policy-governance.test.ts");
+    expect(selected).toContain("__tests__/ci-gate-ordering.test.ts");
+    expect(selected).toContain("__tests__/package-manager-config.test.ts");
+    expect(selected).toContain("__tests__/dx-tooling.test.ts");
   });
 
   it("stays out of the way for ordinary source changes", () => {

@@ -168,6 +168,7 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close diagnostics drawer"
             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
           >
             <IconX className="w-5 h-5" />

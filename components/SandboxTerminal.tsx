@@ -1262,6 +1262,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             disabled={isTyping || isExecuting || currentStepIndex <= -1}
             className="p-2 bg-zinc-950 border border-zinc-900 hover:border-brand-cyan/40 text-zinc-400 hover:text-brand-cyan rounded-lg transition-all disabled:opacity-30 disabled:hover:border-zinc-900 disabled:hover:text-zinc-400 cursor-pointer focus:outline-none"
             title="Step Back"
+            aria-label="Step back"
           >
             <IconPlayerSkipBack className="w-4 h-4" />
           </button>
@@ -1300,6 +1301,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             }
             className="p-2 bg-zinc-950 border border-zinc-900 hover:border-brand-cyan/40 text-zinc-400 hover:text-brand-cyan rounded-lg transition-all disabled:opacity-30 disabled:hover:border-zinc-900 disabled:hover:text-zinc-400 cursor-pointer focus:outline-none"
             title="Step Forward"
+            aria-label="Step forward"
           >
             <IconPlayerSkipForward className="w-4 h-4" />
           </button>
@@ -1309,6 +1311,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             onClick={handleReset}
             className="p-2 bg-zinc-950 border border-zinc-900 hover:border-brand-cyan/40 text-zinc-400 hover:text-brand-cyan rounded-lg transition-all cursor-pointer focus:outline-none"
             title="Reset"
+            aria-label="Reset sequence"
           >
             <IconRotate className="w-4 h-4" />
           </button>

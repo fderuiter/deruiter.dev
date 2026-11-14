@@ -88,16 +88,14 @@ export const FooterStatusTicker: React.FC = () => {
   // contrast failure (#952). Holding also applies when paused, hovered, or
   // when keyboard focus is within the ticker (WCAG 2.2.2).
   const tickerLineRef = useRef<HTMLDivElement>(null);
-  useInterval(() => {
-    if (
-      isPaused ||
-      isHovered ||
-      isFocused ||
-      tickerLineRef.current?.closest("[data-ticker-paused]")
-    )
-      return;
-    setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
-  }, 4500);
+  const isSuspended = isPaused || isHovered || isFocused;
+  useInterval(
+    () => {
+      if (tickerLineRef.current?.closest("[data-ticker-paused]")) return;
+      setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
+    },
+    isSuspended ? null : 4500
+  );
 
   // The only timeout this component schedules is the quote dismissal, so
   // clearing all of them restarts that countdown.

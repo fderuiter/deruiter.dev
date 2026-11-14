@@ -116,9 +116,14 @@ describe("FooterStatusTicker rotation (#952)", () => {
     expect(pauseButton().getAttribute("aria-label")).toBe("Pause ticker");
     expect(tickerRoot().hasAttribute("data-ticker-paused")).toBe(false);
 
-    // Rotation resumes
+    // Rotation resumes with a fresh interval
     await act(async () => {
-      vi.advanceTimersByTime(4500);
+      vi.advanceTimersByTime(2000);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
     });
     expect(line()).toBe(STATUS_TICKER_ITEMS[1]);
   });

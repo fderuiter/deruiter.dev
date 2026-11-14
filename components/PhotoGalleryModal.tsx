@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -54,6 +60,72 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
     }
   }, [initialPhotoId]);
 
+  const lastClickedPhotoIdRef = useRef<string | null>(null);
+  const pendingFocusPhotoIdRef = useRef<string | null>(null);
+  const shouldFocusBackButtonRef = useRef<boolean>(Boolean(initialPhotoId));
+  const prevActivePhotoRef = useRef<PortfolioPhoto | null>(null);
+  const backButtonRef = useRef<HTMLButtonElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const thumbnailRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  const restoreThumbnailFocus = useCallback(() => {
+    const targetPhotoId = pendingFocusPhotoIdRef.current;
+    if (!targetPhotoId) return;
+
+    const targetId = filteredPhotos.some((p) => p.id === targetPhotoId)
+      ? targetPhotoId
+      : filteredPhotos[0]?.id;
+
+    if (targetId) {
+      const btn =
+        thumbnailRefs.current.get(targetId) ||
+        (gridRef.current?.querySelector(
+          `button[data-photo-id="${targetId}"]`
+        ) as HTMLButtonElement | null);
+
+      if (btn) {
+        btn.focus();
+        pendingFocusPhotoIdRef.current = null;
+        lastClickedPhotoIdRef.current = null;
+      }
+    }
+  }, [filteredPhotos]);
+
+  const handleCloseLightbox = useCallback(() => {
+    shouldFocusBackButtonRef.current = false;
+    if (lastClickedPhotoIdRef.current) {
+      pendingFocusPhotoIdRef.current = lastClickedPhotoIdRef.current;
+    }
+    setActivePhoto(null);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      lastClickedPhotoIdRef.current = null;
+      pendingFocusPhotoIdRef.current = null;
+      shouldFocusBackButtonRef.current = false;
+      prevActivePhotoRef.current = null;
+      return;
+    }
+
+    if (activePhoto && !prevActivePhotoRef.current) {
+      // Lightbox view mounted - move focus to the back button
+      shouldFocusBackButtonRef.current = true;
+      if (backButtonRef.current) {
+        backButtonRef.current.focus();
+        shouldFocusBackButtonRef.current = false;
+      }
+    } else if (!activePhoto && prevActivePhotoRef.current) {
+      // Lightbox view closed - restore focus to clicked thumbnail if one was recorded
+      if (lastClickedPhotoIdRef.current) {
+        pendingFocusPhotoIdRef.current = lastClickedPhotoIdRef.current;
+        restoreThumbnailFocus();
+      }
+    }
+
+    prevActivePhotoRef.current = activePhoto;
+  }, [activePhoto, isOpen, restoreThumbnailFocus]);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -69,7 +141,7 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
 
       if (e.key === "Escape") {
         if (activePhoto) {
-          setActivePhoto(null);
+          handleCloseLightbox();
         } else {
           onClose();
         }
@@ -92,7 +164,7 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
         }
       }
     },
-    [isOpen, activePhoto, filteredPhotos, onClose]
+    [isOpen, activePhoto, filteredPhotos, onClose, handleCloseLightbox]
   );
 
   return (
@@ -137,7 +209,11 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
       </div>
 
       {/* Category Filter Pills */}
-      <div className="flex items-center gap-2 px-6 py-3 border-b border-white/5 bg-black/20 overflow-x-auto text-xs font-mono">
+      <div
+        role="group"
+        aria-label="Filter photos by category"
+        className="flex items-center gap-2 px-6 py-3 border-b border-white/5 bg-black/20 overflow-x-auto text-xs font-mono"
+      >
         {[
           {
             id: "all",
@@ -168,7 +244,11 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
           <button
             key={cat.id}
             type="button"
+            aria-pressed={selectedCategory === cat.id}
             onClick={() => {
+              if (activePhoto && lastClickedPhotoIdRef.current) {
+                pendingFocusPhotoIdRef.current = lastClickedPhotoIdRef.current;
+              }
               setSelectedCategory(cat.id as typeof selectedCategory);
               setActivePhoto(null);
             }}
@@ -276,10 +356,17 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
 
                 <div className="pt-2">
                   <button
+                    ref={(el) => {
+                      backButtonRef.current = el;
+                      if (el && shouldFocusBackButtonRef.current) {
+                        el.focus();
+                        shouldFocusBackButtonRef.current = false;
+                      }
+                    }}
                     type="button"
-                    onClick={() => setActivePhoto(null)}
+                    onClick={handleCloseLightbox}
                     aria-label="Back to all photos"
-                    className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                   >
                     ← Back to all photos
                   </button>
@@ -288,12 +375,35 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
             </motion.div>
           ) : (
             /* Grid Thumbnail View */
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div
+              ref={(el) => {
+                gridRef.current = el;
+                if (el && pendingFocusPhotoIdRef.current) {
+                  restoreThumbnailFocus();
+                }
+              }}
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+            >
               {filteredPhotos.map((photo) => (
                 <button
                   key={photo.id}
+                  data-photo-id={photo.id}
+                  ref={(el) => {
+                    if (el) {
+                      thumbnailRefs.current.set(photo.id, el);
+                      if (pendingFocusPhotoIdRef.current) {
+                        restoreThumbnailFocus();
+                      }
+                    } else {
+                      thumbnailRefs.current.delete(photo.id);
+                    }
+                  }}
                   type="button"
-                  onClick={() => setActivePhoto(photo)}
+                  onClick={() => {
+                    lastClickedPhotoIdRef.current = photo.id;
+                    shouldFocusBackButtonRef.current = true;
+                    setActivePhoto(photo);
+                  }}
                   aria-label={`View photo: ${photo.title}`}
                   className="group relative aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 bg-black/40 hover:border-amber-400/50 transition-all text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                 >

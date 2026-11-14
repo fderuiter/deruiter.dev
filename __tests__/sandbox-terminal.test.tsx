@@ -1,6 +1,26 @@
-import { describe, it, expect } from "vitest";
+// @vitest-environment jsdom
+import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
+import React from "react";
+import { render, screen, cleanup } from "@testing-library/react";
+import { SandboxTerminal } from "@/components/SandboxTerminal";
+
+vi.mock("@/components/providers/AudioProvider", () => ({
+  useAudio: () => ({
+    playKeystroke: vi.fn(),
+    playAutocomplete: vi.fn(),
+    playSuccess: vi.fn(),
+  }),
+  AudioProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+vi.mock("@/components/providers/A11yProvider", () => ({
+  useAnnouncer: () => ({
+    announce: vi.fn(),
+  }),
+  A11yProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 describe("SandboxTerminal Accessibility Implementations", () => {
   const terminalPath = path.resolve(
@@ -80,5 +100,21 @@ describe("SandboxTerminal Accessibility Implementations", () => {
     );
     expect(content).toContain('aria-label="Copy JSON payload"');
     expect(content).toContain("JSON.stringify(log.jsonPayload, null, 2)");
+  });
+
+  describe("RTL accessibility queries", () => {
+    afterEach(() => {
+      cleanup();
+    });
+
+    it("should provide accessible aria-labels for the command prompt input and execute button via RTL queries", () => {
+      render(<SandboxTerminal />);
+      expect(
+        screen.getByRole("textbox", { name: "Terminal command prompt" })
+      ).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "Execute command" })
+      ).toBeTruthy();
+    });
   });
 });

@@ -52,13 +52,16 @@ function assertValidInputs(
 }
 
 /**
- * The earliest exposure start date in the collected records, which Trial
- * Summary records as the study start (SSTDTC). Partial or invalid dates are
- * ignored, so the result is always a full ISO 8601 date or null.
+ * The earliest informed consent date in the collected DM, which Trial Summary
+ * records as the study start (SSTDTC, #3864). FDA's Study Data Technical
+ * Conformance Guide defines the study start date as the earliest consent
+ * date, and CORE-002115 compares SSTDTC with the earliest DM.RFICDTC, which is
+ * this date. Partial or invalid dates are ignored, so the result is always a
+ * full ISO 8601 date or null.
  */
-function firstExposureDate(collected: readonly Dataset[]): string | null {
-  const exposure = collected.find((dataset) => dataset.name === "EX");
-  const dates = (exposure?.columns.EXSTDTC ?? []).filter(
+function firstConsentDate(collected: readonly Dataset[]): string | null {
+  const dm = collected.find((dataset) => dataset.name === "DM");
+  const dates = (dm?.columns.CONSENTDTC ?? []).filter(
     (value): value is string =>
       typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
   );
@@ -90,7 +93,7 @@ export function runPipeline(
   const trialDesign = deriveTrialDesign(
     definition,
     STANDARD_VERSIONS,
-    firstExposureDate(collected)
+    firstConsentDate(collected)
   );
   const sdtmDatasets = [
     ...collected,

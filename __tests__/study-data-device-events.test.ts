@@ -167,7 +167,7 @@ describe("a study with no CE activity", () => {
     });
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("994bf62480d9eb41f62b17719c84b59ee84cf00ce6034fb6d3d119b4b3428bb6");
+    ).toBe("fe5f61509a856644cc7be5cb7158a69c6c9122f4ec70cd97451faac14b486a06");
     expect(datasets.some((dataset) => dataset.name === "CE")).toBe(false);
   });
 });

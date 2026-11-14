@@ -75,17 +75,25 @@ describe("USDM-derived trial design", () => {
     expect(codes).not.toContain("ADAMIGVER");
   });
 
-  it("records the planned treatment and the study start date in TS (#3718)", () => {
+  it("records the planned treatment and the study start date in TS (#3718, #3864)", () => {
     const ts = trial().find((dataset) => dataset.name === "TS")!;
     const codes = ts.columns.TSPARMCD as string[];
     const value = (code: string) => ts.columns.TSVAL[codes.indexOf(code)];
     expect(value("TRT")).toBe("Demoxacin");
-    expect(value("SSTDTC")).toBe(
-      runPipeline(DEMO_301_STUDY, options)
-        .datasets.find((dataset) => dataset.name === "EX")!
-        .columns.EXSTDTC.filter((date) => typeof date === "string")
-        .sort()[0]
-    );
+    // FDA's study start date is the earliest informed consent (#3864), the
+    // date CORE-002115 compares SSTDTC with.
+    const consent = runPipeline(DEMO_301_STUDY, options)
+      .datasets.find(
+        (dataset) => dataset.name === "DM" && dataset.layer === "sdtm"
+      )!
+      .columns.RFICDTC.filter((date) => typeof date === "string")
+      .sort();
+    expect(value("SSTDTC")).toBe(consent[0]);
+    const exposure = runPipeline(DEMO_301_STUDY, options)
+      .datasets.find((dataset) => dataset.name === "EX")!
+      .columns.EXSTDTC.filter((date) => typeof date === "string")
+      .sort();
+    expect(consent[0] < exposure[0]).toBe(true);
   });
 
   it("leaves out TRT when the study names no experimental intervention", () => {

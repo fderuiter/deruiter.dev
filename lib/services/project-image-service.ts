@@ -9,6 +9,8 @@ import {
 import { logger } from "@/lib/logger";
 import { sanitizeError } from "@/lib/error-sanitization";
 import { generateId } from "@/lib/utils";
+import { getEnv } from "@/lib/env";
+import { resolveBaseUrl } from "@/lib/domain";
 import {
   getMediaStorageProvider,
   type MediaAssetRecord,
@@ -219,19 +221,103 @@ export function getExtensionForMimeType(mimeType: string): string {
   }
 }
 
+/** Hostname suffix shared by every Vercel Blob store. */
+const VERCEL_BLOB_HOST_SUFFIX = ".public.blob.vercel-storage.com";
+
+/** The API host that `VercelBlobStorageProvider.getUrl` builds URLs on. */
+const VERCEL_BLOB_API_HOST = "blob.vercel-storage.com";
+
+/** A Vercel Blob store id as it appears in a store's hostname label. */
+const BLOB_STORE_ID_PATTERN = /^[a-z0-9]+$/;
+
 /**
- * Extracts the storage key from a media asset URL or path.
+ * What a media URL is checked against before it is treated as an asset this
+ * site owns and may delete.
+ */
+export interface MediaOwnership {
+  /**
+   * The origin the site serves `/api/media/` from. An absolute media URL on
+   * any other origin is not ours, whatever its path says.
+   */
+  siteOrigin: string;
+  /**
+   * The id of the Vercel Blob store this deployment writes to, or `null` when
+   * no store is configured. Without it no Blob URL counts as owned.
+   */
+  blobStoreId: string | null;
+}
+
+/**
+ * Reads the store id out of a Vercel Blob read-write token
+ * (`vercel_blob_rw_<storeId>_<secret>`). Returns `null` for anything else.
+ */
+export function blobStoreIdFromToken(
+  token: string | null | undefined
+): string | null {
+  if (!token) return null;
+  const parts = token.trim().split("_");
+  if (parts.length < 5 || parts[0] !== "vercel" || parts[1] !== "blob") {
+    return null;
+  }
+  const storeId = parts[3].toLowerCase();
+  return BLOB_STORE_ID_PATTERN.test(storeId) ? storeId : null;
+}
+
+function resolveMediaOwnership(): MediaOwnership {
+  return {
+    siteOrigin: new URL(resolveBaseUrl()).origin,
+    blobStoreId: blobStoreIdFromToken(getEnv().BLOB_READ_WRITE_TOKEN),
+  };
+}
+
+/**
+ * Returns the key in a `/api/media/<key>` path, or `null` when the key is
+ * empty or would leave the flat media directory.
+ */
+function mediaKeyFromApiPath(pathname: string): string | null {
+  const key = pathname.slice("/api/media/".length).trim();
+  if (!key || key.includes("/") || key.includes("\\") || key === "..") {
+    return null;
+  }
+  return key;
+}
+
+/**
+ * Whether a parsed URL is a Vercel Blob URL in this deployment's own store.
+ *
+ * The check is exact: HTTPS, no credentials, no port, and either the Blob
+ * API host or `<storeId>.public.blob.vercel-storage.com` for our store id.
+ * A lookalike such as `blob.vercel-storage.com.evil.example`, or another
+ * team's store on the same suffix, is not ours.
+ */
+function isOwnedBlobUrl(parsed: URL, blobStoreId: string | null): boolean {
+  if (!blobStoreId) return false;
+  if (parsed.protocol !== "https:") return false;
+  if (parsed.username || parsed.password || parsed.port) return false;
+  const host = parsed.hostname.toLowerCase();
+  if (host === VERCEL_BLOB_API_HOST) return parsed.pathname.length > 1;
+  return host === `${blobStoreId}${VERCEL_BLOB_HOST_SUFFIX}`;
+}
+
+/**
+ * Extracts the storage key from a media asset URL or path, but only for an
+ * asset this site owns. Cleanup deletes whatever key this returns, so an
+ * external, lookalike or unparseable URL returns `null` (CodeQL alert 36).
+ *
+ * @param url - The stored asset URL or path.
+ * @param ownership - Overrides the site origin and Blob store id; defaults
+ *   to the values this deployment is configured with.
  */
 export function extractMediaKeyFromUrl(
-  url: string | null | undefined
+  url: string | null | undefined,
+  ownership: MediaOwnership = resolveMediaOwnership()
 ): string | null {
   if (!url || typeof url !== "string" || !url.trim()) return null;
   const trimmed = url.trim();
 
   // Local storage relative path: /api/media/<key>
   if (trimmed.startsWith("/api/media/")) {
-    const key = trimmed.slice("/api/media/".length).trim();
-    return key.length > 0 ? key : null;
+    return mediaKeyFromApiPath(trimmed);
   }
 
   // Relative paths not under /api/media/ are static public assets, not managed media keys
@@ -239,18 +325,9 @@ export function extractMediaKeyFromUrl(
     return null;
   }
 
+  let parsed: URL;
   try {
-    const parsed = new URL(trimmed);
-    if (parsed.pathname.startsWith("/api/media/")) {
-      const key = parsed.pathname.slice("/api/media/".length).trim();
-      return key.length > 0 ? key : null;
-    }
-    // Vercel Blob cloud storage URL
-    if (parsed.hostname.includes("blob.vercel-storage.com")) {
-      return trimmed;
-    }
-    // External URLs (e.g. Unsplash, GitHub, third-party CDN) are not managed media assets
-    return null;
+    parsed = new URL(trimmed);
   } catch {
     // Non-URL strings: allow bare keys without path separators or schemes
     if (
@@ -262,6 +339,23 @@ export function extractMediaKeyFromUrl(
     }
     return null;
   }
+
+  if (parsed.username || parsed.password) return null;
+
+  // An absolute /api/media/ URL is ours only on our own origin.
+  if (parsed.pathname.startsWith("/api/media/")) {
+    if (parsed.origin !== ownership.siteOrigin) return null;
+    if (parsed.search || parsed.hash) return null;
+    return mediaKeyFromApiPath(parsed.pathname);
+  }
+
+  // Vercel Blob: the provider deletes by URL, so the URL is the key.
+  if (isOwnedBlobUrl(parsed, ownership.blobStoreId)) {
+    return trimmed;
+  }
+
+  // External URLs (e.g. Unsplash, GitHub, third-party CDN) are not managed media assets
+  return null;
 }
 
 /**
@@ -285,8 +379,11 @@ export class ProjectImageService {
   /**
    * Extracts the storage key from a media asset URL or path.
    */
-  static extractMediaKeyFromUrl(url: string | null | undefined): string | null {
-    return extractMediaKeyFromUrl(url);
+  static extractMediaKeyFromUrl(
+    url: string | null | undefined,
+    ownership?: MediaOwnership
+  ): string | null {
+    return extractMediaKeyFromUrl(url, ownership);
   }
 
   /**

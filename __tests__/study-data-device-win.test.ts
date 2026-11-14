@@ -324,7 +324,7 @@ describe("DEMO-301", () => {
         .digest("hex");
     // Regenerated after #3019 corrected the randomized subjects' eligibility.
     expect(hash(run)).toBe(
-      "1b000a1f2293ff018442b5d5b12f5870bd607585d30aa5a8274d9797adfb398d"
+      "428489ed8cf110355b7bd2a94057c51355964e22967c2f6ea91529f39212bb9e"
     );
     expect(hash(tlf)).toBe(
       "72c657df75694fa900f3068b0134116156f2ff94ad777fdcff62fc94082be603"

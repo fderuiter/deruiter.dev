@@ -74,6 +74,8 @@ export function blogHeroImageUrlIssue(value: string): string | null {
 const blogDraftHeroImageUrl = z
   .string()
   .trim()
+  .url("Hero image URL must be a valid URL.")
+  .max(2048, "Hero image URL cannot exceed 2048 characters.")
   .superRefine((value, ctx) => {
     const issue = blogHeroImageUrlIssue(value);
     if (issue) ctx.addIssue({ code: "custom", message: issue });

@@ -87,6 +87,15 @@ interface BlogAuthoringFormProps {
   isNew?: boolean;
 }
 
+/**
+ * Rebuilds a validated hero URL behind a fixed `https://` prefix, so the
+ * preview `src` can never carry another scheme.
+ */
+function httpsPreviewSrc(value: string): string {
+  const parsed = new URL(value);
+  return `https://${parsed.host}${parsed.pathname}${parsed.search}`;
+}
+
 export function BlogAuthoringForm({
   initialData,
   isNew = false,
@@ -129,7 +138,7 @@ export function BlogAuthoringForm({
     ? blogHeroImageUrlIssue(heroImageInput)
     : null;
   const heroPreviewUrl =
-    heroImageInput && !heroImageIssue ? heroImageInput : null;
+    heroImageInput && !heroImageIssue ? httpsPreviewSrc(heroImageInput) : null;
 
   const showPreview = () => {
     setActiveTab("preview");

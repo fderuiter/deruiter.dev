@@ -81,4 +81,9 @@ describe("SandboxTerminal Accessibility Implementations", () => {
     expect(content).toContain('aria-label="Copy JSON payload"');
     expect(content).toContain("JSON.stringify(log.jsonPayload, null, 2)");
   });
+
+  it("should provide accessible aria-labels for the command prompt input and execute button", () => {
+    expect(content).toContain('aria-label="Terminal command prompt"');
+    expect(content).toContain('aria-label="Execute command"');
+  });
 });

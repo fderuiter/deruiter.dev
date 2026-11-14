@@ -1504,6 +1504,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             onKeyDown={handleKeyDown}
             disabled={isExecuting || isTyping}
             placeholder="Type 'help' or execute dynamic clinical queries..."
+            aria-label="Terminal command prompt"
             className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[11px] text-zinc-100 placeholder-zinc-700 caret-brand-cyan select-text"
             autoCapitalize="off"
             autoComplete="off"
@@ -1515,6 +1516,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             disabled={isExecuting || isTyping || !input.trim()}
             className="p-1.5 text-zinc-600 hover:text-brand-cyan hover:bg-brand-cyan/10 active:scale-90 disabled:text-zinc-800 disabled:hover:text-zinc-800 disabled:hover:bg-transparent transition-all rounded-lg cursor-pointer focus:outline-none focus:text-brand-cyan focus:ring-2 focus:ring-brand-cyan/50 focus:ring-offset-1 focus:ring-offset-zinc-950 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
             title="Execute Command (Enter)"
+            aria-label="Execute command"
           >
             <IconCornerDownLeft className="w-4 h-4" />
           </button>

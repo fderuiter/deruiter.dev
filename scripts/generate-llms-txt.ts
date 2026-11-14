@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { JSDOM } from "jsdom";
 import { ROUTE_METADATA_CONFIGS } from "../lib/seo-metadata";
 import { FALLBACK_CASE_STUDIES } from "../lib/case-studies-data";
 import { isNavGroupActive, PRIMARY_NAV } from "../lib/navigation";
@@ -29,19 +30,78 @@ export interface LlmsManifests {
   full: string;
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&rsquo;/g, "'")
+const TEXT_NODE = 3;
+const ELEMENT_NODE = 1;
+
+/** Elements whose text is never prose: skipped whole, children included. */
+const SKIPPED_ELEMENTS = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT"]);
+
+/** Elements that end a paragraph or line in the extracted text. */
+const BLOCK_ELEMENTS = new Set([
+  "ADDRESS",
+  "ARTICLE",
+  "ASIDE",
+  "BLOCKQUOTE",
+  "BR",
+  "DD",
+  "DIV",
+  "DL",
+  "DT",
+  "FIGCAPTION",
+  "FIGURE",
+  "FOOTER",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "HEADER",
+  "HR",
+  "LI",
+  "OL",
+  "P",
+  "PRE",
+  "SECTION",
+  "TABLE",
+  "TR",
+  "UL",
+]);
+
+/**
+ * Extracts the visible text of an HTML fragment for the plain-text manifests.
+ *
+ * The fragment is parsed by an HTML parser (jsdom) rather than cleaned with
+ * regular expressions (CodeQL alert 25): script, style, template and
+ * noscript bodies are dropped as elements, malformed or nested tag-like
+ * strings are handled the way a browser would, and block elements end a
+ * line. Entities are decoded exactly once, by the parser, so `&amp;lt;`
+ * stays the visible text `&lt;` (CodeQL alert 16).
+ */
+export function stripHtml(html: string): string {
+  const fragment = JSDOM.fragment(html);
+  const parts: string[] = [];
+  const visit = (node: Node): void => {
+    if (node.nodeType === TEXT_NODE) {
+      parts.push(node.textContent ?? "");
+      return;
+    }
+    if (node.nodeType !== ELEMENT_NODE) return;
+    const tag = (node as Element).tagName.toUpperCase();
+    if (SKIPPED_ELEMENTS.has(tag)) return;
+    const block = BLOCK_ELEMENTS.has(tag);
+    if (block) parts.push("\n");
+    node.childNodes.forEach(visit);
+    if (block) parts.push("\n");
+  };
+  fragment.childNodes.forEach(visit);
+  return parts
+    .join("")
+    .replace(/\u00a0/g, " ")
+    .replace(/\u2019/g, "'")
     .replace(/[ \t]+/g, " ")
-    .replace(/\n\s*\n+/g, "\n\n")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 

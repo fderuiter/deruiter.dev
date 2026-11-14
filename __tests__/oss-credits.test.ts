@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -31,7 +31,12 @@ import {
   renderOutputs,
   serializeFacts,
 } from "../scripts/oss-credits";
-import { TarPicker, parseResolvedUrl } from "../scripts/oss-credits-fetch";
+import {
+  TarPicker,
+  fetchVersionDocument,
+  parseResolvedUrl,
+  versionDocumentUrl,
+} from "../scripts/oss-credits-fetch";
 
 const ROOT = path.resolve(__dirname, "..");
 const readJson = <T>(rel: string): T =>
@@ -619,5 +624,69 @@ describe("committed credits match the repository", () => {
         expect(text).not.toMatch(/<(year|owner|copyright holders?)>/i);
       }
     }
+  });
+});
+
+// CodeQL alert 12: the version document URL is built from lockfile strings.
+describe("versionDocumentUrl", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    ["react", "19.2.0", "https://registry.npmjs.org/react/19.2.0"],
+    [
+      "@types/node",
+      "25.0.1",
+      "https://registry.npmjs.org/@types%2Fnode/25.0.1",
+    ],
+    ["JSONStream", "1.3.5", "https://registry.npmjs.org/JSONStream/1.3.5"],
+    ["lodash.merge", "4.6.2", "https://registry.npmjs.org/lodash.merge/4.6.2"],
+    [
+      "next",
+      "16.0.0-canary.12",
+      "https://registry.npmjs.org/next/16.0.0-canary.12",
+    ],
+    ["pkg", "1.0.0+build.7", "https://registry.npmjs.org/pkg/1.0.0%2Bbuild.7"],
+  ])("targets the version document of %s@%s", (name, version, url) => {
+    expect(versionDocumentUrl(name, version)).toBe(url);
+  });
+
+  it.each([
+    ["a/b/c", "1.0.0"],
+    ["@scope/a/b", "1.0.0"],
+    ["@/pkg", "1.0.0"],
+    ["..", "1.0.0"],
+    ["@scope/..", "1.0.0"],
+    ["foo?x=1", "1.0.0"],
+    ["foo#frag", "1.0.0"],
+    ["foo%2Fbar", "1.0.0"],
+    ["", "1.0.0"],
+    ["foo", "1.0.0/../../evil"],
+    ["foo", "1.0.0?x=1"],
+    ["foo", "1.0.0#frag"],
+    ["foo", "1.0.0%2F"],
+    ["foo", ""],
+  ])("refuses %j at %j", (name, version) => {
+    expect(() => versionDocumentUrl(name, version)).toThrow(/not an npm/);
+  });
+
+  it("fetches exactly the encoded URL and never fetches a refused one", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ license: "MIT" }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      fetchVersionDocument("@types/node", "25.0.1")
+    ).resolves.toEqual({ license: "MIT" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://registry.npmjs.org/@types%2Fnode/25.0.1"
+    );
+
+    await expect(fetchVersionDocument("foo", "1.0.0?x=1")).rejects.toThrow(
+      /not an npm version/
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

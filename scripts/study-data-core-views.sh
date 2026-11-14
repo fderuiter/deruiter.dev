@@ -53,16 +53,28 @@ sdtm() {
   local paths=()
   while IFS= read -r file; do paths+=(-dp "$file"); done \
     < <(find "$sdtm_dir" -maxdepth 1 -name '*.json' | LC_ALL=C sort)
-  if core validate -s sdtmig -v 3-4 -ft json \
-    "${paths[@]}" -dxp "$sdtm_dir/define.xml" \
-    -o "$reports/$view/sdtm" -of json -p disabled \
-    > "$reports/$view/sdtm.log" 2>&1; then
-    echo "CORE SDTMIG 3.4: $view done"
-  else
-    echo "::error::CORE failed on the $view view; see $reports/$view/sdtm.log"
-    cat "$reports/$view/sdtm.log" >&2
-    return 1
-  fi
+  # CORE v1.0.0 keeps one cache in a multiprocessing manager, and its
+  # LRUCache is not thread-safe, so a rule now and then fails with
+  # "OrderedDict mutated during iteration". That is the engine, not the
+  # data, so run the view again (#3869). Three tries, then fail loudly.
+  local attempt
+  for attempt in 1 2 3; do
+    if ! core validate -s sdtmig -v 3-4 -ft json \
+      "${paths[@]}" -dxp "$sdtm_dir/define.xml" \
+      -o "$reports/$view/sdtm" -of json -p disabled \
+      > "$reports/$view/sdtm.log" 2>&1; then
+      echo "::error::CORE failed on the $view view; see $reports/$view/sdtm.log"
+      cat "$reports/$view/sdtm.log" >&2
+      return 1
+    fi
+    if ! grep -q 'mutated during iteration' "$reports/$view/sdtm.json"; then
+      echo "CORE SDTMIG 3.4: $view done"
+      return 0
+    fi
+    echo "CORE SDTMIG 3.4: $view hit the engine's cache race (try $attempt of 3)"
+  done
+  echo "::error::CORE hit its cache race on the $view view three times (#3869)."
+  return 1
 }
 export -f sdtm
 

@@ -3293,7 +3293,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 onClick={openWardrobe}
                 className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
                 title="Wardrobe"
-                aria-label="Wardrobe"
               >
                 <IconShirt className="w-4 h-4" />
               </button>
@@ -3302,7 +3301,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 onClick={openScrapbook}
                 className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
                 title="Scrapbook"
-                aria-label="Scrapbook"
               >
                 <IconBook className="w-4 h-4" />
               </button>
@@ -3625,7 +3623,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   onClick={openWardrobe}
                   className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
                   title="Duck Wardrobe & Accessories"
-                  aria-label="Duck Wardrobe & Accessories"
                 >
                   <IconShirt className="w-4 h-4" />
                 </button>
@@ -3634,7 +3631,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   onClick={openScrapbook}
                   className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
                   title="Duck Scrapbook & Facts"
-                  aria-label="Duck Scrapbook & Facts"
                 >
                   <IconBook className="w-4 h-4" />
                 </button>

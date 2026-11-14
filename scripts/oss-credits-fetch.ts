@@ -165,11 +165,40 @@ async function withRetry<T>(label: string, run: () => Promise<T>): Promise<T> {
   );
 }
 
+/** One npm name segment: a scope or a bare package name, never `.` or `..`. */
+const NPM_NAME_SEGMENT = /^(?!\.{1,2}$)[A-Za-z0-9._~-]+$/;
+/** A semver version, including prerelease and build metadata. */
+const NPM_VERSION = /^[0-9A-Za-z][0-9A-Za-z.+-]*$/;
+
+/**
+ * Build the registry URL of one version document, such as
+ * `https://registry.npmjs.org/@scope%2Fpkg/1.0.0`.
+ *
+ * The name and version come from the lockfile, so they are checked against
+ * the forms npm publishes and each path segment is percent-encoded. A `/`,
+ * `?`, `#` or `%` can then never add a path segment, a query or a fragment
+ * (CodeQL alert 12). Anything else throws.
+ */
+export function versionDocumentUrl(name: string, version: string): string {
+  const scoped = /^@([^/]+)\/([^/]+)$/.exec(name);
+  const segments = scoped ? [scoped[1], scoped[2]] : [name];
+  if (!segments.every((segment) => NPM_NAME_SEGMENT.test(segment))) {
+    throw new Error(`not an npm package name: ${JSON.stringify(name)}`);
+  }
+  if (!NPM_VERSION.test(version)) {
+    throw new Error(`not an npm version: ${JSON.stringify(version)}`);
+  }
+  const encodedName = scoped
+    ? `@${encodeURIComponent(segments[0])}%2F${encodeURIComponent(segments[1])}`
+    : encodeURIComponent(name);
+  return `https://${REGISTRY_HOST}/${encodedName}/${encodeURIComponent(version)}`;
+}
+
 export async function fetchVersionDocument(
   name: string,
   version: string
 ): Promise<VersionDocument> {
-  const url = `https://${REGISTRY_HOST}/${name.replace("/", "%2F")}/${version}`;
+  const url = versionDocumentUrl(name, version);
   return withRetry(url, async () => {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);

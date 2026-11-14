@@ -17,6 +17,7 @@ import {
   checkPublicRouteRegistryDrift,
   checkTechnicalGuideSchemaParity,
   checkLlmsManifestsDrift,
+  checkDocumentationIndexParity,
 } from "../lib/dx/doctor";
 
 interface DetailCheckResult {
@@ -39,6 +40,8 @@ export interface DriftCheckDependencies {
   checkPublicRoutes: () => DetailCheckResult;
   checkTechnicalGuides?: () => DetailCheckResult;
   checkLlmsManifests?: () => DetailCheckResult;
+  checkDocumentationIndex?: () => DetailCheckResult;
+  checkDocumentationIndexParity?: () => DetailCheckResult;
 }
 
 function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
@@ -59,6 +62,7 @@ function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
     checkPublicRoutes: () => checkPublicRouteRegistryDrift(workspaceRoot),
     checkTechnicalGuides: () => checkTechnicalGuideSchemaParity(workspaceRoot),
     checkLlmsManifests: () => checkLlmsManifestsDrift(workspaceRoot),
+    checkDocumentationIndex: () => checkDocumentationIndexParity(workspaceRoot),
   };
 }
 
@@ -71,7 +75,8 @@ export type DriftCategory =
   | "markdown-links"
   | "public-routes"
   | "schema-parity"
-  | "llms-manifests";
+  | "llms-manifests"
+  | "docs-index-parity";
 
 const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
   openapi: {
@@ -112,6 +117,14 @@ const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
     steps: [
       "npm run generate:llms",
       "git add public/llms.txt public/llms-full.txt",
+    ],
+  },
+  "docs-index-parity": {
+    title:
+      "Documentation index parity drift (committed markdown guides without inbound index links)",
+    steps: [
+      "# Add inbound links to unindexed guides in docs/README.md or quadrant index files",
+      "npm run check-docs-drift",
     ],
   },
 };
@@ -273,6 +286,24 @@ export function checkDrift(
     driftSummary +=
       "• LLM discovery manifest drift detected:\n" +
       (llmsManifestsResult.details || [])
+        .map((detail) => `  - ${detail}`)
+        .join("\n") +
+      "\n";
+  }
+
+  console.log("Checking documentation index parity...");
+  const checkDocsIndexFn =
+    dependencies.checkDocumentationIndexParity ??
+    dependencies.checkDocumentationIndex;
+  const docsIndexResult = checkDocsIndexFn
+    ? checkDocsIndexFn()
+    : { status: "pass" as const };
+  if (docsIndexResult.status === "fail") {
+    docsDrift = true;
+    categories.push("docs-index-parity");
+    driftSummary +=
+      "• Documentation index parity drift detected:\n" +
+      (docsIndexResult.details || [])
         .map((detail) => `  - ${detail}`)
         .join("\n") +
       "\n";

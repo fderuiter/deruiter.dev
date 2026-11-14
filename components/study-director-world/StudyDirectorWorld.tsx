@@ -28,7 +28,7 @@ import { currentGoal } from "./stage-model";
 import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
-import { useReducedMotion } from "./use-reduced-motion";
+import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import { ConditionsPicker, LengthPicker, WorldIntro } from "./WorldIntro";
 import { WorldTouchControls } from "./WorldTouchControls";
 import {
@@ -69,7 +69,7 @@ export const StudyDirectorWorld: React.FC<{
   /** Called once when a new run leaves its untouched first morning (#2191). */
   onStart?: () => void;
 }> = ({ onExit, onCloseout, onStart }) => {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = usePrefersReducedMotion();
   // The immersive touch cabinet (ADR 0061, #2076) lays the office out to fit
   // its stage; desktop markup is untouched.
   const touch = useCabinetTouch();

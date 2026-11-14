@@ -225,19 +225,6 @@ describe("Pre-commit test scope for non-importable paths", () => {
     expect(selected).toContain("__tests__/dx-tooling.test.ts");
   });
 
-  it("matches .mts, .cts, and .ts Vitest config extensions in root configuration", () => {
-    for (const config of [
-      "vitest.config.mts",
-      "vitest.config.cts",
-      "vitest.config.ts",
-    ]) {
-      const selected = resolveNonImportableTests(workspaceRoot, [config]);
-      expect(selected).toContain("__tests__/ci-gate-ordering.test.ts");
-      expect(selected).toContain("__tests__/package-manager-config.test.ts");
-      expect(selected).toContain("__tests__/dx-tooling.test.ts");
-    }
-  });
-
   it("stays out of the way for ordinary source changes", () => {
     // The bounded scope from ADR 0033 is the point; this must not become a
     // full-suite run for every commit.

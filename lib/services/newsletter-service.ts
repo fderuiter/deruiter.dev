@@ -101,21 +101,28 @@ export type NewsletterDispatchResult = ServiceResult<
 /**
  * Diagnostic record classifying legacy `queueId: null` delivery rows into
  * intentional skips (suppressed) and orphaned claims (#3801 Step 3).
+ *
+ * Privacy note: Contains entity IDs only and omits subscriber email addresses.
  */
+export interface NullQueueDeliveriesAuditOptions {
+  page?: number;
+  pageSize?: number;
+}
+
 export interface NullQueueDeliveriesAudit {
   totalNullQueue: number;
+  page: number;
+  pageSize: number;
   intentionalSkips: Array<{
     deliveryId: string;
     dispatchId: string;
     subscriberId: string;
-    email: string;
     suppressionReason?: string;
   }>;
   orphanedClaims: Array<{
     deliveryId: string;
     dispatchId: string;
     subscriberId: string;
-    email: string;
   }>;
 }
 
@@ -548,32 +555,56 @@ export class NewsletterService {
    * but before enqueueing left an orphaned claim (`queueId: null`) that was indistinguishable from
    * an intentional skip (suppressed address).
    *
-   * This read-only query inspects all `queueId: null` deliveries, joins the subscriber, and checks
+   * This read-only query inspects `queueId: null` deliveries, joins the subscriber, and checks
    * the `SuppressionList`:
    * - Intentional skips: The subscriber's email exists in the suppression list (bounced, complaint,
    *   or unsubscribed).
    * - Orphaned claims: The subscriber's email is NOT suppressed, meaning the claim was created during
    *   a failed non-transactional run and never had an outbound email queued.
    *
+   * Privacy and paging:
+   * - Queries are paged to avoid unbounded memory pressure on large tables.
+   * - Results contain entity IDs only (`deliveryId`, `dispatchId`, `subscriberId`) and omit raw
+   *   subscriber email addresses to prevent PII leakage through diagnostic surfaces.
+   *
+   * Note on temporal classification:
+   * - This audit classifies rows against today's `SuppressionList` state. An address that was
+   *   suppressed after the dispatch run occurred will be categorized as an intentional skip even
+   *   if it was originally an orphaned claim at the time of dispatch.
+   *
    * Purely read-only: does not modify or requeue records.
    */
-  static async auditNullQueueDeliveries(): Promise<
-    ServiceResult<NullQueueDeliveriesAudit>
-  > {
+  static async auditNullQueueDeliveries(
+    options: NullQueueDeliveriesAuditOptions = {}
+  ): Promise<NullQueueAuditResult> {
     try {
-      const nullDeliveries = await prisma.newsletterDelivery.findMany({
-        where: { queueId: null },
-        include: {
-          subscriber: true,
-        },
-      });
+      const page = clamp(options.page ?? 1, 1, Number.MAX_SAFE_INTEGER);
+      const pageSize = clamp(options.pageSize ?? 100, 1, 500);
+      const skip = (page - 1) * pageSize;
+
+      const [nullDeliveries, totalNullQueue] = await Promise.all([
+        prisma.newsletterDelivery.findMany({
+          where: { queueId: null },
+          include: {
+            subscriber: true,
+          },
+          orderBy: { createdAt: "asc" },
+          skip,
+          take: pageSize,
+        }),
+        prisma.newsletterDelivery.count({
+          where: { queueId: null },
+        }),
+      ]);
 
       const intentionalSkips: NullQueueDeliveriesAudit["intentionalSkips"] = [];
       const orphanedClaims: NullQueueDeliveriesAudit["orphanedClaims"] = [];
 
       if (nullDeliveries.length === 0) {
         return createSuccess({
-          totalNullQueue: 0,
+          totalNullQueue,
+          page,
+          pageSize,
           intentionalSkips,
           orphanedClaims,
         });
@@ -599,7 +630,6 @@ export class NewsletterService {
             deliveryId: delivery.id,
             dispatchId: delivery.dispatchId,
             subscriberId: delivery.subscriberId,
-            email: delivery.subscriber.email,
             suppressionReason: reason,
           });
         } else {
@@ -607,13 +637,14 @@ export class NewsletterService {
             deliveryId: delivery.id,
             dispatchId: delivery.dispatchId,
             subscriberId: delivery.subscriberId,
-            email: delivery.subscriber.email,
           });
         }
       }
 
       return createSuccess({
-        totalNullQueue: nullDeliveries.length,
+        totalNullQueue,
+        page,
+        pageSize,
         intentionalSkips,
         orphanedClaims,
       });

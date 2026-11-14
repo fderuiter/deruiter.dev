@@ -23,6 +23,7 @@ interface Delivery {
   dispatchId: string;
   subscriberId: string;
   queueId: string | null;
+  createdAt?: Date;
 }
 interface QueueRow {
   id: string;
@@ -216,7 +217,12 @@ vi.mock("@/lib/db", () => {
               (err as unknown as { code: string }).code = "P2002";
               throw err;
             }
-            const row = { id: id("dlv"), queueId: null, ...data };
+            const row = {
+              id: id("dlv"),
+              queueId: null,
+              createdAt: new Date(),
+              ...data,
+            };
             db.deliveries.push(row);
             return row;
           }
@@ -242,7 +248,12 @@ vi.mock("@/lib/db", () => {
                 throw err;
               }
               if (!exists) {
-                db.deliveries.push({ id: id("dlv"), queueId: null, ...item });
+                db.deliveries.push({
+                  id: id("dlv"),
+                  queueId: null,
+                  createdAt: new Date(),
+                  ...item,
+                });
                 count++;
               }
             }
@@ -269,12 +280,16 @@ vi.mock("@/lib/db", () => {
           async ({
             where,
             include,
+            skip,
+            take,
           }: {
             where?: {
               subscriberId?: string;
               queueId?: null | string | { not: null };
             };
             include?: { subscriber?: boolean };
+            skip?: number;
+            take?: number;
           } = {}) => {
             let res = db.deliveries;
             if (where?.subscriberId) {
@@ -293,6 +308,12 @@ vi.mock("@/lib/db", () => {
             } else if (where?.subscriberId) {
               res = res.filter((d) => d.queueId !== null);
             }
+            if (skip) {
+              res = res.slice(skip);
+            }
+            if (take !== undefined) {
+              res = res.slice(0, take);
+            }
             if (include?.subscriber) {
               return res.map((d) => ({
                 ...d,
@@ -302,6 +323,27 @@ vi.mock("@/lib/db", () => {
               }));
             }
             return res;
+          }
+        ),
+        count: vi.fn(
+          async ({
+            where,
+          }: {
+            where?: { queueId?: null | string | { not: null } };
+          } = {}) => {
+            let res = db.deliveries;
+            if (where && "queueId" in where) {
+              if (
+                where.queueId !== null &&
+                typeof where.queueId === "object" &&
+                "not" in where.queueId
+              ) {
+                res = res.filter((d) => d.queueId !== null);
+              } else {
+                res = res.filter((d) => d.queueId === where.queueId);
+              }
+            }
+            return res.length;
           }
         ),
       },
@@ -985,19 +1027,37 @@ describe("NewsletterService (#841)", () => {
         expect(audit.success).toBe(true);
         if (audit.success) {
           expect(audit.data.totalNullQueue).toBe(2);
+          expect(audit.data.page).toBe(1);
+          expect(audit.data.pageSize).toBe(100);
           expect(audit.data.intentionalSkips).toHaveLength(1);
-          expect(audit.data.intentionalSkips[0]).toMatchObject({
+          expect(audit.data.intentionalSkips[0]).toEqual({
             deliveryId: "dlv_skip",
+            dispatchId: dsp.id,
             subscriberId: subSkipped.id,
-            email: "suppressed@example.com",
             suppressionReason: "BOUNCE",
           });
           expect(audit.data.orphanedClaims).toHaveLength(1);
-          expect(audit.data.orphanedClaims[0]).toMatchObject({
+          expect(audit.data.orphanedClaims[0]).toEqual({
             deliveryId: "dlv_orphan",
+            dispatchId: dsp.id,
             subscriberId: subOrphan.id,
-            email: "orphan@example.com",
           });
+        }
+
+        // Paged invocation: supports take/skip bounds
+        const pagedAudit = await NewsletterService.auditNullQueueDeliveries({
+          page: 2,
+          pageSize: 1,
+        });
+        expect(pagedAudit.success).toBe(true);
+        if (pagedAudit.success) {
+          expect(pagedAudit.data.totalNullQueue).toBe(2);
+          expect(pagedAudit.data.page).toBe(2);
+          expect(pagedAudit.data.pageSize).toBe(1);
+          expect(
+            pagedAudit.data.intentionalSkips.length +
+              pagedAudit.data.orphanedClaims.length
+          ).toBe(1);
         }
 
         // Database remains unmutated

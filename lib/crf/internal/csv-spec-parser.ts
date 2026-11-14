@@ -25,16 +25,25 @@ function stripBom(text: string): string {
   return text;
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  "&nbsp;": " ",
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&#039;": "'",
+  "&apos;": "'",
+  "&#x27;": "'",
+};
+
 function stripHtmlAndEntities(html: string): string {
   if (!html) return "";
   return html
     .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
+    .replace(/&(?:nbsp|amp|lt|gt|quot|apos|#0*39|#x27);/gi, (match) => {
+      return HTML_ENTITIES[match.toLowerCase()] ?? match;
+    })
     .replace(/\s+/g, " ")
     .trim();
 }

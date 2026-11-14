@@ -227,5 +227,26 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
       );
       expect(parsed.forms.length).toBe(2);
     });
+
+    it("safely decodes HTML entities without double-unescaping vulnerabilities", () => {
+      const entityCsv = `"Variable / Field Name","Form Name","Section Header","Field Type","Field Label","Choices, Calculations, OR Slider Labels","Field Note","Text Validation Type OR Show Slider Number","Text Validation Min","Text Validation Max","Identifier?","Branching Logic (Show field only if...)","Required?","Custom Alignment","Question Number (surveys only)","Matrix Group Name","Matrix Ranking?","Field Annotation"
+"test_html","safety","<h3>Safety &amp; Efficacy</h3>","text","Systolic &lt; 120 &amp; Diastolic &gt; 80","1, Option &amp; Choice | 2, Less &lt; More","Note with &amp;lt;script&amp;gt; tag","","","","","","y","","","","",""`;
+
+      const parsed = importStudyFromCsvSpec(entityCsv);
+      const form = parsed.forms.find((f) => f.name === "Safety");
+      expect(form).toBeDefined();
+
+      const section = form?.sections[0];
+      expect(section?.title).toBe("Safety & Efficacy");
+
+      const field = section?.fields[0];
+      expect(field?.label).toBe("Systolic < 120 & Diastolic > 80");
+      // Double unescaping prevention: &amp;lt;script&amp;gt; must decode to &lt;script&gt;, not <script>
+      expect(field?.description).toBe("Note with &lt;script&gt; tag");
+
+      // Verify custom choices
+      expect(field?.customOptions?.[0].label).toBe("Option & Choice");
+      expect(field?.customOptions?.[1].label).toBe("Less < More");
+    });
   });
 });

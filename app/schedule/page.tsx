@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { IntentLink } from "@/components/ui/IntentLink";
 import Image from "next/image";
 import {
@@ -17,6 +17,7 @@ import {
   IconCopy,
   IconWorld,
   IconSparkles,
+  IconX,
 } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
@@ -26,6 +27,7 @@ import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { SCHEDULE_FAQ } from "@/lib/faq-content";
 import { useClipboard } from "@/hooks/useClipboard";
+import { ModalContainer } from "@/components/ui/ModalContainer";
 
 const GOOGLE_CALENDAR_URL = "https://calendar.app.google/YnR5oxos7ZTLyvUp8";
 
@@ -142,6 +144,7 @@ export default function SchedulePage() {
   >({});
   const [selectedTimeZone, setSelectedTimeZone] =
     useState<string>(getInitialTimeZone);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const { copy, copied } = useClipboard({
     successMessage: "Agenda summary copied to clipboard!",
@@ -253,6 +256,15 @@ export default function SchedulePage() {
     selectedCategories,
     selectedTimeZone,
   ]);
+
+  const handleBookingClick = useCallback(() => {
+    copy(computedMessage);
+    setIsBookingModalOpen(true);
+  }, [copy, computedMessage]);
+
+  const closeBookingModal = useCallback(() => {
+    setIsBookingModalOpen(false);
+  }, []);
 
   return (
     <PageLayout
@@ -511,6 +523,7 @@ export default function SchedulePage() {
               href={bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleBookingClick}
               className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-accent text-zinc-950 font-mono font-bold text-sm hover:bg-white transition-all duration-300 hover:scale-105 cursor-pointer"
             >
               <span>Choose a Time</span>
@@ -617,6 +630,122 @@ export default function SchedulePage() {
           }}
         />
       </div>
+
+      {/* Booking Confirmation Dialog */}
+      <ModalContainer
+        isOpen={isBookingModalOpen}
+        onClose={closeBookingModal}
+        ariaLabel="Booking Confirmation"
+        titleId="booking-confirmation-title"
+        maxWidth="max-w-xl"
+        className="p-6 sm:p-8"
+      >
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+              <IconCalendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3
+                id="booking-confirmation-title"
+                className="text-lg font-mono font-bold text-white"
+              >
+                Booking Confirmation
+              </h3>
+              <p className="text-xs font-mono text-accent">
+                Agenda copied to clipboard
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={closeBookingModal}
+            aria-label="Close booking confirmation"
+            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+          >
+            <IconX className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4 text-left">
+          <p className="text-sm text-zinc-300 leading-relaxed font-sans">
+            Google Calendar appointment scheduling is opening in a new tab.
+            Because Google Calendar ignores custom parameters in appointment
+            URLs, your customized agenda has been automatically copied to your
+            clipboard.
+          </p>
+
+          <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold text-zinc-200">
+              <IconSparkles className="w-4 h-4 text-accent" />
+              <span>Next Step: Paste Your Agenda</span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+              Please paste (
+              <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono text-[11px]">
+                ⌘V
+              </kbd>{" "}
+              or{" "}
+              <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono text-[11px]">
+                Ctrl+V
+              </kbd>
+              ) the agenda into the{" "}
+              <strong className="text-zinc-200">Description</strong> or notes
+              field when completing your booking.
+            </p>
+          </div>
+
+          {/* Agenda Preview Box */}
+          <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 font-mono text-xs text-zinc-400 max-h-36 overflow-y-auto whitespace-pre-wrap select-all">
+            {computedMessage}
+          </div>
+
+          {/* Action buttons inside dialog: Fallback Copy & Direct Calendar Link */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => copy(computedMessage)}
+              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer border ${
+                copied
+                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-200 hover:text-white hover:border-accent/50 hover:bg-zinc-800"
+              }`}
+            >
+              {copied ? (
+                <>
+                  <IconCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Agenda Copied!</span>
+                </>
+              ) : (
+                <>
+                  <IconCopy className="w-4 h-4 text-accent" />
+                  <span>Copy Agenda Again</span>
+                </>
+              )}
+            </button>
+
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-zinc-950 font-mono font-bold text-xs hover:bg-white transition-all cursor-pointer"
+            >
+              <span>Open Google Calendar</span>
+              <IconExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-zinc-800/60 flex justify-end">
+          <button
+            type="button"
+            onClick={closeBookingModal}
+            className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition-colors cursor-pointer border border-zinc-800"
+          >
+            Got it, close
+          </button>
+        </div>
+      </ModalContainer>
     </PageLayout>
   );
 }

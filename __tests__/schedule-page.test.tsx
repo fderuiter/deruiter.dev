@@ -55,19 +55,75 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     expect(container?.textContent).toContain("Time Zone:");
   });
 
-  it("renders Google Calendar appointment booking button with context parameters", async () => {
+  it("renders Google Calendar appointment booking button with context parameters and handles automatic copy with confirmation dialog", async () => {
     await act(async () => {
       root?.render(<SchedulePage />);
     });
 
     const bookingBtn = container?.querySelector(
       'a[href^="https://calendar.app.google/YnR5oxos7ZTLyvUp8"]'
-    );
+    ) as HTMLAnchorElement | null;
     expect(bookingBtn).not.toBeNull();
     expect(bookingBtn?.textContent).toContain("Choose a Time");
     expect(bookingBtn?.getAttribute("href")).toContain("tz=");
     expect(container?.textContent).toContain("Find a time that works.");
     expect(container?.textContent).toContain("Google Meet");
+
+    // Modal initially not displayed
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
+
+    // Trigger booking action
+    await act(async () => {
+      bookingBtn?.click();
+    });
+
+    // Verify automatic clipboard copy was executed with the computed agenda
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("30-minute general chat")
+    );
+
+    // Verify confirmation dialog is displayed
+    const dialog = container?.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain("Booking Confirmation");
+    expect(dialog?.textContent).toContain("Agenda copied to clipboard");
+    expect(dialog?.textContent).toContain("Next Step: Paste Your Agenda");
+    expect(dialog?.textContent).toContain("Google Calendar");
+
+    // Verify direct calendar link in dialog
+    const dialogCalendarLink = dialog?.querySelector(
+      'a[href^="https://calendar.app.google/YnR5oxos7ZTLyvUp8"]'
+    );
+    expect(dialogCalendarLink).not.toBeNull();
+    expect(dialogCalendarLink?.textContent).toContain("Open Google Calendar");
+
+    // Verify fallback copy button inside dialog (shows "Agenda Copied!" since booking just copied it)
+    const fallbackCopyBtn = Array.from(
+      dialog?.querySelectorAll("button") || []
+    ).find(
+      (btn) =>
+        btn.textContent?.includes("Agenda Copied!") ||
+        btn.textContent?.includes("Copy Agenda")
+    );
+    expect(fallbackCopyBtn).toBeDefined();
+
+    // Clicking fallback copy button copies agenda again
+    await act(async () => {
+      fallbackCopyBtn?.click();
+    });
+    expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(2);
+
+    // Verify dismissing dialog via close button
+    const closeBtn = dialog?.querySelector(
+      'button[aria-label="Close booking confirmation"]'
+    ) as HTMLButtonElement | null;
+    expect(closeBtn).not.toBeNull();
+
+    await act(async () => {
+      closeBtn?.click();
+    });
+
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("renders correct contact links including contact form and linkedin", async () => {
@@ -242,5 +298,53 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       expect.stringContaining("30-minute general chat")
     );
+  });
+
+  it("copies customized agenda and shows confirmation modal when booking button is clicked with selected topics", async () => {
+    await act(async () => {
+      root?.render(<SchedulePage />);
+    });
+
+    const subtopicBtn = Array.from(
+      container?.querySelectorAll("button") || []
+    ).find((btn) =>
+      btn.textContent?.includes("Next.js & React 19 Architecture")
+    );
+    expect(subtopicBtn).toBeDefined();
+
+    await act(async () => {
+      subtopicBtn?.click();
+    });
+
+    const bookingBtn = container?.querySelector(
+      'a[href^="https://calendar.app.google/YnR5oxos7ZTLyvUp8"]'
+    ) as HTMLAnchorElement | null;
+    expect(bookingBtn).not.toBeNull();
+
+    await act(async () => {
+      bookingBtn?.click();
+    });
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Next.js & React 19 Architecture (10m)")
+    );
+
+    const dialog = container?.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain(
+      "Next.js & React 19 Architecture (10m)"
+    );
+
+    // Dismiss using bottom "Got it, close" button
+    const gotItBtn = Array.from(dialog?.querySelectorAll("button") || []).find(
+      (btn) => btn.textContent?.includes("Got it, close")
+    );
+    expect(gotItBtn).toBeDefined();
+
+    await act(async () => {
+      gotItBtn?.click();
+    });
+
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
   });
 });

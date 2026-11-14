@@ -93,7 +93,7 @@ describe("exportProofToMermaid encoding", () => {
     const parsed = await parseFlowchart(source);
     expect([...parsed.vertices.keys()]).toEqual(["Node_A"]);
     expect(parsed.edges).toEqual([]);
-    expect(parsed.vertices.get("Node_A")).toContain(label.replace("\n", " "));
+    expect(parsed.vertices.get("Node_A")).toContain(label.replace(/\n/g, " "));
     expect(source).not.toMatch(/^\s*click /m);
   });
 

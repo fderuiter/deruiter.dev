@@ -87,6 +87,7 @@ describe("runPipeline", () => {
       "RELREC",
       "SE",
       "CO",
+      "SUPPAE",
       "ADSL",
       "ADVS",
       "ADLB",
@@ -101,7 +102,7 @@ describe("runPipeline", () => {
     ).toHaveLength(13);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "sdtm")
-    ).toHaveLength(20);
+    ).toHaveLength(21);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "adam")
     ).toHaveLength(8);

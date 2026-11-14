@@ -552,14 +552,16 @@ describe("study data package", () => {
     expect(await sha256Hex(new TextEncoder().encode("abc"))).toBe(
       sha256("abc")
     );
-    // The only findings for seed 301: three dataset labels that do not fit
-    // XPT's 40 bytes once the "Synthetic: " prefix is added.
+    // The only findings for seed 301: four dataset labels that do not fit
+    // XPT's 40 bytes once the "Synthetic: " prefix is added. SUPPAE's label
+    // is as long as SUPPDM's (#3719).
     expect(
       pkg.findings.map((finding) => `${finding.ruleId} ${finding.dataset}`)
     ).toEqual([
       "XPT-LABEL-TRUNCATED TI",
       "XPT-LABEL-TRUNCATED IE",
       "XPT-LABEL-TRUNCATED SUPPDM",
+      "XPT-LABEL-TRUNCATED SUPPAE",
       "XPT-LABEL-TRUNCATED ADSL",
     ]);
     expect(manifest.findings).toEqual(pkg.findings);

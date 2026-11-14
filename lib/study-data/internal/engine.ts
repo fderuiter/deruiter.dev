@@ -14,7 +14,10 @@ import type {
 import { generateCollectedData } from "./synth/generate-collected-data";
 import { applyScenarios } from "./synth/scenarios";
 import { deriveTrialDesign } from "./sdtm/trial-design";
-import { deriveSubjectDomains } from "./sdtm/subject-domains";
+import {
+  deriveSubjectDomains,
+  deriveSupplementalAe,
+} from "./sdtm/subject-domains";
 import { runConformance } from "./conformance/run-conformance";
 import { deriveAdamDatasets } from "./adam/derive-adam";
 
@@ -98,7 +101,15 @@ export function runPipeline(
     definition,
     sdtmDatasets.filter((dataset) => dataset.layer === "sdtm")
   );
-  const datasets = [...sdtmDatasets, ...analysis.datasets];
+  // SUPPAE carries the ADaM treatment-emergent flag, so it follows ADaM.
+  const supplementalAe = deriveSupplementalAe(
+    definition.studyId,
+    sdtmDatasets.find(
+      (dataset) => dataset.name === "AE" && dataset.layer === "sdtm"
+    ),
+    analysis.datasets.find((dataset) => dataset.name === "ADAE")
+  );
+  const datasets = [...sdtmDatasets, supplementalAe, ...analysis.datasets];
   const conformance = runConformance(datasets);
   return {
     datasets,

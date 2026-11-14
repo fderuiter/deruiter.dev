@@ -56,7 +56,7 @@ describe("FooterStatusTicker rotation (#952)", () => {
       ?.textContent;
   const pauseButton = () =>
     container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Pause ticker"], button[aria-label="Resume ticker"]'
+      'button[aria-label="Pause ticker"]'
     )!;
   const tickerRoot = () =>
     container.querySelector<HTMLDivElement>(
@@ -93,6 +93,7 @@ describe("FooterStatusTicker rotation (#952)", () => {
     await act(async () => root.render(<FooterStatusTicker />));
     expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
     expect(pauseButton()).not.toBeNull();
+    expect(pauseButton().getAttribute("type")).toBe("button");
     expect(pauseButton().getAttribute("aria-pressed")).toBe("false");
     expect(pauseButton().getAttribute("aria-label")).toBe("Pause ticker");
     expect(tickerRoot().hasAttribute("data-ticker-paused")).toBe(false);
@@ -100,7 +101,7 @@ describe("FooterStatusTicker rotation (#952)", () => {
     // Click to pause
     await act(async () => pauseButton().click());
     expect(pauseButton().getAttribute("aria-pressed")).toBe("true");
-    expect(pauseButton().getAttribute("aria-label")).toBe("Resume ticker");
+    expect(pauseButton().getAttribute("aria-label")).toBe("Pause ticker");
     expect(tickerRoot().getAttribute("data-ticker-paused")).toBe("true");
 
     // Rotation is suspended while paused
@@ -122,34 +123,58 @@ describe("FooterStatusTicker rotation (#952)", () => {
     expect(line()).toBe(STATUS_TICKER_ITEMS[1]);
   });
 
-  it("supports keyboard activation on the pause toggle button via Enter and Space", async () => {
+  it("holds rotation while the ticker is hovered and resumes when unhovered (WCAG 2.2.2)", async () => {
     await act(async () => root.render(<FooterStatusTicker />));
     expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
-    expect(pauseButton().getAttribute("aria-pressed")).toBe("false");
 
-    // Press Enter to pause
+    // Mouse enters the ticker
     await act(async () => {
-      pauseButton().dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      tickerRoot().dispatchEvent(
+        new MouseEvent("mouseenter", { bubbles: false })
       );
     });
-    expect(pauseButton().getAttribute("aria-pressed")).toBe("true");
-    expect(tickerRoot().getAttribute("data-ticker-paused")).toBe("true");
 
+    // Rotation is suspended while hovered
+    await act(async () => {
+      vi.advanceTimersByTime(4500 * 2);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Mouse leaves the ticker
+    await act(async () => {
+      tickerRoot().dispatchEvent(
+        new MouseEvent("mouseleave", { bubbles: false })
+      );
+    });
+
+    // Rotation resumes
     await act(async () => {
       vi.advanceTimersByTime(4500);
     });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[1]);
+  });
+
+  it("holds rotation while the ticker has keyboard focus and resumes when blurred (WCAG 2.2.2)", async () => {
+    await act(async () => root.render(<FooterStatusTicker />));
     expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
 
-    // Press Space to resume
+    // Keyboard focus moves into the pause button
     await act(async () => {
-      pauseButton().dispatchEvent(
-        new KeyboardEvent("keydown", { key: " ", bubbles: true })
-      );
+      pauseButton().focus();
     });
-    expect(pauseButton().getAttribute("aria-pressed")).toBe("false");
-    expect(tickerRoot().hasAttribute("data-ticker-paused")).toBe(false);
 
+    // Rotation is suspended while focused
+    await act(async () => {
+      vi.advanceTimersByTime(4500 * 2);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Keyboard focus blurs
+    await act(async () => {
+      pauseButton().blur();
+    });
+
+    // Rotation resumes
     await act(async () => {
       vi.advanceTimersByTime(4500);
     });

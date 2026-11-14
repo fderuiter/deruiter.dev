@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useEffect,
   useSyncExternalStore,
 } from "react";
 import { IntentLink } from "@/components/ui/IntentLink";
@@ -65,6 +66,8 @@ export const FooterStatusTicker: React.FC = () => {
   const shouldReduceMotion = usePrefersReducedMotion();
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [duckBubble, setDuckBubble] = useState<string | null>(null);
   const [duckBarks, setDuckBarks] = useState(0);
   const [treats, setTreats] = useState<TreatParticle[]>([]);
@@ -79,23 +82,19 @@ export const FooterStatusTicker: React.FC = () => {
     setIsPaused((prev) => !prev);
   }, []);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-        e.preventDefault();
-        togglePause();
-      }
-    },
-    [togglePause]
-  );
-
   // Rotate status ticker every 4.5 seconds. Setting `data-ticker-paused` on
   // the ticker root holds the current line: accessibility audits use it so a
   // scan cannot land mid-cross-fade, where the partial opacity reads as a
-  // contrast failure (#952).
+  // contrast failure (#952). Holding also applies when paused, hovered, or
+  // when keyboard focus is within the ticker (WCAG 2.2.2).
   const tickerLineRef = useRef<HTMLDivElement>(null);
   useInterval(() => {
-    if (isPaused || tickerLineRef.current?.closest("[data-ticker-paused]"))
+    if (
+      isPaused ||
+      isHovered ||
+      isFocused ||
+      tickerLineRef.current?.closest("[data-ticker-paused]")
+    )
       return;
     setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
   }, 4500);
@@ -142,11 +141,42 @@ export const FooterStatusTicker: React.FC = () => {
     { trackVertical: true }
   );
 
+  useEffect(() => {
+    const el = tickerObserverRef.current;
+    if (!el) return;
+    const handleMouseEnter = () => setIsHovered(true);
+    const handleMouseLeave = () => setIsHovered(false);
+    const handleFocusIn = () => setIsFocused(true);
+    const handleFocusOut = (e: FocusEvent) => {
+      if (!el.contains(e.relatedTarget as Node | null)) {
+        setIsFocused(false);
+      }
+    };
+    el.addEventListener("mouseenter", handleMouseEnter);
+    el.addEventListener("mouseleave", handleMouseLeave);
+    el.addEventListener("focusin", handleFocusIn);
+    el.addEventListener("focusout", handleFocusOut);
+    return () => {
+      el.removeEventListener("mouseenter", handleMouseEnter);
+      el.removeEventListener("mouseleave", handleMouseLeave);
+      el.removeEventListener("focusin", handleFocusIn);
+      el.removeEventListener("focusout", handleFocusOut);
+    };
+  }, [tickerObserverRef]);
+
   return (
     <div
       ref={tickerObserverRef}
       data-testid="footer-status-ticker"
       data-ticker-paused={isPaused ? "true" : undefined}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setIsFocused(false);
+        }
+      }}
       className="w-full border-t border-zinc-800/60 bg-zinc-950 px-4 py-3 text-xs font-mono"
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -162,10 +192,9 @@ export const FooterStatusTicker: React.FC = () => {
           <button
             type="button"
             onClick={togglePause}
-            onKeyDown={handleKeyDown}
-            aria-label={isPaused ? "Resume ticker" : "Pause ticker"}
+            aria-label="Pause ticker"
             aria-pressed={isPaused}
-            title={isPaused ? "Resume ticker" : "Pause ticker"}
+            title="Pause ticker"
             className="inline-flex items-center justify-center p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-colors shrink-0 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
           >
             {isPaused ? (

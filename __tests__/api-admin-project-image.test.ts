@@ -9,6 +9,8 @@ import { GET as getMediaAssetRoute } from "@/app/api/media/[key]/route";
 import {
   ProjectImageService,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
+  blobStoreIdFromToken,
+  type MediaOwnership,
 } from "@/lib/services/project-image-service";
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { createFailure, createSuccess } from "@/lib/services/service-result";
@@ -28,6 +30,19 @@ vi.mock("@/lib/services/case-study-service", () => ({
     updateCaseStudyImage: vi.fn(),
   },
 }));
+
+/**
+ * Builds a synthetic Blob read-write token at run time, so the secret
+ * audit never sees a token-shaped literal in the repository.
+ */
+function blobToken(...parts: string[]): string {
+  return ["vercel", "blob", "rw", ...parts].join("_");
+}
+
+const OWNERSHIP: MediaOwnership = {
+  siteOrigin: "https://deruiter.dev",
+  blobStoreId: "abc12345",
+};
 
 // Valid PNG 1x1 image buffer
 const VALID_PNG_BUFFER = Buffer.from(
@@ -677,7 +692,8 @@ describe("API Admin Project Image Upload Route", () => {
     ).toBe("project-test-123.png");
     expect(
       ProjectImageService.extractMediaKeyFromUrl(
-        "https://example.com/api/media/project-test-456.jpg"
+        "https://deruiter.dev/api/media/project-test-456.jpg",
+        OWNERSHIP
       )
     ).toBe("project-test-456.jpg");
     expect(
@@ -685,7 +701,8 @@ describe("API Admin Project Image Upload Route", () => {
     ).toBe("custom-blob-key.webp");
     expect(
       ProjectImageService.extractMediaKeyFromUrl(
-        "https://abc12345.public.blob.vercel-storage.com/project-test-789.png"
+        "https://abc12345.public.blob.vercel-storage.com/project-test-789.png",
+        OWNERSHIP
       )
     ).toBe(
       "https://abc12345.public.blob.vercel-storage.com/project-test-789.png"
@@ -706,5 +723,157 @@ describe("API Admin Project Image Upload Route", () => {
     expect(ProjectImageService.extractMediaKeyFromUrl(null)).toBeNull();
     expect(ProjectImageService.extractMediaKeyFromUrl("")).toBeNull();
     expect(ProjectImageService.extractMediaKeyFromUrl("   ")).toBeNull();
+  });
+
+  // CodeQL alert 36: cleanup deletes whatever key comes back, so anything
+  // that only looks like one of our assets must come back as null.
+  it.each([
+    [
+      "a lookalike host with the Blob host as a prefix",
+      "https://blob.vercel-storage.com.evil.invalid/a.png",
+    ],
+    [
+      "a lookalike host with the Blob host as a suffix",
+      "https://evilblob.vercel-storage.com/a.png",
+    ],
+    [
+      "a lookalike store host on a prefix",
+      "https://abc12345.public.blob.vercel-storage.com.evil.invalid/a.png",
+    ],
+    [
+      "another store on the Blob suffix",
+      "https://otherstore.public.blob.vercel-storage.com/a.png",
+    ],
+    [
+      "a nested label above our store",
+      "https://x.abc12345.public.blob.vercel-storage.com/a.png",
+    ],
+    [
+      "the Blob host in the query",
+      "https://evil.invalid/a.png?u=abc12345.public.blob.vercel-storage.com",
+    ],
+    [
+      "the Blob host in the path",
+      "https://evil.invalid/abc12345.public.blob.vercel-storage.com/a.png",
+    ],
+    [
+      "plain HTTP to our store",
+      "http://abc12345.public.blob.vercel-storage.com/a.png",
+    ],
+    [
+      "credentials in front of our store",
+      "https://user:pw@abc12345.public.blob.vercel-storage.com/a.png",
+    ],
+    [
+      "credentials hiding a foreign host",
+      "https://abc12345.public.blob.vercel-storage.com@evil.invalid/a.png",
+    ],
+    [
+      "a port on our store",
+      "https://abc12345.public.blob.vercel-storage.com:8443/a.png",
+    ],
+    [
+      "a non-HTTP scheme",
+      "javascript://abc12345.public.blob.vercel-storage.com/a.png",
+    ],
+    [
+      "a media path on a foreign origin",
+      "https://example.com/api/media/project-test-456.jpg",
+    ],
+    [
+      "a media path on our host over HTTP",
+      "http://deruiter.dev/api/media/a.png",
+    ],
+    [
+      "a media path with credentials",
+      "https://user@deruiter.dev/api/media/a.png",
+    ],
+    ["a media path with a query", "https://deruiter.dev/api/media/a.png?x=1"],
+    ["a nested media key", "/api/media/nested/a.png"],
+    ["a parent-directory media key", "/api/media/.."],
+    ["an empty media key", "/api/media/"],
+  ])("returns no managed key for %s", (_label, url) => {
+    expect(
+      ProjectImageService.extractMediaKeyFromUrl(url, OWNERSHIP)
+    ).toBeNull();
+  });
+
+  it("owns no Blob URL when this deployment has no Blob store", () => {
+    expect(
+      ProjectImageService.extractMediaKeyFromUrl(
+        "https://abc12345.public.blob.vercel-storage.com/a.png",
+        { ...OWNERSHIP, blobStoreId: null }
+      )
+    ).toBeNull();
+  });
+
+  it("matches the store host case-insensitively", () => {
+    const url = "https://ABC12345.public.blob.vercel-storage.com/a.png";
+    expect(ProjectImageService.extractMediaKeyFromUrl(url, OWNERSHIP)).toBe(
+      url
+    );
+  });
+
+  it("reads the store id out of a Blob read-write token", () => {
+    expect(blobStoreIdFromToken(blobToken("AbC12345", "s3cr3tValue"))).toBe(
+      "abc12345"
+    );
+    expect(blobStoreIdFromToken(blobToken("abc12345"))).toBeNull();
+    expect(blobStoreIdFromToken("not-a-token")).toBeNull();
+    expect(blobStoreIdFromToken(blobToken("abc.evil", "secret"))).toBeNull();
+    expect(blobStoreIdFromToken("")).toBeNull();
+    expect(blobStoreIdFromToken(undefined)).toBeNull();
+  });
+
+  it("never deletes a lookalike Blob asset when replacing the image", async () => {
+    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(
+      fromPartial({
+        slug: "laser-loon",
+        hero_image_url: "https://blob.vercel-storage.com.evil.invalid/a.png",
+      })
+    );
+    const deleteSpy = vi
+      .spyOn(ProjectImageService, "deleteMediaAsset")
+      .mockResolvedValue(createSuccess(null));
+    const req = createMultipartRequest(
+      "http://localhost:3000/api/admin/projects/laser-loon/image",
+      {
+        file: {
+          buffer: VALID_PNG_BUFFER,
+          filename: "new.png",
+          contentType: "image/png",
+        },
+      }
+    );
+
+    const res = await POST(req, {
+      params: Promise.resolve({ slug: "laser-loon" }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it("never deletes a lookalike Blob asset when clearing the image", async () => {
+    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(
+      fromPartial({
+        slug: "laser-loon",
+        hero_image_url: "https://evilblob.vercel-storage.com/a.png",
+      })
+    );
+    const deleteSpy = vi
+      .spyOn(ProjectImageService, "deleteMediaAsset")
+      .mockResolvedValue(createSuccess(null));
+    const req = new NextRequest(
+      "http://localhost:3000/api/admin/projects/laser-loon/image",
+      { method: "DELETE" }
+    );
+
+    const res = await DELETE(req, {
+      params: Promise.resolve({ slug: "laser-loon" }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(deleteSpy).not.toHaveBeenCalled();
   });
 });

@@ -473,8 +473,10 @@ export class NewsletterService {
               tx
             );
             if (!queueId) {
-              throw new EnqueueError(
-                "Could not enqueue a newsletter dispatch email"
+              return Promise.reject(
+                new EnqueueError(
+                  "Could not enqueue a newsletter dispatch email"
+                )
               );
             }
             await tx.newsletterDelivery.update({
@@ -490,7 +492,13 @@ export class NewsletterService {
               { details: { dispatchId: dispatch.id, counts } }
             );
           }
-          throw error;
+          return createFailure(
+            "DISPATCH_FAILED",
+            error instanceof Error
+              ? error.message
+              : "Dispatch transaction failed",
+            { details: { dispatchId: dispatch.id, counts, error } }
+          );
         }
 
         counts.queued++;

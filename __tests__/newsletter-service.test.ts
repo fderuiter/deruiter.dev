@@ -745,5 +745,28 @@ describe("NewsletterService (#841)", () => {
       expect(db.queue).toHaveLength(0);
       expect(db.dispatches[0].completedAt ?? null).toBeNull();
     });
+
+    it("returns DISPATCH_FAILED when transaction fails due to database error", async () => {
+      publishPost("p1");
+      confirmed("reader@example.com", new Date(0));
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      const { prisma } = await import("@/lib/db");
+      vi.spyOn(prisma.newsletterDelivery, "create").mockRejectedValueOnce(
+        new Error("Database connection lost")
+      );
+
+      const result = await NewsletterService.dispatchDue();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: {
+          code: "DISPATCH_FAILED",
+          message: "Database connection lost",
+        },
+      });
+      expect(db.deliveries).toHaveLength(0);
+      expect(db.queue).toHaveLength(0);
+    });
   });
 });

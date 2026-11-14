@@ -271,14 +271,6 @@ export interface RunOptions {
 /**
  * Execute Page Benchmark Suite across specified routes
  */
-const BENCHMARK_BROWSER_ARGS = [
-  "--no-sandbox",
-  "--disable-setuid-sandbox",
-  "--disable-dev-shm-usage",
-  "--js-flags=--max-old-space-size=4096",
-  "--disable-features=Fontations,Fontations_Enabled,FontationsPrinting,CalculateNativeWinOcclusion,ResponsivenessMetrics",
-];
-
 export async function runPageBenchmarks(
   options: RunOptions = {}
 ): Promise<PageBenchmarkSummary[]> {
@@ -295,7 +287,12 @@ export async function runPageBenchmarks(
   try {
     browser = await launchChromiumWithFallback({
       headless: true,
-      args: BENCHMARK_BROWSER_ARGS,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--js-flags=--max-old-space-size=4096",
+      ],
     });
 
     const contextOptions =
@@ -325,7 +322,12 @@ export async function runPageBenchmarks(
         }
         browser = await launchChromiumWithFallback({
           headless: true,
-          args: BENCHMARK_BROWSER_ARGS,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--js-flags=--max-old-space-size=4096",
+          ],
         });
         currentContext = await browser.newContext(contextOptions);
       }
@@ -369,32 +371,18 @@ export async function runPageBenchmarks(
         try {
           await measurePageRoute(warmupPage, pageUrl);
         } finally {
-          await warmupPage.close().catch(() => {});
+          await warmupPage.close();
         }
       } catch {
         // Ignore warmup error
       }
 
-      // Measured runs with single retry on transient error
+      // Measured runs
       const samples: SingleRunMetrics[] = [];
       for (let run = 1; run <= runs; run++) {
-        let metrics: SingleRunMetrics | null = null;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          let runPage: Page | null = null;
-          try {
-            runPage = await createAndConfigurePage();
-            metrics = await measurePageRoute(runPage, pageUrl);
-            break;
-          } catch (error) {
-            if (attempt === 1) throw error;
-            await new Promise((resolve) => setTimeout(resolve, 200));
-          } finally {
-            if (runPage) {
-              await runPage.close().catch(() => {});
-            }
-          }
-        }
-        if (metrics) {
+        const runPage = await createAndConfigurePage();
+        try {
+          const metrics = await measurePageRoute(runPage, pageUrl);
           samples.push(metrics);
           if (options.onProgress) {
             options.onProgress({
@@ -404,6 +392,8 @@ export async function runPageBenchmarks(
               metrics,
             });
           }
+        } finally {
+          await runPage.close();
         }
       }
 

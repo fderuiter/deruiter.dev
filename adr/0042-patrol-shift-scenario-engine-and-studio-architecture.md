@@ -26,9 +26,9 @@ Key design imperatives:
 ### 2. Deep Module Architecture (`lib/patrol`)
 
 - **Public API**:
-  - `lib/patrol/types.ts`: Domain models (`PatrolScenario`, `ShiftState`, `PatrolEvent`, `ScenarioAction`, `DebriefRule`, `DebriefReport`).
+  - `lib/patrol/types.ts`: Domain models (`PatrolScenario`, `ShiftState`, `PatrolEvent`, `ScenarioAction`, `DebriefRule`).
   - `lib/patrol/presets.ts`: Exports `PATROL_SCENARIOS` catalog loaded from private scenarios.
-  - `lib/patrol/engine.ts`: Pure FSM state transitions (`createInitialShiftState`, `transitionShiftPhase`, `recordAction`).
+  - `lib/patrol/engine.ts`: Pure FSM state transitions (`createInitialShiftState`, `reduceShiftState`, `createPatrolShiftEngine`).
   - `lib/patrol/oet-engine.ts`: OET protocol rule verification and score calculations.
   - `lib/patrol/debrief.ts`: Debrief report compilation.
   - `lib/patrol/dialogue.ts`: Triage and radio dialogue nodes.

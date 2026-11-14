@@ -219,6 +219,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
         </div>
         <button
           onClick={handleClose}
+          aria-label="Close export modal"
           className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
         >
           <IconX className="w-5 h-5" />

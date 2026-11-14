@@ -69,6 +69,9 @@ export const StudyDirectorWorld: React.FC<{
   /** Called once when a new run leaves its untouched first morning (#2191). */
   onStart?: () => void;
 }> = ({ onExit, onCloseout, onStart }) => {
+  // Hydration-safe: StudyDirectorWorld only mounts client-side after Launch Cabinet
+  // is engaged (via dynamic import with ssr: false), so usePrefersReducedMotion's
+  // server fallback does not affect SSR or cause hydration mismatches (#3920).
   const reducedMotion = usePrefersReducedMotion();
   // The immersive touch cabinet (ADR 0061, #2076) lays the office out to fit
   // its stage; desktop markup is untouched.

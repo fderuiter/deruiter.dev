@@ -31,6 +31,9 @@ export function PacketEdgeView({
   targetPosition,
   selected,
 }: EdgeProps) {
+  // Hydration-safe: PacketEdgeView only mounts client-side after Launch Cabinet
+  // is engaged (via dynamic import with ssr: false), so usePrefersReducedMotion's
+  // server fallback does not affect SSR or cause hydration mismatches (#3920).
   const reduced = usePrefersReducedMotion();
   // On touch a wire is a finger-wide tap target, not a 20-unit hairline.
   const touch = useCabinetTouch();

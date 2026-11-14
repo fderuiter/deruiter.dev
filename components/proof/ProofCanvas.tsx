@@ -9,6 +9,8 @@ import {
   IconAlertTriangle,
   IconPlayerPlay,
   IconWand,
+  IconArrowBackUp,
+  IconArrowForwardUp,
 } from "@tabler/icons-react";
 import {
   TheoremDefinition,
@@ -56,6 +58,10 @@ interface ProofCanvasProps {
   handleCanvasPointerUp: (e: React.PointerEvent) => void;
   handleApplyRule: (ruleId: string) => void;
   handleStartSimulation: (mode?: "normal" | "loop") => void;
+  handleUndo?: () => void;
+  handleRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
   canvasWrapperRef: RefObject<HTMLDivElement | null>;
   svgCanvasRef: RefObject<SVGSVGElement | null>;
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
@@ -88,6 +94,10 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   handleCanvasPointerUp,
   handleApplyRule,
   handleStartSimulation,
+  handleUndo = () => {},
+  handleRedo = () => {},
+  canUndo = false,
+  canRedo = false,
   canvasWrapperRef,
   svgCanvasRef,
   mobileActiveView,
@@ -205,6 +215,32 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               <kbd className="hidden md:inline text-[9px] px-1 py-0.2 rounded bg-slate-950/70 border border-slate-800 text-slate-400 font-mono">
                 G
               </kbd>
+            </button>
+            <button
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className={`p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border text-xs font-mono transition cursor-pointer active:scale-[0.98] ${
+                canUndo
+                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+                  : "bg-slate-950/40 border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
+              }`}
+              title="Undo proof step [Shortcut: Mod+Z]"
+              aria-label="Undo proof step"
+            >
+              <IconArrowBackUp className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className={`p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border text-xs font-mono transition cursor-pointer active:scale-[0.98] ${
+                canRedo
+                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+                  : "bg-slate-950/40 border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
+              }`}
+              title="Redo proof step [Shortcut: Mod+Shift+Z]"
+              aria-label="Redo proof step"
+            >
+              <IconArrowForwardUp className="w-4 h-4" />
             </button>
             <button
               onClick={handleAutoStep}

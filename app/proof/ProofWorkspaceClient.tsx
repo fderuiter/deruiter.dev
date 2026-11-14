@@ -304,6 +304,14 @@ export function ProofWorkspaceClient() {
     preventDefault: true,
   });
 
+  useHotkeys("Mod+z", () => session.handleUndo(), {
+    preventDefault: true,
+  });
+
+  useHotkeys("Mod+Shift+z", () => session.handleRedo(), {
+    preventDefault: true,
+  });
+
   const toggleConsole = useCallback(() => {
     setIsConsoleOpen((prev) => {
       const next = !prev;
@@ -511,6 +519,32 @@ export function ProofWorkspaceClient() {
     handler: toggleSnapping,
   });
 
+  useWorkspaceAction({
+    id: "proof:undo",
+    title: "Proof Canvas: Undo Last Proof Step",
+    description:
+      "Reverse the last proof graph edge modification or deduction step",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Undo",
+    tags: ["proof", "undo", "history", "step"],
+    shortcut: "Mod+Z",
+    handler: session.handleUndo,
+  });
+
+  useWorkspaceAction({
+    id: "proof:redo",
+    title: "Proof Canvas: Redo Proof Step",
+    description:
+      "Reapply the previously undone proof graph edge modification or deduction step",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Redo",
+    tags: ["proof", "redo", "history", "step"],
+    shortcut: "Mod+Shift+Z",
+    handler: session.handleRedo,
+  });
+
   return (
     <div className="min-h-dvh bg-brand-dark text-slate-100 flex flex-col font-sans pt-20 pb-12 overflow-x-hidden">
       {/* Live Accessibility Announcement Buffer */}
@@ -549,6 +583,10 @@ export function ProofWorkspaceClient() {
             toggleSnapping={toggleSnapping}
             handleAutoStep={session.handleAutoStep}
             handleResetLayout={handleResetLayout}
+            handleUndo={session.handleUndo}
+            handleRedo={session.handleRedo}
+            canUndo={session.canUndo}
+            canRedo={session.canRedo}
             activeTacticHint={session.activeTacticHint}
             handleNodePointerDown={drag.handleNodePointerDown}
             handleNodePointerMove={drag.handleNodePointerMove}

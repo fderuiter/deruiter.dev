@@ -82,6 +82,8 @@ function edgeJoins(edge: Edge, a: string, b: string, caseInsensitive = false) {
   return (s === x && t === y) || (s === y && t === x);
 }
 
+const MAX_HISTORY = 50;
+
 /**
  * The proof graph, selection, fallacy diagnosis and terminal log for one
  * theorem, with every operation the canvas, ledger and terminal can run on
@@ -102,6 +104,9 @@ export function useProofSession(options: ProofSessionOptions) {
     feedback;
 
   const [edges, setEdges] = useState<Edge[]>(theorem.initialEdges);
+  const [past, setPast] = useState<Edge[][]>([]);
+  const [future, setFuture] = useState<Edge[][]>([]);
+
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [currentFallacy, setCurrentFallacy] = useState<FallacyDiagnosis | null>(
     null
@@ -137,12 +142,52 @@ export function useProofSession(options: ProofSessionOptions) {
     [appendLogs]
   );
 
-  /** Puts the graph back to `initialEdges` and drops the selection and diagnosis. */
+  /** Puts the graph back to `initialEdges` and drops the selection, diagnosis, and history stacks. */
   const resetGraph = useCallback((initialEdges: Edge[]) => {
     setEdges(initialEdges);
+    setPast([]);
+    setFuture([]);
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
   }, []);
+
+  const applyEdgeMutation = useCallback(
+    (nextEdges: Edge[]) => {
+      setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), edges]);
+      setFuture([]);
+      setEdges(nextEdges);
+    },
+    [edges]
+  );
+
+  const handleUndo = useCallback(() => {
+    if (past.length === 0) return;
+    const previousEdges = past[past.length - 1];
+    setPast((prev) => prev.slice(0, -1));
+    setFuture((prev) => [edges, ...prev].slice(0, MAX_HISTORY));
+    setEdges(previousEdges);
+    setCurrentFallacy(null);
+    play(playAutocomplete);
+    toast("Undid last proof modification.", "info", { announce: false });
+    announce("Undid last proof modification.");
+    appendLog("undo", "info", "✔ Undid last proof step.");
+  }, [past, edges, playAutocomplete, toast, announce, appendLog]);
+
+  const handleRedo = useCallback(() => {
+    if (future.length === 0) return;
+    const nextEdges = future[0];
+    setFuture((prev) => prev.slice(1));
+    setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), edges]);
+    setEdges(nextEdges);
+    setCurrentFallacy(null);
+    play(playAutocomplete);
+    toast("Redid proof step.", "info", { announce: false });
+    announce("Redid proof step.");
+    appendLog("redo", "info", "✔ Redid proof step.");
+  }, [future, edges, playAutocomplete, toast, announce, appendLog]);
+
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
 
   const diagnose = (sourceId: string, targetId: string) => {
     const fallacy = getFallacyDiagnosis(sourceId, targetId, edges, theorem);
@@ -170,7 +215,7 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    setEdges((prev) => [...prev, { source: sourceId, target: targetId }]);
+    applyEdgeMutation([...edges, { source: sourceId, target: targetId }]);
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
     play(playSuccess);
@@ -201,7 +246,7 @@ export function useProofSession(options: ProofSessionOptions) {
     targetId: string,
     ruleBadge: string | undefined
   ) => {
-    setEdges((prev) => [...prev, { source: sourceId, target: targetId }]);
+    applyEdgeMutation([...edges, { source: sourceId, target: targetId }]);
     play(playSuccess);
     toast(
       `Connected Node ${sourceId} to Node ${targetId} (${ruleBadge || "Inference"})`,
@@ -330,7 +375,9 @@ export function useProofSession(options: ProofSessionOptions) {
         ruleApplied: ruleId.toUpperCase(),
       }));
 
-    setEdges((prev) => [...prev, ...newEdges]);
+    if (newEdges.length > 0) {
+      applyEdgeMutation([...edges, ...newEdges]);
+    }
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
     toast(`✔ ${ruleResult.explanation}`, "success", { announce: false });
@@ -358,7 +405,7 @@ export function useProofSession(options: ProofSessionOptions) {
     const newEdges = autoStep.success ? (autoStep.newEdges ?? []) : [];
 
     if (newEdges.length > 0) {
-      setEdges((prev) => [...prev, ...newEdges]);
+      applyEdgeMutation([...edges, ...newEdges]);
       toast(
         `Auto-Step: Connected premises to Node ${autoStep.targetNodeId} (${autoStep.explanation})`,
         "success"
@@ -388,7 +435,7 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    setEdges(result.newEdges);
+    applyEdgeMutation(result.newEdges);
     setCurrentFallacy(null);
     toast(`✔ ${result.reason}`, "info", { announce: false });
     announce(result.reason);
@@ -429,7 +476,7 @@ export function useProofSession(options: ProofSessionOptions) {
       updatedEdges = updatedEdges.slice(0, -1);
     }
 
-    setEdges(updatedEdges);
+    applyEdgeMutation(updatedEdges);
     setCurrentFallacy(null);
 
     const rollbackMsg =
@@ -469,7 +516,10 @@ export function useProofSession(options: ProofSessionOptions) {
         return;
       case "disconnect": {
         const { source, target } = command;
-        setEdges((prev) => prev.filter((e) => !edgeJoins(e, source, target)));
+        const remaining = edges.filter((e) => !edgeJoins(e, source, target));
+        if (remaining.length !== edges.length) {
+          applyEdgeMutation(remaining);
+        }
         appendLog(
           "disc",
           "info",
@@ -478,6 +528,22 @@ export function useProofSession(options: ProofSessionOptions) {
         announce(`Disconnected Node ${source} and Node ${target}.`);
         return;
       }
+      case "undo":
+        if (past.length === 0) {
+          appendLog("undo", "info", "Nothing to undo: history stack is empty.");
+          announce("Nothing to undo.");
+          return;
+        }
+        handleUndo();
+        return;
+      case "redo":
+        if (future.length === 0) {
+          appendLog("redo", "info", "Nothing to redo: future stack is empty.");
+          announce("Nothing to redo.");
+          return;
+        }
+        handleRedo();
+        return;
       case "prune":
         handleDeleteStep(command.target);
         return;
@@ -547,6 +613,12 @@ export function useProofSession(options: ProofSessionOptions) {
 
   return {
     edges,
+    past,
+    future,
+    canUndo,
+    canRedo,
+    handleUndo,
+    handleRedo,
     selectedNodeIds,
     currentFallacy,
     setCurrentFallacy,

@@ -88,12 +88,17 @@ interface BlogAuthoringFormProps {
 }
 
 /**
- * Rebuilds a validated hero URL behind a fixed `https://` prefix, so the
- * preview `src` can never carry another scheme.
+ * Rebuilds a validated hero URL behind a fixed `https://` prefix and
+ * URI-encodes the rest, so the preview `src` can never carry another scheme
+ * or a raw markup character. Returns null for a malformed escape sequence.
  */
-function httpsPreviewSrc(value: string): string {
+function httpsPreviewSrc(value: string): string | null {
   const parsed = new URL(value);
-  return `https://${parsed.host}${parsed.pathname}${parsed.search}`;
+  try {
+    return `https://${encodeURI(decodeURI(`${parsed.host}${parsed.pathname}${parsed.search}`))}`;
+  } catch {
+    return null;
+  }
 }
 
 export function BlogAuthoringForm({

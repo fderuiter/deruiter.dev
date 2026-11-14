@@ -399,65 +399,68 @@ export const CRFStudioContainer: React.FC = () => {
   // dialog/select) owns focus: Ctrl/Cmd+Z is native undo, Ctrl/Cmd+B and
   // Ctrl/Cmd+I are native bold/italic in rich-text fields, and none of the
   // others should hijack keystrokes meant for whatever the author is typing.
-  // They also stay out of every [data-keyboard-boundary] region, the studio
-  // root included, as the raw listener they replace did, so they fire only
-  // while focus sits outside the studio.
-  useHotkeys(STUDIO_HOTKEYS, (e) => {
-    const key = e.key.toLowerCase();
-    switch (key) {
-      // Slash Command Palette (/)
-      case "/":
-        e.preventDefault();
-        setSlashTargetSectionId(undefined);
-        setSlashTargetIndex(undefined);
-        setIsSlashPaletteOpen(true);
-        return;
-      // Undo / Redo (⌘Z / Ctrl+Z, with Shift to redo)
-      case "z":
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
+  // Keystrokes run inside the studio container boundary so canvas interactions
+  // trigger studio shortcuts, but halt inside editable form fields.
+  useHotkeys(
+    STUDIO_HOTKEYS,
+    (e) => {
+      const key = e.key.toLowerCase();
+      switch (key) {
+        // Slash Command Palette (/)
+        case "/":
+          e.preventDefault();
+          setSlashTargetSectionId(undefined);
+          setSlashTargetIndex(undefined);
+          setIsSlashPaletteOpen(true);
+          return;
+        // Undo / Redo (⌘Z / Ctrl+Z, with Shift to redo)
+        case "z":
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo();
+          } else {
+            undo();
+          }
+          return;
+        // ⌘K / Ctrl+K stays with the site-wide search palette so the shortcut
+        // means the same thing on every page (#1208); the form catalog has its
+        // own "+ Add form" button in the studio header.
+        // Toggle Left Sidebar (⌘B / Ctrl+B)
+        case "b":
+          e.preventDefault();
+          setIsLeftSidebarOpen((prev) => !prev);
+          return;
+        // Toggle Right Inspector (⌘I / Ctrl+I)
+        case "i":
+          e.preventDefault();
+          setIsRightInspectorOpen((prev) => !prev);
+          return;
+        case "j":
+        case "`":
+          e.preventDefault();
+          setIsTerminalOpen((prev) => !prev);
+          return;
+        // Form Test Dock (⌘\ / Ctrl+\). Chosen because it is unclaimed by the
+        // browser and by the studio's existing bindings.
+        case "\\":
+          e.preventDefault();
+          setIsTestDockOpen((prev) => !prev);
+          return;
+        // "?" belongs to the page's Studio Guide (FieldManualButton), which
+        // listens site-wide; F1 alone opens the protocol wizard (#1208).
+        case "f1":
+          e.preventDefault();
+          setIsWizardOpen((prev) => !prev);
+          return;
+        default: {
+          // Same order and numbers as the mode bar's shortcut badges.
+          const mode = MODE_BY_KEY[key];
+          if (mode) setActiveMode(mode);
         }
-        return;
-      // ⌘K / Ctrl+K stays with the site-wide search palette so the shortcut
-      // means the same thing on every page (#1208); the form catalog has its
-      // own "+ Add form" button in the studio header.
-      // Toggle Left Sidebar (⌘B / Ctrl+B)
-      case "b":
-        e.preventDefault();
-        setIsLeftSidebarOpen((prev) => !prev);
-        return;
-      // Toggle Right Inspector (⌘I / Ctrl+I)
-      case "i":
-        e.preventDefault();
-        setIsRightInspectorOpen((prev) => !prev);
-        return;
-      case "j":
-      case "`":
-        e.preventDefault();
-        setIsTerminalOpen((prev) => !prev);
-        return;
-      // Form Test Dock (⌘\ / Ctrl+\). Chosen because it is unclaimed by the
-      // browser and by the studio's existing bindings.
-      case "\\":
-        e.preventDefault();
-        setIsTestDockOpen((prev) => !prev);
-        return;
-      // "?" belongs to the page's Studio Guide (FieldManualButton), which
-      // listens site-wide; F1 alone opens the protocol wizard (#1208).
-      case "f1":
-        e.preventDefault();
-        setIsWizardOpen((prev) => !prev);
-        return;
-      default: {
-        // Same order and numbers as the mode bar's shortcut badges.
-        const mode = MODE_BY_KEY[key];
-        if (mode) setActiveMode(mode);
       }
-    }
-  });
+    },
+    { allowInKeyboardBoundary: true }
+  );
 
   const allFields = activeForm
     ? activeForm.sections.flatMap((s) => s.fields)

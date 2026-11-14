@@ -779,4 +779,51 @@ describe("CRF Studio shortcuts", () => {
     key({ key: "Escape" });
     expect(props("FormCanvas").selectedFieldId).toBeNull();
   });
+
+  it("runs the studio shortcuts when dispatched on canvas elements inside keyboard boundary", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    const canvasKey = (init: KeyboardEventInit) =>
+      fireEvent.keyDown(canvas, init);
+
+    canvasKey({ key: "/" });
+    expect(props("SlashPaletteModal").isOpen).toBe(true);
+    canvasKey({ key: "Escape" });
+    expect(props("SlashPaletteModal").isOpen).toBe(false);
+
+    press("StudySpine.onAddForm");
+    canvasKey({ key: "z", ctrlKey: true });
+    expect(props("StudioHeader").canRedo).toBe(true);
+    canvasKey({ key: "z", ctrlKey: true, shiftKey: true });
+    expect(props("StudioHeader").canRedo).toBe(false);
+
+    canvasKey({ key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(false);
+    canvasKey({ key: "i", ctrlKey: true });
+    expect(props("StudioHeader").isRightInspectorOpen).toBe(false);
+  });
+
+  it("suppresses studio shortcuts when typing inside form inputs", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    const input = document.createElement("input");
+    canvas.appendChild(input);
+
+    const inputKey = (init: KeyboardEventInit) =>
+      fireEvent.keyDown(input, init);
+
+    inputKey({ key: "/" });
+    expect(props("SlashPaletteModal").isOpen).toBe(false);
+
+    press("StudySpine.onAddForm");
+    expect(props("StudioHeader").canRedo).toBe(false);
+    inputKey({ key: "z", ctrlKey: true });
+    expect(props("StudioHeader").canRedo).toBe(false);
+
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+    inputKey({ key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    expect(props("StudioHeader").isRightInspectorOpen).toBe(true);
+    inputKey({ key: "i", ctrlKey: true });
+    expect(props("StudioHeader").isRightInspectorOpen).toBe(true);
+  });
 });

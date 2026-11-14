@@ -1,8 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import React from "react";
+import { render, screen, cleanup } from "@testing-library/react";
 import fs from "fs";
 import path from "path";
+import { SandboxTerminal } from "@/components/SandboxTerminal";
 
 describe("SandboxTerminal Accessibility Implementations", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   const terminalPath = path.resolve(
     __dirname,
     "../components/SandboxTerminal.tsx"
@@ -83,7 +90,15 @@ describe("SandboxTerminal Accessibility Implementations", () => {
   });
 
   it("should provide accessible aria-labels for the command prompt input and execute button", () => {
-    expect(content).toContain('aria-label="Terminal command prompt"');
-    expect(content).toContain('aria-label="Execute command"');
+    render(<SandboxTerminal />);
+    const input = screen.getByRole("textbox", {
+      name: "Terminal command prompt",
+    });
+    const button = screen.getByRole("button", { name: "Execute command" });
+
+    expect(input).toBeDefined();
+    expect(input.tagName).toBe("INPUT");
+    expect(button).toBeDefined();
+    expect(button.tagName).toBe("BUTTON");
   });
 });

@@ -19,6 +19,7 @@ import { apiClient, type ApiClientResponse } from "@/lib/api-client";
 import {
   BlogDraftCreateSchema,
   BlogDraftUpdateSchema,
+  blogHeroImageUrlIssue,
   toFieldErrors,
 } from "@/lib/schemas";
 
@@ -86,6 +87,20 @@ interface BlogAuthoringFormProps {
   isNew?: boolean;
 }
 
+/**
+ * Rebuilds a validated hero URL behind a fixed `https://` prefix and
+ * URI-encodes the rest, so the preview `src` can never carry another scheme
+ * or a raw markup character. Returns null for a malformed escape sequence.
+ */
+function httpsPreviewSrc(value: string): string | null {
+  const parsed = new URL(value);
+  try {
+    return `https://${encodeURI(decodeURI(`${parsed.host}${parsed.pathname}${parsed.search}`))}`;
+  } catch {
+    return null;
+  }
+}
+
 export function BlogAuthoringForm({
   initialData,
   isNew = false,
@@ -120,6 +135,21 @@ export function BlogAuthoringForm({
       .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+  };
+
+  // The preview only loads a hero image the save contract would accept.
+  const heroImageInput = heroImageUrl.trim();
+  const heroImageIssue = heroImageInput
+    ? blogHeroImageUrlIssue(heroImageInput)
+    : null;
+  const heroPreviewUrl =
+    heroImageInput && !heroImageIssue ? httpsPreviewSrc(heroImageInput) : null;
+
+  const showPreview = () => {
+    setActiveTab("preview");
+    if (heroImageIssue) {
+      setFieldErrors((prev) => ({ ...prev, heroImageUrl: heroImageIssue }));
+    }
   };
 
   const clearFieldError = (...fields: BlogFormField[]) => {
@@ -327,7 +357,7 @@ export function BlogAuthoringForm({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("preview")}
+            onClick={showPreview}
             className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-mono transition-colors ${
               activeTab === "preview"
                 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
@@ -641,15 +671,30 @@ export function BlogAuthoringForm({
             </div>
           )}
 
-          {heroImageUrl.trim() && (
+          {heroPreviewUrl && (
             <div className="my-4 overflow-hidden rounded-lg border border-zinc-800">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={heroImageUrl}
+                src={heroPreviewUrl}
                 alt={title}
                 className="w-full h-auto object-cover max-h-80"
               />
             </div>
+          )}
+          {heroImageIssue && (
+            <p
+              role="alert"
+              data-testid="blog-hero-preview-error"
+              className="my-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 font-mono text-xs text-amber-300"
+            >
+              <IconAlertCircle
+                className="mt-0.5 h-4 w-4 shrink-0"
+                aria-hidden="true"
+              />
+              <span className="min-w-0">
+                Hero image not shown. {heroImageIssue}
+              </span>
+            </p>
           )}
 
           <article className="prose prose-invert max-w-none text-neutral-300 leading-relaxed space-y-8 mt-6">

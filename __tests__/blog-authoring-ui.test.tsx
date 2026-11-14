@@ -4,6 +4,11 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { BlogAuthoringForm } from "@/components/admin/BlogAuthoringForm";
 import { BlogPostService } from "@/lib/services/blog-service";
 import { prisma } from "@/lib/db";
+import {
+  BlogDraftCreateSchema,
+  BlogDraftUpdateSchema,
+  blogHeroImageUrlIssue,
+} from "@/lib/schemas";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -115,6 +120,83 @@ describe("BlogAuthoringForm UI", () => {
     expect(screen.getByText("A preview test standfirst.")).toBeDefined();
     expect(screen.getByText("Preview Heading")).toBeDefined();
     expect(screen.getByText("Preview paragraph copy.")).toBeDefined();
+  });
+
+  // CodeQL alert 29: the preview loads the hero image before any save.
+  describe("hero image preview", () => {
+    function openPreview(heroImageUrl: string) {
+      render(
+        <BlogAuthoringForm
+          isNew={true}
+          initialData={{
+            ...VALID_DRAFT,
+            hero_image_url: heroImageUrl,
+            published: false,
+          }}
+        />
+      );
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Live Preview/i })[0]
+      );
+    }
+
+    it.each([
+      ["a plain-HTTP URL", "http://images.example/hero.png"],
+      ["a javascript: URL", "javascript:alert(1)"],
+      ["a data: URL", "data:image/svg+xml,<svg onload=alert(1)>"],
+      ["a credential-bearing URL", "https://user:pw@images.example/hero.png"],
+      ["a malformed URL", "not a url"],
+      ["a protocol-relative URL", "//images.example/hero.png"],
+    ])("loads no image for %s and says why", (_label, url) => {
+      openPreview(url);
+      expect(document.querySelector("img")).toBeNull();
+      expect(screen.getByTestId("blog-hero-preview-error").textContent).toMatch(
+        /Hero image not shown/
+      );
+    });
+
+    it("reports the problem on the hero field too", () => {
+      openPreview("http://images.example/hero.png");
+      fireEvent.click(screen.getAllByRole("button", { name: /Editor/i })[0]);
+      const input = document.getElementById("blog-hero-url")!;
+      expect(input.getAttribute("aria-invalid")).toBe("true");
+      expect(
+        document.getElementById("blog-hero-url-error")?.textContent
+      ).toMatch(/https:\/\//);
+    });
+
+    it("previews a supported https image unchanged", () => {
+      const url = "https://images.example/hero.png?w=1200&h=630";
+      openPreview(url);
+      expect(document.querySelector("img")?.getAttribute("src")).toBe(url);
+      expect(screen.queryByTestId("blog-hero-preview-error")).toBeNull();
+    });
+  });
+
+  it("refuses to save a hero URL the preview would not load", () => {
+    const url = "http://images.example/hero.png";
+    expect(blogHeroImageUrlIssue(url)).not.toBeNull();
+    for (const schema of [BlogDraftCreateSchema, BlogDraftUpdateSchema]) {
+      const result = schema.safeParse({
+        ...VALID_DRAFT,
+        tags: ["a"],
+        heroImageUrl: url,
+      });
+      expect(result.success).toBe(false);
+    }
+    const ok = BlogDraftCreateSchema.safeParse({
+      ...VALID_DRAFT,
+      tags: ["a"],
+      heroImageUrl: "https://images.example/hero.png",
+    });
+    expect(ok.success).toBe(true);
+    expect(
+      BlogDraftCreateSchema.safeParse({
+        ...VALID_DRAFT,
+        tags: ["a"],
+        heroImageUrl: null,
+      }).success
+    ).toBe(true);
   });
 
   it("surfaces the API error envelope message when creating a draft fails", async () => {

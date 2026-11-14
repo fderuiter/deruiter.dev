@@ -40,11 +40,46 @@ const blogDraftTags = z
   )
   .min(1, "Add at least one tag.")
   .max(12, "Use at most 12 tags.");
+/**
+ * Checks a blog hero image URL against the one policy the authoring preview
+ * and the admin blog routes share: an absolute `https:` URL with a host and
+ * no user name or password, at most 2048 characters. Returns the message to
+ * show, or `null` when the URL is supported.
+ *
+ * The preview loads the image as soon as the author types it, so it checks
+ * the URL here first rather than after a save (CodeQL alert 29). This is a
+ * client-side rule for what the browser may load, not an SSRF defence; a
+ * server that fetches the image needs its own check.
+ */
+export function blogHeroImageUrlIssue(value: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed.length > 2048) {
+    return "Hero image URL cannot exceed 2048 characters.";
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return "Hero image URL must be a valid URL.";
+  }
+  if (parsed.protocol !== "https:" || !parsed.hostname) {
+    return "Hero image URL must start with https://.";
+  }
+  if (parsed.username || parsed.password) {
+    return "Hero image URL cannot contain a user name or password.";
+  }
+  return null;
+}
+
 const blogDraftHeroImageUrl = z
   .string()
   .trim()
   .url("Hero image URL must be a valid URL.")
   .max(2048, "Hero image URL cannot exceed 2048 characters.")
+  .superRefine((value, ctx) => {
+    const issue = blogHeroImageUrlIssue(value);
+    if (issue) ctx.addIssue({ code: "custom", message: issue });
+  })
   .nullable()
   .optional();
 

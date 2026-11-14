@@ -291,6 +291,36 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
             }`}
           >
+            {onMoveUp && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMoveUp();
+                }}
+                disabled={!canMoveUp}
+                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors"
+                title="Move Field Up"
+                aria-label="Move Field Up"
+              >
+                <IconArrowUp className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onMoveDown && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMoveDown();
+                }}
+                disabled={!canMoveDown}
+                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors"
+                title="Move Field Down"
+                aria-label="Move Field Down"
+              >
+                <IconArrowDown className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();

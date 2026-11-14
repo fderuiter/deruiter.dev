@@ -534,4 +534,103 @@ describe("CRFStudioContainer Component", () => {
       expect(el.textContent).not.toContain("Text Variable");
     }
   });
+
+  it("renders single-pointer Move Up and Move Down buttons on desktop screens and calls reorder handlers", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<CRFStudioContainer />);
+    });
+
+    const designerBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Form Designer")
+    );
+    if (designerBtn) {
+      await act(async () => {
+        designerBtn.click();
+      });
+    }
+
+    const firstSection = container.querySelector("[data-section-id]");
+    expect(firstSection).toBeTruthy();
+
+    const fieldEls = Array.from(
+      firstSection!.querySelectorAll("[data-field-id]")
+    ) as HTMLElement[];
+    expect(fieldEls.length).toBeGreaterThanOrEqual(2);
+
+    const firstField = fieldEls[0];
+    const secondField = fieldEls[1];
+    const initialFirstId = firstField.getAttribute("data-field-id");
+    const initialSecondId = secondField.getAttribute("data-field-id");
+    expect(initialFirstId).toBeTruthy();
+    expect(initialSecondId).toBeTruthy();
+
+    // In the desktop toolbar (.sm:flex), find Move Up and Move Down buttons
+    const firstMoveUp = firstField.querySelector(
+      '.sm\\:flex button[aria-label="Move Field Up"]'
+    ) as HTMLButtonElement;
+    const firstMoveDown = firstField.querySelector(
+      '.sm\\:flex button[aria-label="Move Field Down"]'
+    ) as HTMLButtonElement;
+
+    expect(firstMoveUp).toBeTruthy();
+    expect(firstMoveDown).toBeTruthy();
+
+    // First field in a section disables Move Up, but Move Down is enabled
+    expect(firstMoveUp.disabled).toBe(true);
+    expect(firstMoveDown.disabled).toBe(false);
+
+    // Second field has Move Up enabled
+    const secondMoveUp = secondField.querySelector(
+      '.sm\\:flex button[aria-label="Move Field Up"]'
+    ) as HTMLButtonElement;
+    expect(secondMoveUp).toBeTruthy();
+    expect(secondMoveUp.disabled).toBe(false);
+
+    // Click Move Down on the first field to reorder
+    await act(async () => {
+      firstMoveDown.click();
+    });
+
+    // Verify fields were reordered in the section
+    const reorderedFieldEls = Array.from(
+      firstSection!.querySelectorAll("[data-field-id]")
+    ) as HTMLElement[];
+    expect(reorderedFieldEls[0].getAttribute("data-field-id")).toBe(
+      initialSecondId
+    );
+    expect(reorderedFieldEls[1].getAttribute("data-field-id")).toBe(
+      initialFirstId
+    );
+
+    // Now on index 1 (which was the original first field), click Move Up
+    const reorderedMoveUp = reorderedFieldEls[1].querySelector(
+      '.sm\\:flex button[aria-label="Move Field Up"]'
+    ) as HTMLButtonElement;
+    expect(reorderedMoveUp).toBeTruthy();
+    expect(reorderedMoveUp.disabled).toBe(false);
+
+    await act(async () => {
+      reorderedMoveUp.click();
+    });
+
+    // Verify fields were restored to original order
+    const restoredFieldEls = Array.from(
+      firstSection!.querySelectorAll("[data-field-id]")
+    ) as HTMLElement[];
+    expect(restoredFieldEls[0].getAttribute("data-field-id")).toBe(
+      initialFirstId
+    );
+    expect(restoredFieldEls[1].getAttribute("data-field-id")).toBe(
+      initialSecondId
+    );
+
+    // Last field in section disables Move Down
+    const lastField = restoredFieldEls[restoredFieldEls.length - 1];
+    const lastMoveDown = lastField.querySelector(
+      '.sm\\:flex button[aria-label="Move Field Down"]'
+    ) as HTMLButtonElement;
+    expect(lastMoveDown).toBeTruthy();
+    expect(lastMoveDown.disabled).toBe(true);
+  });
 });

@@ -13,6 +13,49 @@
  */
 const fs = require("fs");
 
+/**
+ * Encodes a workflow command message the way `@actions/core` does
+ * (`escapeData`), so a line break in a test title cannot end the command
+ * and start another one.
+ */
+function encodeCommandData(value) {
+  return String(value)
+    .replace(/%/g, "%25")
+    .replace(/\r/g, "%0D")
+    .replace(/\n/g, "%0A");
+}
+
+/**
+ * Encodes a workflow command property (`escapeProperty` in `@actions/core`).
+ * A comma or colon in a file path would otherwise start a new property or
+ * end the property list.
+ */
+function encodeCommandProperty(value) {
+  return encodeCommandData(value).replace(/:/g, "%3A").replace(/,/g, "%2C");
+}
+
+/**
+ * Serializes text as one literal Markdown table cell. Line breaks become
+ * spaces so a test stays on one row, and every ASCII punctuation character
+ * CommonMark lets you escape is backslash-escaped, so the text cannot open
+ * a link, emphasis, code span, raw HTML or a new column.
+ */
+function markdownTableCell(value) {
+  return String(value)
+    .replace(/\r\n|\r|\n/g, " ")
+    .replace(/[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/g, "\\$&");
+}
+
+/** Formats one flaky test as a `::warning` annotation line. */
+function formatAnnotation(test) {
+  return `::warning file=${encodeCommandProperty(test.file)},line=${encodeCommandProperty(test.line)}::${encodeCommandData(`Passed only on retry (${test.attempts} attempts): ${test.title}`)}`;
+}
+
+/** Formats one flaky test as a row of the job summary table. */
+function formatSummaryRow(test) {
+  return `| ${markdownTableCell(test.title)} | ${markdownTableCell(`${test.file}:${test.line}`)} | ${test.attempts} |`;
+}
+
 /** Walks nested suites and returns every flaky test with its location. */
 function collectFlakyTests(report) {
   const flaky = [];
@@ -60,9 +103,7 @@ function main(argv) {
     `Merged report: ${stats.expected || 0} passed, ${stats.unexpected || 0} failed, ${flaky.length} passed only on retry, ${stats.skipped || 0} skipped.`
   );
   for (const test of flaky) {
-    console.log(
-      `::warning file=${test.file},line=${test.line}::Passed only on retry (${test.attempts} attempts): ${test.title}`
-    );
+    console.log(formatAnnotation(test));
   }
 
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
@@ -73,7 +114,7 @@ function main(argv) {
     } else {
       markdown += `| Test | File | Attempts |\n| --- | --- | --- |\n`;
       for (const test of flaky) {
-        markdown += `| ${test.title.replace(/\|/g, "\\|")} | ${test.file}:${test.line} | ${test.attempts} |\n`;
+        markdown += `${formatSummaryRow(test)}\n`;
       }
     }
     fs.appendFileSync(summaryPath, `${markdown}\n`);
@@ -85,4 +126,12 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { collectFlakyTests, main };
+module.exports = {
+  collectFlakyTests,
+  encodeCommandData,
+  encodeCommandProperty,
+  formatAnnotation,
+  formatSummaryRow,
+  main,
+  markdownTableCell,
+};

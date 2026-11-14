@@ -22,8 +22,17 @@ const flaky = require("../scripts/report-playwright-flaky.js") as {
     file: string;
     attempts: number;
   }>;
+  formatAnnotation: (test: FlakyTest) => string;
+  formatSummaryRow: (test: FlakyTest) => string;
   main: (argv: string[]) => number;
 };
+
+interface FlakyTest {
+  title: string;
+  file: string;
+  line: number;
+  attempts: number;
+}
 
 /** Support scripts the #1767 CI jobs call. */
 describe("CI support scripts (#1767)", () => {
@@ -338,6 +347,49 @@ describe("CI support scripts (#1767)", () => {
           attempts: 2,
         }),
       ]);
+    });
+
+    // CodeQL alert 13: titles and paths come from the PR under test.
+    const hostile: FlakyTest = {
+      title: "a\\|b | c\r\n[link](https://evil.invalid) `code` <img src=x>",
+      file: "e2e/a,b:c.spec.ts",
+      line: 7,
+      attempts: 3,
+    };
+
+    it("keeps a hostile title and path on one literal summary row", () => {
+      const row = flaky.formatSummaryRow(hostile);
+      expect(row).not.toMatch(/[\r\n]/);
+      // Exactly the four column separators: every pipe in the data is escaped.
+      expect(row.match(/(?<!\\)\|/g)).toHaveLength(4);
+      expect(row).not.toContain("[link](");
+      // Raw HTML and code spans only open on an unescaped delimiter.
+      expect(row).not.toMatch(/(?<!\\)[<`]/);
+      expect(row).toContain("\\[link\\]\\(https");
+      expect(row.endsWith(" | 3 |")).toBe(true);
+    });
+
+    // The escapes are invisible once GitHub renders the summary.
+    it("keeps an ordinary title readable", () => {
+      expect(
+        flaky.formatSummaryRow({
+          title: "home loads",
+          file: "e2e/home.spec.ts",
+          line: 12,
+          attempts: 2,
+        })
+      ).toBe("| home loads | e2e\\/home\\.spec\\.ts\\:12 | 2 |");
+    });
+
+    it("encodes annotations so test metadata cannot start another workflow command", () => {
+      const line = flaky.formatAnnotation({
+        ...hostile,
+        title: "t\n::error::injected 100%",
+      });
+      expect(line.split("\n")).toHaveLength(1);
+      expect(line).toBe(
+        "::warning file=e2e/a%2Cb%3Ac.spec.ts,line=7::Passed only on retry (3 attempts): t%0A::error::injected 100%25"
+      );
     });
 
     it("passes with a valid report and fails when the merged report is missing or empty", () => {

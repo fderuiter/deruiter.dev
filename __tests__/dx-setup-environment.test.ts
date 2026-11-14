@@ -191,6 +191,94 @@ describe("setup environment stage (#983)", () => {
     it("refuses values that cannot round-trip", () => {
       expect(() => formatEnvAssignment("A", 'x"y')).toThrow(/edit .env.local/);
       expect(() => formatEnvAssignment("A", "x\ny")).toThrow();
+      // dotenv turns these two-character sequences into line breaks.
+      expect(() => formatEnvAssignment("A", "a\\nb")).toThrow(
+        /edit .env.local/
+      );
+      expect(() => formatEnvAssignment("A", "a\\rb")).toThrow(
+        /edit .env.local/
+      );
+      expect(() => formatEnvAssignment("A", "a\\\\nb")).toThrow();
+    });
+
+    it("never puts the refused value in the error", () => {
+      const secret = "s3cr3t-\\n-value";
+      expect(() => formatEnvAssignment("PGPASSWORD", secret)).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining("s3cr3t"),
+        })
+      );
+    });
+
+    it("refuses the whole update before anything is written", () => {
+      expect(() => upsertEnvContent('A="1"\n', { B: "ok", C: 'bad"' })).toThrow(
+        /C contains/
+      );
+    });
+  });
+
+  // CodeQL alert 6: check the writer against the loader the app uses
+  // (@next/env: dotenv, then dotenv-expand), not only against our parser.
+  describe("round-trip through @next/env", () => {
+    const SUPPORTED: Record<string, string> = {
+      RT_PLAIN: "plain",
+      RT_DOLLARS: "pa$$word",
+      RT_EXPANSION_LOOKALIKE: "${HOME}/$PATH",
+      RT_ESCAPED_DOLLAR: "x\\$y",
+      RT_TRAILING_BACKSLASH: "secret\\",
+      RT_DOUBLE_BACKSLASH: "back\\\\slash",
+      RT_BACKSLASH_LETTER: "C:\\temp\\data",
+      RT_EMPTY: "",
+      RT_HASH: "a #b",
+      RT_SINGLE_QUOTE: "it's",
+      RT_BACKTICK: "`tick`",
+      RT_SPACES: "  padded  ",
+      RT_EQUALS: "k=v&x=y",
+      RT_URL: "postgresql://u:p%40ss@host:5432/db?sslmode=require",
+    };
+
+    let dir: string;
+    let savedEnv: NodeJS.ProcessEnv;
+    beforeEach(() => {
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), "dotenv-rt-"));
+      savedEnv = { ...process.env };
+    });
+    afterEach(() => {
+      process.env = savedEnv;
+      fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    async function loadWithNextEnv(content: string) {
+      const { loadEnvConfig } = await import("@next/env");
+      fs.writeFileSync(path.join(dir, ".env"), content);
+      for (const key of Object.keys(SUPPORTED)) delete process.env[key];
+      delete process.env.RT_AFTER;
+      const silent = { info: () => {}, error: () => {} };
+      return loadEnvConfig(dir, false, silent, true).combinedEnv;
+    }
+
+    it("loads every supported value byte for byte, without expansion", async () => {
+      const content = upsertEnvContent("", { ...SUPPORTED, RT_AFTER: "next" });
+      const loaded = await loadWithNextEnv(content);
+      for (const [key, value] of Object.entries(SUPPORTED)) {
+        expect(loaded[key], key).toBe(value);
+      }
+      // Adjacent assignments keep their boundaries.
+      expect(loaded.RT_AFTER).toBe("next");
+      // And our own parser agrees with the loader.
+      expect(parseEnvValues(content)).toEqual({
+        ...SUPPORTED,
+        RT_AFTER: "next",
+      });
+    });
+
+    it("refuses exactly the values the loader would change", async () => {
+      for (const value of ["a\\nb", "a\\rb"]) {
+        const naive = `RT_PLAIN="${value}"\n`;
+        const loaded = await loadWithNextEnv(naive);
+        expect(loaded.RT_PLAIN).not.toBe(value);
+        expect(() => formatEnvAssignment("RT_PLAIN", value)).toThrow();
+      }
     });
   });
 

@@ -21,6 +21,30 @@ export interface SecurityTriageItem {
   validationError?: string;
   remainingDays?: number;
   expiresAt?: string;
+  followUp?: string;
+}
+
+export function extractIssueNumber(followUp?: string): number | null {
+  if (!followUp) return null;
+  const match = followUp.match(/(?:issues\/|#)(\d+)/);
+  if (match) return parseInt(match[1], 10);
+  const num = parseInt(followUp.trim(), 10);
+  return isNaN(num) ? null : num;
+}
+
+export function getPriorityForSeverity(
+  severity: "critical" | "high" | "moderate"
+): string {
+  switch (severity) {
+    case "critical":
+      return "p1-critical";
+    case "high":
+      return "p2-high";
+    case "moderate":
+      return "p3-medium";
+    default:
+      return "p2-high";
+  }
 }
 
 export function collectTriageItems(
@@ -45,6 +69,7 @@ export function collectTriageItems(
         pkgName: rule.package,
         severity: rule.severity || "critical",
         reason: rule.reason,
+        followUp: rule.followUp,
       });
     } else if (rule.isApproachingExpiration) {
       items.push({
@@ -55,6 +80,7 @@ export function collectTriageItems(
         reason: rule.reason,
         remainingDays: rule.remainingDays,
         expiresAt: rule.expiresAt,
+        followUp: rule.followUp,
       });
     }
   }
@@ -233,17 +259,19 @@ export async function triageSecurityIssues(options?: {
     return [];
   };
 
-  const securityAlertIssues = await fetchIssuesByLabel("security");
-  const automatedAlertIssues = await fetchIssuesByLabel("automated-alert");
-  const triageIssues = await fetchIssuesByLabel("security-triage");
+  const SEARCH_LABELS = [
+    "security",
+    "automated-alert",
+    "security-triage",
+    "area:security",
+  ];
 
   const issueMap = new Map<number, ExistingGitHubIssue>();
-  for (const issue of [
-    ...securityAlertIssues,
-    ...automatedAlertIssues,
-    ...triageIssues,
-  ]) {
-    issueMap.set(issue.number, issue);
+  for (const label of SEARCH_LABELS) {
+    const issues = await fetchIssuesByLabel(label);
+    for (const issue of issues) {
+      issueMap.set(issue.number, issue);
+    }
   }
   const existingIssues = Array.from(issueMap.values());
 
@@ -326,46 +354,135 @@ export async function triageSecurityIssues(options?: {
     return { created, updated, closed };
   }
 
+  const commentsCache = new Map<number, Array<{ body?: string }>>();
+  const fetchIssueComments = async (
+    issueNumber: number
+  ): Promise<Array<{ body?: string }>> => {
+    if (commentsCache.has(issueNumber)) {
+      return commentsCache.get(issueNumber)!;
+    }
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${repo}/issues/${issueNumber}/comments`,
+        {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "security-triage-bot",
+          },
+        }
+      );
+      if (res.ok) {
+        const comments = (await res.json()) as Array<{ body?: string }>;
+        commentsCache.set(issueNumber, comments);
+        return comments;
+      }
+    } catch (_err) {
+      // Ignore
+    }
+    return [];
+  };
+
   for (const item of items) {
     const openIssue = existingIssues.find(
       (issue) =>
         issue.state === "open" &&
         (issue.title.toLowerCase().includes(item.advisoryId.toLowerCase()) ||
-          issue.body.toLowerCase().includes(item.advisoryId.toLowerCase()))
+          issue.body.toLowerCase().includes(item.advisoryId.toLowerCase()) ||
+          (item.followUp && extractIssueNumber(item.followUp) === issue.number))
     );
 
     if (openIssue) {
-      const commentText = sanitizeLogDetails(
-        `⚠️ **Scheduled Security Audit Alert:** [scheduled-vulnerability-alert] Vulnerability or override issue \`${item.advisoryId}\` (${item.pkgName || "N/A"}) remains active as of ${new Date().toISOString()}.`
-      );
-      try {
-        const commentRes = await fetch(
-          `https://api.github.com/repos/${repo}/issues/${openIssue.number}/comments`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `token ${token}`,
-              Accept: "application/vnd.github.v3+json",
-              "Content-Type": "application/json",
-              "User-Agent": "security-triage-bot",
-            },
-            body: JSON.stringify({
-              body: commentText,
-            }),
-          }
-        );
-        if (commentRes.ok) {
-          console.log(
-            `Updated issue #${openIssue.number} for advisory ${item.advisoryId}`
-          );
-          updated++;
-        } else {
-          console.warn(
-            `Failed to update issue #${openIssue.number}: ${commentRes.status}`
+      if (item.type === "expiring_rule") {
+        let alreadyWarned =
+          openIssue.body.includes(
+            "### Approaching Override Expiration Details"
+          ) || openIssue.body.includes("<!-- marker: expiring-rule-warning");
+
+        if (!alreadyWarned) {
+          const comments = await fetchIssueComments(openIssue.number);
+          alreadyWarned = comments.some(
+            (c) =>
+              c.body &&
+              (c.body.includes("<!-- marker: expiring-rule-warning") ||
+                (c.body.includes("[scheduled-vulnerability-alert]") &&
+                  c.body.toLowerCase().includes("warning window")))
           );
         }
-      } catch (err) {
-        console.warn(`Error updating issue #${openIssue.number}:`, err);
+
+        if (alreadyWarned) {
+          console.log(
+            `Issue #${openIssue.number} already notified of approaching expiration for ${item.advisoryId}. Skipping daily comment.`
+          );
+          continue;
+        }
+
+        const commentText = sanitizeLogDetails(
+          `⚠️ **Scheduled Security Audit Alert:** [scheduled-vulnerability-alert] Temporary override rule for \`${item.advisoryId}\` (${item.pkgName || "N/A"}) has entered its pre-expiration warning window (${item.remainingDays !== undefined ? `${item.remainingDays} days remaining` : "approaching expiration"}, expires \`${item.expiresAt || "N/A"}\`). Please remediate or renew before expiration.\n\n<!-- marker: expiring-rule-warning:${item.advisoryId}:${item.expiresAt || ""} -->\n<!-- marker: expiring-rule-warning -->`
+        );
+
+        try {
+          const commentRes = await fetch(
+            `https://api.github.com/repos/${repo}/issues/${openIssue.number}/comments`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+                "User-Agent": "security-triage-bot",
+              },
+              body: JSON.stringify({
+                body: commentText,
+              }),
+            }
+          );
+          if (commentRes.ok) {
+            console.log(
+              `Notified issue #${openIssue.number} of approaching expiration for ${item.advisoryId}`
+            );
+            updated++;
+          } else {
+            console.warn(
+              `Failed to update issue #${openIssue.number}: ${commentRes.status}`
+            );
+          }
+        } catch (err) {
+          console.warn(`Error updating issue #${openIssue.number}:`, err);
+        }
+      } else {
+        const commentText = sanitizeLogDetails(
+          `⚠️ **Scheduled Security Audit Alert:** [scheduled-vulnerability-alert] Vulnerability or override issue \`${item.advisoryId}\` (${item.pkgName || "N/A"}) remains active as of ${new Date().toISOString()}.`
+        );
+        try {
+          const commentRes = await fetch(
+            `https://api.github.com/repos/${repo}/issues/${openIssue.number}/comments`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+                "User-Agent": "security-triage-bot",
+              },
+              body: JSON.stringify({
+                body: commentText,
+              }),
+            }
+          );
+          if (commentRes.ok) {
+            console.log(
+              `Updated issue #${openIssue.number} for advisory ${item.advisoryId}`
+            );
+            updated++;
+          } else {
+            console.warn(
+              `Failed to update issue #${openIssue.number}: ${commentRes.status}`
+            );
+          }
+        } catch (err) {
+          console.warn(`Error updating issue #${openIssue.number}:`, err);
+        }
       }
     } else {
       const title = `[scheduled-vulnerability-alert] [Security Triage] ${item.severity.toUpperCase()} Advisory: ${item.advisoryId}${item.pkgName ? ` (${item.pkgName})` : ""}`;
@@ -406,12 +523,23 @@ export async function triageSecurityIssues(options?: {
         rawBodyLines.push(
           "The temporary override rule for this advisory is within its pre-expiration warning window and must be remediated or renewed before expiration."
         );
+        rawBodyLines.push("");
+        rawBodyLines.push(
+          `<!-- marker: expiring-rule-warning:${item.advisoryId}:${item.expiresAt || ""} -->`
+        );
+        rawBodyLines.push(`<!-- marker: expiring-rule-warning -->`);
       } else if (item.type === "invalid_rule") {
         rawBodyLines.push("### Invalid Override Rule Details");
         rawBodyLines.push(
           `- **Validation Error:** ${item.validationError || "N/A"}`
         );
       }
+
+      rawBodyLines.push("");
+      rawBodyLines.push("### Acceptance");
+      rawBodyLines.push(
+        "- [ ] `npm run audit:security -- --fail-on-warning --severity=moderate` passes cleanly or with an approved, active ignore rule."
+      );
 
       rawBodyLines.push("");
       rawBodyLines.push("### 📋 Remediation Instructions");
@@ -426,6 +554,13 @@ export async function triageSecurityIssues(options?: {
       );
 
       const body = sanitizeLogDetails(rawBodyLines.join("\n"));
+      const priorityLabel = getPriorityForSeverity(item.severity);
+      const labels = [
+        "type:security",
+        priorityLabel,
+        "area:security",
+        "automated-alert",
+      ];
 
       try {
         const createRes = await fetch(
@@ -441,7 +576,7 @@ export async function triageSecurityIssues(options?: {
             body: JSON.stringify({
               title,
               body,
-              labels: ["security", "automated-alert"],
+              labels,
             }),
           }
         );

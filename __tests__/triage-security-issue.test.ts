@@ -8,6 +8,8 @@ import {
   collectTriageItems,
   triageSecurityIssues,
   sanitizeLogDetails,
+  extractIssueNumber,
+  getPriorityForSeverity,
 } from "../scripts/triage-security-issue";
 
 vi.mock("child_process", () => {
@@ -201,6 +203,30 @@ describe("Triage Security Issue Script", () => {
     });
   });
 
+  describe("extractIssueNumber", () => {
+    it("extracts issue numbers from URLs, hashes, and raw digits", () => {
+      expect(
+        extractIssueNumber(
+          "https://github.com/fderuiter/deruiter.dev/issues/3667"
+        )
+      ).toBe(3667);
+      expect(extractIssueNumber("#1234")).toBe(1234);
+      expect(extractIssueNumber("5678")).toBe(5678);
+      expect(extractIssueNumber("")).toBeNull();
+      expect(extractIssueNumber(undefined)).toBeNull();
+      expect(extractIssueNumber("not-a-number")).toBeNull();
+    });
+  });
+
+  describe("getPriorityForSeverity", () => {
+    it("maps severity levels to issue governance priority labels", () => {
+      expect(getPriorityForSeverity("critical")).toBe("p1-critical");
+      expect(getPriorityForSeverity("high")).toBe("p2-high");
+      expect(getPriorityForSeverity("moderate")).toBe("p3-medium");
+      expect(getPriorityForSeverity("unknown" as any)).toBe("p2-high");
+    });
+  });
+
   describe("sanitizeLogDetails", () => {
     it("sanitizes runner paths and secret tokens", () => {
       const mockToken = ["ghp_", "12345678901234567890123456789012345678"].join(
@@ -233,7 +259,7 @@ describe("Triage Security Issue Script", () => {
       );
     });
 
-    it("creates a new issue with labels security and automated-alert when no existing issue is open", async () => {
+    it("creates a new issue with governance labels when no existing issue is open", async () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
@@ -260,8 +286,11 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Mock list existing issues returning empty for each label search ("security", "automated-alert", "security-triage")
+      // Mock list existing issues returning empty for each label search ("security", "automated-alert", "security-triage", "area:security")
       globalFetchSpy
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
         )
@@ -287,14 +316,17 @@ describe("Triage Security Issue Script", () => {
 
       expect(result).toEqual({ created: 1, updated: 0, closed: 0 });
 
-      // Verify create call was POST to /issues with labels security and automated-alert
-      const createCall = globalFetchSpy.mock.calls[3];
+      // Verify create call was POST to /issues with governance labels
+      const createCall = globalFetchSpy.mock.calls[4];
       expect(createCall[0]).toContain("/repos/fderuiter/portfolio/issues");
       const postBody = JSON.parse((createCall[1]?.body as string) || "{}");
-      expect(postBody.labels).toContain("security");
+      expect(postBody.labels).toContain("type:security");
+      expect(postBody.labels).toContain("p2-high");
+      expect(postBody.labels).toContain("area:security");
       expect(postBody.labels).toContain("automated-alert");
       expect(postBody.title).toContain("scheduled-vulnerability-alert");
       expect(postBody.title.toLowerCase()).toContain("ghsa-new-issue-123");
+      expect(postBody.body).toContain("### Acceptance");
     });
 
     it("posts comment to existing open issue rather than creating duplicate", async () => {
@@ -347,6 +379,9 @@ describe("Triage Security Issue Script", () => {
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
         )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
         // Mock post comment
         .mockResolvedValueOnce(
           fromPartial<Response>({
@@ -363,7 +398,7 @@ describe("Triage Security Issue Script", () => {
 
       expect(result).toEqual({ created: 0, updated: 1, closed: 0 });
 
-      const commentCall = globalFetchSpy.mock.calls[3];
+      const commentCall = globalFetchSpy.mock.calls[4];
       expect(commentCall[0]).toContain("/issues/10/comments");
     });
 
@@ -405,6 +440,9 @@ describe("Triage Security Issue Script", () => {
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
         )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
         // Mock post resolution comment
         .mockResolvedValueOnce(
           fromPartial<Response>({
@@ -428,12 +466,12 @@ describe("Triage Security Issue Script", () => {
 
       expect(result).toEqual({ created: 0, updated: 0, closed: 1 });
 
-      const commentCall = globalFetchSpy.mock.calls[3];
+      const commentCall = globalFetchSpy.mock.calls[4];
       expect(commentCall[0]).toContain("/issues/15/comments");
       const commentBody = JSON.parse((commentCall[1]?.body as string) || "{}");
       expect(commentBody.body).toContain("Scheduled Security Audit Cleared");
 
-      const patchCall = globalFetchSpy.mock.calls[4];
+      const patchCall = globalFetchSpy.mock.calls[5];
       expect(patchCall[0]).toContain("/issues/15");
       expect(patchCall[1]?.method).toBe("PATCH");
       const patchBody = JSON.parse((patchCall[1]?.body as string) || "{}");
@@ -515,6 +553,9 @@ describe("Triage Security Issue Script", () => {
           fromPartial<Response>({ ok: true, json: async () => [] })
         )
         .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
           fromPartial<Response>({
             ok: true,
             json: async () => ({ number: 99 }),
@@ -529,7 +570,7 @@ describe("Triage Security Issue Script", () => {
 
       expect(result).toEqual({ created: 1, updated: 0, closed: 0 });
 
-      const createCall = globalFetchSpy.mock.calls[3];
+      const createCall = globalFetchSpy.mock.calls[4];
       const postBody = JSON.parse((createCall[1]?.body as string) || "{}");
       expect(postBody.title).toContain(
         "MODERATE Advisory: GHSA-expiring-alert-99"
@@ -540,6 +581,253 @@ describe("Triage Security Issue Script", () => {
       expect(postBody.body).toContain("Remaining Days:** 5");
       expect(postBody.body).toContain("pre-expiration warning window");
       expect(postBody.body).toContain("2026-11-25T12:00:00Z");
+      expect(postBody.labels).toContain("type:security");
+      expect(postBody.labels).toContain("p3-medium");
+      expect(postBody.labels).toContain("area:security");
+      expect(postBody.labels).toContain("automated-alert");
+    });
+
+    it("matches existing open issue carrying only area:security and comments once when entering warning window", async () => {
+      const fixedNow = new Date("2026-11-20T12:00:00Z");
+      const rawIgnoreData = [
+        {
+          advisory: "GHSA-g3hv-75wg-m249",
+          package: "minimatch",
+          expiresAt: "2026-11-30T12:00:00Z",
+          severity: "moderate",
+          reason: "Pending upstream fix",
+          owner: "fderuiter",
+          followUp: "https://github.com/fderuiter/deruiter.dev/issues/3667",
+        },
+      ];
+
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(rawIgnoreData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      // Label searches: "security", "automated-alert", "security-triage" return empty, "area:security" returns #3667
+      globalFetchSpy
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [
+              {
+                number: 3667,
+                title:
+                  "chore(deps): remove or renew the GHSA-g3hv-75wg-m249 audit exception by 2026-11-30",
+                state: "open",
+                body: "## Problem\n#3670 added the first entry for GHSA-g3hv-75wg-m249",
+                labels: [{ name: "p3-medium" }, { name: "area:security" }],
+              },
+            ],
+          })
+        )
+        // Fetch comments on issue #3667 returns empty (not warned yet)
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [],
+          })
+        )
+        // POST comment on #3667
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => ({ id: 501 }),
+          })
+        );
+
+      const result = await triageSecurityIssues({
+        token: "example_dev_token",
+        repo: "fderuiter/portfolio",
+        now: fixedNow,
+      });
+
+      expect(result).toEqual({ created: 0, updated: 1, closed: 0 });
+
+      // Check comments was called on 3667
+      const commentsGetCall = globalFetchSpy.mock.calls[4];
+      expect(commentsGetCall[0]).toContain("/issues/3667/comments");
+
+      // Check POST comment was called with marker
+      const commentPostCall = globalFetchSpy.mock.calls[5];
+      expect(commentPostCall[0]).toContain("/issues/3667/comments");
+      const commentPayload = JSON.parse(
+        (commentPostCall[1]?.body as string) || "{}"
+      );
+      expect(commentPayload.body).toContain("pre-expiration warning window");
+      expect(commentPayload.body).toContain(
+        "<!-- marker: expiring-rule-warning -->"
+      );
+      expect(commentPayload.body).toContain("GHSA-g3hv-75wg-m249");
+    });
+
+    it("does not post duplicate comment to existing issue when expiring rule was already warned", async () => {
+      const fixedNow = new Date("2026-11-21T12:00:00Z"); // next day
+      const rawIgnoreData = [
+        {
+          advisory: "GHSA-g3hv-75wg-m249",
+          package: "minimatch",
+          expiresAt: "2026-11-30T12:00:00Z",
+          severity: "moderate",
+          reason: "Pending upstream fix",
+          owner: "fderuiter",
+          followUp: "https://github.com/fderuiter/deruiter.dev/issues/3667",
+        },
+      ];
+
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(rawIgnoreData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      // Label searches: "security", "automated-alert", "security-triage" return empty, "area:security" returns #3667
+      globalFetchSpy
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [
+              {
+                number: 3667,
+                title:
+                  "chore(deps): remove or renew the GHSA-g3hv-75wg-m249 audit exception by 2026-11-30",
+                state: "open",
+                body: "## Problem\n#3670 added the first entry for GHSA-g3hv-75wg-m249",
+                labels: [{ name: "p3-medium" }, { name: "area:security" }],
+              },
+            ],
+          })
+        )
+        // Fetch comments on issue #3667 returns previous warning comment
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [
+              {
+                body: "⚠️ **Scheduled Security Audit Alert:** [scheduled-vulnerability-alert] Temporary override rule for `GHSA-g3hv-75wg-m249` has entered its pre-expiration warning window...\n\n<!-- marker: expiring-rule-warning -->",
+              },
+            ],
+          })
+        );
+
+      const result = await triageSecurityIssues({
+        token: "example_dev_token",
+        repo: "fderuiter/portfolio",
+        now: fixedNow,
+      });
+
+      // No issue created, no comments posted, none closed
+      expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
+
+      // Expect total fetch calls were 5 (4 label searches + 1 comments fetch), no POST comment
+      expect(globalFetchSpy).toHaveBeenCalledTimes(5);
+    });
+
+    it("does not comment on auto-filed issue that already contains Approaching Override Expiration Details in body", async () => {
+      const fixedNow = new Date("2026-11-21T12:00:00Z");
+      const rawIgnoreData = [
+        {
+          advisory: "GHSA-expiring-alert-99",
+          package: "expiring-dep",
+          expiresAt: "2026-11-25T12:00:00Z",
+          severity: "moderate",
+          reason: "Temporary waiver pending upstream release",
+          owner: "owner",
+          followUp: "#99",
+        },
+      ];
+
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(rawIgnoreData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      // Search returns existing auto-filed issue with approaching expiration details in its body
+      globalFetchSpy
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [
+              {
+                number: 99,
+                title:
+                  "[scheduled-vulnerability-alert] [Security Triage] MODERATE Advisory: GHSA-expiring-alert-99",
+                state: "open",
+                body: "### Approaching Override Expiration Details\n- **Advisory Identifier:** `GHSA-expiring-alert-99`\n<!-- marker: expiring-rule-warning -->",
+                labels: [
+                  { name: "type:security" },
+                  { name: "p3-medium" },
+                  { name: "area:security" },
+                ],
+              },
+            ],
+          })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        );
+
+      const result = await triageSecurityIssues({
+        token: "example_dev_token",
+        repo: "fderuiter/portfolio",
+        now: fixedNow,
+      });
+
+      expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
+      // Skips comments without needing to fetch comments API
+      expect(globalFetchSpy).toHaveBeenCalledTimes(4);
     });
   });
 });

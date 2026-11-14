@@ -5076,23 +5076,23 @@
         "category": "by-design",
         "reason": "TATRANS is null: each arm runs its elements in a fixed order, so no transition rule applies."
       },
-      "CORE-002056 TA": {
+      "CORE-002056 AE": {
         "category": "core-limitation",
-        "reason": "Reports a trial design dataset missing although TA, TE, TV, TI and TS are all present; its list of missing domains is made of domains that are not trial design datasets, such as AG, CE and QS. CORE marks the rule partially executable."
+        "reason": "Reports a trial design dataset missing although TA, TE, TV, TI and TS are all present; its list of missing domains is made of domains that are not trial design datasets, such as AG, CE and QS. CORE marks the rule partially executable. It is a study-level rule, which CORE reports against the first dataset it reads (AE, since the workflow passes the datasets in sorted order)."
       },
       "CORE-002061 TA": {
         "category": "core-limitation",
         "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
       },
-      "CORE-002084 TA": {
+      "CORE-002084 AE": {
         "category": "core-limitation",
-        "reason": "Reports Define-XML missing although define.xml is beside the datasets and the other Define-XML rules read it."
+        "reason": "Reports Define-XML missing although define.xml is beside the datasets and the other Define-XML rules read it. It is a study-level rule, which CORE reports against the first dataset it reads (AE, since the workflow passes the datasets in sorted order)."
       },
-      "CORE-002116 TA": {
+      "CORE-002116 AE": {
         "category": "core-limitation",
         "reason": "CORE v1.0.0 cannot run this rule: its rule type, STF Metadata Check, is not implemented in the engine (#3710 class B)."
       },
-      "CORE-002117 TA": {
+      "CORE-002117 AE": {
         "category": "core-limitation",
         "reason": "CORE v1.0.0 cannot run this rule: the define_extended_terms_in_ct operation is not implemented in the engine (#3710 class C)."
       },
@@ -5695,15 +5695,26 @@
           "CORE-002047 MH -#- -",
           "CORE-002051 TS -#- -",
           "CORE-002052 CM -#- -",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
-          "CORE-002056 TA -#- $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0003#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0006#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0007#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0009#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0012#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0014#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0015#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0016#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0018#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0022#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0025#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0027#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0030#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0031#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0032#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0033#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0034#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0035#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0037#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
+          "CORE-002056 AE DEMO-301-0038#1 $missing_trial_design_domains=['AC', 'AG', 'APRELSUB', 'BE', 'BS', 'CE', 'CP', 'CV', 'DA', 'DD', 'DI', 'DR', 'DV', 'EC', 'FA', 'FT', 'GF', 'HO', 'IS', 'MB', 'MI', 'MK', 'ML', 'MS', 'NV', 'OE', 'OI', 'PC', 'PE', 'POOLDEF', 'PP', 'PR', 'QS', 'RE', 'RELSPEC', 'RELSUB', 'RP', 'RS', 'SC', 'SJ', 'SM', 'SR', 'SS', 'SU', 'SUPPQUAL', 'TD', 'TM', 'TP', 'TR', 'TT', 'TU', 'TX', 'UR']",
           "CORE-002057 TS -#- -",
           "CORE-002058 TS -#- -",
           "CORE-002060 TS -#- -",
@@ -5741,15 +5752,26 @@
           "CORE-002074 AE -#- -",
           "CORE-002074 MH -#- -",
           "CORE-002075 DM -#- -",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
-          "CORE-002084 TA -#- define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0003#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0006#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0007#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0009#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0012#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0014#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0015#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0016#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0018#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0022#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0025#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0027#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0030#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0031#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0032#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0033#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0034#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0035#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0037#1 define.xml=Not in dataset",
+          "CORE-002084 AE DEMO-301-0038#1 define.xml=Not in dataset",
           "CORE-002092 CM -#- -",
           "CORE-002093 DM -#- -",
           "CORE-002093 SUPPDM -#- -",
@@ -5774,8 +5796,8 @@
           "CORE-002101 VS -#- -",
           "CORE-002103 CM -#- -",
           "CORE-002106 DM -#- -",
-          "CORE-002116 TA -#- -",
-          "CORE-002117 TA -#- -",
+          "CORE-002116 AE -#- -",
+          "CORE-002117 AE -#- -",
           "CORE-002120 EG -#- -",
           "CORE-002120 IE -#- -",
           "CORE-002120 LB -#- -",
@@ -5867,7 +5889,7 @@
           "CORE-002047 MH": 1,
           "CORE-002051 TS": 1,
           "CORE-002052 CM": 1,
-          "CORE-002056 TA": 9,
+          "CORE-002056 AE": 44,
           "CORE-002057 TS": 1,
           "CORE-002058 TS": 1,
           "CORE-002060 TS": 1,
@@ -5905,7 +5927,7 @@
           "CORE-002074 AE": 1,
           "CORE-002074 MH": 1,
           "CORE-002075 DM": 1,
-          "CORE-002084 TA": 9,
+          "CORE-002084 AE": 44,
           "CORE-002092 CM": 1,
           "CORE-002093 DM": 1,
           "CORE-002093 SUPPDM": 1,
@@ -5930,8 +5952,8 @@
           "CORE-002101 VS": 1,
           "CORE-002103 CM": 1,
           "CORE-002106 DM": 1,
-          "CORE-002116 TA": 1,
-          "CORE-002117 TA": 1,
+          "CORE-002116 AE": 1,
+          "CORE-002117 AE": 1,
           "CORE-002120 EG": 1,
           "CORE-002120 IE": 1,
           "CORE-002120 LB": 1,
@@ -6083,14 +6105,20 @@
     "lab-retest-same-day": {
       "inputSha256": "3b7d827acbd838cb938ca0d4746a41d60b9fe33737b54811adbcc61613e97830",
       "added": {
-        "lines": [],
-        "counts": {}
+        "lines": [
+          "CORE-002123 LB -#- -"
+        ],
+        "counts": {
+          "CORE-002123 LB": 1
+        }
       },
       "removed": {
         "lines": [],
         "counts": {}
       },
-      "status": {}
+      "status": {
+        "CORE-002123": "EXECUTION ERROR"
+      }
     },
     "unscheduled-visit-in-window": {
       "inputSha256": "023c0828d9e6a64dc643ccce6818f498748b04d696a5972c08a3a56d3dfd2e85",

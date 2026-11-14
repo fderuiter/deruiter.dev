@@ -836,9 +836,9 @@
     {
       "target": "sdtm",
       "coreId": "CORE-002056",
-      "dataset": "TA",
+      "dataset": "AE",
       "category": "core-limitation",
-      "reason": "Reports a trial design dataset missing although TA, TE, TV, TI and TS are all present; its list of missing domains is made of domains that are not trial design datasets, such as AG, CE and QS. CORE marks the rule partially executable."
+      "reason": "Reports a trial design dataset missing although TA, TE, TV, TI and TS are all present; its list of missing domains is made of domains that are not trial design datasets, such as AG, CE and QS. CORE marks the rule partially executable. It is a study-level rule, which CORE reports against the first dataset it reads (AE, since the workflow passes the datasets in sorted order)."
     },
     {
       "target": "sdtm",
@@ -850,21 +850,21 @@
     {
       "target": "sdtm",
       "coreId": "CORE-002084",
-      "dataset": "TA",
+      "dataset": "AE",
       "category": "core-limitation",
-      "reason": "Reports Define-XML missing although define.xml is beside the datasets and the other Define-XML rules read it."
+      "reason": "Reports Define-XML missing although define.xml is beside the datasets and the other Define-XML rules read it. It is a study-level rule, which CORE reports against the first dataset it reads (AE, since the workflow passes the datasets in sorted order)."
     },
     {
       "target": "sdtm",
       "coreId": "CORE-002116",
-      "dataset": "TA",
+      "dataset": "AE",
       "category": "core-limitation",
       "reason": "CORE v1.0.0 cannot run this rule: its rule type, STF Metadata Check, is not implemented in the engine (#3710 class B)."
     },
     {
       "target": "sdtm",
       "coreId": "CORE-002117",
-      "dataset": "TA",
+      "dataset": "AE",
       "category": "core-limitation",
       "reason": "CORE v1.0.0 cannot run this rule: the define_extended_terms_in_ct operation is not implemented in the engine (#3710 class C)."
     },

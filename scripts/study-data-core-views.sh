@@ -47,8 +47,14 @@ sdtm() {
   local view="$1"
   local sdtm_dir="$inputs/$view/m5/datasets/tabulations/sdtm"
   mkdir -p "$reports/$view"
+  # CORE reports a study-level rule against the first dataset it reads.
+  # With -d that is directory order, which differs between machines, so
+  # name the datasets in sorted order and the report keys stay the same.
+  local paths=()
+  while IFS= read -r file; do paths+=(-dp "$file"); done \
+    < <(find "$sdtm_dir" -maxdepth 1 -name '*.json' | LC_ALL=C sort)
   if core validate -s sdtmig -v 3-4 -ft json \
-    -d "$sdtm_dir" -dxp "$sdtm_dir/define.xml" \
+    "${paths[@]}" -dxp "$sdtm_dir/define.xml" \
     -o "$reports/$view/sdtm" -of json -p disabled \
     > "$reports/$view/sdtm.log" 2>&1; then
     echo "CORE SDTMIG 3.4: $view done"

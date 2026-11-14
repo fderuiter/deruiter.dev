@@ -218,7 +218,7 @@ describe("PhotoGalleryModal Component", () => {
     );
   });
 
-  it("shifts focus to first available thumbnail when active photo is not in filtered category", async () => {
+  it("exits lightbox mode and updates category filter when clicking a filter pill", async () => {
     await act(async () => {
       root?.render(<PhotoGalleryModal isOpen={true} onClose={() => {}} />);
     });
@@ -233,6 +233,11 @@ describe("PhotoGalleryModal Component", () => {
       firstThumb?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
+    // Lightbox modal should now have an active photo with back button
+    expect(
+      container?.querySelector('button[aria-label="Back to all photos"]')
+    ).not.toBeNull();
+
     // Now switch category to 'sports' while in lightbox
     const sportsFilterBtn = Array.from(
       container?.querySelectorAll('div[role="group"] button') ?? []
@@ -245,12 +250,11 @@ describe("PhotoGalleryModal Component", () => {
       );
     });
 
-    // Focus should shift to the first available thumbnail in 'sports'
-    const sportsThumbnails = container?.querySelectorAll(
-      'button[aria-label^="View photo:"]'
-    );
-    expect(sportsThumbnails?.length).toBeGreaterThan(0);
-    expect(document.activeElement).toBe(sportsThumbnails?.[0]);
+    // Lightbox should close and filter state should update
+    expect(
+      container?.querySelector('button[aria-label="Back to all photos"]')
+    ).toBeNull();
+    expect(sportsFilterBtn?.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("initializes focus on lightbox when opened with initialPhotoId without restoring thumbnail focus on close", async () => {

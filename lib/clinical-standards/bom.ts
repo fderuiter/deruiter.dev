@@ -536,8 +536,8 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
 
 /** The CDISC rules engine the CORE workflow pins. */
 export const CDISC_CORE_PIN = Object.freeze({
-  tag: "v0.17.1",
-  commit: "2a90a3872a7e3b07c15abe84744026c94a7a04b0",
+  tag: "v1.0.0",
+  commit: "f3282a0d870bbdf57e326e9992cceea3ed0d9af5",
 });
 
 const EVS = "https://evs.nci.nih.gov/ftp1/CDISC";

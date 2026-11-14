@@ -16,90 +16,6 @@
       "reason": "Medications started before informed consent have no EPOCH, since they began before the study's first epoch; most are remembered to the month only. Medications for an AE with a month-only start date have none either."
     },
     {
-      "target": "sdtm",
-      "coreId": "CORE-000761",
-      "dataset": "TS",
-      "category": "ct-cache",
-      "reason": "TSVCDVER is the declared CT release, which CORE's rule cache does not hold yet."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000767",
-      "dataset": "AE",
-      "category": "core-limitation",
-      "reason": "The rule compares --DECOD with FAOBJ on any record that RELREC relates, as though the relationship were to a Findings About record. The study has no FA domain: RELREC relates adverse events to the medications given for them, so FAOBJ is absent and every related AE and CM record is reported."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000767",
-      "dataset": "CM",
-      "category": "core-limitation",
-      "reason": "The rule compares --DECOD with FAOBJ on any record that RELREC relates, as though the relationship were to a Findings About record. The study has no FA domain: RELREC relates adverse events to the medications given for them, so FAOBJ is absent and every related AE and CM record is reported."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001080",
-      "dataset": "TS",
-      "category": "core-limitation",
-      "reason": "Engine execution error (unknown exception) on TS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000741",
-      "dataset": "TS",
-      "category": "core-limitation",
-      "reason": "The rule looks for TSPARMCD PCLASS, but the CDISC CT code for Pharmacologic Class is PCLAS (C98768), which TS carries with INTMODEL and INTTYPE."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000939",
-      "dataset": "Objective",
-      "category": "ct-cache",
-      "reason": "The fixture uses the 2026-09-25 Objective Level decodes (Primary Objective, Secondary Objective). CORE validates against its newest cached CT, 2026-03-27, whose submission values were Study Primary Objective and Study Secondary Objective."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000419",
-      "dataset": "Activity",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000419",
-      "dataset": "EligibilityCriterion",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000419",
-      "dataset": "Encounter",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000419",
-      "dataset": "StudyEpoch",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the fixture."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000817",
-      "dataset": "StudyTitle",
-      "category": "core-limitation",
-      "reason": "Reports both titles although their type codes differ (C207616, C207615)."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000871",
-      "dataset": "InterventionalStudyDesign",
-      "category": "core-limitation",
-      "reason": "Counts two primary objectives while listing the one the fixture has."
-    },
-    {
       "target": "usdm",
       "coreId": "CORE-000873",
       "dataset": "StudyVersion",
@@ -143,62 +59,6 @@
     },
     {
       "target": "crf-usdm",
-      "coreId": "CORE-000419",
-      "dataset": "Activity",
-      "category": "core-limitation",
-      "presets": [
-        "oncology_recist",
-        "device_cardiovascular_implant",
-        "clinical_instruments",
-        "cns_neuro",
-        "pk_escalation"
-      ],
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000419",
-      "dataset": "Encounter",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000419",
-      "dataset": "EligibilityCriterion",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export.",
-      "presets": [
-        "oncology_recist",
-        "device_cardiovascular_implant",
-        "clinical_instruments",
-        "cns_neuro",
-        "pk_escalation"
-      ]
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000419",
-      "dataset": "StudyEpoch",
-      "category": "core-limitation",
-      "reason": "Reports every element of a next/previous chain although no nextId or previousId repeats in the export.",
-      "presets": [
-        "oncology_recist",
-        "device_cardiovascular_implant",
-        "clinical_instruments",
-        "cns_neuro",
-        "pk_escalation"
-      ]
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000817",
-      "dataset": "StudyTitle",
-      "category": "core-limitation",
-      "reason": "Reports the export's only title, twice, as a duplicate of itself."
-    },
-    {
-      "target": "crf-usdm",
       "coreId": "CORE-000815",
       "dataset": "StudyDesignPopulation",
       "category": "by-design",
@@ -212,34 +72,6 @@
       "category": "by-design",
       "presets": ["custom_blank"],
       "reason": "The blank canvas plans no population, so it has no planned sex until its author adds one."
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000871",
-      "dataset": "InterventionalStudyDesign",
-      "category": "core-limitation",
-      "reason": "Counts two primary objectives while listing the one the export has.",
-      "presets": [
-        "oncology_recist",
-        "device_cardiovascular_implant",
-        "clinical_instruments",
-        "cns_neuro",
-        "pk_escalation"
-      ]
-    },
-    {
-      "target": "crf-usdm",
-      "coreId": "CORE-000939",
-      "dataset": "Objective",
-      "category": "ct-cache",
-      "reason": "The export uses the 2026-09-25 Objective Level decodes (Primary Objective, Secondary Objective). CORE validates against its newest cached CT, 2026-03-27, whose submission values were Study Primary Objective and Study Secondary Objective.",
-      "presets": [
-        "oncology_recist",
-        "device_cardiovascular_implant",
-        "clinical_instruments",
-        "cns_neuro",
-        "pk_escalation"
-      ]
     },
     {
       "target": "crf-usdm",
@@ -279,6 +111,1035 @@
       "category": "by-design",
       "reason": "No study intervention to reference: clinical_instruments validates measurement instruments and gives none, and the blank canvas has none until its author adds one.",
       "presets": ["clinical_instruments", "custom_blank"]
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "Fires on AE, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002008",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002009",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002010",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002011",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002012",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002013",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002014",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002015",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002031",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002041",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_define_external_dictionary_version operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002047",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002073",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002074",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "Fires on CM, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002052",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002092",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002103",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "CM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000206",
+      "dataset": "CO",
+      "category": "core-limitation",
+      "reason": "Over-reports: hundreds of issues for 26 CO records, and every IDVARVAL checked names a record that exists (for example SV VISITNUM 6 for DEMO-301-0002), so the rule's join fails, not the reference."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "CO",
+      "category": "core-limitation",
+      "reason": "Fires on CO, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "CO",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "CO",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "CO",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "Fires on DM, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000726",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Define Item Metadata Check, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002030",
+      "dataset": "DM",
+      "category": "by-design",
+      "reason": "DTHDTC and DTHFL are null because no subject dies in the default run, and ACTARMUD is null because no subject receives an unplanned treatment. The death-during-treatment and unplanned-treatment views fill them."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002075",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_countries operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002093",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Define Item Metadata Check, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002106",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_countries operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "DM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "DS",
+      "category": "core-limitation",
+      "reason": "Fires on DS, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "DS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "DS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "DS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "EG",
+      "category": "core-limitation",
+      "reason": "Fires on EG, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "EG",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "EG",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002120",
+      "dataset": "EG",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_define_external_dictionary_version operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "EG",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "EX",
+      "category": "core-limitation",
+      "reason": "Fires on EX, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "EX",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "EX",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "EX",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "IE",
+      "category": "core-limitation",
+      "reason": "Fires on IE, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "IE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "IE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002120",
+      "dataset": "IE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_define_external_dictionary_version operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "IE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "LB",
+      "category": "core-limitation",
+      "reason": "Fires on LB, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "LB",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "LB",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002120",
+      "dataset": "LB",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_define_external_dictionary_version operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "LB",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "Fires on MH, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002008",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002009",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002010",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002011",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002012",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002013",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002014",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002031",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002047",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002073",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002074",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000206",
+      "dataset": "RELREC",
+      "category": "core-limitation",
+      "reason": "Every IDVARVAL checked names a record that exists (for example CM CMSEQ 2 for DEMO-301-0003, whose CM has CMSEQ 1 and 2), so the rule's join fails, not the reference."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "RELREC",
+      "category": "core-limitation",
+      "reason": "Fires on RELREC, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002030",
+      "dataset": "RELREC",
+      "category": "by-design",
+      "reason": "RELTYPE is null because every relationship is between records; SDTMIG 3.4 uses RELTYPE only for relationships between datasets."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "RELREC",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "RELREC",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "RELREC",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "SE",
+      "category": "core-limitation",
+      "reason": "Fires on SE, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002006",
+      "dataset": "SE",
+      "category": "by-design",
+      "reason": "SEUPDES is null except on unplanned elements, and the default run has none. The unplanned-treatment view fills it."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "SE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "SE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "SE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002001",
+      "dataset": "SUPPAE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 looks the dataset up in Define-XML with no name (\"name=None ... is not found in Define XML\") and stops, although define.xml has an ItemGroupDef with that Name and Domain (#3710 class E, fixed on our side by #3717)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002030",
+      "dataset": "SUPPAE",
+      "category": "by-design",
+      "reason": "QEVAL is null: AETRTEM is derived from the ADaM treatment-emergent flag, so no evaluator applies."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "SUPPAE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "SUPPAE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000726",
+      "dataset": "SUPPDM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Define Item Metadata Check, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002001",
+      "dataset": "SUPPDM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 looks the dataset up in Define-XML with no name (\"name=None ... is not found in Define XML\") and stops, although define.xml has an ItemGroupDef with that Name and Domain (#3710 class E, fixed on our side by #3717)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002030",
+      "dataset": "SUPPDM",
+      "category": "by-design",
+      "reason": "IDVAR and IDVARVAL are null: SUPPDM records qualify the subject's single DM record, which USUBJID alone identifies."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002093",
+      "dataset": "SUPPDM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Define Item Metadata Check, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "SUPPDM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "SUPPDM",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "SV",
+      "category": "core-limitation",
+      "reason": "Fires on SV, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000544",
+      "dataset": "SV",
+      "category": "core-limitation",
+      "reason": "SDTMIG 3.4 SV has no SVSEQ: its key is STUDYID, USUBJID and VISITNUM. The rule checks a --SEQ variable the domain does not define."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "SV",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "SV",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "SV",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "TA",
+      "category": "core-limitation",
+      "reason": "Fires on TA, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002030",
+      "dataset": "TA",
+      "category": "by-design",
+      "reason": "TATRANS is null: each arm runs its elements in a fixed order, so no transition rule applies."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002056",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "Reports a trial design dataset missing although TA, TE, TV, TI and TS are all present; its list of missing domains is made of domains that are not trial design datasets, such as AG, CE and QS. CORE marks the rule partially executable. It is a study-level rule, which CORE reports against the first dataset it reads (AE, since the workflow passes the datasets in sorted order)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "TA",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002084",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "Reports Define-XML missing although define.xml is beside the datasets and the other Define-XML rules read it. It is a study-level rule, which CORE reports against the first dataset it reads (AE, since the workflow passes the datasets in sorted order)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002116",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, STF Metadata Check, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002117",
+      "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the define_extended_terms_in_ct operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "TA",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "TE",
+      "category": "core-limitation",
+      "reason": "Fires on TE, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "TE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "TE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "TE",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "TI",
+      "category": "core-limitation",
+      "reason": "Fires on TI, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "TI",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "TI",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "TI",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "Fires on TS, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000735",
+      "dataset": "TS",
+      "category": "by-design",
+      "reason": "The investigational product is fictional (Demoxacin), so it has no UNII and TSVCDREF stays null."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000737",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 raises a Python error on this rule (\"'list' object has no attribute 'startswith'\") before it reads the data (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002051",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: get_codelist_attributes does not support the Term Signification attribute (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002057",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: get_codelist_attributes does not support the Term Signification attribute (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002058",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 raises a Python error on this rule (\"'list' object has no attribute 'startswith'\") before it reads the data (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002060",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_countries operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002063",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002064",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002065",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002066",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002067",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002068",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002069",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002070",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002071",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002072",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "TV",
+      "category": "core-limitation",
+      "reason": "Fires on TV, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002030",
+      "dataset": "TV",
+      "category": "by-design",
+      "reason": "ARMCD is null: every planned visit is common to all arms, which TV records with a null ARMCD."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "TV",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "TV",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "TV",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000510",
+      "dataset": "VS",
+      "category": "core-limitation",
+      "reason": "Fires on VS, a whole domain and not a split dataset, so the split dataset name check does not apply. CORE v1.0.0 treats every dataset as split."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002061",
+      "dataset": "VS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: its rule type, Global Value Check with Variable Metadata, is not implemented in the engine (#3710 class B)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002101",
+      "dataset": "VS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 fails to merge the dataset with DM before evaluating the rule (\"'LEFT' is not a valid JoinTypes\") (#3710 class D)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002120",
+      "dataset": "VS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the get_define_external_dictionary_version operation is not implemented in the engine (#3710 class C)."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-002121",
+      "dataset": "VS",
+      "category": "core-limitation",
+      "reason": "CORE v1.0.0 cannot run this rule: the engine reports \"Rule contains invalid operator\". The rule needs a dictionary operator (MedDRA, WHODrug or UNII) that this engine release does not implement (#3710 class A)."
     }
   ]
 }

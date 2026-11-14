@@ -584,7 +584,7 @@ describe("study-data-core.yml (#2603)", () => {
     expect(workflow).toContain("-c scripts/study-data-core-constraints.txt");
   });
 
-  // #3706: CORE v0.17.1 refuses any Python but 3.12, and ubuntu-latest moved
+  // #3706: CORE v1.0.0, like v0.17.1, refuses any Python but 3.12, and ubuntu-latest moved
   // to 3.14, so the job pins the interpreter and builds the venv from it.
   it("builds the CORE venv on a pinned Python 3.12, not the image's python3", () => {
     expect(workflow).toMatch(

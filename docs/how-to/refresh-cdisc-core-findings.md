@@ -65,8 +65,8 @@ CORE needs Python 3.12 (3.13 is refused) and about a minute and a half per
 view on one core.
 
 ```bash
-CORE_TAG=v0.17.1   # read both from .github/workflows/study-data-core.yml
-CORE_COMMIT=2a90a3872a7e3b07c15abe84744026c94a7a04b0
+CORE_TAG=v1.0.0    # read both from .github/workflows/study-data-core.yml
+CORE_COMMIT=f3282a0d870bbdf57e326e9992cceea3ed0d9af5
 work="$(mktemp -d)"
 git clone --quiet --depth 1 --branch "$CORE_TAG" \
   https://github.com/cdisc-org/cdisc-rules-engine.git "$work/core"

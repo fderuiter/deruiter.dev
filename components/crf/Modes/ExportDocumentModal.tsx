@@ -24,17 +24,15 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 
-export type ExportFormat = "docx" | "pdf";
+type ExportFormat = "docx" | "pdf";
 
-export type ExportModalStatus = "idle" | "exporting" | "success" | "error";
-
-export type ExportModalState =
+type ExportModalState =
   | { status: "idle" }
   | { status: "exporting"; format: ExportFormat }
   | { status: "success"; format: ExportFormat }
   | { status: "error"; format: ExportFormat; message: string };
 
-export type ExportAction =
+type ExportAction =
   | { type: "START_EXPORT"; format: ExportFormat }
   | { type: "EXPORT_SUCCESS"; format: ExportFormat }
   | { type: "EXPORT_ERROR"; format: ExportFormat; message: string }

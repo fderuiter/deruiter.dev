@@ -25,10 +25,25 @@ describe("ContactForm Component", () => {
   it("offers peer intents only and no hiring intent (ADR 0047)", () => {
     render(<ContactForm />);
 
+    expect(
+      screen.getByRole("group", { name: /What’s this about\?/i })
+    ).toBeDefined();
+
     for (const intent of ["general", "collaboration", "consulting", "other"]) {
-      expect(screen.getByRole("button", { name: intent })).toBeDefined();
+      const button = screen.getByRole("button", { name: intent });
+      expect(button).toBeDefined();
+      expect(button.getAttribute("aria-pressed")).toBe(
+        intent === "general" ? "true" : "false"
+      );
     }
     expect(screen.queryByRole("button", { name: /recruit/i })).toBeNull();
+
+    const consultingBtn = screen.getByRole("button", { name: "consulting" });
+    const generalBtn = screen.getByRole("button", { name: "general" });
+
+    fireEvent.click(consultingBtn);
+    expect(consultingBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(generalBtn.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("should render all form controls and honeypot trap correctly", () => {

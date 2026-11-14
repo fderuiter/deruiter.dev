@@ -355,17 +355,25 @@ export function ContactForm({
 
       {/* Intent Selector */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-mono font-bold text-zinc-300 flex items-center gap-1.5">
+        <label
+          id="contact_intent_label"
+          className="text-xs font-mono font-bold text-zinc-300 flex items-center gap-1.5"
+        >
           <IconTarget className="w-3.5 h-3.5 text-amber-400" />
           <span>What’s this about?</span>
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-labelledby="contact_intent_label"
+          className="flex flex-wrap gap-2"
+        >
           {SELECTABLE_INTENTS.map((item) => {
             const isSelected = intent === item;
             return (
               <button
                 key={item}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => setIntent(item)}
                 className={`flex-1 min-w-[100px] px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all border text-center cursor-pointer min-h-[40px] pointer-coarse:min-h-11 flex items-center justify-center ${
                   isSelected

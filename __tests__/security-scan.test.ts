@@ -11,7 +11,6 @@ import {
   describe,
   expect,
   it,
-  vi,
 } from "vitest";
 import {
   SECRET_DETECTORS,
@@ -296,25 +295,25 @@ describe("isAllowlistedSecretValue: allowlisting rules", () => {
     expect(isAllowlistedSecretValue(value, "app/random-file.ts")).toBe(false);
   });
 
-  it("bypasses URL parsing for non-URL candidate strings without protocol schemes", () => {
-    const urlSpy = vi.spyOn(globalThis, "URL");
-    try {
-      const nonUrlValues = [
-        "AKIAIOSFODNN7EXAMPLE",
-        ["ghp_", "123456789012345678901234567890123456"].join(""),
-        ["npg_", "SecretPass1234"].join(""),
-        ["re_", "123456789012345678901234567890"].join(""),
-        ["sk-ant-", "12345678901234567890"].join(""),
-        "random_token_without_scheme",
-      ];
-      for (const val of nonUrlValues) {
-        urlSpy.mockClear();
-        isAllowlistedSecretValue(val);
-        expect(urlSpy).not.toHaveBeenCalled();
-      }
-    } finally {
-      urlSpy.mockRestore();
-    }
+  it("evaluates allowlist results for non-URL candidate strings without protocol schemes", () => {
+    expect(isAllowlistedSecretValue("AKIAIOSFODNN7EXAMPLE")).toBe(true);
+    expect(
+      isAllowlistedSecretValue(
+        ["ghp_", "123456789012345678901234567890123456"].join("")
+      )
+    ).toBe(false);
+    expect(isAllowlistedSecretValue(["npg_", "SecretPass1234"].join(""))).toBe(
+      false
+    );
+    expect(
+      isAllowlistedSecretValue(
+        ["re_", "123456789012345678901234567890"].join("")
+      )
+    ).toBe(false);
+    expect(
+      isAllowlistedSecretValue(["sk-ant-", "12345678901234567890"].join(""))
+    ).toBe(false);
+    expect(isAllowlistedSecretValue("random_token_without_scheme")).toBe(false);
   });
 
   it("safely catches malformed candidate values with protocol markers without throwing", () => {

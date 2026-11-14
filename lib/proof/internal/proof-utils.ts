@@ -3741,8 +3741,35 @@ ${rows}
 `;
 }
 
+/** Node ids Mermaid can take as bare syntax after the `Node_` prefix. */
+const MERMAID_NODE_ID = /^[A-Za-z0-9_]+$/;
+
+/**
+ * Encodes text for a double-quoted Mermaid label with Mermaid's own entity
+ * codes (`#quot;`, `#35;` and so on), which it decodes back to the original
+ * characters when it renders. A backslash is not an escape in Mermaid, so the
+ * old backslash-quote let a quote end the label and start new syntax (CodeQL
+ * alert 8). Line breaks become spaces so a label stays on its statement.
+ */
+function encodeMermaidLabel(text: string): string {
+  return text
+    .replace(/\r\n|\r|\n/g, " ")
+    .replace(/[#"\\<>&`]/g, (ch) =>
+      ch === '"' ? "#quot;" : `#${ch.charCodeAt(0)};`
+    );
+}
+
+/** Keeps a free-text value on one Mermaid comment line. */
+function mermaidCommentText(text: string): string {
+  return text.replace(/[\r\n]+/g, " ");
+}
+
 /**
  * Exports the active theorem proof into Mermaid flowchart syntax.
+ *
+ * Labels are entity-encoded, and only nodes whose ids are plain identifiers
+ * are emitted. Edges are emitted only between emitted nodes, so a crafted
+ * theorem or edge list cannot add nodes, links, directives or click lines.
  */
 export function exportProofToMermaid(
   edges: Edge[],
@@ -3757,23 +3784,30 @@ export function exportProofToMermaid(
   const interId = th.intermediateNodeId || "C";
   const targetId = th.targetNodeId || "E";
 
-  const nodeDefs = th.nodes
+  const nodes = th.nodes.filter((n) => MERMAID_NODE_ID.test(n.id));
+  const nodeIds = new Set(nodes.map((n) => n.id));
+
+  const nodeDefs = nodes
     .map((n) => {
       let isProven = true;
       if (n.id === interId) isProven = isC_Proven;
       if (n.id === targetId) isProven = isE_Proven;
       const statusIcon = isProven ? "✔" : "⏳";
-      const cleanLabel = n.label.replace(/"/g, '\\"');
-      return `    Node_${n.id}["${statusIcon} [Node ${n.id}] ${cleanLabel}\\n${n.type.toUpperCase()}"]`;
+      const label = encodeMermaidLabel(
+        `${statusIcon} [Node ${n.id}] ${n.label}`
+      );
+      return `    Node_${n.id}["${label}\\n${encodeMermaidLabel(n.type.toUpperCase())}"]`;
     })
     .join("\n");
 
   const edgeDefs = edges
+    .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
     .map((e) => `    Node_${e.source} --> Node_${e.target}`)
     .join("\n");
+  const title = mermaidCommentText(th.title);
 
   if (th.id === "custom") {
-    const provenNodes = th.nodes
+    const provenNodes = nodes
       .filter(
         (n) =>
           n.type === "premise" ||
@@ -3782,7 +3816,7 @@ export function exportProofToMermaid(
       )
       .map((n) => `Node_${n.id}`);
 
-    const pendingNodes = th.nodes
+    const pendingNodes = nodes
       .filter((n) => !provenNodes.includes(`Node_${n.id}`))
       .map((n) => `Node_${n.id}`);
 
@@ -3797,7 +3831,7 @@ export function exportProofToMermaid(
 
     return `graph TD
     %% Workspace status: ${isE_Proven ? "GRAPH COMPLETE (local simulation)" : "INCOMPLETE"}
-    %% Formal Logic Proof Graph: ${th.title}
+    %% Formal Logic Proof Graph: ${title}
 ${nodeDefs}
 ${edgeDefs}
     classDef proven fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
@@ -3809,7 +3843,7 @@ ${pendingClassLine}
 
   return `graph LR
     %% Workspace status: ${isE_Proven ? "GRAPH COMPLETE (local simulation)" : "INCOMPLETE"}
-    %% Formal Logic Proof Graph: ${th.title}
+    %% Formal Logic Proof Graph: ${title}
 ${nodeDefs}
 ${edgeDefs}
     classDef proven fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;

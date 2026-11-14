@@ -837,7 +837,7 @@ describe("export helpers", () => {
     });
     const pending = exportProofToMermaid([], th);
     expect(pending).toContain("graph TD");
-    expect(pending).toContain('Say \\"hi\\"');
+    expect(pending).toContain("Say #quot;hi#quot;");
     expect(pending).toContain("class Node_A proven;");
     expect(pending).toContain("class Node_C,Node_E pending;");
 

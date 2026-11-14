@@ -43,7 +43,7 @@ export const NON_IMPORTABLE_COVERAGE: Array<{
   },
   {
     match:
-      /^(?:package\.json|vitest\.config\.ts|next\.config\.ts|tsconfig\.json|eslint\.config\.[cm]?js|prisma\.config\.ts)$/u,
+      /^(?:package\.json|vitest\.config\.mts|next\.config\.ts|tsconfig\.json|eslint\.config\.[cm]?js|prisma\.config\.ts)$/u,
     testNameMatches: [
       /package-manager-config/u,
       /gate-ordering/u,

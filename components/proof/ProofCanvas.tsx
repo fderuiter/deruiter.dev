@@ -9,6 +9,8 @@ import {
   IconAlertTriangle,
   IconPlayerPlay,
   IconWand,
+  IconArrowBackUp,
+  IconArrowForwardUp,
 } from "@tabler/icons-react";
 import {
   TheoremDefinition,
@@ -56,6 +58,10 @@ interface ProofCanvasProps {
   handleCanvasPointerUp: (e: React.PointerEvent) => void;
   handleApplyRule: (ruleId: string) => void;
   handleStartSimulation: (mode?: "normal" | "loop") => void;
+  handleUndo?: () => void;
+  handleRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
   canvasWrapperRef: RefObject<HTMLDivElement | null>;
   svgCanvasRef: RefObject<SVGSVGElement | null>;
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
@@ -88,6 +94,10 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   handleCanvasPointerUp,
   handleApplyRule,
   handleStartSimulation,
+  handleUndo = () => {},
+  handleRedo = () => {},
+  canUndo = false,
+  canRedo = false,
   canvasWrapperRef,
   svgCanvasRef,
   mobileActiveView,
@@ -182,7 +192,11 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               {activeTheorem.ruleName}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div
+            role="toolbar"
+            aria-label="Proof canvas controls"
+            className="flex items-center gap-2"
+          >
             <button
               onClick={toggleSnapping}
               className={`px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
@@ -207,15 +221,44 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               </kbd>
             </button>
             <button
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className={`p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border text-xs font-mono transition cursor-pointer active:scale-[0.98] ${
+                canUndo
+                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+                  : "bg-slate-950/40 border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
+              }`}
+              title="Undo proof step [Shortcut: Mod+Z]"
+              aria-label="Undo proof step"
+              aria-keyshortcuts="Meta+Z Control+Z"
+            >
+              <IconArrowBackUp className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className={`p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border text-xs font-mono transition cursor-pointer active:scale-[0.98] ${
+                canRedo
+                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+                  : "bg-slate-950/40 border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
+              }`}
+              title="Redo proof step [Shortcut: Mod+Shift+Z]"
+              aria-label="Redo proof step"
+              aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z"
+            >
+              <IconArrowForwardUp className="w-4 h-4" />
+            </button>
+            <button
               onClick={handleAutoStep}
               className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+              title="Advance next valid deduction step"
             >
               <IconWand className="w-3.5 h-3.5" />
               Auto-Step
             </button>
             <button
               onClick={handleResetLayout}
-              className="p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
+              className="p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
               title="Reset node positions & connections"
               aria-label="Reset node positions and connections"
             >
@@ -244,7 +287,8 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
         >
           Tab to a node. Enter or Space selects it; activate another node to
           connect. Hold Shift while activating nodes to select several premises
-          for a rule. Connection handles also support Enter or Space.
+          for a rule. Connection handles also support Enter or Space. Use Mod+Z
+          to undo and Mod+Shift+Z to redo.
         </p>
         {/* SVG Canvas Area (Responsive scroll wrapper) */}
         <div

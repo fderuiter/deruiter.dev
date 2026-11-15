@@ -40,7 +40,7 @@ Themes for the portfolio #3172: the platform proves clinical domain work end to 
 ## 3. Decisions for Fred (with recommendations)
 
 1. Retire the milestone "CRF Studio AI Agent beta". Recommendation: yes. The beta is paused and the milestone is dated 28 Oct.
-2. Triage the 15 study-data issues #3531 to #3545. Decision #3527 is closed and initiative #3559 exists, so these can be placed under it. The tasks still need an Agent Review Brief before they are ready-for-agent.
+2. Triage the 15 study-data issues #3531 to #3545. Decision #3527 is closed and initiative #3559 exists, so these can be placed under it. The tasks still need a Review notes section before they are ready-for-agent.
 
 ## 4. Ownership
 
@@ -63,7 +63,7 @@ The first snapshot above is at 15:08 UTC. A second pull at about 15:25 UTC chang
 
 Findings for the governance thread (it owns these fixes; this roadmap does not edit issues):
 
-1. Eight issues were `ready-for-agent` with no Agent Review Brief: #3072, #3074, #3075, #3076, #3078, #3080, #3145, #3146. The governance thread reports they were containers, and it removed the label. [Edit: resolved by the governance thread.]
+1. Eight issues were `ready-for-agent` with no Review notes: #3072, #3074, #3075, #3076, #3078, #3080, #3145, #3146. The governance thread reports they were containers, and it removed the label. [Edit: resolved by the governance thread.]
 2. 82 issues carry both `ready-for-agent` and `status:blocked`. This is contested. The governance thread reads the approved taxonomy as allowing both: a blocked issue keeps its triage state and gains `status:blocked`. It holds any edit for Fred's decision card, so this plan does not assume a change.
 3. #3589 (container rule in the governance how-to) is still open and is its own change. This roadmap PR does not touch the triage section.
 4. Milestone "CRF Studio AI Agent beta" still sits on #2680 and #2681 (see Decision 3).

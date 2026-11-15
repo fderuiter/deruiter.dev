@@ -17,12 +17,17 @@ describe("parseProofCommand", () => {
     expect(parseProofCommand("   \t ")).toBeNull();
   });
 
-  it.each(["help", "clear", "list", "ledger"] as const)(
-    "parses the bare %s command, ignoring case and padding",
-    (op) => {
-      expect(parseProofCommand(`  ${op.toUpperCase()}  `)).toEqual({ op });
-    }
-  );
+  it.each([
+    "help",
+    "clear",
+    "list",
+    "ledger",
+    "undo",
+    "redo",
+    "rollback",
+  ] as const)("parses the bare %s command, ignoring case and padding", (op) => {
+    expect(parseProofCommand(`  ${op.toUpperCase()}  `)).toEqual({ op });
+  });
 
   it("treats solve as an alias of autostep", () => {
     expect(parseProofCommand("autostep")).toEqual({ op: "autostep" });
@@ -175,6 +180,9 @@ describe("terminal report formatting", () => {
       "delete-step",
       "apply",
       "autostep",
+      "undo",
+      "redo",
+      "rollback",
       "list",
       "inspect",
       "theorem",

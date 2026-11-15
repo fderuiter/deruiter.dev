@@ -63,8 +63,8 @@ body:
   - type: textarea
     id: brief
     attributes:
-      label: Agent Review Brief
-      description: Required for work an external agent will execute. Fill all three lines.
+      label: Review notes
+      description: Give the implementation and review context. Fill all three lines.
       value: |
         - **Files and symbols:**
         - **Invariant boundaries:** Non-destructive Git. No direct push to main. Environment-scoped credentials. Quota caps.

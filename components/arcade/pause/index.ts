@@ -37,6 +37,7 @@ export { useScreenWakeLock } from "./useScreenWakeLock";
 export { useContextLossPause } from "./useContextLossPause";
 export {
   DISCARDED_RUN_NOTICE,
+  RESTORE_FAILED_NOTICE,
   SAVED_RUN_NOTE,
   useRunSnapshot,
   type RunSnapshotControls,

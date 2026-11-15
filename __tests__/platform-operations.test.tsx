@@ -341,7 +341,8 @@ describe("Risk tab (#2631)", () => {
       .filter((li) => li.textContent?.includes("q = "));
     // BR-118 is the planted data-integrity site: queries, adverse events
     // (#2956), exact-day visits, entry hours (#2955), rounded and barely
-    // varying vital signs (#2957) and its KRI profile.
+    // varying vital signs (#2957) and its KRI profile. US-101, a planted slow
+    // enroller, has too few scheduled visits for a profile (#3221).
     expect(flagged.map((li) => li.textContent?.split(" · ")[0])).toEqual([
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
@@ -350,13 +351,12 @@ describe("Risk tab (#2631)", () => {
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
-      "DEMO-302-US-101",
     ]);
     expect(within(csm).getByText(/DEMO-302-IT-106:/)).toBeTruthy();
     const grid = within(csm).getByRole("table", {
       name: /Adjusted q-values of every central monitoring test/,
     });
-    expect(within(grid).getAllByText("(stands out)")).toHaveLength(8);
+    expect(within(grid).getAllByText("(stands out)")).toHaveLength(7);
   });
 
   it("shows a QTL breach and logs the signal it raises", () => {

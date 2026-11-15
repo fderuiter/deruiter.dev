@@ -38,8 +38,8 @@ export interface CdashVariableMetadata {
   /**
    * CDASH core designation: Highly Recommended, Required, Optional, or
    * Recommended/Conditional (collected only when another answer calls for
-   * it, such as the seriousness criteria after a Yes to Serious Event,
-   * #2826). Only HR and R are expected on every page of their domain.
+   * it, such as the seriousness criteria after a Yes to Serious Event, see
+   * issue 2826). Only HR and R are expected on every page of their domain.
    */
   core: "HR" | "O" | "R" | "R/C";
   acrfAnnotation: string; // e.g. "AE.AESTDTC"

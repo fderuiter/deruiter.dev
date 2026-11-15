@@ -148,7 +148,7 @@ describe("Worker-Based Mesh and Contour Analytics Pipeline Suite", () => {
     );
 
     expect(postMessageSpy).toHaveBeenCalled();
-    const [resPayload, transferList] = postMessageSpy.mock.calls[0];
+    const [resPayload, transferList] = postMessageSpy.mock.calls[0]!;
     expect(resPayload.id).toBe("req_test_hist");
     expect(resPayload.success).toBe(true);
     expect(resPayload.histogram).toBeDefined();

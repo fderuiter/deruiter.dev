@@ -222,9 +222,33 @@ describe("standards watch parsers", () => {
     "<body><noscript><p>SDTMIG v999.0</p></noscript><p>SDTMIG v3.4</p>",
     "<template><p>SDTMIG v999.0</p></template><p>SDTMIG v3.4</p>",
     "<!-- <p>SDTMIG v999.0</p> --><p>SDTMIG v3.4</p>",
+    // CodeQL alert 26 (#3816): style text with "<" and a spaced closing tag.
+    "<style>a < b { } SDTMIG v999.0</style ><p>SDTMIG v3.4</p>",
+    // CodeQL alert 14 (#3817): embedded "<" and odd closing tags in scripts.
+    "<script>if (a < b) x = 'SDTMIG v999.0';</script x><p>SDTMIG v3.4</p>",
+    "<ScRiPt>var s = '</scr' + 'ipt>SDTMIG v999.0';</sCrIpT><p>SDTMIG v3.4</p>",
   ])("ignores hidden text in %j", (html) => {
     expect(textNodes(html)).toEqual(["SDTMIG v3.4"]);
     expect(siteVersion(html, ["SDTMIG"])).toBe("3.4");
+  });
+
+  // CodeQL alert 26 (#3816): the old regex chain could rebuild a tag after a
+  // nested deletion. A parser reads this as one odd element, and no node
+  // poses as a release label.
+  it("cannot be tricked by a nested tag fragment", () => {
+    const html = "<sty<style>x</style>le>SDTMIG v999.0</style><p>SDTMIG v3.4</p>";
+    expect(textNodes(html).filter((node) => node.startsWith("SDTMIG v"))).toEqual([
+      "SDTMIG v3.4",
+    ]);
+    expect(siteVersion(html, ["SDTMIG"])).toBe("3.4");
+  });
+
+  it("drops everything after an unclosed script or style (#3817)", () => {
+    for (const tag of ["script", "style"]) {
+      const html = `<p>SDTMIG v3.4</p><${tag}>SDTMIG v999.0 <p>SDTMIG v9.0</p>`;
+      expect(textNodes(html)).toEqual(["SDTMIG v3.4"]);
+      expect(siteVersion(html, ["SDTMIG"])).toBe("3.4");
+    }
   });
 
   it("decodes entities exactly once", () => {

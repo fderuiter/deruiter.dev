@@ -560,6 +560,41 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     );
   });
 
+  it.each([
+    ["forms without parts", { id: "p1", protocolNumber: "BAD-1", forms: [{}, {}, {}] }],
+    [
+      "a form without rules",
+      { id: "p2", protocolNumber: "BAD-2", forms: [{ sections: [] }] },
+    ],
+    [
+      "a section without fields",
+      { id: "p3", protocolNumber: "BAD-3", forms: [{ sections: [{}], rules: [] }] },
+    ],
+    [
+      "a field without a variable name",
+      {
+        id: "p4",
+        protocolNumber: "BAD-4",
+        forms: [{ sections: [{ fields: [{ label: "x" }] }], rules: [] }],
+      },
+    ],
+  ])("plays built-in scenarios when the stored protocol has %s (#3738)", async (_case, stored) => {
+    const raw = JSON.stringify(stored);
+    mockStorage.setItem("crf_active_protocol", raw);
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+
+    expect(container.textContent).not.toContain("Using your authored protocol");
+    expect(
+      Array.from(container.querySelectorAll("button")).some((b) =>
+        b.textContent?.includes("Load Authored Protocol")
+      )
+    ).toBe(true);
+    expect(mockStorage.getItem("crf_active_protocol")).toBe(raw);
+  });
+
   it("names an authored protocol and links back to CRF Studio (#3393)", async () => {
     mockStorage.setItem(
       "crf_active_protocol",

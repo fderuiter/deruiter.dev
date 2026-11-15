@@ -8,6 +8,7 @@ import {
   writeRunSnapshot,
   type FormFactor,
   type RunSnapshotFormat,
+  type RunTags,
 } from "@/lib/arcade";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import type { ArcadeSession } from "@/components/arcade/views";
@@ -16,6 +17,10 @@ import { useCabinetPauseController } from "./CabinetPause";
 /** The one line shown when a save could not be read and was cleared. */
 export const DISCARDED_RUN_NOTICE =
   "Your saved run could not be read, so it was cleared.";
+
+/** The one line announced when a saved run could not be restored. */
+export const RESTORE_FAILED_NOTICE =
+  "Your saved run could not be restored, so it was cleared. The new run is unchanged.";
 
 /**
  * The note under a Resume offer. WebKit clears script storage after seven
@@ -52,6 +57,32 @@ type SnapshotSession = Pick<
   "snapshot" | "restore" | "tuning" | "rng" | "clock" | "fairness"
 >;
 
+/** The parts of a run that Resume writes into a session. */
+interface RunCheckpoint {
+  readonly state?: unknown;
+  readonly rngState?: number;
+  readonly step?: number;
+  readonly tags?: RunTags;
+}
+
+/** The session's fresh run, read before Resume writes anything into it. */
+function checkpointOf(session: SnapshotSession): RunCheckpoint {
+  return {
+    state: session.snapshot?.(),
+    rngState: session.rng?.getState(),
+    step: session.clock?.getStep(),
+    tags: session.fairness?.getTags(),
+  };
+}
+
+/** Writes a run into the session: state first, then stream, step and tags. */
+function applyRun(session: SnapshotSession, run: RunCheckpoint) {
+  if (run.state !== undefined) session.restore?.(run.state);
+  if (run.rngState !== undefined) session.rng?.setState(run.rngState);
+  if (run.step !== undefined) session.clock?.setStep(run.step);
+  if (run.tags) session.fairness?.restore(run.tags);
+}
+
 /**
  * Saves a session's run under the game's one versioned snapshot,
  * `arcade_run_<slug>_v1` (#2357, ADR 0062). The run is written on every pause
@@ -64,6 +95,12 @@ type SnapshotSession = Pick<
  * `step`, and Resume puts them back after `restore`, so the restored run draws
  * the same numbers (#2544). A session with a `fairness` record saves its
  * tags, and Resume puts them back, so the ratchet survives a reload (#2547).
+ *
+ * Resume is all or nothing (#3803). Before writing the save it reads the
+ * fresh run's state, stream, step and tags. If any part of the restore
+ * throws, it writes the fresh run back, clears the save and announces
+ * {@link RESTORE_FAILED_NOTICE}. That rollback relies on one contract: a
+ * session's `restore` must accept the session's own `snapshot()` output.
  *
  * Call it in the game's session holder, under the cabinet, with a session
  * that offers `snapshot` and `restore`. Without them this saves nothing.
@@ -140,20 +177,25 @@ export function useRunSnapshot<State>(
     if (!run) return;
     pendingRef.current = null;
     setPending(null);
+    const current = sessionRef.current;
+    const fresh = checkpointOf(current);
     try {
-      const current = sessionRef.current;
-      current.restore?.(run.state);
       // The stream and step continue from the save (#2544), so the rest of
-      // the run is the run that was saved, not a re-roll.
-      if (run.rngState !== undefined) current.rng?.setState(run.rngState);
-      if (run.step !== undefined) current.clock?.setStep(run.step);
-      // The resumed run keeps the assists it had reached (#2547).
-      if (run.tags) current.fairness?.restore(run.tags);
+      // the run is the run that was saved, not a re-roll. The resumed run
+      // keeps the assists it had reached (#2547).
+      applyRun(current, run);
     } catch {
-      // A restore that throws leaves the fresh run in place.
+      // A restore can change the session before it throws, so the fresh run
+      // is written back rather than assumed untouched (#3803).
       clear();
+      try {
+        applyRun(current, fresh);
+      } catch {
+        // The session broke its own restore contract; nothing safer is left.
+      }
+      announce(RESTORE_FAILED_NOTICE, "polite");
     }
-  }, [clear]);
+  }, [announce, clear]);
 
   const discardSaved = useCallback(() => {
     pendingRef.current = null;

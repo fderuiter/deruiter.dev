@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
 import type { MeshWorkerRequest } from "@/lib/neuro/types";
 
 /** A stand-in Web Worker that records requests and lets the test fail it. */
@@ -25,7 +26,7 @@ class FakeWorker {
   }
 
   reply(id: string) {
-    this.onmessage?.({ data: { id, buffers: [] } } as unknown as MessageEvent);
+    this.onmessage?.(fromPartial<MessageEvent>({ data: { id, buffers: [] } }));
   }
 }
 

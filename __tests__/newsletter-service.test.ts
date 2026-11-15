@@ -101,7 +101,7 @@ vi.mock("@/lib/db", () => {
     prisma: Object.assign(mockPrisma, {
       newsletterSubscriber: {
         findUnique: vi.fn(async ({ where }: { where: Where }) => {
-          const [key, value] = Object.entries(where)[0];
+          const [key, value] = Object.entries(where)[0]!;
           return (
             db.subscribers.find((s) => s[key as keyof Subscriber] === value) ??
             null

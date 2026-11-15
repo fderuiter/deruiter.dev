@@ -1740,7 +1740,7 @@ describe("Trial & Error first-Blind openers (#2413)", () => {
         const run = createRunState(BIOSTAT_OPS_CAMPAIGN, s, c);
         const blind = deriveRunView(BIOSTAT_OPS_CAMPAIGN, run).blind;
         const pool = openerPool(blind);
-        const opener = pool[openerIndex(s, pool.length)];
+        const opener = pool[openerIndex(s, pool.length)]!;
         const fits = opener.length;
         expect([...run.table.hand.slice(0, fits)].sort()).toEqual(
           [...opener].sort()

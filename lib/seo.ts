@@ -595,14 +595,59 @@ export function getBlogPostingNode(
   }
 
   if ("body" in post && typeof post.body === "string" && post.body) {
-    const textOnly = post.body.replace(/<[^>]*>/g, "").trim();
-    const wordCount = textOnly.split(/\s+/).filter(Boolean).length;
+    const wordCount = countVisibleWords(post.body);
     if (wordCount > 0) {
       node.wordCount = wordCount;
     }
   }
 
   return node;
+}
+
+const NON_VISIBLE_ELEMENTS = ["script", "style"] as const;
+
+/**
+ * Counts the words a reader sees in an article body (#3839). One pass over
+ * the text: everything between "<" and the next ">" is markup, the contents
+ * of script and style elements are skipped, and a tag separates words the
+ * way a block break would. Only the number leaves this function; the text
+ * it reads never enters the JSON-LD node.
+ */
+function countVisibleWords(body: string): number {
+  let words = 0;
+  let inWord = false;
+  let index = 0;
+  const lower = body.toLowerCase();
+  while (index < body.length) {
+    const character = body[index];
+    if (character === "<") {
+      inWord = false;
+      const close = body.indexOf(">", index + 1);
+      if (close === -1) break;
+      const skipped = NON_VISIBLE_ELEMENTS.find(
+        (name) =>
+          lower.startsWith(`<${name}`, index) &&
+          !/[a-z0-9-]/.test(lower[index + name.length + 1] ?? "")
+      );
+      if (skipped) {
+        const end = lower.indexOf(`</${skipped}`, close + 1);
+        if (end === -1) break;
+        const endClose = body.indexOf(">", end);
+        index = endClose === -1 ? body.length : endClose + 1;
+      } else {
+        index = close + 1;
+      }
+      continue;
+    }
+    if (/\s/.test(character)) {
+      inWord = false;
+    } else if (!inWord) {
+      inWord = true;
+      words += 1;
+    }
+    index += 1;
+  }
+  return words;
 }
 
 /**

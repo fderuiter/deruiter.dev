@@ -350,7 +350,7 @@ describe("Universal CRF Specification & Schema Engine", () => {
     };
 
     const formCmd = generateCliCommandForForm(form);
-    expect(formCmd).toBe('crf add form DM --name "Demographics"');
+    expect(formCmd).toBe("crf add form DM --name Demographics");
   });
 
   describe("field command quoting (CodeQL alert 3, #3812)", () => {
@@ -455,6 +455,42 @@ describe("Universal CRF Specification & Schema Engine", () => {
         ]);
       }
     );
+
+    // #3814 (CodeQL alert 5): the form command uses the same serializer.
+    it.each(hostile)("keeps form name and domain %j literal", (text) => {
+      const form: CRFForm = {
+        id: "form_x",
+        domain: text,
+        name: text,
+        description: "",
+        version: "1.0",
+        sections: [],
+        rules: [],
+      };
+      expect(shellArgv(generateCliCommandForForm(form))).toEqual([
+        "crf",
+        "add",
+        "form",
+        text,
+        "--name",
+        text,
+      ]);
+    });
+
+    it("keeps an ordinary multi-word form name as one argument", () => {
+      const form: CRFForm = {
+        id: "form_vs",
+        domain: "VS",
+        name: "Vital Signs",
+        description: "",
+        version: "1.0",
+        sections: [],
+        rules: [],
+      };
+      expect(generateCliCommandForForm(form)).toBe(
+        "crf add form VS --name 'Vital Signs'"
+      );
+    });
 
     it("drops a column span that is not a whole number", () => {
       const field = fromAny<CRFField, unknown>({

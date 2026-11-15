@@ -13,6 +13,7 @@ import {
   checkHydrationSafety,
   checkAccessibilityStandards,
   checkDocumentationParity,
+  checkDocumentationIndexParity,
   checkDirectoryTopology,
   checkOpenApiParity,
   checkDefectRemediationInvariants,
@@ -293,6 +294,38 @@ describe("DX Invariant Doctor Engine", () => {
 
       const result = checkDocumentationParity(tempDir, false);
       expect(result.status).toBe("pass");
+    });
+  });
+
+  describe("checkDocumentationIndexParity", () => {
+    it("fails if docs directory is missing", () => {
+      const result = checkDocumentationIndexParity(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.message).toContain("docs/ directory does not exist");
+    });
+
+    it("passes when all markdown files have inbound index links", () => {
+      const docsDir = path.join(tempDir, "docs");
+      fs.mkdirSync(docsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(docsDir, "README.md"),
+        "# Docs\n\n- [Guide](guide.md)\n"
+      );
+      fs.writeFileSync(path.join(docsDir, "guide.md"), "# Guide\n");
+
+      const result = checkDocumentationIndexParity(tempDir, false);
+      expect(result.status).toBe("pass");
+    });
+
+    it("fails when an authored doc has no inbound index links", () => {
+      const docsDir = path.join(tempDir, "docs");
+      fs.mkdirSync(docsDir, { recursive: true });
+      fs.writeFileSync(path.join(docsDir, "README.md"), "# Docs\n");
+      fs.writeFileSync(path.join(docsDir, "guide.md"), "# Guide\n");
+
+      const result = checkDocumentationIndexParity(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details?.some((d) => d.includes("guide.md"))).toBe(true);
     });
   });
 

@@ -12,6 +12,7 @@ import {
 } from "./env-guard";
 import { checkGitHygieneConfig } from "./git-guard";
 import { checkDeadCode } from "./dead-code";
+import { checkDocumentationIndexParity } from "./doctor/docs";
 import { checkBundleBudgets } from "./bundle-guard";
 import { checkArcadeThreeViews } from "./three-view-guard";
 import {
@@ -70,6 +71,7 @@ export const AGENTS_SECTION_BY_CHECK: Readonly<Record<string, number>> = {
   "architecture-session-determinism": 4,
   "security-license-compliance": 6,
   "docs-drift": 9,
+  "docs-index-parity": 9,
   "docs-llms-manifests-drift": 9,
   "technical-guide-schema-parity": 9,
   "docs-onboarding-drift": 9,
@@ -1185,6 +1187,8 @@ export function checkDocumentationParity(
     message: "Documentation in docs/ is synchronized and up to date.",
   };
 }
+
+export { checkDocumentationIndexParity };
 
 export interface CanonicalField {
   name: string;
@@ -3626,6 +3630,7 @@ export async function runDiagnostics(
 
     checkMigrationGuard(root),
     checkDocumentationParity(root, fix),
+    checkDocumentationIndexParity(root, fix),
     checkLlmsManifestsDrift(root, fix),
     checkTechnicalGuideSchemaParity(root, fix),
     checkOnboardingDocsDrift(root, fix),

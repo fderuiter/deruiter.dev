@@ -279,9 +279,16 @@ export function validateBenchmarkEvidence(
       `Evidence is missing expected routes: ${missingRoutes.join(", ")}.`
     );
   }
-  if (evidence.routes.some((route) => !route.passedBudget)) {
+  const overBudget = evidence.routes.filter((route) => !route.passedBudget);
+  if (overBudget.length > 0) {
+    const detail = overBudget
+      .map(
+        ({ route, ttfb, fcp, lcp, cls }) =>
+          `${route.path} (median TTFB ${Math.round(ttfb.median)}ms, FCP ${Math.round(fcp.median)}ms, LCP ${Math.round(lcp.median)}ms, CLS ${cls.median.toFixed(3)})`
+      )
+      .join("; ");
     errors.push(
-      "Evidence contains route results that failed the performance budget."
+      `Evidence contains route results that failed the performance budget: ${detail}.`
     );
   }
 

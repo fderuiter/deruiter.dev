@@ -46,13 +46,18 @@ function decodeEntities(text: string): string {
 }
 
 /**
- * Transforms a human-readable heading string into a URL-friendly anchor slug.
+ * Turns a plain-text heading label into a URL-friendly anchor slug.
+ *
+ * The input is text, not HTML: callers extract the label first (as
+ * extractAndInjectHeadings does). The output alphabet is only lowercase
+ * word characters and single dashes, so no markup or quote can reach an id
+ * whatever the input holds (#3837). An empty result falls back to
+ * "section".
  */
 export function slugifyHeading(text: string): string {
   const slug = text
     .toLowerCase()
-    .replace(/<[^>]*>/g, "") // strip HTML tags
-    .replace(/[^\w\s-]/g, "") // remove punctuation
+    .replace(/[^\w\s-]/g, "") // keep word characters, whitespace and dashes
     .trim()
     .replace(/\s+/g, "-") // replace whitespace with dashes
     .replace(/-+/g, "-"); // collapse duplicate dashes

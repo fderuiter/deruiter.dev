@@ -1,6 +1,7 @@
 // @vitest-environment node
+import fc from "fast-check";
 import { describe, it, expect } from "vitest";
-import { extractAndInjectHeadings } from "@/lib/blog/headings";
+import { extractAndInjectHeadings, slugifyHeading } from "@/lib/blog/headings";
 
 describe("Blog Headings Extractor & Injector (Ticket #1058)", () => {
   it("extracts h2 and h3 headings and injects IDs", () => {
@@ -117,5 +118,48 @@ describe("Blog Headings Extractor & Injector (Ticket #1058)", () => {
       "section-setup-1",
     ]);
     expect(html).toContain('<h2 id="section-foo" data-id="x">');
+  });
+});
+
+describe("slugifyHeading plain-text contract (#3837, CodeQL alert 22)", () => {
+  it("keeps only lowercase word characters and single dashes", () => {
+    fc.assert(
+      fc.property(fc.string(), (text) => {
+        expect(slugifyHeading(text)).toMatch(/^[a-z0-9_-]+$/);
+        expect(slugifyHeading(text)).not.toMatch(/[<>"'&\s]/);
+        expect(slugifyHeading(text)).not.toMatch(/--/);
+      })
+    );
+  });
+
+  it("is deterministic and ignores surrounding and repeated whitespace", () => {
+    fc.assert(
+      fc.property(fc.string(), (text) => {
+        expect(slugifyHeading(`  ${text}  `)).toBe(slugifyHeading(text));
+        expect(slugifyHeading(text)).toBe(slugifyHeading(text));
+      })
+    );
+    expect(slugifyHeading("Data   flow\tand\nlineage")).toBe(
+      "data-flow-and-lineage"
+    );
+  });
+
+  it("treats markup-looking text as text, never as tags", () => {
+    expect(slugifyHeading('<b>Bold</b> "quoted"')).toBe("bboldb-quoted");
+    expect(slugifyHeading("a < b > c")).toBe("a-b-c");
+  });
+
+  it("falls back to section when nothing survives", () => {
+    expect(slugifyHeading("")).toBe("section");
+    expect(slugifyHeading("<>!?")).toBe("section");
+  });
+
+  it("still gives prefixed, unique generated ids from extracted labels", () => {
+    const { headings } = extractAndInjectHeadings(
+      "<h2><em>Same</em> title</h2><h2>Same title</h2>"
+    );
+    const ids = headings.map((heading) => heading.id);
+    expect(new Set(ids).size).toBe(2);
+    expect(ids[0]).toMatch(/same-title$/);
   });
 });

@@ -679,7 +679,7 @@ export function winStatistics(
         wins: componentWins[level],
         losses: componentLosses[level],
         tiesAfter: undecided,
-        decidingSubjectIds: [...deciding[level]]
+        decidingSubjectIds: [...(deciding[level] ?? [])]
           .sort((a, b) => a - b)
           .map((index) => subjects[index].id),
       };

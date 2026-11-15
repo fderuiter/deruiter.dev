@@ -677,7 +677,8 @@ export const PLATFORM_DQ_RULES: readonly PlatformDqRule[] = [
       rationale:
         "A repeated name within a study usually means the same institution registered twice.",
       fault: (w) => {
-        const [a, b] = w.tables[SITE];
+        const [a, b] = w.tables[SITE] ?? [];
+        if (!a || !b) throw new Error(`the fault needs two rows of ${SITE}`);
         return editRow(
           w,
           SITE,

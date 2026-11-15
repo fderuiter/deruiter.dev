@@ -545,19 +545,9 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
             <IconPrinter className="w-4 h-4" />
             <span>Print / Preview</span>
           </button>
-          <a
-            href="/schedule"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => recordEvent("crf", "project_click")}
-            className="inline-flex items-center gap-1.5 px-2 py-2 text-zinc-400 hover:text-white font-mono text-xs underline decoration-zinc-600 underline-offset-4 transition-colors"
-          >
-            <IconCalendar className="w-4 h-4" />
-            <span>Schedule Consultation</span>
-          </a>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Word (.docx) Button */}
           <button
             type="button"
@@ -599,6 +589,16 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
                 : `Export PDF (.pdf) [${targetFormCount}]`}
             </span>
           </button>
+          <a
+            href="/schedule"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => recordEvent("crf", "project_click")}
+            className="inline-flex items-center gap-1.5 px-2 py-2 text-zinc-400 hover:text-white font-mono text-xs underline decoration-zinc-600 underline-offset-4 transition-colors"
+          >
+            <IconCalendar className="w-4 h-4" />
+            <span>Schedule Consultation</span>
+          </a>
         </div>
       </div>
     </ModalContainer>

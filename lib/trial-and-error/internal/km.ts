@@ -178,7 +178,7 @@ export function validateKm(
         evidence,
       });
 
-    const [x0, y0] = shown.curve[0];
+    const [x0, y0] = shown.curve[0] ?? [Number.NaN, Number.NaN];
     if (km.timeOrigin !== 0 || x0 !== 0 || y0 !== 1) {
       add(
         "TIME_ORIGIN",
@@ -194,7 +194,8 @@ export function validateKm(
         i > 0 && (y > shown.curve[i - 1][1] || x < shown.curve[i - 1][0])
     );
     if (rise !== -1) {
-      const [x, y] = shown.curve[rise];
+      // findIndex returned rise > 0, so both points exist.
+      const [x, y] = shown.curve[rise]!;
       add(
         "MONOTONIC",
         null,

@@ -1018,34 +1018,12 @@ export class CaseStudyService {
         }
       }
 
-      let userReactions: string[] = Array.isArray(userReactionsRaw)
+      // A visitor's own reactions come from Redis only, as in
+      // BlogPostService.getReactions. A Redis miss means none, never a
+      // per-visitor Neon query from a browsing route (ADR 0036, #3200).
+      const userReactions: string[] = Array.isArray(userReactionsRaw)
         ? userReactionsRaw
         : [];
-
-      // If userReactions is empty in Redis, check DB once to backfill
-      if (userReactions.length === 0) {
-        try {
-          const urList = await prisma.caseStudyReaction.findMany({
-            where: { caseStudySlug: slug, connectionHash },
-            select: { reactionType: true },
-          });
-          if (urList.length > 0) {
-            userReactions = urList.map((ur) => ur.reactionType);
-            try {
-              const p = redis.pipeline();
-              for (const ur of userReactions) {
-                p.sadd(userKey, ur);
-              }
-              p.expire(userKey, 30 * 24 * 60 * 60);
-              await p.exec();
-            } catch {
-              // Tolerated
-            }
-          }
-        } catch {
-          // Tolerated
-        }
-      }
 
       return {
         success: true,

@@ -29,12 +29,35 @@ export {
 } from "./internal/mesh-geometry";
 
 // Background Web Worker Management & Async Interface
+
+/**
+ * One in-flight request. `settle` resolves it with the worker's buffers or,
+ * given `null`, with the main-thread fallback. It runs at most once and clears
+ * the request's timer, so removing a waiter always means it has settled
+ * (#3796).
+ */
+interface PendingMeshRequest {
+  settle: (response: MeshWorkerResponse | null) => void;
+}
+
 let workerInstance: Worker | null = null;
 let requestCounter = 0;
-const pendingRequests = new Map<
-  string,
-  (response: MeshWorkerResponse) => void
->();
+const pendingRequests = new Map<string, PendingMeshRequest>();
+
+/**
+ * Settles every in-flight request with the main-thread fallback and retires
+ * `failed`, if it is still the installed worker, so the next request starts a
+ * fresh one.
+ */
+function retireMeshWorker(failed: Worker): void {
+  const waiting = [...pendingRequests.values()];
+  pendingRequests.clear();
+  if (workerInstance === failed) {
+    workerInstance = null;
+    failed.terminate();
+  }
+  for (const request of waiting) request.settle(null);
+}
 
 function getMeshWorker(): Worker | null {
   if (typeof window === "undefined" || typeof Worker === "undefined") {
@@ -43,20 +66,22 @@ function getMeshWorker(): Worker | null {
 
   if (!workerInstance) {
     try {
-      workerInstance = new Worker(new URL("./mesh-worker.ts", import.meta.url));
-      workerInstance.onmessage = (event: MessageEvent<MeshWorkerResponse>) => {
+      const worker = new Worker(new URL("./mesh-worker.ts", import.meta.url));
+      worker.onmessage = (event: MessageEvent<MeshWorkerResponse>) => {
+        if (workerInstance !== worker) return;
         const { id } = event.data;
         if (!id) return;
-        const callback = pendingRequests.get(id);
-        if (callback) {
+        const request = pendingRequests.get(id);
+        if (request) {
           pendingRequests.delete(id);
-          callback(event.data);
+          request.settle(event.data);
         }
       };
-      workerInstance.onerror = (err) => {
+      worker.onerror = (err) => {
         logger.warn("Mesh generator Web Worker error:", err);
-        pendingRequests.clear();
+        retireMeshWorker(worker);
       };
+      workerInstance = worker;
     } catch {
       workerInstance = null;
     }
@@ -82,18 +107,25 @@ export async function createCorticalSurfaceMeshBuffersAsync(
 
   return new Promise((resolve) => {
     const requestId = `mesh_req_${++requestCounter}`;
+    let settled = false;
+
+    const settle = (response: MeshWorkerResponse | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(
+        response
+          ? response.buffers
+          : createCorticalSurfaceMeshBuffers(mode, wireframe, hemiFilter)
+      );
+    };
 
     const timeout = setTimeout(() => {
-      if (pendingRequests.has(requestId)) {
-        pendingRequests.delete(requestId);
-        resolve(createCorticalSurfaceMeshBuffers(mode, wireframe, hemiFilter));
-      }
+      pendingRequests.delete(requestId);
+      settle(null);
     }, 1000);
 
-    pendingRequests.set(requestId, (response: MeshWorkerResponse) => {
-      clearTimeout(timeout);
-      resolve(response.buffers);
-    });
+    pendingRequests.set(requestId, { settle });
 
     const request: MeshWorkerRequest = {
       id: requestId,
@@ -102,6 +134,11 @@ export async function createCorticalSurfaceMeshBuffersAsync(
       wireframe,
     };
 
-    worker.postMessage(request);
+    try {
+      worker.postMessage(request);
+    } catch (err) {
+      logger.warn("Mesh generator Web Worker postMessage failed:", err);
+      retireMeshWorker(worker);
+    }
   });
 }

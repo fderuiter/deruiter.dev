@@ -97,9 +97,7 @@ function parseInlineNodes(
 
     // Plain text before match
     if (matchIndex > lastIndex) {
-      const textChunk = unescapeEntities(
-        input.slice(lastIndex, matchIndex).replace(/<[^>]+>/g, "")
-      );
+      const textChunk = unescapeEntities(input.slice(lastIndex, matchIndex));
       if (textChunk) {
         nodes.push(<span key={`text-${lastIndex}`}>{textChunk}</span>);
       }
@@ -122,17 +120,13 @@ function parseInlineNodes(
       }
 
       const keyVal = keyMatch ? keyMatch[1] : `term-${matchIndex}`;
-      const unescapedDisplay = unescapeEntities(textToDisplay);
 
-      const children = parseInlineNodes(
-        unescapedDisplay,
-        simplified,
-        depth + 1
-      );
+      // Recurse on the raw text so entities are decoded once, at the leaves.
+      const children = parseInlineNodes(textToDisplay, simplified, depth + 1);
 
       nodes.push(
         <React.Fragment key={`term-${keyVal}-${matchIndex}`}>
-          {children.length > 0 ? children : unescapedDisplay}
+          {children.length > 0 ? children : unescapeEntities(textToDisplay)}
         </React.Fragment>
       );
     } else if (match[7]) {
@@ -152,15 +146,15 @@ function parseInlineNodes(
     } else if (match[8]) {
       // Code: `...`
       const rawCode = match[8];
+      // Code is literal source text: decode entities once, keep every character.
       const codeContent = rawCode.slice(1, -1);
-      const cleanCode = codeContent.replace(/<[^>]+>/g, "");
 
       nodes.push(
         <code
           key={`code-${matchIndex}`}
           className="px-1.5 py-0.5 mx-0.5 text-[11px] font-mono font-bold bg-accent/10 border border-accent/20 text-accent rounded-md inline-block align-baseline leading-none"
         >
-          {unescapeEntities(cleanCode)}
+          {unescapeEntities(codeContent)}
         </code>
       );
     } else if (match[9]) {
@@ -181,9 +175,7 @@ function parseInlineNodes(
 
   // Trailing text
   if (lastIndex < input.length) {
-    const trailingChunk = unescapeEntities(
-      input.slice(lastIndex).replace(/<[^>]+>/g, "")
-    );
+    const trailingChunk = unescapeEntities(input.slice(lastIndex));
     if (trailingChunk) {
       nodes.push(<span key={`text-${lastIndex}`}>{trailingChunk}</span>);
     }

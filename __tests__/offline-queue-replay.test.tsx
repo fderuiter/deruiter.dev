@@ -341,6 +341,143 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
   });
 
+  describe("replacement while a request is in flight (#3795)", () => {
+    /** Holds the next POST open until the test resolves or rejects it. */
+    function holdNextPost() {
+      let finish!: (value: ApiClientResponse<unknown>) => void;
+      let fail!: (error: Error) => void;
+      mockPost.mockImplementationOnce(
+        () =>
+          new Promise<ApiClientResponse<unknown>>((resolve, reject) => {
+            finish = resolve;
+            fail = reject;
+          })
+      );
+      return {
+        finish: (value: ApiClientResponse<unknown>) => finish(value),
+        fail: (error: Error) => fail(error),
+      };
+    }
+
+    function bodies(): unknown[] {
+      return mockPost.mock.calls.map((call) => call[1]);
+    }
+
+    async function startFlush() {
+      setOnline(true);
+      let done!: Promise<unknown>;
+      await act(async () => {
+        done = flushOfflineQueue();
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      // Wrapped so awaiting startFlush doesn't wait for the flush itself.
+      return { done };
+    }
+
+    it("keeps and then sends the newer body when the older one succeeds", async () => {
+      enqueueTelemetry("v1", { id: "K" });
+      const held = holdNextPost();
+      const { done: flush } = await startFlush();
+
+      enqueueTelemetry("v2", { id: "K" });
+      held.finish(ok());
+      await act(async () => {
+        await flush;
+      });
+
+      expect(bodies()).toEqual([{ label: "v1" }, { label: "v2" }]);
+      expect(getOfflineQueueLength()).toBe(0);
+    });
+
+    it("leaves the newer body's retry count alone when the older one gets a retryable error", async () => {
+      enqueueTelemetry("v1", { id: "K" });
+      const held = holdNextPost();
+      const { done: flush } = await startFlush();
+
+      enqueueTelemetry("v2", { id: "K" });
+      held.finish(response({ status: 503 }));
+      await act(async () => {
+        await flush;
+      });
+
+      expect(getOfflineQueue()).toHaveLength(1);
+      expect(getOfflineQueue()[0]).toMatchObject({
+        body: { label: "v2" },
+        retries: 0,
+      });
+    });
+
+    it("keeps the newer body when the older one is rejected for good", async () => {
+      enqueueTelemetry("v1", { id: "K" });
+      const held = holdNextPost();
+      const { done: flush } = await startFlush();
+
+      enqueueTelemetry("v2", { id: "K" });
+      held.finish(response({ status: 422, error: "bad v1" }));
+      await act(async () => {
+        await flush;
+      });
+
+      expect(getDLQ().map((item) => item.body)).toEqual([{ label: "v1" }]);
+      expect(bodies()).toEqual([{ label: "v1" }, { label: "v2" }]);
+      expect(getOfflineQueueLength()).toBe(0);
+    });
+
+    it("keeps the newer body when the older send throws", async () => {
+      enqueueTelemetry("v1", { id: "K" });
+      const held = holdNextPost();
+      const { done: flush } = await startFlush();
+
+      enqueueTelemetry("v2", { id: "K" });
+      held.fail(new Error("socket hang up"));
+      await act(async () => {
+        await flush;
+      });
+
+      expect(getOfflineQueue()[0]).toMatchObject({
+        body: { label: "v2" },
+        retries: 0,
+      });
+    });
+
+    it("does not let a DLQ retry overwrite a newer queued body", async () => {
+      enqueueTelemetry("v1", { id: "K" });
+      mockPost.mockResolvedValueOnce(response({ status: 400, error: "bad" }));
+      setOnline(true);
+      await act(async () => {
+        await flushOfflineQueue();
+      });
+      expect(getDLQLength()).toBe(1);
+
+      setOnline(false);
+      enqueueTelemetry("v2", { id: "K" });
+      retryDLQItem("K");
+
+      expect(getDLQLength()).toBe(0);
+      expect(getOfflineQueue().map((item) => item.body)).toEqual([{ label: "v2" }]);
+    });
+
+    it("reads entries stored without a revision as revision 0", async () => {
+      seedQueueFromAnotherTab([
+        {
+          id: "legacy",
+          type: "telemetry",
+          endpoint: "/api/telemetry/legacy",
+          method: "POST",
+          body: { label: "legacy" },
+          createdAt: 1,
+          retries: 0,
+        },
+      ]);
+      setOnline(true);
+      await act(async () => {
+        await flushOfflineQueue();
+      });
+      expect(bodies()).toEqual([{ label: "legacy" }]);
+      expect(getOfflineQueueLength()).toBe(0);
+    });
+  });
+
   describe("retry paths", () => {
     it("dead-letters a retryable item with its last failure reason once maxRetries is exhausted, and continues with the next (#2552)", async () => {
       enqueueTelemetry("a", { maxRetries: 1 });

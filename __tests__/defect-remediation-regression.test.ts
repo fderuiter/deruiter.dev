@@ -62,6 +62,7 @@ import {
   exportStudyToCdiscOdmXml,
   exportStudyToSas,
   importStudyFromCsvSpec,
+  evaluateVisitWindowConflicts,
 } from "@/lib/crf";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
@@ -3076,6 +3077,14 @@ describe("REDCap CSV parser HTML entity decoding regression (#3899)", () => {
     expect(field.description).toBe(
       "Note with &quot;quotes&quot; &amp; &lt;tags&gt;"
     );
+  });
+});
+
+describe("Oncology preset visit-window regression (#3138)", () => {
+  it("opens with no window conflicts, because unscheduled visits are skipped", () => {
+    expect(
+      evaluateVisitWindowConflicts(ONCOLOGY_RECIST_PRESET.visits).hasConflicts
+    ).toBe(false);
   });
 });
 

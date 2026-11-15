@@ -1,5 +1,6 @@
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { logger } from "@/lib/logger";
+import { plainTextSummary } from "@/lib/html-text";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { SandboxTerminal } from "@/components/SandboxTerminal";
@@ -61,13 +62,7 @@ export async function generateMetadata({
     };
   }
 
-  const cleanDescription = (study.editorial_content || "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/\*\*/g, "")
-    .replace(/`/g, "")
-    .replace(/\*/g, "")
-    .trim()
-    .slice(0, 160);
+  const cleanDescription = plainTextSummary(study.editorial_content || "");
 
   const ogImageUrl = `${resolveBaseUrl()}/case-studies/${slug}/opengraph-image`;
 

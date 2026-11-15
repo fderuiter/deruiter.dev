@@ -80,7 +80,8 @@ export function ActionCluster<A extends string>({
       } ${className}`}
     >
       {shown.map((action, index) => {
-        const [row, column] = SLOTS[index];
+        // shown holds at most ACTION_CLUSTER_MAX actions, one per slot.
+        const [row, column] = SLOTS[index] ?? ([2, 2] as const);
         const label = dockActionLabel(map, action);
         return (
           <TouchButton

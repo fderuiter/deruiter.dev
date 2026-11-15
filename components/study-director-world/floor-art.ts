@@ -928,8 +928,11 @@ export function drawDressing(
       spots.push([bx + 5 + (i % 4) * 11, by + 4 + Math.floor(i / 4) * 5]);
     // The route: a thread between pins.
     for (let i = 1; i < spots.length; i += 1) {
-      const [ax, ay] = spots[i - 1];
-      const [cx, cy] = spots[i];
+      const from = spots[i - 1];
+      const to = spots[i];
+      if (!from || !to) continue;
+      const [ax, ay] = from;
+      const [cx, cy] = to;
       box(
         ctx,
         Math.min(ax, cx),

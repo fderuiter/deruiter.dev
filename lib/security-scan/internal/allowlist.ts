@@ -153,6 +153,11 @@ const ROTATED_CREDENTIAL_FINGERPRINTS = new Map<string, ReadonlySet<string>>([
   ],
 ]);
 
+// CodeQL alert 1 (#3823) reads this digest as password hashing. It is a
+// scanner fingerprint: the only use is a set lookup that marks a known,
+// already-rotated value as safe in the one file that held it. Nothing here
+// stores a password or authenticates anyone, and a salted KDF would stop
+// identical values from matching across history.
 function isRotatedCredential(value: string, file: string): boolean {
   const fingerprints = ROTATED_CREDENTIAL_FINGERPRINTS.get(file);
   if (!fingerprints) return false;

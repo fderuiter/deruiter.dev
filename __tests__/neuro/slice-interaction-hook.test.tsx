@@ -138,4 +138,42 @@ describe("useSliceInteraction", () => {
     act(() => result.current.scroll("sagittal", 120));
     expect(onCrosshairChange).toHaveBeenCalledWith({ x: 9, y: 20, z: 30 });
   });
+
+  it("adjusts zoom scale with shift-wheel and clamps between 1 and 8", () => {
+    const { result, onCrosshairChange } = setup("inspect");
+    // deltaY < 0 zooms in
+    act(() => result.current.scroll("axial", -100, true));
+    expect(onCrosshairChange).not.toHaveBeenCalled();
+    expect(result.current.transforms.axial.zoom).toBe(1.25);
+
+    // Zooming out below 1 clamps to 1
+    act(() => result.current.scroll("axial", 100, true));
+    expect(result.current.transforms.axial.zoom).toBe(1);
+    act(() => result.current.scroll("axial", 100, true));
+    expect(result.current.transforms.axial.zoom).toBe(1);
+
+    // Zooming in up to max 8
+    for (let i = 0; i < 40; i++) {
+      act(() => result.current.scroll("axial", -100, true));
+    }
+    expect(result.current.transforms.axial.zoom).toBe(8);
+  });
+
+  it("pans with middle mouse button drag without moving crosshair", () => {
+    const { result, onCrosshairChange, onApplyVoxelEdits } = setup("paint");
+    // Middle button press (button = 1)
+    act(() => result.current.press("axial", target, 100, 100, 1));
+    expect(onCrosshairChange).not.toHaveBeenCalled();
+    expect(onApplyVoxelEdits).not.toHaveBeenCalled();
+
+    // Drag to pan
+    act(() => result.current.drag("axial", target, 130, 140));
+    expect(result.current.transforms.axial.pan).toEqual({ x: 30, y: 40 });
+    expect(onCrosshairChange).not.toHaveBeenCalled();
+
+    // Release stops panning
+    act(() => result.current.release());
+    act(() => result.current.drag("axial", target, 160, 180));
+    expect(result.current.transforms.axial.pan).toEqual({ x: 30, y: 40 });
+  });
 });

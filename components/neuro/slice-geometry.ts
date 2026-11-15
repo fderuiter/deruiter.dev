@@ -15,16 +15,45 @@ export function sliceIndex(plane: SlicePlane, crosshair: VoxelCoord): number {
   return crosshair.x;
 }
 
+export interface ViewportTransform {
+  zoom?: number;
+  pan?: { x: number; y: number };
+}
+
 /** The canvas pixel under a pointer, scaled from CSS pixels to the bitmap. */
 export function canvasPixel(
   canvas: { width: number; height: number },
   rect: { left: number; top: number; width: number; height: number },
   clientX: number,
-  clientY: number
+  clientY: number,
+  transformOrZoom?: ViewportTransform | number,
+  panArg?: { x: number; y: number }
 ): { x: number; y: number } {
+  let zoom = 1;
+  let pan = { x: 0, y: 0 };
+
+  if (typeof transformOrZoom === "number") {
+    zoom = transformOrZoom;
+    if (panArg) {
+      pan = panArg;
+    }
+  } else if (transformOrZoom && typeof transformOrZoom === "object") {
+    if (typeof transformOrZoom.zoom === "number") {
+      zoom = transformOrZoom.zoom;
+    }
+    if (transformOrZoom.pan) {
+      pan = transformOrZoom.pan;
+    }
+  }
+
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  const cssX = cx + (clientX - rect.left - pan.x - cx) / zoom;
+  const cssY = cy + (clientY - rect.top - pan.y - cy) / zoom;
+
   return {
-    x: Math.floor((clientX - rect.left) * (canvas.width / rect.width)),
-    y: Math.floor((clientY - rect.top) * (canvas.height / rect.height)),
+    x: Math.floor(cssX * (canvas.width / rect.width)),
+    y: Math.floor(cssY * (canvas.height / rect.height)),
   };
 }
 

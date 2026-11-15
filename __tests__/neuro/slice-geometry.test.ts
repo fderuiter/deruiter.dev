@@ -29,6 +29,31 @@ describe("canvasPixel", () => {
     expect(canvasPixel(canvas, rect, 111, 91)).toEqual({ x: 5, y: 10 });
     expect(canvasPixel(canvas, rect, 90, 40)).toEqual({ x: -5, y: -3 });
   });
+
+  it("inverts zoom scale and pan offsets centered on the canvas", () => {
+    const canvas = { width: 96, height: 96 };
+    const rect = { left: 0, top: 0, width: 192, height: 192 };
+    // Center is (96, 96) which maps to pixel (48, 48)
+    expect(canvasPixel(canvas, rect, 96, 96, { zoom: 2, pan: { x: 0, y: 0 } })).toEqual({
+      x: 48,
+      y: 48,
+    });
+    // At zoom 2, moving +20 CSS pixels from center (+10 CSS unzoomed -> +5 canvas pixels)
+    expect(canvasPixel(canvas, rect, 116, 96, { zoom: 2, pan: { x: 0, y: 0 } })).toEqual({
+      x: 53,
+      y: 48,
+    });
+    // With pan { x: 20, y: 10 }, the center moves to clientX: 116, clientY: 106
+    expect(canvasPixel(canvas, rect, 116, 106, { zoom: 2, pan: { x: 20, y: 10 } })).toEqual({
+      x: 48,
+      y: 48,
+    });
+    // Supports numeric zoom argument and optional pan parameter
+    expect(canvasPixel(canvas, rect, 116, 106, 2, { x: 20, y: 10 })).toEqual({
+      x: 48,
+      y: 48,
+    });
+  });
 });
 
 describe("pixelToVoxel", () => {

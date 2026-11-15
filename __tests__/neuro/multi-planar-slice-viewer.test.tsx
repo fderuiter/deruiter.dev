@@ -149,6 +149,110 @@ describe("MultiPlanarSliceViewer", () => {
     expect(onCrosshairChange).toHaveBeenCalledWith({ x: 10, y: 21, z: 30 });
   });
 
+  it("magnifies and shrinks slice canvases via zoom in, zoom out, and reset buttons", () => {
+    setup();
+    const axialCanvas = canvas(/^2D Axial/) as HTMLCanvasElement;
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1)");
+    expect(axialCanvas.style.imageRendering).toBe("pixelated");
+
+    // Click zoom in button
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom in" }));
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1.5)");
+
+    // Click zoom out button
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom out" }));
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1)");
+
+    // Zoom out does not go below 1x
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom out" }));
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1)");
+
+    // Zoom in multiple times and then reset
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom in" }));
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(2)");
+
+    fireEvent.click(screen.getByRole("button", { name: "Axial reset zoom" }));
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1)");
+  });
+
+  it("adjusts zoom scale with shift-wheel and retains slice scroll on regular wheel", () => {
+    const { onCrosshairChange } = setup();
+    const axialCanvas = canvas(/^2D Axial/) as HTMLCanvasElement;
+
+    // Shift-wheel zooms in without changing slice
+    fireEvent.wheel(axialCanvas, { deltaY: -100, shiftKey: true });
+    expect(onCrosshairChange).not.toHaveBeenCalled();
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1.25)");
+
+    // Regular wheel navigates slice depth without changing zoom
+    fireEvent.wheel(axialCanvas, { deltaY: 100, shiftKey: false });
+    expect(onCrosshairChange).toHaveBeenCalledWith({ x: 10, y: 20, z: 29 });
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1.25)");
+  });
+
+  it("pans canvas with middle mouse drag and clamps within container bounds", () => {
+    const { onCrosshairChange } = setup();
+    const axialCanvas = canvas(/^2D Axial/) as HTMLCanvasElement;
+
+    // Middle-click press and drag (button 1)
+    fireEvent.mouseDown(axialCanvas, { button: 1, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(axialCanvas, { buttons: 4, clientX: 130, clientY: 150 });
+    expect(onCrosshairChange).not.toHaveBeenCalled();
+    expect(axialCanvas.style.transform).toBe("translate(30px, 50px) scale(1)");
+
+    // Drag beyond container bounds clamps pan offset
+    fireEvent.mouseMove(axialCanvas, { buttons: 4, clientX: 400, clientY: 400 });
+    expect(axialCanvas.style.transform).toBe("translate(192px, 192px) scale(1)");
+
+    fireEvent.mouseUp(axialCanvas);
+  });
+
+  it("preserves exact voxel coordinate targeting under zoom scale and pan offset", () => {
+    const { onCrosshairChange } = setup("inspect");
+    const axialCanvas = canvas(/^2D Axial/);
+
+    // Zoom in on axial to 2x (center is 96, 96 -> voxel 48, 48)
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom in" }));
+
+    // Click at center (96, 96)
+    fireEvent.mouseDown(axialCanvas, { button: 0, clientX: 96, clientY: 96 });
+    expect(onCrosshairChange).toHaveBeenLastCalledWith({ x: 48, y: 48, z: 30 });
+
+    // Click 20 CSS px to right of center (clientX: 116).
+    // At 2x zoom, 20 CSS px from center is 10 unzoomed CSS px -> 5 bitmap pixels.
+    // 48 + 5 = 53.
+    fireEvent.mouseDown(axialCanvas, { button: 0, clientX: 116, clientY: 96 });
+    expect(onCrosshairChange).toHaveBeenLastCalledWith({ x: 53, y: 48, z: 30 });
+  });
+
+  it("resets zoom and pan state when a new volume model is selected", () => {
+    const { rerender } = setup();
+    const axialCanvas = canvas(/^2D Axial/) as HTMLCanvasElement;
+
+    fireEvent.click(screen.getByRole("button", { name: "Axial zoom in" }));
+    expect(axialCanvas.style.transform).toBe("translate(0px, 0px) scale(1.5)");
+
+    const newVolume = generateSyntheticVolume("wm_hypointensity");
+    rerender(
+      <MultiPlanarSliceViewer
+        volume={newVolume}
+        crosshair={{ x: 10, y: 20, z: 30 }}
+        toolMode="inspect"
+        brushRadius={1}
+        showPialContour
+        showWmContour
+        controlPoints={[]}
+        onCrosshairChange={vi.fn()}
+        onAddControlPoint={vi.fn()}
+        onApplyVoxelEdits={vi.fn()}
+      />
+    );
+    const updatedCanvas = canvas(/^2D Axial/) as HTMLCanvasElement;
+    expect(updatedCanvas.style.transform).toBe("translate(0px, 0px) scale(1)");
+  });
+
   it("shows one plane at a time in the focused layout", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: "Focused" }));

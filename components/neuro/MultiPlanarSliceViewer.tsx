@@ -11,8 +11,9 @@ import {
 } from "@/lib/neuro/types";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { IconLayersSubtract } from "@tabler/icons-react";
+import { clamp } from "@/lib/game-utils";
 import { drawSlice } from "./drawSlice";
-import { sliceIndex } from "./slice-geometry";
+import { sliceIndex, ViewportTransform } from "./slice-geometry";
 import { useSliceInteraction } from "./useSliceInteraction";
 
 interface MultiPlanarSliceViewerProps {
@@ -70,6 +71,12 @@ const COMPASS_POSITIONS = [
   "right-1 top-1/2 -translate-y-1/2",
 ];
 
+const DEFAULT_TRANSFORMS: Record<SlicePlane, ViewportTransform> = {
+  axial: { zoom: 1, pan: { x: 0, y: 0 } },
+  coronal: { zoom: 1, pan: { x: 0, y: 0 } },
+  sagittal: { zoom: 1, pan: { x: 0, y: 0 } },
+};
+
 type SliceInteraction = ReturnType<typeof useSliceInteraction>;
 
 /** One plane's slice canvas, wired to the viewer's pointer handling. */
@@ -79,28 +86,33 @@ function SliceCanvas({
   focused,
   canvasRef,
   interaction,
+  transform,
 }: {
   plane: SlicePlane;
   crosshair: VoxelCoord;
   focused: boolean;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   interaction: SliceInteraction;
+  transform: ViewportTransform;
 }) {
   const { title, axis } = PLANES[plane];
   const touchPoint = (e: React.TouchEvent<HTMLCanvasElement>) =>
     e.touches[0] || e.changedTouches[0];
+  const zoom = transform?.zoom ?? 1;
+  const pan = transform?.pan ?? { x: 0, y: 0 };
   return (
     <canvas
       ref={canvasRef}
       role="img"
       tabIndex={0}
       aria-label={`${focused ? "Focused 2D" : "2D"} ${title} MRI Slice View at ${axis.toUpperCase()}=${crosshair[axis]}. Click or drag to inspect or apply edits.`}
-      onMouseDown={(e) =>
-        interaction.press(plane, e.currentTarget, e.clientX, e.clientY)
-      }
+      onMouseDown={(e) => {
+        if (e.button === 1) e.preventDefault();
+        interaction.press(plane, e.currentTarget, e.clientX, e.clientY, e.button);
+      }}
       onMouseMove={(e) => {
         interaction.hover(plane, e.currentTarget, e.clientX, e.clientY);
-        interaction.drag(plane, e.currentTarget, e.clientX, e.clientY);
+        interaction.drag(plane, e.currentTarget, e.clientX, e.clientY, e.buttons);
       }}
       onTouchStart={(e) => {
         const touch = touchPoint(e);
@@ -113,9 +125,14 @@ function SliceCanvas({
       onTouchEnd={interaction.release}
       onWheel={(e) => {
         e.preventDefault();
-        interaction.scroll(plane, e.deltaY);
+        interaction.scroll(plane, e.deltaY, e.shiftKey);
       }}
-      style={{ touchAction: "none" }}
+      style={{
+        touchAction: "none",
+        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+        transformOrigin: "center",
+        imageRendering: "pixelated",
+      }}
       className="w-full h-full object-contain cursor-crosshair"
     />
   );
@@ -138,6 +155,8 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
 }) => {
   const [activePlane, setActivePlane] = useState<SlicePlane>("coronal");
   const [viewLayout, setViewLayout] = useState<"focused" | "multi">("multi");
+  const [transforms, setTransforms] =
+    useState<Record<SlicePlane, ViewportTransform>>(DEFAULT_TRANSFORMS);
 
   const axialCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const coronalCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -151,12 +170,55 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
     sagittal: sagittalCanvasRef,
   };
 
+  const [prevVolume, setPrevVolume] = useState(volume);
+  if (prevVolume !== volume) {
+    setPrevVolume(volume);
+    setTransforms(DEFAULT_TRANSFORMS);
+  }
+
+  const handleZoomIn = (plane: SlicePlane) => {
+    setTransforms((prev) => {
+      const current = prev[plane] ?? { zoom: 1, pan: { x: 0, y: 0 } };
+      const zoom = clamp(Number(((current.zoom ?? 1) + 0.5).toFixed(2)), 1, 8);
+      return {
+        ...prev,
+        [plane]: { ...current, zoom },
+      };
+    });
+  };
+
+  const handleZoomOut = (plane: SlicePlane) => {
+    setTransforms((prev) => {
+      const current = prev[plane] ?? { zoom: 1, pan: { x: 0, y: 0 } };
+      const zoom = clamp(Number(((current.zoom ?? 1) - 0.5).toFixed(2)), 1, 8);
+      return {
+        ...prev,
+        [plane]: { ...current, zoom },
+      };
+    });
+  };
+
+  const handleResetZoom = (plane: SlicePlane) => {
+    setTransforms((prev) => ({
+      ...prev,
+      [plane]: { zoom: 1, pan: { x: 0, y: 0 } },
+    }));
+  };
+
   const interaction = useSliceInteraction({
     volume,
     crosshair,
     toolMode,
     brushRadius,
     controlPointCount: controlPoints.length,
+    transforms,
+    onTransformChange: (plane, transform) => {
+      setTransforms((prev) => ({
+        ...prev,
+        [plane]:
+          typeof transform === "function" ? transform(prev[plane]) : transform,
+      }));
+    },
     onCrosshairChange,
     onAddControlPoint,
     onApplyVoxelEdits,
@@ -289,7 +351,38 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
                   <span className="text-brand-cyan font-bold">
                     {title.toUpperCase()} ({label}={crosshair[axis]})
                   </span>
-                  <span className="text-zinc-400">{direction}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-zinc-400">{direction}</span>
+                    <div className="flex items-center gap-0.5 ml-1">
+                      <button
+                        type="button"
+                        aria-label={`${title} zoom in`}
+                        onClick={() => handleZoomIn(plane)}
+                        className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px] font-bold"
+                        title="Zoom In"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${title} zoom out`}
+                        onClick={() => handleZoomOut(plane)}
+                        className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px] font-bold"
+                        title="Zoom Out"
+                      >
+                        -
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${title} reset zoom`}
+                        onClick={() => handleResetZoom(plane)}
+                        className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px]"
+                        title="Reset Zoom"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-lg bg-black">
                   {/* Anatomical Compass Badges */}
@@ -307,6 +400,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
                     focused={false}
                     canvasRef={canvasRefs[plane]}
                     interaction={interaction}
+                    transform={transforms[plane]}
                   />
                 </div>
                 <input
@@ -348,10 +442,41 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
               ))}
             </div>
 
-            <span className="text-xs font-mono text-zinc-400">
-              SLICE: {PLANES[activePlane].axis.toUpperCase()} ={" "}
-              {crosshair[PLANES[activePlane].axis]}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-zinc-400">
+                SLICE: {PLANES[activePlane].axis.toUpperCase()} ={" "}
+                {crosshair[PLANES[activePlane].axis]}
+              </span>
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  aria-label={`${PLANES[activePlane].title} zoom in`}
+                  onClick={() => handleZoomIn(activePlane)}
+                  className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px] font-bold"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${PLANES[activePlane].title} zoom out`}
+                  onClick={() => handleZoomOut(activePlane)}
+                  className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px] font-bold"
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${PLANES[activePlane].title} reset zoom`}
+                  onClick={() => handleResetZoom(activePlane)}
+                  className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded text-[11px]"
+                  title="Reset Zoom"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-lg bg-black max-h-[480px]">
@@ -362,6 +487,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
               focused
               canvasRef={canvasRefs[activePlane]}
               interaction={interaction}
+              transform={transforms[activePlane]}
             />
           </div>
         </div>

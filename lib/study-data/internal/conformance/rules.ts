@@ -733,6 +733,14 @@ function eligibilityRule(id: string): ConformanceRule {
 }
 
 /**
+ * One unambiguous map key for a subject and a record identifier. JSON keeps
+ * the two parts apart even when a value contains a delimiter (#3828).
+ */
+function recordKey(subject: unknown, identifier: unknown): string {
+  return JSON.stringify([String(subject), String(identifier)]);
+}
+
+/**
  * Every RELREC row names an existing record of its domain by its --SEQ, and
  * each relationship pairs exactly one AE record with one CM record of the
  * same subject (#3414).
@@ -756,11 +764,17 @@ function relatedRecordsRule(id: string): ConformanceRule {
         if (target)
           for (let row = 0; row < target.rowCount; row += 1)
             seen.add(
-              `${at(target, "USUBJID", row)}|${at(target, `${domain}SEQ`, row)}`
+              recordKey(
+                at(target, "USUBJID", row),
+                at(target, `${domain}SEQ`, row)
+              )
             );
         keys.set(domain, seen);
       }
-      const pairs = new Map<string, string[]>();
+      const pairs = new Map<
+        string,
+        { subject: string; relid: string; domains: string[] }
+      >();
       for (let row = 0; row < dataset.rowCount; row += 1) {
         const domain = String(at(dataset, "RDOMAIN", row));
         const subject = String(at(dataset, "USUBJID", row));
@@ -772,15 +786,18 @@ function relatedRecordsRule(id: string): ConformanceRule {
             variable: "IDVAR",
             message: `RELREC links ${domain} by ${String(at(dataset, "IDVAR", row))}; only AE and CM records by their --SEQ are related.`,
           });
-        else if (!known.has(`${subject}|${seq}`))
+        else if (!known.has(recordKey(subject, seq)))
           issues.push({
             row,
             message: `RELREC names ${domain}SEQ ${String(seq)} for ${subject}, which is not a record in ${domain}.`,
           });
-        const relationship = `${subject}|${String(at(dataset, "RELID", row))}`;
-        pairs.set(relationship, [...(pairs.get(relationship) ?? []), domain]);
+        const relid = String(at(dataset, "RELID", row));
+        const key = recordKey(subject, relid);
+        const pair = pairs.get(key) ?? { subject, relid, domains: [] };
+        pair.domains.push(domain);
+        pairs.set(key, pair);
       }
-      for (const [relationship, domains] of pairs)
+      for (const { subject, relid, domains } of pairs.values())
         if (
           domains.length !== 2 ||
           !domains.includes("AE") ||
@@ -788,7 +805,7 @@ function relatedRecordsRule(id: string): ConformanceRule {
         )
           issues.push({
             variable: "RELID",
-            message: `Relationship ${relationship.replace("|", " ")} relates ${domains.join(", ")} rather than one AE and one CM record.`,
+            message: `Relationship ${subject} ${relid} relates ${domains.join(", ")} rather than one AE and one CM record.`,
           });
       return issues;
     },

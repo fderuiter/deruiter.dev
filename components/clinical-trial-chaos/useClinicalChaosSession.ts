@@ -272,11 +272,47 @@ export function readStoredProtocol(): StudyProtocol | null {
     typeof stored === "object" &&
     !Array.isArray(stored) &&
     "id" in stored &&
-    (stored as { id: unknown }).id
+    (stored as { id: unknown }).id &&
+    hasProtocolShape(stored)
   ) {
     return stored as StudyProtocol;
   }
   return null;
+}
+
+/** An object whose own `key` is an array. */
+function arrayAt(value: unknown, key: string): unknown[] | null {
+  if (!value || typeof value !== "object") return null;
+  const field = (value as Record<string, unknown>)[key];
+  return Array.isArray(field) ? field : null;
+}
+
+/**
+ * Whether a stored value has the parts the BIMO report walks: forms with
+ * `sections` and `rules` arrays, sections with `fields`, and fields with a
+ * string `variableName`. Anything else is ignored for this session and left
+ * in storage untouched (#3738).
+ */
+function hasProtocolShape(stored: object): boolean {
+  const forms = arrayAt(stored, "forms");
+  if (!forms) return false;
+  return forms.every((form) => {
+    const sections = arrayAt(form, "sections");
+    if (!sections || !arrayAt(form, "rules")) return false;
+    return sections.every((section) => {
+      const fields = arrayAt(section, "fields");
+      return (
+        fields !== null &&
+        fields.every(
+          (field) =>
+            !!field &&
+            typeof field === "object" &&
+            typeof (field as { variableName?: unknown }).variableName ===
+              "string"
+        )
+      );
+    });
+  });
 }
 
 function readStoredOutfitId(): OutfitId {

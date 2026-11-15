@@ -33,10 +33,11 @@ export default function ProtocolDriftPage() {
           ),
         }}
       />
-      <div className="mx-auto mb-4 w-full max-w-[1600px]">
-        <ClinicalJourneyNav path="/protocol-drift" variant="compact" />
-      </div>
-      <ProtocolDriftClient />
+      <ProtocolDriftClient
+        journey={
+          <ClinicalJourneyNav path="/protocol-drift" variant="compact" />
+        }
+      />
     </PageLayout>
   );
 }

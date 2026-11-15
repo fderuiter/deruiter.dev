@@ -23,7 +23,14 @@ const DynamicProtocolDrift = dynamic(ProtocolDriftLoader, {
   ),
 });
 
-export const ProtocolDriftClient: React.FC = () => (
+interface ProtocolDriftClientProps {
+  /** The clinical journey strip, rendered below the page heading (#3195). */
+  readonly journey?: React.ReactNode;
+}
+
+export const ProtocolDriftClient: React.FC<ProtocolDriftClientProps> = ({
+  journey,
+}) => (
   <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
     <div className="mx-auto max-w-[1600px]">
       <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-4 sm:gap-4">
@@ -45,6 +52,8 @@ export const ProtocolDriftClient: React.FC = () => (
           advice.
         </p>
       </div>
+
+      {journey ? <div className="mb-8 min-w-0">{journey}</div> : null}
 
       <div className="border border-zinc-800 bg-[#13151a] p-1.5 sm:p-4">
         <PlayCabinet

@@ -750,13 +750,26 @@ test.describe("Clinical Trial Chaos guided tutorial", () => {
 
     // Work through the answers until the right one lands.
     await expect.poll(() => step(page)).toBe("validate");
+    const fixDialog = page.getByRole("dialog", {
+      name: "CDISC Controlled Terminology Validation",
+    });
+    await expect(fixDialog).toBeVisible();
     await expect(async () => {
       for (const key of ["1", "2", "3", "4"]) {
-        if ((await step(page)) !== "validate") break;
+        if (!(await fixDialog.isVisible())) break;
         await page.keyboard.press(key);
+        if (
+          await fixDialog
+            .getByText("✓ Standard Verified")
+            .isVisible()
+            .catch(() => false)
+        ) {
+          break;
+        }
       }
-      expect(await step(page)).toBe("lifeline");
+      await expect(fixDialog).toBeHidden();
     }).toPass({ timeout: 15000 });
+    await expect.poll(() => step(page)).toBe("lifeline");
 
     // The Coffee Break always fires; Enter then routes and signs.
     await expect(page.getByRole("dialog")).toHaveCount(0);

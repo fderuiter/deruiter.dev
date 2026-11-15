@@ -137,6 +137,30 @@ describe("benchmark evidence contract", () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 
+  it("names each route that failed the budget with its medians", () => {
+    const slow: PageBenchmarkSummary = {
+      ...passingRoute("/crf"),
+      lcp: { median: 3120.4, min: 2900, max: 3300, p95: 3300 },
+      passedBudget: false,
+    };
+    const result = validateBenchmarkEvidence(
+      productionEvidence({
+        assertion: { budgetEnabled: true, expectedRoutes: ["/", "/crf"] },
+        routes: [passingRoute(), slow],
+      }),
+      {
+        revision: "abc123",
+        dirty: false,
+        now: new Date("2026-09-09T12:05:00.000Z"),
+      }
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "Evidence contains route results that failed the performance budget: /crf (median TTFB 120ms, FCP 300ms, LCP 3120ms, CLS 0.010)."
+    );
+  });
+
   it("rejects reports that are older than the assertion freshness window", () => {
     const result = validateBenchmarkEvidence(productionEvidence(), {
       revision: "abc123",

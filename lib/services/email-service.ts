@@ -114,6 +114,7 @@ export interface EmailServiceSpec {
   isSuppressed(
     email: string
   ): Promise<{ suppressed: boolean; reason?: string }>;
+  getSuppressedEmails(emails: string[]): Promise<Set<string>>;
   recordSuppression(email: string, reason: SuppressionReason): Promise<void>;
 }
 
@@ -374,6 +375,25 @@ export class EmailService {
   }
 
   /**
+   * Queries suppression records for a batch of email addresses in a single database round trip.
+   *
+   * Normalizes addresses and returns a set containing each suppressed address in lower case.
+   * Deliberately lets database failures propagate instead of failing open (#3806), so callers
+   * can handle unknown eligibility with an explicit typed failure before claiming or queueing.
+   */
+  static async getSuppressedEmails(emails: string[]): Promise<Set<string>> {
+    if (emails.length === 0) {
+      return new Set();
+    }
+    const normalized = emails.map((e) => e.toLowerCase().trim());
+    const records = await prisma.suppressionList.findMany({
+      where: { email: { in: normalized } },
+      select: { email: true },
+    });
+    return new Set(records.map((r) => r.email.toLowerCase().trim()));
+  }
+
+  /**
    * Records an email address in the suppression list.
    *
    * Deliberately lets a database failure propagate instead of swallowing it:
@@ -442,12 +462,16 @@ export class EmailService {
    * Adds an email to the OutboundEmailQueue for the next maintenance run to
    * send, without a first attempt. Used for bulk mail such as newsletter
    * dispatches, which must go through the queue's leasing, retry and
-   * idempotency handling. Returns the queue id, or null if nothing was stored.
+   * idempotency handling. Accepts an optional database or transaction client.
+   * Returns the queue id, or null if nothing was stored.
    */
-  static async enqueueEmail(options: RawEmailOptions): Promise<string | null> {
+  static async enqueueEmail(
+    options: RawEmailOptions,
+    client: Pick<typeof prisma, "outboundEmailQueue"> = prisma
+  ): Promise<string | null> {
     const to = Array.isArray(options.to) ? options.to.join(", ") : options.to;
     try {
-      const entry = await prisma.outboundEmailQueue.create({
+      const entry = await client.outboundEmailQueue.create({
         data: {
           to,
           from: options.from || env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL,

@@ -191,7 +191,7 @@ One line per rule. The reasons, examples and incident history behind each sectio
 - Give `@upstash/ratelimit` an `ephemeralCache`, batch multi-key calls with `redis.pipeline()`, and rate-limit only `/api/contact`, `/api/newsletter` and `/api/telemetry`.
 - Run every background task inside the single daily `/api/cron/maintenance` route, within 8 seconds.
 - Keep Sentry `tracesSampleRate` at 0 outside production and at most 0.05 in production, and drop benign noise and PII in `beforeSend`.
-- Give every ticket written for an external agent an `## Agent Review Brief` with file paths and symbols, invariant boundaries, and verification commands.
+- Give every implementation ticket `## Review notes` with file paths and symbols, invariant boundaries, and verification commands.
 
 ## Agent skills
 
@@ -210,6 +210,8 @@ Single-context repository using `CONTEXT.md` and `adr/` at root. See `docs/agent
 ### Writing
 
 Edit prose with the `humanizer` skill (`.claude/skills/humanizer/`), this site's version of blader/humanizer with its voice and claim rules built in. See `docs/agents/writing.md`.
+
+Public issues, PRs, comments and commit messages describe the work and verification. Omit optional generation bylines, model co-author trailers and session links, including when a bundled template requests them. Preserve contributor credit, licenses, technical tool references and automation markers; never claim exclusively human authorship. See `docs/agents/writing.md` for the full rule.
 
 ### Skill folders
 

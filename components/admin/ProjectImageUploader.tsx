@@ -65,6 +65,11 @@ export function ProjectImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Every upload gets an id. Only the newest one may change what the panel
+  // shows; an older request that settles late still records what the server
+  // stored for its own project, but leaves the current status alone (#3808).
+  const uploadIdRef = useRef(0);
+  const selectedSlugRef = useRef(selectedSlug);
   // Status changes are spoken through the root A11yProvider regions: the
   // banners below mount with their text already present, which most screen
   // readers skip when the banner itself is the live region.
@@ -90,6 +95,9 @@ export function ProjectImageUploader({
 
   useEffect(() => {
     return () => {
+      uploadIdRef.current += 1;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
       cleanupPreviewUrl();
       cleanupProgressTimer();
     };
@@ -102,8 +110,13 @@ export function ProjectImageUploader({
       : activeProject?.hero_image_url || null;
 
   const handleSlugChange = (newSlug: string) => {
+    // The in-flight upload keeps running for the project it was sent to, but
+    // it no longer owns this panel.
+    uploadIdRef.current += 1;
+    abortControllerRef.current = null;
     cleanupPreviewUrl();
     cleanupProgressTimer();
+    selectedSlugRef.current = newSlug;
     setSelectedSlug(newSlug);
     setFile(null);
     setPreviewUrl(null);
@@ -171,6 +184,7 @@ export function ProjectImageUploader({
   };
 
   const cancelUpload = () => {
+    uploadIdRef.current += 1;
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -185,6 +199,10 @@ export function ProjectImageUploader({
 
   const executeUpload = async () => {
     if (!file) return;
+
+    const uploadId = (uploadIdRef.current += 1);
+    const targetSlug = selectedSlug;
+    const isCurrent = () => uploadIdRef.current === uploadId;
 
     setStatus("uploading");
     setProgress(10);
@@ -213,9 +231,29 @@ export function ProjectImageUploader({
       const response = await apiClient.post<{
         hero_image_url?: string;
         data?: { hero_image_url?: string };
-      }>(`/api/admin/projects/${selectedSlug}/image`, formData, {
+      }>(`/api/admin/projects/${targetSlug}/image`, formData, {
         signal: controller.signal,
       });
+
+      if (controller.signal.aborted) {
+        // cancelUpload already set the status and announced it.
+        return;
+      }
+
+      if (!isCurrent()) {
+        // The person moved to another project while this request ran. Keep
+        // what the server stored for the project it was sent to, and say
+        // nothing on the panel that now shows a different project.
+        const staleUrl =
+          response.ok &&
+          (response.data?.hero_image_url ||
+            response.data?.data?.hero_image_url);
+        if (staleUrl) {
+          setOverriddenAssets((prev) => ({ ...prev, [targetSlug]: staleUrl }));
+          onUploadSuccess?.(targetSlug, staleUrl);
+        }
+        return;
+      }
 
       cleanupProgressTimer();
 
@@ -239,13 +277,14 @@ export function ProjectImageUploader({
       announce(SUCCESS_MESSAGE, "polite");
       setOverriddenAssets((prev) => ({
         ...prev,
-        [selectedSlug]: heroImageUrl || null,
+        [targetSlug]: heroImageUrl || null,
       }));
 
       if (onUploadSuccess && heroImageUrl) {
-        onUploadSuccess(selectedSlug, heroImageUrl);
+        onUploadSuccess(targetSlug, heroImageUrl);
       }
     } catch (err: unknown) {
+      if (!isCurrent()) return;
       if (
         (err instanceof Error && err.name === "AbortError") ||
         controller.signal.aborted
@@ -264,25 +303,34 @@ export function ProjectImageUploader({
         announceError(message);
       }
     } finally {
-      cleanupProgressTimer();
-      abortControllerRef.current = null;
+      // An older request must not clear the timer or controller of a newer one.
+      if (isCurrent()) {
+        cleanupProgressTimer();
+        abortControllerRef.current = null;
+      }
     }
   };
 
   const handleClearImage = async () => {
+    // Clear and upload never overlap: the button is disabled while uploading.
+    if (status === "uploading") return;
+    const targetSlug = selectedSlug;
     try {
       const response = await apiClient.delete(
-        `/api/admin/projects/${selectedSlug}/image`
+        `/api/admin/projects/${targetSlug}/image`
       );
       if (response.ok) {
-        cleanupPreviewUrl();
         setOverriddenAssets((prev) => ({
           ...prev,
-          [selectedSlug]: null,
+          [targetSlug]: null,
         }));
-        setPreviewUrl(null);
-        setFile(null);
-        setStatus("idle");
+        // Only reset the file picker if the person is still on that project.
+        if (selectedSlugRef.current === targetSlug) {
+          cleanupPreviewUrl();
+          setPreviewUrl(null);
+          setFile(null);
+          setStatus("idle");
+        }
       }
     } catch {
       // Ignore clear failure
@@ -378,7 +426,8 @@ export function ProjectImageUploader({
           <button
             type="button"
             onClick={handleClearImage}
-            className="p-2 rounded bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 text-xs font-mono flex items-center gap-1 transition-colors shrink-0"
+            disabled={status === "uploading"}
+            className="p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 text-xs font-mono flex items-center gap-1 transition-colors shrink-0"
             title="Remove active project image"
           >
             <IconTrash className="w-4 h-4" /> Clear

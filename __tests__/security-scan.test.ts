@@ -258,6 +258,22 @@ describe("redaction: formatFinding never carries a candidate value", () => {
 });
 
 describe("isAllowlistedSecretValue: allowlisting rules", () => {
+  // CodeQL alert 1 (#3823): fingerprints identify known rotated values in one
+  // file each. They never vouch for a new value, or for any value elsewhere.
+  it("does not allow an unknown value in a file that holds fingerprints", () => {
+    const candidate = ["ghp_", "Zq7".repeat(12)].join("");
+    for (const file of [
+      "__tests__/dx-tooling.test.ts",
+      "__tests__/email-service.test.ts",
+      "__tests__/triage-security-issue.test.ts",
+      "lib/security-scan/internal/allowlist.ts",
+    ]) {
+      expect(isAllowlistedSecretValue(candidate, file)).toBe(false);
+    }
+    expect(isAllowlistedSecretValue(candidate, "src/config.ts")).toBe(false);
+    expect(isAllowlistedSecretValue(candidate)).toBe(false);
+  });
+
   it("allows localhost and 127.0.0.1 hosts", () => {
     expect(isAllowlistedSecretValue("postgresql://u:p@localhost:5432/db")).toBe(
       true

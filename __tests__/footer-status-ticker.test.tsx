@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { fireEvent } from "@testing-library/react";
 import { FooterStatusTicker } from "@/components/FooterStatusTicker";
 import { STATUS_TICKER_ITEMS } from "@/lib/meme-data";
 
@@ -54,6 +55,14 @@ describe("FooterStatusTicker rotation (#952)", () => {
   const line = () =>
     container.querySelector('[data-testid="footer-status-ticker"] span.block')
       ?.textContent;
+  const pauseButton = () =>
+    container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Pause ticker"]'
+    )!;
+  const tickerRoot = () =>
+    container.querySelector<HTMLDivElement>(
+      '[data-testid="footer-status-ticker"]'
+    )!;
 
   it("rotates every 4.5s and holds its line while data-ticker-paused is set", async () => {
     await act(async () => root.render(<FooterStatusTicker />));
@@ -79,6 +88,99 @@ describe("FooterStatusTicker rotation (#952)", () => {
       vi.advanceTimersByTime(4500);
     });
     expect(line()).toBe(STATUS_TICKER_ITEMS[2]);
+  });
+
+  it("pauses and resumes rotation via toggle button clicks and reflects aria-pressed and data-ticker-paused attributes", async () => {
+    await act(async () => root.render(<FooterStatusTicker />));
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+    expect(pauseButton()).not.toBeNull();
+    expect(pauseButton().getAttribute("type")).toBe("button");
+    expect(pauseButton().getAttribute("aria-pressed")).toBe("false");
+    expect(pauseButton().getAttribute("aria-label")).toBe("Pause ticker");
+    expect(tickerRoot().hasAttribute("data-ticker-paused")).toBe(false);
+
+    // Click to pause
+    await act(async () => pauseButton().click());
+    expect(pauseButton().getAttribute("aria-pressed")).toBe("true");
+    expect(pauseButton().getAttribute("aria-label")).toBe("Pause ticker");
+    expect(tickerRoot().getAttribute("data-ticker-paused")).toBe("true");
+
+    // Rotation is suspended while paused
+    await act(async () => {
+      vi.advanceTimersByTime(4500 * 2);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Click to resume
+    await act(async () => pauseButton().click());
+    expect(pauseButton().getAttribute("aria-pressed")).toBe("false");
+    expect(pauseButton().getAttribute("aria-label")).toBe("Pause ticker");
+    expect(tickerRoot().hasAttribute("data-ticker-paused")).toBe(false);
+
+    // Rotation resumes with a fresh interval
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[1]);
+  });
+
+  it("holds rotation while the ticker is hovered and resumes when unhovered (WCAG 2.2.2)", async () => {
+    await act(async () => root.render(<FooterStatusTicker />));
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Mouse enters the ticker
+    await act(async () => {
+      fireEvent.mouseEnter(tickerRoot());
+    });
+
+    // Rotation is suspended while hovered
+    await act(async () => {
+      vi.advanceTimersByTime(4500 * 2);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Mouse leaves the ticker
+    await act(async () => {
+      fireEvent.mouseLeave(tickerRoot());
+    });
+
+    // Rotation resumes
+    await act(async () => {
+      vi.advanceTimersByTime(4500);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[1]);
+  });
+
+  it("holds rotation while the ticker has keyboard focus and resumes when blurred (WCAG 2.2.2)", async () => {
+    await act(async () => root.render(<FooterStatusTicker />));
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Keyboard focus moves into the pause button
+    await act(async () => {
+      pauseButton().focus();
+    });
+
+    // Rotation is suspended while focused
+    await act(async () => {
+      vi.advanceTimersByTime(4500 * 2);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[0]);
+
+    // Keyboard focus blurs
+    await act(async () => {
+      pauseButton().blur();
+    });
+
+    // Rotation resumes
+    await act(async () => {
+      vi.advanceTimersByTime(4500);
+    });
+    expect(line()).toBe(STATUS_TICKER_ITEMS[1]);
   });
 
   const bubble = () => container.querySelector("p.font-sans");

@@ -837,6 +837,15 @@ describe("CRF Studio shortcuts", () => {
     fireEvent.keyDown(button, { key: "3" });
     expect(props("StudioHeader").activeMode).toBe("designer");
 
+    // Role button when focused: also does NOT switch mode
+    const customButton = document.createElement("div");
+    customButton.setAttribute("role", "button");
+    customButton.tabIndex = 0;
+    canvas.appendChild(customButton);
+    customButton.focus();
+    fireEvent.keyDown(customButton, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+
     // Plain digit key when canvas itself receives keydown: switches mode
     fireEvent.keyDown(canvas, { key: "3" });
     expect(props("StudioHeader").activeMode).toBe("rules");
@@ -861,6 +870,19 @@ describe("CRF Studio shortcuts", () => {
     const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
     press("StudioHeader.onOpenWizard");
     expect(props("WorkflowWizardModal").isOpen).toBe(true);
+
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+    fireEvent.keyDown(canvas, { key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    fireEvent.keyDown(canvas, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+  });
+
+  it("suppresses studio hotkeys when omnibar palette is open", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    press("StudioHeader.onOpenOmnibar");
+    expect(props("StudyOmnibar").isOpen).toBe(true);
 
     expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
     fireEvent.keyDown(canvas, { key: "b", ctrlKey: true });

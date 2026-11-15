@@ -397,6 +397,31 @@ export const CRFStudioContainer: React.FC = () => {
     { allowInInputs: true, allowInKeyboardBoundary: true }
   );
 
+  const isAnyStudioModalOpen = Boolean(
+    isAnyFocusTrapActive() ||
+      isSlashPaletteOpen ||
+      isBaselinesModalOpen ||
+      isCompareModalOpen ||
+      isWizardOpen ||
+      isExportDocModalOpen ||
+      isFormCatalogOpen ||
+      isDiagnosticsOpen ||
+      isBrandingOpen ||
+      isReviewPackageOpen ||
+      isSpotlightTourOpen ||
+      isMobileWidgetDrawerOpen ||
+      isOmnibarOpen ||
+      isLibraryUpgradesOpen ||
+      Boolean(pendingStudyReplacement) ||
+      impactPendingDeletion !== null ||
+      (typeof document !== "undefined" &&
+        Boolean(
+          document.querySelector(
+            "dialog[open], [role='dialog'], [aria-modal='true']"
+          )
+        ))
+  );
+
   const handleStudioShortcut = useCallback(
     (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
@@ -479,20 +504,7 @@ export const CRFStudioContainer: React.FC = () => {
     STUDIO_HOTKEYS,
     (e) => {
       // Suppress behind open dialogs/modals
-      if (
-        isAnyFocusTrapActive() ||
-        isSlashPaletteOpen ||
-        isBaselinesModalOpen ||
-        isCompareModalOpen ||
-        isWizardOpen ||
-        isExportDocModalOpen ||
-        isFormCatalogOpen ||
-        isDiagnosticsOpen ||
-        isBrandingOpen ||
-        isReviewPackageOpen ||
-        isSpotlightTourOpen ||
-        isMobileWidgetDrawerOpen
-      ) {
+      if (isAnyStudioModalOpen) {
         return;
       }
 
@@ -540,7 +552,11 @@ export const CRFStudioContainer: React.FC = () => {
         const isButtonOrInteractive =
           target.tagName === "BUTTON" ||
           target.tagName === "A" ||
-          Boolean(target.closest?.("button, a"));
+          Boolean(
+            target.closest?.(
+              "button, a, [role='button'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='switch']"
+            )
+          );
 
         if (!isCanvasItself || isButtonOrInteractive) {
           return;

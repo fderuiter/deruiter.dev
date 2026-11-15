@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -12,7 +13,7 @@ import {
 import { clamp } from "@/lib/game-utils";
 import type { CellValue, DataLayer, VariableMeta } from "@/lib/study-data";
 import { ROW_PAGE_SIZE, type DatasetSummary, type RowWindow } from "./protocol";
-import { CELL, CELL_FOCUS, FIELD, SELECTED } from "./ui";
+import { BUTTON_SECONDARY, CELL, CELL_FOCUS, FIELD, SELECTED } from "./ui";
 
 const ROW_HEIGHT = 36;
 const VIEW_HEIGHT = 432;
@@ -135,6 +136,7 @@ export function DatasetViewer({
   const dataset =
     datasets.find((item) => item.key === selectedKey) ?? datasets[0];
   const selectId = useId();
+  const searchId = useId();
   const helpId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLTableElement>(null);
@@ -147,6 +149,8 @@ export function DatasetViewer({
   const [scrollTop, setScrollTop] = useState(0);
   const [active, setActive] = useState<Position>({ row: 0, col: 1 });
   const [inspected, setInspected] = useState(0);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const pageKey = `${runId}:${dataset?.key ?? ""}`;
   const [loadedFor, setLoadedFor] = useState(pageKey);
 
@@ -157,7 +161,17 @@ export function DatasetViewer({
     setScrollTop(0);
     setActive({ row: 0, col: 1 });
     setInspected(0);
+    setQuery("");
+    setDebouncedQuery("");
   }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   useEffect(() => {
     requestedRef.current = new Set(
       [...requestedRef.current].filter((key) => key.startsWith(`${pageKey}|`))
@@ -165,13 +179,71 @@ export function DatasetViewer({
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [pageKey]);
 
-  const rowCount = dataset?.rowCount ?? 0;
-  const variables = dataset?.variables ?? [];
-  const first = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
-  const last = Math.min(rowCount, first + VISIBLE_ROWS + OVERSCAN * 2);
+  const [lastQuery, setLastQuery] = useState(debouncedQuery);
+  if (lastQuery !== debouncedQuery) {
+    setLastQuery(debouncedQuery);
+    setScrollTop(0);
+  }
 
   useEffect(() => {
-    if (!dataset || last <= first) return;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [debouncedQuery]);
+
+  const rowCount = dataset?.rowCount ?? 0;
+  const variables = dataset?.variables ?? [];
+
+  const isFiltered = debouncedQuery.trim().length > 0;
+
+  const matchingRowIndices = useMemo(() => {
+    if (!isFiltered) return [];
+    const queryText = debouncedQuery.trim().toLowerCase();
+    const prefix = `${pageKey}|`;
+    const matches: number[] = [];
+
+    const loadedPages: {
+      page: number;
+      rows: readonly (readonly CellValue[])[];
+    }[] = [];
+    for (const [key, rows] of pages.entries()) {
+      if (key.startsWith(prefix)) {
+        const pageNum = parseInt(key.slice(prefix.length), 10);
+        if (!isNaN(pageNum)) {
+          loadedPages.push({ page: pageNum, rows });
+        }
+      }
+    }
+    loadedPages.sort((a, b) => a.page - b.page);
+
+    for (const { page, rows } of loadedPages) {
+      const pageOffset = page * ROW_PAGE_SIZE;
+      for (let r = 0; r < rows.length; r += 1) {
+        const row = rows[r];
+        const match = row.some((val) => {
+          if (val === null || val === undefined) return false;
+          return String(val).toLowerCase().includes(queryText);
+        });
+        if (match) {
+          matches.push(pageOffset + r);
+        }
+      }
+    }
+
+    return matches;
+  }, [debouncedQuery, isFiltered, pageKey, pages]);
+
+  const effectiveRowCount = isFiltered ? matchingRowIndices.length : rowCount;
+
+  if (effectiveRowCount === 0 && active.row !== -1) {
+    setActive((prev) => ({ row: -1, col: prev.col }));
+  } else if (effectiveRowCount > 0 && active.row >= effectiveRowCount) {
+    setActive((prev) => ({ row: 0, col: prev.col }));
+  }
+
+  const first = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const last = Math.min(effectiveRowCount, first + VISIBLE_ROWS + OVERSCAN * 2);
+
+  useEffect(() => {
+    if (!dataset || last <= first || isFiltered) return;
     const key = dataset.key;
     const firstPage = Math.floor(first / ROW_PAGE_SIZE);
     const lastPage = Math.floor((last - 1) / ROW_PAGE_SIZE);
@@ -192,7 +264,7 @@ export function DatasetViewer({
         }
       );
     }
-  }, [dataset, first, last, loadRows, pageKey]);
+  }, [dataset, first, last, loadRows, pageKey, isFiltered]);
 
   const cellValue = (row: number, col: number): CellValue | undefined => {
     const page = pages.get(`${pageKey}|${Math.floor(row / ROW_PAGE_SIZE)}`);
@@ -228,15 +300,19 @@ export function DatasetViewer({
 
   useEffect(() => {
     if (!reveal || reveal.key !== dataset?.key) return;
+    const targetVirtualRow = isFiltered
+      ? matchingRowIndices.indexOf(reveal.row)
+      : reveal.row;
+    if (targetVirtualRow === -1) return;
     focusPending.current = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActive({ row: reveal.row, col: 1 });
-    scrollToRow(reveal.row);
-  }, [reveal, dataset?.key, scrollToRow]);
+    setActive({ row: targetVirtualRow, col: 1 });
+    scrollToRow(targetVirtualRow);
+  }, [reveal, dataset?.key, scrollToRow, isFiltered, matchingRowIndices]);
 
   const moveTo = (row: number, col: number) => {
     const next = {
-      row: clamp(row, -1, rowCount - 1),
+      row: clamp(row, -1, effectiveRowCount - 1),
       col: clamp(col, 0, variables.length),
     };
     focusPending.current = true;
@@ -271,12 +347,25 @@ export function DatasetViewer({
         moveTo(event.ctrlKey ? 0 : row, 0);
         break;
       case "End":
-        moveTo(event.ctrlKey ? rowCount - 1 : row, variables.length);
+        moveTo(
+          event.ctrlKey
+            ? effectiveRowCount === 0
+              ? -1
+              : effectiveRowCount - 1
+            : row,
+          variables.length
+        );
         break;
       case "Enter":
-      case " ":
-        if (row >= 0 && dataset) onTrace(dataset.layer, dataset.name, row);
+      case " ": {
+        if (row >= 0 && dataset) {
+          const datasetRow = isFiltered ? matchingRowIndices[row] : row;
+          if (datasetRow !== undefined) {
+            onTrace(dataset.layer, dataset.name, datasetRow);
+          }
+        }
         break;
+      }
       default:
         return;
     }
@@ -289,6 +378,11 @@ export function DatasetViewer({
     );
     const col = Number(cell?.dataset.col);
     if (col > 0) setInspected(col - 1);
+  };
+
+  const onClear = () => {
+    setQuery("");
+    setDebouncedQuery("");
   };
 
   if (!dataset) return null;
@@ -318,7 +412,10 @@ export function DatasetViewer({
           <select
             id={selectId}
             value={dataset.key}
-            onChange={(event) => onSelectKey(event.target.value)}
+            onChange={(event) => {
+              onClear();
+              onSelectKey(event.target.value);
+            }}
             className={FIELD}
           >
             {groups.map((group) => (
@@ -357,6 +454,56 @@ export function DatasetViewer({
           </div>
         </dl>
       </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-0 flex-1 sm:max-w-md">
+          <label
+            htmlFor={searchId}
+            className="mb-1 block font-mono text-xs uppercase tracking-[0.14em] text-slate-300"
+          >
+            Search rows
+          </label>
+          <input
+            id={searchId}
+            type="search"
+            role="searchbox"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                onClear();
+              }
+            }}
+            placeholder="Filter by subject or value…"
+            aria-label="Search rows"
+            className={FIELD}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={!query}
+          className={BUTTON_SECONDARY}
+        >
+          Clear
+        </button>
+        {isFiltered ? (
+          <div className="flex items-center pb-3">
+            <span
+              role="status"
+              aria-live="polite"
+              aria-label="Match count"
+              className="inline-flex items-center border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-mono text-xs text-amber-200"
+            >
+              {matchingRowIndices.length.toLocaleString("en-US")} of{" "}
+              {rowCount.toLocaleString("en-US")} rows (
+              {matchingRowIndices.length === 1
+                ? "1 match"
+                : `${matchingRowIndices.length.toLocaleString("en-US")} matches`}
+              )
+            </span>
+          </div>
+        ) : null}
+      </div>
       <p className="break-words text-sm text-slate-300">
         <span className="font-semibold text-white">{dataset.label}</span>
         {dataset.structure ? ` · ${dataset.structure}` : ""}
@@ -377,7 +524,7 @@ export function DatasetViewer({
           role="grid"
           aria-label={`${dataset.name}: ${dataset.label}`}
           aria-describedby={helpId}
-          aria-rowcount={rowCount + 1}
+          aria-rowcount={effectiveRowCount + 1}
           aria-colcount={variables.length + 1}
           className="border-separate border-spacing-0"
           onKeyDown={onKeyDown}
@@ -417,61 +564,86 @@ export function DatasetViewer({
             </tr>
           </thead>
           <tbody>
-            {first > 0 ? (
-              <tr aria-hidden="true">
-                <td style={{ height: first * ROW_HEIGHT, padding: 0 }} />
-              </tr>
-            ) : null}
-            {rows.map((row) => {
-              const traced = tracedRow === row;
-              return (
-                <tr
-                  key={row}
-                  aria-rowindex={row + 2}
-                  aria-selected={traced}
-                  className={traced ? SELECTED : "text-slate-100"}
-                  style={{ height: ROW_HEIGHT }}
-                >
-                  <th
-                    scope="row"
-                    aria-colindex={1}
-                    data-row={row}
-                    data-col={0}
-                    tabIndex={tabStop(row, 0)}
-                    onFocus={() => setActive({ row, col: 0 })}
-                    onClick={() => onTrace(dataset.layer, dataset.name, row)}
-                    className={`${CELL} cursor-pointer border-b border-white/[0.04] font-normal text-slate-400 ${CELL_FOCUS}`}
-                  >
-                    {row + 1}
-                  </th>
-                  {variables.map((variable, index) => (
-                    <td
-                      key={variable.name}
-                      role="gridcell"
-                      aria-colindex={index + 2}
-                      data-row={row}
-                      data-col={index + 1}
-                      tabIndex={tabStop(row, index + 1)}
-                      onFocus={() => {
-                        setActive({ row, col: index + 1 });
-                        setInspected(index);
-                      }}
-                      onClick={() => onTrace(dataset.layer, dataset.name, row)}
-                      className={`${CELL} max-w-[18rem] cursor-pointer truncate border-b border-white/[0.04] hover:bg-white/[0.04] ${CELL_FOCUS}`}
-                    >
-                      {display(cellValue(row, index))}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-            {last < rowCount ? (
-              <tr aria-hidden="true">
+            {isFiltered && effectiveRowCount === 0 ? (
+              <tr>
                 <td
-                  style={{ height: (rowCount - last) * ROW_HEIGHT, padding: 0 }}
-                />
+                  colSpan={variables.length + 1}
+                  className="py-12 text-center text-sm text-slate-400"
+                  role="status"
+                  aria-live="polite"
+                >
+                  No records matching &ldquo;{debouncedQuery}&rdquo;
+                </td>
               </tr>
-            ) : null}
+            ) : (
+              <>
+                {first > 0 ? (
+                  <tr aria-hidden="true">
+                    <td style={{ height: first * ROW_HEIGHT, padding: 0 }} />
+                  </tr>
+                ) : null}
+                {rows.map((virtualRow) => {
+                  const datasetRow = isFiltered
+                    ? matchingRowIndices[virtualRow]
+                    : virtualRow;
+                  const traced = tracedRow === datasetRow;
+                  return (
+                    <tr
+                      key={datasetRow}
+                      aria-rowindex={virtualRow + 2}
+                      aria-selected={traced}
+                      className={traced ? SELECTED : "text-slate-100"}
+                      style={{ height: ROW_HEIGHT }}
+                    >
+                      <th
+                        scope="row"
+                        aria-colindex={1}
+                        data-row={virtualRow}
+                        data-col={0}
+                        tabIndex={tabStop(virtualRow, 0)}
+                        onFocus={() => setActive({ row: virtualRow, col: 0 })}
+                        onClick={() =>
+                          onTrace(dataset.layer, dataset.name, datasetRow)
+                        }
+                        className={`${CELL} cursor-pointer border-b border-white/[0.04] font-normal text-slate-400 ${CELL_FOCUS}`}
+                      >
+                        {datasetRow + 1}
+                      </th>
+                      {variables.map((variable, index) => (
+                        <td
+                          key={variable.name}
+                          role="gridcell"
+                          aria-colindex={index + 2}
+                          data-row={virtualRow}
+                          data-col={index + 1}
+                          tabIndex={tabStop(virtualRow, index + 1)}
+                          onFocus={() => {
+                            setActive({ row: virtualRow, col: index + 1 });
+                            setInspected(index);
+                          }}
+                          onClick={() =>
+                            onTrace(dataset.layer, dataset.name, datasetRow)
+                          }
+                          className={`${CELL} max-w-[18rem] cursor-pointer truncate border-b border-white/[0.04] hover:bg-white/[0.04] ${CELL_FOCUS}`}
+                        >
+                          {display(cellValue(datasetRow, index))}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                {last < effectiveRowCount ? (
+                  <tr aria-hidden="true">
+                    <td
+                      style={{
+                        height: (effectiveRowCount - last) * ROW_HEIGHT,
+                        padding: 0,
+                      }}
+                    />
+                  </tr>
+                ) : null}
+              </>
+            )}
           </tbody>
         </table>
       </div>

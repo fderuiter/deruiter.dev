@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { fromAny, fromPartial } from "@total-typescript/shoehorn";
 import fs from "fs";
 import path from "path";
 import {
@@ -405,14 +406,14 @@ describe("provider verification when a probe throws", () => {
         throw new Error("token gh-real-token was rejected");
       },
     };
-    const prompter = {
+    const prompter = fromPartial<SetupPrompter>({
       interactive: false,
       confirm: async () => false,
       input: async () => "",
       secret: async () => "",
       choose: async <T extends string>(_q: string, _c: readonly T[], fallback: T) =>
         fallback,
-    } as unknown as SetupPrompter;
+    });
 
     const checks = await runVerification({
       root: process.cwd(),
@@ -422,7 +423,7 @@ describe("provider verification when a probe throws", () => {
         CRON_SECRET: "a-real-secret-value-that-is-long-enough-123",
       },
       prompter,
-      run: (async () => ({ ok: true, code: 0, stdout: "", stderr: "" })) as unknown as CommandRunner,
+      run: fromAny<CommandRunner, unknown>(async () => ({ ok: true, code: 0, stdout: "", stderr: "" })),
       fetch: (async () => ({ ok: true, status: 200, text: async () => "" })) as ProbeFetch,
       dryRun: false,
       adapters: [leaky, cron],

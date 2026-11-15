@@ -13,6 +13,18 @@ import {
 import { checkGitHygieneConfig } from "./git-guard";
 import { checkDeadCode } from "./dead-code";
 import { checkDocumentationIndexParity } from "./doctor/docs";
+import { checkApiRouteWrapper } from "./doctor/api-routes";
+import { checkSetStateInEffectCeiling } from "./doctor/effect-suppressions";
+
+export {
+  checkApiRouteWrapper,
+  findApiRouteWrapperViolations,
+} from "./doctor/api-routes";
+export {
+  checkSetStateInEffectCeiling,
+  findSetStateInEffectSuppressions,
+  SET_STATE_IN_EFFECT_CEILING,
+} from "./doctor/effect-suppressions";
 import { checkBundleBudgets } from "./bundle-guard";
 import { checkArcadeThreeViews } from "./three-view-guard";
 import {
@@ -3637,6 +3649,8 @@ export async function runDiagnostics(
     checkDirectoryTopology(root),
     checkOpenApiParity(root, fix),
     checkHydrationSafety(root),
+    checkSetStateInEffectCeiling(root),
+    checkApiRouteWrapper(root),
     checkAccessibilityStandards(root, fix),
     checkAccessibilityAuditIntegrity(root),
     checkDefectRemediationInvariants(root),

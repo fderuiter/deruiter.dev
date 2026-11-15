@@ -3,6 +3,8 @@
  * generate clean and unique anchor IDs, and inject IDs into the HTML tags.
  */
 
+import { htmlToText } from "@/lib/html-text";
+
 export interface HeadingItem {
   id: string;
   text: string;
@@ -14,36 +16,6 @@ export interface HeadingItem {
  * "Images" or "Title" produce ids that DOMPurify's anti-clobbering pass strips.
  */
 const GENERATED_ID_PREFIX = "section-";
-
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  apos: "'",
-  nbsp: " ",
-};
-
-/**
- * Decodes the HTML entities DOMPurify emits so TOC labels read as plain text.
- */
-function decodeEntities(text: string): string {
-  return text.replace(
-    /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
-    (match, entity: string) => {
-      if (entity[0] === "#") {
-        const codePoint =
-          entity[1].toLowerCase() === "x"
-            ? parseInt(entity.slice(2), 16)
-            : parseInt(entity.slice(1), 10);
-        return Number.isFinite(codePoint) && codePoint <= 0x10ffff
-          ? String.fromCodePoint(codePoint)
-          : match;
-      }
-      return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
-    }
-  );
-}
 
 /**
  * Turns a plain-text heading label into a URL-friendly anchor slug.
@@ -98,10 +70,8 @@ export function extractAndInjectHeadings(html: string): {
     (_fullMatch, tag: string, attributes: string, innerContent: string) => {
       const level = tag.toLowerCase() === "h2" ? 2 : 3;
 
-      // Strip inner tags to get plain text label for the TOC
-      const cleanText = decodeEntities(
-        innerContent.replace(/<[^>]*>/g, "")
-      ).trim();
+      // The TOC label is the heading's visible text, read once (#3838)
+      const cleanText = htmlToText(innerContent).trim();
 
       // Check if the heading already has an id attribute
       const idMatch = idAttrRegex.exec(attributes);

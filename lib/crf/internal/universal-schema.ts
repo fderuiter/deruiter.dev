@@ -905,10 +905,22 @@ export function generateCliCommandForField(
 }
 
 /**
- * Generates the CLI subcommand string to scaffold a form via terminal
+ * Generates the CLI subcommand string to scaffold a form via terminal.
+ *
+ * The domain and the name each become one literal POSIX shell word through
+ * the same serializer as the field command, so an imported form name cannot
+ * run a substitution when the line is pasted into a shell (CodeQL alert 5,
+ * #3814).
  */
 export function generateCliCommandForForm(form: CRFForm): string {
-  return `crf add form ${form.domain} --name "${form.name.replace(/"/g, '\\"')}"`;
+  return formatPosixCommand([
+    "crf",
+    "add",
+    "form",
+    form.domain,
+    "--name",
+    form.name,
+  ]);
 }
 
 // 12. Protocol Semantic Diff Engine

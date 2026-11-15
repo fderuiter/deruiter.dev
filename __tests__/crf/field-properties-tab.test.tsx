@@ -610,7 +610,7 @@ describe("FieldPropertiesTab standard codelists", () => {
       customOptions: sexCodelist.options,
       codelistId: undefined,
     });
-    const [update] = onUpdateField.mock.calls[0];
+    const [update] = onUpdateField.mock.calls[0]!;
     expect(update.customOptions?.[0]).not.toBe(sexCodelist.options[0]);
     expect(screen.getByText("Quick-Insert Templates")).toBeTruthy();
   });
@@ -994,7 +994,7 @@ describe("FieldPropertiesTab save to study codelists", () => {
     );
 
     expect(onSaveToStudyCodelist).toHaveBeenCalledTimes(1);
-    const [saved] = onSaveToStudyCodelist.mock.calls[0];
+    const [saved] = onSaveToStudyCodelist.mock.calls[0]!;
     expect(saved.id).toMatch(new RegExp(`^CL_${customRadio.variableName}_`));
     expect(saved.id).toBe(saved.id.toUpperCase());
     expect(saved.name).toBe("Severity Grade (3 Options)");

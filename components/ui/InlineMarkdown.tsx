@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTerminology } from "@/components/providers/TerminologyProvider";
+import { decodeHtmlEntities, htmlToText } from "@/lib/html-text";
 
 /**
  * Inline renderer for the light Markdown subset used by `CaseStudy.editorial_content`.
@@ -19,7 +20,11 @@ import { useTerminology } from "@/components/providers/TerminologyProvider";
 
 /**
  * Synchronously swaps compiled terminology tags for either simplified plain-text definitions
- * or original technical terms, then strips remaining raw HTML tags.
+ * or original technical terms, and reads the rest of the snippet as text.
+ *
+ * Markup is read with a scanner and entities are decoded once, after it, so
+ * escaped text such as `&lt;T&gt;` stays visible as `<T>` and is never read
+ * as a tag. Inline code keeps its literal source (#3836).
  */
 export function resolveSnippetTerminology(
   html: string,
@@ -27,43 +32,34 @@ export function resolveSnippetTerminology(
 ): string {
   if (!html) return "";
 
-  const unescapeAttr = (str: string): string => {
-    return str
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&apos;/g, "'")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&amp;/g, "&");
-  };
-
   const termTagRegex = /<(span|abbr)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+  const outsideTerms = (segment: string): string =>
+    segment
+      .split(/(`[^`\n]+`)/)
+      .map((part, index) => (index % 2 === 1 ? part : htmlToText(part)))
+      .join("");
 
-  let resolved = html.replace(
-    termTagRegex,
-    (fullTag, _tagName, attrs, innerContent) => {
-      const isTermTag =
-        /data-term=/i.test(attrs) ||
-        /data-definition=/i.test(attrs) ||
-        /data-key=/i.test(attrs);
+  let resolved = "";
+  let cursor = 0;
+  for (const match of html.matchAll(termTagRegex)) {
+    const [fullTag, , attrs, innerContent] = match;
+    const isTermTag =
+      /data-term=/i.test(attrs) ||
+      /data-definition=/i.test(attrs) ||
+      /data-key=/i.test(attrs);
+    if (!isTermTag) continue;
 
-      if (!isTermTag) {
-        return fullTag;
-      }
-
-      if (simplified) {
-        const termMatch = /data-term=["']([^"']*)["']/i.exec(attrs);
-        if (termMatch && termMatch[1]) {
-          return unescapeAttr(termMatch[1]);
-        }
-      }
-
-      return unescapeAttr(innerContent);
-    }
-  );
-
-  // Strip any remaining or unclosed HTML tags to prevent broken markup in card text
-  resolved = resolved.replace(/<[^>]*>/g, "");
+    resolved += outsideTerms(html.slice(cursor, match.index));
+    const termMatch = simplified
+      ? /data-term=["']([^"']*)["']/i.exec(attrs)
+      : null;
+    resolved +=
+      termMatch && termMatch[1]
+        ? decodeHtmlEntities(termMatch[1])
+        : htmlToText(innerContent);
+    cursor = match.index + fullTag.length;
+  }
+  resolved += outsideTerms(html.slice(cursor));
 
   return resolved;
 }

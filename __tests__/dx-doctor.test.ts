@@ -27,6 +27,9 @@ import {
   checkSeoSocialIntegrity,
   runDiagnostics,
   printDoctorReport,
+  checkSetStateInEffectCeiling,
+  findSetStateInEffectSuppressions,
+  SET_STATE_IN_EFFECT_CEILING,
 } from "@/lib/dx/doctor";
 import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
@@ -88,6 +91,37 @@ describe("DX Invariant Doctor Engine", () => {
         "utf-8"
       );
       expect(updatedPalette).toContain('url: "/arcade/cyber-dash"');
+    });
+  });
+
+  describe("checkSetStateInEffectCeiling", () => {
+    const suppression =
+      "  // eslint-disable-next-line react-hooks/set-state-in-effect\n  setReady(true);\n";
+
+    function seed(count: number) {
+      const dir = path.join(tempDir, "components");
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, "Seeded.tsx"),
+        `export function useSeeded() {\n${suppression.repeat(count)}}\n/* eslint-enable react-hooks/set-state-in-effect */\n`
+      );
+    }
+
+    it("passes on main at the recorded ceiling", () => {
+      const result = checkSetStateInEffectCeiling(process.cwd());
+      expect(result.status).toBe("pass");
+      expect(findSetStateInEffectSuppressions(process.cwd()).length).toBeLessThanOrEqual(
+        SET_STATE_IN_EFFECT_CEILING
+      );
+    });
+
+    it("passes at the ceiling and fails one above it", () => {
+      seed(3);
+      expect(checkSetStateInEffectCeiling(tempDir, 3).status).toBe("pass");
+      const over = checkSetStateInEffectCeiling(tempDir, 2);
+      expect(over.status).toBe("fail");
+      expect(over.details).toHaveLength(3);
+      expect(over.details?.[0]).toMatch(/components[\\/]Seeded\.tsx:2$/);
     });
   });
 

@@ -74,7 +74,7 @@ An issue is ready for an agent when all of these hold:
 - [ ] Numbered steps name exact file paths and symbols.
 - [ ] Acceptance checks are observable results.
 - [ ] Verify commands are listed, such as `npm run typecheck`, `npm test`, `npm run quality`.
-- [ ] Agent-facing work carries an Agent Review Brief (see `AGENTS.md`, section 6).
+- [ ] Implementation work carries a Review notes section (see `AGENTS.md`, section 22).
 - [ ] Blockers are listed as "Blocked by #N" and `status:blocked` is set.
 
 The `Task` form enforces most of this. Older issues may not meet it. The organizing thread rewrites them.
@@ -129,6 +129,6 @@ Do not close an issue because it is old. Do not move a `needs-decision` or `stat
 
 ## See also
 
-- [`AGENTS.md`](../../AGENTS.md): project rules, including the Agent Review Brief.
+- [`AGENTS.md`](../../AGENTS.md): project rules, including the Review notes section.
 - [`docs/agents/issue-tracker.md`](../agents/issue-tracker.md) and [`docs/agents/triage-labels.md`](../agents/triage-labels.md): skill configuration for the issue tracker and triage labels.
 - [`docs/how-to/sync-issues-with-github.md`](sync-issues-with-github.md): the local ticket sync.

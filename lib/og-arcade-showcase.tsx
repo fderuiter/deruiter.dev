@@ -10,6 +10,7 @@ import {
   OG_FALLBACK_IMAGE_PATH,
   OG_IMAGE_SIZE,
 } from "@/lib/og-image";
+import { PIPELINE_SIMULATOR_NAME } from "@/lib/clinical-tools/pipeline-simulator";
 
 /** Content type of the screenshot cards: JPEG keeps photographic cards far below the byte budget. */
 export const ARCADE_SHOWCASE_CONTENT_TYPE = "image/jpeg";
@@ -79,7 +80,7 @@ export const GAME_CARD_COPY = {
       "Set up our Costco wedding before 4:00. Grill the hot dogs, arrange the Kirkland roses, and don't leave with your brothers.",
   },
   "protocol-drift": {
-    title: "Protocol Drift",
+    title: PIPELINE_SIMULATOR_NAME,
     tagline:
       "Wire a clinical data pipeline from site entry to SDTM and ADaM, then keep it honest through a protocol amendment.",
   },

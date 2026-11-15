@@ -3087,3 +3087,13 @@ describe("Oncology preset visit-window regression (#3138)", () => {
     ).toBe(false);
   });
 });
+
+describe("TypeDoc comment Markdown regression (#3791)", () => {
+  it("keeps the CdashVariableMetadata and withAgentsSection comments lint-valid", () => {
+    const read = (file: string) =>
+      fs.readFileSync(path.resolve(__dirname, "..", file), "utf-8");
+
+    expect(read("lib/crf/types.ts")).not.toMatch(/^\s*\* #\d/m);
+    expect(read("lib/dx/doctor.ts")).not.toContain("` (AGENTS.md section N)`");
+  });
+});

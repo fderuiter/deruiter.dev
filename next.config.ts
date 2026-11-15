@@ -111,7 +111,15 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // `next dev` keeps a managed block at the top of AGENTS.md when it detects
+  // a coding agent (#3191). It stays on, and the committed block matches what
+  // Next writes, so a dev server leaves the tree clean;
+  // __tests__/agents-rule-index.test.ts fails when they drift apart.
+  agentRules: true,
   experimental: {
+    // Off (the default): no feedback block in AGENTS.md, and no agent
+    // feedback reporting to Vercel.
+    agentFeedback: false,
     optimizePackageImports: ["@tabler/icons-react"],
     // The webpack compile itself outgrew Vercel's 8 GB build machine on
     // 2026-10-28 (OOM SIGKILL in "Creating an optimized production build").

@@ -22,7 +22,7 @@
 - [ ] No production or shared-provider credentials were added to the repository
 - [ ] `npm run audit:secrets` passes when history or public visibility is in scope
 
-## Agent Review Brief
+## Review notes
 
 - **Files and symbols:** <!-- Exact review targets -->
 - **Invariant boundaries:** Non-destructive Git operations; Vercel Hobby quota;

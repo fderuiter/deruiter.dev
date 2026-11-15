@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { fireEvent } from "@testing-library/react";
 import { FooterStatusTicker } from "@/components/FooterStatusTicker";
 import { STATUS_TICKER_ITEMS } from "@/lib/meme-data";
 
@@ -134,9 +135,7 @@ describe("FooterStatusTicker rotation (#952)", () => {
 
     // Mouse enters the ticker
     await act(async () => {
-      tickerRoot().dispatchEvent(
-        new MouseEvent("mouseenter", { bubbles: false })
-      );
+      fireEvent.mouseEnter(tickerRoot());
     });
 
     // Rotation is suspended while hovered
@@ -147,9 +146,7 @@ describe("FooterStatusTicker rotation (#952)", () => {
 
     // Mouse leaves the ticker
     await act(async () => {
-      tickerRoot().dispatchEvent(
-        new MouseEvent("mouseleave", { bubbles: false })
-      );
+      fireEvent.mouseLeave(tickerRoot());
     });
 
     // Rotation resumes

@@ -4,7 +4,6 @@ import React, {
   useState,
   useCallback,
   useRef,
-  useEffect,
   useSyncExternalStore,
 } from "react";
 import { IntentLink } from "@/components/ui/IntentLink";
@@ -138,29 +137,6 @@ export const FooterStatusTicker: React.FC = () => {
     },
     { trackVertical: true }
   );
-
-  useEffect(() => {
-    const el = tickerObserverRef.current;
-    if (!el) return;
-    const handleMouseEnter = () => setIsHovered(true);
-    const handleMouseLeave = () => setIsHovered(false);
-    const handleFocusIn = () => setIsFocused(true);
-    const handleFocusOut = (e: FocusEvent) => {
-      if (!el.contains(e.relatedTarget as Node | null)) {
-        setIsFocused(false);
-      }
-    };
-    el.addEventListener("mouseenter", handleMouseEnter);
-    el.addEventListener("mouseleave", handleMouseLeave);
-    el.addEventListener("focusin", handleFocusIn);
-    el.addEventListener("focusout", handleFocusOut);
-    return () => {
-      el.removeEventListener("mouseenter", handleMouseEnter);
-      el.removeEventListener("mouseleave", handleMouseLeave);
-      el.removeEventListener("focusin", handleFocusIn);
-      el.removeEventListener("focusout", handleFocusOut);
-    };
-  }, [tickerObserverRef]);
 
   return (
     <div

@@ -48,7 +48,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
         "MedDRA / WHO-Drug",
         "GxP Validation",
       ],
-      "story": "Bringing a novel therapeutic drug or medical device from Phase I trials through FDA/EMA approval requires processing millions of patient data points under strict federal regulations. CDISC standards (SDTM, ADaM, and ODM) ensure universal semantic interoperability, while FDA 21 CFR Part 11 guarantees that electronic records have the identical legal standing and auditability as traditional paper records.",
+      "story": "Taking a new drug or medical device from Phase I trials through FDA or EMA approval means handling millions of patient data points under federal regulation. CDISC standards (SDTM, ADaM and ODM) give that data a shared structure, and FDA 21 CFR Part 11 sets the rules under which electronic records can stand in for paper ones.",
       "title": "Biotech Data Governance & Regulatory Lifecycles",
     },
     "objective": "Standardize clinical observations across 8 CDISC SDTM domains (DM, VS, AE, LB, CM, EX, DS, MH), solve multi-choice Controlled Terminology puzzles, deploy combo-charged regulatory lifelines, sign 21 CFR Part 11 electronic records, and achieve a clean FDA BIMO inspection rating.",
@@ -57,7 +57,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       "Charge your 'FDA Coffee Break' lifeline by maintaining clean submission streaks; deploy it when auditor suspicion climbs above 70%.",
       "Switch to the Live SDTM Studio tab during shifts to inspect generated observation rows and export authentic CDISC ODM 1.3.2 XML.",
       "Notice how each CRF is signed and where it goes: the Phase 3 inspector asks about the records you locked, and three wrong answers add a Major finding for an incomplete audit trail.",
-      "Toggle the procedural 8-bit synth BGM to hear dynamic tempo scaling as auditor scrutiny intensifies.",
+      "Toggle the procedural 8-bit synth music. Its tempo rises as auditor scrutiny goes up.",
     ],
     "quickSummary": "Solve Controlled Terminology discrepancies via multi-choice puzzles, route validated dossier packets to tiered EDC stations with hotkeys [1-8] (four stations in phase 1, six in phase 2 and endless, all eight in phase 3), deploy power-ups [Q, W, E, R], and export authentic CDISC ODM XML / SDTM CSV datasets.",
     "route": "/arcade/clinical-chaos",
@@ -653,7 +653,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
     "proTips": [
       "Say the key numbers under your breath as the pads light. A spoken chunk like 3-1-7 is easier to hold than a picture.",
       "Each pad has its own sound, so Echo can be played by ear with sound on.",
-      "One trophy rewards a sound you actually hear in this very room.",
+      "One trophy rewards a sound you hear in this room.",
       "A furry friend naps somewhere you only reach by scrolling all the way down.",
       "The terminal on one of the case studies knows a few classic UNIX jokes, and one very risky git command.",
       "The command palette (Cmd+K) has opinions about hot drinks and an old HTTP status code.",
@@ -684,7 +684,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       },
       {
         "badge": "Trophies",
-        "detail": "Six trophies are hidden around the site, not just in this room. Locked shelf slots carry a hint; the manual's pro tips nudge without spoiling.",
+        "detail": "Six trophies are hidden around the site, and some of them are outside this room. Locked shelf slots carry a hint; the manual's pro tips nudge without spoiling.",
         "title": "The Hidden Trophy Case",
       },
     ],
@@ -768,7 +768,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       "Reassess vitals after an intervention; a single check early gives the debrief nothing to compare against.",
       "On the descent, small sustained corrections beat large late ones: the comfort metric punishes abrupt input.",
       "Engage the chain brake before the pitch steepens, not after you are already accelerating.",
-      "Ambient events between calls are scored too: patrolling is responsibility for a place, not just waiting for injuries.",
+      "Ambient events between calls are scored too, because patrolling means looking after a place between injuries.",
       "Audio is muted by default and every radio call is text-first, so nothing is lost with sound off.",
     ],
     "quickSummary": "Start your shift, patrol the map between dispatches, assess and treat on scene, run the toboggan down the fall line, hand off to EMS, then review a debrief scored across five dimensions.",
@@ -1062,7 +1062,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
         "Protocol amendments and IRB activation",
         "Database lock",
       ],
-      "story": "Data standards describe the data a trial should collect; clinics produce the data they actually collect. Protocol Drift is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
+      "story": "Data standards describe the data a trial should collect; clinics produce the data they collect. Protocol Drift is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
       "title": "Where the plan meets the clinic",
     },
     "objective": "As Lead Clinical Data Architect for Study PD-101, wire a pipeline that carries site entries into CDISC SDTM, keep it honest through tired coordinators and a mid-flight protocol amendment, derive the ADaM orthostatic rows below the Conservation Wall, and clear both Database Lock gates without fabricating a single bit.",
@@ -1206,7 +1206,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       },
       {
         "badge": "Act 2",
-        "detail": "Prove Level 18, the Act 1 capstone, without \`sorry\` to open Act 2 (Levels 19–30): ∀ and ∃ goals (\`intro\`, \`use\`), induction over ℕ with a base case and a step case that carries \`ih\`, ≤ chains (\`trans\`, \`gcongr\`), and an almost perfect numbers arc that ends at a second capstone. Act 1 levels, stars and saves are unchanged, and a save that already proved Level 18 opens Act 2 at once.",
+        "detail": "Prove Level 18, the Act 1 capstone, without \`sorry\` to open Act 2 (Levels 19 to 30): ∀ and ∃ goals (\`intro\`, \`use\`), induction over ℕ with a base case and a step case that carries \`ih\`, ≤ chains (\`trans\`, \`gcongr\`), and an almost perfect numbers arc that ends at a second capstone. Act 1 levels, stars and saves are unchanged, and a save that already proved Level 18 opens Act 2 at once.",
         "title": "Act 2: Quantifiers, Induction & Chains",
       },
     ],
@@ -1515,7 +1515,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       },
       {
         "badge": "Visits",
-        "detail": "Twice in a study someone waits for you in the conference room for an hour and a half: the sponsor's VP of Clinical Operations, some time in the third week, and the EDC vendor, some time in the sixth. Walk in to meet them. With the sponsor you can tell what you have actually seen (best if you audited the site she is worried about), give the clean summary (pleasant, and a cost to integrity if something is being hidden), hand her to your data manager, or ask for another day. With the vendor you can ask for the audit-trail walkthrough, negotiate the renewal, send the data manager with questions, or take the brochure. A sponsor nobody meets takes it as a snub. Interruptions wait while a visitor does.",
+        "detail": "Twice in a study someone waits for you in the conference room for an hour and a half: the sponsor's VP of Clinical Operations, some time in the third week, and the EDC vendor, some time in the sixth. Walk in to meet them. With the sponsor you can tell her what you have seen (best if you audited the site she is worried about), give the clean summary (pleasant, and a cost to integrity if something is being hidden), hand her to your data manager, or ask for another day. With the vendor you can ask for the audit-trail walkthrough, negotiate the renewal, send the data manager with questions, or take the brochure. A sponsor nobody meets takes it as a snub. Interruptions wait while a visitor does.",
         "title": "Visitors in the conference room",
       },
       {
@@ -1535,7 +1535,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       },
       {
         "badge": "Closeout",
-        "detail": "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did. A run played in the office closes out at the same report, and its share card says so; the link replays the same seed at the classic desk. Office runs also keep a meeting archive, reachable from your desk and from the closeout, and add meetings, site visits and what you were told to the exports.",
+        "detail": "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you did. A run played in the office closes out at the same report, and its share card says so; the link replays the same seed at the classic desk. Office runs also keep a meeting archive, reachable from your desk and from the closeout, and add meetings, site visits and what you were told to the exports.",
         "title": "Four verdicts and a profile",
       },
       {
@@ -1926,7 +1926,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       },
       {
         "badge": "Collectibles",
-        "detail": "Capturing key milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",
+        "detail": "Capturing milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",
         "title": "Polaroid Scrapbook",
       },
     ],

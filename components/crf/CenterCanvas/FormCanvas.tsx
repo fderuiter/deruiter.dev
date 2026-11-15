@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   IconFolderPlus,
   IconTrash,
@@ -24,6 +24,7 @@ import {
 import { FieldRenderer } from "./FieldRenderer";
 import { ViewportSwitcher } from "./ViewportSwitcher";
 import { generateId } from "@/lib/utils";
+import { useAnnouncer } from "@/components/providers/A11yProvider";
 
 interface FormCanvasProps {
   form: CRFForm;
@@ -96,6 +97,45 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
     return () => cancelAnimationFrame(frame);
   }, [selectedFieldId]);
 
+  const { announce } = useAnnouncer();
+  const pendingFocusRef = useRef<{
+    fieldId: string;
+    direction: "up" | "down";
+  } | null>(null);
+
+  useEffect(() => {
+    if (!pendingFocusRef.current) return;
+    const { fieldId, direction } = pendingFocusRef.current;
+    pendingFocusRef.current = null;
+
+    const fieldEl = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (!fieldEl) return;
+
+    const preferredAction = direction === "up" ? "move-up" : "move-down";
+    const fallbackAction = direction === "up" ? "move-down" : "move-up";
+
+    const preferredBtn =
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[data-action="${preferredAction}"]`
+      ) ??
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[aria-label="${direction === "up" ? "Move Field Up" : "Move Field Down"}"]`
+      );
+    const fallbackBtn =
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[data-action="${fallbackAction}"]`
+      ) ??
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[aria-label="${direction === "up" ? "Move Field Down" : "Move Field Up"}"]`
+      );
+
+    if (preferredBtn && !preferredBtn.disabled) {
+      preferredBtn.focus();
+    } else if (fallbackBtn && !fallbackBtn.disabled) {
+      fallbackBtn.focus();
+    }
+  }, [form.sections]);
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(form.name);
   const [descInput, setDescInput] = useState(form.description);
@@ -149,15 +189,25 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
     if (!targetSec || targetIndex < 0 || targetIndex >= targetSec.fields.length)
       return;
 
+    const moved = targetSec.fields[fieldIndex];
+
     const updatedSections = form.sections.map((sec) => {
       if (sec.id !== sectionId) return sec;
       const fields = [...sec.fields];
-      const [moved] = fields.splice(fieldIndex, 1);
-      fields.splice(targetIndex, 0, moved);
+      const [item] = fields.splice(fieldIndex, 1);
+      fields.splice(targetIndex, 0, item);
       return { ...sec, fields };
     });
 
+    pendingFocusRef.current = { fieldId: moved.id, direction };
+
     onUpdateFormMeta({ sections: updatedSections });
+    onSelectField?.(moved.id);
+
+    announce(
+      `Moved to ${targetIndex + 1} of ${targetSec.fields.length}`,
+      "polite"
+    );
   };
 
   // Drag & drop field reordering

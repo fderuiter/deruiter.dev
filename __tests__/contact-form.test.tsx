@@ -7,6 +7,7 @@ import {
   waitFor,
   cleanup,
 } from "@testing-library/react";
+import axe from "axe-core";
 import { ContactForm, CONTACT_FORM_DRAFT_KEY } from "@/components/ContactForm";
 import { safeStorage } from "@/lib/safe-storage";
 
@@ -25,10 +26,102 @@ describe("ContactForm Component", () => {
   it("offers peer intents only and no hiring intent (ADR 0047)", () => {
     render(<ContactForm />);
 
+    expect(
+      screen.getByRole("radiogroup", { name: /What’s this about\?/i })
+    ).toBeDefined();
+
     for (const intent of ["general", "collaboration", "consulting", "other"]) {
-      expect(screen.getByRole("button", { name: intent })).toBeDefined();
+      const radio = screen.getByRole("radio", { name: intent });
+      expect(radio).toBeDefined();
+      expect(radio.getAttribute("aria-checked")).toBe(
+        intent === "general" ? "true" : "false"
+      );
+      expect(radio.getAttribute("tabindex")).toBe(
+        intent === "general" ? "0" : "-1"
+      );
     }
+    expect(screen.queryByRole("radio", { name: /recruit/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /recruit/i })).toBeNull();
+
+    const consultingRadio = screen.getByRole("radio", { name: "consulting" });
+    const generalRadio = screen.getByRole("radio", { name: "general" });
+
+    fireEvent.click(consultingRadio);
+    expect(consultingRadio.getAttribute("aria-checked")).toBe("true");
+    expect(consultingRadio.getAttribute("tabindex")).toBe("0");
+    expect(generalRadio.getAttribute("aria-checked")).toBe("false");
+    expect(generalRadio.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("supports keyboard navigation with arrow keys within the intent radiogroup", () => {
+    render(<ContactForm />);
+
+    const generalRadio = screen.getByRole("radio", { name: "general" });
+    const collabRadio = screen.getByRole("radio", { name: "collaboration" });
+    const otherRadio = screen.getByRole("radio", { name: "other" });
+
+    // Initial state: general is checked
+    expect(generalRadio.getAttribute("aria-checked")).toBe("true");
+
+    // ArrowRight moves to next option (collaboration)
+    fireEvent.keyDown(generalRadio, { key: "ArrowRight" });
+    expect(collabRadio.getAttribute("aria-checked")).toBe("true");
+    expect(generalRadio.getAttribute("aria-checked")).toBe("false");
+    expect(document.activeElement).toBe(collabRadio);
+
+    // ArrowDown moves forward similarly
+    fireEvent.keyDown(collabRadio, { key: "ArrowDown" });
+    const consultingRadio = screen.getByRole("radio", { name: "consulting" });
+    expect(consultingRadio.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(consultingRadio);
+
+    // ArrowUp moves back
+    fireEvent.keyDown(consultingRadio, { key: "ArrowUp" });
+    expect(collabRadio.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(collabRadio);
+
+    // ArrowLeft moves back to previous option (general)
+    fireEvent.keyDown(collabRadio, { key: "ArrowLeft" });
+    expect(generalRadio.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(generalRadio);
+
+    // ArrowLeft from first option wraps to last option (other)
+    fireEvent.keyDown(generalRadio, { key: "ArrowLeft" });
+    expect(otherRadio.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(otherRadio);
+
+    // ArrowRight from last option wraps to first option (general)
+    fireEvent.keyDown(otherRadio, { key: "ArrowRight" });
+    expect(generalRadio.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(generalRadio);
+  });
+
+  it("keeps the intent group reachable when no radio is checked", () => {
+    // A saved draft or an older link can still carry the retired intent.
+    render(<ContactForm initialIntent="recruiting" />);
+
+    const radios = screen.getAllByRole("radio");
+    expect(
+      radios.every((r) => r.getAttribute("aria-checked") === "false")
+    ).toBe(true);
+    expect(radios.map((r) => r.getAttribute("tabindex"))).toEqual([
+      "0",
+      ...radios.slice(1).map(() => "-1"),
+    ]);
+  });
+
+  it("renders with zero axe violations", async () => {
+    const computed = window.getComputedStyle;
+    const spy = vi
+      .spyOn(window, "getComputedStyle")
+      .mockImplementation((element) => computed.call(window, element));
+    try {
+      const { container } = render(<ContactForm />);
+      const results = await axe.run(container);
+      expect(results.violations).toEqual([]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("should render all form controls and honeypot trap correctly", () => {

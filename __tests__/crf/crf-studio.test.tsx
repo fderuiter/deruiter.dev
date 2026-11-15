@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { liveAnnouncer } from "@/components/providers/A11yProvider";
 
 /**
  * This file tests CRFStudioContainer's own tab-routing and preset-switching
@@ -533,5 +534,142 @@ describe("CRFStudioContainer Component", () => {
     for (const el of otherSections) {
       expect(el.textContent).not.toContain("Text Variable");
     }
+  });
+
+  it("renders single-pointer Move Up and Move Down buttons on desktop screens and calls reorder handlers", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<CRFStudioContainer />);
+    });
+
+    const designerBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Form Designer")
+    );
+    if (designerBtn) {
+      await act(async () => {
+        designerBtn.click();
+      });
+    }
+
+    const firstSection = container.querySelector("[data-section-id]");
+    expect(firstSection).toBeTruthy();
+
+    const fieldEls = Array.from(
+      firstSection!.querySelectorAll("[data-field-id]")
+    ) as HTMLElement[];
+    expect(fieldEls.length).toBeGreaterThanOrEqual(2);
+
+    const firstField = fieldEls[0];
+    const secondField = fieldEls[1];
+    const initialFirstId = firstField.getAttribute("data-field-id");
+    const initialSecondId = secondField.getAttribute("data-field-id");
+    expect(initialFirstId).toBeTruthy();
+    expect(initialSecondId).toBeTruthy();
+
+    // Verify each field has exactly ONE responsive pair of move buttons (no duplicate touch/desktop pairs)
+    expect(
+      firstField.querySelectorAll('button[aria-label="Move Field Up"]').length
+    ).toBe(1);
+    expect(
+      firstField.querySelectorAll('button[aria-label="Move Field Down"]').length
+    ).toBe(1);
+    expect(
+      firstField.querySelectorAll('button[data-action="move-up"]').length
+    ).toBe(1);
+    expect(
+      firstField.querySelectorAll('button[data-action="move-down"]').length
+    ).toBe(1);
+
+    // In the responsive actions bar, find Move Up and Move Down buttons
+    const firstMoveUp = firstField.querySelector(
+      'button[data-action="move-up"]'
+    ) as HTMLButtonElement;
+    const firstMoveDown = firstField.querySelector(
+      'button[data-action="move-down"]'
+    ) as HTMLButtonElement;
+
+    expect(firstMoveUp).toBeTruthy();
+    expect(firstMoveDown).toBeTruthy();
+    expect(firstMoveUp.getAttribute("aria-label")).toBe("Move Field Up");
+    expect(firstMoveDown.getAttribute("aria-label")).toBe("Move Field Down");
+
+    // First field in a section disables Move Up, but Move Down is enabled
+    expect(firstMoveUp.disabled).toBe(true);
+    expect(firstMoveDown.disabled).toBe(false);
+
+    // Second field has Move Up enabled
+    const secondMoveUp = secondField.querySelector(
+      'button[aria-label="Move Field Up"]'
+    ) as HTMLButtonElement;
+    expect(secondMoveUp).toBeTruthy();
+    expect(secondMoveUp.disabled).toBe(false);
+
+    // Click Move Down on the first field to reorder
+    await act(async () => {
+      firstMoveDown.click();
+    });
+
+    // Verify fields were reordered in the section
+    const reorderedFieldEls = Array.from(
+      firstSection!.querySelectorAll("[data-field-id]")
+    ) as HTMLElement[];
+    expect(reorderedFieldEls[0].getAttribute("data-field-id")).toBe(
+      initialSecondId
+    );
+    expect(reorderedFieldEls[1].getAttribute("data-field-id")).toBe(
+      initialFirstId
+    );
+
+    const getLatestAnnouncement = () =>
+      liveAnnouncer.getSnapshot().politeQueue[0]?.text ??
+      liveAnnouncer.getSnapshot().activePolite?.text;
+
+    // Verify live announcer announced the new position (e.g. "Moved to 2 of 2")
+    expect(getLatestAnnouncement()).toBe(`Moved to 2 of ${fieldEls.length}`);
+
+    // Because field moved to the last index (2 of 2), Move Down became disabled, so focus falls back to Move Up on the moved field
+    const movedFieldUpBtn = reorderedFieldEls[1].querySelector(
+      'button[aria-label="Move Field Up"]'
+    );
+    expect(document.activeElement).toBe(movedFieldUpBtn);
+
+    // Now on index 1 (which was the original first field), click Move Up
+    const reorderedMoveUp = reorderedFieldEls[1].querySelector(
+      'button[aria-label="Move Field Up"]'
+    ) as HTMLButtonElement;
+    expect(reorderedMoveUp).toBeTruthy();
+    expect(reorderedMoveUp.disabled).toBe(false);
+
+    await act(async () => {
+      reorderedMoveUp.click();
+    });
+
+    // Verify fields were restored to original order
+    const restoredFieldEls = Array.from(
+      firstSection!.querySelectorAll("[data-field-id]")
+    ) as HTMLElement[];
+    expect(restoredFieldEls[0].getAttribute("data-field-id")).toBe(
+      initialFirstId
+    );
+    expect(restoredFieldEls[1].getAttribute("data-field-id")).toBe(
+      initialSecondId
+    );
+
+    // Verify live announcer announced the restored position
+    expect(getLatestAnnouncement()).toBe(`Moved to 1 of ${fieldEls.length}`);
+
+    // Because field moved to index 0, Move Up became disabled, so focus falls back to Move Down on the moved field
+    const restoredMoveDown = restoredFieldEls[0].querySelector(
+      'button[aria-label="Move Field Down"]'
+    );
+    expect(document.activeElement).toBe(restoredMoveDown);
+
+    // Last field in section disables Move Down
+    const lastField = restoredFieldEls[restoredFieldEls.length - 1];
+    const lastMoveDown = lastField.querySelector(
+      'button[aria-label="Move Field Down"]'
+    ) as HTMLButtonElement;
+    expect(lastMoveDown).toBeTruthy();
+    expect(lastMoveDown.disabled).toBe(true);
   });
 });

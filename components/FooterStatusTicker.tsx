@@ -17,7 +17,11 @@ import {
 import { playMemeSound } from "@/lib/meme-audio";
 import { onAppEvent } from "@/lib/event-bus";
 import { generateId } from "@/lib/utils";
-import { IconDeviceGamepad2 } from "@tabler/icons-react";
+import {
+  IconDeviceGamepad2,
+  IconPlayerPause,
+  IconPlayerPlay,
+} from "@tabler/icons-react";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useInterval } from "@/hooks/useInterval";
 import { useSafeTimeout } from "@/hooks/useSafeTimeout";
@@ -60,6 +64,9 @@ export const FooterStatusTicker: React.FC = () => {
   // on the server and on the client, so its style attributes match (#2893).
   const shouldReduceMotion = usePrefersReducedMotion();
   const [tickerIndex, setTickerIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [duckBubble, setDuckBubble] = useState<string | null>(null);
   const [duckBarks, setDuckBarks] = useState(0);
   const [treats, setTreats] = useState<TreatParticle[]>([]);
@@ -70,15 +77,24 @@ export const FooterStatusTicker: React.FC = () => {
     getVaultServerSnapshot
   );
 
+  const togglePause = useCallback(() => {
+    setIsPaused((prev) => !prev);
+  }, []);
+
   // Rotate status ticker every 4.5 seconds. Setting `data-ticker-paused` on
   // the ticker root holds the current line: accessibility audits use it so a
   // scan cannot land mid-cross-fade, where the partial opacity reads as a
-  // contrast failure (#952).
+  // contrast failure (#952). Holding also applies when paused, hovered, or
+  // when keyboard focus is within the ticker (WCAG 2.2.2).
   const tickerLineRef = useRef<HTMLDivElement>(null);
-  useInterval(() => {
-    if (tickerLineRef.current?.closest("[data-ticker-paused]")) return;
-    setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
-  }, 4500);
+  const isSuspended = isPaused || isHovered || isFocused;
+  useInterval(
+    () => {
+      if (tickerLineRef.current?.closest("[data-ticker-paused]")) return;
+      setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
+    },
+    isSuspended ? null : 4500
+  );
 
   // The only timeout this component schedules is the quote dismissal, so
   // clearing all of them restarts that countdown.
@@ -126,6 +142,15 @@ export const FooterStatusTicker: React.FC = () => {
     <div
       ref={tickerObserverRef}
       data-testid="footer-status-ticker"
+      data-ticker-paused={isPaused ? "true" : undefined}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setIsFocused(false);
+        }
+      }}
       className="w-full border-t border-zinc-800/60 bg-zinc-950 px-4 py-3 text-xs font-mono"
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -138,6 +163,20 @@ export const FooterStatusTicker: React.FC = () => {
           <span className="text-zinc-400 uppercase tracking-wider text-[10px] font-semibold shrink-0">
             Footnotes:
           </span>
+          <button
+            type="button"
+            onClick={togglePause}
+            aria-label="Pause ticker"
+            aria-pressed={isPaused}
+            title="Pause ticker"
+            className="inline-flex items-center justify-center p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-colors shrink-0 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+          >
+            {isPaused ? (
+              <IconPlayerPlay className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <IconPlayerPause className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+          </button>
           <div
             ref={tickerLineRef}
             className="h-5 overflow-hidden relative flex-1 sm:w-80"

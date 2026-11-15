@@ -135,3 +135,80 @@ describe("SDTM RELREC", () => {
     }
   });
 });
+
+describe("SD-077 relationship keys (#3828)", () => {
+  const run = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
+  const rule = CONFORMANCE_RULES.find((item) => item.id === "SD-077")!;
+
+  function withRows(
+    base: Dataset,
+    columns: Record<string, CellValue[]>
+  ): Dataset {
+    const rowCount = Object.values(columns)[0].length;
+    return {
+      ...base,
+      rowCount,
+      columns: Object.fromEntries(
+        base.variables.map(({ name }) => [
+          name,
+          columns[name] ?? Array.from({ length: rowCount }, () => null),
+        ])
+      ),
+    };
+  }
+
+  const ae = withRows(dataset(run, "sdtm", "AE"), {
+    USUBJID: ["A|B", "A"],
+    AESEQ: [1, 2],
+  });
+  const cm = withRows(dataset(run, "sdtm", "CM"), {
+    USUBJID: ["A|B", "A"],
+    CMSEQ: [1, 2],
+  });
+
+  it("keeps a subject and RELID apart when either contains the delimiter", () => {
+    // Before #3828 both rows keyed as "A|B|1", so one AE row and one CM row
+    // from different subjects read as a valid pair.
+    const relrec = withRows(dataset(run, "sdtm", "RELREC"), {
+      USUBJID: ["A|B", "A"],
+      RDOMAIN: ["AE", "CM"],
+      IDVAR: ["AESEQ", "CMSEQ"],
+      IDVARVAL: ["1", "2"],
+      RELID: ["1", "B|1"],
+    });
+    const messages = rule
+      .check(relrec, [ae, cm, relrec])
+      .map((issue) => issue.message);
+    expect(messages).toEqual([
+      "Relationship A|B 1 relates AE rather than one AE and one CM record.",
+      "Relationship A B|1 relates CM rather than one AE and one CM record.",
+    ]);
+  });
+
+  it("still accepts a pair whose values contain the delimiter", () => {
+    const relrec = withRows(dataset(run, "sdtm", "RELREC"), {
+      USUBJID: ["A|B", "A|B"],
+      RDOMAIN: ["AE", "CM"],
+      IDVAR: ["AESEQ", "CMSEQ"],
+      IDVARVAL: ["1", "1"],
+      RELID: ["R|1", "R|1"],
+    });
+    expect(rule.check(relrec, [ae, cm, relrec])).toEqual([]);
+  });
+
+  it("keeps markup-looking values as plain message text", () => {
+    const relrec = withRows(dataset(run, "sdtm", "RELREC"), {
+      USUBJID: ["<b>A</b>"],
+      RDOMAIN: ["AE"],
+      IDVAR: ["AESEQ"],
+      IDVARVAL: ["9"],
+      RELID: ["<i>1</i>"],
+    });
+    const messages = rule
+      .check(relrec, [ae, cm, relrec])
+      .map((issue) => issue.message);
+    expect(messages).toContain(
+      "Relationship <b>A</b> <i>1</i> relates AE rather than one AE and one CM record."
+    );
+  });
+});

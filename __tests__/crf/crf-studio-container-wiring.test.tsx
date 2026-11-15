@@ -779,4 +779,116 @@ describe("CRF Studio shortcuts", () => {
     key({ key: "Escape" });
     expect(props("FormCanvas").selectedFieldId).toBeNull();
   });
+
+  it("runs the studio shortcuts when dispatched on canvas elements inside keyboard boundary", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    const canvasKey = (init: KeyboardEventInit) =>
+      fireEvent.keyDown(canvas, init);
+
+    canvasKey({ key: "/" });
+    expect(props("SlashPaletteModal").isOpen).toBe(true);
+    canvasKey({ key: "Escape" });
+    expect(props("SlashPaletteModal").isOpen).toBe(false);
+
+    press("StudySpine.onAddForm");
+    canvasKey({ key: "z", ctrlKey: true });
+    expect(props("StudioHeader").canRedo).toBe(true);
+    canvasKey({ key: "z", ctrlKey: true, shiftKey: true });
+    expect(props("StudioHeader").canRedo).toBe(false);
+
+    canvasKey({ key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(false);
+    canvasKey({ key: "i", ctrlKey: true });
+    expect(props("StudioHeader").isRightInspectorOpen).toBe(false);
+  });
+
+  it("suppresses studio shortcuts when typing inside form inputs", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    const input = document.createElement("input");
+    canvas.appendChild(input);
+
+    const inputKey = (init: KeyboardEventInit) =>
+      fireEvent.keyDown(input, init);
+
+    inputKey({ key: "/" });
+    expect(props("SlashPaletteModal").isOpen).toBe(false);
+
+    press("StudySpine.onAddForm");
+    expect(props("StudioHeader").canRedo).toBe(false);
+    inputKey({ key: "z", ctrlKey: true });
+    expect(props("StudioHeader").canRedo).toBe(false);
+
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+    inputKey({ key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    expect(props("StudioHeader").isRightInspectorOpen).toBe(true);
+    inputKey({ key: "i", ctrlKey: true });
+    expect(props("StudioHeader").isRightInspectorOpen).toBe(true);
+  });
+
+  it("keeps digit hotkeys off when buttons have focus, but switches modes when canvas itself has focus", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    const button = document.createElement("button");
+    canvas.appendChild(button);
+    button.focus();
+
+    // Plain digit key when button has focus: does NOT switch mode
+    fireEvent.keyDown(button, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+
+    // Role button when focused: also does NOT switch mode
+    const customButton = document.createElement("div");
+    customButton.setAttribute("role", "button");
+    customButton.tabIndex = 0;
+    canvas.appendChild(customButton);
+    customButton.focus();
+    fireEvent.keyDown(customButton, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+
+    // Plain digit key when canvas itself receives keydown: switches mode
+    fireEvent.keyDown(canvas, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("rules");
+  });
+
+  it("skips nested keyboard boundaries so FormTestDock retains complete isolation", () => {
+    press("StudioHeader.onToggleTestDock");
+    expect(props("FormTestDock").isOpen).toBe(true);
+
+    const dock = screen.getByTestId("stub-FormTestDock");
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    // Keystrokes inside FormTestDock boundary must not trigger studio hotkeys
+    fireEvent.keyDown(dock, { key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    fireEvent.keyDown(dock, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+  });
+
+  it("suppresses studio hotkeys behind open dialogs", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    press("StudioHeader.onOpenWizard");
+    expect(props("WorkflowWizardModal").isOpen).toBe(true);
+
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+    fireEvent.keyDown(canvas, { key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    fireEvent.keyDown(canvas, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+  });
+
+  it("suppresses studio hotkeys when omnibar palette is open", () => {
+    const canvas = screen.getAllByTestId("stub-FormCanvas")[1];
+    press("StudioHeader.onOpenOmnibar");
+    expect(props("StudyOmnibar").isOpen).toBe(true);
+
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+    fireEvent.keyDown(canvas, { key: "b", ctrlKey: true });
+    expect(props("StudioHeader").isLeftSidebarOpen).toBe(true);
+
+    fireEvent.keyDown(canvas, { key: "3" });
+    expect(props("StudioHeader").activeMode).toBe("designer");
+  });
 });

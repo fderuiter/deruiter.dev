@@ -48,6 +48,9 @@ an audit if the two disagree.
 - [Modularizing case studies data research (#3488)](research-3488-case-studies-modularization.md),
   the architectural research and scanner integration analysis for modularizing
   `lib/case-studies-data.ts`.
+- [Modularizing game manuals research (#3487)](game-manuals-architecture-research.md),
+  the architectural research and pre-implementation specification for
+  modularizing `lib/game-manuals.ts`.
 
 ## Planning
 
@@ -59,3 +62,4 @@ commitments.
 - [UI/UX improvement backlog](planning/ui-ux-backlog.md)
 - [Design system tokens and editorial palette](planning/ui-ux-design-tokens.md)
 - [UI/UX GitHub ticket proposal](planning/ui-ux-ticket-proposal.md)
+- [Proposed DEMO-DEV-201 device study](study-data-device-study-proposal.md)

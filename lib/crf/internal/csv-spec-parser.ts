@@ -17,6 +17,8 @@ import {
   isRedcapCsv,
   detectCsvDialect,
   importStudyFromRedcapCsv,
+  stripHtmlAndEntities,
+  REQUIRED_REDCAP_HEADERS,
 } from "./redcap-dictionary";
 
 export {
@@ -24,6 +26,8 @@ export {
   isRedcapCsv,
   detectCsvDialect,
   importStudyFromRedcapCsv,
+  stripHtmlAndEntities,
+  REQUIRED_REDCAP_HEADERS,
 };
 
 function stripBom(text: string): string {

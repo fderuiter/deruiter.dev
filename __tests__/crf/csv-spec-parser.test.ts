@@ -5,6 +5,8 @@ import {
   isRedcapHeader,
   isRedcapCsv,
   detectCsvDialect,
+  stripHtmlAndEntities,
+  REQUIRED_REDCAP_HEADERS,
 } from "@/lib/crf";
 
 describe("CRF Studio - CSV Study Specification Parser", () => {
@@ -305,6 +307,42 @@ AE,"Adverse Events, Serious & Non-Serious",AETERM,"Reported Term for Adverse Eve
       // Verify custom choices
       expect(field?.customOptions?.[0].label).toBe("Option & Choice");
       expect(field?.customOptions?.[1].label).toBe("Less < More");
+    });
+
+    it("safely sanitizes HTML tags via DOM parser and decodes entities with &amp; strictly last", () => {
+      // Required signature headers verification
+      expect(REQUIRED_REDCAP_HEADERS).toEqual([
+        "variablefieldname",
+        "formname",
+        "fieldtype",
+        "fieldlabel",
+      ]);
+
+      // Strips dangerous tags via DOM parser
+      expect(stripHtmlAndEntities("<script>alert(1)</script>Safe Text")).toBe(
+        "Safe Text"
+      );
+      expect(
+        stripHtmlAndEntities("<scr<script>ipt>alert(1)</script>Safe")
+      ).toBe("ipt>alert(1)Safe");
+      expect(stripHtmlAndEntities("<b>Bold</b> &amp; <i>Italic</i>")).toBe(
+        "Bold & Italic"
+      );
+      expect(stripHtmlAndEntities("<p>Line 1</p><p>Line 2</p>")).toBe(
+        "Line 1 Line 2"
+      );
+      expect(stripHtmlAndEntities("Item 1<br/>Item 2")).toBe("Item 1 Item 2");
+
+      // Double-unescaping prevention
+      expect(stripHtmlAndEntities("&amp;lt;script&amp;gt;")).toBe(
+        "&lt;script&gt;"
+      );
+      expect(stripHtmlAndEntities("&amp;amp;")).toBe("&amp;");
+      expect(stripHtmlAndEntities("&amp;quot;test&amp;quot;")).toBe(
+        "&quot;test&quot;"
+      );
+      expect(stripHtmlAndEntities("AT&amp;T &amp; R&amp;D")).toBe("AT&T & R&D");
+      expect(stripHtmlAndEntities("&#60;tag&#62;")).toBe("<tag>");
     });
 
     it("parses and validates against a real public REDCap dictionary (OuhscBbmc/REDCapR simple project)", () => {

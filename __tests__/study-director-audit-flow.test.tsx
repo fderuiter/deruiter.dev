@@ -80,6 +80,54 @@ const KEY: Record<Facing, string> = {
   right: "ArrowRight",
 };
 
+/**
+ * The save these tests write is the game's own synthetic world (#3841,
+ * CodeQL alert 28). It holds a fictional study's clock, player and floor
+ * state, generated from a fixed seed, and no credential or real record.
+ */
+describe("Study Director audit: the saved world is synthetic", () => {
+  const SAVE_SCHEMA = [
+    "version",
+    "study",
+    "minute",
+    "energy",
+    "focus",
+    "coffees",
+    "overtime",
+    "fatigue",
+    "location",
+    "player",
+    "walked",
+    "known",
+    "map",
+    "visit",
+    "plan",
+  ];
+
+  function keysOf(value: unknown, into = new Set<string>()): Set<string> {
+    if (value && typeof value === "object")
+      for (const [key, child] of Object.entries(value)) {
+        into.add(key);
+        keysOf(child, into);
+      }
+    return into;
+  }
+
+  it("stores only the game's world schema, built from a fixed seed", () => {
+    const saved: unknown = JSON.parse(serializeWorld(dayOne()));
+    expect(Object.keys(saved as object)).toEqual(SAVE_SCHEMA);
+    expect(serializeWorld(dayOne())).toBe(serializeWorld(dayOne()));
+  });
+
+  it("has no credential or personal-data fields anywhere in the save", () => {
+    const keys = [...keysOf(JSON.parse(serializeWorld(dayOne())))];
+    for (const key of keys)
+      expect(key).not.toMatch(
+        /pass(word)?|secret|token|api[-_]?key|e-?mail|phone|birth|dob|ssn|address/i
+      );
+  });
+});
+
 describe("Study Director audit: the end of the day", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
@@ -90,6 +138,7 @@ describe("Study Director audit: the end of the day", () => {
     cleanup();
     vi.restoreAllMocks();
     window.history.replaceState(null, "", "/");
+    globalThis.localStorage?.clear?.();
   });
 
   it("offers to go home from where you stand at the hard stop (#2184)", async () => {

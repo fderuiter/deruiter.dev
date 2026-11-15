@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
+import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
 import {
   MEDALLION_LAYERS,
   REGULATORY_WORDING,
@@ -44,9 +45,7 @@ export default function PlatformPage() {
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
         <Breadcrumbs path="/platform" className="mb-6" />
         <ClinicalJourneyNav path="/platform" className="mb-8" />
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
-          Clinical systems / 01
-        </p>
+        <JourneyStepLabel path="/platform" fallback="Clinical Data Platform" />
         <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           Clinical Data Platform
         </h1>
@@ -69,7 +68,7 @@ export default function PlatformPage() {
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-amber-400">
-              System flow / 02
+              System flow
             </p>
             <h2
               id="flow-title"
@@ -124,7 +123,7 @@ export default function PlatformPage() {
         className="border-t border-white/[0.08] py-12 sm:py-16"
       >
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-amber-400">
-          Evidence index / 03
+          Evidence index
         </p>
         <h2
           id="capability-title"

@@ -155,7 +155,7 @@ export default async function StandardsConformancePage() {
       <header className="border-b border-white/[0.08] pb-10 sm:pb-14">
         <Breadcrumbs path="/clinical/standards" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
-          Clinical · Evidence
+          Standards evidence
         </p>
         <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           Standards conformance

@@ -361,7 +361,9 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   return (
     <div
       onClick={() => onSelectField(null)}
-      className="@container flex-1 flex flex-col min-w-0 h-auto md:h-full bg-zinc-950/80 crf-canvas-area overflow-visible md:overflow-y-auto p-3 sm:p-6 transition-all relative"
+      data-studio-canvas="true"
+      tabIndex={-1}
+      className="@container flex-1 flex flex-col min-w-0 h-auto md:h-full bg-zinc-950/80 crf-canvas-area overflow-visible md:overflow-y-auto p-3 sm:p-6 transition-all relative outline-none"
     >
       {/* Top Canvas Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-zinc-800/80">

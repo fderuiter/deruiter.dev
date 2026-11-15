@@ -31,7 +31,7 @@ import { pathToFileURL } from "node:url";
 export const BOT_BRANCH_PREFIXES = Object.freeze(["stitch/", "jules/"]);
 
 /**
- * Branch prefixes people (and Claude threads) use. Listed so that every
+ * Conventional development branch prefixes. Listed so that every
  * prefix `validateBranchName()` accepts is classified exactly once.
  */
 export const HUMAN_BRANCH_PREFIXES = Object.freeze([

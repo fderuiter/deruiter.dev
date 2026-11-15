@@ -497,7 +497,7 @@ and no unexplained active branch retained by Vercel.
 - Add least-privilege permissions and concurrency to CI.
 - Run PR CI against `main`; make post-merge checks smaller and purpose-specific.
 - Add a pull-request template containing test evidence, migration impact,
-  deployment impact, rollback notes, and an Agent Review Brief when applicable.
+  deployment impact, rollback notes, and a Review notes section when applicable.
 
 Exit criterion: a red required check or missing PR cannot update `main`.
 

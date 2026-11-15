@@ -7,9 +7,9 @@ import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import {
   PATROL_SCENARIOS,
   createInitialShiftState,
-  transitionShiftPhase,
-  recordAction,
-  generateDebriefReport,
+  reduceShiftState,
+  compileShiftSummary,
+  type PatrolEvent,
 } from "@/lib/patrol";
 import { PatrolShiftContainer } from "@/components/patrol/PatrolShiftContainer";
 
@@ -80,18 +80,50 @@ describe("Patrol Shift — M1 Foundation Scaffold & Discovery Verification", () 
     expect(initial.phase).toBe("briefing");
     expect(initial.timeElapsedMinutes).toBe(0);
 
-    const patrolState = transitionShiftPhase(initial, "patrol");
-    expect(patrolState.phase).toBe("patrol");
+    const briefingState = reduceShiftState(initial, { type: "START_SHIFT" });
+    expect(briefingState.phase).toBe("BRIEFING");
 
-    const withAction = recordAction(patrolState, scenario.actions[0]);
+    const mapState = reduceShiftState(briefingState, {
+      type: "COMPLETE_BRIEFING",
+    });
+    expect(mapState.phase).toBe("PATROL_MAP");
+
+    const dispatchState = reduceShiftState(mapState, {
+      type: "RECEIVE_DISPATCH",
+      scenarioId: scenario.id,
+    });
+    expect(dispatchState.phase).toBe("DISPATCH");
+
+    const respondingState = reduceShiftState(dispatchState, {
+      type: "ACCEPT_DISPATCH",
+    });
+    expect(respondingState.phase).toBe("RESPONDING");
+
+    const onSceneState = reduceShiftState(respondingState, {
+      type: "ARRIVE_ON_SCENE",
+    });
+    expect(onSceneState.phase).toBe("SCENE");
+
+    const withAction = reduceShiftState(onSceneState, {
+      type: "RECORD_ACTION",
+      action: scenario.actions[0],
+    });
     expect(withAction.actionHistory).toHaveLength(1);
     expect(withAction.timeElapsedMinutes).toBeGreaterThan(0);
 
-    const debriefState = transitionShiftPhase(withAction, "debrief");
-    expect(debriefState.phase).toBe("debrief");
+    const events: PatrolEvent[] = [
+      {
+        scenarioId: scenario.id,
+        action: scenario.actions[0].id,
+        timestamp: 1000,
+        description: scenario.actions[0].label,
+      },
+    ];
 
-    const report = generateDebriefReport(scenario, debriefState);
-    expect(report.scenarioId).toBe(scenario.id);
-    expect(report.score).toBeGreaterThanOrEqual(0);
+    const summary = compileShiftSummary(events, withAction.timeElapsedMinutes);
+    expect(summary.totalIncidents).toBe(1);
+    expect(summary.elapsedShiftMinutes).toBe(withAction.timeElapsedMinutes);
+    expect(summary.incidentResults[0].scenarioId).toBe(scenario.id);
+    expect(summary.compositeDimensions).toBeDefined();
   });
 });

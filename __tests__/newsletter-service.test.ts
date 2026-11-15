@@ -23,6 +23,7 @@ interface Delivery {
   dispatchId: string;
   subscriberId: string;
   queueId: string | null;
+  createdAt?: Date;
 }
 interface QueueRow {
   id: string;
@@ -72,8 +73,32 @@ vi.mock("@/lib/db", () => {
       return false;
     return true;
   };
+  const mockPrisma: Record<string, unknown> = {
+    $transaction: vi.fn(async (cb: unknown) => {
+      if (typeof cb === "function") {
+        const snapshot = {
+          deliveries: [...db.deliveries.map((d) => ({ ...d }))],
+          queue: [...db.queue.map((q) => ({ ...q }))],
+          subscribers: [...db.subscribers.map((s) => ({ ...s }))],
+          dispatches: [...db.dispatches.map((d) => ({ ...d }))],
+        };
+        try {
+          return await (cb as (tx: unknown) => Promise<unknown>)(mockPrisma);
+        } catch (err) {
+          db.deliveries = snapshot.deliveries;
+          db.queue = snapshot.queue;
+          db.subscribers = snapshot.subscribers;
+          db.dispatches = snapshot.dispatches;
+          throw err;
+        }
+      }
+      if (Array.isArray(cb)) {
+        return Promise.all(cb);
+      }
+    }),
+  };
   return {
-    prisma: {
+    prisma: Object.assign(mockPrisma, {
       newsletterSubscriber: {
         findUnique: vi.fn(async ({ where }: { where: Where }) => {
           const [key, value] = Object.entries(where)[0];
@@ -187,11 +212,52 @@ vi.mock("@/lib/db", () => {
                   d.dispatchId === data.dispatchId &&
                   d.subscriberId === data.subscriberId
               )
-            )
-              throw new Error("Unique constraint failed");
-            const row = { id: id("dlv"), queueId: null, ...data };
+            ) {
+              const err = new Error("Unique constraint failed");
+              (err as unknown as { code: string }).code = "P2002";
+              throw err;
+            }
+            const row = {
+              id: id("dlv"),
+              queueId: null,
+              createdAt: new Date(),
+              ...data,
+            };
             db.deliveries.push(row);
             return row;
+          }
+        ),
+        createMany: vi.fn(
+          async ({
+            data,
+            skipDuplicates,
+          }: {
+            data: Array<{ dispatchId: string; subscriberId: string }>;
+            skipDuplicates?: boolean;
+          }) => {
+            let count = 0;
+            for (const item of data) {
+              const exists = db.deliveries.some(
+                (d) =>
+                  d.dispatchId === item.dispatchId &&
+                  d.subscriberId === item.subscriberId
+              );
+              if (exists && !skipDuplicates) {
+                const err = new Error("Unique constraint failed");
+                (err as unknown as { code: string }).code = "P2002";
+                throw err;
+              }
+              if (!exists) {
+                db.deliveries.push({
+                  id: id("dlv"),
+                  queueId: null,
+                  createdAt: new Date(),
+                  ...item,
+                });
+                count++;
+              }
+            }
+            return { count };
           }
         ),
         update: vi.fn(
@@ -211,10 +277,74 @@ vi.mock("@/lib/db", () => {
           db.deliveries = db.deliveries.filter((d) => d.id !== where.id);
         }),
         findMany: vi.fn(
-          async ({ where }: { where: { subscriberId: string } }) =>
-            db.deliveries.filter(
-              (d) => d.subscriberId === where.subscriberId && d.queueId
-            )
+          async ({
+            where,
+            include,
+            skip,
+            take,
+          }: {
+            where?: {
+              subscriberId?: string;
+              queueId?: null | string | { not: null };
+            };
+            include?: { subscriber?: boolean };
+            skip?: number;
+            take?: number;
+          } = {}) => {
+            let res = db.deliveries;
+            if (where?.subscriberId) {
+              res = res.filter((d) => d.subscriberId === where.subscriberId);
+            }
+            if (where && "queueId" in where) {
+              if (
+                where.queueId !== null &&
+                typeof where.queueId === "object" &&
+                "not" in where.queueId
+              ) {
+                res = res.filter((d) => d.queueId !== null);
+              } else {
+                res = res.filter((d) => d.queueId === where.queueId);
+              }
+            } else if (where?.subscriberId) {
+              res = res.filter((d) => d.queueId !== null);
+            }
+            if (skip) {
+              res = res.slice(skip);
+            }
+            if (take !== undefined) {
+              res = res.slice(0, take);
+            }
+            if (include?.subscriber) {
+              return res.map((d) => ({
+                ...d,
+                subscriber: db.subscribers.find(
+                  (s) => s.id === d.subscriberId
+                )!,
+              }));
+            }
+            return res;
+          }
+        ),
+        count: vi.fn(
+          async ({
+            where,
+          }: {
+            where?: { queueId?: null | string | { not: null } };
+          } = {}) => {
+            let res = db.deliveries;
+            if (where && "queueId" in where) {
+              if (
+                where.queueId !== null &&
+                typeof where.queueId === "object" &&
+                "not" in where.queueId
+              ) {
+                res = res.filter((d) => d.queueId !== null);
+              } else {
+                res = res.filter((d) => d.queueId === where.queueId);
+              }
+            }
+            return res.length;
+          }
         ),
       },
       outboundEmailQueue: {
@@ -266,13 +396,36 @@ vi.mock("@/lib/db", () => {
         ),
       },
       suppressionList: {
-        findUnique: vi.fn(async ({ where }: { where: { email: string } }) =>
-          db.suppressed.has(where.email)
+        findUnique: vi.fn(async ({ where }: { where: { email: string } }) => {
+          const email = where.email.toLowerCase().trim();
+          return db.suppressed.has(email) || db.suppressed.has(where.email)
             ? { email: where.email, reason: "BOUNCE" }
-            : null
+            : null;
+        }),
+        findMany: vi.fn(
+          async ({
+            where,
+            select,
+          }: {
+            where?: { email?: { in?: string[] } };
+            select?: { email?: boolean };
+          } = {}) => {
+            const inList = where?.email?.in ?? [];
+            return inList
+              .filter(
+                (e) =>
+                  db.suppressed.has(e) ||
+                  db.suppressed.has(e.toLowerCase().trim())
+              )
+              .map((e) =>
+                select?.email
+                  ? { email: e }
+                  : { id: id("sup"), email: e, reason: "BOUNCE" }
+              );
+          }
         ),
       },
-    },
+    }),
   };
 });
 
@@ -586,6 +739,333 @@ describe("NewsletterService (#841)", () => {
       const counts = await dispatchCounts();
       expect(counts).toMatchObject({ queued: 0, completedDispatches: 1 });
       expect(db.dispatches[0].completedAt).not.toBeNull();
+    });
+
+    it("batches suppression lookups and records skipped deliveries in batch", async () => {
+      publishPost("p1");
+      confirmed("user1@example.com", new Date(0));
+      confirmed("user2@example.com", new Date(0));
+      confirmed("user3@example.com", new Date(0));
+      db.suppressed.add("user2@example.com");
+
+      const getSuppressedSpy = vi.spyOn(EmailService, "getSuppressedEmails");
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      const counts = await dispatchCounts();
+
+      expect(getSuppressedSpy).toHaveBeenCalledTimes(1);
+      expect(getSuppressedSpy).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          "user1@example.com",
+          "user2@example.com",
+          "user3@example.com",
+        ])
+      );
+
+      expect(counts).toMatchObject({
+        queued: 2,
+        skippedSuppressed: 1,
+        completedDispatches: 1,
+      });
+
+      const user2Delivery = db.deliveries.find(
+        (d) => d.subscriberId === "sub_user2@example.com"
+      );
+      expect(user2Delivery).toBeDefined();
+      expect(user2Delivery?.queueId).toBeNull();
+
+      expect(db.queue.map((q) => q.to).sort()).toEqual([
+        "user1@example.com",
+        "user3@example.com",
+      ]);
+    });
+
+    it("completes dispatch when all recipients in a batch are suppressed without queueing emails", async () => {
+      publishPost("p1");
+      confirmed("all1@example.com", new Date(0));
+      confirmed("all2@example.com", new Date(0));
+      db.suppressed.add("all1@example.com");
+      db.suppressed.add("all2@example.com");
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      const counts = await dispatchCounts();
+
+      expect(counts).toMatchObject({
+        queued: 0,
+        skippedSuppressed: 2,
+        completedDispatches: 1,
+      });
+      expect(db.queue).toHaveLength(0);
+      expect(db.deliveries).toHaveLength(2);
+      expect(db.dispatches[0].completedAt).not.toBeNull();
+    });
+
+    it("ends run with typed DISPATCH_FAILED when suppression lookup fails without claiming or queueing (#3806)", async () => {
+      publishPost("p1");
+      confirmed("reader@example.com", new Date(0));
+      await NewsletterService.queuePostAnnouncement("p1");
+
+      vi.spyOn(EmailService, "getSuppressedEmails").mockRejectedValueOnce(
+        new Error("Suppression DB connection lost")
+      );
+
+      const result = await NewsletterService.dispatchDue();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: {
+          code: "DISPATCH_FAILED",
+          message: "Suppression DB connection lost",
+        },
+      });
+
+      // No recipient claimed or queued
+      expect(db.deliveries).toHaveLength(0);
+      expect(db.queue).toHaveLength(0);
+      expect(db.dispatches[0].completedAt ?? null).toBeNull();
+    });
+
+    describe("fault injection at transaction write boundaries (#3801)", () => {
+      it("Boundary 1 (before claim): rollback when delivery claim creation fails", async () => {
+        publishPost("p1");
+        confirmed("reader@example.com", new Date(0));
+        await NewsletterService.queuePostAnnouncement("p1");
+
+        const { prisma } = await import("@/lib/db");
+        vi.spyOn(prisma.newsletterDelivery, "create").mockRejectedValueOnce(
+          new Error("Claim insert failed: connection reset")
+        );
+
+        const result = await NewsletterService.dispatchDue();
+
+        expect(result).toMatchObject({
+          success: false,
+          error: {
+            code: "DISPATCH_FAILED",
+            message: "Claim insert failed: connection reset",
+          },
+        });
+        expect(db.deliveries).toHaveLength(0);
+        expect(db.queue).toHaveLength(0);
+        expect(db.dispatches[0].completedAt ?? null).toBeNull();
+
+        // Rerun succeeds cleanly
+        const retryCounts = await dispatchCounts();
+        expect(retryCounts.queued).toBe(1);
+        expect(db.deliveries).toHaveLength(1);
+        expect(db.deliveries[0].queueId).toBe(db.queue[0].id);
+      });
+
+      it("Boundary 2 (after claim, during enqueue): rollback when enqueue fails", async () => {
+        publishPost("p1");
+        confirmed("reader@example.com", new Date(0));
+        await NewsletterService.queuePostAnnouncement("p1");
+
+        const { prisma } = await import("@/lib/db");
+        vi.spyOn(prisma.outboundEmailQueue, "create").mockRejectedValueOnce(
+          new Error("Queue disk full")
+        );
+
+        const result = await NewsletterService.dispatchDue();
+
+        expect(result).toMatchObject({
+          success: false,
+          error: {
+            code: "ENQUEUE_FAILED",
+            message: "Could not enqueue a newsletter dispatch email",
+          },
+        });
+        // Delivery claim is atomically rolled back; no orphan delivery remains
+        expect(db.deliveries).toHaveLength(0);
+        expect(db.queue).toHaveLength(0);
+        expect(db.dispatches[0].completedAt ?? null).toBeNull();
+
+        // Rerun succeeds cleanly
+        const retryCounts = await dispatchCounts();
+        expect(retryCounts.queued).toBe(1);
+        expect(db.deliveries).toHaveLength(1);
+        expect(db.deliveries[0].queueId).toBe(db.queue[0].id);
+      });
+
+      it("Boundary 3 (after outbound insert, before link): rollback when link update fails", async () => {
+        publishPost("p1");
+        confirmed("reader@example.com", new Date(0));
+        await NewsletterService.queuePostAnnouncement("p1");
+
+        const { prisma } = await import("@/lib/db");
+        vi.spyOn(prisma.newsletterDelivery, "update").mockRejectedValueOnce(
+          new Error("Lock timeout on delivery link update")
+        );
+
+        const result = await NewsletterService.dispatchDue();
+
+        expect(result).toMatchObject({
+          success: false,
+          error: {
+            code: "DISPATCH_FAILED",
+            message: "Lock timeout on delivery link update",
+          },
+        });
+        // Both delivery and queue row are rolled back atomically
+        expect(db.deliveries).toHaveLength(0);
+        expect(db.queue).toHaveLength(0);
+        expect(db.dispatches[0].completedAt ?? null).toBeNull();
+
+        // Rerun succeeds cleanly
+        const retryCounts = await dispatchCounts();
+        expect(retryCounts.queued).toBe(1);
+        expect(db.deliveries).toHaveLength(1);
+        expect(db.deliveries[0].queueId).toBe(db.queue[0].id);
+      });
+
+      it("handles duplicate invocation and replay idempotently without double-queueing", async () => {
+        publishPost("p1");
+        confirmed("dup1@example.com", new Date(0));
+        confirmed("suppressed@example.com", new Date(0));
+        db.suppressed.add("suppressed@example.com");
+        await NewsletterService.queuePostAnnouncement("p1");
+
+        const firstRun = await dispatchCounts();
+        expect(firstRun.queued).toBe(1);
+        expect(firstRun.skippedSuppressed).toBe(1);
+        expect(firstRun.completedDispatches).toBe(1);
+
+        // Replay: dispatchDue on completed dispatch
+        const replayedRun = await dispatchCounts();
+        expect(replayedRun.queued).toBe(0);
+        expect(replayedRun.skippedSuppressed).toBe(0);
+        expect(db.queue).toHaveLength(1);
+        expect(db.deliveries).toHaveLength(2);
+
+        // Simulated concurrent run hitting unique constraint on claim (Prisma P2002):
+        // Returns DISPATCH_FAILED instead of throwing across service boundary
+        confirmed("concurrent@example.com", new Date(0));
+        const { prisma } = await import("@/lib/db");
+        const uniqueErr = new Error(
+          "Unique constraint failed on the fields: (`dispatchId`,`subscriberId`)"
+        );
+        (uniqueErr as unknown as { code: string }).code = "P2002";
+        vi.spyOn(prisma.newsletterDelivery, "create").mockRejectedValueOnce(
+          uniqueErr
+        );
+
+        // Reopen dispatch to simulate concurrent run
+        db.dispatches[0].completedAt = null;
+        const concurrentResult = await NewsletterService.dispatchDue();
+        expect(concurrentResult).toMatchObject({
+          success: false,
+          error: {
+            code: "DISPATCH_FAILED",
+            message:
+              "Unique constraint failed on the fields: (`dispatchId`,`subscriberId`)",
+          },
+        });
+      });
+
+      it("cancels queued email when an unsubscribe races the dispatch", async () => {
+        publishPost("p1");
+        const subscriber = confirmed("racing@example.com", new Date(0));
+        await NewsletterService.queuePostAnnouncement("p1");
+
+        // Dispatch runs and enqueues the announcement inside atomic transaction
+        const counts = await dispatchCounts();
+        expect(counts.queued).toBe(1);
+        expect(db.deliveries).toHaveLength(1);
+        const queueId = db.deliveries[0].queueId;
+        expect(queueId).not.toBeNull();
+        expect(db.queue[0].status).toBe("PENDING");
+
+        // Unsubscribe races immediately after dispatch
+        const unsubResult = await NewsletterService.unsubscribe(
+          subscriber.unsubscribeToken
+        );
+        expect(unsubResult).toBe("unsubscribed");
+
+        // The queued email has been canceled so it is never sent
+        expect(db.queue[0].status).toBe("FAILED");
+        expect(db.queue[0].lastError).toBe("Recipient unsubscribed");
+      });
+    });
+
+    describe("auditNullQueueDeliveries (#3801 Step 3)", () => {
+      it("distinguishes intentional skips from orphaned claims without mutating database", async () => {
+        publishPost("p1");
+        const dsp = db.dispatches[0] ?? { id: "dsp_1" };
+
+        const subSkipped = confirmed("suppressed@example.com", new Date(0));
+        const subOrphan = confirmed("orphan@example.com", new Date(0));
+        const subLinked = confirmed("linked@example.com", new Date(0));
+
+        db.suppressed.add("suppressed@example.com");
+
+        // 1. Intentional skip: queueId is null, email is in suppressionList
+        db.deliveries.push({
+          id: "dlv_skip",
+          dispatchId: dsp.id,
+          subscriberId: subSkipped.id,
+          queueId: null,
+        });
+
+        // 2. Orphaned claim: queueId is null, email is NOT in suppressionList
+        db.deliveries.push({
+          id: "dlv_orphan",
+          dispatchId: dsp.id,
+          subscriberId: subOrphan.id,
+          queueId: null,
+        });
+
+        // 3. Normal linked delivery: queueId is present
+        db.deliveries.push({
+          id: "dlv_linked",
+          dispatchId: dsp.id,
+          subscriberId: subLinked.id,
+          queueId: "q_1",
+        });
+
+        const audit = await NewsletterService.auditNullQueueDeliveries();
+
+        expect(audit.success).toBe(true);
+        if (audit.success) {
+          expect(audit.data.totalNullQueue).toBe(2);
+          expect(audit.data.page).toBe(1);
+          expect(audit.data.pageSize).toBe(100);
+          expect(audit.data.intentionalSkips).toHaveLength(1);
+          expect(audit.data.intentionalSkips[0]).toEqual({
+            deliveryId: "dlv_skip",
+            dispatchId: dsp.id,
+            subscriberId: subSkipped.id,
+            suppressionReason: "BOUNCE",
+          });
+          expect(audit.data.orphanedClaims).toHaveLength(1);
+          expect(audit.data.orphanedClaims[0]).toEqual({
+            deliveryId: "dlv_orphan",
+            dispatchId: dsp.id,
+            subscriberId: subOrphan.id,
+          });
+        }
+
+        // Paged invocation: supports take/skip bounds
+        const pagedAudit = await NewsletterService.auditNullQueueDeliveries({
+          page: 2,
+          pageSize: 1,
+        });
+        expect(pagedAudit.success).toBe(true);
+        if (pagedAudit.success) {
+          expect(pagedAudit.data.totalNullQueue).toBe(2);
+          expect(pagedAudit.data.page).toBe(2);
+          expect(pagedAudit.data.pageSize).toBe(1);
+          expect(
+            pagedAudit.data.intentionalSkips.length +
+              pagedAudit.data.orphanedClaims.length
+          ).toBe(1);
+        }
+
+        // Database remains unmutated
+        expect(db.deliveries).toHaveLength(3);
+        expect(
+          db.deliveries.find((d) => d.id === "dlv_orphan")?.queueId
+        ).toBeNull();
+      });
     });
   });
 });

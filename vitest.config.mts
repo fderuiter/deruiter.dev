@@ -164,6 +164,8 @@ export default defineConfig({
         "lib/proof/index.ts",
         "lib/arcade/manuals/types.ts",
         "lib/arcade/manuals/index.ts",
+        "lib/patrol/types.ts",
+        "lib/patrol/index.ts",
       ],
       thresholds: coverageThresholdsDeferred
         ? undefined

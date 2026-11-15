@@ -306,16 +306,6 @@ export interface ShiftEngineEvent {
   seed?: number;
 }
 
-export interface DebriefReport {
-  scenarioId: string;
-  totalTimeMinutes: number;
-  score: number;
-  maxPossibleScore: number;
-  passedRules: DebriefRule[];
-  failedRules: DebriefRule[];
-  summary: string;
-}
-
 export interface OETEngineState {
   evaluatedCount: number;
   rulesPassed: number;

@@ -658,35 +658,29 @@ describe("getReactions outage matrix", () => {
     expect(m.prisma.caseStudyReaction.findMany).not.toHaveBeenCalled();
   });
 
-  it("Redis up (miss), Neon up: reads base counts, caches them, and backfills user reactions", async () => {
+  it("Redis up (miss), Neon up: reads and caches base counts, and reads no per-visitor rows (#3200)", async () => {
     const { CaseStudyService, key } = await load();
     m.prisma.caseStudyReaction.groupBy.mockResolvedValueOnce([
       { reactionType: "thorough", _count: { id: 7 } },
       { reactionType: "retired_type", _count: { id: 1 } },
     ]);
-    m.prisma.caseStudyReaction.findMany.mockResolvedValueOnce([
-      { reactionType: "thorough" },
-    ]);
 
     const result = await CaseStudyService.getReactions(slug, "hash");
 
     expect(result.counts).toEqual({ ...zero, thorough: 7 });
-    expect(result.userReactions).toEqual(["thorough"]);
+    expect(result.userReactions).toEqual([]);
     expect(m.redis.set).toHaveBeenCalledWith(
       key(`cs:reactions_counts:${slug}`),
       { ...zero, thorough: 7 },
       { ex: 3600 }
     );
-    expect(m.pipe.sadd).toHaveBeenCalledWith(
-      key(`cs:user_reactions:${slug}:hash`),
-      "thorough"
-    );
+    expect(m.prisma.caseStudyReaction.findMany).not.toHaveBeenCalled();
+    expect(m.pipe.sadd).not.toHaveBeenCalled();
   });
 
   it("Redis up (miss), Neon up with zero rows: zero counts, nothing to backfill", async () => {
     const { CaseStudyService } = await load("production-build");
     m.prisma.caseStudyReaction.groupBy.mockResolvedValueOnce([]);
-    m.prisma.caseStudyReaction.findMany.mockResolvedValueOnce([]);
 
     const result = await CaseStudyService.getReactions(slug, "hash");
 
@@ -699,26 +693,22 @@ describe("getReactions outage matrix", () => {
     expect(m.pipe.exec).not.toHaveBeenCalled();
   });
 
-  it("tolerates failing cache writes and a failing backfill pipeline", async () => {
+  it("tolerates a failing base-count cache write", async () => {
     const { CaseStudyService } = await load();
     m.redis.set.mockRejectedValueOnce(redisDown());
-    m.pipe.exec.mockRejectedValueOnce(redisDown());
     m.prisma.caseStudyReaction.groupBy.mockResolvedValueOnce([
       { reactionType: "insightful", _count: { id: 1 } },
-    ]);
-    m.prisma.caseStudyReaction.findMany.mockResolvedValueOnce([
-      { reactionType: "insightful" },
     ]);
 
     const result = await CaseStudyService.getReactions(slug, "hash");
 
-    expect(result.userReactions).toEqual(["insightful"]);
+    expect(result.counts).toEqual({ ...zero, insightful: 1 });
+    expect(result.userReactions).toEqual([]);
   });
 
   it("Redis up, Neon down: zero counts and no user reactions, with the base-count warning in production", async () => {
     const { CaseStudyService } = await load("production-runtime");
     m.prisma.caseStudyReaction.groupBy.mockRejectedValueOnce(neonDown());
-    m.prisma.caseStudyReaction.findMany.mockRejectedValueOnce(neonDown());
 
     const result = await CaseStudyService.getReactions(slug, "hash");
 

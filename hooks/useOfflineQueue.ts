@@ -18,6 +18,13 @@ export interface QueuedRequest<T = unknown> {
   createdAt: number;
   retries: number;
   maxRetries?: number;
+  /**
+   * How many times this `id` has been replaced while queued. A response only
+   * acknowledges, retries or dead-letters the revision that was sent, so a
+   * newer replacement made mid-flight survives (#3795). Entries stored before
+   * this field existed read as revision 0.
+   */
+  revision?: number;
 }
 
 export interface DeadLetterItem<T = unknown> extends QueuedRequest<T> {
@@ -178,6 +185,25 @@ if (typeof window !== "undefined") {
  * Moves a queued item to the dead-letter queue, replacing any dead letter that
  * already holds its id, then logs it and announces it to listeners.
  */
+/** Whether a stored entry is the same revision as the one that was sent. */
+function isSameRevision(entry: QueuedRequest, sent: QueuedRequest): boolean {
+  return entry.id === sent.id && (entry.revision ?? 0) === (sent.revision ?? 0);
+}
+
+/** Removes the sent revision only; a newer replacement stays queued. */
+function acknowledgeSent(sent: QueuedRequest): void {
+  writeStorage(readStorage().filter((entry) => !isSameRevision(entry, sent)));
+}
+
+/** Records a retry on the sent revision only. */
+function recordRetry(sent: QueuedRequest, retries: number): void {
+  writeStorage(
+    readStorage().map((entry) =>
+      isSameRevision(entry, sent) ? { ...entry, retries } : entry
+    )
+  );
+}
+
 function moveToDeadLetterQueue(
   item: QueuedRequest,
   statusCode: number,
@@ -193,7 +219,7 @@ function moveToDeadLetterQueue(
 
   const currentDLQ = readDLQStorage().filter((i) => i.id !== item.id);
   writeDLQStorage([...currentDLQ, deadLetterItem]);
-  dequeueOfflineRequest(item.id);
+  acknowledgeSent(item);
 
   logger.error(message, { deadLetterItem });
 
@@ -235,6 +261,9 @@ export function enqueueOfflineRequest<T = unknown>(
   };
 
   const existingIndex = current.findIndex((item) => item.id === id);
+  if (existingIndex !== -1) {
+    newEntry.revision = (current[existingIndex].revision ?? 0) + 1;
+  }
   const updated =
     existingIndex === -1
       ? [...current, newEntry as QueuedRequest]
@@ -337,6 +366,9 @@ export function retryDLQItem(id: string): void {
   if (!itemToRetry) return;
 
   dismissDLQItem(id);
+  // A newer request with this id is already queued; it supersedes the failed
+  // one, so retrying must not overwrite it (#3795).
+  if (readStorage().some((item) => item.id === id)) return;
   enqueueOfflineRequest({
     id: itemToRetry.id,
     type: itemToRetry.type,
@@ -425,7 +457,7 @@ export async function flushOfflineQueue(): Promise<{
       }
 
       if (res.ok) {
-        dequeueOfflineRequest(item.id);
+        acknowledgeSent(item);
         processed++;
       } else if (
         res.status >= 400 &&
@@ -530,10 +562,7 @@ export async function flushOfflineQueue(): Promise<{
             `Offline request exhausted ${maxRetries} retries (last status ${res.status}) and moved to DLQ`
           );
         } else {
-          const updatedQueue = readStorage().map((i) =>
-            i.id === item.id ? { ...i, retries: nextRetries } : i
-          );
-          writeStorage(updatedQueue);
+          recordRetry(item, nextRetries);
 
           const delay = Math.min(1000 * Math.pow(2, nextRetries), 30000);
           retryTimer = setTimeout(() => {
@@ -561,10 +590,7 @@ export async function flushOfflineQueue(): Promise<{
           `Offline request exhausted ${maxRetries} retries after a thrown error and moved to DLQ`
         );
       } else {
-        const updatedQueue = readStorage().map((i) =>
-          i.id === item.id ? { ...i, retries: nextRetries } : i
-        );
-        writeStorage(updatedQueue);
+        recordRetry(item, nextRetries);
 
         const delay = Math.min(1000 * Math.pow(2, nextRetries), 30000);
         retryTimer = setTimeout(() => {

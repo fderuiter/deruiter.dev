@@ -607,8 +607,9 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     )
   ),
   ...START_UP_GAPS.map(([id, name, span], index) => {
-    const [from] = START_UP_STAGES[index];
-    const [to] = START_UP_STAGES[index + 1];
+    // Gap i spans stage i to stage i + 1; START_UP_GAPS has one fewer row.
+    const [from] = START_UP_STAGES[index]!;
+    const [to] = START_UP_STAGES[index + 1]!;
     return define(
       {
         id,

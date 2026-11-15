@@ -128,7 +128,7 @@ describe("the budget plan (#2912)", () => {
 });
 
 describe("gold.fct_spend_forecast (#2912)", () => {
-  const rows = warehouse.tables["gold.fct_spend_forecast"];
+  const rows = warehouse.tables["gold.fct_spend_forecast"]!;
 
   it("passes every warehouse check", () => {
     expect(checkWarehouse(WAREHOUSE_SCHEMA, warehouse)).toEqual([]);

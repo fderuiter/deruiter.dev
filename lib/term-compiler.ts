@@ -5,6 +5,7 @@ import {
   TermDefinition,
 } from "./term-glossary";
 import { escapeXml } from "./utils";
+import { decodeHtmlEntities } from "./html-text";
 
 export function escapeAttr(str: string): string {
   return escapeXml(str, { singleQuoteEntity: "&#39;" });
@@ -229,14 +230,8 @@ export function validateTermTags(
       continue;
     }
 
-    // Unescape attributes for comparison
-    const unescapeAttr = (s: string) =>
-      s
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">");
+    // Decode attribute entities once for comparison (#3833)
+    const unescapeAttr = decodeHtmlEntities;
 
     // Assert consistency with glossary definition
     if (unescapeAttr(termVal) !== expected.simplified) {

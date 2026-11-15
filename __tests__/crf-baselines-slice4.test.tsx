@@ -582,7 +582,7 @@ describe("CRF Features Track 3 Slice 4: Save Named Baselines & Restore Into New 
 
       expect(handleRestore).toHaveBeenCalledTimes(1);
       expect(handleClose).toHaveBeenCalledTimes(1);
-      const [restoredStudy, baseline] = handleRestore.mock.calls[0];
+      const [restoredStudy, baseline] = handleRestore.mock.calls[0]!;
       expect(baseline.versionTag).toBe("v1.0");
       expect(restoredStudy.provenance?.derivedFromVersionTag).toBe("v1.0");
     });

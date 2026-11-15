@@ -68,13 +68,13 @@ Before an email can reach Resend's sending API:
 - `beforeSend` filtering: Silently drops benign noise (`AbortError`, client browser extension script errors, crawler 404s).
 - PII scrubbing: Strips sensitive headers, query parameters, and email bodies before transmission.
 
-### 6. Dual-Tracker Issue Delivery & External Agent Review Briefs
+### 6. Dual-Tracker Issue Delivery & Implementation Review Notes
 
 All child issues governing this architecture are delivered using the dual-tracker pattern:
 
 - Standalone markdown tickets in `.scratch/issues/` for context isolation.
 - Synchronized GitHub issues under parent epic #632 with standard labels (`integration`, `ready-for-agent`, `p1-critical`).
-- Each issue concludes with an **Agent Review Brief** block providing explicit file paths, acceptance criteria, and invariant verification commands (`npm test`, `npm run verify:*`, `npm run quality`) for external reviewer agents (Claude Code / OpenAI).
+- Each issue concludes with a **Review notes** block providing explicit file paths, acceptance criteria, and invariant verification commands (`npm test`, `npm run verify:*`, `npm run quality`) for implementation and review.
 
 ## Consequences
 
@@ -112,3 +112,8 @@ browsing route does not query Neon. The Neon figures now match the
 100 CU-hours of compute per project per month. The request-time Neon read in
 `CaseStudyService`'s Redis-outage fallback is unchanged here and needs its
 own decision.
+
+## Terminology clarification 2026-11-14
+
+Implementation tickets use the heading `Review notes` for the existing file,
+constraint and verification brief. The delivery and quota decisions are unchanged.

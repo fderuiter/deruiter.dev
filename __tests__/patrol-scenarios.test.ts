@@ -7,6 +7,7 @@ import {
   INITIAL_PATROL_SCENARIOS,
   OEC_SAMPLE_SCENARIO,
   ALL_PATROL_SCENARIOS,
+  getScenarioById,
   checkActionPreconditions,
   getAvailableActions,
   type ScenarioAction,
@@ -301,5 +302,17 @@ describe("Patrol Shift — M6 Scenario Content Package Invariants (Issue #752)",
         });
       });
     }
+  });
+
+  describe("getScenarioById", () => {
+    it("finds registered scenarios by their id", () => {
+      for (const scenario of ALL_PATROL_SCENARIOS) {
+        expect(getScenarioById(scenario.id)).toBe(scenario);
+      }
+    });
+
+    it("returns undefined for unknown scenario ids", () => {
+      expect(getScenarioById("nonexistent-scenario-id")).toBeUndefined();
+    });
   });
 });

@@ -55,19 +55,31 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     expect(container?.textContent).toContain("Time Zone:");
   });
 
-  it("renders Google Calendar appointment booking button with context parameters", async () => {
+  it("renders Google Calendar appointment booking button with context parameters and inline 2-step flow without overwriting clipboard on booking link click", async () => {
     await act(async () => {
       root?.render(<SchedulePage />);
     });
 
     const bookingBtn = container?.querySelector(
       'a[href^="https://calendar.app.google/YnR5oxos7ZTLyvUp8"]'
-    );
+    ) as HTMLAnchorElement | null;
     expect(bookingBtn).not.toBeNull();
-    expect(bookingBtn?.textContent).toContain("Choose a Time");
+    expect(bookingBtn?.textContent).toContain("Choose a time");
     expect(bookingBtn?.getAttribute("href")).toContain("tz=");
-    expect(container?.textContent).toContain("Find a time that works.");
+    expect(container?.textContent).toContain("Find a time that works");
+    expect(container?.textContent).toContain("Copy the agenda");
     expect(container?.textContent).toContain("Google Meet");
+
+    // No modal dialog rendered
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
+
+    // Trigger booking action directly - should not overwrite visitor's clipboard without asking
+    await act(async () => {
+      bookingBtn?.click();
+    });
+
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("renders correct contact links including contact form and linkedin", async () => {
@@ -225,14 +237,14 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     expect(messageInput.value).toContain("Open-Source Tooling & DX (10m)");
   });
 
-  it("copies agenda context on Copy Agenda Context button click", async () => {
+  it("copies agenda context on Copy agenda button click without a modal", async () => {
     await act(async () => {
       root?.render(<SchedulePage />);
     });
 
     const copyBtn = Array.from(
       container?.querySelectorAll("button") || []
-    ).find((btn) => btn.textContent?.includes("Copy Agenda Context"));
+    ).find((btn) => btn.textContent?.includes("Copy agenda"));
     expect(copyBtn).toBeDefined();
 
     await act(async () => {
@@ -242,5 +254,50 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       expect.stringContaining("30-minute general chat")
     );
+    expect(copyBtn?.textContent).toContain("Agenda copied");
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("copies customized agenda when copy button is clicked with selected topics and leaves booking link clean", async () => {
+    await act(async () => {
+      root?.render(<SchedulePage />);
+    });
+
+    const subtopicBtn = Array.from(
+      container?.querySelectorAll("button") || []
+    ).find((btn) =>
+      btn.textContent?.includes("Next.js & React 19 Architecture")
+    );
+    expect(subtopicBtn).toBeDefined();
+
+    await act(async () => {
+      subtopicBtn?.click();
+    });
+
+    const copyBtn = Array.from(
+      container?.querySelectorAll("button") || []
+    ).find((btn) => btn.textContent?.includes("Copy agenda"));
+    expect(copyBtn).toBeDefined();
+
+    await act(async () => {
+      copyBtn?.click();
+    });
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Next.js & React 19 Architecture (10m)")
+    );
+
+    const bookingBtn = container?.querySelector(
+      'a[href^="https://calendar.app.google/YnR5oxos7ZTLyvUp8"]'
+    ) as HTMLAnchorElement | null;
+    expect(bookingBtn).not.toBeNull();
+
+    await act(async () => {
+      bookingBtn?.click();
+    });
+
+    // writeText was called only once (by the explicit copy button, not by the booking link)
+    expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(container?.querySelector('[role="dialog"]')).toBeNull();
   });
 });

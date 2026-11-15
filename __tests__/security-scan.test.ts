@@ -294,6 +294,40 @@ describe("isAllowlistedSecretValue: allowlisting rules", () => {
     ).toBe(true);
     expect(isAllowlistedSecretValue(value, "app/random-file.ts")).toBe(false);
   });
+
+  it("evaluates allowlist results for non-URL candidate strings without protocol schemes", () => {
+    expect(isAllowlistedSecretValue("AKIAIOSFODNN7EXAMPLE")).toBe(true);
+    expect(
+      isAllowlistedSecretValue(
+        ["ghp_", "123456789012345678901234567890123456"].join("")
+      )
+    ).toBe(false);
+    expect(isAllowlistedSecretValue(["npg_", "SecretPass1234"].join(""))).toBe(
+      false
+    );
+    expect(
+      isAllowlistedSecretValue(
+        ["re_", "123456789012345678901234567890"].join("")
+      )
+    ).toBe(false);
+    expect(
+      isAllowlistedSecretValue(["sk-ant-", "12345678901234567890"].join(""))
+    ).toBe(false);
+    expect(isAllowlistedSecretValue("random_token_without_scheme")).toBe(false);
+  });
+
+  it("safely catches malformed candidate values with protocol markers without throwing", () => {
+    // Built from parts so the literal URLs never appear in a diff or in the
+    // Playwright report that embeds it, where the scanner would flag them.
+    const scheme = (name: string) => [name, "://"].join("");
+    expect(isAllowlistedSecretValue(scheme("postgresql"))).toBe(false);
+    expect(isAllowlistedSecretValue(scheme("https") + ":invalid-host")).toBe(
+      false
+    );
+    expect(
+      isAllowlistedSecretValue(scheme("custom-scheme") + "[invalid-ipv6")
+    ).toBe(false);
+  });
 });
 
 describe("documentation and generated-file false-positive avoidance", () => {

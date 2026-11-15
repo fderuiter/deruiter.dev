@@ -4,7 +4,7 @@ The full text of [AGENTS.md](../../../AGENTS.md) sections 20 to 22, with the rea
 
 ## 20. Scientific & Engineering Editorial & Zero-Trope Invariant
 
-- **Prohibition of Generic AI Design Tropes**: The visual system strictly prohibits generic AI portfolio clichés:
+- **Visual design constraints**: The visual system excludes distracting decoration and unclear layouts:
   - No continuous main-thread or canvas collision particle loops (e.g. Aceternity falling beams).
   - No diffuse, uncontained neon glow washes or purple-on-dark aesthetics.
   - No icon-stuffed bento cards lacking functional telemetry.
@@ -31,7 +31,7 @@ The full text of [AGENTS.md](../../../AGENTS.md) sections 20 to 22, with the rea
 - **Upstash Daily Command Protection**: To prevent exhausting Upstash's 10,000 commands/day allowance, `@upstash/ratelimit` instances must configure local in-memory caching (`ephemeralCache`), multi-key operations must use `redis.pipeline()`, and rate-limiting must be restricted strictly to mutative routes (`/api/contact`, `/api/newsletter`, `/api/telemetry`), completely bypassing static GET assets.
 - **Unified Maintenance Pipeline (Vercel Hobby 1-Cron Limit)**: Because Vercel Hobby permits strictly one cron job per day (`0 0 * * *`), all background tasks (telemetry buffer syncing, outbound email retries, and retention rollups) must be consolidated into a single time-budgeted maintenance route (`/api/cron/maintenance`) executing within $\le 8$ seconds. Sub-daily email retries may optionally use external event-driven webhooks via Upstash QStash.
 - **Sentry Quota & Noise Bounds**: `tracesSampleRate` must resolve dynamically to 0% in preview, development, and testing, and be clamped to $\le 5\%$ (0.05) in production. `beforeSend` filters must drop benign client noise (`AbortError`, `ResizeObserver loop limit exceeded`, browser extension errors) and strip all PII and authorization headers.
-- **External Agent Review Brief Standard**: All integration, devops, and feature tickets authored for review or execution by external AI agents (Claude Code, OpenAI) must include an explicit `## Agent Review Brief` specifying:
+- **Implementation Review Notes Standard**: All integration, devops, and feature tickets must include an explicit `## Review notes` section specifying:
   1. Exact file paths and symbols to inspect.
   2. Invariant boundaries (non-destructive execution, quota caps, environment namespacing).
   3. Actionable terminal verification commands (`npm test`, `npm run verify:*`, `npm run check-docs-drift`, `npm run quality`).

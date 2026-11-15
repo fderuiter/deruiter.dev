@@ -1,17 +1,13 @@
 import type {
   DebriefDimension,
-  DebriefReport,
   DimensionScore,
   IncidentDebriefResult,
   OetMetrics,
   PatrolEvent,
-  PatrolScenario,
   QualitativeObservation,
   ShiftDebriefSummary,
   ShiftPlayfulStats,
-  ShiftState,
 } from "./types";
-import { evaluateOETCompliance } from "./oet-engine";
 import { clamp } from "@/lib/game-utils";
 
 /**
@@ -1024,34 +1020,5 @@ export function compileShiftSummary(
     ),
     playfulStats: derivePlayfulStats(orderedEvents),
     chronologicalHighlights: buildChronologicalHighlights(orderedEvents),
-  };
-}
-
-/**
- * Legacy debrief report generator retained for backward compatibility with
- * existing container routes and the M1-era `DebriefReport` shape.
- */
-export function generateDebriefReport(
-  scenario: PatrolScenario,
-  shiftState: ShiftState
-): DebriefReport {
-  const oetResult = evaluateOETCompliance(
-    scenario,
-    shiftState.actionHistory,
-    shiftState.activeEvents
-  );
-
-  const rules = oetResult.evaluatedRules ?? scenario.debriefRules;
-  const passedRules = rules.filter((r) => r.passed);
-  const failedRules = rules.filter((r) => !r.passed);
-
-  return {
-    scenarioId: scenario.id,
-    totalTimeMinutes: shiftState.timeElapsedMinutes,
-    score: oetResult.score,
-    maxPossibleScore: 100,
-    passedRules,
-    failedRules,
-    summary: `Shift completed for ${scenario.title}. Performance score: ${oetResult.score}%. Actions taken: ${shiftState.actionHistory.length}.`,
   };
 }

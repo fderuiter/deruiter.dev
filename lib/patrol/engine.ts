@@ -50,48 +50,6 @@ export function createInitialShiftState(
 }
 
 /**
- * Legacy transition helper maintained for backward compatibility.
- */
-export function transitionShiftPhase(
-  currentState: ShiftState,
-  nextPhase: ShiftPhase
-): ShiftState {
-  return {
-    ...currentState,
-    phase: nextPhase,
-    isCompleted: nextPhase === "completed" || nextPhase === "SHIFT_COMPLETE",
-  };
-}
-
-/**
- * Legacy record action helper maintained for backward compatibility.
- */
-export function recordAction(
-  currentState: ShiftState,
-  action: ScenarioAction
-): ShiftState {
-  const timeIncrement = action.costMinutes ?? 1;
-  return {
-    ...currentState,
-    timeElapsedMinutes: currentState.timeElapsedMinutes + timeIncrement,
-    actionHistory: [...currentState.actionHistory, action],
-  };
-}
-
-/**
- * Legacy event push helper.
- */
-export function pushEvent(
-  currentState: ShiftState,
-  event: PatrolEvent
-): ShiftState {
-  return {
-    ...currentState,
-    activeEvents: [event, ...currentState.activeEvents],
-  };
-}
-
-/**
  * Verifies whether all prerequisites/preconditions for a scenario action are satisfied.
  */
 export function checkActionPreconditions(

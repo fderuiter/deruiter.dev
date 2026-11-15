@@ -397,30 +397,28 @@ export const CRFStudioContainer: React.FC = () => {
     { allowInInputs: true, allowInKeyboardBoundary: true }
   );
 
-  const isAnyStudioModalOpen = Boolean(
+  // Checked when a key is pressed, not during render: the focus-trap registry
+  // and the open-dialog query read live DOM state.
+  const isAnyStudioModalOpen = () =>
     isAnyFocusTrapActive() ||
-      isSlashPaletteOpen ||
-      isBaselinesModalOpen ||
-      isCompareModalOpen ||
-      isWizardOpen ||
-      isExportDocModalOpen ||
-      isFormCatalogOpen ||
-      isDiagnosticsOpen ||
-      isBrandingOpen ||
-      isReviewPackageOpen ||
-      isSpotlightTourOpen ||
-      isMobileWidgetDrawerOpen ||
-      isOmnibarOpen ||
-      isLibraryUpgradesOpen ||
-      Boolean(pendingStudyReplacement) ||
-      impactPendingDeletion !== null ||
-      (typeof document !== "undefined" &&
-        Boolean(
-          document.querySelector(
-            "dialog[open], [role='dialog'], [aria-modal='true']"
-          )
-        ))
-  );
+    isSlashPaletteOpen ||
+    isBaselinesModalOpen ||
+    isCompareModalOpen ||
+    isWizardOpen ||
+    isExportDocModalOpen ||
+    isFormCatalogOpen ||
+    isDiagnosticsOpen ||
+    isBrandingOpen ||
+    isReviewPackageOpen ||
+    isSpotlightTourOpen ||
+    isMobileWidgetDrawerOpen ||
+    isOmnibarOpen ||
+    isLibraryUpgradesOpen ||
+    Boolean(pendingStudyReplacement) ||
+    impactPendingDeletion !== null ||
+    document.querySelector(
+      "dialog[open], [role='dialog'], [aria-modal='true']"
+    ) !== null;
 
   const handleStudioShortcut = useCallback(
     (e: KeyboardEvent) => {
@@ -504,7 +502,7 @@ export const CRFStudioContainer: React.FC = () => {
     STUDIO_HOTKEYS,
     (e) => {
       // Suppress behind open dialogs/modals
-      if (isAnyStudioModalOpen) {
+      if (isAnyStudioModalOpen()) {
         return;
       }
 
@@ -533,9 +531,7 @@ export const CRFStudioContainer: React.FC = () => {
 
       // Must originate on the canvas area
       const isCanvasTarget = Boolean(
-        target.closest?.(
-          '[data-studio-canvas="true"], [data-testid="stub-FormCanvas"], .crf-canvas-area'
-        )
+        target.closest?.('[data-studio-canvas="true"], .crf-canvas-area')
       );
       if (!isCanvasTarget) {
         return;
@@ -546,7 +542,6 @@ export const CRFStudioContainer: React.FC = () => {
       if (MODE_BY_KEY[key]) {
         const isCanvasItself =
           target.getAttribute?.("data-studio-canvas") === "true" ||
-          target.getAttribute?.("data-testid") === "stub-FormCanvas" ||
           target.classList?.contains("crf-canvas-area") ||
           target.getAttribute?.("data-tour") === "canvas";
         const isButtonOrInteractive =

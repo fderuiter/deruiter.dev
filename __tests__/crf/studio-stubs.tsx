@@ -24,6 +24,9 @@ export function stubComponent(name: string) {
         {...(name === "FormTestDock"
           ? { "data-keyboard-boundary": "true" }
           : {})}
+        {...(name === "FormCanvas"
+          ? { "data-studio-canvas": "true", tabIndex: -1 }
+          : {})}
       >
         {Object.entries(props)
           .filter(([, value]) => typeof value === "function")

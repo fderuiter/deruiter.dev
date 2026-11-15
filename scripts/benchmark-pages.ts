@@ -28,6 +28,7 @@ import {
   type PrebuiltProduction,
 } from "../lib/dx/benchmark-runner";
 import { colors, formatHeader } from "../lib/dx/utils";
+import { compileRouteFilter, type RouteFilter } from "../lib/dx/route-filter";
 
 interface BenchmarkCliOptions {
   baseUrl: string;
@@ -35,7 +36,7 @@ interface BenchmarkCliOptions {
   assertBudget: boolean;
   isMobile: boolean;
   throttled: boolean;
-  routeFilter: string | null;
+  routeFilter: RouteFilter | null;
   outputDirectory: string;
   rebuild: boolean;
 }
@@ -211,13 +212,8 @@ function parseOptions(args: string[]): BenchmarkCliOptions | null {
     } else if (argument === "--throttled") {
       options.throttled = true;
     } else if (argument === "--routes") {
-      if (!next) throw new Error("--routes requires a pattern.");
-      try {
-        new RegExp(next, "i");
-      } catch {
-        throw new Error(`--routes must be a valid regular expression: ${next}`);
-      }
-      options.routeFilter = next;
+      if (next === undefined) throw new Error("--routes requires a pattern.");
+      options.routeFilter = compileRouteFilter(next);
       index++;
     } else if (argument === "--output") {
       if (!next) throw new Error("--output requires a directory.");
@@ -243,7 +239,7 @@ function parseOptions(args: string[]): BenchmarkCliOptions | null {
         `  --throttled        Emulate throttled mobile profile (4x CPU slowdown, 1.6 Mbps / 750 kbps, 150ms RTT)`
       );
       console.log(
-        `  --routes <pattern> Filter canonical routes by path or name`
+        `  --routes <pattern> Filter canonical routes by path or name: text, "." for any character, "^"/"$" anchors, "|" alternatives`
       );
       console.log(
         `  --assert, --budget Require fresh, clean, owned production evidence`
@@ -263,14 +259,15 @@ function parseOptions(args: string[]): BenchmarkCliOptions | null {
   return options;
 }
 
-function selectRoutes(routeFilter: string | null): PageBenchmarkRoute[] {
+function selectRoutes(routeFilter: RouteFilter | null): PageBenchmarkRoute[] {
   if (!routeFilter) return CANONICAL_ROUTES;
-  const expression = new RegExp(routeFilter, "i");
   const selected = CANONICAL_ROUTES.filter(
-    (route) => expression.test(route.path) || expression.test(route.name)
+    (route) => routeFilter.test(route.path) || routeFilter.test(route.name)
   );
   if (selected.length === 0)
-    throw new Error(`No routes matched filter '${routeFilter}'.`);
+    throw new Error(
+      `No routes matched filter ${JSON.stringify(routeFilter.source)}.`
+    );
   return selected;
 }
 

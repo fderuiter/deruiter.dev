@@ -85,6 +85,36 @@ describe("ExportDocumentModal Component", () => {
     expect(container.textContent).toContain("Export PDF (.pdf)");
   });
 
+  it("puts the downloads ahead of the consultation link (#3139)", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <ExportDocumentModal
+          study={ONCOLOGY_RECIST_PRESET}
+          activeFormId={ONCOLOGY_RECIST_PRESET.forms[0].id}
+          onClose={vi.fn()}
+          onOpenBranding={vi.fn()}
+        />
+      );
+    });
+
+    const controls = Array.from(
+      document.body.querySelectorAll("button, a")
+    ).map((el) => el.textContent?.trim() ?? "");
+    const word = controls.findIndex((t) => t.startsWith("Export Word"));
+    const pdf = controls.findIndex((t) => t.startsWith("Export PDF"));
+    const consult = controls.findIndex((t) => t === "Schedule Consultation");
+    expect(word).toBeGreaterThan(-1);
+    expect(pdf).toBeGreaterThan(word);
+    expect(consult).toBeGreaterThan(pdf);
+
+    const link = Array.from(document.body.querySelectorAll("a")).find(
+      (a) => a.textContent?.trim() === "Schedule Consultation"
+    );
+    expect(link?.getAttribute("href")).toBe("/schedule");
+    expect(link?.getAttribute("target")).toBe("_blank");
+  });
+
   it("switches document mode and triggers Word export without crashing", async () => {
     const handleClose = vi.fn();
     const handleOpenBranding = vi.fn();

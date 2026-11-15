@@ -137,7 +137,7 @@ describe("client forms validate against the shared route schemas (#1128)", () =>
     fireEvent.click(screen.getByRole("button", { name: /Send Message/i }));
 
     expect(await screen.findByTestId("contact-form-success")).toBeDefined();
-    const [url, init] = (global.fetch as FetchMock).mock.calls[0];
+    const [url, init] = (global.fetch as FetchMock).mock.calls[0]!;
     expect(url).toBe("/api/contact");
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body).toMatchObject({

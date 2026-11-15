@@ -35,9 +35,9 @@ describe("compile-docs TypeDoc invocation", () => {
     compileDocumentation("/workspace", "out", { strict: true });
 
     const [[, relaxed], [, strict]] = execFileSyncMock.mock.calls as [
-      string,
-      string[],
-    ][];
+      [string, string[]],
+      [string, string[]],
+    ];
     expect(relaxed).not.toContain("--treatWarningsAsErrors");
     expect(strict).toContain("--treatWarningsAsErrors");
     expect(strict.slice(-2)).toEqual(["--out", "out"]);

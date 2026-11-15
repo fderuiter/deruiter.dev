@@ -181,7 +181,7 @@ describe("checkArcadeThreeViews (#2845)", () => {
   });
 
   it("skips an allow-listed file, and reports the row once the file is clean", () => {
-    const [file, epic] = Object.entries(THREE_VIEW_ALLOWLIST)[0];
+    const [file, epic] = Object.entries(THREE_VIEW_ALLOWLIST)[0]!;
     const dirty = fixture({ [file]: "const phone = usePhone();\n" });
     expect(checkArcadeThreeViews(dirty).status).toBe("pass");
     const clean = fixture({ [file]: "export const View = () => null;\n" });

@@ -530,3 +530,188 @@ describe("useProofSession: theorem changes", () => {
     expect(result.current.isE_Proven).toBe(false);
   });
 });
+
+describe("useProofSession: history stack and undo/redo", () => {
+  it("starts with empty past and future stacks with canUndo and canRedo false", () => {
+    const { result } = setup();
+    expect(result.current.canUndo).toBe(false);
+    expect(result.current.canRedo).toBe(false);
+    expect(result.current.past).toEqual([]);
+    expect(result.current.future).toEqual([]);
+  });
+
+  it("records edge history, supports undo and redo, and triggers audio feedback", () => {
+    const { result, options } = setup();
+    act(() => result.current.connectNodes("C", "E"));
+    act(() => result.current.connectNodes("D", "E"));
+    expect(result.current.canUndo).toBe(true);
+    expect(result.current.canRedo).toBe(false);
+    expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE", "DE"]);
+
+    // Undo step 2
+    act(() => result.current.handleUndo());
+    expect(result.current.canUndo).toBe(true);
+    expect(result.current.canRedo).toBe(true);
+    expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE"]);
+    expect(options.feedback.playAutocomplete).toHaveBeenCalledTimes(1);
+    expect(lastLog(result.current).text).toBe("✔ Undid last proof step.");
+
+    // Undo step 1
+    act(() => result.current.handleUndo());
+    expect(result.current.canUndo).toBe(false);
+    expect(result.current.canRedo).toBe(true);
+    expect(edgePairs(result.current)).toEqual(["AC", "BC"]);
+    expect(options.feedback.playAutocomplete).toHaveBeenCalledTimes(2);
+
+    // Calling undo on empty stack does nothing
+    act(() => result.current.handleUndo());
+    expect(result.current.canUndo).toBe(false);
+
+    // Redo step 1
+    act(() => result.current.handleRedo());
+    expect(result.current.canUndo).toBe(true);
+    expect(result.current.canRedo).toBe(true);
+    expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE"]);
+    expect(options.feedback.playAutocomplete).toHaveBeenCalledTimes(3);
+    expect(lastLog(result.current).text).toBe("✔ Redid proof step.");
+
+    // Redo step 2
+    act(() => result.current.handleRedo());
+    expect(result.current.canUndo).toBe(true);
+    expect(result.current.canRedo).toBe(false);
+    expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE", "DE"]);
+
+    // Calling redo on empty future stack does nothing
+    act(() => result.current.handleRedo());
+    expect(result.current.canRedo).toBe(false);
+  });
+
+  it("truncates future redo stack when a new mutation occurs after undo", () => {
+    const { result } = setup();
+    act(() => result.current.connectNodes("C", "E"));
+    act(() => result.current.connectNodes("D", "E"));
+    act(() => result.current.handleUndo());
+    expect(result.current.canRedo).toBe(true);
+
+    // New edge mutation discards future stack
+    act(() => result.current.handleDeleteStep("C"));
+    expect(result.current.canRedo).toBe(false);
+    expect(result.current.future).toEqual([]);
+
+    act(() => result.current.handleRedo());
+    expect(result.current.canRedo).toBe(false);
+  });
+
+  it("enforces fifty-state limit on history stack", () => {
+    const { result } = setup();
+    for (let i = 0; i < 30; i++) {
+      act(() => {
+        result.current.connectByDrag("C", "E", "Inference");
+      });
+      act(() => {
+        result.current.handleDeleteStep("C");
+      });
+    }
+    // 30 pairs = 60 mutations, past must be capped at 50
+    expect(result.current.past.length).toBe(50);
+
+    // Can undo exactly 50 times
+    for (let i = 0; i < 50; i++) {
+      expect(result.current.canUndo).toBe(true);
+      act(() => result.current.handleUndo());
+    }
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("clears active fallacy diagnosis upon undo", () => {
+    const { result } = setup();
+    act(() => result.current.connectNodes("C", "E"));
+    act(() => result.current.connectNodes("A", "E")); // invalid connection produces fallacy
+    expect(result.current.currentFallacy).not.toBeNull();
+
+    act(() => result.current.handleUndo());
+    expect(result.current.currentFallacy).toBeNull();
+  });
+
+  it("resets both history stacks when resetting graph or switching theorems", () => {
+    const { result } = setup();
+    act(() => result.current.connectNodes("C", "E"));
+    expect(result.current.canUndo).toBe(true);
+
+    act(() => result.current.resetGraph(MP.initialEdges));
+    expect(result.current.canUndo).toBe(false);
+    expect(result.current.canRedo).toBe(false);
+    expect(result.current.past).toEqual([]);
+    expect(result.current.future).toEqual([]);
+  });
+
+  it("executes undo and redo from terminal commands", () => {
+    const { result } = setup();
+    act(() => result.current.runCommand("undo"));
+    expect(lastLog(result.current).text).toBe(
+      "Nothing to undo: history stack is empty."
+    );
+
+    act(() => result.current.runCommand("redo"));
+    expect(lastLog(result.current).text).toBe(
+      "Nothing to redo: future stack is empty."
+    );
+
+    act(() => result.current.connectNodes("C", "E"));
+    act(() => result.current.runCommand("undo"));
+    expect(lastLog(result.current).text).toBe("✔ Undid last proof step.");
+    expect(result.current.edges).toEqual(MP.initialEdges);
+
+    act(() => result.current.runCommand("redo"));
+    expect(lastLog(result.current).text).toBe("✔ Redid proof step.");
+    expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE"]);
+  });
+
+  it("treats rollback as an undoable mutation that undo can reverse", () => {
+    const { result } = setup();
+    act(() => result.current.connectNodes("C", "E"));
+    // Attempt invalid connection to trigger fallacy
+    act(() => result.current.connectNodes("A", "E"));
+    expect(result.current.currentFallacy).not.toBeNull();
+
+    // Rollback the invalid step
+    act(() => result.current.handleRollback());
+    expect(result.current.currentFallacy).toBeNull();
+    expect(result.current.canUndo).toBe(true);
+
+    // Undo should restore the state prior to rollback
+    act(() => result.current.handleUndo());
+    expect(result.current.edges).toEqual([
+      ...MP.initialEdges,
+      { source: "C", target: "E" },
+    ]);
+  });
+
+  it("executes rollback via terminal CLI and reports if no fallacy is active", () => {
+    const { result } = setup();
+    act(() => result.current.runCommand("rollback"));
+    expect(lastLog(result.current).text).toBe(
+      "No active fallacy diagnosis to roll back. Use 'undo' to reverse the last proof step."
+    );
+
+    act(() => result.current.connectNodes("A", "E")); // fallacy triggered
+    expect(result.current.currentFallacy).not.toBeNull();
+
+    act(() => result.current.runCommand("rollback"));
+    expect(result.current.currentFallacy).toBeNull();
+    expect(lastLog(result.current).text).toContain("[ROLLBACK]");
+  });
+
+  it("records apply rule and delete-step as undoable mutations using functional updates", () => {
+    const { result } = setup();
+    act(() => result.current.handleApplyRule("mp", ["C", "D"]));
+    expect(result.current.canUndo).toBe(true);
+    expect(result.current.edges.some((e) => e.target === "E")).toBe(true);
+
+    act(() => result.current.handleDeleteStep("C"));
+    expect(result.current.edges.some((e) => e.target === "C")).toBe(false);
+
+    act(() => result.current.handleUndo());
+    expect(result.current.edges.some((e) => e.target === "C")).toBe(true);
+  });
+});

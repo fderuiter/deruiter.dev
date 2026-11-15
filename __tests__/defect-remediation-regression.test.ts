@@ -3078,3 +3078,13 @@ describe("REDCap CSV parser HTML entity decoding regression (#3899)", () => {
     );
   });
 });
+
+describe("TypeDoc comment Markdown regression (#3791)", () => {
+  it("keeps the CdashVariableMetadata and withAgentsSection comments lint-valid", () => {
+    const read = (file: string) =>
+      fs.readFileSync(path.resolve(__dirname, "..", file), "utf-8");
+
+    expect(read("lib/crf/types.ts")).not.toMatch(/^\s*\* #\d/m);
+    expect(read("lib/dx/doctor.ts")).not.toContain("` (AGENTS.md section N)`");
+  });
+});

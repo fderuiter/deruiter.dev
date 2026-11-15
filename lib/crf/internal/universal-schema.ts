@@ -910,7 +910,7 @@ export function generateCliCommandForField(
  * The domain and the name each become one literal POSIX shell word through
  * the same serializer as the field command, so an imported form name cannot
  * run a substitution when the line is pasted into a shell (CodeQL alert 5,
- * #3814).
+ * issue 3814).
  */
 export function generateCliCommandForForm(form: CRFForm): string {
   return formatPosixCommand([

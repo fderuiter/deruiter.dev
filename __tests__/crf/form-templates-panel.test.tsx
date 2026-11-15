@@ -151,7 +151,7 @@ describe("FormTemplatesPanel", () => {
     render(<FormTemplatesPanel />);
     fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(downloadFile).toHaveBeenCalledTimes(1);
-    const [text, name] = vi.mocked(downloadFile).mock.calls[0];
+    const [text, name] = vi.mocked(downloadFile).mock.calls[0]!;
     expect(name).toBe("crf-form-templates.json");
     expect(JSON.parse(String(text)).templates).toHaveLength(1);
   });

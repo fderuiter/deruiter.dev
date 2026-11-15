@@ -701,4 +701,17 @@ describe("useProofSession: history stack and undo/redo", () => {
     expect(result.current.currentFallacy).toBeNull();
     expect(lastLog(result.current).text).toContain("[ROLLBACK]");
   });
+
+  it("records apply rule and delete-step as undoable mutations using functional updates", () => {
+    const { result } = setup();
+    act(() => result.current.handleApplyRule("mp", ["C", "D"]));
+    expect(result.current.canUndo).toBe(true);
+    expect(result.current.edges.some((e) => e.target === "E")).toBe(true);
+
+    act(() => result.current.handleDeleteStep("C"));
+    expect(result.current.edges.some((e) => e.target === "C")).toBe(false);
+
+    act(() => result.current.handleUndo());
+    expect(result.current.edges.some((e) => e.target === "C")).toBe(true);
+  });
 });

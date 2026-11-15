@@ -364,22 +364,21 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    const newEdges: Edge[] = nodeIds
-      .filter(
-        (source) =>
-          !edges.some(
-            (edge) => edge.source === source && edge.target === autoTarget.id
-          )
-      )
-      .map((source) => ({
-        source,
-        target: autoTarget.id,
-        ruleApplied: ruleId.toUpperCase(),
-      }));
-
-    if (newEdges.length > 0) {
-      applyEdgeMutation((prev) => [...prev, ...newEdges]);
-    }
+    applyEdgeMutation((prev) => {
+      const newEdges: Edge[] = nodeIds
+        .filter(
+          (source) =>
+            !prev.some(
+              (edge) => edge.source === source && edge.target === autoTarget.id
+            )
+        )
+        .map((source) => ({
+          source,
+          target: autoTarget.id,
+          ruleApplied: ruleId.toUpperCase(),
+        }));
+      return newEdges.length > 0 ? [...prev, ...newEdges] : prev;
+    });
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
     toast(`✔ ${ruleResult.explanation}`, "success", { announce: false });
@@ -437,7 +436,10 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    applyEdgeMutation(result.newEdges);
+    applyEdgeMutation((prev) => {
+      const liveResult = pruneStepOrNode(stepOrNode, prev, theorem);
+      return liveResult.success ? liveResult.newEdges : prev;
+    });
     setCurrentFallacy(null);
     toast(`✔ ${result.reason}`, "info", { announce: false });
     announce(result.reason);

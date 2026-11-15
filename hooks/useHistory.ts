@@ -43,7 +43,10 @@ function historyReducer<T>(
         typeof action.updater === "function"
           ? (action.updater as (prev: T) => T)(state.present)
           : action.updater;
-      if (action.isEqual && action.isEqual(state.present, nextPresent)) {
+      if (
+        state.present === nextPresent ||
+        (action.isEqual && action.isEqual(state.present, nextPresent))
+      ) {
         return state;
       }
       return {
@@ -57,7 +60,10 @@ function historyReducer<T>(
         typeof action.updater === "function"
           ? (action.updater as (prev: T) => T)(state.present)
           : action.updater;
-      if (action.isEqual && action.isEqual(state.present, nextPresent)) {
+      if (
+        state.present === nextPresent ||
+        (action.isEqual && action.isEqual(state.present, nextPresent))
+      ) {
         return state;
       }
       return {

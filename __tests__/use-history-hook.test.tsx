@@ -120,4 +120,11 @@ describe("useHistory", () => {
     expect(result.current.past).toEqual([]);
     expect(result.current.canUndo).toBe(false);
   });
+
+  it("ignores no-op commits when updater returns referentially equal present state", () => {
+    const { result } = renderHook(() => useHistory(["a", "b"]));
+    act(() => result.current.set((prev) => prev));
+    expect(result.current.past).toEqual([]);
+    expect(result.current.canUndo).toBe(false);
+  });
 });

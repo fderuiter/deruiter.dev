@@ -102,12 +102,12 @@ export const CLINICAL_CHAOS_MANUAL: FieldManualData = {
     "Charge your 'FDA Coffee Break' lifeline by maintaining clean submission streaks; deploy it when auditor suspicion climbs above 70%.",
     `Switch to the Live SDTM Studio tab during shifts to inspect generated observation rows and export authentic CDISC ${standardCitation("ODM")} XML.`,
     "Notice how each CRF is signed and where it goes: the Phase 3 inspector asks about the records you locked, and three wrong answers add a Major finding for an incomplete audit trail.",
-    "Toggle the procedural 8-bit synth BGM to hear dynamic tempo scaling as auditor scrutiny intensifies.",
+    "Toggle the procedural 8-bit synth music. Its tempo rises as auditor scrutiny goes up.",
   ],
   lore: {
     title: "Biotech Data Governance & Regulatory Lifecycles",
     story:
-      "Bringing a novel therapeutic drug or medical device from Phase I trials through FDA/EMA approval requires processing millions of patient data points under strict federal regulations. CDISC standards (SDTM, ADaM, and ODM) ensure universal semantic interoperability, while FDA 21 CFR Part 11 guarantees that electronic records have the identical legal standing and auditability as traditional paper records.",
+      "Taking a new drug or medical device from Phase I trials through FDA or EMA approval means handling millions of patient data points under federal regulation. CDISC standards (SDTM, ADaM and ODM) give that data a shared structure, and FDA 21 CFR Part 11 sets the rules under which electronic records can stand in for paper ones.",
     realWorldTech: [
       "CDISC SDTM / ADaM / ODM",
       "FDA 21 CFR Part 11",

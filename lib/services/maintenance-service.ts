@@ -75,15 +75,18 @@ async function runBoundedPhase(
     return { status: "skipped", durationMs: 0, counts: {} };
   }
 
+  // Promise.race stops waiting at the deadline; it does not cancel `task`.
+  // A timed-out phase may still be writing, so its outcome and counts are
+  // unknown, and each adapter must be safe to replay on the next run (#3809).
+  // The deadline is recognized by this sentinel, not by the clock, so a
+  // phase's own late error still reads as failed.
+  const deadlineError = new Error(`${name} phase exceeded its deadline`);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
       task(),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`${name} phase exceeded its deadline`)),
-          remainingMs
-        );
+        timer = setTimeout(() => reject(deadlineError), remainingMs);
         timer.unref?.();
       }),
     ]);
@@ -109,7 +112,7 @@ async function runBoundedPhase(
   } catch (error) {
     // Deadline rejections, and throws from reads that are not on
     // ServiceResult (the email queue health query).
-    const timedOut = clock() >= deadlineAt - RESPONSE_RESERVE_MS;
+    const timedOut = error === deadlineError;
     logger.warn(`[maintenance:${name}] ${errorMessage(error)}`, error, {
       maintenancePhase: name,
     });

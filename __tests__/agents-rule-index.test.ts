@@ -22,6 +22,22 @@ describe("AGENTS.md rule index (#3495)", () => {
     expect(agents).toContain("<!-- END:nextjs-agent-rules -->");
   });
 
+  it("matches the block the installed next dev writes, so dev leaves git clean (#3191)", async (context) => {
+    let generator:
+      { hasCurrentAgentRules: (dir: string) => boolean } | undefined;
+    try {
+      generator = await import("next/dist/server/lib/generate-agent-files.js");
+    } catch {
+      context.skip(
+        "node_modules/next is missing; install dependencies to check the block"
+      );
+    }
+    expect(
+      generator!.hasCurrentAgentRules(path.resolve(__dirname, "..")),
+      "AGENTS.md's managed block differs from what next dev writes. Run next dev once and commit AGENTS.md; never hand-edit the block."
+    ).toBe(true);
+  });
+
   it("keeps sections 1 to 22 in AGENTS.md and in docs/agents/invariants", () => {
     for (const n of SECTIONS) {
       const title = agents.match(new RegExp(`^### ${n}\\. (.+)$`, "m"))?.[1];

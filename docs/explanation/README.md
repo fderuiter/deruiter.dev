@@ -39,6 +39,12 @@ an audit if the two disagree.
 - [Product excellence evaluation](audits/product-excellence-evaluation.md),
   a point-in-time product opportunity catalog.
 
+## Session state
+
+- [Pause and phase invariants for legacy session flags](session-pause-and-phase-invariants.md),
+  which flag owns which fact in the Clinical Trial Chaos, Laser Loon and
+  Patrol sessions, and how each resets.
+
 ## Case studies
 
 - [InBody QR decoder case study](inbody-qr-decoder-case-study.md), the InBody

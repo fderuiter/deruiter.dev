@@ -33,6 +33,9 @@ RESEND_FROM_EMAIL="Your Name <notifications@yourdomain.com>"
 - **`RESEND_WEBHOOK_SECRET`**: the signing secret Resend gives you when you
   create a webhook endpoint (see step 3). It's a Svix signing secret
   (`whsec_...`), not a Resend API key.
+- **`CONTACT_NOTIFICATION_EMAIL`** (optional): the address that receives
+  contact-form notifications. It has a default, so leave it unset unless the
+  notifications should go somewhere else.
 
 Validate the file against the declared contract:
 

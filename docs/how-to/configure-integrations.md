@@ -232,6 +232,9 @@ curl -X POST http://localhost:3000/api/telemetry \
   [Vercel Cron Jobs docs](https://vercel.com/docs/cron-jobs)). Set
   `CRON_SECRET` in the Vercel project's environment variables to a strong
   random value.
+- **App URL**: `NEXT_PUBLIC_APP_URL` is optional. Leave it unset in
+  Production, where the site falls back to `https://deruiter.dev`. If it is
+  set, it must be exactly that value.
 - **Analytics**: `@vercel/analytics/next`'s `<Analytics />` component is
   already mounted in [`app/layout.tsx`](../../app/layout.tsx); Vercel
   Analytics requires no additional environment variable, only that

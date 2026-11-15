@@ -152,11 +152,20 @@ async function runLevel(
           offline.status === "configured"
         ) {
           if (adapter.probe) {
-            result = await adapter.probe({
-              values,
-              fetch: options.fetch,
-              timeoutMs: options.probeTimeoutMs ?? 8000,
-            });
+            // A probe that throws must not abort the other providers' checks
+            // or leak its error text, which can echo a credential (#3609).
+            try {
+              result = await adapter.probe({
+                values,
+                fetch: options.fetch,
+                timeoutMs: options.probeTimeoutMs ?? 8000,
+              });
+            } catch {
+              result = {
+                status: "failed",
+                detail: "The live check stopped before it reported a status.",
+              };
+            }
           }
         }
         checks.push({

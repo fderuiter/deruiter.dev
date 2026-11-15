@@ -7,6 +7,9 @@ import { useHistory } from "@/hooks/useHistory";
 /** Undo keeps this many earlier versions of the study, plus the one being replaced. */
 const HISTORY_LIMIT = 20;
 
+/** Every commit is its own undo step, even when it leaves the study unchanged. */
+const neverEqual = () => false;
+
 /**
  * The study being authored, its undo and redo stacks, and the baseline it is
  * compared against to decide whether the draft has unsaved changes.
@@ -14,34 +17,36 @@ const HISTORY_LIMIT = 20;
 export function useStudyHistory(initialStudy: () => StudyProtocol) {
   const history = useHistory<StudyProtocol>(initialStudy, {
     capacity: HISTORY_LIMIT + 1,
+    isEqual: neverEqual,
   });
+  const { commit: commitStep, reset: resetHistory } = history;
   const [baselineStudy, setBaselineStudy] = useState<StudyProtocol>(
     history.state
   );
 
   const commit = useCallback(
     (newStudy: StudyProtocol) => {
-      history.commit(newStudy);
+      commitStep(newStudy);
     },
-    [history]
+    [commitStep]
   );
 
   /** Loads another study as one undoable step and makes it the new baseline. */
   const replace = useCallback(
     (target: StudyProtocol) => {
       setBaselineStudy(target);
-      history.commit(target);
+      commitStep(target);
     },
-    [history]
+    [commitStep]
   );
 
   /** Starts over from a study: no undo, no redo, and it becomes the baseline. */
   const reset = useCallback(
     (target: StudyProtocol) => {
-      history.reset(target);
+      resetHistory(target);
       setBaselineStudy(target);
     },
-    [history]
+    [resetHistory]
   );
 
   return {

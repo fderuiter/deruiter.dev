@@ -11,7 +11,10 @@ export interface HistoryState<T> {
 export interface UseHistoryOptions<T> {
   /** Maximum number of previous states to retain in the past stack (default: 50). */
   capacity?: number;
-  /** Custom equality function to avoid pushing duplicate states when a mutation produces identical output. */
+  /**
+   * Decides when a change is a no-op that records nothing. Defaults to
+   * `Object.is`, so an updater that returns the same value adds no undo step.
+   */
   isEqual?: (a: T, b: T) => boolean;
 }
 
@@ -22,12 +25,12 @@ type HistoryAction<T> =
       type: "COMMIT";
       updater: HistoryUpdater<T>;
       capacity: number;
-      isEqual?: (a: T, b: T) => boolean;
+      isEqual: (a: T, b: T) => boolean;
     }
   | {
       type: "SET_PRESENT";
       updater: HistoryUpdater<T>;
-      isEqual?: (a: T, b: T) => boolean;
+      isEqual: (a: T, b: T) => boolean;
     }
   | { type: "UNDO"; capacity: number }
   | { type: "REDO"; capacity: number }
@@ -43,12 +46,7 @@ function historyReducer<T>(
         typeof action.updater === "function"
           ? (action.updater as (prev: T) => T)(state.present)
           : action.updater;
-      if (
-        state.present === nextPresent ||
-        (action.isEqual && action.isEqual(state.present, nextPresent))
-      ) {
-        return state;
-      }
+      if (action.isEqual(state.present, nextPresent)) return state;
       return {
         past: [...state.past.slice(-(action.capacity - 1)), state.present],
         present: nextPresent,
@@ -61,8 +59,8 @@ function historyReducer<T>(
           ? (action.updater as (prev: T) => T)(state.present)
           : action.updater;
       if (
-        state.present === nextPresent ||
-        (action.isEqual && action.isEqual(state.present, nextPresent))
+        Object.is(state.present, nextPresent) ||
+        action.isEqual(state.present, nextPresent)
       ) {
         return state;
       }
@@ -109,7 +107,7 @@ export function useHistory<T>(
   options?: UseHistoryOptions<T>
 ) {
   const capacity = options?.capacity ?? 50;
-  const isEqual = options?.isEqual;
+  const isEqual = options?.isEqual ?? Object.is;
 
   const [state, dispatch] = useReducer(
     historyReducer<T>,

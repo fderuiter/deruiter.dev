@@ -4,7 +4,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { checkDocumentationDrift } from "../scripts/documentation-drift";
-import { checkLlmsManifestsDrift } from "../lib/dx/doctor";
+import {
+  checkLlmsManifestsDrift,
+  checkDocumentationIndexParity,
+} from "../lib/dx/doctor";
 import { buildLlmsManifests } from "../scripts/generate-llms-txt";
 import {
   checkDrift,
@@ -33,6 +36,7 @@ function passingDependencies(): DriftCheckDependencies {
     checkPublicRoutes: () => ({ status: "pass", details: [] }),
     checkTechnicalGuides: () => ({ status: "pass", details: [] }),
     checkLlmsManifests: () => ({ status: "pass", details: [] }),
+    checkDocumentationIndex: () => ({ status: "pass", details: [] }),
   };
 }
 
@@ -171,6 +175,26 @@ describe("documentation drift checking", () => {
     );
     error.mockRestore();
   });
+
+  it("reports documentation index parity drift with exit code 1 in checkDrift", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const dependencies = passingDependencies();
+    dependencies.checkDocumentationIndex = () => ({
+      status: "fail",
+      details: [
+        "Unindexed markdown file: docs/how-to/new-guide.md. Missing inbound link from docs/README.md or quadrant index.",
+      ],
+    });
+
+    expect(checkDrift("/workspace", dependencies)).toBe(1);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining("Documentation index parity drift detected:")
+    );
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining("docs/how-to/new-guide.md")
+    );
+    error.mockRestore();
+  });
 });
 
 describe("LLM discovery manifests drift checking", () => {
@@ -259,6 +283,174 @@ describe("LLM discovery manifests drift checking", () => {
   });
 });
 
+describe("documentation index parity checking", () => {
+  it("passes when all markdown files are indexed in docs/README.md", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(
+      path.join(docs, "README.md"),
+      "# Documentation\n\n- [Reference](reference.md)\n",
+      "utf8"
+    );
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("pass");
+  });
+
+  it("fails when an unindexed markdown file exists in docs/", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(path.join(docs, "README.md"), "# Documentation\n", "utf8");
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(result.details?.some((d) => d.includes("docs/reference.md"))).toBe(
+      true
+    );
+  });
+
+  it("ignores auto-generated TypeDoc files in docs/reference/api/", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(
+      path.join(docs, "README.md"),
+      "# Documentation\n\n- [Reference](reference.md)\n",
+      "utf8"
+    );
+    const apiDir = path.join(docs, "reference", "api");
+    fs.mkdirSync(apiDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(apiDir, "generated.md"),
+      "# Generated\n",
+      "utf8"
+    );
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("pass");
+  });
+
+  it("ignores internal agent invariant documents covered by local directory index", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(
+      path.join(docs, "README.md"),
+      "# Documentation\n\n- [Reference](reference.md)\n",
+      "utf8"
+    );
+    const invariantsDir = path.join(docs, "agents", "invariants");
+    fs.mkdirSync(invariantsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(invariantsDir, "README.md"),
+      "# Invariants\n\n- [Rules](rules.md)\n",
+      "utf8"
+    );
+    fs.writeFileSync(path.join(invariantsDir, "rules.md"), "# Rules\n", "utf8");
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("pass");
+  });
+
+  it("fails when an internal agent invariant document is not indexed locally", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(
+      path.join(docs, "README.md"),
+      "# Documentation\n\n- [Reference](reference.md)\n",
+      "utf8"
+    );
+    const invariantsDir = path.join(docs, "agents", "invariants");
+    fs.mkdirSync(invariantsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(invariantsDir, "README.md"),
+      "# Invariants\n",
+      "utf8"
+    );
+    fs.writeFileSync(
+      path.join(invariantsDir, "unindexed-rule.md"),
+      "# Unindexed\n",
+      "utf8"
+    );
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(result.details?.some((d) => d.includes("unindexed-rule.md"))).toBe(
+      true
+    );
+  });
+
+  it("reports failure when reading an index file fails", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(path.join(docs, "README.md"), "# Documentation\n", "utf8");
+    const readSpy = vi
+      .spyOn(fs, "readFileSync")
+      .mockImplementation((file, ...args) => {
+        if (String(file).endsWith("README.md")) {
+          throw new Error("EACCES: permission denied");
+        }
+        return Reflect.apply(fs.readFileSync, fs, [file, ...args]);
+      });
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(
+      result.details?.some(
+        (d) =>
+          d.includes("Failed to read index file") &&
+          d.includes("permission denied")
+      )
+    ).toBe(true);
+    readSpy.mockRestore();
+  });
+
+  it("reports failure when scanning a directory fails", () => {
+    const { root } = createFixture();
+    const readdirSpy = vi
+      .spyOn(fs, "readdirSync")
+      .mockImplementation((dir, ...args) => {
+        if (String(dir).includes("docs")) {
+          throw new Error("EACCES: permission denied");
+        }
+        return Reflect.apply(fs.readdirSync, fs, [dir, ...args]);
+      });
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(
+      result.details?.some(
+        (d) =>
+          d.includes("Failed to read directory") &&
+          d.includes("permission denied")
+      )
+    ).toBe(true);
+    readdirSpy.mockRestore();
+  });
+
+  it("reports failure when stating a linked target fails", () => {
+    const { root, docs } = createFixture();
+    fs.writeFileSync(
+      path.join(docs, "README.md"),
+      "# Documentation\n\n- [Sub](sub)\n",
+      "utf8"
+    );
+    const subDir = path.join(docs, "sub");
+    fs.mkdirSync(subDir, { recursive: true });
+    fs.writeFileSync(path.join(subDir, "README.md"), "# Sub\n", "utf8");
+
+    const statSpy = vi
+      .spyOn(fs, "statSync")
+      .mockImplementation((target, ...args) => {
+        if (String(target).endsWith("sub")) {
+          throw new Error("EIO: i/o error");
+        }
+        return Reflect.apply(fs.statSync, fs, [target, ...args]);
+      });
+
+    const result = checkDocumentationIndexParity(root);
+    expect(result.status).toBe("fail");
+    expect(
+      result.details?.some(
+        (d) => d.includes("Failed to stat path") && d.includes("EIO: i/o error")
+      )
+    ).toBe(true);
+    statSpy.mockRestore();
+  });
+});
+
 /**
  * The remedy used to read "regenerate only stale references", naming no
  * command. Every public-export change then cost two full pre-commit cycles:
@@ -275,6 +467,12 @@ describe("Drift remedy guidance", () => {
     const remedy = formatDriftRemedy(["llms-manifests"]);
     expect(remedy).toContain("npm run generate:llms");
     expect(remedy).toContain("public/llms.txt");
+  });
+
+  it("names the documentation index guidance for index parity drift", () => {
+    const remedy = formatDriftRemedy(["docs-index-parity"]);
+    expect(remedy).toContain("docs/README.md");
+    expect(remedy).toContain("npm run check-docs-drift");
   });
 
   it("never offers to regenerate authored documentation", () => {

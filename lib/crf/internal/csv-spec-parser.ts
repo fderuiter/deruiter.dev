@@ -1,6 +1,7 @@
 /**
  * CSV Study Specification Parser
  * Converts structured CSV study specification rows into CRF Studio StudyProtocol.
+ * Also delegates to REDCap Data Dictionary parser when a REDCap dialect CSV is detected.
  */
 
 import {
@@ -11,6 +12,30 @@ import {
   ClinicalDataType,
   CdashVariableMetadata,
 } from "../types";
+import {
+  isRedcapHeader,
+  isRedcapCsv,
+  detectCsvDialect,
+  importStudyFromRedcapCsv,
+  stripHtmlAndEntities,
+  REQUIRED_REDCAP_HEADERS,
+} from "./redcap-dictionary";
+
+export {
+  isRedcapHeader,
+  isRedcapCsv,
+  detectCsvDialect,
+  importStudyFromRedcapCsv,
+  stripHtmlAndEntities,
+  REQUIRED_REDCAP_HEADERS,
+};
+
+function stripBom(text: string): string {
+  if (text && text.charCodeAt(0) === 0xfeff) {
+    return text.slice(1);
+  }
+  return text;
+}
 
 function parseCsvRows(text: string): string[][] {
   const lines: string[][] = [];
@@ -79,18 +104,7 @@ function normalizeDataType(rawType: string): ClinicalDataType {
   return "text";
 }
 
-export function importStudyFromCsvSpec(csvContent: string): StudyProtocol {
-  if (!csvContent || typeof csvContent !== "string" || !csvContent.trim()) {
-    throw new Error("Invalid CSV specification: Empty file content");
-  }
-
-  const rows = parseCsvRows(csvContent);
-  if (rows.length < 2) {
-    throw new Error(
-      "Invalid CSV specification: Insufficient rows (header and data required)"
-    );
-  }
-
+function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
   const header = rows[0].map((h) => h.toLowerCase());
 
   let domainIdx = header.findIndex((h) => h.includes("domain"));
@@ -235,4 +249,29 @@ export function importStudyFromCsvSpec(csvContent: string): StudyProtocol {
       importedBy: "Unverified Session",
     },
   };
+}
+
+/**
+ * Imports a StudyProtocol from raw CSV content.
+ * Automatically detects whether the CSV matches Vanderbilt REDCap data dictionary
+ * format or CDISC CSV study specification format.
+ */
+export function importStudyFromCsvSpec(csvContent: string): StudyProtocol {
+  if (!csvContent || typeof csvContent !== "string" || !csvContent.trim()) {
+    throw new Error("Invalid CSV specification: Empty file content");
+  }
+
+  const clean = stripBom(csvContent.trim());
+  const rows = parseCsvRows(clean);
+  if (rows.length < 2) {
+    throw new Error(
+      "Invalid CSV specification: Insufficient rows (header and data required)"
+    );
+  }
+
+  if (isRedcapHeader(rows[0])) {
+    return importStudyFromRedcapCsv(clean);
+  }
+
+  return parseCdiscCsvRows(rows);
 }

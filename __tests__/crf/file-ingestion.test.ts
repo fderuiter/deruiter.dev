@@ -42,6 +42,22 @@ describe("CRF Studio - File Ingestion & Format Signature Detection", () => {
     expect(result.study.forms.length).toBe(1);
   });
 
+  it("detects and parses REDCap CSV data dictionary files with appropriate label", () => {
+    const redcapCsv = `"Variable / Field Name","Form Name","Section Header","Field Type","Field Label","Choices, Calculations, OR Slider Labels","Field Note","Text Validation Type OR Show Slider Number","Text Validation Min","Text Validation Max","Identifier?","Branching Logic (Show field only if...)","Required?","Custom Alignment","Question Number (surveys only)","Matrix Group Name","Matrix Ranking?","Field Annotation"
+"record_id","demographics","Subject Info","text","Record ID",,,,,,,,"y",,,,
+"gender","demographics",,"radio","Gender","1, Male | 2, Female",,,,,,,,"y",,,,`;
+    const result = detectAndParseStudyFile(
+      redcapCsv,
+      "redcap_dictionary.csv",
+      redcapCsv.length
+    );
+
+    expect(result.format).toBe("csv_redcap");
+    expect(result.formatLabel).toBe("REDCap CSV Data Dictionary");
+    expect(result.study.forms.length).toBe(1);
+    expect(result.study.forms[0].name).toBe("Demographics");
+  });
+
   it("enforces maximum 50MB file size constraint", () => {
     const oversizeBytes = 51 * 1024 * 1024;
     expect(() =>

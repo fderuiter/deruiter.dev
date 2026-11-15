@@ -71,7 +71,7 @@ export type UniversalCodelist = z.infer<typeof CodelistDefinitionSchema>;
 
 // 3. CDASH & SDTM Metadata
 export const CdashVariableMetadataSchema = z.object({
-  domain: z.string().min(1).max(8),
+  domain: z.string().max(8).default(""),
   sdtmVariable: z.string().min(1).max(8),
   cdashLabel: z.string().min(1),
   nciConceptId: z.string().optional(),
@@ -310,7 +310,7 @@ export type UniversalCrfSection = z.infer<typeof UniversalCrfSectionSchema>;
 export const UniversalCrfFormSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  domain: z.string().min(1).max(8),
+  domain: z.string().max(8).default(""),
   description: z.string().default(""),
   version: z.string().default("1.0"),
   sections: z.array(UniversalCrfSectionSchema).default([]),
@@ -319,6 +319,7 @@ export const UniversalCrfFormSchema = z.object({
   isLocked: z.boolean().optional(),
   lockedBy: z.string().optional(),
   lockedAt: z.string().optional(),
+  needsReview: z.boolean().optional(),
 });
 export type UniversalCrfForm = z.infer<typeof UniversalCrfFormSchema>;
 
@@ -904,10 +905,22 @@ export function generateCliCommandForField(
 }
 
 /**
- * Generates the CLI subcommand string to scaffold a form via terminal
+ * Generates the CLI subcommand string to scaffold a form via terminal.
+ *
+ * The domain and the name each become one literal POSIX shell word through
+ * the same serializer as the field command, so an imported form name cannot
+ * run a substitution when the line is pasted into a shell (CodeQL alert 5,
+ * #3814).
  */
 export function generateCliCommandForForm(form: CRFForm): string {
-  return `crf add form ${form.domain} --name "${form.name.replace(/"/g, '\\"')}"`;
+  return formatPosixCommand([
+    "crf",
+    "add",
+    "form",
+    form.domain,
+    "--name",
+    form.name,
+  ]);
 }
 
 // 12. Protocol Semantic Diff Engine

@@ -52,3 +52,18 @@ application reads those files. Decided by the owner on 2026-10-26 (#2991).
 - The check no longer compares generated pages, so the literal-union
   normalisation from #951 (`scripts/docs-union-order.ts`) is removed.
 - `openapi.json` stays committed, with its 100% route-coverage check.
+
+## Amendment 2026-11-14: Documentation index parity is a hard gate
+
+Adding documentation guides without discoverable inbound navigation links in root or quadrant
+indexes causes documentation fragmentation. `scripts/check-drift.ts` (invoked via pre-commit
+and `npm run check-docs-drift` in CI) now enforces documentation index parity as a hard gate (#3930, #3900).
+
+- Every authored markdown guide in `docs/` must have an inbound index link in root `docs/README.md`
+  or quadrant/local `README.md` index files.
+- Internal agent invariant documents under `docs/agents/invariants/` must be indexed in
+  `docs/agents/invariants/README.md`.
+- Auto-generated TypeDoc files in `docs/reference/api/` and agent-tooling documentation outside
+  Diátaxis quadrants are excluded.
+- Any unindexed documentation guide or filesystem failure encountered while checking index parity
+  fails `check-drift` with exit code 1 and actionable remediation instructions.

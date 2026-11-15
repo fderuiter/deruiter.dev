@@ -6,6 +6,8 @@ digest, and `__tests__/ci-toolchain-pinning.test.ts` fails when an image tag
 differs from the locked `@playwright/test` version. A Dependabot bump of
 either one fails until you make the other match.
 
+## Steps
+
 1. Bump the package on a branch cut from `main`:
 
    ```bash
@@ -50,6 +52,8 @@ either one fails until you make the other match.
    records with no `resolved` URL or integrity) are skipped, so they no
    longer need a manual fix. A shipped entry without them still fails. See
    [Manage dependency licenses](manage-dependency-licenses.md).
+
+## Cloud sessions
 
 Cloud sessions run Playwright against the Chromium preinstalled in the
 container, not the image. See

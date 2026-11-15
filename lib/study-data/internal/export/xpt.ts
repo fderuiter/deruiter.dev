@@ -19,7 +19,7 @@
  *   the last record. Pipeline datasets always carry `STUDYID`, so they never
  *   end with such a row.
  *
- * The dataset label carries the synthetic-data notice as a `Synthetic: `
+ * The dataset label carries the synthetic-data notice as a `"Synthetic: "`
  * prefix, the only free-text field a v5 member has.
  */
 import type { Dataset, Finding } from "../../types";

@@ -111,17 +111,23 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
     const fieldEl = document.querySelector(`[data-field-id="${fieldId}"]`);
     if (!fieldEl) return;
 
-    const preferredAriaLabel =
-      direction === "up" ? "Move Field Up" : "Move Field Down";
-    const fallbackAriaLabel =
-      direction === "up" ? "Move Field Down" : "Move Field Up";
+    const preferredAction = direction === "up" ? "move-up" : "move-down";
+    const fallbackAction = direction === "up" ? "move-down" : "move-up";
 
-    const preferredBtn = fieldEl.querySelector<HTMLButtonElement>(
-      `button[aria-label="${preferredAriaLabel}"]`
-    );
-    const fallbackBtn = fieldEl.querySelector<HTMLButtonElement>(
-      `button[aria-label="${fallbackAriaLabel}"]`
-    );
+    const preferredBtn =
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[data-action="${preferredAction}"]`
+      ) ??
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[aria-label="${direction === "up" ? "Move Field Up" : "Move Field Down"}"]`
+      );
+    const fallbackBtn =
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[data-action="${fallbackAction}"]`
+      ) ??
+      fieldEl.querySelector<HTMLButtonElement>(
+        `button[aria-label="${direction === "up" ? "Move Field Down" : "Move Field Up"}"]`
+      );
 
     if (preferredBtn && !preferredBtn.disabled) {
       preferredBtn.focus();

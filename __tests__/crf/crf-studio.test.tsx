@@ -573,17 +573,25 @@ describe("CRFStudioContainer Component", () => {
     expect(
       firstField.querySelectorAll('button[aria-label="Move Field Down"]').length
     ).toBe(1);
+    expect(
+      firstField.querySelectorAll('button[data-action="move-up"]').length
+    ).toBe(1);
+    expect(
+      firstField.querySelectorAll('button[data-action="move-down"]').length
+    ).toBe(1);
 
     // In the responsive actions bar, find Move Up and Move Down buttons
     const firstMoveUp = firstField.querySelector(
-      'button[aria-label="Move Field Up"]'
+      'button[data-action="move-up"]'
     ) as HTMLButtonElement;
     const firstMoveDown = firstField.querySelector(
-      'button[aria-label="Move Field Down"]'
+      'button[data-action="move-down"]'
     ) as HTMLButtonElement;
 
     expect(firstMoveUp).toBeTruthy();
     expect(firstMoveDown).toBeTruthy();
+    expect(firstMoveUp.getAttribute("aria-label")).toBe("Move Field Up");
+    expect(firstMoveDown.getAttribute("aria-label")).toBe("Move Field Down");
 
     // First field in a section disables Move Up, but Move Down is enabled
     expect(firstMoveUp.disabled).toBe(true);

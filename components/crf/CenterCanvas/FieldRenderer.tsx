@@ -256,7 +256,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
           {/* Responsive Action Buttons (Single Pair of Move Buttons) */}
           <div
-            className={`flex sm:flex items-center gap-0.5 transition-opacity ${
+            className={`flex items-center gap-0.5 transition-opacity ${
               isSelected
                 ? "opacity-100"
                 : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
@@ -265,6 +265,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             {onMoveUp && (
               <button
                 type="button"
+                data-action="move-up"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMoveUp();
@@ -280,6 +281,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             {onMoveDown && (
               <button
                 type="button"
+                data-action="move-down"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMoveDown();

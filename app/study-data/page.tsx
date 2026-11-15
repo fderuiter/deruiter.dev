@@ -3,6 +3,7 @@ import { StudyPicker } from "@/components/clinical/StudyPicker";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
+import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
 import {
   toDefinitionCounts,
@@ -70,9 +71,11 @@ export default function StudyDataPage() {
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
         <Breadcrumbs path="/study-data" className="mb-6" />
         <ClinicalJourneyNav path="/study-data" variant="compact" />
-        <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
-          Clinical systems / Study data
-        </p>
+        <JourneyStepLabel
+          path="/study-data"
+          fallback="Study Data Pipeline"
+          className="mt-8"
+        />
         <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           Study Data Pipeline
         </h1>
@@ -124,7 +127,7 @@ export default function StudyDataPage() {
         className="border-t border-white/[0.08] py-12 sm:py-16"
       >
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-amber-400">
-          Standards / 05
+          Standards
         </p>
         <h2
           id="versions-title"

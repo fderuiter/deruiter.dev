@@ -61,6 +61,7 @@ import {
   autoFixAllViolations,
   exportStudyToCdiscOdmXml,
   exportStudyToSas,
+  importStudyFromCsvSpec,
 } from "@/lib/crf";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
@@ -3056,5 +3057,24 @@ describe("Study data pipeline disposal rejects pending requests (#3798)", () => 
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("REDCap CSV parser HTML entity decoding regression (#3899)", () => {
+  it("prevents double-unescaping of HTML entities in labels and notes", () => {
+    const csvContent = `"Variable / Field Name","Form Name","Section Header","Field Type","Field Label","Choices, Calculations, OR Slider Labels","Field Note","Text Validation Type OR Show Slider Number","Text Validation Min","Text Validation Max","Identifier?","Branching Logic (Show field only if...)","Required?","Custom Alignment","Question Number (surveys only)","Matrix Group Name","Matrix Ranking?","Field Annotation"
+"test_var","adverse_events","<h3>Adverse Events &amp; Reactions</h3>","text","Reported &amp;lt;Term&amp;gt;","","Note with &amp;quot;quotes&amp;quot; &amp;amp; &amp;lt;tags&amp;gt;","","","","","","y","","","","",""`;
+
+    const study = importStudyFromCsvSpec(csvContent);
+    const form = study.forms[0];
+    expect(form.sections[0].title).toBe("Adverse Events & Reactions");
+    expect(form.domain).toBe("");
+    expect(form.needsReview).toBe(true);
+
+    const field = form.sections[0].fields[0];
+    expect(field.label).toBe("Reported &lt;Term&gt;");
+    expect(field.description).toBe(
+      "Note with &quot;quotes&quot; &amp; &lt;tags&gt;"
+    );
   });
 });

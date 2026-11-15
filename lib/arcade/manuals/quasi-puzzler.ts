@@ -92,7 +92,7 @@ export const QUASI_PUZZLER_MANUAL: FieldManualData = {
     {
       title: "Act 2: Quantifiers, Induction & Chains",
       detail:
-        "Prove Level 18, the Act 1 capstone, without `sorry` to open Act 2 (Levels 19–30): ∀ and ∃ goals (`intro`, `use`), induction over ℕ with a base case and a step case that carries `ih`, ≤ chains (`trans`, `gcongr`), and an almost perfect numbers arc that ends at a second capstone. Act 1 levels, stars and saves are unchanged, and a save that already proved Level 18 opens Act 2 at once.",
+        "Prove Level 18, the Act 1 capstone, without `sorry` to open Act 2 (Levels 19 to 30): ∀ and ∃ goals (`intro`, `use`), induction over ℕ with a base case and a step case that carries `ih`, ≤ chains (`trans`, `gcongr`), and an almost perfect numbers arc that ends at a second capstone. Act 1 levels, stars and saves are unchanged, and a save that already proved Level 18 opens Act 2 at once.",
       badge: "Act 2",
     },
   ],

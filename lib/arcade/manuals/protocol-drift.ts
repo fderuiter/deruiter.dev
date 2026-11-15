@@ -96,7 +96,7 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   lore: {
     title: "Where the plan meets the clinic",
     story:
-      "Data standards describe the data a trial should collect; clinics produce the data they actually collect. Protocol Drift is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
+      "Data standards describe the data a trial should collect; clinics produce the data they collect. Protocol Drift is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
     realWorldTech: [
       "CDISC SDTM and ADaM",
       "CDASH partial date handling",

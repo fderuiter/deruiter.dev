@@ -113,7 +113,7 @@ export const PATROL_MANUAL: FieldManualData = {
     "Reassess vitals after an intervention; a single check early gives the debrief nothing to compare against.",
     "On the descent, small sustained corrections beat large late ones: the comfort metric punishes abrupt input.",
     "Engage the chain brake before the pitch steepens, not after you are already accelerating.",
-    "Ambient events between calls are scored too: patrolling is responsibility for a place, not just waiting for injuries.",
+    "Ambient events between calls are scored too, because patrolling means looking after a place between injuries.",
     "Audio is muted by default and every radio call is text-first, so nothing is lost with sound off.",
   ],
   lore: {

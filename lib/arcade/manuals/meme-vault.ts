@@ -68,14 +68,14 @@ export const MEME_VAULT_MANUAL: FieldManualData = {
     {
       title: "The Hidden Trophy Case",
       detail:
-        "Six trophies are hidden around the site, not just in this room. Locked shelf slots carry a hint; the manual's pro tips nudge without spoiling.",
+        "Six trophies are hidden around the site, and some of them are outside this room. Locked shelf slots carry a hint; the manual's pro tips nudge without spoiling.",
       badge: "Trophies",
     },
   ],
   proTips: [
     "Say the key numbers under your breath as the pads light. A spoken chunk like 3-1-7 is easier to hold than a picture.",
     "Each pad has its own sound, so Echo can be played by ear with sound on.",
-    "One trophy rewards a sound you actually hear in this very room.",
+    "One trophy rewards a sound you hear in this room.",
     "A furry friend naps somewhere you only reach by scrolling all the way down.",
     "The terminal on one of the case studies knows a few classic UNIX jokes, and one very risky git command.",
     "The command palette (Cmd+K) has opinions about hot drinks and an old HTTP status code.",

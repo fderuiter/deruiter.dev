@@ -106,7 +106,7 @@ export const WORKING_WITH_DUCK_MANUAL: FieldManualData = {
     {
       title: "Polaroid Scrapbook",
       detail:
-        "Capturing key milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",
+        "Capturing milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",
       badge: "Collectibles",
     },
   ],

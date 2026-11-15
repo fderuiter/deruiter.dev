@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { fromAny, fromPartial } from "@total-typescript/shoehorn";
 import fs from "fs";
 import path from "path";
 import {
@@ -7,6 +8,7 @@ import {
   PROVIDER_ADAPTERS,
   publishToDestination,
   resolveProviderAdapters,
+  runVerification,
   type CommandRunner,
   type ProbeFetch,
   type SetupPrompter,
@@ -74,6 +76,21 @@ describe("setup provider adapters (#984)", () => {
       expect(entry.portability.note).not.toBe("");
       const docFile = entry.docs.split("#")[0];
       expect(fs.existsSync(path.join(process.cwd(), docFile))).toBe(true);
+    }
+  });
+
+  // #3608: a new adapter must document every key it asks for on the page it
+  // links, or the guided path sends people to a page that never names them.
+  it("names every key on the adapter's own documentation page", () => {
+    for (const entry of PROVIDER_ADAPTERS) {
+      const page = fs.readFileSync(
+        path.join(process.cwd(), entry.docs.split("#")[0]),
+        "utf-8"
+      );
+      const missing = entry.keys
+        .map((key) => key.name)
+        .filter((name) => !page.includes(name));
+      expect(missing, `${entry.id} → ${entry.docs}`).toEqual([]);
     }
   });
 
@@ -373,5 +390,49 @@ describe("setup provider adapters (#984)", () => {
         "development",
       ]);
     });
+  });
+});
+
+// #3609: each provider's status comes from its own check. A probe that
+// throws reports that provider as failed, without its error text, and the
+// other providers still report their own status.
+describe("provider verification when a probe throws", () => {
+  it("reports the throwing provider as failed and keeps the rest", async () => {
+    const github = PROVIDER_ADAPTERS.find((entry) => entry.id === "github")!;
+    const cron = PROVIDER_ADAPTERS.find((entry) => entry.id === "vercel")!;
+    const leaky = {
+      ...github,
+      probe: async () => {
+        throw new Error("token gh-real-token was rejected");
+      },
+    };
+    const prompter = fromPartial<SetupPrompter>({
+      interactive: false,
+      confirm: async () => false,
+      input: async () => "",
+      secret: async () => "",
+      choose: async <T extends string>(_q: string, _c: readonly T[], fallback: T) =>
+        fallback,
+    });
+
+    const checks = await runVerification({
+      root: process.cwd(),
+      requested: ["providers"],
+      values: {
+        GITHUB_TOKEN: "gh-real-token",
+        CRON_SECRET: "a-real-secret-value-that-is-long-enough-123",
+      },
+      prompter,
+      run: fromAny<CommandRunner, unknown>(async () => ({ ok: true, code: 0, stdout: "", stderr: "" })),
+      fetch: (async () => ({ ok: true, status: 200, text: async () => "" })) as ProbeFetch,
+      dryRun: false,
+      adapters: [leaky, cron],
+      log: () => {},
+    });
+
+    const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
+    expect(byId["providers:github"]?.status).toBe("failed");
+    expect(byId["providers:github"]?.detail).not.toContain("gh-real-token");
+    expect(byId["providers:vercel"]?.status).toBe("schema-valid");
   });
 });

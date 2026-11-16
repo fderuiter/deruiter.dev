@@ -178,7 +178,9 @@ export function ModalContainer({
       closingOnUnmount = true;
       dialog.removeEventListener("cancel", handleCancel);
       dialog.removeEventListener("close", handleClose);
-      if (dialog.isConnected && dialog.open) dialog.close();
+      if (!dialog.isConnected || !dialog.open) return;
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
     };
   }, [isOpen, containerRef, initialFocusRef]);
 

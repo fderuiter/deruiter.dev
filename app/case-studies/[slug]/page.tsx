@@ -225,7 +225,8 @@ export default async function CaseStudyPage({ params }: PageProps) {
                 fill
                 className="object-cover"
                 unoptimized
-                priority
+                loading="eager"
+                fetchPriority="high"
               />
             </div>
           )}

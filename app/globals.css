@@ -300,7 +300,6 @@ body {
   font-family: var(--font-sans);
   min-height: 100dvh;
   overflow-x: hidden;
-  will-change: background-color, color;
 }
 
 /* Global focus ring styling (WCAG 2.1 compliance) */
@@ -515,7 +514,7 @@ body {
 }
 
 /* Centralized Pretext High Contrast & Forced Colors Protection */
-@media (forced-colors: active), (-ms-high-contrast: active) {
+@media (forced-colors: active) {
   [data-pretext-layer="visual"] {
     opacity: 0 !important;
     visibility: hidden !important;

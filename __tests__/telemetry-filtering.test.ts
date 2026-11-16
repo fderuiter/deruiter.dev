@@ -1,5 +1,4 @@
 // @vitest-environment node
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock Sentry.init to intercept the config passed to it
@@ -7,44 +6,28 @@ const { mockInit } = vi.hoisted(() => ({
   mockInit: vi.fn(),
 }));
 
-vi.mock("@sentry/nextjs", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@sentry/nextjs")>();
-  return {
-    default: {
-      ...original,
-      init: (config: any) => {
-        mockInit(config);
-        return original.init(config);
-      },
-    },
-    ...original,
-    init: (config: any) => {
-      mockInit(config);
-      return original.init(config);
-    },
-  };
-});
+// These tests inspect configuration callbacks. Initializing the real SDK
+// would install process-wide integrations and an unnecessary network transport.
+vi.mock("@sentry/nextjs", () => ({
+  default: { init: mockInit },
+  init: mockInit,
+}));
 
 import { GameEngineException } from "../lib/exceptions";
 import { resetSentryInitializationForTesting } from "../lib/client-sentry";
 
 describe("Sentry Telemetry Filtering for Game Engine Exceptions", () => {
-  const originalVercelEnv = process.env.VERCEL_ENV;
-
   beforeEach(() => {
     mockInit.mockClear();
     resetSentryInitializationForTesting();
     // beforeSend drops every event outside a production deployment, so the
     // noise-filter assertions below can only be reached from production.
-    process.env.VERCEL_ENV = "production";
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "");
   });
 
   afterEach(() => {
-    if (originalVercelEnv === undefined) {
-      delete process.env.VERCEL_ENV;
-    } else {
-      process.env.VERCEL_ENV = originalVercelEnv;
-    }
+    vi.unstubAllEnvs();
   });
 
   it("should filter out GameEngineException in Client config", async () => {

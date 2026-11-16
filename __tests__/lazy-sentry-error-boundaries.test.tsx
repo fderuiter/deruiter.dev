@@ -9,30 +9,43 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { mockInit, mockCaptureException } = vi.hoisted(() => ({
-  mockInit: vi.fn(),
-  mockCaptureException: vi.fn(),
-}));
+const { mockInit, mockCaptureException, mockTransportSend } = vi.hoisted(
+  () => ({
+    mockInit: vi.fn(),
+    mockCaptureException: vi.fn(),
+    mockTransportSend: vi.fn(),
+  })
+);
 
 vi.mock("@sentry/nextjs", async (importOriginal) => {
   const original = await importOriginal<typeof import("@sentry/nextjs")>();
+  const init = (config: unknown) => {
+    mockInit(config);
+    // Exercise the real SDK without sending test events to the fixture DSN.
+    // Disable automatic integrations so they cannot collect ambient context.
+    return original.init({
+      ...(config as any),
+      defaultIntegrations: false,
+      transport: () => ({
+        send: async (envelope: unknown) => {
+          mockTransportSend(envelope);
+          return { statusCode: 200 };
+        },
+        flush: async () => true,
+      }),
+    });
+  };
   return {
     default: {
       ...original,
-      init: (config: unknown) => {
-        mockInit(config);
-        return original.init(config as any);
-      },
+      init,
       captureException: (err: unknown) => {
         mockCaptureException(err);
         return original.captureException(err as any);
       },
     },
     ...original,
-    init: (config: unknown) => {
-      mockInit(config);
-      return original.init(config as any);
-    },
+    init,
     captureException: (err: unknown) => {
       mockCaptureException(err);
       return original.captureException(err as any);
@@ -63,9 +76,15 @@ describe("Lazy Sentry Loading in Error Boundaries & Conditional Initialization",
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
-    process.env.NEXT_PUBLIC_SENTRY_DSN = originalEnvDsn;
+    const Sentry = await import("@sentry/nextjs");
+    await Sentry.close();
+    if (originalEnvDsn === undefined) {
+      delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+    } else {
+      process.env.NEXT_PUBLIC_SENTRY_DSN = originalEnvDsn;
+    }
     if (originalVercelEnv === undefined) {
       delete process.env.VERCEL_ENV;
     } else {
@@ -130,6 +149,18 @@ describe("Lazy Sentry Loading in Error Boundaries & Conditional Initialization",
   });
 
   describe("Requirement 2 & 4: Error Boundaries Dynamic Fetching & Immediate Fallback UI", () => {
+    it("delivers synthetic error events only to the in-memory test transport", async () => {
+      process.env.NEXT_PUBLIC_SENTRY_DSN =
+        "https://validkey@o0.ingest.sentry.io/999999";
+      await reportClientError(new Error("Synthetic transport regression"));
+      const Sentry = await import("@sentry/nextjs");
+      expect(await Sentry.flush(1000)).toBe(true);
+      expect(mockTransportSend).toHaveBeenCalled();
+      expect(JSON.stringify(mockTransportSend.mock.calls)).toContain(
+        "Synthetic transport regression"
+      );
+    });
+
     it("renders app/error.tsx fallback UI immediately and triggers deferred telemetry when valid DSN is set", async () => {
       process.env.NEXT_PUBLIC_SENTRY_DSN =
         "https://validkey@o0.ingest.sentry.io/999999";

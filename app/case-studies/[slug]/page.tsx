@@ -234,7 +234,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
           {/* CRF.xl FluentUI Easter Egg Banner */}
           {slug === "crf-xl" && (
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-mono mb-6 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
               <span className="font-semibold">
                 Microsoft Office / Fluent Design Accent Active (Easter Egg)
               </span>

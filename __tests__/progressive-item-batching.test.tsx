@@ -65,7 +65,7 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
       });
 
       // Skeleton should be active initially
-      expect(container.querySelector(".animate-pulse")).not.toBeNull();
+      expect(container.querySelector(".motion-safe\\:animate-pulse")).not.toBeNull();
 
       // Advance timers to trigger deferred hydration transitions
       await act(async () => {
@@ -162,7 +162,7 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
         root.render(<TimelineSkeleton />);
       });
 
-      expect(container.querySelector(".animate-pulse")).not.toBeNull();
+      expect(container.querySelector(".motion-safe\\:animate-pulse")).not.toBeNull();
       const nodes = container.querySelectorAll(".rounded-full");
       expect(nodes.length).toBeGreaterThan(0);
     });

@@ -51,7 +51,7 @@ test.describe("Top bar and menus on a wide screen", () => {
       panel.getByRole("link", { name: /Study Director/ })
     ).toBeVisible();
     await expect(
-      panel.getByRole("link", { name: /Protocol Drift/ })
+      panel.getByRole("link", { name: /Trial Data Pipeline Simulator/ })
     ).toHaveCount(0);
     await expect(panel.getByRole("link", { name: /Merch/ })).toHaveCount(0);
 
@@ -74,7 +74,7 @@ test.describe("Top bar and menus on a wide screen", () => {
     await expect(trigger).toBeFocused();
   });
 
-  test("Clinical menu lists the journey in order and opens Protocol Drift", async ({
+  test("Clinical menu lists the journey in order and opens the pipeline simulator", async ({
     page,
   }) => {
     await page.goto("/");
@@ -89,7 +89,7 @@ test.describe("Top bar and menus on a wide screen", () => {
     const journey = panel.getByRole("group", { name: "The journey, in order" });
     await expect(journey.getByRole("link")).toHaveText([
       /1\. Case report form designer \(CRF Studio\)/,
-      /2\. Protocol Drift/,
+      /2\. Trial Data Pipeline Simulator/,
       /3\. Study Data Pipeline/,
       /4\. Clinical Data Platform/,
     ]);
@@ -97,10 +97,14 @@ test.describe("Top bar and menus on a wide screen", () => {
       panel.getByRole("link", { name: /The whole clinical journey/ })
     ).toHaveAttribute("href", "/clinical");
     await expect(async () => {
-      await panel.getByRole("link", { name: /Protocol Drift/ }).click();
+      await panel
+        .getByRole("link", { name: /Trial Data Pipeline Simulator/ })
+        .click();
       await expect(page).toHaveURL(/\/protocol-drift$/, { timeout: 4000 });
     }).toPass({ timeout: 15000 });
-    await expect(page.locator("h1")).toContainText("Protocol Drift");
+    await expect(page.locator("h1")).toContainText(
+      "Trial Data Pipeline Simulator"
+    );
   });
 
   test("Labs menu holds the studios and non-clinical simulators", async ({
@@ -145,7 +149,9 @@ test.describe("Top bar and menus on a wide screen", () => {
     const response = await page.goto("/arcade/protocol-drift");
     expect(response?.ok()).toBe(true);
     await expect(page).toHaveURL(/\/protocol-drift$/);
-    await expect(page.locator("h1")).toContainText("Protocol Drift");
+    await expect(page.locator("h1")).toContainText(
+      "Trial Data Pipeline Simulator"
+    );
   });
 
   // The trophy cabinet further down still links Protocol Drift so its
@@ -194,7 +200,7 @@ test.describe("Mobile drawer", () => {
 
     await sims.click();
     await expect(
-      drawer.getByRole("link", { name: /Protocol Drift/ })
+      drawer.getByRole("link", { name: /Trial Data Pipeline Simulator/ })
     ).toBeVisible();
     await expect(
       drawer.getByRole("link", { name: /The whole clinical journey/ })

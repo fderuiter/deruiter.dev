@@ -1,3 +1,5 @@
+import { PIPELINE_SIMULATOR_NAME } from "@/lib/clinical-tools/pipeline-simulator";
+
 export interface ArcadeGameMetadata {
   id: string;
   slug: string;
@@ -231,7 +233,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
   {
     id: "protocol-drift",
     slug: "protocol-drift",
-    title: "Protocol Drift",
+    title: PIPELINE_SIMULATOR_NAME,
     subtitle: "Design the trial. Debug reality.",
     genre: "Systems Simulation",
     description:

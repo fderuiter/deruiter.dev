@@ -75,7 +75,7 @@ const EXPECTED_ROWS = [
   "nav-study-director | Study Director: Everything Is Fine",
   "nav-patty-drive-thru | Patty's Drive-Thru",
   "nav-for-better-or-bulk | For Better or Bulk",
-  "nav-protocol-drift | Protocol Drift: Regulatory Simulation Workbench",
+  "nav-protocol-drift | Trial Data Pipeline Simulator",
   "nav-garmin-watch | Monkey C Mayhem: A Garmin 5K Platformer",
   "nav-working-with-duck | Working With Duck: Pet Simulation Arcade",
   "nav-retro-labyrinth | Retro Labyrinth: Graveyard Roguelike",

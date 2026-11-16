@@ -120,7 +120,7 @@ export const AGENTS_SECTION_BY_CHECK: Readonly<Record<string, number>> = {
  * passing check, are returned unchanged.
  *
  * @param check - One check's result.
- * @returns The result, with ` (AGENTS.md section N)` added to its message.
+ * @returns The result, with `(AGENTS.md section N)` appended to its message.
  */
 export function withAgentsSection(
   check: DiagnosticCheckResult

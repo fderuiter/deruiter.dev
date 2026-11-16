@@ -12,3 +12,7 @@
 | 20 to 22 | [Editorial design, deep modules and free-tier quotas](20-22-editorial-modules-free-tier.md) |
 
 When a rule changes, change its line in AGENTS.md and its section here in the same commit.
+
+## The managed block at the top of AGENTS.md
+
+The block between `<!-- BEGIN:nextjs-agent-rules -->` and `<!-- END:nextjs-agent-rules -->` belongs to Next.js. `next dev` rewrites it whenever it differs from the text in `node_modules/next/dist/server/lib/generate-agent-files.js`, and `agentRules: true` in `next.config.ts` keeps that on. Don't hand-edit the block. After a Next upgrade, run `next dev` once and commit the rewritten AGENTS.md. `__tests__/agents-rule-index.test.ts` fails when the committed block and the installed generator disagree (#3191).

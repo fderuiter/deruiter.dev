@@ -30,8 +30,10 @@ describe("arcade registry (#2353)", () => {
   it("derives the hub routes and count from the hub listing, in order", () => {
     const hub = ARCADE_REGISTRY.filter((game) => game.listing === "hub");
     expect(ARCADE_GAME_ROUTES).toEqual(hub.map((game) => game.route));
-    expect(ARCADE_GAME_COUNT).toBe(10);
+    expect(ARCADE_GAME_COUNT).toBe(9);
     expect(ARCADE_GAME_ROUTES).not.toContain("/arcade/meme-vault");
+    // Listed under Clinical (#3153).
+    expect(ARCADE_GAME_ROUTES).not.toContain("/arcade/clinical-chaos");
     expect(ARCADE_GAME_ROUTES).not.toContain("/clinical/pipeline-simulator");
   });
 

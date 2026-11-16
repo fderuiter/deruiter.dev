@@ -74,6 +74,20 @@ describe("navigation structure (#1842, #2952)", () => {
     expect(evidence.items.map((i) => i.href)).toEqual(["/clinical/standards"]);
   });
 
+  it("lists Clinical Trial Chaos under Clinical only (#3153)", () => {
+    const practice = getNavGroup("clinical").sections.find(
+      (s) => s.id === "practice"
+    );
+    expect(practice?.items.map((i) => i.href)).toEqual([
+      "/arcade/clinical-chaos",
+    ]);
+    const everywhere = getAllNavItems().map((i) => i.href);
+    expect(
+      everywhere.filter((href) => href === "/arcade/clinical-chaos")
+    ).toHaveLength(1);
+    expect(getNavGroupForHref("/arcade/clinical-chaos")?.id).toBe("clinical");
+  });
+
   it("puts the studios and non-clinical simulators under Labs", () => {
     expect(
       getNavGroup("labs").sections.flatMap((s) => s.items.map((i) => i.href))
@@ -174,6 +188,7 @@ describe("navigation structure (#1842, #2952)", () => {
       PRIMARY_NAV.filter((g) => isNavGroupActive(g, p)).map((g) => g.id);
     expect(current("/arcade/study-director")).toEqual(["arcade"]);
     expect(current("/arcade/meme-vault")).toEqual(["labs"]);
+    expect(current("/arcade/clinical-chaos")).toEqual(["clinical"]);
     expect(current("/merch")).toEqual(["about"]);
     expect(current("/clinical/pipeline-simulator")).toEqual(["clinical"]);
     expect(current("/platform/portfolio")).toEqual(["clinical"]);

@@ -4,7 +4,6 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
-import { getArcadeNeighbors } from "@/lib/arcade";
 import { CLINICAL_CHAOS_TUTORIAL } from "@/lib/clinical-trial-chaos";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestClinicalChaosAutoPause } from "@/components/clinical-trial-chaos/auto-pause";
@@ -147,12 +146,11 @@ export const ClinicalChaosClient: React.FC = () => {
           </div>
         </div>
 
-        {/* Sequential Next / Previous Navigation */}
+        {/* Listed under Clinical, outside the arcade ring (#3153). */}
         <NextPrevNav
-          {...getArcadeNeighbors("/arcade/clinical-chaos")}
           backToHub={{
-            title: "All Arcade Games",
-            href: "/arcade",
+            title: "Back to Clinical",
+            href: "/clinical",
           }}
         />
       </div>

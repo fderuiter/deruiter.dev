@@ -12,6 +12,7 @@
  */
 
 import { CLINICAL_JOURNEY, type JourneyStepId } from "./clinical-journey";
+import { PIPELINE_SIMULATOR_PATH } from "./clinical-tools/pipeline-simulator";
 
 /** Names an icon the components know how to draw. */
 export type NavIconKey =
@@ -491,7 +492,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         "/clinical",
         "/clinical/standards",
         "/crf",
-        "/protocol-drift",
+        PIPELINE_SIMULATOR_PATH,
         "/study-data",
       ],
       prefixes: ["/platform", "/m/crf"],

@@ -262,8 +262,8 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "arcade",
   },
   {
-    path: "/protocol-drift",
-    name: "Protocol Drift Simulator",
+    path: "/clinical/pipeline-simulator",
+    name: "Trial Data Pipeline Simulator",
     category: "tool",
   },
   {

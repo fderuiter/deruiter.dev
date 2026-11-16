@@ -58,6 +58,7 @@ export function buildContentSecurityPolicy(
   const connectSrc = ["'self'", "https://vitals.vercel-insights.com"];
   const imgSrc = ["'self'", "data:"];
   const frameSrc = ["'self'"];
+  const formAction = ["'self'"];
 
   if (admin && authOrigin) {
     scriptSrc.push(
@@ -72,6 +73,7 @@ export function buildContentSecurityPolicy(
       "https://*.protect.clerk.com:*"
     );
     imgSrc.push("https://img.clerk.com");
+    formAction.push(authOrigin);
     frameSrc.push(
       "https://challenges.cloudflare.com",
       "https://*.protect.clerk.com"
@@ -87,6 +89,13 @@ export function buildContentSecurityPolicy(
       `img-src ${imgSrc.join(" ")}`,
       `frame-src ${frameSrc.join(" ")}`,
       "worker-src 'self' blob:",
+      // Baseline directives from the web security guidance (#3974): no
+      // plugins, no <base> rewrites, forms post only to this origin (and the
+      // auth host on the admin surface), and no framing by any site.
+      "object-src 'none'",
+      "base-uri 'self'",
+      `form-action ${formAction.join(" ")}`,
+      "frame-ancestors 'none'",
     ].join("; ") + ";"
   );
 }
@@ -104,10 +113,14 @@ export function buildSecurityHeaders(
   return {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    // Isolates the browsing context from cross-origin windows it opens or is
+    // opened by. The admin surface keeps popups so Clerk sign-in still works.
+    "Cross-Origin-Opener-Policy": admin
+      ? "same-origin-allow-popups"
+      : "same-origin",
     "Content-Security-Policy": buildContentSecurityPolicy(admin, wasm),
   };
 }

@@ -5,7 +5,10 @@ import { z } from "zod";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { validateSyncRequest } from "@/lib/security";
-import { SECURITY_HEADERS } from "@/lib/security-headers";
+import {
+  ADMIN_SECURITY_HEADERS,
+  SECURITY_HEADERS,
+} from "@/lib/security-headers";
 
 vi.mock("@/lib/auth/admin", () => ({
   isCurrentUserAdmin: vi.fn(),
@@ -40,8 +43,9 @@ describe("createApiHandler Inline Authentication Enforcement", () => {
       expect(json.error).toBe("Administrator access required");
       expect(handler).not.toHaveBeenCalled();
 
-      // Check security headers
-      Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
+      // Check security headers: /api/admin gets the admin set, whose COOP
+      // allows the Clerk sign-in popup (#3974).
+      Object.entries(ADMIN_SECURITY_HEADERS).forEach(([header, value]) => {
         if (header === "Content-Security-Policy") {
           expect(res.headers.get(header)).toBeTruthy();
         } else {

@@ -116,6 +116,8 @@ const nextConfig: NextConfig = {
   // Next writes, so a dev server leaves the tree clean;
   // __tests__/agents-rule-index.test.ts fails when they drift apart.
   agentRules: true,
+  // Drops the X-Powered-By: Next.js header, which only advertises the stack.
+  poweredByHeader: false,
   experimental: {
     // Off (the default): no feedback block in AGENTS.md, and no agent
     // feedback reporting to Vercel.

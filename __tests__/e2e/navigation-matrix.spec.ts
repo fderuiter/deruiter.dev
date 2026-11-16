@@ -30,8 +30,9 @@ const MENU_SAMPLES: Record<string, RegExp[]> = {
     /NeuroRecon Studio/,
     /Incident Simulator/,
     /Patrol Shift/,
+    /Meme Vault/,
   ],
-  Arcade: [/Arcade Hub/, /Laser Loon/, /Study Director/, /Meme Vault/],
+  Arcade: [/Arcade Hub/, /Laser Loon/, /Study Director/],
   Writing: [/^Blog/, /Case Studies/, /Designing for My Brother/],
   About: [/Under the Hood/, /Open Source Credits/, /Office Hours/, /GitHub/],
 };

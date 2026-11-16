@@ -54,6 +54,10 @@ test.describe("Top bar and menus on a wide screen", () => {
       panel.getByRole("link", { name: /Trial Data Pipeline Simulator/ })
     ).toHaveCount(0);
     await expect(panel.getByRole("link", { name: /Merch/ })).toHaveCount(0);
+    // Meme Vault is listed under Labs (#3151).
+    await expect(panel.getByRole("link", { name: /Meme Vault/ })).toHaveCount(
+      0
+    );
 
     await trigger.focus();
     await page.keyboard.press("ArrowDown");
@@ -65,7 +69,9 @@ test.describe("Top bar and menus on a wide screen", () => {
     await page.keyboard.press("ArrowUp");
     await expect(panel.getByRole("link", { name: /Arcade Hub/ })).toBeFocused();
     await page.keyboard.press("End");
-    await expect(panel.getByRole("link", { name: /Meme Vault/ })).toBeFocused();
+    await expect(
+      panel.getByRole("link", { name: /Quasi-Perfect Puzzler/ })
+    ).toBeFocused();
     await page.keyboard.press("Home");
     await expect(panel.getByRole("link", { name: /Arcade Hub/ })).toBeFocused();
 

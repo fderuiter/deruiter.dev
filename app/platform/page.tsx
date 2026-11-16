@@ -44,11 +44,11 @@ export default function PlatformPage() {
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
         <Breadcrumbs path="/platform" className="mb-6" />
-        <ClinicalJourneyNav path="/platform" className="mb-8" />
         <JourneyStepLabel path="/platform" fallback="Clinical Data Platform" />
         <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           Clinical Data Platform
         </h1>
+        <ClinicalJourneyNav path="/platform" className="mt-6" />
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
           A synthetic sponsor portfolio, designed as a connected data and
           reporting system. Follow how operational feeds become governed data

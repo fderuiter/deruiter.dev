@@ -3,9 +3,9 @@
     "advisory": "GHSA-g3hv-75wg-m249",
     "package": "minimatch",
     "severity": "moderate",
-    "createdAt": "2026-11-10",
-    "expiresAt": "2026-12-10",
-    "reason": "Rechecked 2026-11-10: upstream is unchanged. No fixed minimatch fits two kinds of caller. minimatch 3.1.5 is still required by the latest @eslint/eslintrc (3.3.7), eslint-plugin-import (2.32.0), eslint-plugin-jsx-a11y (6.10.2) and eslint-plugin-react (7.37.5), which call its CommonJS default export, and eslint-config-next 16.4.6 still bundles those three plugins. typedoc 0.28.20, the latest stable release, still depends on minimatch ^10.2.5 and calls Minimatch.matchOne, which minimatch 11 removed, so its minimatch 10 copy stays too. Both run only at lint and docs time on the repository's own globs and never ship in the built site. The other minimatch 10 copies and every glob 13 copy are overridden to fixed releases in package.json.",
+    "createdAt": "2026-11-16",
+    "expiresAt": "2026-12-16",
+    "reason": "Rechecked 2026-11-16: GHSA-g3hv-75wg-m249 now affects minimatch >=7.0.0 <11.0.1, so minimatch 3 used by ESLint and the Next plugins is outside the advisory range. npm audit --package-lock-only reports only typedoc's minimatch 10.2.6, propagated through typedoc and typedoc-plugin-markdown. typedoc 0.28.20 remains the latest stable release, declares minimatch ^10.2.5, and calls Minimatch.matchOne, which minimatch 11 removed. This copy runs only during documentation generation on repository-controlled globs, with no site-user input or production runtime exposure. Retain the supported TypeDoc toolchain and the existing fixed minimatch/glob overrides; do not force incompatible APIs or downgrade documentation tooling. Recheck TypeDoc before the strict gate's 14-day warning window begins on 2026-12-02; remove this advisory-and-package-scoped moderate exception when a supported fixed parent is available. Renewal is limited to 30 days.",
     "owner": "fderuiter",
     "followUp": "https://github.com/fderuiter/deruiter.dev/issues/3667"
   }

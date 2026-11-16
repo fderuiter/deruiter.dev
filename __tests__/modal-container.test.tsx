@@ -239,28 +239,31 @@ describe("MountainMap responsibility-code modal on ModalContainer", () => {
  * check actual modality.
  */
 describe("ModalContainer on the native dialog element", () => {
-  const proto = HTMLDialogElement.prototype as unknown as Record<
-    string,
-    unknown
-  >;
+  const proto = HTMLDialogElement.prototype;
+  const stub = (name: string, value: unknown) =>
+    Object.defineProperty(proto, name, {
+      configurable: true,
+      writable: true,
+      value,
+    });
   let showModal: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     showModal = vi.fn(function (this: HTMLDialogElement) {
       this.setAttribute("open", "");
     });
-    proto.showModal = showModal;
-    proto.close = function (this: HTMLDialogElement) {
+    stub("showModal", showModal);
+    stub("close", function (this: HTMLDialogElement) {
       if (!this.hasAttribute("open")) return;
       this.removeAttribute("open");
       this.dispatchEvent(new Event("close"));
-    };
+    });
   });
 
   afterEach(() => {
     cleanup();
-    delete proto.showModal;
-    delete proto.close;
+    Reflect.deleteProperty(proto, "showModal");
+    Reflect.deleteProperty(proto, "close");
   });
 
   const cancel = (dialog: HTMLElement) => {

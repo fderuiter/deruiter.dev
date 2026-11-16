@@ -32,7 +32,7 @@ describe("arcade registry (#2353)", () => {
     expect(ARCADE_GAME_ROUTES).toEqual(hub.map((game) => game.route));
     expect(ARCADE_GAME_COUNT).toBe(10);
     expect(ARCADE_GAME_ROUTES).not.toContain("/arcade/meme-vault");
-    expect(ARCADE_GAME_ROUTES).not.toContain("/protocol-drift");
+    expect(ARCADE_GAME_ROUTES).not.toContain("/clinical/pipeline-simulator");
   });
 
   it("keeps the daily ids equal to the registry's daily games", () => {

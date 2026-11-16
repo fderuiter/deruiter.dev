@@ -12,6 +12,7 @@
 
 import { fnv1a } from "../utils/prng";
 import { isPhoneGated } from "./registry";
+import { PIPELINE_SIMULATOR_PATH } from "../clinical-tools/pipeline-simulator";
 
 /**
  * The games with seeded runs, in the order the daily panel lists them. A unit
@@ -73,7 +74,7 @@ export const ARCADE_DAILY_GAMES: readonly ArcadeDailyGame[] = [
   {
     id: "protocol-drift",
     title: "Protocol Drift",
-    route: "/protocol-drift",
+    route: PIPELINE_SIMULATOR_PATH,
     scoreLabel: "lock score",
     desktopOnly: isPhoneGated("protocol-drift"),
   },
@@ -204,7 +205,7 @@ export function arcadeDailyHref(game: ArcadeDailyGameId, date: string): string {
     case "for-better-or-bulk":
       return `/arcade/for-better-or-bulk?daily=${date}`;
     case "protocol-drift":
-      return `/protocol-drift?daily=${date}`;
+      return `${PIPELINE_SIMULATOR_PATH}?daily=${date}`;
   }
 }
 

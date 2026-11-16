@@ -242,3 +242,48 @@ describe("client forms validate against the shared route schemas (#1128)", () =>
     expect(global.fetch).not.toHaveBeenCalled();
   });
 });
+
+describe("contact and newsletter fields support autofill and touch input (#3973)", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("ContactForm names its autofill fields and keeps email free of correction", () => {
+    render(<ContactForm />);
+
+    const name = screen.getByLabelText(/Your Name/i);
+    const email = screen.getByLabelText(/Email Address/i);
+
+    expect(name.getAttribute("autocomplete")).toBe("name");
+    expect(email.getAttribute("autocomplete")).toBe("email");
+    expect(email.getAttribute("spellcheck")).toBe("false");
+    expect(email.getAttribute("autocapitalize")).toBe("none");
+  });
+
+  it("ContactForm fields grow to 16px on touch so iOS does not zoom on focus", () => {
+    render(<ContactForm />);
+
+    for (const field of [
+      screen.getByLabelText(/Your Name/i),
+      screen.getByLabelText(/Email Address/i),
+      screen.getByLabelText(/Subject/i),
+      screen.getByLabelText(/^Message/i),
+    ]) {
+      expect(field.className).toContain("pointer-coarse:text-base");
+    }
+  });
+
+  it("NewsletterForm takes its accessible name from a visible label", () => {
+    render(<NewsletterForm />);
+
+    const email = screen.getByLabelText("Email address");
+
+    expect(email.hasAttribute("aria-label")).toBe(false);
+    expect(email.getAttribute("autocomplete")).toBe("email");
+    expect(email.className).toContain("pointer-coarse:text-base");
+    const label = document.querySelector(
+      'label[for="newsletter-email-input"]'
+    );
+    expect(label?.textContent).toBe("Email address");
+  });
+});

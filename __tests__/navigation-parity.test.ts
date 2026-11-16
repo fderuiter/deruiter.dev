@@ -25,7 +25,7 @@ describe("navigation groups for pages (#1848)", () => {
   it("names the group a page belongs to", () => {
     expect(getNavGroupForHref("/arcade/laser-loon")?.id).toBe("arcade");
     expect(getNavGroupForHref("/merch")?.id).toBe("about");
-    expect(getNavGroupForHref("/protocol-drift")?.id).toBe("clinical");
+    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe("clinical");
     expect(getNavGroupForHref("/crf")?.id).toBe("clinical");
     expect(getNavGroupForHref("/proof")?.id).toBe("labs");
     expect(getNavGroupForHref("/stack")?.id).toBe("about");
@@ -134,7 +134,7 @@ describe("llms.txt sections (#1848)", () => {
   });
 
   it("lists the clinical pages under Clinical and the studios under Labs", () => {
-    expect(sectionOf("/protocol-drift")).toBe("Clinical");
+    expect(sectionOf("/clinical/pipeline-simulator")).toBe("Clinical");
     expect(sectionOf("/crf")).toBe("Clinical");
     expect(sectionOf("/clinical")).toBe("Clinical");
     expect(sectionOf("/proof")).toBe("Labs");
@@ -176,7 +176,7 @@ describe("sitemap priorities (#1848)", () => {
       "/neuro",
       "/patrol",
       "/simulator",
-      "/protocol-drift",
+      "/clinical/pipeline-simulator",
     ]) {
       expect(priority(flagship), flagship).toBe(0.9);
     }

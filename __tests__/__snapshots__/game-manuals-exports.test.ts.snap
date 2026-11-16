@@ -1072,7 +1072,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       "Replay derivations after any source correction.",
     ],
     "quickSummary": "Accept the briefing, place chips on the Tabulation Lane and wire them, press Run Local Test, then Publish Revision, then Space to run the clock. Investigate discrepancies in the Forensic Inspector, query sites with attached evidence, and request the Database Lock on Day 28.",
-    "route": "/protocol-drift",
+    "route": "/clinical/pipeline-simulator",
     "rules": [
       {
         "badge": "Wall",

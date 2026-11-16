@@ -201,11 +201,12 @@ test("the risk tab flags the planted site and drills into it (#2631)", async ({
   await expect(
     csm.getByRole("listitem").filter({ hasText: "DEMO-302-BR-118 · " })
   ).toHaveCount(7);
-  // Two central monitoring flags and the planted site's red adverse event
-  // rate (#3218), under the header row.
+  // The planted site's central monitoring flag and its red adverse event
+  // rate (#3218), under the header row. DEMO-302-US-101 has 6 scheduled
+  // visits, too few for the KRI profile, so it is no longer flagged (#3221).
   await expect(
     page.getByRole("table", { name: /risk signal log/ }).getByRole("row")
-  ).toHaveCount(4);
+  ).toHaveCount(3);
 
   // A site row drills into that site and stays on the Risk tab.
   await expect(async () => {

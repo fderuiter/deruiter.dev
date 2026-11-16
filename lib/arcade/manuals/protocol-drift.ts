@@ -85,12 +85,6 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
         "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
       badge: "Par",
     },
-    {
-      title: "Arcade Daily",
-      detail:
-        "Play daily on the arcade hub starts the study on today's seed instead of seed #48291; the footer shows the daily's date. Locking the database on it records the lock score as today's daily best on the hub.",
-      badge: "Daily",
-    },
   ],
   proTips: [
     "Add the regex split before Site A's narrative entry arrives on Day 7.",

@@ -4,7 +4,7 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 // These run only in the iPad projects in playwright.config.ts: Protocol Drift
 // is gated on phones, and HTML5 drag out of the toolbox does nothing on a
 // touch screen, so a long-press picks a chip and a tap on the canvas places it.
-const ROUTE = "/protocol-drift";
+const ROUTE = "/clinical/pipeline-simulator";
 const IMMERSIVE = '[data-arcade-cabinet][data-immersive="true"]';
 const ROOT = ".pd-touch";
 const PANE = `${ROOT} .react-flow__pane`;

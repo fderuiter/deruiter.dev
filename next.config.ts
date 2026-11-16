@@ -1,6 +1,10 @@
 import withSerwistInit from "@serwist/next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import {
+  PIPELINE_SIMULATOR_LEGACY_PATH,
+  PIPELINE_SIMULATOR_PATH,
+} from "./lib/clinical-tools/pipeline-simulator";
 import { ChunkCycleGuardPlugin } from "./lib/dx/chunk-cycle-guard";
 import { securityHeaderRules } from "./lib/security-headers";
 
@@ -111,7 +115,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // `next dev` keeps a managed block at the top of AGENTS.md when it detects
+  // a coding agent (#3191). It stays on, and the committed block matches what
+  // Next writes, so a dev server leaves the tree clean;
+  // __tests__/agents-rule-index.test.ts fails when they drift apart.
+  agentRules: true,
+  // Drops the X-Powered-By: Next.js header, which only advertises the stack.
+  poweredByHeader: false,
   experimental: {
+    // Off (the default): no feedback block in AGENTS.md, and no agent
+    // feedback reporting to Vercel.
+    agentFeedback: false,
     optimizePackageImports: ["@tabler/icons-react"],
     // The webpack compile itself outgrew Vercel's 8 GB build machine on
     // 2026-10-28 (OOM SIGKILL in "Creating an optimized production build").
@@ -176,10 +190,16 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        // Protocol Drift is a workbench, so it moved from the arcade to the
-        // simulators (#1841). Old links, search results and bookmarks follow.
+        // The pipeline simulator is a workbench, so it left the arcade
+        // (#1841) and then moved under Clinical (#3167). Old links, search
+        // results and bookmarks follow in one hop.
         source: "/arcade/protocol-drift",
-        destination: "/protocol-drift",
+        destination: PIPELINE_SIMULATOR_PATH,
+        permanent: true,
+      },
+      {
+        source: PIPELINE_SIMULATOR_LEGACY_PATH,
+        destination: PIPELINE_SIMULATOR_PATH,
         permanent: true,
       },
       {

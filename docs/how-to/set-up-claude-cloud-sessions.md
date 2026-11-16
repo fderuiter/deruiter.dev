@@ -17,8 +17,13 @@ SessionStart hook. In cloud sessions only (`CLAUDE_CODE_REMOTE=true`) it:
   `package-lock.json`, which also runs `prisma generate` (postinstall) and
   installs the Husky git hooks (prepare);
 - otherwise runs `npx prisma generate` only, so resumed sessions start fast;
-- exports `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and
-  `NEXT_TELEMETRY_DISABLED=1` for the session.
+- links the newest Chromium build in `/opt/pw-browsers` into a scratch
+  directory under the revision names the installed Playwright expects (from
+  `node_modules/playwright-core/browsers.json`), and warns instead of
+  downloading if none is there;
+- exports `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`,
+  `NEXT_TELEMETRY_DISABLED=1` and `PLAYWRIGHT_BROWSERS_PATH` (the scratch
+  directory) for the session.
 
 The hook is synchronous, so the session starts only after dependencies are
 installed (about 40 seconds on a cold container). Local sessions skip it.
@@ -61,10 +66,13 @@ exit 0
 
 - Chromium is preinstalled under `/opt/pw-browsers`, but at an older
   revision than the pinned `@playwright/test`, and the Playwright download
-  CDN is not on the Trusted list. `lib/dx/browser-launch.ts` falls back to
-  the preinstalled build, so the Mermaid corpus test and
-  `npm run bench:pages` work. The Playwright suite (`npx playwright test`)
-  does not use that fallback and is left to CI.
+  CDN is not on the Trusted list. The SessionStart hook links the
+  preinstalled build under the expected revision, so `npm run audit:a11y`
+  and `npx playwright test` launch it. Project threads don't run the hook:
+  run it by hand (see the top of this page), then `source` the env file or
+  export `PLAYWRIGHT_BROWSERS_PATH` yourself. `lib/dx/browser-launch.ts`
+  separately falls back to the preinstalled build for the Mermaid corpus
+  test and `npm run bench:pages`.
 - The container cannot reach `deruiter.dev` or the Vercel and Neon
   control planes directly; use the claude.ai connectors instead.
 - Branch names must use an allowed prefix (`feat/`, `fix/`, `chore/`,

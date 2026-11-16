@@ -112,7 +112,7 @@ export function NewsletterForm({
       {variant === "card" && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-amber-400 motion-safe:animate-pulse" />
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
               PROJECT NOTES / NEWSLETTER
             </span>
@@ -151,6 +151,12 @@ export function NewsletterForm({
             />
           </div>
 
+          <label
+            htmlFor="newsletter-email-input"
+            className="block text-[11px] font-mono font-bold text-zinc-300"
+          >
+            Email address
+          </label>
           <div className="flex flex-col sm:flex-row items-stretch gap-2">
             <div className="relative flex-1 min-w-0">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
@@ -160,6 +166,9 @@ export function NewsletterForm({
                 type="email"
                 id="newsletter-email-input"
                 name="email"
+                autoComplete="email"
+                spellCheck={false}
+                autoCapitalize="none"
                 required
                 value={email}
                 onChange={(e) => {
@@ -167,11 +176,10 @@ export function NewsletterForm({
                   if (emailInvalid) setEmailInvalid(false);
                 }}
                 placeholder="your.email@domain.com"
-                aria-label="Email address for engineering dispatch newsletter"
                 aria-invalid={emailInvalid}
                 aria-describedby={emailInvalid ? errorId : undefined}
                 disabled={status === "submitting"}
-                className="w-full pl-9 pr-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors disabled:opacity-50"
+                className="w-full pl-9 pr-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs pointer-coarse:text-base font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors disabled:opacity-50"
               />
             </div>
 

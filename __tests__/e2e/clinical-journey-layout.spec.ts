@@ -11,7 +11,12 @@ import { expect, test, type Page } from "@playwright/test";
  * be measured: no journey strip, no heading, or horizontal overflow.
  */
 
-const PAGES = ["/study-data", "/platform", "/protocol-drift", "/crf"] as const;
+const PAGES = [
+  "/study-data",
+  "/platform",
+  "/clinical/pipeline-simulator",
+  "/crf",
+] as const;
 
 /** `NextPrevNav` has no landmark; its default link labels identify it. */
 const NEXT_PREV_LABEL = /^(Previous|Next) Experience$/i;

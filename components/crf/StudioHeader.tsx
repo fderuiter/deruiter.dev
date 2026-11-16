@@ -399,7 +399,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         {/* Left Side: Brand, Protocol Selector & Menus */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-brand-cyan motion-safe:animate-pulse shrink-0" />
             <span className="font-mono text-xs sm:text-sm font-extrabold text-white tracking-wider uppercase truncate">
               CRF Studio
             </span>

@@ -62,7 +62,12 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/meme-audio", () => ({ playMemeSound: vi.fn() }));
 
-const INFINITE_LOOPS = ["animate-ping", "animate-pulse"];
+const INFINITE_LOOPS = [
+  "animate-ping",
+  "animate-pulse",
+  "motion-safe:animate-ping",
+  "motion-safe:animate-pulse",
+];
 
 const infiniteLoopElements = (root: ParentNode) =>
   Array.from(root.querySelectorAll<HTMLElement>("*")).filter((el) =>
@@ -98,28 +103,28 @@ describe("site chrome is calm at rest (#1596)", () => {
 
     const nav = container.querySelector("nav, header");
     const footer = container.querySelector("footer");
-    expect(nav?.querySelector(".animate-ping-settle")).not.toBeNull();
+    expect(nav?.querySelector(".motion-safe\\:animate-ping-settle")).not.toBeNull();
     // Brand dot and the footnotes ticker dot.
     expect(
-      footer?.querySelectorAll(".animate-ping-settle").length
+      footer?.querySelectorAll(".motion-safe\\:animate-ping-settle").length
     ).toBeGreaterThanOrEqual(2);
     // Project Notes dot and the Dyslexia: ON dot.
     expect(
-      footer?.querySelectorAll(".animate-pulse-settle").length
+      footer?.querySelectorAll(".motion-safe\\:animate-pulse-settle").length
     ).toBeGreaterThanOrEqual(2);
   });
 
   it("the footer status ticker dot settles instead of pinging forever", () => {
     const { container } = render(<FooterStatusTicker />);
     expect(infiniteLoopElements(container)).toEqual([]);
-    expect(container.querySelector(".animate-ping-settle")).not.toBeNull();
+    expect(container.querySelector(".motion-safe\\:animate-ping-settle")).not.toBeNull();
   });
 
   it("the unseen Field Manual badge pings a bounded number of times", () => {
     const { container } = render(
       <FieldManualButton manualId="working-with-duck" />
     );
-    const badge = container.querySelector(".animate-ping-settle");
+    const badge = container.querySelector(".motion-safe\\:animate-ping-settle");
     expect(badge).not.toBeNull();
     // The solid dot stays, so the badge still reads without motion.
     expect(

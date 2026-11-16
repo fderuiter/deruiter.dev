@@ -187,7 +187,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
         {/* Canvas Header */}
         <div className="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-950/40">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500/80 animate-ping" />
+            <span className="w-3 h-3 rounded-full bg-emerald-500/80 motion-safe:animate-ping" />
             <span className="text-xs font-semibold text-white">
               {activeTheorem.ruleName}
             </span>
@@ -212,7 +212,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
                   isSnappingEnabled
-                    ? "bg-emerald-400 animate-pulse"
+                    ? "bg-emerald-400 motion-safe:animate-pulse"
                     : "bg-slate-600"
                 }`}
               />
@@ -405,7 +405,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       stroke="#06b6d4"
                       strokeWidth="1.5"
                       strokeDasharray="4 3"
-                      className="animate-pulse"
+                      className="motion-safe:animate-pulse"
                     />
                   );
                 }
@@ -419,7 +419,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     stroke="#10b981"
                     strokeWidth="1.5"
                     strokeDasharray="4 3"
-                    className="animate-pulse"
+                    className="motion-safe:animate-pulse"
                   />
                 );
               })}
@@ -453,7 +453,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       stroke="url(#edgeGradient)"
                       strokeWidth="2.5"
                       strokeDasharray="4 2"
-                      className="animate-pulse"
+                      className="motion-safe:animate-pulse"
                       markerEnd="url(#arrow)"
                     />
                   </g>
@@ -483,7 +483,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                         stroke={strokeColor}
                         strokeWidth="2.5"
                         strokeDasharray="3 3"
-                        className="animate-pulse"
+                        className="motion-safe:animate-pulse"
                         markerEnd={
                           dragConnection.isValid
                             ? "url(#arrow-emerald)"
@@ -495,7 +495,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                         cy={y2}
                         r="5"
                         fill={strokeColor}
-                        className="animate-ping"
+                        className="motion-safe:animate-ping"
                       />
                     </g>
                   );
@@ -577,7 +577,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                 >
                   {/* Compatible Rule Floating Badge */}
                   {isCompatible && compTarget && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-mono text-[9px] font-bold shadow-md shadow-emerald-950/50 flex items-center gap-1 z-30 whitespace-nowrap animate-bounce">
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-mono text-[9px] font-bold shadow-md shadow-emerald-950/50 flex items-center gap-1 z-30 whitespace-nowrap motion-safe:animate-bounce">
                       <IconSparkles className="w-2.5 h-2.5 shrink-0" />
                       <span>{compTarget.badgeLabel}</span>
                     </div>
@@ -597,7 +597,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       aria-expanded={activePopoverNodeId === node.id}
                       aria-label={`Counterexample badge for Node ${node.id}. Click to view variable valuations.`}
                     >
-                      <IconAlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-300 animate-pulse" />
+                      <IconAlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-300 motion-safe:animate-pulse" />
                       <span>Counterexample</span>
                     </button>
                   )}

@@ -46,7 +46,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
           {isEulerOk ? (
             <IconShieldCheck className="w-4 h-4 text-emerald-400" />
           ) : (
-            <IconAlertTriangle className="w-4 h-4 text-amber-400 animate-pulse" />
+            <IconAlertTriangle className="w-4 h-4 text-amber-400 motion-safe:animate-pulse" />
           )}
         </div>
         <div className="text-[10px] font-mono text-zinc-400 mt-1">
@@ -166,7 +166,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
           <IconCircleDot
             className={`w-3.5 h-3.5 ${
               metrics.isResolved
-                ? "text-emerald-400 animate-ping"
+                ? "text-emerald-400 motion-safe:animate-ping"
                 : "text-zinc-400"
             }`}
           />

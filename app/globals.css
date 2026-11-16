@@ -210,7 +210,7 @@
  * the eye a few times on arrival, then settle: "calm at rest" (ADR 0046,
  * AGENTS.md section 16). The ping halo finishes hidden (forwards) so only the
  * solid dot remains; the pulse finishes at full opacity. Only transform and
- * opacity animate, and the global reduced-motion clamp still applies.
+ * opacity animate, and call sites opt in with `motion-safe:` (#3976).
  */
 @theme {
   --animate-ping-settle: ping-settle 1s cubic-bezier(0, 0, 0.2, 1) 3 forwards;
@@ -300,7 +300,6 @@ body {
   font-family: var(--font-sans);
   min-height: 100dvh;
   overflow-x: hidden;
-  will-change: background-color, color;
 }
 
 /* Global focus ring styling (WCAG 2.1 compliance) */
@@ -477,14 +476,32 @@ body {
 }
 
 /* Reduced motion compliance */
+/*
+ * Reduced motion, case by case (#3976). There is no global 0.01ms clamp: it
+ * made some animations more abrupt and froze loading spinners. Decorative
+ * loops opt in with `motion-safe:` (animate-pulse, -ping, -bounce) or a
+ * no-preference query (.animate-grid-square). Spinners keep turning, slower.
+ * Transitions keep their colour and opacity fades but drop movement, scaling
+ * and rotation.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  html {
     scroll-behavior: auto !important;
+  }
+
+  /* Unlayered rules beat every Tailwind utility, so elements that already
+     choose their own reduced-motion behaviour (motion-reduce:animate-none,
+     motion-reduce:transition-none) are left to it. */
+  .animate-spin:not([class*="motion-reduce:animate"]) {
+    animation-duration: 3s;
+  }
+
+  :is(.transition, .transition-all, .transition-transform):not(
+    [class*="motion-reduce:transition"]
+  ) {
+    transition-property:
+      color, background-color, border-color, outline-color,
+      text-decoration-color, fill, stroke, opacity, box-shadow;
   }
 }
 
@@ -500,10 +517,12 @@ body {
 }
 
 .animate-grid-square {
-  animation: grid-square-pulse var(--grid-square-duration, 4s) ease-in-out
-    infinite;
-  animation-delay: var(--grid-square-delay, 0s);
-  will-change: opacity;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: grid-square-pulse var(--grid-square-duration, 4s) ease-in-out
+      infinite;
+    animation-delay: var(--grid-square-delay, 0s);
+    will-change: opacity;
+  }
 }
 
 [data-pretext-layer="semantic"] {
@@ -515,7 +534,7 @@ body {
 }
 
 /* Centralized Pretext High Contrast & Forced Colors Protection */
-@media (forced-colors: active), (-ms-high-contrast: active) {
+@media (forced-colors: active) {
   [data-pretext-layer="visual"] {
     opacity: 0 !important;
     visibility: hidden !important;

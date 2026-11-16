@@ -157,7 +157,7 @@ describe("the shared Arcade Daily seed (#2113)", () => {
       "/arcade/for-better-or-bulk?daily=2026-10-14"
     );
     expect(arcadeDailyHref("protocol-drift", date)).toBe(
-      "/protocol-drift?daily=2026-10-14"
+      "/clinical/pipeline-simulator?daily=2026-10-14"
     );
     expect(arcadeDailyHref("study-director", date)).toBe(
       `/arcade/study-director#mode=desk&seed=${arcadeDailyTag(date, "study-director")}`

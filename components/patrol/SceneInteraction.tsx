@@ -198,7 +198,7 @@ export const SceneInteraction: React.FC<SceneInteractionProps> = ({
         <div
           role="alert"
           data-testid="scene-safety-alert"
-          className="p-4 rounded-xl bg-rose-500/10 border-2 border-rose-500/60 text-rose-300 flex items-start gap-3 text-xs font-mono animate-pulse"
+          className="p-4 rounded-xl bg-rose-500/10 border-2 border-rose-500/60 text-rose-300 flex items-start gap-3 text-xs font-mono motion-safe:animate-pulse"
         >
           <IconAlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
           <div className="space-y-1">

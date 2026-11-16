@@ -41,7 +41,7 @@ export const DispatchOverlay: React.FC<DispatchOverlayProps> = ({
       {/* Top Radio Frequency Status Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan animate-pulse">
+          <div className="p-2 rounded-xl bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan motion-safe:animate-pulse">
             <IconRadio className="w-5 h-5" />
           </div>
           <div>
@@ -49,7 +49,7 @@ export const DispatchOverlay: React.FC<DispatchOverlayProps> = ({
               <span className="text-xs font-mono font-bold text-white tracking-wide uppercase">
                 Incoming Dispatch Callout
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-mono font-bold uppercase animate-pulse">
+              <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-mono font-bold uppercase motion-safe:animate-pulse">
                 PRIORITY 10-33
               </span>
             </div>

@@ -717,7 +717,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                         {dropTargetInfo?.sectionId === section.id &&
                           dropTargetInfo?.targetIndex === fIdx &&
                           draggedFieldInfo?.fieldId !== field.id && (
-                            <div className="col-span-12 h-1 bg-brand-cyan rounded-full animate-pulse my-1" />
+                            <div className="col-span-12 h-1 bg-brand-cyan rounded-full motion-safe:animate-pulse my-1" />
                           )}
 
                         <FieldRenderer

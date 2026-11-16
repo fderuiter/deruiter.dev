@@ -4600,7 +4600,7 @@
       "homepage": "https://reactflow.dev",
       "repository": "https://github.com/xyflow/xyflow",
       "group": "Interface and motion",
-      "reason": "Node-and-wire canvas for the Protocol Drift pipeline editor."
+      "reason": "Node-and-wire canvas for the Trial Data Pipeline Simulator pipeline editor."
     },
     {
       "name": "@xyflow/system",
@@ -11560,7 +11560,7 @@
       "homepage": "https://github.com/pmndrs/zustand",
       "repository": "https://github.com/pmndrs/zustand",
       "group": "Framework and runtime",
-      "reason": "Small state store behind the Protocol Drift workbench and the Patty's Drive-Thru booth."
+      "reason": "Small state store behind the Trial Data Pipeline Simulator workbench and the Patty's Drive-Thru booth."
     }
   ]
 }

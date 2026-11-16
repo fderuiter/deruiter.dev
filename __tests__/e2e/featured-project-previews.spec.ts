@@ -24,8 +24,12 @@ for (const viewport of viewports) {
     await expect(cards).toHaveCount(3);
 
     for (const card of await cards.all()) {
+      // Under reduced motion the card runs no transition: either it has none
+      // (motion-reduce:transition-none) or every duration is zero (#3976).
       const reducedMotionDuration = await card.evaluate((element) => {
-        const raw = window.getComputedStyle(element).transitionDuration;
+        const style = window.getComputedStyle(element);
+        if (style.transitionProperty === "none") return 0;
+        const raw = style.transitionDuration;
         if (!raw) return 0;
         const durations = raw
           .split(",")

@@ -167,7 +167,7 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
       >
         <div className="flex flex-col items-center justify-center space-y-3">
           {isReading ? (
-            <div className="p-3 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan animate-pulse">
+            <div className="p-3 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan motion-safe:animate-pulse">
               <IconLoader2 className="w-8 h-8 animate-spin" />
             </div>
           ) : activeFile ? (

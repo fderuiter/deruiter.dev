@@ -4,7 +4,7 @@ import { Icon3dCubeSphere } from "@tabler/icons-react";
 export const NeuroReconSkeleton: React.FC = () => {
   return (
     <div
-      className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 w-full select-none animate-pulse space-y-6"
+      className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 w-full select-none motion-safe:animate-pulse space-y-6"
       data-testid="neuro-recon-skeleton"
     >
       {/* Top Header HUD Skeleton */}
@@ -25,7 +25,7 @@ export const NeuroReconSkeleton: React.FC = () => {
       {/* Main Slice / 3D Grid Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 h-[460px] bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-3 p-6">
-          <Icon3dCubeSphere className="w-12 h-12 text-zinc-700 animate-pulse" />
+          <Icon3dCubeSphere className="w-12 h-12 text-zinc-700 motion-safe:animate-pulse" />
           <div className="h-4 w-48 bg-zinc-800 rounded" />
           <p className="text-xs font-mono text-zinc-400">
             INITIALIZING NEURORECON WORKSPACE & 3D MESH...

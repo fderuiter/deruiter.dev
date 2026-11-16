@@ -5,6 +5,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
 import { getBreadcrumbTrailSchema } from "@/lib/navigation";
+import { PIPELINE_SIMULATOR_PATH } from "@/lib/clinical-tools/pipeline-simulator";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.protocolDrift
@@ -29,12 +30,12 @@ export default function ProtocolDriftPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: getBreadcrumbSchema(
-            getBreadcrumbTrailSchema("/protocol-drift")
+            getBreadcrumbTrailSchema(PIPELINE_SIMULATOR_PATH)
           ),
         }}
       />
       <div className="mx-auto mb-4 w-full max-w-[1600px]">
-        <ClinicalJourneyNav path="/protocol-drift" variant="compact" />
+        <ClinicalJourneyNav path={PIPELINE_SIMULATOR_PATH} variant="compact" />
       </div>
       <ProtocolDriftClient />
     </PageLayout>

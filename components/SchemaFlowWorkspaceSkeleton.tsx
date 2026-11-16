@@ -11,7 +11,7 @@ export function SchemaFlowWorkspaceSkeleton() {
       {/* Main split dashboard workspace skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-auto min-h-[520px]">
         {/* Left Side: Proof Canvas & Telemetry Skeleton */}
-        <div className="lg:col-span-8 flex flex-col gap-5 bg-zinc-950 border border-zinc-900 rounded-3xl p-5 relative overflow-hidden animate-pulse">
+        <div className="lg:col-span-8 flex flex-col gap-5 bg-zinc-950 border border-zinc-900 rounded-3xl p-5 relative overflow-hidden motion-safe:animate-pulse">
           {/* Header row skeleton */}
           <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
             <div className="space-y-2">
@@ -143,7 +143,7 @@ export function SchemaFlowWorkspaceSkeleton() {
         </div>
 
         {/* Right Side: Accessible Command CLI Terminal Skeleton */}
-        <div className="lg:col-span-4 flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden relative min-h-[300px] animate-pulse">
+        <div className="lg:col-span-4 flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden relative min-h-[300px] motion-safe:animate-pulse">
           <div className="border-b border-zinc-900 bg-zinc-950/80 px-4 py-3 flex justify-between items-center">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800" />

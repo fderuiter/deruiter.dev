@@ -1897,7 +1897,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   }}
                                   className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all border ${
                                     status.openQueriesCount > 0
-                                      ? "bg-red-500/20 text-red-400 border-red-500/40 animate-pulse"
+                                      ? "bg-red-500/20 text-red-400 border-red-500/40 motion-safe:animate-pulse"
                                       : status.isLocked
                                         ? "bg-sky-500/20 text-sky-400 border-sky-500/40"
                                         : status.isComplete

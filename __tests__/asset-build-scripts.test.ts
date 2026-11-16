@@ -22,6 +22,7 @@ const trackedOutputs = [
   "public/apple-touch-icon.png",
   "public/icon-192.png",
   "public/icon-512.png",
+  "public/icon-maskable-512.png",
   "lib/design-manifest.ts",
   "public/garmin-engine.js",
   "public/monkey-c-mayhem.js",

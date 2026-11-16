@@ -62,6 +62,7 @@ import {
   exportStudyToCdiscOdmXml,
   exportStudyToSas,
   importStudyFromCsvSpec,
+  evaluateVisitWindowConflicts,
 } from "@/lib/crf";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
@@ -3076,5 +3077,23 @@ describe("REDCap CSV parser HTML entity decoding regression (#3899)", () => {
     expect(field.description).toBe(
       "Note with &quot;quotes&quot; &amp; &lt;tags&gt;"
     );
+  });
+});
+
+describe("Oncology preset visit-window regression (#3138)", () => {
+  it("opens with no window conflicts, because unscheduled visits are skipped", () => {
+    expect(
+      evaluateVisitWindowConflicts(ONCOLOGY_RECIST_PRESET.visits).hasConflicts
+    ).toBe(false);
+  });
+});
+
+describe("TypeDoc comment Markdown regression (#3791)", () => {
+  it("keeps the CdashVariableMetadata and withAgentsSection comments lint-valid", () => {
+    const read = (file: string) =>
+      fs.readFileSync(path.resolve(__dirname, "..", file), "utf-8");
+
+    expect(read("lib/crf/types.ts")).not.toMatch(/^\s*\* #\d/m);
+    expect(read("lib/dx/doctor.ts")).not.toContain("` (AGENTS.md section N)`");
   });
 });

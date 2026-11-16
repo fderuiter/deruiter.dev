@@ -6,6 +6,10 @@ import { IconShieldCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestProtocolDriftAutoPause } from "@/components/protocol-drift/auto-pause";
+import {
+  PIPELINE_SIMULATOR_NAME,
+  PIPELINE_SIMULATOR_PATH,
+} from "@/lib/clinical-tools/pipeline-simulator";
 
 // React Flow and the engine adapter load only when the cabinet launches, so
 // the arcade hub and the shared bundle never pay for them.
@@ -27,12 +31,12 @@ export const ProtocolDriftClient: React.FC = () => (
   <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
     <div className="mx-auto max-w-[1600px]">
       <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-4 sm:gap-4">
-        <Breadcrumbs path="/protocol-drift" />
+        <Breadcrumbs path={PIPELINE_SIMULATOR_PATH} />
       </div>
 
       <div className="mb-8 min-w-0">
         <h1 className="font-mono text-3xl font-extrabold tracking-[-0.035em] break-words text-zinc-100 sm:text-4xl">
-          Protocol Drift:{" "}
+          {PIPELINE_SIMULATOR_NAME}:{" "}
           <span className="text-amber-400">
             Design the trial. Debug reality.
           </span>
@@ -49,7 +53,7 @@ export const ProtocolDriftClient: React.FC = () => (
       <div className="border border-zinc-800 bg-[#13151a] p-1.5 sm:p-4">
         <PlayCabinet
           gameId="protocol-drift"
-          title="Protocol Drift"
+          title={PIPELINE_SIMULATOR_NAME}
           subtitle="Study PD-101 · Clinical Data Architecture"
           icon={
             <IconShieldCheck

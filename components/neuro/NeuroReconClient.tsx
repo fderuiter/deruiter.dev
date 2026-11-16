@@ -63,12 +63,12 @@ import { NeuroReconSkeleton } from "./NeuroReconSkeleton";
 const Brain3DViewerSkeleton: React.FC = () => {
   return (
     <div
-      className="relative w-full h-[460px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col justify-between p-4 select-none animate-pulse"
+      className="relative w-full h-[460px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col justify-between p-4 select-none motion-safe:animate-pulse"
       data-testid="brain-3d-skeleton"
     >
       {/* Skeleton Header */}
       <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-mono w-max">
-        <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan/60 animate-ping" />
+        <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan/60 motion-safe:animate-ping" />
         <span className="font-semibold text-zinc-400 uppercase tracking-wider">
           Initializing 3D Engine...
         </span>
@@ -77,8 +77,8 @@ const Brain3DViewerSkeleton: React.FC = () => {
       {/* Skeleton Center pulsing graphic */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <div className="relative">
-          <div className="absolute -inset-4 rounded-full bg-brand-cyan/5 blur-xl animate-pulse" />
-          <Icon3dCubeSphere className="w-16 h-16 text-brand-cyan/40 animate-pulse relative z-10" />
+          <div className="absolute -inset-4 rounded-full bg-brand-cyan/5 blur-xl motion-safe:animate-pulse" />
+          <Icon3dCubeSphere className="w-16 h-16 text-brand-cyan/40 motion-safe:animate-pulse relative z-10" />
         </div>
         <div className="text-center space-y-1 relative z-10">
           <p className="text-sm font-bold font-mono text-zinc-300">
@@ -94,7 +94,7 @@ const Brain3DViewerSkeleton: React.FC = () => {
       <div className="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-900/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800/60 w-full mt-auto">
         <span>PREPARING T1 MESH BUFFER</span>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-cyan/30 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-brand-cyan/30 motion-safe:animate-pulse" />
           <span className="text-[10px]">STANDBY</span>
         </div>
       </div>
@@ -236,8 +236,19 @@ export const NeuroReconClient: React.FC = () => {
     return computeQAMetricsSync(scs[activeScenarioId], vol, [], []);
   });
 
+  // The case whose edits are on screen, which is the one a switch parks.
+  // It changes only when a load commits, so a second switch during a load
+  // parks the shown case's edits under that case (#3802).
+  const committedScenarioRef = React.useRef<ScenarioId>(activeScenarioId);
+  // Each case load takes a number; only the newest one may commit, and none
+  // after unmount.
+  const scenarioLoadRef = React.useRef(0);
+  const mountedRef = React.useRef(false);
+
   useEffect(() => {
     let isMounted = true;
+    mountedRef.current = true;
+    const firstLoad = scenarioLoadRef.current;
     Promise.all([
       getNeuroScenarios(),
       getNeuroDatasetConfigs(),
@@ -248,16 +259,21 @@ export const NeuroReconClient: React.FC = () => {
       setScenarios(scs);
       setDatasetConfigs(dCfgs);
       setScenarioList(scList);
+      // A case picked before this first load landed owns the volume.
+      if (scenarioLoadRef.current !== firstLoad) return;
       setVolume(vol);
       const sc = scs[activeScenarioId];
       if (sc) {
         computeQAMetrics(sc, vol, [], []).then((metrics) => {
-          if (isMounted) setQaMetrics(metrics);
+          if (isMounted && scenarioLoadRef.current === firstLoad) {
+            setQaMetrics(metrics);
+          }
         });
       }
     });
     return () => {
       isMounted = false;
+      mountedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -449,8 +465,9 @@ export const NeuroReconClient: React.FC = () => {
         setIsProcessing(false);
       }
 
-      // Park the current case's edits as a draft before leaving it.
-      const leavingId = activeScenarioRef.current;
+      const load = ++scenarioLoadRef.current;
+      // Park the shown case's edits as a draft before leaving it.
+      const leavingId = committedScenarioRef.current;
       const savedDrafts = withNeuroDraft(
         draftsRef.current,
         leavingId,
@@ -465,12 +482,16 @@ export const NeuroReconClient: React.FC = () => {
       const scs = scenarios || (await getNeuroScenarios());
       const newConfig = scs[scenarioId];
       const newVol = await computeSyntheticVolume(scenarioId);
-      const restored = savedDrafts[scenarioId];
+      // A newer switch or an unmount has taken over: drop this load.
+      if (load !== scenarioLoadRef.current || !mountedRef.current) return;
+      const restored = draftsRef.current[scenarioId];
       if (restored) applyVoxelEditsToVolume(newVol, restored.voxelEdits);
-      setVolume(newVol);
       const newMetrics = newConfig
         ? await computeQAMetrics(newConfig, newVol, [], [])
         : null;
+      if (load !== scenarioLoadRef.current || !mountedRef.current) return;
+      committedScenarioRef.current = scenarioId;
+      setVolume(newVol);
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
       }

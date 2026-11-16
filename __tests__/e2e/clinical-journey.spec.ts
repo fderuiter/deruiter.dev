@@ -10,7 +10,7 @@ import { expect, test, type Page } from "@playwright/test";
  */
 
 const STEPS = [
-  { path: "/crf", next: "Protocol Drift" },
+  { path: "/crf", next: "Trial Data Pipeline Simulator" },
   { path: "/protocol-drift", next: "Study Data Pipeline" },
   { path: "/study-data", next: "Clinical Data Platform" },
   { path: "/platform", next: "Study Data Pipeline case study" },

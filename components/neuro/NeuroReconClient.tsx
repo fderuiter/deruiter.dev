@@ -236,8 +236,19 @@ export const NeuroReconClient: React.FC = () => {
     return computeQAMetricsSync(scs[activeScenarioId], vol, [], []);
   });
 
+  // The case whose edits are on screen, which is the one a switch parks.
+  // It changes only when a load commits, so a second switch during a load
+  // parks the shown case's edits under that case (#3802).
+  const committedScenarioRef = React.useRef<ScenarioId>(activeScenarioId);
+  // Each case load takes a number; only the newest one may commit, and none
+  // after unmount.
+  const scenarioLoadRef = React.useRef(0);
+  const mountedRef = React.useRef(false);
+
   useEffect(() => {
     let isMounted = true;
+    mountedRef.current = true;
+    const firstLoad = scenarioLoadRef.current;
     Promise.all([
       getNeuroScenarios(),
       getNeuroDatasetConfigs(),
@@ -248,16 +259,21 @@ export const NeuroReconClient: React.FC = () => {
       setScenarios(scs);
       setDatasetConfigs(dCfgs);
       setScenarioList(scList);
+      // A case picked before this first load landed owns the volume.
+      if (scenarioLoadRef.current !== firstLoad) return;
       setVolume(vol);
       const sc = scs[activeScenarioId];
       if (sc) {
         computeQAMetrics(sc, vol, [], []).then((metrics) => {
-          if (isMounted) setQaMetrics(metrics);
+          if (isMounted && scenarioLoadRef.current === firstLoad) {
+            setQaMetrics(metrics);
+          }
         });
       }
     });
     return () => {
       isMounted = false;
+      mountedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -449,8 +465,9 @@ export const NeuroReconClient: React.FC = () => {
         setIsProcessing(false);
       }
 
-      // Park the current case's edits as a draft before leaving it.
-      const leavingId = activeScenarioRef.current;
+      const load = ++scenarioLoadRef.current;
+      // Park the shown case's edits as a draft before leaving it.
+      const leavingId = committedScenarioRef.current;
       const savedDrafts = withNeuroDraft(
         draftsRef.current,
         leavingId,
@@ -465,12 +482,16 @@ export const NeuroReconClient: React.FC = () => {
       const scs = scenarios || (await getNeuroScenarios());
       const newConfig = scs[scenarioId];
       const newVol = await computeSyntheticVolume(scenarioId);
-      const restored = savedDrafts[scenarioId];
+      // A newer switch or an unmount has taken over: drop this load.
+      if (load !== scenarioLoadRef.current || !mountedRef.current) return;
+      const restored = draftsRef.current[scenarioId];
       if (restored) applyVoxelEditsToVolume(newVol, restored.voxelEdits);
-      setVolume(newVol);
       const newMetrics = newConfig
         ? await computeQAMetrics(newConfig, newVol, [], [])
         : null;
+      if (load !== scenarioLoadRef.current || !mountedRef.current) return;
+      committedScenarioRef.current = scenarioId;
+      setVolume(newVol);
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
       }

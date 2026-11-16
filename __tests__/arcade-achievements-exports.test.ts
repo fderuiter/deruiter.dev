@@ -32,7 +32,10 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
       Object.entries(arcadeAchievements)
         .filter(([, value]) => typeof value === "function")
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, fn]) => [name, (fn as (...args: never[]) => unknown).length])
+        .map(([name, fn]) => [
+          name,
+          (fn as (...args: never[]) => unknown).length,
+        ])
     );
 
     expect(functionSignatures).toEqual({
@@ -126,8 +129,7 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         gameId: "laser-loon",
         title: "Capitol Flight Ace",
         subtitle: "Laser Loon",
-        description:
-          "Master raycast optics and defeat rival flag submissions.",
+        description: "Master raycast optics and defeat rival flag submissions.",
         icon: "Sparkles",
         category: "mastery",
         targetScore: 2000,
@@ -295,8 +297,7 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         gameId: "trial-and-error",
         title: "Blind Cleared",
         subtitle: "Trial & Error",
-        description:
-          "Play Chips x Mult hands to satisfy the SAP review blind.",
+        description: "Play Chips x Mult hands to satisfy the SAP review blind.",
         icon: "Cards",
         category: "gameplay",
         milestone: "blind_cleared",
@@ -412,7 +413,8 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         icon: "Headset",
         category: "milestone",
         milestone: "full_week",
-        conditionDescription: "Finish all five days of a Patty's Drive-Thru week",
+        conditionDescription:
+          "Finish all five days of a Patty's Drive-Thru week",
       },
 
       // For Better or Bulk
@@ -468,7 +470,8 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         gameId: "for-better-or-bulk",
         title: "Nothing Burnt",
         subtitle: "For Better or Bulk",
-        description: "Finish every setup task with no batch burnt on the grill.",
+        description:
+          "Finish every setup task with no batch burnt on the grill.",
         icon: "Heart",
         category: "gameplay",
         conditionDescription:
@@ -480,37 +483,37 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         id: "protocol_drift_locked",
         gameId: "protocol-drift",
         title: "Database Locked",
-        subtitle: "Protocol Drift",
+        subtitle: "Trial Data Pipeline Simulator",
         description: "Clear both Database Lock gates for Study PD-101.",
         icon: "ShieldCheck",
         category: "gameplay",
         targetScore: 100,
-        conditionDescription: "Lock the Protocol Drift database",
+        conditionDescription: "Lock the simulator's database",
       },
       {
         id: "protocol_drift_defensible",
         gameId: "protocol-drift",
         title: "Defensible Lock",
-        subtitle: "Protocol Drift",
+        subtitle: "Trial Data Pipeline Simulator",
         description:
           "Lock the database and earn all three preventative badges without fabricating data.",
         icon: "Trophy",
         category: "mastery",
         milestone: "all_badges",
         conditionDescription:
-          "Earn every Protocol Drift preventative badge at lock",
+          "Earn every preventative badge in the simulator at lock",
       },
       {
         id: "protocol_drift_lean_lock",
         gameId: "protocol-drift",
         title: "Lean Pipeline",
-        subtitle: "Protocol Drift",
+        subtitle: "Trial Data Pipeline Simulator",
         description:
           "Lock the database with a live pipeline at or under the par chip count.",
         icon: "Cpu",
         category: "milestone",
         milestone: "lock_under_par_chips",
-        conditionDescription: "Lock Protocol Drift with no more chips than par",
+        conditionDescription: "Lock the simulator with no more chips than par",
       },
 
       // Retro Labyrinth
@@ -519,7 +522,8 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         gameId: "retro-labyrinth",
         title: "Dungeon Crawler",
         subtitle: "Retro Labyrinth",
-        description: "Navigate shifting maze walls and defeat legacy code bugs.",
+        description:
+          "Navigate shifting maze walls and defeat legacy code bugs.",
         icon: "DeviceGamepad2",
         category: "gameplay",
         targetScore: 500,
@@ -535,7 +539,8 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         icon: "Trophy",
         category: "gameplay",
         milestone: "faceforge_cleared",
-        conditionDescription: "Clear the FaceForge boss room in Retro Labyrinth",
+        conditionDescription:
+          "Clear the FaceForge boss room in Retro Labyrinth",
       },
       {
         id: "retro_labyrinth_untouched",
@@ -569,7 +574,8 @@ describe("lib/arcade-achievements export contract snapshot (#3489)", () => {
         gameId: "meme-vault",
         title: "Soundboard Operator",
         subtitle: "Meme Vault",
-        description: "Find your first hidden trophy in or around the Meme Vault.",
+        description:
+          "Find your first hidden trophy in or around the Meme Vault.",
         icon: "Sparkles",
         category: "gameplay",
         targetScore: 100,

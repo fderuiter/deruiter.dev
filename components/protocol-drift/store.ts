@@ -37,7 +37,11 @@ import {
   saveEfficiencyBests,
   type EfficiencyBestsRecord,
 } from "./efficiency-bests";
-import { createEngineAdapter, type EngineAdapter } from "./engine-adapter";
+import {
+  EngineDisposedError,
+  createEngineAdapter,
+  type EngineAdapter,
+} from "./engine-adapter";
 import type { EngineResponse } from "./engine-core";
 import {
   clampChip,
@@ -224,7 +228,13 @@ const AWAITING_LOCK_TEXT =
 
 /** A reference pipeline loaded but not yet committed to the engine. */
 let pendingReference: string | null = null;
-let busy = false;
+/**
+ * The session each init or dispose starts (#3799). A reply, a save replay or
+ * a tick from an older session cannot touch the current one.
+ */
+let sessionEpoch = 0;
+/** The session whose tick is in flight, or null. */
+let tickingEpoch: number | null = null;
 /** True while a save is replaying: no cues, no autosaves. */
 let replaying = false;
 /** The seed new studies start from. */
@@ -279,11 +289,20 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
   const autosave = async () => {
     if (!adapter) return;
-    const res = await adapter.request({ type: "EXPORT_SAVE" });
+    const epoch = sessionEpoch;
+    let res: EngineResponse;
+    try {
+      res = await adapter.request({ type: "EXPORT_SAVE" });
+    } catch (error) {
+      if (error instanceof EngineDisposedError) return;
+      throw error;
+    }
+    // A save from an ended session never overwrites the current one's.
+    if (epoch !== sessionEpoch) return;
     const saved = res.events.find((e) => e.type === "SAVE_EXPORTED");
     if (saved && saved.type === "SAVE_EXPORTED") {
       await writeAutosave(saved.save);
-      set({ autosavedAt: saved.save.savedAt });
+      if (epoch === sessionEpoch) set({ autosavedAt: saved.save.savedAt });
     }
   };
 
@@ -403,7 +422,16 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
   const send = async (command: PDCommand): Promise<EngineResponse | null> => {
     if (!adapter) return null;
-    const res = await adapter.request(command);
+    const epoch = sessionEpoch;
+    let res: EngineResponse;
+    try {
+      res = await adapter.request(command);
+    } catch (error) {
+      // The session this request belonged to was disposed.
+      if (error instanceof EngineDisposedError) return null;
+      throw error;
+    }
+    if (epoch !== sessionEpoch) return null;
     absorb(res);
     return res;
   };
@@ -429,14 +457,17 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
     init: async (scenario = "full", seed) => {
       if (seed !== undefined) runSeed = seed;
       pendingReference = null;
+      sessionEpoch += 1;
+      const epoch = sessionEpoch;
       adapter?.dispose();
       adapter = createEngineAdapter();
       set({ ...initialState(), mode: adapter.mode, scenario });
       await send({ type: "INIT", seed: runSeed, scenario });
-      set({ ready: true });
+      if (epoch === sessionEpoch) set({ ready: true });
     },
 
     dispose: () => {
+      sessionEpoch += 1;
       adapter?.dispose();
       adapter = null;
       set({ ...initialState() });
@@ -537,10 +568,13 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
     },
 
     tick: async (realMs) => {
-      if (busy || get().snapshot?.fsmState !== "RUNNING") return;
-      busy = true;
+      if (tickingEpoch === sessionEpoch) return;
+      if (get().snapshot?.fsmState !== "RUNNING") return;
+      const epoch = sessionEpoch;
+      tickingEpoch = epoch;
       try {
         await send({ type: "TICK", realMs });
+        if (epoch !== sessionEpoch) return;
         // The last site reply after the final wave: stop before empty days.
         if (
           get().snapshot?.fsmState === "RUNNING" &&
@@ -550,7 +584,8 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           say("info", AWAITING_LOCK_TEXT);
         }
       } finally {
-        busy = false;
+        // An older session's tick never clears a newer session's lock.
+        if (tickingEpoch === epoch) tickingEpoch = null;
       }
     },
 

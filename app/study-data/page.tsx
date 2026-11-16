@@ -70,15 +70,15 @@ export default function StudyDataPage() {
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
         <Breadcrumbs path="/study-data" className="mb-6" />
-        <ClinicalJourneyNav path="/study-data" variant="compact" />
-        <JourneyStepLabel
-          path="/study-data"
-          fallback="Study Data Pipeline"
-          className="mt-8"
-        />
+        <JourneyStepLabel path="/study-data" fallback="Study Data Pipeline" />
         <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           Study Data Pipeline
         </h1>
+        <ClinicalJourneyNav
+          path="/study-data"
+          variant="compact"
+          className="mt-6"
+        />
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
           One fictional study, defined once in USDM, taken through collected
           data, SDTM, conformance checks, ADaM, Define-XML and the tables and

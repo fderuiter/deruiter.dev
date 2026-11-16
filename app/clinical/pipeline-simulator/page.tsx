@@ -34,10 +34,14 @@ export default function ProtocolDriftPage() {
           ),
         }}
       />
-      <div className="mx-auto mb-4 w-full max-w-[1600px]">
-        <ClinicalJourneyNav path={PIPELINE_SIMULATOR_PATH} variant="compact" />
-      </div>
-      <ProtocolDriftClient />
+      <ProtocolDriftClient
+        journey={
+          <ClinicalJourneyNav
+            path={PIPELINE_SIMULATOR_PATH}
+            variant="compact"
+          />
+        }
+      />
     </PageLayout>
   );
 }

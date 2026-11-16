@@ -6,9 +6,10 @@ import { expect, test, type Page } from "@playwright/test";
  * the page also render the next/previous navigator (`NextPrevNav`), which
  * would give it two competing "what next" controls?
  *
- * The spec records what it finds rather than asserting a design, because
- * #3146 decides the fix from these numbers. It fails only when a page cannot
- * be measured: no journey strip, no heading, or horizontal overflow.
+ * #3146 settled the rule from these numbers: one "what next" control per
+ * page, and the heading above the strip (#3195). The spec attaches each
+ * reading and fails when a page breaks either rule, cannot be measured, or
+ * scrolls sideways.
  */
 
 const PAGES = [
@@ -76,6 +77,12 @@ test.describe("clinical journey strip against the H1 at 375 px (#3386)", () => {
         contentType: "application/json",
       });
       console.log(`[journey-layout] ${JSON.stringify(reading)}`);
+      expect(reading.stripAboveHeading, `${path} strip above its h1`).toBe(
+        false
+      );
+      expect(reading.bothControlsPresent, `${path} has two controls`).toBe(
+        false
+      );
 
       const overflow = await page.evaluate(
         () =>

@@ -380,4 +380,37 @@ describe("ModalContainer on the native dialog element", () => {
       screen.getByRole("button", { name: "First" })
     );
   });
+  it("moves focus to the first control when showModal() focuses the scrolling panel", () => {
+    // Chrome treats a scrollable panel as keyboard-focusable and may make it
+    // the focus delegate, which left the close button unfocused at 200% text.
+    showModal.mockImplementation(function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+      const panel = this.firstElementChild as HTMLElement;
+      panel.tabIndex = -1;
+      panel.focus();
+    });
+    render(
+      <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+        <button type="button">Close</button>
+        <input aria-label="Field" />
+      </ModalContainer>
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Close" })
+    );
+  });
+
+  it("keeps focus on a control showModal() already focused", () => {
+    showModal.mockImplementation(function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+      (this.querySelector("input") as HTMLElement).focus();
+    });
+    render(
+      <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+        <button type="button">Close</button>
+        <input aria-label="Field" />
+      </ModalContainer>
+    );
+    expect(document.activeElement).toBe(screen.getByLabelText("Field"));
+  });
 });

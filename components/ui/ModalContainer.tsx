@@ -4,6 +4,17 @@ import React, { ReactNode, useEffect, useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { cn } from "@/lib/utils";
 
+// Controls that can take initial focus. A scroll container is not one.
+const CONTROL_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+  '[contenteditable]:not([contenteditable="false"])',
+].join(", ");
+
 export interface ModalContainerProps {
   /**
    * Whether the modal dialog is currently visible.
@@ -137,7 +148,24 @@ export function ModalContainer({
         // Environments without showModal (jsdom) still get an open dialog.
         dialog.setAttribute("open", "");
       }
-      initialFocusRef?.current?.focus();
+      if (initialFocusRef?.current) {
+        initialFocusRef.current.focus();
+        return;
+      }
+      // Without showModal() focus stays put until the trap moves it.
+      if (typeof dialog.showModal !== "function") return;
+      // Chrome makes a scrollable panel keyboard-focusable, and showModal()
+      // may pick it as the focus delegate (the panel scrolls at 200% text).
+      // Land on the first control instead, as the trap would.
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        dialog.contains(active) &&
+        active.matches(CONTROL_SELECTOR)
+      ) {
+        return;
+      }
+      dialog.querySelector<HTMLElement>(CONTROL_SELECTOR)?.focus();
     };
 
     const requestClose = () => {

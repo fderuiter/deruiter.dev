@@ -411,3 +411,11 @@ the menus show it:
 Meme Vault is the first `labs` game
 ([#3151](https://github.com/fderuiter/deruiter.dev/issues/3151)). It is a
 soundboard and trophy room rather than a cabinet game, so it was `room` until now.
+
+The `simulators` listing works the same way under Clinical. Clinical Trial
+Chaos moves to it
+([#3153](https://github.com/fderuiter/deruiter.dev/issues/3153)): a CDISC and
+Part 11 drill that reads as a study tool. The Clinical menu lists it once in a
+Practice section, Clinical counts as the current group on
+`/arcade/clinical-chaos`, and the page links back to `/clinical` instead of the
+arcade ring. The route stays where it is.

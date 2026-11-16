@@ -23,8 +23,9 @@ export type ArcadePhoneOrientation = "portrait" | "landscape" | "both";
  * - `hub`: a card in the arcade hub's game grid, counted in the game count
  *   and part of the previous/next ring.
  * - `room`: an arcade page outside the grid.
- * - `simulators`: listed under Clinical as a tool (the Trial Data Pipeline
- *   Simulator, #1841, #3167), outside the hub grid and the Arcade Daily.
+ * - `simulators`: listed under Clinical (the Trial Data Pipeline Simulator,
+ *   #1841, #3167, and Clinical Trial Chaos, #3153), outside the hub grid,
+ *   its count, the previous/next ring and the Arcade Daily.
  * - `labs`: listed once under Labs (#3150), outside the hub grid, its count
  *   and the previous/next ring. The route, readiness, saved progress and
  *   `daily` flag do not change with the listing.
@@ -112,7 +113,8 @@ export const ARCADE_REGISTRY = [
     slug: "clinical-chaos",
     name: "Clinical Trial Chaos",
     route: "/arcade/clinical-chaos",
-    listing: "hub",
+    // A CDISC and Part 11 drill that reads as a study tool (#3153).
+    listing: "simulators",
     views: GATED_ON_PHONE,
     epic: 2453,
     daily: false,

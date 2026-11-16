@@ -23,10 +23,7 @@ test.describe("Arcade Games & Simulators Suite", () => {
       page.getByRole("heading", { name: /Garmin/i }).first()
     ).toBeVisible();
 
-    // 4. Clinical Trial Chaos
-    await expect(
-      page.getByRole("heading", { name: /Clinical Trial Chaos/i }).first()
-    ).toBeVisible();
+    // Clinical Trial Chaos is listed under Clinical, not the hub (#3153).
 
     // 5. Retro Labyrinth
     await expect(

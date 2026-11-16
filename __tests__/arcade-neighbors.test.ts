@@ -25,13 +25,23 @@ describe("arcade previous/next ring (#1330)", () => {
     }
   });
 
-  it("puts Trial & Error between Clinical Chaos and Study Director", () => {
-    expect(getArcadeNeighbors("/arcade/clinical-chaos").next.href).toBe(
+  it("puts Trial & Error between Monkey C Mayhem and Study Director", () => {
+    expect(getArcadeNeighbors("/arcade/garmin-watch").next.href).toBe(
       "/arcade/trial-and-error"
     );
     const te = getArcadeNeighbors("/arcade/trial-and-error");
-    expect(te.prev.href).toBe("/arcade/clinical-chaos");
+    expect(te.prev.href).toBe("/arcade/garmin-watch");
     expect(te.next.href).toBe("/arcade/study-director");
+  });
+
+  it("leaves Clinical Trial Chaos out of the ring, now that Clinical lists it (#3153)", () => {
+    expect(ARCADE_GAME_ROUTES).not.toContain("/arcade/clinical-chaos");
+    const src = readFileSync(
+      path.resolve(process.cwd(), "components/arcade/ClinicalChaosClient.tsx"),
+      "utf8"
+    );
+    expect(src).not.toMatch(/getArcadeNeighbors/);
+    expect(src).toMatch(/href: "\/clinical"/);
   });
 
   it("leaves Protocol Drift out of the ring, since it is a simulator (#1841)", () => {
@@ -57,7 +67,7 @@ describe("arcade previous/next ring (#1330)", () => {
   });
 
   it("takes titles and tags from the shared game metadata", () => {
-    const { next } = getArcadeNeighbors("/arcade/clinical-chaos");
+    const { next } = getArcadeNeighbors("/arcade/garmin-watch");
     const meta = ARCADE_GAMES_METADATA.find(
       (g) => g.route === "/arcade/trial-and-error"
     );
@@ -71,7 +81,6 @@ describe("arcade previous/next ring (#1330)", () => {
       "LaserLoon",
       "QuasiPuzzler",
       "GarminWatch",
-      "ClinicalChaos",
       "TrialAndError",
       "StudyDirector",
       "RetroLabyrinth",

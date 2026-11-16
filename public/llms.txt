@@ -6,6 +6,7 @@ Canonical origin: https://deruiter.dev. The full architectural dossier, with cas
 
 ## Clinical
 
+- [Clinical Trial Chaos: SDTM Game](https://deruiter.dev/arcade/clinical-chaos): Sort clinical data into SDTM domains, sign the submissions, and keep up with the conveyor belt while the auditor watches. At least there is a restart button.
 - [Clinical Data, End to End: The Journey](https://deruiter.dev/clinical): One synthetic study followed from case report forms through SDTM, ADaM and study tables to a governed portfolio, with the evidence behind each step.
 - [Trial Data Pipeline Simulator](https://deruiter.dev/clinical/pipeline-simulator): A browser puzzle about the gap between a clean regulatory specification and the messy way people collect clinical data, played as a systems simulation.
 - [CDISC Standards Conformance Matrix](https://deruiter.dev/clinical/standards): Each CDISC standard a synthetic clinical data pipeline uses, the version it is pinned to, the newest published, and what CDISC CORE and local rules found.
@@ -31,7 +32,6 @@ Canonical origin: https://deruiter.dev. The full architectural dossier, with cas
 ## Arcade
 
 - [Arcade: Browser Games and Puzzles](https://deruiter.dev/arcade): Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, clinical trial games, and a smartwatch with little memory to spare.
-- [Clinical Trial Chaos: SDTM Game](https://deruiter.dev/arcade/clinical-chaos): Sort clinical data into SDTM domains, sign the submissions, and keep up with the conveyor belt while the auditor watches. At least there is a restart button.
 - [For Better or Bulk: Costco Wedding](https://deruiter.dev/arcade/for-better-or-bulk): Set up our real Costco wedding before the 4:00 ceremony: grill hot dogs, arrange Kirkland roses and stack chairs, solo or as two players on one keyboard.
 - [Monkey C Mayhem: Garmin 5K Platformer](https://deruiter.dev/arcade/garmin-watch): Run a 5K platformer on a smartwatch in Monkey C Mayhem: stomp Couch Potatoes, jump Hurdles and keep your Body Battery above zero through five stages.
 - [Laser Loon: Quest for the State Flag](https://deruiter.dev/arcade/laser-loon): Fly F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, blasting rival flags and red tape in this browser game.

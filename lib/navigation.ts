@@ -381,9 +381,19 @@ const LABS_GAME_ROUTES: readonly string[] = ARCADE_REGISTRY.filter(
   (game) => game.listing === "labs"
 ).map((game) => game.route);
 
+/**
+ * Arcade routes the registry lists under Clinical (#3153). Their menu entries
+ * move from the Arcade sections to the Clinical group's practice section.
+ */
+const CLINICAL_GAME_ROUTES: readonly string[] = ARCADE_REGISTRY.filter(
+  (game) => game.listing === "simulators" && game.route.startsWith("/arcade/")
+).map((game) => game.route);
+
 const isLabsGame = (item: NavItem) => LABS_GAME_ROUTES.includes(item.href);
+const isClinicalGame = (item: NavItem) =>
+  CLINICAL_GAME_ROUTES.includes(item.href);
 const arcadeOnly = (items: NavItem[]) =>
-  items.filter((item) => !isLabsGame(item));
+  items.filter((item) => !isLabsGame(item) && !isClinicalGame(item));
 
 /** Arcade entries the registry lists under Labs, in Arcade menu order. */
 const LABS_GAME_ITEMS: NavItem[] = [
@@ -391,6 +401,13 @@ const LABS_GAME_ITEMS: NavItem[] = [
   ...ARCADE_LIFE_ITEMS,
   ...ARCADE_PUZZLE_ITEMS,
 ].filter(isLabsGame);
+
+/** Arcade entries the registry lists under Clinical, in Arcade menu order. */
+const CLINICAL_GAME_ITEMS: NavItem[] = [
+  ...ARCADE_CLINICAL_ITEMS,
+  ...ARCADE_LIFE_ITEMS,
+  ...ARCADE_PUZZLE_ITEMS,
+].filter(isClinicalGame);
 
 const WRITING_ITEMS: NavItem[] = [
   {
@@ -508,6 +525,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         items: PLATFORM_TOOL_ITEMS,
       },
       { id: "evidence", label: "Evidence", items: CLINICAL_EVIDENCE_ITEMS },
+      { id: "practice", label: "Practice", items: CLINICAL_GAME_ITEMS },
     ],
     activeWhen: {
       exact: [
@@ -516,6 +534,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         "/crf",
         PIPELINE_SIMULATOR_PATH,
         "/study-data",
+        ...CLINICAL_GAME_ROUTES,
       ],
       prefixes: ["/platform", "/m/crf"],
     },
@@ -553,7 +572,10 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         items: arcadeOnly(ARCADE_PUZZLE_ITEMS),
       },
     ],
-    activeWhen: { prefixes: ["/arcade"], except: [...LABS_GAME_ROUTES] },
+    activeWhen: {
+      prefixes: ["/arcade"],
+      except: [...LABS_GAME_ROUTES, ...CLINICAL_GAME_ROUTES],
+    },
   },
   {
     id: "writing",

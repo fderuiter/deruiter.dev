@@ -436,6 +436,13 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
   }) => {
     await governanceJourney(page);
   });
+
+  // #3215: the strategy toolkit's scoring weights write the shareable hash.
+  test("Probe 18: Strategy toolkit weights update the shareable link", async ({
+    page,
+  }) => {
+    await strategyJourney(page);
+  });
 });
 
 async function studyDataJourney(page: Page) {
@@ -705,4 +712,33 @@ async function governanceJourney(page: Page) {
     });
   }).toPass({ timeout: 15_000 });
   await expect(page.locator('[id="catalog-subjects_screened"]')).toBeVisible();
+}
+
+async function strategyJourney(page: Page) {
+  const response = await page.goto("/platform/strategy", {
+    waitUntil: "domcontentloaded",
+  });
+  // A deployed origin a release behind main can lack the route; the daily
+  // probe skips there, as the other platform probes do.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/platform/strategy is not deployed to the probed origin yet"
+  );
+  expect(response?.status()).toBe(200);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Vendor scoring (Platform Strategy)",
+    })
+  ).toBeVisible();
+  const weight = page.getByRole("spinbutton", {
+    name: "Functional fit weight",
+  });
+  await expect(async () => {
+    await weight.fill("0");
+    await expect(page).toHaveURL(/#strategy=/, { timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+  await expect(
+    page.getByRole("heading", { level: 2, name: "05 / Decision memo" })
+  ).toBeVisible();
 }

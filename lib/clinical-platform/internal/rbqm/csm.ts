@@ -37,6 +37,13 @@ export const CSM_DEFAULT_FDR = 0.05;
 
 /** Measures in the KRI profile, in vector order. */
 const PROFILE_MEASURES = 4;
+/**
+ * Scheduled (windowed) visits a site needs before its on-day share enters
+ * the KRI profile. With fewer, the share moves in steps of a half or a
+ * third, and two on-day visits out of two read as a profile far from every
+ * peer (#3221).
+ */
+const MIN_PROFILE_SCHEDULED_VISITS = 10;
 
 /** Hours in a day, the entry-hour test's categories. */
 const HOURS = 24;
@@ -502,6 +509,14 @@ function kriProfile(
       siteId: site.siteId,
       testId,
       reason: `A ${k}-measure profile needs at least ${k + 2} peer sites; the site has ${n}.`,
+    };
+  }
+  const scheduled = sum(site.scheduled.values());
+  if (scheduled < MIN_PROFILE_SCHEDULED_VISITS) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason: `${scheduled} scheduled visits with a window; the profile's on-day share needs ${MIN_PROFILE_SCHEDULED_VISITS}.`,
     };
   }
   const rows = peers.map(profile);

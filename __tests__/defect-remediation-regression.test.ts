@@ -3080,6 +3080,27 @@ describe("REDCap CSV parser HTML entity decoding regression (#3899)", () => {
   });
 });
 
+describe("Central monitoring KRI profile regression (#3221)", () => {
+  it("leaves a site with two scheduled visits out of the profile instead of flagging it", async () => {
+    const { buildWarehouse, centralMonitoring, generatePortfolio } =
+      await import("@/lib/clinical-platform");
+    const run = centralMonitoring(
+      buildWarehouse(generatePortfolio({ seed: 2 })),
+      "DEV-402"
+    );
+    expect(
+      run.results.some(
+        (r) => r.siteId === "DEV-402-CA-122" && r.testId === "csm-kri-profile"
+      )
+    ).toBe(false);
+    expect(
+      run.excluded.find(
+        (e) => e.siteId === "DEV-402-CA-122" && e.testId === "csm-kri-profile"
+      )?.reason
+    ).toMatch(/2 scheduled visits/);
+  });
+});
+
 describe("Oncology preset visit-window regression (#3138)", () => {
   it("opens with no window conflicts, because unscheduled visits are skipped", () => {
     expect(

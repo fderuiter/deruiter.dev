@@ -53,7 +53,7 @@ describe("navigation structure (#1842, #2952)", () => {
       [...ARCADE_GAME_ROUTES, "/arcade/meme-vault"].sort()
     );
     expect(hrefs).not.toContain("/merch");
-    expect(hrefs).not.toContain("/protocol-drift");
+    expect(hrefs).not.toContain("/clinical/pipeline-simulator");
   });
 
   it("lists the clinical journey's pages in journey order, then the platform tools", () => {
@@ -127,7 +127,7 @@ describe("navigation structure (#1842, #2952)", () => {
       "/stack",
       "/acknowledgments",
       "/merch",
-      "/protocol-drift",
+      "/clinical/pipeline-simulator",
       "/platform",
     ]) {
       expect(reachable.has(href), href).toBe(true);
@@ -156,7 +156,7 @@ describe("navigation structure (#1842, #2952)", () => {
       PRIMARY_NAV.filter((g) => isNavGroupActive(g, p)).map((g) => g.id);
     expect(current("/arcade/study-director")).toEqual(["arcade"]);
     expect(current("/merch")).toEqual(["about"]);
-    expect(current("/protocol-drift")).toEqual(["clinical"]);
+    expect(current("/clinical/pipeline-simulator")).toEqual(["clinical"]);
     expect(current("/platform/portfolio")).toEqual(["clinical"]);
     expect(current("/clinical")).toEqual(["clinical"]);
     expect(current("/m/crf")).toEqual(["clinical"]);
@@ -220,16 +220,22 @@ describe("Protocol Drift redirect (#1841)", () => {
   it("permanently redirects the old arcade URL to the simulator", async () => {
     const redirects = await nextConfig.redirects?.();
     const rule = redirects?.find((r) => r.source === "/arcade/protocol-drift");
-    expect(rule?.destination).toBe("/protocol-drift");
+    expect(rule?.destination).toBe("/clinical/pipeline-simulator");
     expect(rule?.permanent).toBe(true);
   });
 
-  it("no longer serves the game from the arcade folder", () => {
-    expect(
-      fs.existsSync(path.join(process.cwd(), "app/arcade/protocol-drift"))
-    ).toBe(false);
-    expect(
-      fs.existsSync(path.join(process.cwd(), "app/protocol-drift/page.tsx"))
-    ).toBe(true);
+  it("permanently redirects the old simulator URL to the Clinical route (#3167)", async () => {
+    const redirects = await nextConfig.redirects?.();
+    const rule = redirects?.find((r) => r.source === "/protocol-drift");
+    expect(rule?.destination).toBe("/clinical/pipeline-simulator");
+    expect(rule?.permanent).toBe(true);
+  });
+
+  it("serves the page only from the Clinical folder", () => {
+    const exists = (dir: string) =>
+      fs.existsSync(path.join(process.cwd(), dir));
+    expect(exists("app/arcade/protocol-drift")).toBe(false);
+    expect(exists("app/protocol-drift")).toBe(false);
+    expect(exists("app/clinical/pipeline-simulator/page.tsx")).toBe(true);
   });
 });

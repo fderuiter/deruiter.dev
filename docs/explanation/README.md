@@ -69,3 +69,8 @@ commitments.
 - [Design system tokens and editorial palette](planning/ui-ux-design-tokens.md)
 - [UI/UX GitHub ticket proposal](planning/ui-ux-ticket-proposal.md)
 - [Proposed DEMO-DEV-201 device study](study-data-device-study-proposal.md)
+
+## Study data pipeline
+
+- [Cancel and dispose in the study-data pipeline client](study-data-pipeline-cancellation.md),
+  what cancel and dispose mean in worker and main-thread mode.

@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
@@ -138,5 +140,23 @@ describe("GlossaryTerm", () => {
     fireEvent.click(screen.getByRole("button", { name: "SDTM" }));
     const open = await axe.run(container);
     expect(open.violations).toEqual([]);
+  });
+});
+
+// #3194: each clinical page wraps a glossary term once, at its first prose
+// use. The pages are server components, so the source is the stable check.
+describe("glossary terms on the clinical pages", () => {
+  const read = (file: string) =>
+    fs.readFileSync(path.resolve(__dirname, "..", file), "utf-8");
+  const wrapped = (source: string) =>
+    [...source.matchAll(/<GlossaryTerm term="([a-z-]+)"/g)].map((m) => m[1]);
+
+  it.each([
+    ["app/study-data/page.tsx", ["usdm", "sdtm", "adam", "define-xml"]],
+    ["app/platform/page.tsx", ["sdtm", "adam"]],
+    ["app/clinical/standards/page.tsx", ["core"]],
+    ["components/arcade/ProtocolDriftClient.tsx", ["protocol-amendment"]],
+  ])("%s wraps each present term exactly once", (file, terms) => {
+    expect(wrapped(read(file))).toEqual(terms);
   });
 });

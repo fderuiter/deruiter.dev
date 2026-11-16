@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IntentLink } from "@/components/ui/IntentLink";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
@@ -107,7 +108,8 @@ export default function PlatformPage() {
         </ol>
         <p className="mt-4 border-l-2 border-emerald-500 pl-4 text-sm leading-relaxed text-slate-300">
           Governance, quality, lineage and validation evidence span every layer.
-          The gold layer&apos;s SDTM and ADaM come from the{" "}
+          The gold layer&apos;s <GlossaryTerm term="sdtm" /> and{" "}
+          <GlossaryTerm term="adam" /> come from the{" "}
           <IntentLink
             href="/study-data"
             className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"

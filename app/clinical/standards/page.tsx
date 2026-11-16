@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageLayout } from "@/components/PageLayout";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
   standardsBillOfMaterials,
@@ -170,9 +171,9 @@ export default async function StandardsConformancePage() {
           className="mt-6 max-w-3xl border-l-2 border-amber-500 pl-4 text-sm leading-relaxed text-slate-300"
         >
           A demonstration, not a validated or certified system. All data is
-          synthetic. CDISC has not reviewed or endorsed this site; the CDISC
-          CORE results are what the open-source engine reported on this
-          site&apos;s files.
+          synthetic. CDISC has not reviewed or endorsed this site; the CDISC{" "}
+          <GlossaryTerm term="core" /> results are what the open-source engine
+          reported on this site&apos;s files.
         </p>
       </header>
 

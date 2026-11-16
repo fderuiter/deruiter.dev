@@ -54,7 +54,7 @@ export const ProtocolDriftClient: React.FC = () => (
         <PlayCabinet
           gameId="protocol-drift"
           title={PIPELINE_SIMULATOR_NAME}
-          subtitle="Study PD-101 · Clinical Data Architecture"
+          subtitle="Study PD-101 · Clinical data pipeline"
           icon={
             <IconShieldCheck
               className="h-8 w-8 text-amber-400"

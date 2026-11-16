@@ -104,10 +104,10 @@ export function BriefingModal() {
       holdEscape
     >
       <p className="mb-2 text-zinc-300">
-        You are the Lead Clinical Data Architect for Study {STUDY_ID}, a Phase I
-        antihypertensive single-ascending-dose trial. Design the pipeline that
-        carries site data into CDISC SDTM, keep it honest when the data is not,
-        and survive a protocol amendment before Database Lock.
+        Study {STUDY_ID} is a Phase I antihypertensive single-ascending-dose
+        trial. Design the pipeline that carries site data into CDISC SDTM, keep
+        it honest when the data is not, and survive a protocol amendment before
+        Database Lock.
       </p>
       <ul className="mb-3 list-disc space-y-1 pl-5 text-zinc-200">
         <li>
@@ -605,7 +605,13 @@ function formatMeasure(id: EfficiencyMetric["id"], value: number): string {
   return String(value);
 }
 
-/** Par, actual, best and medal for each efficiency measure (#2054). */
+/** Debrief names for the preventative checks, free of role titles (#3198). */
+const CHECK_TITLES: Partial<Record<Scorecard["badges"][number]["id"], string>> =
+  {
+    PREVENTATIVE_ARCHITECT: "Preventative design",
+  };
+
+/** Par, actual and best for each efficiency measure (#2054). */
 function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
   const record = useProtocolDriftStore((s) => s.efficiencyBests);
   return (
@@ -613,9 +619,7 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-0 border-collapse text-left text-xs">
           <caption className="mb-1 text-left text-zinc-100">
-            Efficiency against par: {scorecard.medals} of{" "}
-            {scorecard.efficiency.length} medals, {scorecard.efficiencyScore}{" "}
-            points
+            Efficiency against par
           </caption>
           <thead>
             <tr className="border-b border-zinc-700 text-zinc-300">
@@ -628,11 +632,8 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
               <th scope="col" className="px-2 py-1 text-right font-normal">
                 Actual
               </th>
-              <th scope="col" className="px-2 py-1 text-right font-normal">
-                Best
-              </th>
               <th scope="col" className="py-1 pl-2 text-right font-normal">
-                Medal
+                Best
               </th>
             </tr>
           </thead>
@@ -654,22 +655,11 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
                   <td className="px-2 py-1 text-right tabular-nums text-zinc-100">
                     {formatMeasure(m.id, m.actual)}
                   </td>
-                  <td className="px-2 py-1 text-right tabular-nums text-zinc-100">
+                  <td className="py-1 pl-2 text-right tabular-nums text-zinc-100">
                     {best === undefined ? "n/a" : formatMeasure(m.id, best)}
                     {isNew ? (
                       <span className="ml-1 text-amber-400">new</span>
                     ) : null}
-                  </td>
-                  <td className="py-1 pl-2 text-right">
-                    <span
-                      className={`inline-flex items-center justify-center border px-1 ${
-                        m.medal
-                          ? "border-emerald-500/70 text-emerald-400"
-                          : "border-zinc-700 text-zinc-300"
-                      }`}
-                    >
-                      {m.medal ? "MEDAL" : m.waived ? "ASSISTED" : "OVER PAR"}
-                    </span>
                   </td>
                 </tr>
               );
@@ -680,16 +670,10 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
       {scorecard.assisted ? (
         <p className="mt-2 text-amber-300">
           Assisted run: a reference pipeline was loaded, so the chip and wire
-          measures earn no medal, no points and no best. Design your own
-          pipeline to score them.
+          measures keep no best. Design your own pipeline to record them.
         </p>
       ) : null}
-      <p className="mt-2 text-zinc-300">
-        Arcade score{" "}
-        <b className="tabular-nums text-zinc-100">{scorecard.score}</b>: 100 for
-        the lock, 100 per badge, mean goodwill and the efficiency points. Bests
-        are kept in this browser.
-      </p>
+      <p className="mt-2 text-zinc-300">Bests are kept in this browser.</p>
     </div>
   );
 }
@@ -790,7 +774,7 @@ export function DebriefModal({
             {scorecard.meanGoodwill.toFixed(1)}
           </dd>
         </dl>
-        <ul className="mt-2 space-y-1" aria-label="Preventative badges">
+        <ul className="mt-2 space-y-1" aria-label="Preventative checks">
           {scorecard.badges.map((b) => (
             <li key={b.id} className="flex min-w-0 gap-2">
               <span
@@ -800,10 +784,11 @@ export function DebriefModal({
                     : "border-zinc-700 text-zinc-300"
                 }`}
               >
-                {b.earned ? "EARNED" : "NOT YET"}
+                {b.earned ? "MET" : "NOT YET"}
               </span>
               <span className="min-w-0 break-words">
-                <b className="text-zinc-100">{b.title}</b>: {b.reason}
+                <b className="text-zinc-100">{CHECK_TITLES[b.id] ?? b.title}</b>
+                : {b.reason}
               </span>
             </li>
           ))}

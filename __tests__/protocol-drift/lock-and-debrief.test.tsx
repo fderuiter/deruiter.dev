@@ -114,8 +114,10 @@ describe("Database lock and debrief", () => {
     expect(card.textContent).toMatch(/Query restraint ratio/);
     expect(within(card).getAllByText(/^Site [ABC] goodwill$/)).toHaveLength(3);
     expect(
-      within(card).getByLabelText("Preventative badges").children
+      within(card).getByLabelText("Preventative checks").children
     ).toHaveLength(3);
+    // No medal or role-title wording on the debrief (#3198).
+    expect(debrief.textContent).not.toMatch(/medal|trophy|architect/i);
 
     await act(async () => {
       fireEvent.click(within(debrief).getByRole("button", { name: "VS.csv" }));

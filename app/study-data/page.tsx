@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { StudyPicker } from "@/components/clinical/StudyPicker";
 import { IntentLink } from "@/components/ui/IntentLink";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
@@ -80,11 +81,13 @@ export default function StudyDataPage() {
           className="mt-6"
         />
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
-          One fictional study, defined once in USDM, taken through collected
-          data, SDTM, conformance checks, ADaM, Define-XML and the tables and
-          figures of a study report. Select any number to see the records it
-          came from and the protocol activity that scheduled them. To run a
-          study of your own, design it in{" "}
+          One fictional study, defined once in <GlossaryTerm term="usdm" />,
+          taken through collected data, <GlossaryTerm term="sdtm" />,
+          conformance checks, <GlossaryTerm term="adam" />,{" "}
+          <GlossaryTerm term="define-xml" /> and the tables and figures of a
+          study report. Select any number to see the records it came from and
+          the protocol activity that scheduled them. To run a study of your own,
+          design it in{" "}
           <IntentLink
             href="/crf"
             className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"

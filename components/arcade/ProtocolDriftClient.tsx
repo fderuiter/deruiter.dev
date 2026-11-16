@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { IconShieldCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { requestProtocolDriftAutoPause } from "@/components/protocol-drift/auto-pause";
 import {
@@ -50,7 +51,10 @@ export const ProtocolDriftClient: React.FC<ProtocolDriftClientProps> = ({
         </h1>
         <p className="mt-2 max-w-3xl font-mono text-xs text-zinc-300 sm:text-sm">
           Wire a clinical data pipeline from site entry to CDISC SDTM and ADaM,
-          then keep it honest while coordinators tire, a protocol amendment
+          then keep it honest while coordinators tire, a{" "}
+          <GlossaryTerm term="protocol-amendment">
+            protocol amendment
+          </GlossaryTerm>{" "}
           lands mid-flight and the data stops matching the plan. Every study,
           site and person here is fictional; nothing is clinical or regulatory
           advice.

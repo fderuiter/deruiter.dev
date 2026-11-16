@@ -216,3 +216,88 @@ describe("useProofSimulation", () => {
     expect(result.current.isSimulating).toBe(false);
   });
 });
+
+describe("useProofSimulation attempt boundaries (#3800)", () => {
+  const step = (requestId: number, n: number) =>
+    latestWorker().emit({
+      type: "progress",
+      requestId,
+      log: `[Step ${n}/7] Line ${n}`,
+    });
+
+  it("done writes the buffered lines first, and a later flush cannot revive progress", () => {
+    const { result, logs } = setup();
+    const requestId = start(result);
+    step(requestId, 2);
+    latestWorker().emit({ type: "done", requestId, stepsCompleted: 7 });
+    act(() => vi.advanceTimersByTime(SIMULATION_FLUSH_MS * 3));
+
+    expect(result.current.isSimulating).toBe(false);
+    expect(result.current.simulationProgress).toBeNull();
+    expect(logs.map((l) => l.text)).toEqual([
+      "[Step 2/7] Line 2",
+      "✔ Background Simulation completed successfully with 7 steps.",
+    ]);
+  });
+
+  it("error writes the buffered lines first and leaves progress cleared", () => {
+    const { result, logs } = setup();
+    const requestId = start(result);
+    step(requestId, 3);
+    latestWorker().emit({ type: "error", requestId, message: "bad AST" });
+    act(() => vi.advanceTimersByTime(SIMULATION_FLUSH_MS * 3));
+
+    expect(result.current.simulationProgress).toBeNull();
+    expect(logs.map((l) => l.text)).toEqual([
+      "[Step 3/7] Line 3",
+      "Background Simulation error: bad AST",
+    ]);
+  });
+
+  it("abort drops the buffered lines and keeps progress cleared", () => {
+    const { result, logs } = setup();
+    const requestId = start(result);
+    step(requestId, 2);
+    act(() => result.current.abortSimulation());
+    act(() => vi.advanceTimersByTime(SIMULATION_FLUSH_MS * 3));
+
+    expect(result.current.simulationProgress).toBeNull();
+    expect(logs).toHaveLength(0);
+  });
+
+  it("after the watchdog fires, later flushes leave progress cleared", () => {
+    // Every line resets the watchdog, so a line is always flushed before it
+    // fires; what matters is that nothing revives the timed-out attempt.
+    const { result, logs } = setup();
+    const requestId = start(result);
+    step(requestId, 2);
+    act(() => vi.advanceTimersByTime(SIMULATION_WATCHDOG_MS));
+    const written = logs.length;
+    act(() => vi.advanceTimersByTime(SIMULATION_FLUSH_MS * 3));
+
+    expect(logs.at(-1)?.text).toMatch(/terminated by watchdog/);
+    expect(logs).toHaveLength(written);
+    expect(result.current.simulationProgress).toBeNull();
+  });
+
+  it("a new attempt started before the old batch flushed shows only its own lines", () => {
+    const { result, logs } = setup();
+    const first = start(result);
+    step(first, 5);
+    const second = start(result);
+    act(() => vi.advanceTimersByTime(SIMULATION_FLUSH_MS));
+
+    expect(second).toBe(first + 1);
+    expect(logs).toHaveLength(0);
+    expect(result.current.simulationProgress).toEqual({
+      step: 1,
+      total: 10,
+      log: "Booting Proof Simulation Engine...",
+    });
+
+    step(second, 2);
+    act(() => vi.advanceTimersByTime(SIMULATION_FLUSH_MS));
+    expect(logs.map((l) => l.text)).toEqual(["[Step 2/7] Line 2"]);
+    expect(result.current.simulationProgress?.step).toBe(2);
+  });
+});

@@ -1741,7 +1741,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
 
             <div className="space-y-2 mt-4">
               <div className="cabinet-standby-text flex justify-between items-center text-[10px]">
-                <span className="animate-pulse motion-reduce:animate-none">
+                <span className="motion-safe:animate-pulse motion-reduce:animate-none">
                   Warming up CRT display...
                 </span>
                 <span>{bootProgress}%</span>
@@ -1825,7 +1825,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
             <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-400 z-10">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "animate-pulse motion-reduce:animate-none" : ""}`}
+                  className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "motion-safe:animate-pulse motion-reduce:animate-none" : ""}`}
                 />
                 <span className="uppercase tracking-wider">
                   {isPrefetched

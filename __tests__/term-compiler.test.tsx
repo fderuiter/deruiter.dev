@@ -210,7 +210,7 @@ describe("Centralized Term Template Compiler", () => {
         </TerminologyProvider>
       );
 
-      const trigger = container.querySelector("span[aria-describedby]");
+      const trigger = container.querySelector("[data-tooltip-trigger]");
       expect(trigger).not.toBeNull();
       expect(trigger?.textContent).toBe("GxP");
     });

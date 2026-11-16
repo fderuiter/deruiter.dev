@@ -327,7 +327,7 @@ export function UnifiedErrorLayout({
 
                   {/* Blinking INSERT COIN */}
                   <div className="space-y-1">
-                    <div className="text-base sm:text-lg font-extrabold text-accent tracking-widest animate-pulse">
+                    <div className="text-base sm:text-lg font-extrabold text-accent tracking-widest motion-safe:animate-pulse">
                       INSERT COIN
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium tracking-wide">
@@ -346,7 +346,7 @@ export function UnifiedErrorLayout({
           {/* Closest Matching Case Study Suggestions */}
           {loading ? (
             <div className="mb-6 p-4 bg-neutral-950/40 border border-neutral-900/40 rounded-2xl flex items-center justify-center">
-              <span className="animate-pulse text-xs font-mono text-neutral-500">
+              <span className="motion-safe:animate-pulse text-xs font-mono text-neutral-500">
                 Finding pages...
               </span>
             </div>

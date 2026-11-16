@@ -1482,7 +1482,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
           {/* Loading execution state */}
           {isExecuting && (
             <div className="flex items-center gap-2 text-brand-cyan/80 font-bold italic select-none min-w-0">
-              <span className="animate-pulse shrink-0">◌</span>
+              <span className="motion-safe:animate-pulse shrink-0">◌</span>
               <span className="truncate">Executing clinical API query...</span>
             </div>
           )}

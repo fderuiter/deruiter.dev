@@ -511,7 +511,7 @@ export function ContactForm({
       {/* Submit Button */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-white/5">
         <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
           <span>Please don’t include passwords or patient information.</span>
         </span>
 

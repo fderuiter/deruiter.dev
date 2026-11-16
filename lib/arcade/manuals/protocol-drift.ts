@@ -14,7 +14,7 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
   badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
   objective:
-    "As Lead Clinical Data Architect for Study PD-101, wire a pipeline that carries site entries into CDISC SDTM, keep it honest through tired coordinators and a mid-flight protocol amendment, derive the ADaM orthostatic rows below the Conservation Wall, and clear both Database Lock gates without fabricating a single bit.",
+    "For Study PD-101, wire a pipeline that carries site entries into CDISC SDTM, keep it honest through tired coordinators and a mid-flight protocol amendment, derive the ADaM orthostatic rows below the Conservation Wall, and clear both Database Lock gates without fabricating a single bit.",
   quickSummary:
     "Accept the briefing, place chips on the Tabulation Lane and wire them, press Run Local Test, then Publish Revision, then Space to run the clock. Investigate discrepancies in the Forensic Inspector, query sites with attached evidence, and request the Database Lock on Day 28.",
   controls: [
@@ -82,14 +82,8 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
     {
       title: "Efficiency against par",
       detail:
-        "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
+        "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Your best for each measure is kept in this browser.",
       badge: "Par",
-    },
-    {
-      title: "Arcade Daily",
-      detail:
-        "Play daily on the arcade hub starts the study on today's seed instead of seed #48291; the footer shows the daily's date. Locking the database on it records the lock score as today's daily best on the hub.",
-      badge: "Daily",
     },
   ],
   proTips: [

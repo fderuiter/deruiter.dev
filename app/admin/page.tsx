@@ -166,7 +166,7 @@ export default async function AdminDashboardPage() {
 
             <div className="pt-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
                 <span>Buffer Pipeline Active</span>
               </span>
             </div>

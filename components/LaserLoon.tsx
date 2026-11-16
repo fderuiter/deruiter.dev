@@ -229,7 +229,7 @@ export const LaserLoon: React.FC = () => {
   if (!isMounted) {
     return (
       <div className="w-full h-[460px] bg-neutral-950 border border-neutral-800 rounded-3xl flex flex-col items-center justify-center p-6 text-center font-mono select-none">
-        <div className="text-red-400 text-sm font-bold animate-pulse mb-2">
+        <div className="text-red-400 text-sm font-bold motion-safe:animate-pulse mb-2">
           [INITIALIZING LASER LOON CRYO ENGINE...]
         </div>
         <p className="text-xs text-neutral-500 max-w-sm">
@@ -886,7 +886,7 @@ export const LaserLoon: React.FC = () => {
         {/* Start Overlay Screen */}
         {gameState === "idle" && (
           <div className="arcade-shooter-start absolute inset-0 bg-neutral-950/85 z-30 flex flex-col items-center text-center p-3 select-none overflow-y-auto">
-            <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3 text-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-pulse">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3 text-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] motion-safe:animate-pulse">
               <IconTarget className="w-8 h-8" />
             </div>
             <h3 className="text-2xl font-bold text-neutral-100 font-mono tracking-tight mb-2">

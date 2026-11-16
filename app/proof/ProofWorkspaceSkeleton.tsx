@@ -36,7 +36,7 @@ export function ProofWorkspaceSkeleton() {
               </ol>
             </nav>
             <h1 className="type-title text-white flex items-center gap-2">
-              <IconCpu className="w-8 h-8 text-brand-cyan animate-pulse" />
+              <IconCpu className="w-8 h-8 text-brand-cyan motion-safe:animate-pulse" />
               Logical Proof Canvas
             </h1>
             <p className="text-sm text-slate-400">
@@ -93,11 +93,11 @@ export function ProofWorkspaceSkeleton() {
                 className="flex flex-col text-left p-2.5 rounded-xl border bg-slate-900/60 border-slate-800 min-h-[62px] h-auto"
               >
                 <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="w-12 h-3.5 rounded bg-slate-800 animate-pulse" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800 animate-pulse" />
+                  <span className="w-12 h-3.5 rounded bg-slate-800 motion-safe:animate-pulse" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-800 motion-safe:animate-pulse" />
                 </div>
-                <div className="w-20 h-3 rounded bg-slate-800 mb-1 animate-pulse" />
-                <div className="w-16 h-2 rounded bg-slate-800 animate-pulse" />
+                <div className="w-20 h-3 rounded bg-slate-800 mb-1 motion-safe:animate-pulse" />
+                <div className="w-16 h-2 rounded bg-slate-800 motion-safe:animate-pulse" />
               </div>
             ))}
           </div>
@@ -110,17 +110,17 @@ export function ProofWorkspaceSkeleton() {
             <div className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur overflow-hidden flex flex-col shadow-2xl relative">
               {/* Canvas Header */}
               <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 h-[49px]">
-                <div className="w-24 h-4 bg-slate-800 rounded animate-pulse" />
+                <div className="w-24 h-4 bg-slate-800 rounded motion-safe:animate-pulse" />
                 <div className="flex items-center gap-2">
-                  <div className="w-14 h-7 bg-slate-800 rounded-lg animate-pulse" />
-                  <div className="w-24 h-7 bg-slate-800 rounded-lg animate-pulse" />
+                  <div className="w-14 h-7 bg-slate-800 rounded-lg motion-safe:animate-pulse" />
+                  <div className="w-24 h-7 bg-slate-800 rounded-lg motion-safe:animate-pulse" />
                 </div>
               </div>
 
               {/* Tactic Goal Ribbon */}
               <div className="bg-slate-950/60 px-4 py-2 border-b border-slate-800/80 flex items-center justify-between text-xs h-[37px]">
-                <div className="w-48 h-4 bg-slate-800 rounded animate-pulse" />
-                <div className="w-16 h-4 bg-slate-800 rounded animate-pulse" />
+                <div className="w-48 h-4 bg-slate-800 rounded motion-safe:animate-pulse" />
+                <div className="w-16 h-4 bg-slate-800 rounded motion-safe:animate-pulse" />
               </div>
 
               {/* SVG Canvas Area placeholder */}
@@ -164,12 +164,12 @@ export function ProofWorkspaceSkeleton() {
               {/* Floating Rule Palette Dock placeholder */}
               <div className="p-3 bg-slate-950/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 h-[57px]">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <div className="w-20 h-4 bg-slate-800 rounded animate-pulse" />
-                  <div className="w-16 h-8 bg-slate-800 rounded-lg animate-pulse" />
-                  <div className="w-16 h-8 bg-slate-800 rounded-lg animate-pulse" />
-                  <div className="w-16 h-8 bg-slate-800 rounded-lg animate-pulse" />
+                  <div className="w-20 h-4 bg-slate-800 rounded motion-safe:animate-pulse" />
+                  <div className="w-16 h-8 bg-slate-800 rounded-lg motion-safe:animate-pulse" />
+                  <div className="w-16 h-8 bg-slate-800 rounded-lg motion-safe:animate-pulse" />
+                  <div className="w-16 h-8 bg-slate-800 rounded-lg motion-safe:animate-pulse" />
                 </div>
-                <div className="w-24 h-8 bg-slate-800 rounded-lg animate-pulse" />
+                <div className="w-24 h-8 bg-slate-800 rounded-lg motion-safe:animate-pulse" />
               </div>
             </div>
           </div>
@@ -193,10 +193,10 @@ export function ProofWorkspaceSkeleton() {
               {/* Tab Content */}
               <div className="p-4 flex flex-col gap-4 min-h-[380px] max-h-[460px] overflow-y-auto">
                 <div className="space-y-3">
-                  <div className="w-full h-12 bg-slate-800/60 rounded-xl animate-pulse" />
-                  <div className="w-full h-12 bg-slate-800/60 rounded-xl animate-pulse" />
-                  <div className="w-full h-12 bg-slate-800/60 rounded-xl animate-pulse" />
-                  <div className="w-5/6 h-12 bg-slate-800/60 rounded-xl animate-pulse" />
+                  <div className="w-full h-12 bg-slate-800/60 rounded-xl motion-safe:animate-pulse" />
+                  <div className="w-full h-12 bg-slate-800/60 rounded-xl motion-safe:animate-pulse" />
+                  <div className="w-full h-12 bg-slate-800/60 rounded-xl motion-safe:animate-pulse" />
+                  <div className="w-5/6 h-12 bg-slate-800/60 rounded-xl motion-safe:animate-pulse" />
                 </div>
               </div>
             </div>

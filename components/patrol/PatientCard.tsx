@@ -111,7 +111,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                 : patientCondition === "worsened" ||
                     patientCondition === "deteriorating"
-                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300 animate-pulse"
+                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300 motion-safe:animate-pulse"
                   : "bg-rose-500/15 border-rose-500/40 text-rose-400"
             }`}
           >

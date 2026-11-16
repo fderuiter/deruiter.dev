@@ -282,7 +282,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle: `${recordedStepsCount} step(s) recorded. Click to save macro.`,
         category: "navigation",
         url: "action:macro:stop-and-save",
-        icon: <IconCircleDot className="w-4 h-4 text-rose-400 animate-pulse" />,
+        icon: <IconCircleDot className="w-4 h-4 text-rose-400 motion-safe:animate-pulse" />,
         badge: "Recording",
         status: `${recordedStepsCount} Steps`,
         description:
@@ -719,7 +719,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           />
           {isRecording && (
             <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded-lg flex-shrink-0 select-none">
-              <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-rose-400 motion-safe:animate-ping" />
               REC ({recordedStepsCount})
             </span>
           )}
@@ -813,7 +813,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
                       {/* Right Enter Shortcut icon */}
                       {isActive && (
-                        <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 animate-pulse flex-shrink-0 select-none">
+                        <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 motion-safe:animate-pulse flex-shrink-0 select-none">
                           <span className="hidden sm:inline">Select</span>
                           <IconCornerDownLeft className="w-3.5 h-3.5 text-accent" />
                         </span>
@@ -867,7 +867,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                     </span>
                     {activeItem.status && (
                       <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
                         {activeItem.status}
                       </span>
                     )}

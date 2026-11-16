@@ -28,10 +28,21 @@ interface ProofSimulationOptions {
   announce: (text: string) => void;
 }
 
+/** A buffered progress line and the attempt that produced it. */
+interface PendingLog {
+  readonly requestId: number;
+  readonly log: TerminalLog;
+}
+
 /**
  * Runs the proof simulation in a Web Worker. Progress lines are batched into
  * the terminal, a watchdog restarts a worker that goes silent, and replies to
  * a request that has since been aborted are ignored.
+ *
+ * Each buffered line carries its attempt (#3800). When an attempt finishes or
+ * fails, its lines are written before the final line and progress stays
+ * cleared. When it is aborted, timed out or replaced, its unwritten lines are
+ * dropped, so they never show as the next attempt's output.
  */
 export function useProofSimulation({
   appendLogs,
@@ -43,8 +54,10 @@ export function useProofSimulation({
 
   const workerRef = useRef<Worker | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingLogsRef = useRef<TerminalLog[]>([]);
+  const pendingLogsRef = useRef<PendingLog[]>([]);
   const requestIdRef = useRef(0);
+  /** The attempt whose progress may show, or null when none is running. */
+  const activeRequestRef = useRef<number | null>(null);
   const initWorkerRef = useRef<() => void>(() => {});
 
   const clearWatchdog = useCallback(() => {
@@ -54,7 +67,26 @@ export function useProofSimulation({
     }
   }, []);
 
+  /** Writes one attempt's buffered lines now, without touching progress. */
+  const flushAttempt = useCallback(
+    (requestId: number) => {
+      const mine = pendingLogsRef.current.filter(
+        (entry) => entry.requestId === requestId
+      );
+      pendingLogsRef.current = [];
+      if (mine.length > 0) appendLogs(...mine.map((entry) => entry.log));
+    },
+    [appendLogs]
+  );
+
+  /** Ends the running attempt: no later batch may revive its progress. */
+  const endAttempt = useCallback(() => {
+    activeRequestRef.current = null;
+    pendingLogsRef.current = [];
+  }, []);
+
   const handleWatchdogTimeout = useCallback(() => {
+    endAttempt();
     workerRef.current?.terminate();
     initWorkerRef.current();
     setIsSimulating(false);
@@ -68,7 +100,7 @@ export function useProofSimulation({
     announce(
       "Background calculation terminated by watchdog: execution exceeded 5-second limit."
     );
-  }, [clearWatchdog, appendLogs, announce]);
+  }, [endAttempt, clearWatchdog, appendLogs, announce]);
 
   const resetWatchdog = useCallback(() => {
     clearWatchdog();
@@ -97,12 +129,13 @@ export function useProofSimulation({
 
       if (message.type === "progress") {
         pendingLogsRef.current.push({
-          id: makeLogId("sim"),
-          type: "output",
-          text: message.log,
+          requestId: requestIdRef.current,
+          log: { id: makeLogId("sim"), type: "output", text: message.log },
         });
         announce(`Simulation update: ${message.log}`);
       } else if (message.type === "done") {
+        flushAttempt(requestIdRef.current);
+        endAttempt();
         setIsSimulating(false);
         setSimulationProgress(null);
         clearWatchdog();
@@ -113,6 +146,8 @@ export function useProofSimulation({
         });
         announce("Background proof simulation completed successfully.");
       } else if (message.type === "error") {
+        flushAttempt(requestIdRef.current);
+        endAttempt();
         setIsSimulating(false);
         setSimulationProgress(null);
         clearWatchdog();
@@ -126,7 +161,14 @@ export function useProofSimulation({
     };
 
     workerRef.current = worker;
-  }, [clearWatchdog, resetWatchdog, appendLogs, announce]);
+  }, [
+    clearWatchdog,
+    resetWatchdog,
+    appendLogs,
+    announce,
+    flushAttempt,
+    endAttempt,
+  ]);
 
   useEffect(() => {
     initWorkerRef.current = initWorker;
@@ -137,9 +179,15 @@ export function useProofSimulation({
 
     const flushInterval = setInterval(() => {
       if (pendingLogsRef.current.length === 0) return;
-      const logsToAppend = pendingLogsRef.current;
+      const batch = pendingLogsRef.current;
       pendingLogsRef.current = [];
+      const logsToAppend = batch.map((entry) => entry.log);
       appendLogs(...logsToAppend);
+      // Only the running attempt's own lines may move its progress.
+      const active = activeRequestRef.current;
+      if (active === null || batch.some((entry) => entry.requestId !== active)) {
+        return;
+      }
 
       const stepLogs = logsToAppend.filter(
         (log) => log.type === "output" && log.text.includes("[Step")
@@ -164,15 +212,19 @@ export function useProofSimulation({
   /** Cancels any running simulation; its late replies are ignored. */
   const abortSimulation = useCallback(() => {
     requestIdRef.current += 1;
+    endAttempt();
     workerRef.current?.postMessage({ type: "ABORT" });
     setIsSimulating(false);
     setSimulationProgress(null);
     clearWatchdog();
-  }, [clearWatchdog]);
+  }, [clearWatchdog, endAttempt]);
 
   const startSimulation = useCallback(
     ({ mode, theoremId, customFormulas }: SimulationRequest) => {
       requestIdRef.current += 1;
+      // A previous attempt's unwritten lines are not this attempt's output.
+      pendingLogsRef.current = [];
+      activeRequestRef.current = requestIdRef.current;
       setIsSimulating(true);
       setSimulationProgress({
         step: 1,

@@ -431,7 +431,7 @@ export const TwinStickAimDock: React.FC<TwinStickAimDockProps> = ({
             onPointerCancel={(e) => handleAction(e, onTremoloRelease)}
             className={`min-w-[52px] min-h-[52px] w-14 h-14 rounded-2xl border flex flex-col items-center justify-center transition-all shadow-lg focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
               isTremoloReady
-                ? "bg-cyan-500/30 border-cyan-400 text-cyan-200 animate-pulse shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-95 cursor-pointer"
+                ? "bg-cyan-500/30 border-cyan-400 text-cyan-200 motion-safe:animate-pulse shadow-[0_0_15px_rgba(6,182,212,0.5)] active:scale-95 cursor-pointer"
                 : "bg-zinc-900 border-zinc-800 text-zinc-600 opacity-60 cursor-not-allowed"
             }`}
           >

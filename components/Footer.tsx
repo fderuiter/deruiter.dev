@@ -130,7 +130,7 @@ export const Footer: React.FC = () => {
                 className="inline-flex items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground group pointer-coarse:min-h-11"
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-75" />
+                  <span className="motion-safe:animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
                 </span>
                 <span className="group-hover:text-accent transition-colors">
@@ -149,7 +149,7 @@ export const Footer: React.FC = () => {
               onMouseEnter={handleHover}
               className="inline-flex items-center gap-2 px-3 py-1.5 pointer-coarse:min-h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-accent/40 text-[11px] font-mono text-zinc-300 hover:text-white transition-all w-fit group"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:motion-safe:animate-pulse" />
               <span>Explore the projects</span>
               <span className="text-zinc-600">|</span>
               <span className="text-zinc-400 group-hover:text-accent transition-colors">
@@ -251,7 +251,7 @@ export const Footer: React.FC = () => {
         <div className="mb-12 p-6 bg-[#13151a]/90 border border-white/10 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
           <div className="space-y-1 max-w-md">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-settle" />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent motion-safe:animate-pulse-settle" />
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-accent">
                 Project Notes
               </span>
@@ -309,7 +309,7 @@ export const Footer: React.FC = () => {
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
                   isDyslexic
-                    ? "bg-amber-400 animate-pulse-settle"
+                    ? "bg-amber-400 motion-safe:animate-pulse-settle"
                     : "bg-zinc-600"
                 }`}
               />

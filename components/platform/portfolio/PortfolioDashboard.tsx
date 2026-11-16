@@ -59,9 +59,9 @@ export function PortfolioDashboard() {
             className="space-y-4"
             data-testid="portfolio-loading"
           >
-            <div className="min-h-6 w-1/3 animate-pulse bg-white/[0.06]" />
-            <div className="min-h-80 animate-pulse bg-white/[0.04]" />
-            <div className="min-h-64 animate-pulse bg-white/[0.04]" />
+            <div className="min-h-6 w-1/3 motion-safe:animate-pulse bg-white/[0.06]" />
+            <div className="min-h-80 motion-safe:animate-pulse bg-white/[0.04]" />
+            <div className="min-h-64 motion-safe:animate-pulse bg-white/[0.04]" />
           </div>
         )
       ) : (

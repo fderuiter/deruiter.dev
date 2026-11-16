@@ -489,13 +489,16 @@ body {
     scroll-behavior: auto !important;
   }
 
-  .animate-spin {
+  /* Unlayered rules beat every Tailwind utility, so elements that already
+     choose their own reduced-motion behaviour (motion-reduce:animate-none,
+     motion-reduce:transition-none) are left to it. */
+  .animate-spin:not([class*="motion-reduce:animate"]) {
     animation-duration: 3s;
   }
 
-  .transition,
-  .transition-all,
-  .transition-transform {
+  :is(.transition, .transition-all, .transition-transform):not(
+    [class*="motion-reduce:transition"]
+  ) {
     transition-property:
       color, background-color, border-color, outline-color,
       text-decoration-color, fill, stroke, opacity, box-shadow;

@@ -45,19 +45,31 @@ describe("reduced motion without a global clamp (#3976)", () => {
   it("keeps instant scrolling and slows spinners under reduce", () => {
     const reduce = reduceBlocks().join("\n");
     expect(reduce).toMatch(/html\s*\{[^}]*scroll-behavior:\s*auto/);
-    expect(reduce).toMatch(/\.animate-spin\s*\{[^}]*animation-duration:\s*3s/);
+    expect(reduce).toMatch(
+      /\.animate-spin:not\(\[class\*="motion-reduce:animate"\]\)\s*\{[^}]*animation-duration:\s*3s/
+    );
   });
 
   it("keeps colour fades but drops transform from transitions under reduce", () => {
     const reduce = reduceBlocks().join("\n");
-    const rule = reduce.match(/\.transition-transform\s*\{([^}]*)\}/)?.[1] ?? "";
+    const rule =
+      reduce.match(/\.transition-transform\)[\s\S]*?\{([^}]*)\}/)?.[1] ?? "";
     expect(rule).toContain("background-color");
     expect(rule).toContain("opacity");
-    expect(rule).not.toMatch(/\btransform\b|\btranslate\b|\bscale\b|\brotate\b/);
+    expect(rule).not.toMatch(
+      /\btransform\b|\btranslate\b|\bscale\b|\brotate\b/
+    );
+  });
+
+  it("leaves elements with their own motion-reduce utility alone", () => {
+    const reduce = reduceBlocks().join("\n");
+    expect(reduce).toContain(':not([class*="motion-reduce:animate"])');
+    expect(reduce).toMatch(/:not\(\s*\[class\*="motion-reduce:transition"\]/);
   });
 
   it("runs the grid square loop only without a motion preference", () => {
-    const rule = css.match(/\.animate-grid-square\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const rule =
+      css.match(/\.animate-grid-square\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     expect(rule).toMatch(
       /@media \(prefers-reduced-motion: no-preference\)\s*\{[^}]*grid-square-pulse/
     );

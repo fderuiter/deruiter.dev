@@ -283,6 +283,7 @@ export function ContactForm({
             id="contact_name"
             name="name"
             type="text"
+            autoComplete="name"
             required
             ref={nameInputRef}
             value={name}
@@ -294,7 +295,7 @@ export function ContactForm({
             placeholder="e.g. Ada Lovelace"
             aria-invalid={!!fieldErrors.name}
             aria-describedby={fieldErrors.name ? "name_error" : undefined}
-            className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all ${
+            className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs pointer-coarse:text-base font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all ${
               fieldErrors.name
                 ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/30"
                 : "border-white/10 focus:border-amber-400/60 focus:ring-amber-400/20"
@@ -325,6 +326,9 @@ export function ContactForm({
             id="contact_email"
             name="email"
             type="email"
+            autoComplete="email"
+            spellCheck={false}
+            autoCapitalize="none"
             required
             ref={emailInputRef}
             value={email}
@@ -336,7 +340,7 @@ export function ContactForm({
             placeholder="e.g. ada@example.com"
             aria-invalid={!!fieldErrors.email}
             aria-describedby={fieldErrors.email ? "email_error" : undefined}
-            className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all ${
+            className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs pointer-coarse:text-base font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all ${
               fieldErrors.email
                 ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/30"
                 : "border-white/10 focus:border-amber-400/60 focus:ring-amber-400/20"
@@ -441,7 +445,7 @@ export function ContactForm({
           placeholder="e.g. A project I’d like your help with"
           aria-invalid={!!fieldErrors.subject}
           aria-describedby={fieldErrors.subject ? "subject_error" : undefined}
-          className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all ${
+          className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs pointer-coarse:text-base font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all ${
             fieldErrors.subject
               ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/30"
               : "border-white/10 focus:border-amber-400/60 focus:ring-amber-400/20"
@@ -488,7 +492,7 @@ export function ContactForm({
           placeholder="Write your note, idea, project outline, or question here..."
           aria-invalid={!!fieldErrors.message}
           aria-describedby={fieldErrors.message ? "message_error" : undefined}
-          className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all resize-y min-h-[100px] leading-relaxed ${
+          className={`w-full px-3.5 py-2.5 rounded-xl bg-[#0d0e11] border text-xs pointer-coarse:text-base font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 transition-all resize-y min-h-[100px] leading-relaxed ${
             fieldErrors.message
               ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/30"
               : "border-white/10 focus:border-amber-400/60 focus:ring-amber-400/20"

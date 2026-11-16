@@ -6,7 +6,8 @@ The full text of [AGENTS.md](../../../AGENTS.md) sections 10 to 14, with the rea
 
 - All public pages, interactive modals, drawers, and forms must maintain strict WCAG 2.1 Level AA compliance with zero Critical, Serious, or Moderate axe-core violations.
 - Root layout (`app/layout.tsx`) must provide a visible-on-focus `<SkipToContent />` link targeting `<main id="main-content" tabIndex={-1}>`, alongside the global screen reader live announcer provider (`A11yProvider`).
-- Interactive modal containers and mobile navigation drawers must enforce focus trapping (`useFocusTrap`) with Escape dismissal and focus restoration to the originating trigger.
+- Modals built on `ModalContainer` render a native `<dialog>` and open it with `showModal()` (#3975). The browser puts it in the top layer and makes the rest of the page inert, so no z-index workaround is needed. `ModalContainer` still runs `useFocusTrap` for the shared trap stack, Escape ownership, focus restoration and Tab wrapping (a native modal alone lets Tab leave for the browser's own controls), and turns the native `cancel` event into a single `onClose` call while React keeps owning visibility.
+- Bespoke overlays and mobile navigation drawers that are not yet on `ModalContainer` enforce focus trapping with `useFocusTrap`, with Escape dismissal and focus restoration to the originating trigger.
 - Canvas-driven experiences (games, 3D brain simulator, proof DAGs) must supply accessible fallback descriptions and keyboard-navigable controls.
 
 ## 11. Defect Remediation & Root-Cause Regression Invariant

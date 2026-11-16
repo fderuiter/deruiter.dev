@@ -232,3 +232,185 @@ describe("MountainMap responsibility-code modal on ModalContainer", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+/**
+ * Issue #3975: ModalContainer is a native dialog. jsdom has no showModal(),
+ * so these tests stub it and check the lifecycle wiring only; real browsers
+ * check actual modality.
+ */
+describe("ModalContainer on the native dialog element", () => {
+  const proto = HTMLDialogElement.prototype;
+  const stub = (name: string, value: unknown) =>
+    Object.defineProperty(proto, name, {
+      configurable: true,
+      writable: true,
+      value,
+    });
+  let showModal: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    showModal = vi.fn(function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    });
+    stub("showModal", showModal);
+    stub("close", function (this: HTMLDialogElement) {
+      if (!this.hasAttribute("open")) return;
+      this.removeAttribute("open");
+      this.dispatchEvent(new Event("close"));
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    Reflect.deleteProperty(proto, "showModal");
+    Reflect.deleteProperty(proto, "close");
+  });
+
+  const cancel = (dialog: HTMLElement) => {
+    const event = new Event("cancel", { cancelable: true });
+    dialog.dispatchEvent(event);
+    return event;
+  };
+
+  it("opens with showModal() as a dialog element", () => {
+    render(
+      <React.StrictMode>
+        <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+          <button type="button">Inside</button>
+        </ModalContainer>
+      </React.StrictMode>
+    );
+    const dialog = screen.getByRole("dialog", { name: "Native" });
+    expect(dialog.tagName).toBe("DIALOG");
+    expect(dialog.hasAttribute("open")).toBe(true);
+    expect(showModal).toHaveBeenCalled();
+  });
+
+  it("turns a cancel into one onClose call and keeps the dialog open", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer isOpen onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(cancel(dialog).defaultPrevented).toBe(true);
+    cancel(dialog);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(dialog.hasAttribute("open")).toBe(true);
+  });
+
+  it("prevents cancel without calling onClose when Escape may not close", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer
+        isOpen
+        onClose={onClose}
+        closeOnEscape={false}
+        ariaLabel="Native"
+      >
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(cancel(dialog).defaultPrevented).toBe(true);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("treats a native close as one close request", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer isOpen onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+    cancel(dialog);
+    dialog.close();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("reopens after a native close when Escape may not close", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer
+        isOpen
+        onClose={onClose}
+        closeOnEscape={false}
+        ariaLabel="Native"
+      >
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+    const opens = showModal.mock.calls.length;
+    dialog.close();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(showModal.mock.calls.length).toBe(opens + 1);
+    expect(dialog.hasAttribute("open")).toBe(true);
+  });
+
+  it("does not call onClose when the parent closes it", () => {
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <ModalContainer isOpen onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    rerender(
+      <ModalContainer isOpen={false} onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("still wraps Tab from the last control to the first", () => {
+    render(
+      <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+        <button type="button">First</button>
+        <button type="button">Last</button>
+      </ModalContainer>
+    );
+    const last = screen.getByRole("button", { name: "Last" });
+    last.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "First" })
+    );
+  });
+  it("moves focus to the first control when showModal() focuses the scrolling panel", () => {
+    // Chrome treats a scrollable panel as keyboard-focusable and may make it
+    // the focus delegate, which left the close button unfocused at 200% text.
+    showModal.mockImplementation(function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+      const panel = this.firstElementChild as HTMLElement;
+      panel.tabIndex = -1;
+      panel.focus();
+    });
+    render(
+      <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+        <button type="button">Close</button>
+        <input aria-label="Field" />
+      </ModalContainer>
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Close" })
+    );
+  });
+
+  it("keeps focus on a control showModal() already focused", () => {
+    showModal.mockImplementation(function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+      (this.querySelector("input") as HTMLElement).focus();
+    });
+    render(
+      <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+        <button type="button">Close</button>
+        <input aria-label="Field" />
+      </ModalContainer>
+    );
+    expect(document.activeElement).toBe(screen.getByLabelText("Field"));
+  });
+});

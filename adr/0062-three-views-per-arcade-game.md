@@ -391,3 +391,23 @@ item 20's 9/10 phone playtest. A game that does not claim it stays behind
 `DesktopOnlyGate` on phones and closes its epic on the desktop and tablet bars.
 So `DesktopOnlyGate` and ADR 0048 stay for as long as any game keeps
 `views.phone` at `gated`, rather than retiring with the last game.
+
+## Amendment 2026-11-16: a game can be listed under Labs
+
+`ArcadeListing` in `lib/arcade/registry.ts` gains a fourth value, `labs`
+([#3150](https://github.com/fderuiter/deruiter.dev/issues/3150)). The game stays
+in `ARCADE_REGISTRY`, so the registry is still the one place that holds its
+slug, route, view readiness and `daily` flag. The listing only decides where
+the menus show it:
+
+- A `labs` game appears once, in the Labs menu and on `/labs`. Its entry moves
+  out of the Arcade menu sections, and the Labs group, not Arcade, counts as
+  the current group on its route.
+- It is not in the hub's game grid, the game count or the previous/next ring,
+  which read only `hub` entries.
+- Its route, readiness, saved progress and Arcade Daily membership do not change
+  with the listing. Moving a route is a separate decision.
+
+Meme Vault is the first `labs` game
+([#3151](https://github.com/fderuiter/deruiter.dev/issues/3151)). It is a
+soundboard and trophy room rather than a cabinet game, so it was `room` until now.

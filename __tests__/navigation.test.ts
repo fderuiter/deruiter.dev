@@ -8,11 +8,12 @@ import {
   getAllNavHrefs,
   getAllNavItems,
   getNavGroup,
+  getNavGroupForHref,
   getNavHref,
   isNavGroupActive,
   isNavMenu,
 } from "@/lib/navigation";
-import { ARCADE_GAME_ROUTES } from "@/lib/arcade";
+import { ARCADE_GAME_ROUTES, ARCADE_REGISTRY } from "@/lib/arcade";
 import { CLINICAL_JOURNEY } from "@/lib/clinical-journey";
 import { PUBLIC_ROUTE_REGISTRY } from "@/lib/public-routes";
 import nextConfig from "../next.config";
@@ -48,10 +49,9 @@ describe("navigation structure (#1842, #2952)", () => {
       .sections.flatMap((s) => s.items)
       .map((i) => i.href);
     expect(hrefs[0]).toBe("/arcade");
-    // The Meme Vault is listed but sits outside the previous/next ring.
-    expect(hrefs.slice(1).sort()).toEqual(
-      [...ARCADE_GAME_ROUTES, "/arcade/meme-vault"].sort()
-    );
+    // Meme Vault is listed under Labs, not Arcade (#3151).
+    expect(hrefs.slice(1).sort()).toEqual([...ARCADE_GAME_ROUTES].sort());
+    expect(hrefs).not.toContain("/arcade/meme-vault");
     expect(hrefs).not.toContain("/merch");
     expect(hrefs).not.toContain("/clinical/pipeline-simulator");
   });
@@ -77,7 +77,25 @@ describe("navigation structure (#1842, #2952)", () => {
   it("puts the studios and non-clinical simulators under Labs", () => {
     expect(
       getNavGroup("labs").sections.flatMap((s) => s.items.map((i) => i.href))
-    ).toEqual(["/proof", "/neuro", "/simulator", "/patrol"]);
+    ).toEqual([
+      "/proof",
+      "/neuro",
+      "/simulator",
+      "/patrol",
+      "/arcade/meme-vault",
+    ]);
+  });
+
+  it("lists each registry Labs game once, under Labs only (#3150)", () => {
+    const labsGames = ARCADE_REGISTRY.filter(
+      (game) => game.listing === "labs"
+    ).map((game) => game.route);
+    expect(labsGames).toEqual(["/arcade/meme-vault"]);
+    const everywhere = getAllNavItems().map((i) => i.href);
+    for (const route of labsGames) {
+      expect(everywhere.filter((href) => href === route)).toHaveLength(1);
+      expect(getNavGroupForHref(route)?.id).toBe("labs");
+    }
   });
 
   it("gives Clinical and Labs an overview page of their own", () => {
@@ -144,7 +162,7 @@ describe("navigation structure (#1842, #2952)", () => {
     const sims = getNavGroup("labs").sections[0].items;
     expect(
       filterNavItems(sims, "behind-the-scenes").map((i) => i.href)
-    ).toEqual(["/proof", "/neuro", "/patrol"]);
+    ).toEqual(["/proof", "/neuro", "/patrol", "/arcade/meme-vault"]);
     expect(filterNavItems(sims, "professional")).toHaveLength(sims.length);
     const patrol = sims.find((i) => i.id === "patrol-shift")!;
     expect(getNavHref(patrol, "mobile")).toBe("/m/patrol");
@@ -155,6 +173,7 @@ describe("navigation structure (#1842, #2952)", () => {
     const current = (p: string) =>
       PRIMARY_NAV.filter((g) => isNavGroupActive(g, p)).map((g) => g.id);
     expect(current("/arcade/study-director")).toEqual(["arcade"]);
+    expect(current("/arcade/meme-vault")).toEqual(["labs"]);
     expect(current("/merch")).toEqual(["about"]);
     expect(current("/clinical/pipeline-simulator")).toEqual(["clinical"]);
     expect(current("/platform/portfolio")).toEqual(["clinical"]);

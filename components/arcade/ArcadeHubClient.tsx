@@ -37,7 +37,6 @@ import {
   PHONE_ONLY_BLOCK,
   PhoneReadinessBadge,
 } from "@/components/arcade/phone-readiness";
-import { echoBestStore } from "@/lib/meme-data";
 import { useToast } from "@/hooks/useToast";
 
 interface ArcadeGameCard {
@@ -54,25 +53,6 @@ interface ArcadeGameCard {
   borderHover: string;
   badgeBg: string;
   route: string;
-}
-
-/** The vault card's Echo best, read from this browser (#2126). */
-function MemeVaultEchoBest() {
-  const best = echoBestStore.useValue();
-  return (
-    <p
-      className="mt-2 font-mono text-[11px] uppercase tracking-wider text-zinc-300"
-      data-testid="hub-meme-echo-best"
-    >
-      {best > 0 ? (
-        <>
-          Echo best: <span className="text-amber-300 tabular-nums">{best}</span>
-        </>
-      ) : (
-        "Echo best: not set yet"
-      )}
-    </p>
-  );
 }
 
 const ARCADE_GAMES: ArcadeGameCard[] = [
@@ -522,7 +502,6 @@ function useProgressNotices() {
 }
 
 export const ArcadeHubClient: React.FC = () => {
-  const shouldReduceMotion = useReducedMotion();
   useProgressNotices();
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
@@ -586,62 +565,6 @@ export const ArcadeHubClient: React.FC = () => {
 
         {/* Interactive Trophy Cabinet & Score Dashboard */}
         <ArcadeTrophyCabinet />
-
-        {/* Easter Egg Meme Vault Discovery Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            shouldReduceMotion ? { duration: 0 } : { delay: 0.5, duration: 0.4 }
-          }
-          className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-slate-950/80 p-6 sm:p-8 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.1)] hover:border-emerald-500/50 transition-all"
-        >
-          <div className="flex w-full min-w-0 flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-center">
-            {/* 16:10 still at every width, like the game cards (#1516). */}
-            <IntentLink
-              href="/arcade/meme-vault"
-              tabIndex={-1}
-              aria-hidden="true"
-              className="block w-full shrink-0 overflow-hidden rounded-2xl border border-emerald-500/30 sm:w-40"
-            >
-              <Image
-                src="/images/arcade/previews/meme-vault.webp"
-                alt=""
-                width={800}
-                height={500}
-                loading="lazy"
-                unoptimized
-                className="block aspect-[16/10] h-auto w-full object-cover object-top"
-              />
-            </IntentLink>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
-                  Meme Soundboard
-                </span>
-                <span className="text-xs font-mono text-zinc-300">
-                  SOUNDS &amp; EASTER EGGS
-                </span>
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold font-mono text-white">
-                Developer Soundboard &amp; Meme Vault
-              </h2>
-              <p className="text-xs sm:text-sm text-zinc-300 font-sans mt-1">
-                Play Echo: repeat the vault&apos;s growing pad sequence. Then
-                hunt a few hidden trophies and borrow some ASCII art.
-              </p>
-              <MemeVaultEchoBest />
-            </div>
-          </div>
-
-          <IntentLink
-            href="/arcade/meme-vault"
-            className="inline-flex shrink-0 items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
-          >
-            <span>Enter Vault</span>
-            <IconArrowRight className="w-4 h-4" />
-          </IntentLink>
-        </motion.div>
       </div>
     </div>
   );

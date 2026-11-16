@@ -13,6 +13,7 @@
 
 import { CLINICAL_JOURNEY, type JourneyStepId } from "./clinical-journey";
 import { PIPELINE_SIMULATOR_PATH } from "./clinical-tools/pipeline-simulator";
+import { ARCADE_REGISTRY } from "./arcade/registry";
 
 /** Names an icon the components know how to draw. */
 export type NavIconKey =
@@ -97,6 +98,8 @@ export interface NavGroup {
   activeWhen: {
     exact?: string[];
     prefixes?: string[];
+    /** Paths that match a prefix but belong to another group. */
+    except?: string[];
   };
 }
 
@@ -370,6 +373,25 @@ const ARCADE_PUZZLE_ITEMS: NavItem[] = [
   },
 ];
 
+/**
+ * Arcade routes the registry lists under Labs (#3150). Their menu entries move
+ * from the Arcade sections to the Labs section, so each is listed once.
+ */
+const LABS_GAME_ROUTES: readonly string[] = ARCADE_REGISTRY.filter(
+  (game) => game.listing === "labs"
+).map((game) => game.route);
+
+const isLabsGame = (item: NavItem) => LABS_GAME_ROUTES.includes(item.href);
+const arcadeOnly = (items: NavItem[]) =>
+  items.filter((item) => !isLabsGame(item));
+
+/** Arcade entries the registry lists under Labs, in Arcade menu order. */
+const LABS_GAME_ITEMS: NavItem[] = [
+  ...ARCADE_CLINICAL_ITEMS,
+  ...ARCADE_LIFE_ITEMS,
+  ...ARCADE_PUZZLE_ITEMS,
+].filter(isLabsGame);
+
 const WRITING_ITEMS: NavItem[] = [
   {
     id: "blog",
@@ -503,9 +525,9 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
     label: "Labs",
     href: "/labs",
     overviewLabel: "Every lab on one page",
-    sections: [{ id: "labs", items: LABS_ITEMS }],
+    sections: [{ id: "labs", items: [...LABS_ITEMS, ...LABS_GAME_ITEMS] }],
     activeWhen: {
-      exact: ["/labs", "/simulator", "/proof", "/neuro"],
+      exact: ["/labs", "/simulator", "/proof", "/neuro", ...LABS_GAME_ROUTES],
       prefixes: ["/patrol", "/m/proof", "/m/neuro", "/m/patrol"],
     },
   },
@@ -518,16 +540,20 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
       {
         id: "clinical-life",
         label: "Clinical life",
-        items: ARCADE_CLINICAL_ITEMS,
+        items: arcadeOnly(ARCADE_CLINICAL_ITEMS),
       },
-      { id: "freds-life", label: "Fred's life", items: ARCADE_LIFE_ITEMS },
+      {
+        id: "freds-life",
+        label: "Fred's life",
+        items: arcadeOnly(ARCADE_LIFE_ITEMS),
+      },
       {
         id: "puzzles",
         label: "Puzzles and classics",
-        items: ARCADE_PUZZLE_ITEMS,
+        items: arcadeOnly(ARCADE_PUZZLE_ITEMS),
       },
     ],
-    activeWhen: { prefixes: ["/arcade"] },
+    activeWhen: { prefixes: ["/arcade"], except: [...LABS_GAME_ROUTES] },
   },
   {
     id: "writing",
@@ -592,7 +618,10 @@ export function getNavGroup(id: NavGroup["id"]): NavGroup {
 
 /** Whether a path puts the group in its current state. */
 export function isNavGroupActive(group: NavGroup, pathname: string): boolean {
-  const { exact = [], prefixes = [] } = group.activeWhen;
+  const { exact = [], prefixes = [], except = [] } = group.activeWhen;
+  if (except.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return false;
+  }
   return (
     exact.includes(pathname) ||
     prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))

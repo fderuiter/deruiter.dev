@@ -246,13 +246,14 @@ describe("Meme Vault audit 2026-10-15", () => {
       expect(unlocked.meme_vault_echo_10).toBeDefined();
     });
 
-    it("shows the Echo best on the hub's vault card", () => {
+    it("leaves the vault card off the hub, now that Labs lists it (#3151)", () => {
       vi.useRealTimers();
       safeSetRawItem(MEME_STORAGE_KEYS.ECHO_BEST, "7");
       render(<ArcadeHubClient />);
-      expect(screen.getByTestId("hub-meme-echo-best").textContent).toBe(
-        "Echo best: 7"
-      );
+      // The phone picks and the score board still name the vault; only the
+      // hub's own card is gone.
+      expect(screen.queryByTestId("hub-meme-echo-best")).toBeNull();
+      expect(screen.queryByText("Enter Vault")).toBeNull();
     });
   });
 

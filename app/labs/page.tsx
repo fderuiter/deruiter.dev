@@ -39,8 +39,8 @@ export default function LabsPage() {
         </h1>
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
           Interactive tools outside clinical data: building a proof step by
-          step, looking through an MRI in 3D, triaging an outage and working a
-          ski-patrol shift.
+          step, looking through an MRI in 3D, triaging an outage, working a
+          ski-patrol shift and playing the Meme Vault soundboard.
         </p>
       </header>
 

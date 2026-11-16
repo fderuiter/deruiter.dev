@@ -232,3 +232,149 @@ describe("MountainMap responsibility-code modal on ModalContainer", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+/**
+ * Issue #3975: ModalContainer is a native dialog. jsdom has no showModal(),
+ * so these tests stub it and check the lifecycle wiring only; real browsers
+ * check actual modality.
+ */
+describe("ModalContainer on the native dialog element", () => {
+  const proto = HTMLDialogElement.prototype as unknown as Record<
+    string,
+    unknown
+  >;
+  let showModal: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    showModal = vi.fn(function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    });
+    proto.showModal = showModal;
+    proto.close = function (this: HTMLDialogElement) {
+      if (!this.hasAttribute("open")) return;
+      this.removeAttribute("open");
+      this.dispatchEvent(new Event("close"));
+    };
+  });
+
+  afterEach(() => {
+    cleanup();
+    delete proto.showModal;
+    delete proto.close;
+  });
+
+  const cancel = (dialog: HTMLElement) => {
+    const event = new Event("cancel", { cancelable: true });
+    dialog.dispatchEvent(event);
+    return event;
+  };
+
+  it("opens with showModal() as a dialog element", () => {
+    render(
+      <React.StrictMode>
+        <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+          <button type="button">Inside</button>
+        </ModalContainer>
+      </React.StrictMode>
+    );
+    const dialog = screen.getByRole("dialog", { name: "Native" });
+    expect(dialog.tagName).toBe("DIALOG");
+    expect(dialog.hasAttribute("open")).toBe(true);
+    expect(showModal).toHaveBeenCalled();
+  });
+
+  it("turns a cancel into one onClose call and keeps the dialog open", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer isOpen onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(cancel(dialog).defaultPrevented).toBe(true);
+    cancel(dialog);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(dialog.hasAttribute("open")).toBe(true);
+  });
+
+  it("prevents cancel without calling onClose when Escape may not close", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer
+        isOpen
+        onClose={onClose}
+        closeOnEscape={false}
+        ariaLabel="Native"
+      >
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(cancel(dialog).defaultPrevented).toBe(true);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("treats a native close as one close request", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer isOpen onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+    cancel(dialog);
+    dialog.close();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("reopens after a native close when Escape may not close", () => {
+    const onClose = vi.fn();
+    render(
+      <ModalContainer
+        isOpen
+        onClose={onClose}
+        closeOnEscape={false}
+        ariaLabel="Native"
+      >
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+    const opens = showModal.mock.calls.length;
+    dialog.close();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(showModal.mock.calls.length).toBe(opens + 1);
+    expect(dialog.hasAttribute("open")).toBe(true);
+  });
+
+  it("does not call onClose when the parent closes it", () => {
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <ModalContainer isOpen onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    rerender(
+      <ModalContainer isOpen={false} onClose={onClose} ariaLabel="Native">
+        <button type="button">Inside</button>
+      </ModalContainer>
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("leaves Tab to the browser instead of running a second trap", () => {
+    render(
+      <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
+        <button type="button">Only</button>
+      </ModalContainer>
+    );
+    const tab = new KeyboardEvent("keydown", {
+      key: "Tab",
+      bubbles: true,
+      cancelable: true,
+    });
+    screen.getByRole("button", { name: "Only" }).dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBe(false);
+  });
+});

@@ -89,7 +89,7 @@ One line per rule. The reasons, examples and incident history behind each sectio
 
 - Keep every public page, modal, drawer and form at WCAG 2.1 AA with zero Critical, Serious or Moderate axe violations.
 - Keep the visible-on-focus `<SkipToContent />` link to `<main id="main-content" tabIndex={-1}>` and the `A11yProvider` announcer in `app/layout.tsx`.
-- Trap focus in modals and mobile drawers (`useFocusTrap`), close on Escape, and restore focus to the trigger.
+- Build modals on `ModalContainer` (a native `<dialog>` opened with `showModal()`, which makes the page inert); trap focus with `useFocusTrap` in bespoke overlays and mobile drawers. Close on Escape and restore focus to the trigger.
 - Give canvas experiences accessible descriptions and keyboard controls.
 
 ### 11. Defect Remediation & Root-Cause Regression Invariant
@@ -103,7 +103,7 @@ One line per rule. The reasons, examples and incident history behind each sectio
 - Keep fast-check property tests (`__tests__/property-fuzz.test.ts`) on core deterministic and sanitization modules.
 - Cover critical journeys in `__tests__/e2e/synthetic-probes.spec.ts`, run on a schedule by `.github/workflows/synthetic-probes.yml`.
 - Wrap UI triggers in Playwright tests in `expect(async () => { ... }).toPass({ timeout: 15000 })`.
-- Give the outermost container of every `<AnimatePresence>` modal or drawer an explicit `key`.
+- Give the outermost container of every `<AnimatePresence>` modal or drawer an explicit `key`. `ModalContainer` mounts its dialog without `AnimatePresence`.
 - In `/arcade/*` probes, click **Launch Cabinet** in `<PlayCabinet>` and wait for the CRT warmup before checking the `<canvas>`.
 - Canary analysis (`npm run canary:eval`) is manual tooling. Nothing in the repository promotes or rolls back a deployment; rollback is a person using Vercel's Instant Rollback ([ADR 0063](adr/0063-weekly-release-train.md)).
 

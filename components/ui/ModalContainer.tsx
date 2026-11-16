@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useRef } from "react";
+import React, { ReactNode, useEffect, useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { cn } from "@/lib/utils";
 
@@ -63,10 +63,18 @@ export interface ModalContainerProps {
   children: ReactNode;
 }
 
+const supportsNativeModal = () =>
+  typeof HTMLDialogElement !== "undefined" &&
+  typeof HTMLDialogElement.prototype.showModal === "function";
+
 /**
- * Standardized, accessible modal dialog container enforcing vertical content scrolling,
- * WCAG focus containment via useFocusTrap, Escape key dismissal, backdrop backdrop-blur,
- * and safe viewport max height constraints (max-h-[85vh] / max-h-[90dvh]).
+ * Standardized, accessible modal dialog built on the native dialog element
+ * (#3975). showModal() puts it in the top layer and makes the rest of the page
+ * inert, so no z-index or second focus trap is needed. useFocusTrap still runs
+ * with Tab cycling off, for the shared trap stack, Escape ownership and focus
+ * restoration. React owns visibility: the dialog mounts open while isOpen is
+ * true and unmounts when it turns false. A user close request calls onClose
+ * once; the dialog never closes itself.
  */
 export function ModalContainer({
   isOpen,
@@ -84,25 +92,103 @@ export function ModalContainer({
   className = "",
   children,
 }: ModalContainerProps) {
-  const containerRef = useFocusTrap<HTMLDivElement>(isOpen, {
+  const containerRef = useFocusTrap<HTMLDialogElement>(isOpen, {
     initialFocusRef,
     onEscape: closeOnEscape ? onClose : undefined,
     returnFocus,
     onKeyDown,
+    // Only where showModal() really makes the page inert; elsewhere (jsdom,
+    // very old browsers) the trap keeps cycling Tab as before.
+    trapTab: !supportsNativeModal(),
   });
   // A click event targets the nearest common ancestor of its mousedown and
   // mouseup, so a drag that starts inside the panel (a range slider, a text
   // selection) and is released over the backdrop arrives as a backdrop
   // click. Only a press that also began on the backdrop may dismiss.
   const pressStartedOnBackdropRef = useRef<boolean | null>(null);
+  const onCloseRef = useRef(onClose);
+  const closeOnEscapeRef = useRef(closeOnEscape);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    closeOnEscapeRef.current = closeOnEscape;
+  }, [onClose, closeOnEscape]);
+
+  // Declared after useFocusTrap, so the trap records the trigger before
+  // showModal() moves focus into the dialog.
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = containerRef.current;
+    if (!dialog) return;
+    let closeRequested = false;
+    let closingOnUnmount = false;
+
+    const isModal = () => {
+      try {
+        return dialog.matches(":modal");
+      } catch {
+        return dialog.open;
+      }
+    };
+
+    const open = () => {
+      if (dialog.open && isModal()) return;
+      if (typeof dialog.showModal === "function") {
+        if (dialog.open) dialog.close();
+        try {
+          dialog.showModal();
+        } catch {
+          // Not connected or already modal: leave it as it is.
+        }
+      } else {
+        // Environments without showModal (jsdom) still get an open dialog.
+        dialog.setAttribute("open", "");
+      }
+      initialFocusRef?.current?.focus();
+    };
+
+    const requestClose = () => {
+      if (closeRequested) return;
+      closeRequested = true;
+      onCloseRef.current();
+    };
+
+    // Escape and the Android back gesture arrive as cancel. The dialog must
+    // stay open until the parent drops isOpen, so the native close is always
+    // prevented; the request goes to onClose only when Escape may close.
+    const handleCancel = (event: Event) => {
+      event.preventDefault();
+      if (closeOnEscapeRef.current) requestClose();
+    };
+
+    // A browser may still close the dialog after a prevented cancel (Chrome
+    // does so for repeated requests without user activation). Treat that as
+    // the user's close request, or reopen when Escape may not close.
+    const handleClose = () => {
+      if (closingOnUnmount) return;
+      if (closeOnEscapeRef.current) requestClose();
+      else if (dialog.isConnected) open();
+    };
+
+    dialog.addEventListener("cancel", handleCancel);
+    dialog.addEventListener("close", handleClose);
+    open();
+
+    return () => {
+      closingOnUnmount = true;
+      dialog.removeEventListener("cancel", handleCancel);
+      dialog.removeEventListener("close", handleClose);
+      if (dialog.isConnected && dialog.open) dialog.close();
+    };
+  }, [isOpen, containerRef, initialFocusRef]);
 
   if (!isOpen) return null;
 
-  const handleBackdropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleBackdropMouseDown = (e: React.MouseEvent<HTMLDialogElement>) => {
     pressStartedOnBackdropRef.current = e.target === e.currentTarget;
   };
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
     const pressStartedOnBackdrop = pressStartedOnBackdropRef.current !== false;
     pressStartedOnBackdropRef.current = null;
     if (
@@ -116,7 +202,7 @@ export function ModalContainer({
   };
 
   return (
-    <div
+    <dialog
       ref={containerRef}
       role="dialog"
       aria-modal="true"
@@ -126,7 +212,11 @@ export function ModalContainer({
       onMouseDown={handleBackdropMouseDown}
       onClick={handleBackdropClick}
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto transition-opacity duration-200",
+        // The dialog itself is the full-viewport scrim, so clicks on it are
+        // backdrop clicks and the panel centres inside it. The UA box (margin,
+        // max size, border, canvas background) is reset, and ::backdrop stays
+        // clear because the scrim already covers the viewport.
+        "fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none border-0 bg-black/80 p-4 text-inherit backdrop:bg-transparent open:flex items-center justify-center backdrop-blur-sm overflow-y-auto overscroll-contain transition-opacity duration-200",
         overlayClassName
       )}
     >
@@ -139,6 +229,6 @@ export function ModalContainer({
       >
         {children}
       </div>
-    </div>
+    </dialog>
   );
 }

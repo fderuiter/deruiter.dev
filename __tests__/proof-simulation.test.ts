@@ -2,51 +2,36 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import {
+  SIMULATION_FLUSH_MS,
+  SIMULATION_WATCHDOG_MS,
+} from "@/app/proof/useProofSimulation";
 
-describe("Background Web Worker & Watchdog Implementations", () => {
-  const pagePath = path.resolve(__dirname, "../app/proof/page.tsx");
-  const content = fs.readFileSync(pagePath, "utf-8");
+/**
+ * Wiring checks for the /proof background simulation (#3800). Behaviour
+ * (batching, watchdog restarts, attempt boundaries) is covered by
+ * proof-simulation-hook.test.tsx; these only pin what a bundler or a reader
+ * depends on and a rendered hook test cannot see.
+ */
+const root = path.resolve(__dirname, "..");
+const read = (file: string) =>
+  fs.readFileSync(path.join(root, file), "utf-8");
 
-  it("should lazy-initialize Web Worker using native Next.js import.meta.url pattern", () => {
-    expect(content).toContain(
+describe("proof simulation wiring", () => {
+  it("keeps the Worker URL literal the bundler needs to emit the worker chunk", () => {
+    expect(read("app/proof/useProofSimulation.ts")).toContain(
       'new Worker(new URL("./proof-worker.ts", import.meta.url))'
     );
   });
 
-  it("should implement a configurable 5-second (5000ms) watchdog timeout", () => {
-    // Watchdog timer of 5 seconds (5000ms) should be used
-    expect(content).toContain("5000");
-    expect(content).toContain("watchdogRef.current = setTimeout(");
+  it("uses a 5 second watchdog and a 100 ms log flush", () => {
+    expect(SIMULATION_WATCHDOG_MS).toBe(5000);
+    expect(SIMULATION_FLUSH_MS).toBe(100);
   });
 
-  it("should terminate the hung worker on watchdog timeout", () => {
-    expect(content).toContain("workerRef.current.terminate()");
-  });
-
-  it("should re-initialize a new Web Worker instance upon timeout to recover usability", () => {
-    expect(content).toContain("initWorkerRef.current()");
-  });
-
-  it("should print a user-friendly error notification when watchdog kills computation", () => {
-    expect(content).toContain(
-      "Background calculation terminated by watchdog: execution exceeded 5-second limit (potential infinite loop detected)"
-    );
-  });
-
-  it("should implement an asynchronous batching buffer (100ms) to throttle progress logs", () => {
-    expect(content).toContain("100ms batch logs flush timer");
-    expect(content).toContain("pendingLogsRef.current");
-  });
-
-  it("should declare isSimulating state to visually render progress metrics", () => {
-    expect(content).toContain("const [isSimulating, setIsSimulating]");
-    expect(content).toContain(
-      "const [simulationProgress, setSimulationProgress]"
-    );
-  });
-
-  it("should render step-by-step metrics and high frequency updates safe badge", () => {
-    expect(content).toContain("Background Tactic Simulation Running...");
-    expect(content).toContain("THREAD: WEB WORKER (60FPS UI SAFE)");
+  it("renders the running badge in the proof canvas", () => {
+    const canvas = read("components/proof/ProofCanvas.tsx");
+    expect(canvas).toContain("Background Tactic Simulation Running...");
+    expect(canvas).toContain("THREAD: WEB WORKER (60FPS UI SAFE)");
   });
 });

@@ -180,7 +180,7 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
     // GxP and eCRF should now be rendered inside interactive tooltip trigger spans
     // and Source Document Verification (SDV) too
     const triggers = Array.from(
-      container.querySelectorAll("span[aria-describedby]")
+      container.querySelectorAll("[data-tooltip-trigger]")
     );
     expect(triggers.length).toBeGreaterThanOrEqual(3);
 
@@ -265,7 +265,7 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
 
     // Find the GxP trigger
     const gxpTrigger = Array.from(
-      container.querySelectorAll("span[aria-describedby]")
+      container.querySelectorAll("[data-tooltip-trigger]")
     ).find((t) => t.textContent === "GxP");
     expect(gxpTrigger).toBeDefined();
 

@@ -150,7 +150,7 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
       });
 
       // Tooltip trigger should now be present in the rehydrated tree
-      const tooltipTrigger = container.querySelector("[aria-describedby]");
+      const tooltipTrigger = container.querySelector("[data-tooltip-trigger]");
       expect(tooltipTrigger).not.toBeNull();
       expect(tooltipTrigger?.textContent).toBe("eCRF");
     });

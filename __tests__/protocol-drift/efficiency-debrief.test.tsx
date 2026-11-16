@@ -85,31 +85,27 @@ describe("efficiency debrief (#2054)", () => {
     const save = readySave();
     const debrief = await lockFrom(save);
     const table = within(debrief).getByRole("table", {
-      name: /Efficiency against par: 5 of 5 medals, 500 points/,
+      name: /Efficiency against par/,
     });
     expect(
       within(table)
         .getAllByRole("columnheader")
         .map((h) => h.textContent)
-    ).toEqual(["Measure", "Par", "Actual", "Best", "Medal"]);
+    ).toEqual(["Measure", "Par", "Actual", "Best"]);
     expect(rowCells(table, "Chips in pipeline")).toEqual([
       "Chips in pipeline",
       "13",
       "13",
       "13new",
-      "MEDAL",
     ]);
     expect(rowCells(table, "Lock day")).toEqual([
       "Lock day",
       "Day 28",
       "Day 28",
       "Day 28new",
-      "MEDAL",
     ]);
     expect(rowCells(table, "Fabricated bits introduced")[2]).toBe("0.00");
-    expect(within(debrief).getByText(/Arcade score/).textContent).toMatch(
-      /Arcade score \d+/
-    );
+    expect(within(debrief).queryByText(/medal|Arcade score/i)).toBeNull();
 
     const stored = window.localStorage.getItem(EFFICIENCY_BESTS_STORAGE_KEY);
     expect(JSON.parse(stored ?? "{}")).toEqual({

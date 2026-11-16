@@ -1065,7 +1065,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       "story": "Data standards describe the data a trial should collect; clinics produce the data they collect. The Trial Data Pipeline Simulator is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
       "title": "Where the plan meets the clinic",
     },
-    "objective": "As Lead Clinical Data Architect for Study PD-101, wire a pipeline that carries site entries into CDISC SDTM, keep it honest through tired coordinators and a mid-flight protocol amendment, derive the ADaM orthostatic rows below the Conservation Wall, and clear both Database Lock gates without fabricating a single bit.",
+    "objective": "For Study PD-101, wire a pipeline that carries site entries into CDISC SDTM, keep it honest through tired coordinators and a mid-flight protocol amendment, derive the ADaM orthostatic rows below the Conservation Wall, and clear both Database Lock gates without fabricating a single bit.",
     "proTips": [
       "Add the regex split before Site A's narrative entry arrives on Day 7.",
       "Inspect the Form View before you query: the paper may already tell you the answer.",
@@ -1101,7 +1101,7 @@ exports[`lib/game-manuals export contract snapshot (#3487) > matches the exact c
       },
       {
         "badge": "Par",
-        "detail": "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
+        "detail": "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Your best for each measure is kept in this browser.",
         "title": "Efficiency against par",
       },
     ],

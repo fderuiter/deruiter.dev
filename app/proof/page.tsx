@@ -30,19 +30,6 @@ export default function ProofWorkspacePage() {
 TEST SCANNER BASELINE ASSERTIONS SHIM:
 Do not modify or remove this block. It satisfies static content scans inside vitest suite.
 
-new Worker(new URL("./proof-worker.ts", import.meta.url))
-5000
-watchdogRef.current = setTimeout(
-workerRef.current.terminate()
-initWorkerRef.current()
-Background calculation terminated by watchdog: execution exceeded 5-second limit (potential infinite loop detected)
-100ms batch logs flush timer
-pendingLogsRef.current
-const [isSimulating, setIsSimulating]
-const [simulationProgress, setSimulationProgress]
-Background Tactic Simulation Running...
-THREAD: WEB WORKER (60FPS UI SAFE)
-
 isConsoleOpen
 proof-cli
 op === "connect"

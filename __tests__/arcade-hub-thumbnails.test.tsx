@@ -12,10 +12,12 @@ const thumbnailSources = (container: HTMLElement) =>
     .filter((src) => src.includes("/images/arcade/previews/"));
 
 describe("arcade hub thumbnails (#1530)", () => {
-  it("shows a gameplay still for every game and the Meme Vault", () => {
+  it("shows a gameplay still for every hub game", () => {
     const { container } = render(<ArcadeHubClient />);
     const sources = thumbnailSources(container);
-    const expected = [...ARCADE_GAME_ROUTES, "/arcade/meme-vault"].map(
+    // Meme Vault is listed under Labs now, so the hub shows no card for it
+    // (#3151).
+    const expected = [...ARCADE_GAME_ROUTES].map(
       (route) => `/images/arcade/previews/${route.split("/").pop()}.webp`
     );
     for (const src of expected) expect(sources).toContain(src);

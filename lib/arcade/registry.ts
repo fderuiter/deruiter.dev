@@ -22,12 +22,14 @@ export type ArcadePhoneOrientation = "portrait" | "landscape" | "both";
  *
  * - `hub`: a card in the arcade hub's game grid, counted in the game count
  *   and part of the previous/next ring.
- * - `room`: an arcade page outside the grid (Meme Vault is a page, not a
- *   cabinet).
+ * - `room`: an arcade page outside the grid.
  * - `simulators`: listed under Clinical as a tool (the Trial Data Pipeline
  *   Simulator, #1841, #3167), outside the hub grid and the Arcade Daily.
+ * - `labs`: listed once under Labs (#3150), outside the hub grid, its count
+ *   and the previous/next ring. The route, readiness, saved progress and
+ *   `daily` flag do not change with the listing.
  */
-export type ArcadeListing = "hub" | "room" | "simulators";
+export type ArcadeListing = "hub" | "room" | "simulators" | "labs";
 
 /** One game in the registry. */
 export interface ArcadeRegistryEntry {
@@ -164,7 +166,8 @@ export const ARCADE_REGISTRY = [
     slug: "meme-vault",
     name: "Meme Vault",
     route: "/arcade/meme-vault",
-    listing: "room",
+    // A soundboard and trophy room rather than a cabinet game (#3151).
+    listing: "labs",
     views: READY_EVERYWHERE,
     epic: 2387,
     daily: false,

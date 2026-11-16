@@ -36,9 +36,11 @@ describe("clinical journey navigation", () => {
     );
     expect(
       within(nav)
-        .getByRole("link", { name: "← Previous step: Trial Data Pipeline Simulator" })
+        .getByRole("link", {
+          name: "← Previous step: Trial Data Pipeline Simulator",
+        })
         .getAttribute("href")
-    ).toBe("/protocol-drift");
+    ).toBe("/clinical/pipeline-simulator");
     expect(
       within(nav)
         .getByRole("link", { name: "Next step: Clinical Data Platform →" })
@@ -64,7 +66,9 @@ describe("clinical journey navigation", () => {
   it("starts with no previous step and ends with no next step", () => {
     const { unmount } = render(<ClinicalJourneyNav path="/crf" />);
     expect(screen.queryByText(/Previous step/)).toBeNull();
-    expect(screen.getByText(/Next step: Trial Data Pipeline Simulator/)).toBeTruthy();
+    expect(
+      screen.getByText(/Next step: Trial Data Pipeline Simulator/)
+    ).toBeTruthy();
     unmount();
     render(<ClinicalJourneyNav path="/case-studies/study-data-pipeline" />);
     expect(screen.queryByText(/Next step/)).toBeNull();
@@ -98,7 +102,7 @@ describe("clinical journey navigation", () => {
   });
 
   it("lists Clinical Trial Chaos on the pipeline simulator, labelled a game", () => {
-    render(<ClinicalJourneyNav path="/protocol-drift" />);
+    render(<ClinicalJourneyNav path="/clinical/pipeline-simulator" />);
     expect(
       screen
         .getByRole("link", { name: "Clinical Trial Chaos" })
@@ -170,7 +174,9 @@ describe("clinical journey navigation", () => {
       "1. Collect: Case report form designer (CRF Studio)"
     );
     expect(
-      screen.getByRole("link", { name: "Next step: Trial Data Pipeline Simulator →" })
+      screen.getByRole("link", {
+        name: "Next step: Trial Data Pipeline Simulator →",
+      })
     ).toBeTruthy();
   });
 

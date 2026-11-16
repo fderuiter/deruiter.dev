@@ -172,7 +172,7 @@ export const ARCADE_REGISTRY = [
   {
     slug: "protocol-drift",
     name: "Protocol Drift",
-    route: "/protocol-drift",
+    route: "/clinical/pipeline-simulator",
     listing: "simulators",
     views: GATED_ON_PHONE,
     epic: 2462,

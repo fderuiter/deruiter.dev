@@ -10,13 +10,15 @@ import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getAllNavHrefs } from "@/lib/navigation";
 
-const ROUTE = "/protocol-drift";
+const ROUTE = "/clinical/pipeline-simulator";
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
 
 describe("Protocol Drift discovery matrix", () => {
   it("is listed in the command palette, navbar and footer", () => {
-    expect(read("lib/command-palette/static-navs.ts")).toContain(`url: "${ROUTE}"`);
+    expect(read("lib/command-palette/static-navs.ts")).toContain(
+      `url: "${ROUTE}"`
+    );
     // The navbar and footer read the shared navigation data (#1843), whose
     // Clinical entries come from the journey map (#2952).
     expect(getAllNavHrefs()).toContain(ROUTE);
@@ -29,7 +31,9 @@ describe("Protocol Drift discovery matrix", () => {
 
   it("ships an opengraph image and a preview thumbnail", () => {
     expect(
-      fs.existsSync(path.join(root, "app/protocol-drift/opengraph-image.tsx"))
+      fs.existsSync(
+        path.join(root, "app/clinical/pipeline-simulator/opengraph-image.tsx")
+      )
     ).toBe(true);
     expect(
       fs.existsSync(
@@ -39,7 +43,7 @@ describe("Protocol Drift discovery matrix", () => {
   });
 
   it("declares header clearance on the page and never renders a second Navbar", () => {
-    const page = read("app/protocol-drift/page.tsx");
+    const page = read("app/clinical/pipeline-simulator/page.tsx");
     expect(page).toContain("PageLayout");
     expect(page).toContain("pt-28");
     expect(page).not.toContain("<Navbar");

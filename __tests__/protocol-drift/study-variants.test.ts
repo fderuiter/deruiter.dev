@@ -10,7 +10,6 @@ import {
   studyVariant,
   trialDayOf,
 } from "@/lib/protocol-drift";
-import { arcadeDailyNumber } from "@/lib/arcade/daily";
 import {
   ok,
   playFullLevel,
@@ -20,12 +19,9 @@ import {
 } from "./helpers";
 
 const SEEDS = [
-  1,
-  7,
-  1234,
-  99_999,
-  arcadeDailyNumber("2026-10-15", "protocol-drift"),
-  arcadeDailyNumber("2026-12-25", "protocol-drift"),
+  1, 7, 1234, 99_999,
+  // Large seeds the Arcade Daily once produced (2026-10-15, 2026-12-25).
+  10_031_992, 531_800_841,
 ];
 
 function engineFor(seed: number, scenario: "full" | "tracer" = "full") {

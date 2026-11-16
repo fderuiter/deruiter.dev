@@ -73,7 +73,7 @@ describe("the shared Arcade Daily seed (#2113)", () => {
     expect(isArcadeDailyDate("2026-02-29")).toBe(false);
     expect(isArcadeDailyDate("2028-02-29")).toBe(true);
     expect(isArcadeDailyDate("2026-10-14T00:00")).toBe(false);
-    expect(() => arcadeDailySeed("2026-13-01", "protocol-drift")).toThrow(
+    expect(() => arcadeDailySeed("2026-13-01", "for-better-or-bulk")).toThrow(
       RangeError
     );
     expect(() => arcadeDailyHref("trial-and-error", "today")).toThrow(
@@ -123,17 +123,19 @@ describe("the shared Arcade Daily seed (#2113)", () => {
   });
 
   it("finds the date of a daily number today or yesterday only", () => {
-    const today = arcadeDailyNumber("2026-10-14", "protocol-drift");
-    const yesterday = arcadeDailyNumber("2026-10-13", "protocol-drift");
-    const older = arcadeDailyNumber("2026-10-12", "protocol-drift");
-    expect(arcadeDailyDateOfNumber(today, "protocol-drift", NOON)).toBe(
+    const today = arcadeDailyNumber("2026-10-14", "for-better-or-bulk");
+    const yesterday = arcadeDailyNumber("2026-10-13", "for-better-or-bulk");
+    const older = arcadeDailyNumber("2026-10-12", "for-better-or-bulk");
+    expect(arcadeDailyDateOfNumber(today, "for-better-or-bulk", NOON)).toBe(
       "2026-10-14"
     );
-    expect(arcadeDailyDateOfNumber(yesterday, "protocol-drift", NOON)).toBe(
+    expect(arcadeDailyDateOfNumber(yesterday, "for-better-or-bulk", NOON)).toBe(
       "2026-10-13"
     );
-    expect(arcadeDailyDateOfNumber(older, "protocol-drift", NOON)).toBeNull();
-    expect(arcadeDailyDateOfNumber(0, "protocol-drift", NOON)).toBeNull();
+    expect(
+      arcadeDailyDateOfNumber(older, "for-better-or-bulk", NOON)
+    ).toBeNull();
+    expect(arcadeDailyDateOfNumber(0, "for-better-or-bulk", NOON)).toBeNull();
   });
 
   it("tags string seeds with their date and checks the game", () => {
@@ -155,9 +157,6 @@ describe("the shared Arcade Daily seed (#2113)", () => {
     );
     expect(arcadeDailyHref("for-better-or-bulk", date)).toBe(
       "/arcade/for-better-or-bulk?daily=2026-10-14"
-    );
-    expect(arcadeDailyHref("protocol-drift", date)).toBe(
-      "/clinical/pipeline-simulator?daily=2026-10-14"
     );
     expect(arcadeDailyHref("study-director", date)).toBe(
       `/arcade/study-director#mode=desk&seed=${arcadeDailyTag(date, "study-director")}`
@@ -247,7 +246,7 @@ describe("Arcade Daily bests", () => {
     );
     p = withArcadeDailyResult(
       p,
-      "protocol-drift",
+      "for-better-or-bulk",
       "2026-10-14",
       { score: 80 },
       "2026-10-14"
@@ -255,7 +254,7 @@ describe("Arcade Daily bests", () => {
     expect(arcadeDailyBest(p, "patty-drive-thru", "2026-10-14")).toEqual({
       score: 300,
     });
-    expect(arcadeDailyBest(p, "protocol-drift", "2026-10-14")).toEqual({
+    expect(arcadeDailyBest(p, "for-better-or-bulk", "2026-10-14")).toEqual({
       score: 80,
     });
     expect(arcadeDailyBest(p, "trial-and-error", "2026-10-14")).toBeNull();

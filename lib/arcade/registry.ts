@@ -24,8 +24,8 @@ export type ArcadePhoneOrientation = "portrait" | "landscape" | "both";
  *   and part of the previous/next ring.
  * - `room`: an arcade page outside the grid (Meme Vault is a page, not a
  *   cabinet).
- * - `simulators`: listed with the simulators (Protocol Drift, #1841), but its
- *   trophies and daily stay with the arcade.
+ * - `simulators`: listed under Clinical as a tool (the Trial Data Pipeline
+ *   Simulator, #1841, #3167), outside the hub grid and the Arcade Daily.
  */
 export type ArcadeListing = "hub" | "room" | "simulators";
 
@@ -176,7 +176,7 @@ export const ARCADE_REGISTRY = [
     listing: "simulators",
     views: GATED_ON_PHONE,
     epic: 2462,
-    daily: true,
+    daily: false,
   },
 ] as const satisfies readonly ArcadeRegistryEntry[];
 

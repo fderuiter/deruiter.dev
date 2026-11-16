@@ -119,7 +119,7 @@ export default function SchemaFlowWorkspace() {
                 declarative svg layout // no layout reflows
               </span>
               <h3 className="text-sm font-extrabold text-white mt-2 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-brand-cyan motion-safe:animate-pulse"></span>
                 Proof Tactic Vector Canvas
               </h3>
             </div>
@@ -313,7 +313,7 @@ export default function SchemaFlowWorkspace() {
                         <div className="bg-zinc-950/95 border border-brand-cyan/70 rounded-xl p-2.5 shadow-xl shadow-black/90 backdrop-blur-md text-[10px] font-mono text-cyan-200 leading-tight select-none">
                           <div className="flex items-center justify-between mb-1 gap-2">
                             <span className="font-extrabold text-white flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-ping"></span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan motion-safe:animate-ping"></span>
                               {hoveredNode.label} SPECIFICATION
                             </span>
                             <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
@@ -353,7 +353,7 @@ export default function SchemaFlowWorkspace() {
             <div className="flex items-center justify-between border-b border-zinc-900 pb-2.5 mb-3 min-w-0 gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <div
-                  className={`w-2 h-2 rounded-full ${activeInspectorNode ? "bg-brand-cyan animate-pulse" : "bg-zinc-600"}`}
+                  className={`w-2 h-2 rounded-full ${activeInspectorNode ? "bg-brand-cyan motion-safe:animate-pulse" : "bg-zinc-600"}`}
                 />
                 <h4 className="text-xs font-mono font-extrabold uppercase tracking-wider text-zinc-200 truncate">
                   {activeInspectorNode
@@ -467,7 +467,7 @@ export default function SchemaFlowWorkspace() {
                   {isE_Proven ? (
                     <IconCheck className="w-4 h-4" />
                   ) : (
-                    <IconCircleDot className="w-4 h-4 animate-pulse" />
+                    <IconCircleDot className="w-4 h-4 motion-safe:animate-pulse" />
                   )}
                 </div>
                 <div>

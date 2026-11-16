@@ -63,12 +63,12 @@ import { NeuroReconSkeleton } from "./NeuroReconSkeleton";
 const Brain3DViewerSkeleton: React.FC = () => {
   return (
     <div
-      className="relative w-full h-[460px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col justify-between p-4 select-none animate-pulse"
+      className="relative w-full h-[460px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col justify-between p-4 select-none motion-safe:animate-pulse"
       data-testid="brain-3d-skeleton"
     >
       {/* Skeleton Header */}
       <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-mono w-max">
-        <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan/60 animate-ping" />
+        <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan/60 motion-safe:animate-ping" />
         <span className="font-semibold text-zinc-400 uppercase tracking-wider">
           Initializing 3D Engine...
         </span>
@@ -77,8 +77,8 @@ const Brain3DViewerSkeleton: React.FC = () => {
       {/* Skeleton Center pulsing graphic */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <div className="relative">
-          <div className="absolute -inset-4 rounded-full bg-brand-cyan/5 blur-xl animate-pulse" />
-          <Icon3dCubeSphere className="w-16 h-16 text-brand-cyan/40 animate-pulse relative z-10" />
+          <div className="absolute -inset-4 rounded-full bg-brand-cyan/5 blur-xl motion-safe:animate-pulse" />
+          <Icon3dCubeSphere className="w-16 h-16 text-brand-cyan/40 motion-safe:animate-pulse relative z-10" />
         </div>
         <div className="text-center space-y-1 relative z-10">
           <p className="text-sm font-bold font-mono text-zinc-300">
@@ -94,7 +94,7 @@ const Brain3DViewerSkeleton: React.FC = () => {
       <div className="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-900/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800/60 w-full mt-auto">
         <span>PREPARING T1 MESH BUFFER</span>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-cyan/30 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-brand-cyan/30 motion-safe:animate-pulse" />
           <span className="text-[10px]">STANDBY</span>
         </div>
       </div>

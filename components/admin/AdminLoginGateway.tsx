@@ -117,7 +117,7 @@ export function AdminLoginGateway() {
                 </span>
               </div>
               <span className="text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
                 ONLINE
               </span>
             </div>

@@ -112,7 +112,7 @@ export function NewsletterForm({
       {variant === "card" && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-amber-400 motion-safe:animate-pulse" />
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
               PROJECT NOTES / NEWSLETTER
             </span>

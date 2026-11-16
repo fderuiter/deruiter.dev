@@ -93,7 +93,7 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
         <div>
           <Breadcrumbs path="/proof" />
           <h1 className="type-title text-white flex items-center gap-2 mt-1">
-            <IconCpu className="w-8 h-8 text-brand-cyan animate-pulse" />
+            <IconCpu className="w-8 h-8 text-brand-cyan motion-safe:animate-pulse" />
             Logical Proof Canvas
           </h1>
           <p className="text-sm text-slate-400 mt-0.5">

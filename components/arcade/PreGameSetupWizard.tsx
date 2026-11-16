@@ -1038,7 +1038,7 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
               type="button"
               onClick={handleStartGame}
               onMouseEnter={() => playHover()}
-              className="min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer touch-manipulation select-none active:scale-95 uppercase tracking-wider animate-pulse"
+              className="min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer touch-manipulation select-none active:scale-95 uppercase tracking-wider motion-safe:animate-pulse"
             >
               <IconRocket className="w-4 h-4 fill-black" />
               <span>Start Game</span>

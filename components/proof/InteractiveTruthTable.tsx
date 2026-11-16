@@ -389,7 +389,7 @@ export function InteractiveTruthTable({
       >
         <div className="flex items-center gap-2">
           {isCounterexampleActive ? (
-            <IconAlertTriangle className="w-4 h-4 text-red-400 shrink-0 animate-pulse" />
+            <IconAlertTriangle className="w-4 h-4 text-red-400 shrink-0 motion-safe:animate-pulse" />
           ) : allPremisesTrue ? (
             <IconShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
           ) : (

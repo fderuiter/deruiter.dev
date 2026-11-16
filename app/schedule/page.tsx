@@ -264,7 +264,7 @@ export default function SchedulePage() {
         <div className="w-full flex items-center justify-between mb-8 gap-4 flex-wrap">
           <Breadcrumbs path="/schedule" />
           <div className="flex items-center gap-2 text-xs font-mono text-accent bg-accent/10 border border-accent/20 px-3 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-accent motion-safe:animate-pulse" />
             <span>Choose a time</span>
           </div>
         </div>

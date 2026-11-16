@@ -62,7 +62,7 @@ export const TracingBeam: React.FC<TracingBeamProps> = ({
           <div className="absolute top-0 -left-[5px] -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-zinc-950 flex items-center justify-center">
             {/* Neon pulsating ring */}
             {!shouldReduceMotion && (
-              <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping absolute opacity-75" />
+              <span className="w-2.5 h-2.5 rounded-full bg-white motion-safe:animate-ping absolute opacity-75" />
             )}
             <span className="w-1.5 h-1.5 rounded-full bg-white" />
           </div>

@@ -5,14 +5,14 @@ import React from "react";
 export function RetroLabyrinthSkeleton() {
   return (
     <div
-      className="relative w-full aspect-[15/9] min-h-[240px] h-[240px] bg-neutral-950/80 border border-neutral-900 rounded-2xl flex flex-col items-center justify-center font-mono select-none overflow-hidden my-6 animate-pulse"
+      className="relative w-full aspect-[15/9] min-h-[240px] h-[240px] bg-neutral-950/80 border border-neutral-900 rounded-2xl flex flex-col items-center justify-center font-mono select-none overflow-hidden my-6 motion-safe:animate-pulse"
       data-testid="retro-labyrinth-skeleton"
     >
       {/* Skeleton Top Header Bar */}
       <div className="absolute top-3 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
         <span>SYSTEM_LABYRINTH.EXE</span>
         <span className="text-brand-cyan/60 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-ping" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan motion-safe:animate-ping" />
           INITIALIZING...
         </span>
       </div>

@@ -108,7 +108,7 @@ describe("Interactive Terminology Tooltips - Component Structures", () => {
   it("should implement focusable and accessible tooltip specifications in Tooltip component", () => {
     const content = fs.readFileSync(tooltipPath, "utf-8");
     expect(content).toContain("tabIndex={0}");
-    expect(content).toContain("aria-describedby={tooltipId}");
+    expect(content).toContain("aria-describedby={describedBy}");
     expect(content).toContain('role="tooltip"');
   });
 

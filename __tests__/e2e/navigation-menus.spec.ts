@@ -100,7 +100,9 @@ test.describe("Top bar and menus on a wide screen", () => {
       await panel
         .getByRole("link", { name: /Trial Data Pipeline Simulator/ })
         .click();
-      await expect(page).toHaveURL(/\/protocol-drift$/, { timeout: 4000 });
+      await expect(page).toHaveURL(/\/clinical\/pipeline-simulator$/, {
+        timeout: 4000,
+      });
     }).toPass({ timeout: 15000 });
     await expect(page.locator("h1")).toContainText(
       "Trial Data Pipeline Simulator"
@@ -148,7 +150,7 @@ test.describe("Top bar and menus on a wide screen", () => {
   }) => {
     const response = await page.goto("/arcade/protocol-drift");
     expect(response?.ok()).toBe(true);
-    await expect(page).toHaveURL(/\/protocol-drift$/);
+    await expect(page).toHaveURL(/\/clinical\/pipeline-simulator$/);
     await expect(page.locator("h1")).toContainText(
       "Trial Data Pipeline Simulator"
     );
@@ -165,7 +167,7 @@ test.describe("Top bar and menus on a wide screen", () => {
     ).toBeVisible();
     await expect(
       grid.locator(
-        'a[href="/arcade/protocol-drift"], a[href="/protocol-drift"]'
+        'a[href="/arcade/protocol-drift"], a[href="/clinical/pipeline-simulator"]'
       )
     ).toHaveCount(0);
   });

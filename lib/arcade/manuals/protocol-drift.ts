@@ -1,5 +1,8 @@
 import type { FieldManualData } from "./types";
-import { PIPELINE_SIMULATOR_NAME } from "@/lib/clinical-tools/pipeline-simulator";
+import {
+  PIPELINE_SIMULATOR_NAME,
+  PIPELINE_SIMULATOR_PATH,
+} from "@/lib/clinical-tools/pipeline-simulator";
 
 export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   id: "protocol-drift",
@@ -7,7 +10,7 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   subtitle: "Design the trial. Debug reality.",
   genre: "Systems Simulation",
   badge: "Pipeline Canvas",
-  route: "/protocol-drift",
+  route: PIPELINE_SIMULATOR_PATH,
   accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
   badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
   objective:

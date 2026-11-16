@@ -655,7 +655,7 @@ export const STATIC_NAVS: readonly StaticNavEntry[] = [
     subtitle:
       "Design the trial. Debug reality. A node-graph pipeline simulation across CDISC SDTM and ADaM, coordinator fatigue and a protocol amendment.",
     category: "navigation",
-    url: "/protocol-drift",
+    url: "/clinical/pipeline-simulator",
     icon: { name: "IconShieldCheck", className: "w-4 h-4 text-amber-400" },
     badge: "Simulation",
     status: "CDISC Architecture",

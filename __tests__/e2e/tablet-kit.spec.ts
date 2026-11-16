@@ -620,7 +620,7 @@ test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => 
   });
 });
 
-const PD_ROUTE = "/protocol-drift";
+const PD_ROUTE = "/clinical/pipeline-simulator";
 const PD_ROOT = ".pd-touch";
 const PD_INSPECTOR = `${PD_ROOT} [data-testid="inspector"]`;
 const PD_INSPECTOR_SHEET = `${PD_ROOT} [data-testid="inspector-sheet"]`;

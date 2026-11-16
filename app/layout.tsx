@@ -63,6 +63,9 @@ const openDyslexic = localFont({
   ],
   variable: "--font-opendyslexic",
   display: "swap",
+  // Loaded only for readers who switch the dyslexia font on. next/font
+  // preloads by default, which put 235 KB on every first visit (#3972).
+  preload: false,
 });
 
 export const viewport: Viewport = {

@@ -304,3 +304,34 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     }
   });
 });
+
+describe("baseline CSP directives and isolation headers (#3974)", () => {
+  it("blocks plugins, base rewrites, foreign form posts and all framing", async () => {
+    const { buildContentSecurityPolicy } = await import(
+      "@/lib/security-headers"
+    );
+    for (const admin of [false, true]) {
+      const policy = buildContentSecurityPolicy(admin);
+      expect(policy).toContain("object-src 'none'");
+      expect(policy).toContain("base-uri 'self'");
+      expect(policy).toMatch(/form-action 'self'/);
+      expect(policy).toContain("frame-ancestors 'none'");
+    }
+  });
+
+  it("sends COOP and drops the obsolete X-XSS-Protection header", async () => {
+    const { SECURITY_HEADERS, ADMIN_SECURITY_HEADERS } = await import(
+      "@/lib/security-headers"
+    );
+    expect(SECURITY_HEADERS["Cross-Origin-Opener-Policy"]).toBe("same-origin");
+    expect(ADMIN_SECURITY_HEADERS["Cross-Origin-Opener-Policy"]).toBe(
+      "same-origin-allow-popups"
+    );
+    expect(SECURITY_HEADERS).not.toHaveProperty("X-XSS-Protection");
+  });
+
+  it("turns off the X-Powered-By header", async () => {
+    const { default: config } = await import("../next.config");
+    expect(config.poweredByHeader).toBe(false);
+  });
+});

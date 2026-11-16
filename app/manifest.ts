@@ -6,10 +6,11 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "F. de Ruiter",
     description:
       "A high-performance design engineering showcase combining DOM-free canvas layout physics, serverless Neon Postgres data streams, and robust clinical CDISC data engines.",
+    id: "/",
     start_url: "/",
     display: "standalone",
     background_color: "#090D16",
-    theme_color: "#06B6D4",
+    theme_color: "#090D16",
     icons: [
       {
         src: "/icon.svg",
@@ -25,6 +26,12 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/icon-512.png",
         sizes: "512x512",
         type: "image/png",
+      },
+      {
+        src: "/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
       {
         src: "/apple-touch-icon.png",

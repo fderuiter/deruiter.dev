@@ -74,7 +74,8 @@ export function WeddingArchiveView() {
                     width={photo.width}
                     height={photo.height}
                     sizes="(min-width: 1024px) 320px, (min-width: 640px) 45vw, 100vw"
-                    priority={index === 0}
+                    loading={index === 0 ? "eager" : undefined}
+                    fetchPriority={index === 0 ? "high" : undefined}
                     className="h-auto w-full"
                   />
                 </a>

@@ -3,7 +3,7 @@ import React from "react";
 export const PatrolShiftSkeleton: React.FC = () => {
   return (
     <div
-      className="w-full h-[800px] min-h-[600px] bg-zinc-950 rounded-3xl border border-zinc-800 overflow-hidden flex flex-col p-4 sm:p-6 select-none animate-pulse"
+      className="w-full h-[800px] min-h-[600px] bg-zinc-950 rounded-3xl border border-zinc-800 overflow-hidden flex flex-col p-4 sm:p-6 select-none motion-safe:animate-pulse"
       data-testid="patrol-shift-skeleton"
     >
       {/* Top Bar Skeleton */}

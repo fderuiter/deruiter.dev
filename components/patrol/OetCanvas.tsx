@@ -320,7 +320,7 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
 
   const speedColorClass =
     snapshot.currentSpeedMph > 18
-      ? "text-red-400 animate-pulse"
+      ? "text-red-400 motion-safe:animate-pulse"
       : snapshot.currentSpeedMph > 14
         ? "text-amber-400"
         : "text-emerald-400";
@@ -487,7 +487,7 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
 
           {/* Active Warnings Alert Pill */}
           {snapshot.activeWarnings.length > 0 && (
-            <div className="self-center pointer-events-auto animate-bounce">
+            <div className="self-center pointer-events-auto motion-safe:animate-bounce">
               <div className="px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-bold flex items-center gap-2 shadow-xl backdrop-blur-md">
                 <IconAlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>{snapshot.activeWarnings[0]}</span>
@@ -641,7 +641,7 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
             className="absolute inset-0 bg-zinc-950/95 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center gap-4 z-20"
             data-testid="oet-crashed-modal"
           >
-            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 animate-pulse">
+            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 motion-safe:animate-pulse">
               <IconAlertTriangle className="w-8 h-8" />
             </div>
 

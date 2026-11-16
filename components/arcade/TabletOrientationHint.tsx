@@ -48,7 +48,7 @@ export const TabletOrientationHint: React.FC<TabletOrientationHintProps> = ({
       className={`relative mb-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono flex items-center justify-between gap-3 animate-fadeIn shadow-lg backdrop-blur-md ${className}`}
     >
       <div className="flex items-center gap-2">
-        <IconDeviceMobileRotated className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+        <IconDeviceMobileRotated className="w-4 h-4 text-amber-400 shrink-0 motion-safe:animate-pulse" />
         <span>
           Rotate to landscape for the best arcade experience & touch controls.
         </span>

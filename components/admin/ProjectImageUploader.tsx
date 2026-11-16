@@ -530,7 +530,7 @@ export function ProjectImageUploader({
           aria-label="Upload Progress"
         >
           <div className="flex justify-between items-center text-xs font-mono">
-            <span className="text-cyan-400 font-semibold animate-pulse">
+            <span className="text-cyan-400 font-semibold motion-safe:animate-pulse">
               Uploading asset...
             </span>
             <span className="text-zinc-400">{progress}%</span>

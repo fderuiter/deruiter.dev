@@ -167,7 +167,7 @@ describe("Arcade progress store (#2548)", () => {
     it("keeps the Daily record and its bytes", () => {
       const today = {
         version: 1,
-        bests: { "protocol-drift": { "2026-10-13": { score: 88 } } },
+        bests: { "for-better-or-bulk": { "2026-10-13": { score: 88 } } },
         played: ["2026-10-12", "2026-10-13"],
         longest: 4,
       };
@@ -180,7 +180,7 @@ describe("Arcade progress store (#2548)", () => {
       const noon = Date.UTC(2026, 9, 14, 12);
       expect(
         recordArcadeDailyResult(
-          "protocol-drift",
+          "for-better-or-bulk",
           "2026-10-14",
           { score: 90 },
           noon
@@ -189,7 +189,7 @@ describe("Arcade progress store (#2548)", () => {
       const after = JSON.parse(
         localStorage.getItem(ARCADE_DAILY_STORAGE_KEY) ?? "null"
       );
-      expect(after.bests["protocol-drift"]["2026-10-13"]).toEqual({
+      expect(after.bests["for-better-or-bulk"]["2026-10-13"]).toEqual({
         score: 88,
       });
       expect(after.played).toEqual(["2026-10-12", "2026-10-13", "2026-10-14"]);

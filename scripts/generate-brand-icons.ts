@@ -183,6 +183,26 @@ export async function generateBrandIcons(
     icon512Buffer
   );
   console.log("✓ Generated public/icon-512.png (512x512)");
+
+  // 5. Maskable icon: the mark sits inside the 80% safe zone on the brand
+  // background, so launchers that crop to a circle keep the whole tile.
+  const maskableMark = await sharp(svgBuffer).resize(320, 320).png().toBuffer();
+  const maskableBuffer = await sharp({
+    create: {
+      width: 512,
+      height: 512,
+      channels: 4,
+      background: "#090D16",
+    },
+  })
+    .composite([{ input: maskableMark, gravity: "center" }])
+    .png()
+    .toBuffer();
+  writeIfChanged(
+    path.resolve(outputRoot, "public/icon-maskable-512.png"),
+    maskableBuffer
+  );
+  console.log("✓ Generated public/icon-maskable-512.png (512x512, maskable)");
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

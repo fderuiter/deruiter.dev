@@ -31,7 +31,7 @@ export default function ContactPage() {
         <div className="w-full flex items-center justify-between mb-8 gap-4 flex-wrap">
           <Breadcrumbs path="/contact" />
           <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
             <span>Say hello</span>
           </div>
         </div>

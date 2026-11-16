@@ -910,7 +910,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   strokeWidth="10"
                   strokeLinecap="round"
                   opacity="0.5"
-                  className="animate-pulse"
+                  className="motion-safe:animate-pulse"
                   data-testid="lift-highlight-belle-creek-quad"
                 />
               )}
@@ -924,7 +924,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   opacity="0.4"
-                  className="animate-pulse"
+                  className="motion-safe:animate-pulse"
                   data-testid="trail-highlight-long-way-home"
                 />
               )}
@@ -938,7 +938,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   opacity="0.4"
-                  className="animate-pulse"
+                  className="motion-safe:animate-pulse"
                   data-testid="trail-highlight-harleys-hollow"
                 />
               )}
@@ -997,7 +997,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       opacity="0.4"
-                      className="animate-pulse"
+                      className="motion-safe:animate-pulse"
                       data-testid="trail-highlight-long-way-home"
                     />
                   )}
@@ -1012,7 +1012,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         opacity="0.4"
-                        className="animate-pulse"
+                        className="motion-safe:animate-pulse"
                         data-testid="trail-highlight-harleys-hollow"
                       />
                     )}
@@ -1131,7 +1131,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                       strokeWidth="12"
                       strokeLinecap="round"
                       opacity="0.5"
-                      className="animate-pulse"
+                      className="motion-safe:animate-pulse"
                       data-testid="lift-highlight-belle-creek-quad"
                     />
                   )}
@@ -1294,7 +1294,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                     stroke="#f59e0b"
                     strokeWidth="3"
                     opacity="0.6"
-                    className="animate-pulse"
+                    className="motion-safe:animate-pulse"
                     data-testid="station-highlight-summit"
                   />
                 )}
@@ -1307,7 +1307,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                     stroke="#f59e0b"
                     strokeWidth="3"
                     opacity="0.6"
-                    className="animate-pulse"
+                    className="motion-safe:animate-pulse"
                     data-testid="station-highlight-base"
                   />
                 )}
@@ -1504,7 +1504,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   r="20"
                   fill="#f59e0b"
                   opacity="0.35"
-                  className="animate-ping"
+                  className="motion-safe:animate-ping"
                 />
                 <circle
                   cx="0"
@@ -1608,7 +1608,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
               activeAmbientEvent || activeIncident
                 ? "bg-amber-400"
                 : "bg-emerald-400"
-            } animate-pulse`}
+            } motion-safe:animate-pulse`}
           />
           <span className="truncate">
             Hill Sector:{" "}

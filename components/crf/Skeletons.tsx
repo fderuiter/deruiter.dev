@@ -2,7 +2,7 @@ import React from "react";
 
 export const VisitMatrixEditorSkeleton: React.FC = () => {
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-3 sm:p-6 overflow-y-auto animate-pulse">
+    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-3 sm:p-6 overflow-y-auto motion-safe:animate-pulse">
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-zinc-800">
         <div className="min-w-0 space-y-2">
@@ -46,7 +46,7 @@ export const VisitMatrixEditorSkeleton: React.FC = () => {
 
 export const RuleGraphStudioSkeleton: React.FC = () => {
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6 animate-pulse">
+    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6 motion-safe:animate-pulse">
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-zinc-800">
         <div className="space-y-2">
@@ -101,7 +101,7 @@ export const RuleGraphStudioSkeleton: React.FC = () => {
 
 export const LiveEdcSimulatorSkeleton: React.FC = () => {
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6 animate-pulse">
+    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6 motion-safe:animate-pulse">
       {/* Top Banner & Multi-Role Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-zinc-800">
         <div className="space-y-2 min-w-0">
@@ -156,7 +156,7 @@ export const LiveEdcSimulatorSkeleton: React.FC = () => {
 
 export const WorkflowWizardModalSkeleton: React.FC = () => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-pulse">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md motion-safe:animate-pulse">
       {/* Modal Wrapper */}
       <div className="w-full max-w-4xl h-full max-h-[92vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden">
         {/* Top Header Bar */}
@@ -218,7 +218,7 @@ export const WorkflowWizardModalSkeleton: React.FC = () => {
 export const CRFStudioSkeleton: React.FC = () => {
   return (
     <div
-      className="w-full h-[800px] min-h-[600px] bg-zinc-950 rounded-3xl border border-zinc-800 overflow-hidden flex flex-col p-4 select-none animate-pulse"
+      className="w-full h-[800px] min-h-[600px] bg-zinc-950 rounded-3xl border border-zinc-800 overflow-hidden flex flex-col p-4 select-none motion-safe:animate-pulse"
       data-testid="crf-studio-skeleton"
     >
       {/* Studio Header Skeleton */}

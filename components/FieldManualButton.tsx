@@ -363,7 +363,7 @@ export function FieldManualButton({
 
         {!hasSeenGuide && (
           <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-[var(--game-accent,#22d3ee)] opacity-75"></span>
+            <span className="motion-safe:animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-[var(--game-accent,#22d3ee)] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--game-accent,#06b6d4)]"></span>
           </span>
         )}

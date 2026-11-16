@@ -87,7 +87,7 @@ export const DeferredHydration: React.FC<DeferredHydrationProps> = ({
 
 export const SkillsGridSkeleton: React.FC = () => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl mx-auto select-none animate-pulse">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl mx-auto select-none motion-safe:animate-pulse">
       {/* 1. Bio Card Skeleton */}
       <div className="md:col-span-2 p-5 sm:p-6 md:p-8 bg-zinc-900/10 border border-zinc-900/50 rounded-3xl min-h-[220px] sm:min-h-[250px] flex flex-col justify-between">
         <div>
@@ -152,7 +152,7 @@ export const SkillsGridSkeleton: React.FC = () => {
 
 export const TimelineSkeleton: React.FC = () => {
   return (
-    <div className="w-full max-w-3xl mx-auto py-6 sm:py-8 relative select-none animate-pulse">
+    <div className="w-full max-w-3xl mx-auto py-6 sm:py-8 relative select-none motion-safe:animate-pulse">
       {/* Perspective Switcher Placeholder */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 py-3 bg-surface-1 border border-zinc-900/80 rounded-2xl w-full">
         <div className="flex items-center gap-2">

@@ -35,7 +35,7 @@ describe("arcade previous/next ring (#1330)", () => {
   });
 
   it("leaves Protocol Drift out of the ring, since it is a simulator (#1841)", () => {
-    expect(ARCADE_GAME_ROUTES).not.toContain("/protocol-drift");
+    expect(ARCADE_GAME_ROUTES).not.toContain("/clinical/pipeline-simulator");
     expect(getArcadeNeighbors("/arcade/study-director").next.href).toBe(
       "/arcade/patty-drive-thru"
     );

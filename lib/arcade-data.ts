@@ -1,3 +1,8 @@
+import {
+  PIPELINE_SIMULATOR_NAME,
+  PIPELINE_SIMULATOR_PATH,
+} from "@/lib/clinical-tools/pipeline-simulator";
+
 export interface ArcadeGameMetadata {
   id: string;
   slug: string;
@@ -225,13 +230,13 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     badgeBg: "bg-rose-300/10 text-rose-300 border-rose-300/30",
     route: "/arcade/for-better-or-bulk",
   },
-  // Protocol Drift lives with the simulators at /protocol-drift (#1841). It
+  // The pipeline simulator lives under Clinical (#1841, #3167). It
   // keeps its entry here so its achievements and trophies stay in the cabinet;
   // the hub, previous/next ring and game count use ARCADE_GAME_ROUTES instead.
   {
     id: "protocol-drift",
     slug: "protocol-drift",
-    title: "Protocol Drift",
+    title: PIPELINE_SIMULATOR_NAME,
     subtitle: "Design the trial. Debug reality.",
     genre: "Systems Simulation",
     description:
@@ -250,7 +255,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-amber-400",
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    route: "/protocol-drift",
+    route: PIPELINE_SIMULATOR_PATH,
   },
   {
     id: "retro-labyrinth",

@@ -92,7 +92,7 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan px-2.5 py-1 rounded-lg text-[10px]">
-            <IconCpu className="w-3 h-3 animate-pulse" />
+            <IconCpu className="w-3 h-3 motion-safe:animate-pulse" />
             <span>OFFLOADED TO WEB WORKER · ZERO-COPY TRANSFERABLE</span>
           </span>
           {scanDurationMs !== undefined && scanDurationMs > 0 && (

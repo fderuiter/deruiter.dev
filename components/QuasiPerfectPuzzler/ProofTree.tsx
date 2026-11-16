@@ -166,7 +166,7 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
                 </span>
               ) : (
                 <span className="flex items-center gap-1 qp-text-accent-strong">
-                  <IconCircleDot className="w-3 h-3 animate-pulse" />{" "}
+                  <IconCircleDot className="w-3 h-3 motion-safe:animate-pulse" />{" "}
                   {node.status || "open"}
                 </span>
               )}

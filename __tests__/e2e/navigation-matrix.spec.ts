@@ -19,7 +19,7 @@ const TOP_LEVEL = {
 const MENU_SAMPLES: Record<string, RegExp[]> = {
   Clinical: [
     /CRF Studio/,
-    /Protocol Drift/,
+    /Trial Data Pipeline Simulator/,
     /Study Data Pipeline/,
     /Clinical Data Platform/,
     /Portfolio Dashboard/,

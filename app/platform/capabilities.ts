@@ -1,3 +1,8 @@
+import {
+  PIPELINE_SIMULATOR_NAME,
+  PIPELINE_SIMULATOR_PATH,
+} from "@/lib/clinical-tools/pipeline-simulator";
+
 /** Evidence that a visitor can open now, or the issue tracking planned work. */
 interface CapabilityLink {
   label: string;
@@ -58,7 +63,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
       "Collection, tabulation and analysis connected by study metadata and lineage.",
     evidence: [
       route("/crf", "CRF Studio"),
-      route("/protocol-drift", "Protocol Drift"),
+      route(PIPELINE_SIMULATOR_PATH, PIPELINE_SIMULATOR_NAME),
       route("/study-data", "Study Data Pipeline"),
     ],
   },

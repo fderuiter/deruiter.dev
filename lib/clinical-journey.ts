@@ -1,3 +1,8 @@
+import {
+  PIPELINE_SIMULATOR_NAME,
+  PIPELINE_SIMULATOR_PATH,
+} from "@/lib/clinical-tools/pipeline-simulator";
+
 /**
  * The clinical data journey (#2689): the order in which the site's clinical
  * work tells one story, from collecting a study's data to governing a
@@ -82,8 +87,8 @@ export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
   {
     id: "consequences",
     stage: "Feel the consequences",
-    title: "Protocol Drift",
-    href: "/protocol-drift",
+    title: PIPELINE_SIMULATOR_NAME,
+    href: PIPELINE_SIMULATOR_PATH,
     purpose:
       "Play a systems simulation of the friction between a protocol's specification and the messy data sites actually collect.",
     evidence: ["synthetic"],

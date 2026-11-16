@@ -921,7 +921,7 @@ export const ClinicalTrialChaos: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               Live BIMO Stream
@@ -978,7 +978,7 @@ export const ClinicalTrialChaos: React.FC = () => {
           {/* Warning Banner if threshold violations occur */}
           {(liveBimoReport.verdict.startsWith("OAI") ||
             liveBimoReport.findings.some((f) => f.severity === "Critical")) && (
-            <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 p-2.5 text-xs text-rose-200 flex items-start gap-2 animate-pulse">
+            <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 p-2.5 text-xs text-rose-200 flex items-start gap-2 motion-safe:animate-pulse">
               <IconAlertTriangle className="h-5 w-5 shrink-0 text-rose-400 mt-0.5" />
               <div>
                 <div className="font-bold text-rose-300">

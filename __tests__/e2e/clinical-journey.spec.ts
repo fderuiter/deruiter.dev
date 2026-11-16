@@ -10,8 +10,8 @@ import { expect, test, type Page } from "@playwright/test";
  */
 
 const STEPS = [
-  { path: "/crf", next: "Protocol Drift" },
-  { path: "/protocol-drift", next: "Study Data Pipeline" },
+  { path: "/crf", next: "Trial Data Pipeline Simulator" },
+  { path: "/clinical/pipeline-simulator", next: "Study Data Pipeline" },
   { path: "/study-data", next: "Clinical Data Platform" },
   { path: "/platform", next: "Study Data Pipeline case study" },
   { path: "/case-studies/study-data-pipeline", next: null },
@@ -75,7 +75,7 @@ for (const width of [320, 1440]) {
       expect(await overflowingElements(page)).toEqual([]);
       expect(await seriousNavViolations(page)).toEqual([]);
 
-      if (step.path === "/protocol-drift") {
+      if (step.path === "/clinical/pipeline-simulator") {
         // Protocol Drift is a workbench, so its journey panel is compact and
         // the related game sits behind "About this step".
         await nav.getByRole("button", { name: /About this step/ }).click();

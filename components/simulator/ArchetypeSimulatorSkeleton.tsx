@@ -5,7 +5,7 @@ export function ArchetypeSimulatorSkeleton() {
     <div
       role="region"
       aria-label="Incident simulator workspace skeleton"
-      className="w-full max-w-2xl mx-auto min-h-[500px] bg-[#13151a] border border-white/[0.08] rounded-2xl p-6 sm:p-10 animate-pulse flex flex-col gap-6"
+      className="w-full max-w-2xl mx-auto min-h-[500px] bg-[#13151a] border border-white/[0.08] rounded-2xl p-6 sm:p-10 motion-safe:animate-pulse flex flex-col gap-6"
     >
       <div className="h-4 w-32 bg-zinc-800 rounded-md" />
       <div className="h-8 w-3/4 bg-zinc-800 rounded-lg" />

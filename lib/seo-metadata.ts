@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_BASE_URL } from "@/lib/seo";
+import { PIPELINE_SIMULATOR_NAME } from "@/lib/clinical-tools/pipeline-simulator";
 
 export interface RouteMetaConfig {
   title: string;
@@ -469,13 +470,13 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   protocolDrift: {
-    title: "Protocol Drift: Data Pipeline Sim",
+    title: PIPELINE_SIMULATOR_NAME,
     description:
       "A browser puzzle about the gap between a clean regulatory specification and the messy way people collect clinical data, played as a systems simulation.",
-    path: "/protocol-drift",
+    path: "/clinical/pipeline-simulator",
     ogImageType: "image/jpeg",
     keywords: [
-      "Protocol Drift",
+      PIPELINE_SIMULATOR_NAME,
       "Clinical Data Architecture",
       "CDISC SDTM",
       "CDISC ADaM",

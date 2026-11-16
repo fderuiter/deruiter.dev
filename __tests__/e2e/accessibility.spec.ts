@@ -703,7 +703,7 @@ test.describe("Shift+Tab back from the footer clears the fixed navbar (#2325)", 
   test("Protocol Drift workbench at 1280", async ({ page }) => {
     test.setTimeout(120000);
     // /arcade/protocol-drift redirects here.
-    await page.goto("/protocol-drift");
+    await page.goto("/clinical/pipeline-simulator");
     const launch = page.getByRole("button", { name: /Launch Cabinet/i });
     const briefing = page.getByRole("dialog", { name: /Trial Briefing/ });
     await expect(async () => {

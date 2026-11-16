@@ -703,7 +703,7 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
           aria-live="polite"
           className={`absolute top-12 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono shadow-xl transition-all duration-300 pointer-events-none ${
             contextStatus === "lost" || contextStatus === "restoring"
-              ? "bg-amber-950/90 border border-amber-500/60 text-amber-300 animate-pulse"
+              ? "bg-amber-950/90 border border-amber-500/60 text-amber-300 motion-safe:animate-pulse"
               : "bg-emerald-950/90 border border-emerald-500/60 text-emerald-300"
           }`}
         >

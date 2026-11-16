@@ -229,7 +229,8 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
                   fill
                   sizes="(max-width: 768px) 100vw, 440px"
                   className="object-contain"
-                  priority
+                  loading="eager"
+                  fetchPriority="high"
                 />
                 {/* Prev / Next buttons inside lightbox */}
                 <button

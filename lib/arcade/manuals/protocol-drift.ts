@@ -1,12 +1,16 @@
 import type { FieldManualData } from "./types";
+import {
+  PIPELINE_SIMULATOR_NAME,
+  PIPELINE_SIMULATOR_PATH,
+} from "@/lib/clinical-tools/pipeline-simulator";
 
 export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   id: "protocol-drift",
-  title: "Protocol Drift",
+  title: PIPELINE_SIMULATOR_NAME,
   subtitle: "Design the trial. Debug reality.",
   genre: "Systems Simulation",
   badge: "Pipeline Canvas",
-  route: "/protocol-drift",
+  route: PIPELINE_SIMULATOR_PATH,
   accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
   badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
   objective:
@@ -81,12 +85,6 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
         "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
       badge: "Par",
     },
-    {
-      title: "Arcade Daily",
-      detail:
-        "Play daily on the arcade hub starts the study on today's seed instead of seed #48291; the footer shows the daily's date. Locking the database on it records the lock score as today's daily best on the hub.",
-      badge: "Daily",
-    },
   ],
   proTips: [
     "Add the regex split before Site A's narrative entry arrives on Day 7.",
@@ -96,7 +94,7 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   lore: {
     title: "Where the plan meets the clinic",
     story:
-      "Data standards describe the data a trial should collect; clinics produce the data they collect. Protocol Drift is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
+      "Data standards describe the data a trial should collect; clinics produce the data they collect. The Trial Data Pipeline Simulator is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
     realWorldTech: [
       "CDISC SDTM and ADaM",
       "CDASH partial date handling",

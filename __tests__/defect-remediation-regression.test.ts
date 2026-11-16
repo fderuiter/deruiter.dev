@@ -62,6 +62,7 @@ import {
   exportStudyToCdiscOdmXml,
   exportStudyToSas,
   importStudyFromCsvSpec,
+  evaluateVisitWindowConflicts,
 } from "@/lib/crf";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
@@ -3097,5 +3098,23 @@ describe("Central monitoring KRI profile regression (#3221)", () => {
         (e) => e.siteId === "DEV-402-CA-122" && e.testId === "csm-kri-profile"
       )?.reason
     ).toMatch(/2 scheduled visits/);
+  });
+});
+
+describe("Oncology preset visit-window regression (#3138)", () => {
+  it("opens with no window conflicts, because unscheduled visits are skipped", () => {
+    expect(
+      evaluateVisitWindowConflicts(ONCOLOGY_RECIST_PRESET.visits).hasConflicts
+    ).toBe(false);
+  });
+});
+
+describe("TypeDoc comment Markdown regression (#3791)", () => {
+  it("keeps the CdashVariableMetadata and withAgentsSection comments lint-valid", () => {
+    const read = (file: string) =>
+      fs.readFileSync(path.resolve(__dirname, "..", file), "utf-8");
+
+    expect(read("lib/crf/types.ts")).not.toMatch(/^\s*\* #\d/m);
+    expect(read("lib/dx/doctor.ts")).not.toContain("` (AGENTS.md section N)`");
   });
 });

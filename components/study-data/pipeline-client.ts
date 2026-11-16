@@ -57,12 +57,15 @@ export interface PipelineClient {
   /**
    * Stops the worker and rejects every pending request with
    * {@link PipelineCancelledError}. The next request starts a fresh worker,
-   * which holds no run until it is asked for one.
+   * which holds no run until it is asked for one. On the main thread it does
+   * the same with a fresh session: a request still waiting for the session
+   * starts no work, and one already running finishes but its answer is
+   * dropped, because main-thread work cannot be interrupted.
    */
   cancel(): void;
   /**
-   * Releases the worker, if any, and rejects every pending worker request
-   * with {@link PipelineDisposedError}. Calling it again does nothing. The
+   * Releases the worker or the main-thread session, if any, and rejects every
+   * pending request with {@link PipelineDisposedError}. Calling it again does nothing. The
    * client stays usable: the next request starts a fresh worker, so an owner
    * that sets up again (as React Strict Mode does) can keep the same client.
    */
@@ -136,13 +139,54 @@ export function createPipelineClient(): PipelineClient {
     return created;
   };
 
-  const runInThread = async (request: StudyDataRequest) => {
-    inThread ??= import("./pipeline-session").then((module) =>
-      module.createStudyDataSession()
-    );
-    const session = await inThread;
-    return session.handle(request);
+  // Main-thread requests have no worker to terminate, so cancel and dispose
+  // end them by generation (#3805). Each request records the generation it
+  // started in; cancel and dispose start a new one and settle the older
+  // waiters at once. Work already running on the main thread cannot be
+  // interrupted, so its answer is dropped instead of reaching the caller.
+  let generation = 0;
+  const inThreadWaiters = new Map<number, Waiter>();
+
+  const endInThread = (error: Error) => {
+    generation += 1;
+    // A fresh session holds no run, as a fresh worker would.
+    inThread = null;
+    const waiters = [...inThreadWaiters.values()];
+    inThreadWaiters.clear();
+    for (const waiter of waiters) waiter.reject(error);
   };
+
+  const runInThread = (id: number, request: StudyDataRequest) =>
+    new Promise<unknown>((resolve, reject) => {
+      const started = generation;
+      inThreadWaiters.set(id, { resolve, reject });
+      const settle = (outcome: () => void) => {
+        if (started !== generation || !inThreadWaiters.delete(id)) return;
+        outcome();
+      };
+      const session = (inThread ??= import("./pipeline-session").then(
+        (module) => module.createStudyDataSession()
+      ));
+      session
+        .then((loaded) => {
+          // Cancelled while the session loaded: start no work.
+          if (started !== generation) return undefined;
+          return loaded.handle(request).then(
+            (value) => settle(() => resolve(value)),
+            (error: unknown) =>
+              settle(() =>
+                reject(
+                  error instanceof Error ? error : new Error(String(error))
+                )
+              )
+          );
+        })
+        .catch((error: unknown) =>
+          settle(() =>
+            reject(error instanceof Error ? error : new Error(String(error)))
+          )
+        );
+    });
 
   return {
     request<T extends StudyDataRequest["type"]>(
@@ -153,7 +197,7 @@ export function createPipelineClient(): PipelineClient {
       const request: StudyDataRequest = { ...base, id };
       const target = ensureWorker();
       if (!target) {
-        return runInThread(request) as Promise<StudyDataResults[T]>;
+        return runInThread(id, request) as Promise<StudyDataResults[T]>;
       }
       return new Promise<StudyDataResults[T]>((resolve, reject) => {
         pending.set(id, {
@@ -169,10 +213,12 @@ export function createPipelineClient(): PipelineClient {
       });
     },
     cancel() {
+      if (inThread) endInThread(new PipelineCancelledError());
       if (!worker) return;
       release(new PipelineCancelledError());
     },
     dispose() {
+      if (inThread) endInThread(new PipelineDisposedError());
       release(new PipelineDisposedError());
     },
     mode() {

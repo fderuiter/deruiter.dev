@@ -479,7 +479,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(urls).toContain(`${expectedBase}/arcade/quasi-puzzler`);
     expect(urls).toContain(`${expectedBase}/arcade/garmin-watch`);
     expect(urls).toContain(`${expectedBase}/arcade/clinical-chaos`);
-    expect(urls).toContain(`${expectedBase}/protocol-drift`);
+    expect(urls).toContain(`${expectedBase}/clinical/pipeline-simulator`);
     expect(urls).toContain(`${expectedBase}/arcade/retro-labyrinth`);
     expect(urls).toContain(`${expectedBase}/arcade/working-with-duck`);
     expect(urls).toContain(`${expectedBase}/proof`);
@@ -679,7 +679,16 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(data.start_url).toBe("/");
     expect(data.display).toBe("standalone");
     expect(data.background_color).toBe("#090D16");
-    expect(data.theme_color).toBe("#06B6D4");
+    // Matches viewport.themeColor in app/layout.tsx, so an installed app's
+    // title bar and the browser's address bar use the same color (#3972).
+    expect(data.theme_color).toBe("#090D16");
+    expect(data.id).toBe("/");
+    expect(data.icons).toContainEqual(
+      expect.objectContaining({
+        src: "/icon-maskable-512.png",
+        purpose: "maskable",
+      })
+    );
     expect(data.icons).toBeDefined();
     expect(data.icons?.length).toBeGreaterThanOrEqual(4);
   });
@@ -840,7 +849,10 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
         "pattyDriveThru",
         () => import("@/app/arcade/patty-drive-thru/opengraph-image"),
       ],
-      ["protocolDrift", () => import("@/app/protocol-drift/opengraph-image")],
+      [
+        "protocolDrift",
+        () => import("@/app/clinical/pipeline-simulator/opengraph-image"),
+      ],
       [
         "quasiPuzzler",
         () => import("@/app/arcade/quasi-puzzler/opengraph-image"),
@@ -924,7 +936,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       for (const game of ARCADE_GAMES_METADATA) {
         // Protocol Drift moved to the simulators and keeps its entry for trophies.
         if (game.id === "protocol-drift") {
-          expect(game.route).toBe("/protocol-drift");
+          expect(game.route).toBe("/clinical/pipeline-simulator");
         } else {
           expect(game.route).toMatch(/^\/arcade/);
         }

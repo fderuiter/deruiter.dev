@@ -31,8 +31,6 @@ import {
   recordArcadeMilestone,
   recordArcadeScore,
 } from "@/lib/arcade-achievements";
-import { arcadeDailyDateOfNumber } from "@/lib/arcade/daily";
-import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import { downloadFile } from "@/lib/download";
 import { playProtocolCue } from "./audio";
 import {
@@ -130,7 +128,7 @@ interface ProtocolDriftState {
   autosavedAt: string | null;
 
   /**
-   * Starts a study. A seed, such as the Arcade Daily's (#2113), is kept for
+   * Starts a study. A seed is kept for
    * later restarts and the brief's scenario switch; left out, the study
    * keeps the seed it had, the default at first.
    */
@@ -229,14 +227,8 @@ let pendingReference: string | null = null;
 let busy = false;
 /** True while a save is replaying: no cues, no autosaves. */
 let replaying = false;
-/** The seed new studies start from: the default, or a daily from the link. */
+/** The seed new studies start from. */
 let runSeed: number = DEFAULT_SEED;
-
-/** A locked study on the day's Arcade Daily seed keeps its own best (#2113). */
-function recordDaily(seed: number, score: number): void {
-  const date = arcadeDailyDateOfNumber(seed, "protocol-drift", Date.now());
-  if (date) recordArcadeDailyResult("protocol-drift", date, { score });
-}
 
 function edgeKey(source: string, target: string): string {
   return `${source}>${target}`;
@@ -358,9 +350,6 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           patch.scorecard = event.scorecard;
           cue = "gatePass";
           recordArcadeScore("protocol-drift", event.scorecard.score);
-          // An assisted run keeps no Daily best, as it keeps no bests (#2276).
-          if (!replaying && !event.scorecard.assisted)
-            recordDaily(res.view.seed, event.scorecard.score);
           patch.efficiencyBests = saveEfficiencyBests(event.scorecard);
           if (event.scorecard.badges.every((b) => b.earned)) {
             recordArcadeMilestone("protocol-drift", "all_badges");
@@ -790,7 +779,7 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         say(
           "error",
           stale
-            ? "This save is from an earlier version of Protocol Drift and can't be resumed. Start a new study."
+            ? "This save is from an earlier version of the Trial Data Pipeline Simulator and can't be resumed. Start a new study."
             : error instanceof Error
               ? error.message
               : "Save is invalid"

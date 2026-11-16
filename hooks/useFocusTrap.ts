@@ -32,13 +32,6 @@ export interface UseFocusTrapOptions {
    * beside the thing the player is watching (defaults to false).
    */
   preventScroll?: boolean;
-  /**
-   * Cycle Tab and Shift+Tab inside the container (defaults to true). A native
-   * modal dialog opened with showModal() already makes the rest of the page
-   * inert, so it passes false and keeps only the stack, Escape ownership and
-   * focus restoration (#3975).
-   */
-  trapTab?: boolean;
 }
 
 // Module-level count of currently-active focus traps across the whole page
@@ -160,7 +153,6 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     returnFocusTo,
     onKeyDown,
     preventScroll = false,
-    trapTab = true,
   } = options;
 
   const trapIdRef = useRef<symbol>(Symbol("focus-trap"));
@@ -201,7 +193,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
         }
       }
 
-      if (event.key !== "Tab" || !trapTab) return;
+      if (event.key !== "Tab") return;
 
       const container = containerRef.current;
       const tabbable = Array.from(
@@ -253,7 +245,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
         }
       }
     },
-    [active, trapTab]
+    [active]
   );
 
   useEffect(() => {

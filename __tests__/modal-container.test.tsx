@@ -366,18 +366,18 @@ describe("ModalContainer on the native dialog element", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("leaves Tab to the browser instead of running a second trap", () => {
+  it("still wraps Tab from the last control to the first", () => {
     render(
       <ModalContainer isOpen onClose={vi.fn()} ariaLabel="Native">
-        <button type="button">Only</button>
+        <button type="button">First</button>
+        <button type="button">Last</button>
       </ModalContainer>
     );
-    const tab = new KeyboardEvent("keydown", {
-      key: "Tab",
-      bubbles: true,
-      cancelable: true,
-    });
-    screen.getByRole("button", { name: "Only" }).dispatchEvent(tab);
-    expect(tab.defaultPrevented).toBe(false);
+    const last = screen.getByRole("button", { name: "Last" });
+    last.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "First" })
+    );
   });
 });

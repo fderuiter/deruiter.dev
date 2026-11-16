@@ -63,16 +63,12 @@ export interface ModalContainerProps {
   children: ReactNode;
 }
 
-const supportsNativeModal = () =>
-  typeof HTMLDialogElement !== "undefined" &&
-  typeof HTMLDialogElement.prototype.showModal === "function";
-
 /**
  * Standardized, accessible modal dialog built on the native dialog element
  * (#3975). showModal() puts it in the top layer and makes the rest of the page
- * inert, so no z-index or second focus trap is needed. useFocusTrap still runs
- * with Tab cycling off, for the shared trap stack, Escape ownership and focus
- * restoration. React owns visibility: the dialog mounts open while isOpen is
+ * inert, so no z-index is needed. useFocusTrap still runs for the shared trap
+ * stack, Escape ownership and focus restoration, and wraps Tab at the ends:
+ * a native modal alone lets Tab leave for the browser's own controls. React owns visibility: the dialog mounts open while isOpen is
  * true and unmounts when it turns false. A user close request calls onClose
  * once; the dialog never closes itself.
  */
@@ -97,9 +93,6 @@ export function ModalContainer({
     onEscape: closeOnEscape ? onClose : undefined,
     returnFocus,
     onKeyDown,
-    // Only where showModal() really makes the page inert; elsewhere (jsdom,
-    // very old browsers) the trap keeps cycling Tab as before.
-    trapTab: !supportsNativeModal(),
   });
   // A click event targets the nearest common ancestor of its mousedown and
   // mouseup, so a drag that starts inside the panel (a range slider, a text

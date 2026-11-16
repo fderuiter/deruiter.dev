@@ -679,7 +679,16 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(data.start_url).toBe("/");
     expect(data.display).toBe("standalone");
     expect(data.background_color).toBe("#090D16");
-    expect(data.theme_color).toBe("#06B6D4");
+    // Matches viewport.themeColor in app/layout.tsx, so an installed app's
+    // title bar and the browser's address bar use the same color (#3972).
+    expect(data.theme_color).toBe("#090D16");
+    expect(data.id).toBe("/");
+    expect(data.icons).toContainEqual(
+      expect.objectContaining({
+        src: "/icon-maskable-512.png",
+        purpose: "maskable",
+      })
+    );
     expect(data.icons).toBeDefined();
     expect(data.icons?.length).toBeGreaterThanOrEqual(4);
   });

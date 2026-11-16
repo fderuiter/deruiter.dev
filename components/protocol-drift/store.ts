@@ -790,7 +790,7 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         say(
           "error",
           stale
-            ? "This save is from an earlier version of Protocol Drift and can't be resumed. Start a new study."
+            ? "This save is from an earlier version of the Trial Data Pipeline Simulator and can't be resumed. Start a new study."
             : error instanceof Error
               ? error.message
               : "Save is invalid"

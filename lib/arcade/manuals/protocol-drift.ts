@@ -1,8 +1,9 @@
 import type { FieldManualData } from "./types";
+import { PIPELINE_SIMULATOR_NAME } from "@/lib/clinical-tools/pipeline-simulator";
 
 export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   id: "protocol-drift",
-  title: "Protocol Drift",
+  title: PIPELINE_SIMULATOR_NAME,
   subtitle: "Design the trial. Debug reality.",
   genre: "Systems Simulation",
   badge: "Pipeline Canvas",
@@ -96,7 +97,7 @@ export const PROTOCOL_DRIFT_MANUAL: FieldManualData = {
   lore: {
     title: "Where the plan meets the clinic",
     story:
-      "Data standards describe the data a trial should collect; clinics produce the data they collect. Protocol Drift is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
+      "Data standards describe the data a trial should collect; clinics produce the data they collect. The Trial Data Pipeline Simulator is a fictional, simplified account of the work in between. Every study, site and person is invented and nothing in it is clinical or regulatory advice.",
     realWorldTech: [
       "CDISC SDTM and ADaM",
       "CDASH partial date handling",

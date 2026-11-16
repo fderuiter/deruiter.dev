@@ -32,7 +32,7 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
   zustand: {
     group: "Framework and runtime",
     reason:
-      "Small state store behind the Protocol Drift workbench and the Patty's Drive-Thru booth.",
+      "Small state store behind the Trial Data Pipeline Simulator workbench and the Patty's Drive-Thru booth.",
   },
   clsx: {
     group: "Framework and runtime",
@@ -63,7 +63,8 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
   },
   "@xyflow/react": {
     group: "Interface and motion",
-    reason: "Node-and-wire canvas for the Protocol Drift pipeline editor.",
+    reason:
+      "Node-and-wire canvas for the Trial Data Pipeline Simulator pipeline editor.",
   },
   three: {
     group: "Visualization and 3D",

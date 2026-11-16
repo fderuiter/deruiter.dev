@@ -2,6 +2,7 @@ import {
   CLINICAL_STANDARDS_PROFILE,
   standardCitation,
 } from "@/lib/clinical-standards";
+import { PIPELINE_SIMULATOR_NAME } from "@/lib/clinical-tools/pipeline-simulator";
 
 /**
  * Tabler icon names a static palette entry can use. The Command Palette maps
@@ -650,7 +651,7 @@ export const STATIC_NAVS: readonly StaticNavEntry[] = [
   },
   {
     id: "nav-protocol-drift",
-    title: "Protocol Drift: Regulatory Simulation Workbench",
+    title: PIPELINE_SIMULATOR_NAME,
     subtitle:
       "Design the trial. Debug reality. A node-graph pipeline simulation across CDISC SDTM and ADaM, coordinator fatigue and a protocol amendment.",
     category: "navigation",
@@ -1205,7 +1206,7 @@ export const STATIC_NAVS: readonly StaticNavEntry[] = [
     badge: "Overview",
     status: "Journey Hub",
     description:
-      "The clinical data journey on one page: CRF Studio, Protocol Drift, the Study Data Pipeline and the Clinical Data Platform, with each step's evidence and related case studies.",
+      "The clinical data journey on one page: CRF Studio, the Trial Data Pipeline Simulator, the Study Data Pipeline and the Clinical Data Platform, with each step's evidence and related case studies.",
     techStack: ["Next.js 16", "TypeScript", "CDISC", "Synthetic Data"],
     highlights: [
       "Four working steps in journey order",

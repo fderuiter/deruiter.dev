@@ -28,6 +28,32 @@ vi.mock("@/lib/db", () => ({
         }
         return mockSuppressionList.get(where.email.toLowerCase()) || null;
       }),
+      findMany: vi.fn(
+        async ({
+          where,
+        }: {
+          where?: { email?: { in?: string[] } };
+          select?: { email?: boolean };
+        } = {}) => {
+          if (findUniqueShouldFail) {
+            throw new Error("Simulated database outage (read)");
+          }
+          const inEmails = where?.email?.in ?? [];
+          const results: {
+            id: string;
+            email: string;
+            reason: string;
+            createdAt: Date;
+          }[] = [];
+          for (const email of inEmails) {
+            const item = mockSuppressionList.get(email.toLowerCase().trim());
+            if (item) {
+              results.push(item);
+            }
+          }
+          return results;
+        }
+      ),
       create: vi.fn(
         async ({ data }: { data: { email: string; reason: string } }) => {
           const record = {

@@ -295,4 +295,104 @@ describe("EmailService (Spec & Handler)", () => {
       ).rejects.toThrow("Neon connection terminated");
     });
   });
+
+  describe("sendRawEmail batched suppression pre-check", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("executes exactly one suppression query for a multi-recipient dispatch when none are suppressed", async () => {
+      const { prisma } = await import("@/lib/db");
+      const findManySpy = vi
+        .spyOn(prisma.suppressionList, "findMany")
+        .mockResolvedValueOnce([]);
+      const findUniqueSpy = vi.spyOn(prisma.suppressionList, "findUnique");
+
+      (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "re_test_key";
+      mockSend.mockResolvedValueOnce({
+        data: { id: "msg_batch_clean" },
+        error: null,
+      });
+
+      const result = await EmailService.sendRawEmail({
+        to: ["user1@example.com", "user2@example.com", "user3@example.com"],
+        subject: "Batched Suppression Check",
+        html: "<p>Hello</p>",
+      });
+
+      expect(result.success).toBe(true);
+      expect(findManySpy).toHaveBeenCalledTimes(1);
+      expect(findManySpy).toHaveBeenCalledWith({
+        where: {
+          email: {
+            in: ["user1@example.com", "user2@example.com", "user3@example.com"],
+          },
+        },
+        select: { email: true },
+      });
+      expect(findUniqueSpy).not.toHaveBeenCalled();
+    });
+
+    it("executes exactly one batch query and queries suppression reason only for the rejected address when suppressed", async () => {
+      const { prisma } = await import("@/lib/db");
+      const findManySpy = vi
+        .spyOn(prisma.suppressionList, "findMany")
+        .mockResolvedValueOnce([
+          {
+            id: "sup_1",
+            email: "bounced@example.com",
+            reason: "BOUNCE",
+            createdAt: new Date(),
+          },
+        ]);
+      const findUniqueSpy = vi
+        .spyOn(prisma.suppressionList, "findUnique")
+        .mockResolvedValueOnce({
+          id: "sup_1",
+          email: "bounced@example.com",
+          reason: "BOUNCE" as const,
+          createdAt: new Date(),
+        });
+
+      (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "re_test_key";
+
+      const result = await EmailService.sendRawEmail({
+        to: ["clean1@example.com", "bounced@example.com", "clean2@example.com"],
+        subject: "Batched Suppression Check With Bounce",
+        html: "<p>Hello</p>",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe(
+        "Recipient address bounced@example.com is suppressed due to previous BOUNCE."
+      );
+      expect(findManySpy).toHaveBeenCalledTimes(1);
+      expect(findUniqueSpy).toHaveBeenCalledTimes(1);
+      expect(findUniqueSpy).toHaveBeenCalledWith({
+        where: { email: "bounced@example.com" },
+      });
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it("executes zero queries when recipients list is empty", async () => {
+      const { prisma } = await import("@/lib/db");
+      const findManySpy = vi.spyOn(prisma.suppressionList, "findMany");
+      const findUniqueSpy = vi.spyOn(prisma.suppressionList, "findUnique");
+
+      (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "re_test_key";
+      mockSend.mockResolvedValueOnce({
+        data: { id: "msg_empty" },
+        error: null,
+      });
+
+      await EmailService.sendRawEmail({
+        to: [],
+        subject: "Empty to array",
+        html: "<p>Hello</p>",
+      });
+
+      expect(findManySpy).not.toHaveBeenCalled();
+      expect(findUniqueSpy).not.toHaveBeenCalled();
+    });
+  });
 });

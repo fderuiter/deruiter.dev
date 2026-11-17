@@ -74,6 +74,34 @@ vi.mock("@/lib/db", () => ({
           );
           return item ? { ...item, id: "sup_1", createdAt: new Date() } : null;
         }),
+      findMany: vi.fn().mockImplementation(
+        async ({
+          where,
+        }: {
+          where?: { email?: { in?: string[] } };
+          select?: { email?: boolean };
+        } = {}) => {
+          const inEmails = where?.email?.in ?? [];
+          const results: {
+            id: string;
+            email: string;
+            reason: string;
+            createdAt: Date;
+          }[] = [];
+          for (const email of inEmails) {
+            const item = mockSuppressionStore.get(email.toLowerCase().trim());
+            if (item) {
+              results.push({
+                id: "sup_1",
+                email: item.email,
+                reason: item.reason,
+                createdAt: new Date(),
+              });
+            }
+          }
+          return results;
+        }
+      ),
       upsert: vi
         .fn()
         .mockImplementation(
@@ -557,6 +585,147 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       const updated = mockQueueStore.get(initialDispatch.queueId!);
       expect(updated?.status).toBe("FAILED");
       expect(updated?.lastError).toContain("suppression list");
+    });
+
+    it("executes exactly one suppression batch query for multiple leased retry items", async () => {
+      mockQueueStore.set("batch-sup-1", {
+        id: "batch-sup-1",
+        to: "rec1@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Batch suppression check 1",
+        html: "<p>1</p>",
+        text: null,
+        tags: null,
+        attempts: 1,
+        status: "RETRYING",
+        nextRetryAt: new Date(0),
+        lastError: "temporary",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      mockQueueStore.set("batch-sup-2", {
+        id: "batch-sup-2",
+        to: "rec2a@example.com, rec2b@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Batch suppression check 2",
+        html: "<p>2</p>",
+        text: null,
+        tags: null,
+        attempts: 1,
+        status: "RETRYING",
+        nextRetryAt: new Date(0),
+        lastError: "temporary",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      mockQueueStore.set("batch-sup-3", {
+        id: "batch-sup-3",
+        to: "rec3@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Batch suppression check 3",
+        html: "<p>3</p>",
+        text: null,
+        tags: null,
+        attempts: 1,
+        status: "RETRYING",
+        nextRetryAt: new Date(0),
+        lastError: "temporary",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      mockSuppressionStore.set("rec2b@example.com", {
+        email: "rec2b@example.com",
+        reason: "COMPLAINT",
+      });
+
+      mockSendFn.mockResolvedValue({ data: { id: "msg_ok" }, error: null });
+
+      const findManySpy = vi.spyOn(prisma.suppressionList, "findMany");
+      const findUniqueSpy = vi.spyOn(prisma.suppressionList, "findUnique");
+
+      const summary = await retryCounts(EmailService.processRetryQueue());
+
+      expect(summary.processed).toBe(3);
+      expect(summary.succeeded).toBe(2);
+      expect(summary.failed).toBe(1);
+
+      // Verify exactly one findMany query for the entire batch
+      expect(findManySpy).toHaveBeenCalledTimes(1);
+      expect(findManySpy).toHaveBeenCalledWith({
+        where: {
+          email: {
+            in: [
+              "rec1@example.com",
+              "rec2a@example.com",
+              "rec2b@example.com",
+              "rec3@example.com",
+            ],
+          },
+        },
+        select: { email: true },
+      });
+      // No sequential findUnique calls during processRetryQueue
+      expect(findUniqueSpy).not.toHaveBeenCalled();
+
+      // Item 2 has a suppressed recipient and was marked FAILED
+      expect(mockQueueStore.get("batch-sup-2")?.status).toBe("FAILED");
+      expect(mockQueueStore.get("batch-sup-2")?.lastError).toContain(
+        "suppression list"
+      );
+    });
+
+    it("returns QUEUE_UPDATE_FAILED and leaves items recoverable when suppression batch lookup rejects", async () => {
+      mockQueueStore.set("recoverable-on-error", {
+        id: "recoverable-on-error",
+        to: "user@example.com",
+        from: "sender@deruiter.dev",
+        replyTo: null,
+        subject: "Recovery Test",
+        html: "<p>test</p>",
+        text: null,
+        tags: null,
+        attempts: 1,
+        status: "RETRYING",
+        nextRetryAt: new Date(0),
+        lastError: "temporary",
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      });
+
+      vi.spyOn(prisma.suppressionList, "findMany").mockRejectedValueOnce(
+        new Error("Database connection dropped during suppression check")
+      );
+
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+
+      const result = await EmailService.processRetryQueue();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: {
+          code: "QUEUE_UPDATE_FAILED",
+          message: expect.stringContaining(
+            "An outbound email queue row could not be updated during retry"
+          ),
+        },
+      });
+
+      // The row was leased (nextRetryAt moved to leaseUntil), but NOT marked FAILED or DELIVERED,
+      // remaining recoverable on future retry cycles.
+      const item = mockQueueStore.get("recoverable-on-error");
+      expect(item?.status).toBe("RETRYING");
+      expect(item?.attempts).toBe(1);
+      expect(mockSendFn).not.toHaveBeenCalled();
+
+      consoleError.mockRestore();
     });
   });
 

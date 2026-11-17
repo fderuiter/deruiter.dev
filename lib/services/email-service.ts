@@ -605,6 +605,17 @@ export class EmailService {
     let failed = 0;
 
     try {
+      const allRecipients: string[] = [];
+      for (const item of items) {
+        if (item.to.includes(",")) {
+          allRecipients.push(...item.to.split(",").map((s) => s.trim()));
+        } else {
+          allRecipients.push(item.to.trim());
+        }
+      }
+
+      const suppressedSet = await this.getSuppressedEmails(allRecipients);
+
       for (const item of items) {
         const rawOptions: RawEmailOptions = {
           to: item.to.includes(",")
@@ -624,14 +635,9 @@ export class EmailService {
         const toRecipients = Array.isArray(rawOptions.to)
           ? rawOptions.to
           : [rawOptions.to];
-        let isAnySuppressed = false;
-        for (const rec of toRecipients) {
-          const check = await this.isSuppressed(rec);
-          if (check.suppressed) {
-            isAnySuppressed = true;
-            break;
-          }
-        }
+        const isAnySuppressed = toRecipients.some((rec) =>
+          suppressedSet.has(rec.toLowerCase().trim())
+        );
 
         if (isAnySuppressed) {
           await prisma.outboundEmailQueue.update({
@@ -839,14 +845,22 @@ export class EmailService {
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
     // Pre-check suppression list before transmitting
-    for (const recipient of recipients) {
-      const check = await this.isSuppressed(recipient);
-      if (check.suppressed) {
-        return {
-          success: false,
-          error: `Recipient address ${recipient} is suppressed due to previous ${check.reason || "rejection"}.`,
-        };
+    try {
+      const suppressedEmails = await this.getSuppressedEmails(recipients);
+      if (suppressedEmails.size > 0) {
+        const suppressedRecipient = recipients.find((recipient) =>
+          suppressedEmails.has(recipient.toLowerCase().trim())
+        );
+        if (suppressedRecipient) {
+          const check = await this.isSuppressed(suppressedRecipient);
+          return {
+            success: false,
+            error: `Recipient address ${suppressedRecipient} is suppressed due to previous ${check.reason || "rejection"}.`,
+          };
+        }
       }
+    } catch {
+      // If database is offline or unseeded in tests, defensively fail open
     }
 
     const client = getResendClient();

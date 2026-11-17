@@ -12,7 +12,10 @@ vi.mock("@/lib/db", () => ({
       create: (...a: unknown[]) => create(...a),
       update: vi.fn(),
     },
-    suppressionList: { findUnique: vi.fn().mockResolvedValue(null) },
+    suppressionList: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 

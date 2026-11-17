@@ -4,6 +4,7 @@ import { standardCitation } from "@/lib/clinical-standards";
 import React, { useState, useRef } from "react";
 import { StudyBranding } from "@/lib/crf/types";
 import { BRANDING_PRESETS, DEFAULT_STUDY_BRANDING } from "@/lib/crf";
+import { FormField } from "../FormField";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { safeSetRawItem } from "@/lib/safe-storage";
 import {
@@ -188,10 +189,11 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
           {/* Left Column: Organization & Colors */}
           <div className="space-y-4">
             {/* Organization / Sponsor Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
-                Organization / Sponsor Name
-              </label>
+            <FormField
+              label="Organization / Sponsor Name"
+              className="space-y-1.5"
+              labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+            >
               <input
                 type="text"
                 value={branding.organizationName}
@@ -204,13 +206,15 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                 placeholder="e.g. Aura Oncology Therapeutics"
                 className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
               />
-            </div>
+            </FormField>
 
             {/* Logo Uploader */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-300 font-mono uppercase flex items-center justify-between">
-                <span>Sponsor Logo (PNG / SVG / JPG)</span>
-                {branding.logoBase64 && (
+            <FormField
+              label="Sponsor Logo (PNG / SVG / JPG)"
+              className="space-y-1.5"
+              labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+              labelExtra={
+                branding.logoBase64 ? (
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
@@ -219,122 +223,148 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                     <IconTrash className="w-3 h-3" />
                     <span>Remove</span>
                   </button>
-                )}
-              </label>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleLogoFileUpload}
-                accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                className="hidden"
-              />
-              {branding.logoBase64 ? (
-                <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between gap-4">
-                  <div className="bg-white p-1.5 rounded-lg border border-zinc-700 max-w-[140px] max-h-[50px] flex items-center justify-center overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={branding.logoBase64}
-                      alt="Uploaded Logo"
-                      className="max-h-8 max-w-full object-contain"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 text-xs font-mono rounded-lg transition-colors"
-                  >
-                    Change File
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full p-4 border-2 border-dashed border-zinc-800 hover:border-brand-cyan/60 rounded-xl bg-zinc-950/40 text-center transition-all flex flex-col items-center justify-center gap-1.5 group"
-                >
-                  <IconUpload className="w-5 h-5 text-zinc-500 group-hover:text-brand-cyan transition-colors" />
-                  <span className="text-xs font-mono text-zinc-400 group-hover:text-zinc-200">
-                    Upload high-res logo (renders in Word &amp; PDF)
+                ) : undefined
+              }
+              error={
+                logoError ? (
+                  <span className="flex items-center gap-1.5">
+                    <IconAlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{logoError}</span>
                   </span>
-                </button>
+                ) : undefined
+              }
+              errorClassName="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono"
+            >
+              {({
+                id,
+                "aria-describedby": ariaDescribedBy,
+                "aria-invalid": ariaInvalid,
+              }) => (
+                <>
+                  <input
+                    id={id}
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleLogoFileUpload}
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    className="hidden"
+                    aria-describedby={ariaDescribedBy}
+                    aria-invalid={ariaInvalid}
+                  />
+                  {branding.logoBase64 ? (
+                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between gap-4">
+                      <div className="bg-white p-1.5 rounded-lg border border-zinc-700 max-w-[140px] max-h-[50px] flex items-center justify-center overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={branding.logoBase64}
+                          alt="Uploaded Logo"
+                          className="max-h-8 max-w-full object-contain"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 text-xs font-mono rounded-lg transition-colors"
+                      >
+                        Change File
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full p-4 border-2 border-dashed border-zinc-800 hover:border-brand-cyan/60 rounded-xl bg-zinc-950/40 text-center transition-all flex flex-col items-center justify-center gap-1.5 group"
+                    >
+                      <IconUpload className="w-5 h-5 text-zinc-500 group-hover:text-brand-cyan transition-colors" />
+                      <span className="text-xs font-mono text-zinc-400 group-hover:text-zinc-200">
+                        Upload high-res logo (renders in Word &amp; PDF)
+                      </span>
+                    </button>
+                  )}
+                </>
               )}
-              {logoError && (
-                <div className="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
-                  <IconAlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{logoError}</span>
-                </div>
-              )}
-            </div>
+            </FormField>
 
             {/* Color Controls */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
-                  Primary Brand Color
-                </label>
-                <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-1.5">
-                  <input
-                    type="color"
-                    value={branding.primaryColor}
-                    onChange={(e) =>
-                      setBranding((prev) => ({
-                        ...prev,
-                        primaryColor: e.target.value,
-                      }))
-                    }
-                    className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
-                  />
-                  <input
-                    type="text"
-                    value={branding.primaryColor}
-                    onChange={(e) =>
-                      setBranding((prev) => ({
-                        ...prev,
-                        primaryColor: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none uppercase"
-                  />
-                </div>
-              </div>
+              <FormField
+                label="Primary Brand Color"
+                className="space-y-1.5"
+                labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+              >
+                {({ id }) => (
+                  <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-1.5">
+                    <input
+                      type="color"
+                      aria-label="Primary Brand Color picker"
+                      value={branding.primaryColor}
+                      onChange={(e) =>
+                        setBranding((prev) => ({
+                          ...prev,
+                          primaryColor: e.target.value,
+                        }))
+                      }
+                      className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <input
+                      id={id}
+                      type="text"
+                      value={branding.primaryColor}
+                      onChange={(e) =>
+                        setBranding((prev) => ({
+                          ...prev,
+                          primaryColor: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none uppercase"
+                    />
+                  </div>
+                )}
+              </FormField>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
-                  Accent Highlight Color
-                </label>
-                <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-1.5">
-                  <input
-                    type="color"
-                    value={branding.accentColor}
-                    onChange={(e) =>
-                      setBranding((prev) => ({
-                        ...prev,
-                        accentColor: e.target.value,
-                      }))
-                    }
-                    className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
-                  />
-                  <input
-                    type="text"
-                    value={branding.accentColor}
-                    onChange={(e) =>
-                      setBranding((prev) => ({
-                        ...prev,
-                        accentColor: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none uppercase"
-                  />
-                </div>
-              </div>
+              <FormField
+                label="Accent Highlight Color"
+                className="space-y-1.5"
+                labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+              >
+                {({ id }) => (
+                  <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-1.5">
+                    <input
+                      type="color"
+                      aria-label="Accent Highlight Color picker"
+                      value={branding.accentColor}
+                      onChange={(e) =>
+                        setBranding((prev) => ({
+                          ...prev,
+                          accentColor: e.target.value,
+                        }))
+                      }
+                      className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <input
+                      id={id}
+                      type="text"
+                      value={branding.accentColor}
+                      onChange={(e) =>
+                        setBranding((prev) => ({
+                          ...prev,
+                          accentColor: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none uppercase"
+                    />
+                  </div>
+                )}
+              </FormField>
             </div>
 
             {/* Running Headers & Footers */}
             <div className="space-y-3 pt-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
-                  Header Running Text
-                </label>
+              <FormField
+                label="Header Running Text"
+                className="space-y-1.5"
+                labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+              >
                 <input
                   type="text"
                   value={branding.headerText || ""}
@@ -347,12 +377,13 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                   placeholder="e.g. CONFIDENTIAL • CLINICAL INVESTIGATION"
                   className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
                 />
-              </div>
+              </FormField>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
-                  Footer Running Text
-                </label>
+              <FormField
+                label="Footer Running Text"
+                className="space-y-1.5"
+                labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+              >
                 <input
                   type="text"
                   value={branding.footerText || ""}
@@ -365,17 +396,18 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                   placeholder={`e.g. Modelled on ${standardCitation("CDASHIG")} (synthetic demo)`}
                   className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
                 />
-              </div>
+              </FormField>
             </div>
           </div>
 
           {/* Right Column: Confidentiality & Live Simulation Preview */}
           <div className="space-y-4 flex flex-col justify-between">
             {/* Confidentiality Notice */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
-                Confidentiality Disclaimer
-              </label>
+            <FormField
+              label="Confidentiality Disclaimer"
+              className="space-y-1.5"
+              labelClassName="text-xs font-bold text-zinc-300 font-mono uppercase"
+            >
               <textarea
                 rows={3}
                 value={branding.confidentialityNotice || ""}
@@ -388,7 +420,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                 placeholder="Proprietary clinical protocol notice..."
                 className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none resize-none leading-relaxed"
               />
-            </div>
+            </FormField>
 
             {/* Live Real-Time Visual Preview Card */}
             <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">

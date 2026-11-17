@@ -4,6 +4,7 @@ import { standardCitation } from "@/lib/clinical-standards";
 import React from "react";
 import { CRFField, CRFForm, CdashVariableMetadata } from "@/lib/crf/types";
 import { CDASH_STANDARD_VARIABLES } from "@/lib/crf";
+import { FormField } from "../FormField";
 import { IconDatabase, IconSparkles } from "@tabler/icons-react";
 
 interface CdiscMetadataTabProps {
@@ -80,10 +81,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
 
       {/* SDTM Domain & Variable */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-            SDTM Target Domain
-          </label>
+        <FormField label="SDTM Target Domain">
           <input
             type="text"
             value={cdashMeta.domain}
@@ -92,12 +90,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             }
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:border-brand-cyan focus:outline-none"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-            SDTM Variable
-          </label>
+        <FormField label="SDTM Variable">
           <input
             type="text"
             value={cdashMeta.sdtmVariable}
@@ -106,15 +101,12 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             }
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:border-brand-cyan focus:outline-none"
           />
-        </div>
+        </FormField>
       </div>
 
       {/* CDASH Core Level & NCI Concept */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-            CDASH Core Requirement
-          </label>
+        <FormField label="CDASH Core Requirement">
           <select
             value={cdashMeta.core}
             onChange={(e) =>
@@ -128,12 +120,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             <option value="HR">HR - Highly Recommended</option>
             <option value="O">O - Optional</option>
           </select>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-            NCI Concept ID
-          </label>
+        <FormField label="NCI Concept ID">
           <input
             type="text"
             value={cdashMeta.nciConceptId || ""}
@@ -143,15 +132,15 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none"
             placeholder="e.g. C49487"
           />
-        </div>
+        </FormField>
       </div>
 
       {/* Annotated CRF (aCRF) Submission Label */}
-      <div>
-        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-          Annotated CRF (aCRF) Text Overlay{" "}
-          <span className="text-brand-cyan">*</span>
-        </label>
+      <FormField
+        label="Annotated CRF (aCRF) Text Overlay"
+        required
+        description="This string renders directly on the visual Annotated CRF overlay for regulatory submission (FDA/PMDA)."
+      >
         <input
           type="text"
           value={cdashMeta.acrfAnnotation}
@@ -161,11 +150,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-brand-cyan font-mono text-xs focus:border-brand-cyan focus:outline-none"
           placeholder="e.g. AE.AESTDTC or VS.VSSTRESN [VSTESTCD=HEIGHT]"
         />
-        <p className="text-[10px] text-zinc-500 mt-1 font-sans">
-          This string renders directly on the visual Annotated CRF overlay for
-          regulatory submission (FDA/PMDA).
-        </p>
-      </div>
+      </FormField>
     </div>
   );
 };

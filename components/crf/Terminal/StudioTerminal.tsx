@@ -278,6 +278,7 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
         <input
           ref={inputRef}
           type="text"
+          aria-label="Terminal command input"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={handleKeyDown}

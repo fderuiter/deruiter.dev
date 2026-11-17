@@ -9,6 +9,7 @@ import {
 } from "@/lib/crf/types";
 import { validateCdashVariableName } from "@/lib/crf";
 import { generateId } from "@/lib/utils";
+import { FormField } from "../FormField";
 import { AstRuleEditor } from "./AstRuleEditor";
 import {
   IconPlus,
@@ -404,56 +405,67 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
   return (
     <div className="space-y-4 p-4 text-xs font-sans">
       {/* Variable Name & Display Label */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-[11px] font-mono text-zinc-400">
-            CDASH / SDTM Variable Name{" "}
-            <span className="text-brand-cyan">*</span>
-          </label>
+      <FormField
+        label="CDASH / SDTM Variable Name"
+        required
+        labelExtra={
           <span className="text-[10px] font-mono text-zinc-500">
             {variableNameDraft.length}/8 chars
           </span>
-        </div>
-        <input
-          type="text"
-          maxLength={8}
-          value={variableNameDraft}
-          onChange={(e) => setVariableNameDraft(e.target.value.toUpperCase())}
-          className={`w-full px-2.5 py-1.5 bg-zinc-950 border rounded-lg text-white font-mono uppercase focus:outline-none ${
-            !varValidation.isValid && variableNameDraft
-              ? "border-red-500/70 focus:border-red-400 ring-1 ring-red-500/20"
-              : "border-zinc-800 focus:border-brand-cyan"
-          }`}
-          placeholder="e.g. BRTHYR, SYSBP, AETERM, DITERM"
-        />
-        {!varValidation.isValid && variableNameDraft && (
-          <p className="text-[10px] text-red-400 font-mono mt-1">
-            ⚠ {varValidation.error}
-          </p>
+        }
+        error={
+          !varValidation.isValid && variableNameDraft
+            ? `⚠ ${varValidation.error}`
+            : undefined
+        }
+      >
+        {({
+          id,
+          "aria-describedby": ariaDescribedBy,
+          "aria-invalid": ariaInvalid,
+        }) => (
+          <>
+            <input
+              id={id}
+              type="text"
+              maxLength={8}
+              value={variableNameDraft}
+              onChange={(e) =>
+                setVariableNameDraft(e.target.value.toUpperCase())
+              }
+              aria-describedby={ariaDescribedBy}
+              aria-invalid={ariaInvalid}
+              className={`w-full px-2.5 py-1.5 bg-zinc-950 border rounded-lg text-white font-mono uppercase focus:outline-none ${
+                !varValidation.isValid && variableNameDraft
+                  ? "border-red-500/70 focus:border-red-400 ring-1 ring-red-500/20"
+                  : "border-zinc-800 focus:border-brand-cyan"
+              }`}
+              placeholder="e.g. BRTHYR, SYSBP, AETERM, DITERM"
+            />
+            {onRenameEverywhere &&
+              varValidation.isValid &&
+              variableNameDraft && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleRenameEverywhere(variableNameDraft)}
+                    className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
+                    title="Atomically updates variable name and all AST rules, conditions, and formulas"
+                  >
+                    <span>Rename Everywhere (Atomic)</span>
+                  </button>
+                  {renameSuccess && (
+                    <span className="text-[10px] font-mono text-emerald-400 animate-in fade-in">
+                      ✓ {renameSuccess}
+                    </span>
+                  )}
+                </div>
+              )}
+          </>
         )}
-        {onRenameEverywhere && varValidation.isValid && variableNameDraft && (
-          <div className="mt-1.5 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleRenameEverywhere(variableNameDraft)}
-              className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
-              title="Atomically updates variable name and all AST rules, conditions, and formulas"
-            >
-              <span>Rename Everywhere (Atomic)</span>
-            </button>
-            {renameSuccess && (
-              <span className="text-[10px] font-mono text-emerald-400 animate-in fade-in">
-                ✓ {renameSuccess}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      </FormField>
 
-      <div>
-        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-          Question Text / Form Label <span className="text-brand-cyan">*</span>
-        </label>
+      <FormField label="Question Text / Form Label" required>
         <input
           type="text"
           value={field.label}
@@ -462,12 +474,9 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
           className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none"
           placeholder="e.g. Primary Device Deficiency Classification"
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-          Instruction / Clinical Description
-        </label>
+      <FormField label="Instruction / Clinical Description">
         <textarea
           rows={2}
           value={field.description || ""}
@@ -475,14 +484,11 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
           className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-300 font-sans focus:border-brand-cyan focus:outline-none resize-none"
           placeholder="e.g. Select the primary reason observed during procedure."
         />
-      </div>
+      </FormField>
 
       {/* Data Type & Grid Width */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-            Data Type
-          </label>
+        <FormField label="Data Type">
           <select
             value={field.dataType}
             onChange={(e) =>
@@ -496,12 +502,9 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-            Grid Width ({field.columnSpan}/12)
-          </label>
+        <FormField label={`Grid Width (${field.columnSpan}/12)`}>
           <select
             value={field.columnSpan}
             onChange={(e) =>
@@ -522,7 +525,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
       </div>
 
       {/* 3-Tier Missing Data Engine */}

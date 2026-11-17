@@ -38,6 +38,7 @@ import { InspectorPanel } from "./RightInspector/InspectorPanel";
 import dynamic from "next/dynamic";
 
 import { ActiveFormGrid } from "./Modes/ActiveFormGrid";
+import { StudioErrorBoundary } from "@/components/StudioErrorBoundary";
 
 const AcrfOverlayViewer = dynamic(
   () =>
@@ -188,7 +189,7 @@ const STUDIO_HOTKEYS: readonly string[] = [
   ...Object.keys(MODE_BY_KEY),
 ];
 
-export const CRFStudioContainer: React.FC = () => {
+const CRFStudioWorkspace: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Polyfill touch drag-and-drop support across CRF Studio
@@ -1538,3 +1539,12 @@ export const CRFStudioContainer: React.FC = () => {
     </div>
   );
 };
+
+export const CRFStudioContainer: React.FC = () => (
+  <StudioErrorBoundary
+    studioName="CRF Studio"
+    draftStorageKey="crf_studio_draft_v1"
+  >
+    <CRFStudioWorkspace />
+  </StudioErrorBoundary>
+);

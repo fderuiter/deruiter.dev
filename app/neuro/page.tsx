@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { NeuroReconSkeleton } from "@/components/neuro/NeuroReconSkeleton";
+import { StudioErrorBoundary } from "@/components/StudioErrorBoundary";
 
 const NeuroReconClient = dynamic(
   () =>
@@ -33,7 +34,9 @@ export default function NeuroReconPage() {
         <Breadcrumbs path="/neuro" />
       </div>
 
-      <NeuroReconClient />
+      <StudioErrorBoundary studioName="NeuroRecon Studio">
+        <NeuroReconClient />
+      </StudioErrorBoundary>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 w-full">
         <NextPrevNav

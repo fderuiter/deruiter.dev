@@ -10,6 +10,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { CRFStudioSkeleton } from "@/components/crf/Skeletons";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { CRF_FAQ } from "@/lib/faq-content";
+import { StudioErrorBoundary } from "@/components/StudioErrorBoundary";
 
 const CRFStudioContainer = dynamic(
   () =>
@@ -47,7 +48,12 @@ export default function CRFStudioPage() {
           comfortable maximum instead of the 1280px reading column (#1205). */}
       <div className="max-w-[1920px] mx-auto w-full">
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
-          <CRFStudioContainer />
+          <StudioErrorBoundary
+            studioName="CRF Studio"
+            draftStorageKey="crf_studio_draft_v1"
+          >
+            <CRFStudioContainer />
+          </StudioErrorBoundary>
         </div>
       </div>
 

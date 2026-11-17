@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { logger } from "@/lib/logger";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
@@ -57,6 +63,7 @@ import {
 } from "@/lib/neuro";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
+import { StudioErrorBoundary } from "@/components/StudioErrorBoundary";
 import dynamic from "next/dynamic";
 import { NeuroReconSkeleton } from "./NeuroReconSkeleton";
 
@@ -1382,15 +1389,21 @@ export const NeuroReconClient: React.FC = () => {
               viewMode === "3d" ? "lg:col-span-12" : "lg:col-span-5"
             }`}
           >
-            <Brain3DViewer
-              surfaceMode={surfaceMode}
-              crosshair={crosshair}
-              modelUrl={
-                activeDatasetConfig?.modelUrl || "/models/brain-surface.glb"
-              }
-              onSurfaceChange={setSurfaceMode}
-              onCrosshairChange={setCrosshair}
-            />
+            <StudioErrorBoundary
+              studioName="NeuroRecon 3D Viewer"
+              draftStorageKey="neuro_studio_draft_v1"
+              onExportDraft={() => draftsRef.current}
+            >
+              <Brain3DViewer
+                surfaceMode={surfaceMode}
+                crosshair={crosshair}
+                modelUrl={
+                  activeDatasetConfig?.modelUrl || "/models/brain-surface.glb"
+                }
+                onSurfaceChange={setSurfaceMode}
+                onCrosshairChange={setCrosshair}
+              />
+            </StudioErrorBoundary>
           </div>
         )}
 

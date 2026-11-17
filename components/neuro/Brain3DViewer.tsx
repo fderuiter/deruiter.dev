@@ -28,6 +28,7 @@ import {
   IconLayersSubtract,
   IconRefresh,
 } from "@tabler/icons-react";
+import { StudioErrorBoundary } from "@/components/StudioErrorBoundary";
 
 interface Brain3DViewerProps {
   surfaceMode: SurfaceMode;
@@ -38,7 +39,7 @@ interface Brain3DViewerProps {
   onCrosshairChange?: (coord: VoxelCoord) => void;
 }
 
-export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
+const Brain3DViewerContent: React.FC<Brain3DViewerProps> = ({
   surfaceMode,
   crosshair,
   modelUrl,
@@ -828,3 +829,12 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
     </div>
   );
 };
+
+export const Brain3DViewer: React.FC<Brain3DViewerProps> = (props) => (
+  <StudioErrorBoundary
+    studioName="NeuroRecon 3D Viewer"
+    draftStorageKey="neuro_studio_draft_v1"
+  >
+    <Brain3DViewerContent {...props} />
+  </StudioErrorBoundary>
+);

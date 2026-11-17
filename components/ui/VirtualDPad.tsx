@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { triggerHaptic } from "@/lib/haptics";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { usePressHandler } from "@/hooks/usePressHandler";
+import { useRovingTabIndex, type ArrowKey } from "@/hooks/useRovingTabIndex";
 import {
   IconChevronUp,
   IconChevronDown,
@@ -25,6 +26,8 @@ export interface VirtualDPadProps {
   className?: string;
 }
 
+type ButtonId = "up" | "down" | "left" | "right" | "actionB" | "actionA";
+
 export const VirtualDPad: React.FC<VirtualDPadProps> = ({
   onDirectionPress,
   onDirectionRelease,
@@ -39,40 +42,129 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
   className,
 }) => {
   const { playNote } = useAudio();
-  const activeTouchesRef = useRef<Map<string, number>>(new Map());
 
-  const handlePress = useCallback(
-    (
-      action: (() => void) | undefined,
-      e: React.TouchEvent | React.MouseEvent,
-      id: string
-    ) => {
-      e.preventDefault();
-      triggerHaptic(15);
-      playNote(880, 0.02);
-      action?.();
-      activeTouchesRef.current.set(id, Date.now());
-    },
-    [playNote]
-  );
+  const items = useMemo<ButtonId[]>(() => {
+    const list: ButtonId[] = ["up", "down", "left", "right"];
+    if (onActionBPress) list.push("actionB");
+    if (onActionAPress) list.push("actionA");
+    return list;
+  }, [onActionBPress, onActionAPress]);
 
-  const handleRelease = useCallback(
-    (
-      releaseAction: (() => void) | undefined,
-      e: React.TouchEvent | React.MouseEvent,
-      id: string
-    ) => {
-      e.preventDefault();
-      releaseAction?.();
-      activeTouchesRef.current.delete(id);
-    },
-    []
-  );
+  const navigationMap = useMemo(() => {
+    const map: Record<string, Partial<Record<ArrowKey, ButtonId>>> = {
+      up: {
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        ArrowRight: "right",
+        ArrowUp: "down",
+      },
+      down: {
+        ArrowUp: "up",
+        ArrowLeft: "left",
+        ArrowRight: "right",
+        ArrowDown: "up",
+      },
+      left: {
+        ArrowRight: "right",
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowLeft: "right",
+      },
+      right: {
+        ArrowLeft: "left",
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowRight: onActionBPress
+          ? "actionB"
+          : onActionAPress
+            ? "actionA"
+            : "left",
+      },
+    };
+    if (onActionBPress) {
+      map.actionB = {
+        ArrowLeft: "right",
+        ArrowRight: onActionAPress ? "actionA" : "left",
+        ArrowUp: onActionAPress ? "actionA" : "up",
+        ArrowDown: onActionAPress ? "actionA" : "down",
+      };
+    }
+    if (onActionAPress) {
+      map.actionA = {
+        ArrowLeft: onActionBPress ? "actionB" : "right",
+        ArrowRight: "left",
+        ArrowUp: onActionBPress ? "actionB" : "up",
+        ArrowDown: onActionBPress ? "actionB" : "down",
+      };
+    }
+    return map;
+  }, [onActionBPress, onActionAPress]);
+
+  const { getTabProps } = useRovingTabIndex<ButtonId>({
+    items,
+    defaultActiveId: "up",
+    navigationMap,
+  });
+
+  const upTab = getTabProps("up");
+  const upPress = usePressHandler({
+    onPress: () => onDirectionPress?.("up"),
+    onRelease: () => onDirectionRelease?.("up"),
+    onAudio: () => playNote(880, 0.02),
+    haptic: 15,
+    onKeyDown: upTab.onKeyDown,
+  });
+
+  const downTab = getTabProps("down");
+  const downPress = usePressHandler({
+    onPress: () => onDirectionPress?.("down"),
+    onRelease: () => onDirectionRelease?.("down"),
+    onAudio: () => playNote(880, 0.02),
+    haptic: 15,
+    onKeyDown: downTab.onKeyDown,
+  });
+
+  const leftTab = getTabProps("left");
+  const leftPress = usePressHandler({
+    onPress: () => onDirectionPress?.("left"),
+    onRelease: () => onDirectionRelease?.("left"),
+    onAudio: () => playNote(880, 0.02),
+    haptic: 15,
+    onKeyDown: leftTab.onKeyDown,
+  });
+
+  const rightTab = getTabProps("right");
+  const rightPress = usePressHandler({
+    onPress: () => onDirectionPress?.("right"),
+    onRelease: () => onDirectionRelease?.("right"),
+    onAudio: () => playNote(880, 0.02),
+    haptic: 15,
+    onKeyDown: rightTab.onKeyDown,
+  });
+
+  const actionBTab = getTabProps("actionB");
+  const actionBPress = usePressHandler({
+    onPress: onActionBPress,
+    onRelease: onActionBRelease,
+    onAudio: () => playNote(880, 0.02),
+    haptic: 15,
+    onKeyDown: actionBTab.onKeyDown,
+  });
+
+  const actionATab = getTabProps("actionA");
+  const actionAPress = usePressHandler({
+    onPress: onActionAPress,
+    onRelease: onActionARelease,
+    onAudio: () => playNote(880, 0.02),
+    haptic: 15,
+    onKeyDown: actionATab.onKeyDown,
+  });
 
   return (
     <div
       role="group"
       aria-label="Virtual Game Controller"
+      data-roving-group=""
       className={cn(
         "w-full flex items-center justify-between gap-4 p-4 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 backdrop-blur-xl select-none touch-none",
         className
@@ -88,19 +180,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Up"
-          onTouchStart={(e) =>
-            handlePress(() => onDirectionPress?.("up"), e, "up")
-          }
-          onTouchEnd={(e) =>
-            handleRelease(() => onDirectionRelease?.("up"), e, "up")
-          }
-          onMouseDown={(e) =>
-            handlePress(() => onDirectionPress?.("up"), e, "up")
-          }
-          onMouseUp={(e) =>
-            handleRelease(() => onDirectionRelease?.("up"), e, "up")
-          }
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-t-xl bg-zinc-900/90 border-t border-x border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
+          data-roving-id="up"
+          tabIndex={upTab.tabIndex}
+          onFocus={upTab.onFocus}
+          {...upPress.pressProps}
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-t-xl bg-zinc-900/90 border-t border-x border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
         >
           <IconChevronUp className="w-6 h-6 pointer-events-none" />
         </button>
@@ -109,19 +193,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Down"
-          onTouchStart={(e) =>
-            handlePress(() => onDirectionPress?.("down"), e, "down")
-          }
-          onTouchEnd={(e) =>
-            handleRelease(() => onDirectionRelease?.("down"), e, "down")
-          }
-          onMouseDown={(e) =>
-            handlePress(() => onDirectionPress?.("down"), e, "down")
-          }
-          onMouseUp={(e) =>
-            handleRelease(() => onDirectionRelease?.("down"), e, "down")
-          }
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-b-xl bg-zinc-900/90 border-b border-x border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
+          data-roving-id="down"
+          tabIndex={downTab.tabIndex}
+          onFocus={downTab.onFocus}
+          {...downPress.pressProps}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-b-xl bg-zinc-900/90 border-b border-x border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
         >
           <IconChevronDown className="w-6 h-6 pointer-events-none" />
         </button>
@@ -130,19 +206,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Left"
-          onTouchStart={(e) =>
-            handlePress(() => onDirectionPress?.("left"), e, "left")
-          }
-          onTouchEnd={(e) =>
-            handleRelease(() => onDirectionRelease?.("left"), e, "left")
-          }
-          onMouseDown={(e) =>
-            handlePress(() => onDirectionPress?.("left"), e, "left")
-          }
-          onMouseUp={(e) =>
-            handleRelease(() => onDirectionRelease?.("left"), e, "left")
-          }
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-l-xl bg-zinc-900/90 border-l border-y border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
+          data-roving-id="left"
+          tabIndex={leftTab.tabIndex}
+          onFocus={leftTab.onFocus}
+          {...leftPress.pressProps}
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-l-xl bg-zinc-900/90 border-l border-y border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
         >
           <IconChevronLeft className="w-6 h-6 pointer-events-none" />
         </button>
@@ -151,19 +219,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Right"
-          onTouchStart={(e) =>
-            handlePress(() => onDirectionPress?.("right"), e, "right")
-          }
-          onTouchEnd={(e) =>
-            handleRelease(() => onDirectionRelease?.("right"), e, "right")
-          }
-          onMouseDown={(e) =>
-            handlePress(() => onDirectionPress?.("right"), e, "right")
-          }
-          onMouseUp={(e) =>
-            handleRelease(() => onDirectionRelease?.("right"), e, "right")
-          }
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-r-xl bg-zinc-900/90 border-r border-y border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
+          data-roving-id="right"
+          tabIndex={rightTab.tabIndex}
+          onFocus={rightTab.onFocus}
+          {...rightPress.pressProps}
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-r-xl bg-zinc-900/90 border-r border-y border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
         >
           <IconChevronRight className="w-6 h-6 pointer-events-none" />
         </button>
@@ -175,11 +235,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
           <button
             type="button"
             aria-label={actionBLabel}
-            onTouchStart={(e) => handlePress(onActionBPress, e, "actionB")}
-            onTouchEnd={(e) => handleRelease(onActionBRelease, e, "actionB")}
-            onMouseDown={(e) => handlePress(onActionBPress, e, "actionB")}
-            onMouseUp={(e) => handleRelease(onActionBRelease, e, "actionB")}
-            className="w-16 h-16 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 active:bg-purple-500/20 active:border-purple-400 active:text-purple-300 text-zinc-300 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shadow-md active:scale-95"
+            data-roving-id="actionB"
+            tabIndex={actionBTab.tabIndex}
+            onFocus={actionBTab.onFocus}
+            {...actionBPress.pressProps}
+            className="w-16 h-16 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 active:bg-purple-500/20 active:border-purple-400 active:text-purple-300 text-zinc-300 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shadow-md active:scale-95 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
           >
             <span className="text-[11px] font-mono font-black tracking-wider pointer-events-none">
               {actionBLabel}
@@ -194,11 +254,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
           <button
             type="button"
             aria-label={actionALabel}
-            onTouchStart={(e) => handlePress(onActionAPress, e, "actionA")}
-            onTouchEnd={(e) => handleRelease(onActionARelease, e, "actionA")}
-            onMouseDown={(e) => handlePress(onActionAPress, e, "actionA")}
-            onMouseUp={(e) => handleRelease(onActionARelease, e, "actionA")}
-            className="w-18 h-18 rounded-2xl bg-brand-cyan/15 border-2 border-brand-cyan/60 active:bg-brand-cyan/30 active:border-brand-cyan active:scale-95 text-brand-cyan flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.15)]"
+            data-roving-id="actionA"
+            tabIndex={actionATab.tabIndex}
+            onFocus={actionATab.onFocus}
+            {...actionAPress.pressProps}
+            className="w-18 h-18 rounded-2xl bg-brand-cyan/15 border-2 border-brand-cyan/60 active:bg-brand-cyan/30 active:border-brand-cyan active:scale-95 text-brand-cyan flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.15)] focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
           >
             <span className="text-xs font-mono font-black tracking-wider pointer-events-none">
               {actionALabel}

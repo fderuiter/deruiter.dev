@@ -1,0 +1,513 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+
+const { mockTriggerHaptic } = vi.hoisted(() => ({
+  mockTriggerHaptic: vi.fn(),
+}));
+
+vi.mock("@/lib/haptics", () => ({
+  triggerHaptic: mockTriggerHaptic,
+}));
+
+const mockPlayNote = vi.fn();
+vi.mock("@/components/providers/AudioProvider", () => ({
+  useAudio: () => ({
+    playClick: vi.fn(),
+    playNote: mockPlayNote,
+    playSuccess: vi.fn(),
+    playHover: vi.fn(),
+  }),
+}));
+
+import { VirtualDPad as UIVirtualDPad } from "@/components/ui/VirtualDPad";
+import {
+  VirtualGamepad,
+  VirtualDPad as ArcadeVirtualDPad,
+} from "@/components/arcade/VirtualGamepad";
+import { usePressHandler } from "@/hooks/usePressHandler";
+import { useRovingTabIndex } from "@/hooks/useRovingTabIndex";
+
+function TestPressButton({
+  onPress,
+  onRelease,
+  onAudio,
+}: {
+  onPress?: () => void;
+  onRelease?: () => void;
+  onAudio?: () => void;
+}) {
+  const { pressProps, isPressed } = usePressHandler({
+    onPress,
+    onRelease,
+    onAudio,
+    haptic: 15,
+  });
+
+  return (
+    <button
+      type="button"
+      data-testid="press-button"
+      data-pressed={isPressed}
+      {...pressProps}
+    >
+      Test Button
+    </button>
+  );
+}
+
+function TestRovingGroup() {
+  const { getTabProps } = useRovingTabIndex({
+    items: ["up", "down", "left", "right"],
+    defaultActiveId: "up",
+  });
+
+  return (
+    <div role="group" data-roving-group="" aria-label="Roving test">
+      {(["up", "down", "left", "right"] as const).map((id) => {
+        const tab = getTabProps(id);
+        return (
+          <button
+            key={id}
+            type="button"
+            data-roving-id={id}
+            tabIndex={tab.tabIndex}
+            onFocus={tab.onFocus}
+            onKeyDown={tab.onKeyDown}
+            aria-label={`Button ${id}`}
+          >
+            {id}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+describe("Unified usePressHandler & useRovingTabIndex Suite", () => {
+  beforeEach(() => {
+    mockTriggerHaptic.mockClear();
+    mockPlayNote.mockClear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  describe("usePressHandler Hook Modality Parity", () => {
+    it("triggers press on Space keydown and release on Space keyup", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(<TestPressButton onPress={onPress} onRelease={onRelease} />);
+      const btn = screen.getByTestId("press-button");
+
+      fireEvent.keyDown(btn, { key: " " });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      expect(onRelease).not.toHaveBeenCalled();
+      expect(mockTriggerHaptic).toHaveBeenCalledWith(15);
+
+      // Repeat keydown should not re-trigger press
+      fireEvent.keyDown(btn, { key: " ", repeat: true });
+      expect(onPress).toHaveBeenCalledTimes(1);
+
+      fireEvent.keyUp(btn, { key: " " });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("triggers press on Enter keydown and release on Enter keyup", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(<TestPressButton onPress={onPress} onRelease={onRelease} />);
+      const btn = screen.getByTestId("press-button");
+
+      fireEvent.keyDown(btn, { key: "Enter" });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      expect(onRelease).not.toHaveBeenCalled();
+
+      fireEvent.keyUp(btn, { key: "Enter" });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("triggers synthetic press and release cycle on assistive technology click", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      const onAudio = vi.fn();
+      render(
+        <TestPressButton
+          onPress={onPress}
+          onRelease={onRelease}
+          onAudio={onAudio}
+        />
+      );
+      const btn = screen.getByTestId("press-button");
+
+      // Direct click without prior keydown or pointerdown (screen reader virtual cursor)
+      fireEvent.click(btn);
+      expect(onPress).toHaveBeenCalledTimes(1);
+      expect(onRelease).toHaveBeenCalledTimes(1);
+      expect(onAudio).toHaveBeenCalledTimes(1);
+      expect(mockTriggerHaptic).toHaveBeenCalledWith(15);
+    });
+
+    it("deduplicates synthetic click following a keyboard or touch press", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(<TestPressButton onPress={onPress} onRelease={onRelease} />);
+      const btn = screen.getByTestId("press-button");
+
+      // Keyboard sequence
+      fireEvent.keyDown(btn, { key: " " });
+      fireEvent.keyUp(btn, { key: " " });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      expect(onRelease).toHaveBeenCalledTimes(1);
+
+      // Subsequent click generated by browser within 500ms
+      fireEvent.click(btn);
+      expect(onPress).toHaveBeenCalledTimes(1);
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("releases keyboard press if element blurs while held", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(<TestPressButton onPress={onPress} onRelease={onRelease} />);
+      const btn = screen.getByTestId("press-button");
+
+      fireEvent.keyDown(btn, { key: " " });
+      expect(onPress).toHaveBeenCalledTimes(1);
+
+      fireEvent.blur(btn);
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("useRovingTabIndex Hook Navigation", () => {
+    it("maintains one tab stop and navigates across buttons with Arrow keys", () => {
+      render(<TestRovingGroup />);
+      const up = screen.getByRole("button", { name: "Button up" });
+      const down = screen.getByRole("button", { name: "Button down" });
+      const left = screen.getByRole("button", { name: "Button left" });
+      const right = screen.getByRole("button", { name: "Button right" });
+
+      // Initial state: first button has tabIndex 0, others -1
+      expect(up.getAttribute("tabindex")).toBe("0");
+      expect(down.getAttribute("tabindex")).toBe("-1");
+      expect(left.getAttribute("tabindex")).toBe("-1");
+      expect(right.getAttribute("tabindex")).toBe("-1");
+
+      // ArrowDown from Up navigates to Down
+      fireEvent.keyDown(up, { key: "ArrowDown" });
+      expect(down.getAttribute("tabindex")).toBe("0");
+      expect(up.getAttribute("tabindex")).toBe("-1");
+      expect(document.activeElement).toBe(down);
+
+      // ArrowRight from Down navigates to Right
+      fireEvent.keyDown(down, { key: "ArrowRight" });
+      expect(right.getAttribute("tabindex")).toBe("0");
+      expect(down.getAttribute("tabindex")).toBe("-1");
+      expect(document.activeElement).toBe(right);
+
+      // ArrowLeft from Right navigates to Left
+      fireEvent.keyDown(right, { key: "ArrowLeft" });
+      expect(left.getAttribute("tabindex")).toBe("0");
+      expect(right.getAttribute("tabindex")).toBe("-1");
+      expect(document.activeElement).toBe(left);
+
+      // Home key moves focus to first element
+      fireEvent.keyDown(left, { key: "Home" });
+      expect(up.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(up);
+
+      // End key moves focus to last element
+      fireEvent.keyDown(up, { key: "End" });
+      expect(right.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(right);
+    });
+
+    it("updates active tab stop when an element receives focus directly", () => {
+      render(<TestRovingGroup />);
+      const up = screen.getByRole("button", { name: "Button up" });
+      const down = screen.getByRole("button", { name: "Button down" });
+
+      expect(up.getAttribute("tabindex")).toBe("0");
+      fireEvent.focus(down);
+      expect(down.getAttribute("tabindex")).toBe("0");
+      expect(up.getAttribute("tabindex")).toBe("-1");
+    });
+  });
+
+  describe("Criterion 1 & 3: UI VirtualDPad Component", () => {
+    it("invokes onDirectionPress on Space/Enter keydown and onDirectionRelease on keyup", () => {
+      const onDirectionPress = vi.fn();
+      const onDirectionRelease = vi.fn();
+      render(
+        <UIVirtualDPad
+          onDirectionPress={onDirectionPress}
+          onDirectionRelease={onDirectionRelease}
+        />
+      );
+
+      const upBtn = screen.getByRole("button", { name: "Move Up" });
+
+      // Space key
+      fireEvent.keyDown(upBtn, { key: " " });
+      expect(onDirectionPress).toHaveBeenCalledWith("up");
+      expect(mockPlayNote).toHaveBeenCalledWith(880, 0.02);
+      expect(mockTriggerHaptic).toHaveBeenCalledWith(15);
+
+      fireEvent.keyUp(upBtn, { key: " " });
+      expect(onDirectionRelease).toHaveBeenCalledWith("up");
+
+      // Enter key
+      fireEvent.keyDown(upBtn, { key: "Enter" });
+      expect(onDirectionPress).toHaveBeenCalledTimes(2);
+      fireEvent.keyUp(upBtn, { key: "Enter" });
+      expect(onDirectionRelease).toHaveBeenCalledTimes(2);
+    });
+
+    it("navigates directional pad buttons using Arrow keys with roving tabindex", () => {
+      render(
+        <UIVirtualDPad
+          onDirectionPress={vi.fn()}
+          onDirectionRelease={vi.fn()}
+        />
+      );
+
+      const up = screen.getByRole("button", { name: "Move Up" });
+      const down = screen.getByRole("button", { name: "Move Down" });
+      const left = screen.getByRole("button", { name: "Move Left" });
+      const right = screen.getByRole("button", { name: "Move Right" });
+
+      expect(up.getAttribute("tabindex")).toBe("0");
+      expect(down.getAttribute("tabindex")).toBe("-1");
+
+      fireEvent.keyDown(up, { key: "ArrowDown" });
+      expect(down.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(down);
+
+      fireEvent.keyDown(down, { key: "ArrowLeft" });
+      expect(left.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(left);
+
+      fireEvent.keyDown(left, { key: "ArrowRight" });
+      expect(right.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(right);
+    });
+
+    it("navigates from D-Pad to action buttons using roving tabindex", () => {
+      const onActionAPress = vi.fn();
+      const onActionARelease = vi.fn();
+      const onActionBPress = vi.fn();
+      const onActionBRelease = vi.fn();
+
+      render(
+        <UIVirtualDPad
+          onDirectionPress={vi.fn()}
+          onDirectionRelease={vi.fn()}
+          onActionAPress={onActionAPress}
+          onActionARelease={onActionARelease}
+          onActionBPress={onActionBPress}
+          onActionBRelease={onActionBRelease}
+          actionALabel="FIRE"
+          actionBLabel="JUMP"
+        />
+      );
+
+      const right = screen.getByRole("button", { name: "Move Right" });
+      const actionB = screen.getByRole("button", { name: "JUMP" });
+      const actionA = screen.getByRole("button", { name: "FIRE" });
+
+      // Focus Right button
+      fireEvent.focus(right);
+      expect(right.getAttribute("tabindex")).toBe("0");
+
+      // ArrowRight from Right navigates to actionB
+      fireEvent.keyDown(right, { key: "ArrowRight" });
+      expect(actionB.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(actionB);
+
+      // ArrowRight from actionB navigates to actionA
+      fireEvent.keyDown(actionB, { key: "ArrowRight" });
+      expect(actionA.getAttribute("tabindex")).toBe("0");
+      expect(document.activeElement).toBe(actionA);
+
+      // Space on actionA triggers onActionAPress and keyup triggers onActionARelease
+      fireEvent.keyDown(actionA, { key: " " });
+      expect(onActionAPress).toHaveBeenCalledTimes(1);
+      fireEvent.keyUp(actionA, { key: " " });
+      expect(onActionARelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("triggers press and release cycle on assistive technology click", () => {
+      const onDirectionPress = vi.fn();
+      const onDirectionRelease = vi.fn();
+      render(
+        <UIVirtualDPad
+          onDirectionPress={onDirectionPress}
+          onDirectionRelease={onDirectionRelease}
+        />
+      );
+
+      const left = screen.getByRole("button", { name: "Move Left" });
+      fireEvent.click(left);
+      expect(onDirectionPress).toHaveBeenCalledWith("left");
+      expect(onDirectionRelease).toHaveBeenCalledWith("left");
+    });
+  });
+
+  describe("Criterion 2: Arcade VirtualGamepad Component", () => {
+    let container: HTMLDivElement;
+    let root: Root;
+
+    beforeEach(() => {
+      container = document.createElement("div");
+      document.body.appendChild(container);
+      root = createRoot(container);
+    });
+
+    afterEach(() => {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    });
+
+    it("invokes action press and release handlers via keyboard actuation", async () => {
+      const onActionAPress = vi.fn();
+      const onActionARelease = vi.fn();
+      const onActionBPress = vi.fn();
+      const onActionBRelease = vi.fn();
+
+      await act(async () => {
+        root.render(
+          <VirtualGamepad
+            forceVisible
+            onActionAPress={onActionAPress}
+            onActionARelease={onActionARelease}
+            onActionBPress={onActionBPress}
+            onActionBRelease={onActionBRelease}
+            actionALabel="Attack"
+            actionBLabel="Potion"
+          />
+        );
+      });
+
+      const attack = container.querySelector('button[aria-label="Attack"]');
+      const potion = container.querySelector('button[aria-label="Potion"]');
+
+      expect(attack).not.toBeNull();
+      expect(potion).not.toBeNull();
+
+      // Keyboard Space on Attack
+      await act(async () => {
+        attack?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: " ",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onActionAPress).toHaveBeenCalledTimes(1);
+      expect(onActionARelease).not.toHaveBeenCalled();
+
+      await act(async () => {
+        attack?.dispatchEvent(
+          new KeyboardEvent("keyup", {
+            key: " ",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onActionARelease).toHaveBeenCalledTimes(1);
+
+      // Keyboard Enter on Potion
+      await act(async () => {
+        potion?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onActionBPress).toHaveBeenCalledTimes(1);
+      expect(onActionBRelease).not.toHaveBeenCalled();
+
+      await act(async () => {
+        potion?.dispatchEvent(
+          new KeyboardEvent("keyup", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onActionBRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("invokes directional press and release on arcade VirtualDPad via keyboard and click", async () => {
+      const onDirectionPress = vi.fn();
+      const onDirectionRelease = vi.fn();
+
+      await act(async () => {
+        root.render(
+          <ArcadeVirtualDPad
+            onDirectionPress={onDirectionPress}
+            onDirectionRelease={onDirectionRelease}
+          />
+        );
+      });
+
+      const up = container.querySelector('button[aria-label="Move Up"]');
+      expect(up).not.toBeNull();
+
+      // Keyboard Enter
+      await act(async () => {
+        up?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onDirectionPress).toHaveBeenCalledWith("up");
+
+      await act(async () => {
+        up?.dispatchEvent(
+          new KeyboardEvent("keyup", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onDirectionRelease).toHaveBeenCalledWith("up");
+
+      // Assistive technology Click on Down
+      const down = container.querySelector('button[aria-label="Move Down"]');
+      expect(down).not.toBeNull();
+
+      await act(async () => {
+        down?.dispatchEvent(
+          new MouseEvent("click", {
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      expect(onDirectionPress).toHaveBeenCalledWith("down");
+      expect(onDirectionRelease).toHaveBeenCalledWith("down");
+    });
+  });
+});

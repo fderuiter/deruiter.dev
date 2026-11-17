@@ -232,22 +232,6 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
-  mCrf: {
-    title: "Mobile CRF Studio for Clinical Forms",
-    description:
-      "The clinical research form studio, laid out for a phone. Tap through each section of a form and inspect every field on a small touch screen.",
-    path: "/m/crf",
-    canonicalPath: "/crf",
-    keywords: [
-      "Mobile CRF Studio",
-      "CDASH Mobile Forms",
-      "Clinical Trial eCRF Touch",
-      "eCRF Field Inspector",
-    ],
-    inLanguage: "en-US",
-    locale: "en-US",
-    isAccessibleForFree: true,
-  },
   patrol: {
     title: "Ski Patrol Shift Studio Simulation",
     description:
@@ -260,54 +244,6 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
       "Operational Judgment",
       "Finite State Machine",
       "Winter Operations",
-    ],
-    inLanguage: "en-US",
-    locale: "en-US",
-    isAccessibleForFree: true,
-  },
-  mPatrol: {
-    title: "Mobile Ski Patrol Shift Studio",
-    description:
-      "The ski-patrol judgment simulator, laid out for a phone. Triage calls as they come in and decide how to respond to each emergency in real time.",
-    path: "/m/patrol",
-    canonicalPath: "/patrol",
-    keywords: [
-      "Mobile Patrol Studio",
-      "Ski Patrol Touch Triage",
-      "Emergency Operations Dispatch",
-      "Mountain Judgment Engine",
-    ],
-    inLanguage: "en-US",
-    locale: "en-US",
-    isAccessibleForFree: true,
-  },
-  mProof: {
-    title: "Mobile Logical Proof Workspace",
-    description:
-      "The formal logic proof workspace, laid out for a phone. Build a proof in a step-by-step deduction ledger and spot where a fallacy breaks it.",
-    path: "/m/proof",
-    canonicalPath: "/proof",
-    keywords: [
-      "Mobile Proof Workspace",
-      "Formal Logic Touch Ledger",
-      "Fallacy Diagnostics Mobile",
-      "Interactive Theorem Prover",
-    ],
-    inLanguage: "en-US",
-    locale: "en-US",
-    isAccessibleForFree: true,
-  },
-  mNeuro: {
-    title: "Mobile NeuroRecon Studio Viewer",
-    description:
-      "The brain morphometry viewer, laid out for a phone. Read subcortical volume measures and the FreeSurfer reconstruction status on a touch screen.",
-    path: "/m/neuro",
-    canonicalPath: "/neuro",
-    keywords: [
-      "Mobile NeuroRecon Studio",
-      "Subcortical Volumetric Touch",
-      "FreeSurfer Morphometry Mobile",
-      "Neuroimaging Structural Metrics",
     ],
     inLanguage: "en-US",
     locale: "en-US",

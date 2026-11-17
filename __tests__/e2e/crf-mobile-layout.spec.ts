@@ -85,8 +85,8 @@ test.describe("CRF Studio touch targets (#3469)", () => {
   });
 });
 
-test.describe("CRF Studio mobile redirect (#3204)", () => {
-  test("a phone user agent on /crf lands on /m/crf", async ({ browser }) => {
+test.describe("CRF Studio mobile navigation (#3204)", () => {
+  test("a phone user agent on /crf stays on /crf", async ({ browser }) => {
     const context = await browser.newContext({
       userAgent: devices["Pixel 7"].userAgent,
       viewport: { width: 412, height: 915 },
@@ -94,7 +94,22 @@ test.describe("CRF Studio mobile redirect (#3204)", () => {
     const page = await context.newPage();
     await expect(async () => {
       await page.goto("/crf");
-      await expect(page).toHaveURL(/\/m\/crf$/, { timeout: 5_000 });
+      await expect(page).toHaveURL(/\/crf$/, { timeout: 5_000 });
+      expect(new URL(page.url()).pathname).toBe("/crf");
+    }).toPass({ timeout: 15_000 });
+    await context.close();
+  });
+
+  test("a legacy /m/crf request redirects to /crf", async ({ browser }) => {
+    const context = await browser.newContext({
+      userAgent: devices["Pixel 7"].userAgent,
+      viewport: { width: 412, height: 915 },
+    });
+    const page = await context.newPage();
+    await expect(async () => {
+      await page.goto("/m/crf");
+      await expect(page).toHaveURL(/\/crf$/, { timeout: 5_000 });
+      expect(new URL(page.url()).pathname).toBe("/crf");
     }).toPass({ timeout: 15_000 });
     await context.close();
   });

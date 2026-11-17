@@ -131,7 +131,7 @@ interface Section {
 const SECTIONS: Section[] = [
   ...PRIMARY_NAV.map((group) => ({
     heading: group.label,
-    match: (p: string) => !p.startsWith("/m/") && isNavGroupActive(group, p),
+    match: (p: string) => isNavGroupActive(group, p),
   })),
   {
     heading: "Mobile and utility routes",

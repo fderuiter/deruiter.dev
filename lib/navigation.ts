@@ -110,7 +110,6 @@ const JOURNEY_MENU_STYLE: Partial<
   collect: {
     id: "crf-studio",
     subtitle: "Design the forms and enter data as a site would",
-    mobileHref: "/m/crf",
     icon: "spreadsheet",
     tone: "amber",
     badge: "CDISC",
@@ -226,7 +225,6 @@ const LABS_ITEMS: NavItem[] = [
     title: "Proof Workspace",
     subtitle: "Build a proof, one step at a time",
     href: "/proof",
-    mobileHref: "/m/proof",
     icon: "brain",
     tone: "purple",
     badge: "AST",
@@ -236,7 +234,6 @@ const LABS_ITEMS: NavItem[] = [
     title: "NeuroRecon Studio",
     subtitle: "Interactive 3D MRI brain viewer",
     href: "/neuro",
-    mobileHref: "/m/neuro",
     icon: "brain",
     tone: "emerald",
     badge: "3D MRI",
@@ -256,7 +253,6 @@ const LABS_ITEMS: NavItem[] = [
     title: "Patrol Shift",
     subtitle: "Midwest ski-patrol operational judgment simulator",
     href: "/patrol",
-    mobileHref: "/m/patrol",
     icon: "shield",
     tone: "cyan",
     badge: "Judgment",
@@ -536,7 +532,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         "/study-data",
         ...CLINICAL_GAME_ROUTES,
       ],
-      prefixes: ["/platform", "/m/crf"],
+      prefixes: ["/platform"],
     },
   },
   {
@@ -547,7 +543,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
     sections: [{ id: "labs", items: [...LABS_ITEMS, ...LABS_GAME_ITEMS] }],
     activeWhen: {
       exact: ["/labs", "/simulator", "/proof", "/neuro", ...LABS_GAME_ROUTES],
-      prefixes: ["/patrol", "/m/proof", "/m/neuro", "/m/patrol"],
+      prefixes: ["/patrol"],
     },
   },
   {
@@ -732,8 +728,8 @@ export function getBreadcrumbTrailSchema(
 }
 
 /** The href to use on a phone-sized surface. */
-export function getNavHref(item: NavItem, surface: "desktop" | "mobile") {
-  return surface === "mobile" && item.mobileHref ? item.mobileHref : item.href;
+export function getNavHref(item: NavItem, _surface?: "desktop" | "mobile") {
+  return item.href;
 }
 
 /** Hides items the current reading mode removes. */

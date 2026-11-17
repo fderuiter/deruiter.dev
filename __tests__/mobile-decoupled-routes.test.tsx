@@ -4,14 +4,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 import nextConfig from "@/next.config";
 import { config as proxyConfig } from "@/proxy";
-import MobileProofPage from "@/app/m/proof/page";
-import MobileCrfPage from "@/app/m/crf/page";
-import MobileNeuroPage from "@/app/m/neuro/page";
-import MobilePatrolPage from "@/app/m/patrol/page";
-import { metadata as mobileProofMetadata } from "@/app/m/proof/layout";
-import { metadata as mobileCrfMetadata } from "@/app/m/crf/layout";
-import { metadata as mobileNeuroMetadata } from "@/app/m/neuro/layout";
-import { metadata as mobilePatrolMetadata } from "@/app/m/patrol/layout";
+import ProofWorkspacePage from "@/app/proof/page";
+import CRFStudioPage from "@/app/crf/page";
+import NeuroReconPage from "@/app/neuro/page";
+import PatrolShiftPage from "@/app/patrol/page";
+import { metadata as proofMetadata } from "@/app/proof/layout";
+import { metadata as crfMetadata } from "@/app/crf/layout";
+import { metadata as neuroMetadata } from "@/app/neuro/layout";
+import { metadata as patrolMetadata } from "@/app/patrol/layout";
 import { PUBLIC_ROUTE_REGISTRY } from "@/lib/public-routes";
 
 (
@@ -44,19 +44,15 @@ describe("Route-Level Mobile Decoupling & Dedicated Mobile Views", () => {
   });
 
   describe("Phone redirects from next.config.ts (#3204, #3205)", () => {
-    it("sends the four studios and their subpaths to /m/* for phones, temporarily", async () => {
+    it("permanently redirects /m/* studio paths to canonical studio routes", async () => {
       const redirects = (await nextConfig.redirects!()).filter((r) =>
-        r.destination.startsWith("/m/")
+        r.source.startsWith("/m/")
       );
-      expect(redirects.map((r) => r.has?.[0]?.key)).toEqual([
-        "user-agent",
-        "sec-ch-ua-mobile",
-      ]);
-      for (const redirect of redirects) {
-        expect(redirect.source).toBe("/:studio(crf|proof|neuro|patrol)/:path*");
-        expect(redirect.destination).toBe("/m/:studio/:path*");
-        expect(redirect.permanent).toBe(false);
-      }
+      expect(redirects).toHaveLength(1);
+      const redirect = redirects[0];
+      expect(redirect.source).toBe("/m/:studio/:path*");
+      expect(redirect.destination).toBe("/:studio/:path*");
+      expect(redirect.permanent).toBe(true);
     });
 
     it("no longer runs the proxy on the studios or on /m/*", () => {
@@ -75,34 +71,34 @@ describe("Route-Level Mobile Decoupling & Dedicated Mobile Views", () => {
 
   describe("Mobile Views Preserving Full User Journey Features", () => {
     it("renders touch-optimized studio pages with complete user journey parity", () => {
-      expect(typeof MobileProofPage).toBe("function");
-      expect(typeof MobileCrfPage).toBe("function");
-      expect(typeof MobileNeuroPage).toBe("function");
-      expect(typeof MobilePatrolPage).toBe("function");
+      expect(typeof ProofWorkspacePage).toBe("function");
+      expect(typeof CRFStudioPage).toBe("function");
+      expect(typeof NeuroReconPage).toBe("function");
+      expect(typeof PatrolShiftPage).toBe("function");
     });
 
-    it("exports metadata for mobile routes canonicalizing to primary studio URLs", () => {
-      expect(mobileProofMetadata.alternates?.canonical).toBe("/proof");
-      expect(mobileCrfMetadata.alternates?.canonical).toBe("/crf");
-      expect(mobileNeuroMetadata.alternates?.canonical).toBe("/neuro");
-      expect(mobilePatrolMetadata.alternates?.canonical).toBe("/patrol");
+    it("exports metadata for studio routes canonicalizing to primary studio URLs", () => {
+      expect(proofMetadata.alternates?.canonical).toBe("/proof");
+      expect(crfMetadata.alternates?.canonical).toBe("/crf");
+      expect(neuroMetadata.alternates?.canonical).toBe("/neuro");
+      expect(patrolMetadata.alternates?.canonical).toBe("/patrol");
 
-      expect(mobileProofMetadata.title).toContain(
-        "Mobile Logical Proof Workspace"
-      );
-      expect(mobileCrfMetadata.title).toContain("Mobile CRF Studio");
-      expect(mobileNeuroMetadata.title).toContain("Mobile NeuroRecon Studio");
-      expect(mobilePatrolMetadata.title).toContain(
-        "Mobile Ski Patrol Shift Studio"
-      );
+      expect(proofMetadata.title).toContain("Logical Proof Workspace");
+      expect(crfMetadata.title).toContain("CRF Studio");
+      expect(neuroMetadata.title).toContain("NeuroRecon Studio");
+      expect(patrolMetadata.title).toContain("Ski Patrol Shift Studio");
     });
 
-    it("registers mobile routes in PUBLIC_ROUTE_REGISTRY", () => {
+    it("registers canonical studio routes in PUBLIC_ROUTE_REGISTRY and removes /m/*", () => {
       const paths = PUBLIC_ROUTE_REGISTRY.map((r) => r.path);
-      expect(paths).toContain("/m/proof");
-      expect(paths).toContain("/m/crf");
-      expect(paths).toContain("/m/neuro");
-      expect(paths).toContain("/m/patrol");
+      expect(paths).toContain("/proof");
+      expect(paths).toContain("/crf");
+      expect(paths).toContain("/neuro");
+      expect(paths).toContain("/patrol");
+      expect(paths).not.toContain("/m/proof");
+      expect(paths).not.toContain("/m/crf");
+      expect(paths).not.toContain("/m/neuro");
+      expect(paths).not.toContain("/m/patrol");
     });
   });
 });

@@ -25,7 +25,9 @@ describe("navigation groups for pages (#1848)", () => {
   it("names the group a page belongs to", () => {
     expect(getNavGroupForHref("/arcade/laser-loon")?.id).toBe("arcade");
     expect(getNavGroupForHref("/merch")?.id).toBe("about");
-    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe("clinical");
+    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe(
+      "clinical"
+    );
     expect(getNavGroupForHref("/crf")?.id).toBe("clinical");
     expect(getNavGroupForHref("/proof")?.id).toBe("labs");
     expect(getNavGroupForHref("/stack")?.id).toBe("about");
@@ -78,12 +80,6 @@ describe("breadcrumb trails (#1848, #2952)", () => {
       { label: "Monkey C Mayhem" },
     ]);
     expect(getBreadcrumbTrail("/arcade")).toEqual([{ label: "Arcade" }]);
-  });
-
-  it("gives phone-sized variants the trail of the page they mirror", () => {
-    expect(getBreadcrumbTrail("/m/proof")).toEqual(
-      getBreadcrumbTrail("/proof")
-    );
   });
 
   it("never links a group crumb to the page it is on", () => {
@@ -145,7 +141,7 @@ describe("llms.txt sections (#1848)", () => {
     expect(sectionOf("/case-studies")).toBe("Writing");
     expect(sectionOf("/work/laser-loon")).toBe("Writing");
     expect(sectionOf("/blog")).toBe("Writing");
-    expect(sectionOf("/m/crf")).toBe("Mobile and utility routes");
+    expect(sectionOf("/offline")).toBe("Mobile and utility routes");
   });
 
   it("places each navigation page under its own group", () => {
@@ -163,7 +159,7 @@ describe("llms.txt sections (#1848)", () => {
 });
 
 describe("sitemap priorities (#1848)", () => {
-  it("rates the Clinical and Labs menu pages as flagship and keeps phone variants lower", async () => {
+  it("rates the Clinical and Labs menu pages as flagship", async () => {
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
     const priority = (routePath: string) =>
@@ -180,7 +176,6 @@ describe("sitemap priorities (#1848)", () => {
     ]) {
       expect(priority(flagship), flagship).toBe(0.9);
     }
-    expect(priority("/m/crf")).toBe(0.8);
     expect(priority("/merch")).toBe(0.4);
     expect(priority("/acknowledgments")).toBe(0.5);
   });

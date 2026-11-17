@@ -51,11 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "weekly";
 
     // Pages the Clinical and Labs menus list are the site's flagship tools
-    // (#1848, #2952); the phone-sized variants of them stay at the default.
+    // (#1848, #2952).
     const navGroup = getNavGroupForHref(config.path)?.id;
-    const isSimulatorPage =
-      !config.path.startsWith("/m/") &&
-      (navGroup === "clinical" || navGroup === "labs");
+    const isSimulatorPage = navGroup === "clinical" || navGroup === "labs";
 
     if (
       isSimulatorPage ||

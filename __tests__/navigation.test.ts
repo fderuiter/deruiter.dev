@@ -172,14 +172,14 @@ describe("navigation structure (#1842, #2952)", () => {
     expect(new Set(items.map((i) => i.href)).size).toBe(items.length);
   });
 
-  it("hides items by reading mode and swaps phone variants", () => {
+  it("hides items by reading mode and keeps canonical URLs for phone surfaces", () => {
     const sims = getNavGroup("labs").sections[0].items;
     expect(
       filterNavItems(sims, "behind-the-scenes").map((i) => i.href)
     ).toEqual(["/proof", "/neuro", "/patrol", "/arcade/meme-vault"]);
     expect(filterNavItems(sims, "professional")).toHaveLength(sims.length);
     const patrol = sims.find((i) => i.id === "patrol-shift")!;
-    expect(getNavHref(patrol, "mobile")).toBe("/m/patrol");
+    expect(getNavHref(patrol, "mobile")).toBe("/patrol");
     expect(getNavHref(patrol, "desktop")).toBe("/patrol");
   });
 
@@ -193,7 +193,7 @@ describe("navigation structure (#1842, #2952)", () => {
     expect(current("/clinical/pipeline-simulator")).toEqual(["clinical"]);
     expect(current("/platform/portfolio")).toEqual(["clinical"]);
     expect(current("/clinical")).toEqual(["clinical"]);
-    expect(current("/m/crf")).toEqual(["clinical"]);
+    expect(current("/crf")).toEqual(["clinical"]);
     expect(current("/patrol")).toEqual(["labs"]);
     expect(current("/labs")).toEqual(["labs"]);
     expect(current("/stack")).toEqual(["about"]);
@@ -212,8 +212,6 @@ describe("navigation structure (#1842, #2952)", () => {
       (p) =>
         !reachable.has(p) &&
         !NOT_NAVIGATION.has(p) &&
-        // Phone variants are reached through their desktop item's mobileHref.
-        !p.startsWith("/m/") &&
         // Individual case studies and posts hang off their Writing indexes.
         !p.startsWith("/case-studies/") &&
         !p.startsWith("/blog/")

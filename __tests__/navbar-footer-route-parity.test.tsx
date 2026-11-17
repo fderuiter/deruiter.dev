@@ -113,14 +113,9 @@ describe("Navbar mobile drawer & Footer Systems route parity", () => {
     const footer = container.querySelector("footer");
 
     for (const route of SYSTEMS_ROUTES) {
-      const drawerRoute = ["/crf", "/proof", "/neuro", "/patrol"].includes(
-        route
-      )
-        ? `/m${route}`
-        : route;
       expect(
-        drawer?.querySelector(`a[href="${drawerRoute}"]`),
-        `expected mobile drawer to link to ${drawerRoute}`
+        drawer?.querySelector(`a[href="${route}"]`),
+        `expected mobile drawer to link to ${route}`
       ).toBeTruthy();
       expect(
         footer?.querySelector(`a[href="${route}"]`),

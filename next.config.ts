@@ -39,29 +39,6 @@ const OG_TRACING_INCLUDES: Record<string, string[]> = Object.fromEntries(
   OG_ROUTE_GLOBS.map((route) => [route, [...OG_TRACED_ASSETS]])
 );
 
-/**
- * The phone user agents `proxy.ts` sends from the desktop studios to `/m/*`
- * (its `isMobileUa` regex). A `has` header value is a case-sensitive regex
- * anchored at both ends, so each word becomes a case-insensitive character
- * class and the alternation is wrapped in `.*` (#3204).
- */
-const MOBILE_UA_WORDS = [
-  "android",
-  "iphone",
-  "ipad",
-  "ipod",
-  "blackberry",
-  "iemobile",
-  "opera mini",
-  "mobile",
-] as const;
-const anyCase = (word: string) =>
-  word.replace(/[a-z]/g, (c) => `[${c}${c.toUpperCase()}]`);
-const MOBILE_UA_HEADER_PATTERN = `.*(?:${MOBILE_UA_WORDS.map(anyCase).join("|")}).*`;
-
-/** The desktop studios that have a phone view under `/m/<studio>`. */
-const MOBILE_DECOUPLED_STUDIOS = "crf|proof|neuro|patrol";
-
 const nextConfig: NextConfig = {
   // Inlined at build time and read by buildTimestamp() in lib/env.ts, so
   // GET /api/version can say when the serving deployment was built (#2534).
@@ -221,26 +198,11 @@ const nextConfig: NextConfig = {
         destination: "/blog/rss.xml",
         statusCode: 301,
       },
-      // Phones on a desktop studio go to its phone view, as the proxy did,
-      // without invoking it. Temporary, because the answer depends on the
-      // user agent (#3204).
+      // Legacy mobile studio paths redirect permanently to canonical studio URLs.
       {
-        source: `/:studio(${MOBILE_DECOUPLED_STUDIOS})/:path*`,
-        has: [
-          {
-            type: "header",
-            key: "user-agent",
-            value: MOBILE_UA_HEADER_PATTERN,
-          },
-        ],
-        destination: "/m/:studio/:path*",
-        permanent: false,
-      },
-      {
-        source: `/:studio(${MOBILE_DECOUPLED_STUDIOS})/:path*`,
-        has: [{ type: "header", key: "sec-ch-ua-mobile", value: "\\?1" }],
-        destination: "/m/:studio/:path*",
-        permanent: false,
+        source: "/m/:studio/:path*",
+        destination: "/:studio/:path*",
+        permanent: true,
       },
     ];
   },

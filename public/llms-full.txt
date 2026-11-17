@@ -492,8 +492,4 @@ The approach: A Next.js site with a home page (our story, the schedule, the venu
 
 ## Mobile and utility routes
 
-- [Mobile CRF Studio for Clinical Forms](https://deruiter.dev/m/crf): The clinical research form studio, laid out for a phone. Tap through each section of a form and inspect every field on a small touch screen.
-- [Mobile NeuroRecon Studio Viewer](https://deruiter.dev/m/neuro): The brain morphometry viewer, laid out for a phone. Read subcortical volume measures and the FreeSurfer reconstruction status on a touch screen.
-- [Mobile Ski Patrol Shift Studio](https://deruiter.dev/m/patrol): The ski-patrol judgment simulator, laid out for a phone. Triage calls as they come in and decide how to respond to each emergency in real time.
-- [Mobile Logical Proof Workspace](https://deruiter.dev/m/proof): The formal logic proof workspace, laid out for a phone. Build a proof in a step-by-step deduction ledger and spot where a fallacy breaks it.
 - [You’re Offline: Page Not Saved](https://deruiter.dev/offline): This page has not been saved for offline use. Check your connection, retry the page, or open one of the pages already cached in your browser.

@@ -50,7 +50,7 @@ describe("Unified Shared Utility Suite (lib/utils.ts)", () => {
         "x-forwarded-for": "  203.0.113.195 , 198.51.100.17  ",
       });
       const ip = getClientIp(headers);
-      expect(ip).toBe("203.0.113.195");
+      expect(ip).toBe("198.51.100.17");
     });
 
     it("falls back to x-real-ip when x-forwarded-for is missing", () => {

@@ -138,12 +138,56 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
       expect(hash).not.toContain(rawIp);
     });
 
-    it("extracts client IP correctly from proxy headers", () => {
+    it("extracts trusted upstream proxy IP correctly from x-forwarded-for headers", () => {
       const req = new NextRequest("http://localhost/api/test", {
         headers: { "x-forwarded-for": "198.51.100.1, 10.0.0.1" },
       });
       const ip = extractClientIp(req);
-      expect(ip).toBe("198.51.100.1");
+      expect(ip).toBe("10.0.0.1");
+    });
+
+    it("evaluates req.ip first if provided by Next.js runtime", () => {
+      const req = new NextRequest("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "203.0.113.106, 198.51.100.99" },
+      });
+      Object.defineProperty(req, "ip", { value: "192.0.2.1" });
+      const ip = extractClientIp(req);
+      expect(ip).toBe("192.0.2.1");
+    });
+
+    it("evaluates platform headers (x-vercel-forwarded-for, cf-connecting-ip)", () => {
+      const vercelReq = new NextRequest("http://localhost/api/test", {
+        headers: {
+          "x-vercel-forwarded-for": "198.51.100.50",
+          "x-forwarded-for": "203.0.113.1, 203.0.113.2",
+        },
+      });
+      expect(extractClientIp(vercelReq)).toBe("198.51.100.50");
+
+      const cfReq = new NextRequest("http://localhost/api/test", {
+        headers: {
+          "cf-connecting-ip": "198.51.100.60",
+          "x-forwarded-for": "203.0.113.1, 203.0.113.2",
+        },
+      });
+      expect(extractClientIp(cfReq)).toBe("198.51.100.60");
+    });
+
+    it("sanitizes IP values by stripping ports and bracket notation", () => {
+      const ipv4WithPort = new NextRequest("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "198.51.100.99:8080" },
+      });
+      expect(extractClientIp(ipv4WithPort)).toBe("198.51.100.99");
+
+      const ipv6WithPort = new NextRequest("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "[2001:db8::1]:8443" },
+      });
+      expect(extractClientIp(ipv6WithPort)).toBe("2001:db8::1");
+
+      const invalidIp = new NextRequest("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "<script>alert(1)</script>" },
+      });
+      expect(extractClientIp(invalidIp)).toBe("127.0.0.1");
     });
 
     it("hashes the client in the handler and ignores a forged x-connection-hash header (#3205)", async () => {

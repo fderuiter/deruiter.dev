@@ -95,6 +95,38 @@ describe("API: /api/contact Route Handler", () => {
     expect(data.error).toContain("Too many contact submission attempts");
   });
 
+  it("should return 429 after 5 submissions even when rotating client tokens in X-Forwarded-For", async () => {
+    const validBody = {
+      name: "Adversary",
+      email: "adversary@example.com",
+      intent: "general",
+      subject: "Automated Flooding Attempt",
+      message:
+        "Attempting to bypass rate limiting by rotating client tokens in X-Forwarded-For.",
+      _clientTimestamp: Date.now() - 5000,
+    };
+
+    // 5 allowed attempts with rotating client tokens but same upstream proxy IP
+    for (let i = 1; i <= 5; i++) {
+      const res = await POST(
+        createRequest(validBody, {
+          "x-forwarded-for": `203.0.113.${100 + i}, 198.51.100.99`,
+        })
+      );
+      expect(res.status).toBe(201);
+    }
+
+    // 6th attempt should be rate limited (HTTP 429)
+    const limitedRes = await POST(
+      createRequest(validBody, {
+        "x-forwarded-for": "203.0.113.106, 198.51.100.99",
+      })
+    );
+    expect(limitedRes.status).toBe(429);
+    const data = await limitedRes.json();
+    expect(data.error).toContain("Too many contact submission attempts");
+  });
+
   it("should silently absorb honeypot submissions without dispatching email", async () => {
     const spy = vi.spyOn(EmailService, "sendContactInquiry");
 

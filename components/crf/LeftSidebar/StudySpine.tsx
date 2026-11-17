@@ -28,6 +28,7 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
 import { FormTemplatesPanel } from "./FormTemplatesPanel";
+import { IconButton } from "@/components/ui/IconButton";
 
 export type LeftSidebarTab = "spine" | "forms" | "palette";
 
@@ -537,7 +538,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                             <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
                                               {form.domain || "CRF"}
                                             </span>
-                                            <button
+                                            <IconButton
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
@@ -551,7 +552,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                               aria-label={`Unassign ${form.name} from ${visit.name}`}
                                             >
                                               <IconLayersSubtract className="w-3 h-3" />
-                                            </button>
+                                            </IconButton>
                                           </div>
                                         </div>
                                       );
@@ -672,7 +673,8 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         {onCommitFormVariant && (
-                          <button
+                          <IconButton
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setVariantFormId(form.id);
@@ -682,9 +684,10 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                             aria-label={`Inspect visit uses of form ${form.name}`}
                           >
                             <IconGitFork className="w-3.5 h-3.5" />
-                          </button>
+                          </IconButton>
                         )}
-                        <button
+                        <IconButton
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             onDuplicateForm(form.id);
@@ -694,9 +697,10 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                           aria-label={`Duplicate form ${form.name}`}
                         >
                           <IconCopy className="w-3.5 h-3.5" />
-                        </button>
+                        </IconButton>
                         {study.forms.length > 1 && (
-                          <button
+                          <IconButton
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteFormClick(form);
@@ -706,7 +710,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                             aria-label={`Delete form ${form.name}`}
                           >
                             <IconTrash className="w-3.5 h-3.5" />
-                          </button>
+                          </IconButton>
                         )}
                       </div>
                     </div>

@@ -13,6 +13,7 @@ import {
   IconSparkles,
 } from "@tabler/icons-react";
 import { useClipboard } from "@/hooks/useClipboard";
+import { IconButton } from "@/components/ui/IconButton";
 
 interface StudioTerminalProps {
   isOpen: boolean;
@@ -215,20 +216,24 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button
+          <IconButton
+            type="button"
             onClick={() => setHistory([])}
             className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
             title="Clear Console (clear)"
+            aria-label="Clear Console"
           >
             <IconTrash className="w-3.5 h-3.5" />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            type="button"
             onClick={onClose}
             className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
             title="Close Terminal Drawer (Esc or `)"
+            aria-label="Close Terminal Drawer"
           >
             <IconX className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -243,17 +248,19 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span>{item.timestamp}</span>
-                <button
+                <IconButton
+                  type="button"
                   onClick={() => handleCopyOutput(item)}
-                  className="hover:text-white p-0.5 rounded"
+                  className="hover:text-white p-0.5 rounded text-zinc-400"
                   title="Copy Output"
+                  aria-label="Copy Output"
                 >
                   {copied && copiedId === item.id ? (
                     <IconCheck className="w-3 h-3 text-emerald-400" />
                   ) : (
                     <IconCopy className="w-3 h-3" />
                   )}
-                </button>
+                </IconButton>
               </div>
             </div>
             <pre

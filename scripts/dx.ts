@@ -55,6 +55,19 @@ import {
 } from "../lib/dx/cli-parser";
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+
+function propagateChildProcessExit(error: unknown): never {
+  const status = (error as { status?: number | null })?.status;
+  if (typeof status === "number") {
+    process.exit(status);
+  }
+  const signal = (error as { signal?: NodeJS.Signals | null })?.signal;
+  if (signal) {
+    process.kill(process.pid, signal);
+  }
+  throw error;
+}
 
 function printUsage(): void {
   console.log(
@@ -1684,22 +1697,38 @@ export async function main(): Promise<void> {
           : parsed
       );
       break;
-    case "crf":
-      execSync(
-        `npx tsx "${path.resolve(__dirname, "crf.ts")}" ${parsed.raw.filter((a) => a !== "crf").join(" ")}`,
-        { stdio: "inherit" }
-      );
+    case "crf": {
+      const forwardedArgs = parsed.raw.filter((a) => a !== "crf");
+      try {
+        execFileSync(
+          npxCommand,
+          ["tsx", path.resolve(__dirname, "crf.ts"), ...forwardedArgs],
+          { stdio: "inherit" }
+        );
+      } catch (error) {
+        propagateChildProcessExit(error);
+      }
       break;
+    }
     case "issues:sync":
-    case "sync-issues":
-      execSync(
-        `npx tsx "${path.resolve(__dirname, "sync-issues.ts")}" ${parsed.raw.filter((a) => a !== "issues:sync" && a !== "sync-issues").join(" ")}`,
-        {
-          cwd: workspaceRoot,
-          stdio: "inherit",
-        }
+    case "sync-issues": {
+      const forwardedArgs = parsed.raw.filter(
+        (a) => a !== "issues:sync" && a !== "sync-issues"
       );
+      try {
+        execFileSync(
+          npxCommand,
+          ["tsx", path.resolve(__dirname, "sync-issues.ts"), ...forwardedArgs],
+          {
+            cwd: workspaceRoot,
+            stdio: "inherit",
+          }
+        );
+      } catch (error) {
+        propagateChildProcessExit(error);
+      }
       break;
+    }
     case "check:migrations":
     case "migrate:check": {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

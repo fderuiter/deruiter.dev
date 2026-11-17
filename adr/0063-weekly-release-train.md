@@ -81,9 +81,14 @@ the build starts.
 
 - GitHub holds one production-adjacent value, the hook URL, which can only
   rebuild `main`. Production credentials stay in Vercel.
-- The workflow asks for `contents: write` (tags and Releases), `checks: read`
-  and `issues: write`, uses no `environment:`, and runs on a standard runner
-  with `timeout-minutes`.
+- The workflow enforces least-privilege token permissions: top-level
+  permissions default to `contents: read`, with explicit job-level privilege
+  escalation. `gate` requests `contents: read`, `checks: read` and
+  `issues: write`; `rc-build`, `rc-browser` and `probe` run with
+  `contents: read`; `rc-failed` and `hold-after-probe` declare `issues: write`;
+  `train` declares `contents: write` and `issues: write`; and `publish`
+  declares `contents: write` (tags and Releases). The workflow uses no
+  `environment:` and runs on a standard runner with `timeout-minutes`.
 - `__tests__/deploy-config.test.ts` pins the triggers, permissions, gates and
   the absence of any build, migration or Vercel CLI call.
 

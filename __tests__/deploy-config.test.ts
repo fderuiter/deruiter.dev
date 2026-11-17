@@ -126,9 +126,7 @@ describe("production deploy configuration", () => {
     expect(train).toContain('- cron: "0 1 * * 1"');
     expect(train.match(/- cron:/g)).toHaveLength(1);
     expect(train).toMatch(/workflow_dispatch:/);
-    expect(train).toMatch(
-      /permissions:\s*\n\s*contents: write\s*\n\s*checks: read\s*\n\s*issues: write\s*\n/
-    );
+    expect(train).toMatch(/permissions:\s*\n\s*contents: read\s*\n\s*jobs:/);
     expect(train).toMatch(/timeout-minutes: \d+/);
 
     expect(train).toContain('"$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]');
@@ -165,6 +163,16 @@ describe("production deploy configuration", () => {
     expect(rcBuild).toContain("run: bash scripts/vercel-shaped-build.sh");
     expect(rcBuild).toContain("127.0.0.1:59999");
     expect(rcBuild).toContain("npm run analyze:bundle -- --strict");
+    expect(job("gate")).toMatch(
+      /permissions:\s*\n\s*contents: read\s*\n\s*checks: read\s*\n\s*issues: write\s*\n/
+    );
+    for (const name of ["rc-failed", "hold-after-probe"]) {
+      expect(job(name), name).toMatch(/permissions:\s*\n\s*issues: write\s*\n/);
+    }
+    expect(job("train")).toMatch(
+      /permissions:\s*\n\s*contents: write\s*\n\s*issues: write\s*\n/
+    );
+    expect(job("publish")).toMatch(/permissions:\s*\n\s*contents: write\s*\n/);
     for (const name of ["rc-build", "rc-browser"]) {
       expect(job(name), name).toMatch(
         /permissions:\s*\n\s*contents: read\s*\n/

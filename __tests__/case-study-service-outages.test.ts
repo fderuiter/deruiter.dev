@@ -36,6 +36,9 @@ const m = vi.hoisted(() => ({
     lmove: vi.fn(),
     lrem: vi.fn(),
     del: vi.fn(),
+    hgetall: vi.fn(),
+    hdel: vi.fn(),
+    srem: vi.fn(),
     exec: vi.fn(),
   },
   prisma: {
@@ -73,7 +76,52 @@ vi.mock("@/lib/redis", async (importOriginal) => {
   return {
     ...actual,
     isRedisConfigured: () => m.redisConfigured.value,
-    redis: { ...m.redis, pipeline: vi.fn(() => m.pipe) },
+    redis: {
+      ...m.redis,
+      pipeline: vi.fn(() => {
+        let isCleanupOrInspect = false;
+        const queued: Array<() => Promise<unknown> | unknown> = [];
+        return {
+          sadd: vi.fn((...args) => m.pipe.sadd(...args)),
+          expire: vi.fn((...args) => m.pipe.expire(...args)),
+          hincrby: vi.fn((...args) => m.pipe.hincrby(...args)),
+          rpush: vi.fn((...args) => m.pipe.rpush(...args)),
+          lmove: vi.fn((...args) => m.pipe.lmove(...args)),
+          lrem: vi.fn((...args) => m.pipe.lrem(...args)),
+          del: vi.fn((...args) => {
+            m.pipe.del(...args);
+            if (isCleanupOrInspect) {
+              queued.push(() => m.redis.del(...args));
+            }
+          }),
+          hgetall: vi.fn((...args) => {
+            isCleanupOrInspect = true;
+            m.pipe.hgetall(...args);
+            queued.push(() => m.redis.hgetall(...args));
+          }),
+          hdel: vi.fn((...args) => {
+            isCleanupOrInspect = true;
+            m.pipe.hdel(...args);
+            queued.push(() => m.redis.hdel(...args));
+          }),
+          srem: vi.fn((...args) => {
+            isCleanupOrInspect = true;
+            m.pipe.srem(...args);
+            queued.push(() => m.redis.srem(...args));
+          }),
+          exec: vi.fn(async () => {
+            if (isCleanupOrInspect && queued.length > 0) {
+              const results = [];
+              for (const fn of queued) {
+                results.push(await fn());
+              }
+              return results;
+            }
+            return m.pipe.exec();
+          }),
+        };
+      }),
+    },
   };
 });
 

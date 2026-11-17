@@ -1353,8 +1353,9 @@ export class BlogPostService {
         }
       }
 
-      for (const slug of Object.keys(flushedCountsBySlug)) {
-        await BlogPostService.hydrateBlogReactionCounts(slug);
+      const flushedSlugs = Object.keys(flushedCountsBySlug);
+      if (flushedSlugs.length > 0) {
+        await BlogPostService.hydrateBlogReactionCounts(flushedSlugs);
       }
 
       return createSuccess({
@@ -1380,28 +1381,71 @@ export class BlogPostService {
    * Hydrates the authoritative base reaction counts in Upstash Redis from Postgres.
    * Executed during scheduled maintenance or database seeding when Postgres is awake.
    * Never invoked on the public visitor read path per ADR 0043 §3.
+   *
+   * Supports batch hydration across multiple slugs using a single Prisma groupBy query
+   * and a single Redis pipeline write.
    */
   static async hydrateBlogReactionCounts(
     slug: string
-  ): Promise<Record<string, number>> {
-    const baseKey = getScopedRedisKey(`blog:reactions_counts:${slug}`);
-    const counts = getDefaultBlogReactionCounts();
+  ): Promise<Record<string, number>>;
+  static async hydrateBlogReactionCounts(
+    slugs: string[]
+  ): Promise<Record<string, Record<string, number>>>;
+  static async hydrateBlogReactionCounts(
+    slugOrSlugs: string | string[]
+  ): Promise<Record<string, number> | Record<string, Record<string, number>>> {
+    const isSingle = typeof slugOrSlugs === "string";
+    const slugs = isSingle ? [slugOrSlugs] : slugOrSlugs;
+
+    const countsMap: Record<string, Record<string, number>> = {};
+    for (const slug of slugs) {
+      countsMap[slug] = getDefaultBlogReactionCounts();
+    }
+
+    if (slugs.length === 0) {
+      return isSingle ? getDefaultBlogReactionCounts() : countsMap;
+    }
 
     try {
-      const reactions = await prisma.blogPostReaction.groupBy({
-        by: ["reactionType"],
-        where: { blogPostSlug: slug },
-        _count: { id: true },
-      });
-      for (const r of reactions) {
-        if (counts[r.reactionType] !== undefined) {
-          counts[r.reactionType] = r._count.id;
+      if (isSingle) {
+        const reactions = await prisma.blogPostReaction.groupBy({
+          by: ["reactionType"],
+          where: { blogPostSlug: slugs[0] },
+          _count: { id: true },
+        });
+        if (Array.isArray(reactions)) {
+          for (const r of reactions) {
+            if (countsMap[slugs[0]][r.reactionType] !== undefined) {
+              countsMap[slugs[0]][r.reactionType] = r._count.id;
+            }
+          }
+        }
+      } else {
+        const reactions = await prisma.blogPostReaction.groupBy({
+          by: ["blogPostSlug", "reactionType"],
+          where: { blogPostSlug: { in: slugs } },
+          _count: { id: true },
+        });
+        if (Array.isArray(reactions)) {
+          for (const r of reactions) {
+            if (
+              countsMap[r.blogPostSlug] &&
+              countsMap[r.blogPostSlug][r.reactionType] !== undefined
+            ) {
+              countsMap[r.blogPostSlug][r.reactionType] = r._count.id;
+            }
+          }
         }
       }
 
       if (isRedisConfigured()) {
+        const p = redis.pipeline();
+        for (const slug of slugs) {
+          const baseKey = getScopedRedisKey(`blog:reactions_counts:${slug}`);
+          p.set(baseKey, countsMap[slug]);
+        }
         await Promise.race([
-          redis.set(baseKey, counts),
+          p.exec(),
           new Promise((_, reject) =>
             setTimeout(
               () =>
@@ -1414,12 +1458,22 @@ export class BlogPostService {
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
         logger.warn(
-          `BlogPostService: Failed to hydrate base reactions for ${slug}:`,
+          `BlogPostService: Failed to hydrate base reactions for ${slugs.join(", ")}:`,
           err
         );
       }
     }
 
-    return counts;
+    return isSingle ? countsMap[slugs[0]] : countsMap;
+  }
+
+  /**
+   * Batch hydrates authoritative base reaction counts in Upstash Redis from Postgres
+   * across multiple blog post slugs using a single query and pipeline.
+   */
+  static async hydrateBlogReactionCountsBatch(
+    slugs: string[]
+  ): Promise<Record<string, Record<string, number>>> {
+    return BlogPostService.hydrateBlogReactionCounts(slugs);
   }
 }

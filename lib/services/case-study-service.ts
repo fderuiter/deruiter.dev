@@ -1328,40 +1328,66 @@ export class CaseStudyService {
 
       await ack.exec();
 
-      // Clean up empty buffers and dirty flags
-      for (const slug of Object.keys(flushedCountsBySlug)) {
-        const bufferKey = getScopedRedisKey(`cs:reactions_buffer:${slug}`);
-        let remainingBuffer: Record<string, string | number> | null = null;
-        try {
-          remainingBuffer =
-            await redis.hgetall<Record<string, string | number>>(bufferKey);
-        } catch {
-          // Tolerated
+      // Clean up empty buffers and dirty flags via 2 pipelined Redis requests
+      const flushedSlugs = Object.keys(flushedCountsBySlug);
+      if (flushedSlugs.length > 0) {
+        // Phase 1: Inspect all pending Redis buffers in a single pipelined request
+        const inspectPipeline = redis.pipeline();
+        for (const slug of flushedSlugs) {
+          const bufferKey = getScopedRedisKey(`cs:reactions_buffer:${slug}`);
+          inspectPipeline.hgetall(bufferKey);
         }
 
-        let allZeroOrEmpty = true;
-        if (remainingBuffer && typeof remainingBuffer === "object") {
-          for (const [key, val] of Object.entries(remainingBuffer)) {
-            if (Number(val) <= 0) {
-              try {
-                await redis.hdel(bufferKey, key);
-              } catch {
-                // Tolerated
+        let inspectResults: unknown[] = [];
+        try {
+          inspectResults = (await inspectPipeline.exec()) ?? [];
+        } catch {
+          // Tolerated: treat buffers as null if inspection fails
+          inspectResults = [];
+        }
+
+        // Phase 2: Remove empty buffers and dirty keys in a single pipelined Redis request
+        const cleanupPipeline = redis.pipeline();
+        let hasCleanupOps = false;
+
+        for (let i = 0; i < flushedSlugs.length; i++) {
+          const slug = flushedSlugs[i];
+          const bufferKey = getScopedRedisKey(`cs:reactions_buffer:${slug}`);
+          const remainingBuffer = inspectResults[i] as
+            Record<string, string | number> | null | undefined;
+
+          let allZeroOrEmpty = true;
+          const zeroKeys: string[] = [];
+
+          if (
+            remainingBuffer &&
+            typeof remainingBuffer === "object" &&
+            !(remainingBuffer instanceof Error)
+          ) {
+            for (const [key, val] of Object.entries(remainingBuffer)) {
+              if (Number(val) <= 0) {
+                zeroKeys.push(key);
+              } else {
+                allZeroOrEmpty = false;
               }
-            } else {
-              allZeroOrEmpty = false;
             }
           }
+
+          if (allZeroOrEmpty) {
+            cleanupPipeline.del(bufferKey);
+            cleanupPipeline.srem(dirtyKey, slug);
+            hasCleanupOps = true;
+          } else if (zeroKeys.length > 0) {
+            for (const key of zeroKeys) {
+              cleanupPipeline.hdel(bufferKey, key);
+            }
+            hasCleanupOps = true;
+          }
         }
 
-        if (allZeroOrEmpty) {
+        if (hasCleanupOps) {
           try {
-            await redis.del(bufferKey);
-          } catch {
-            // Tolerated
-          }
-          try {
-            await redis.srem(dirtyKey, slug);
+            await cleanupPipeline.exec();
           } catch {
             // Tolerated
           }

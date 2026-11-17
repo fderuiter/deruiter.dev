@@ -190,12 +190,23 @@ describe("asset generation and staging workflow", () => {
       "/repo/docs/guide.md",
     ]);
 
-    expect(commands).toHaveLength(2);
+    expect(commands).toHaveLength(3);
     expect(commands[0]).toContain("prettier");
     expect(commands[0]).toContain("Example File.tsx");
+    expect(commands[0]).toContain("guide.md");
     expect(commands[0]).not.toContain("garmin-engine.js");
     expect(commands[1]).toContain("eslint");
     expect(commands[1]).toContain("Example File.tsx");
+    expect(commands[2]).toContain("markdownlint");
+    expect(commands[2]).toContain("guide.md");
+
+    const codeOnlyCommands = lintStagedConfig["*"]([
+      "/repo/components/Example File.tsx",
+    ]);
+    expect(codeOnlyCommands).toHaveLength(2);
+    expect(codeOnlyCommands.some((c) => c.includes("markdownlint"))).toBe(
+      false
+    );
   });
 
   it("keeps test setup non-mutating", () => {

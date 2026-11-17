@@ -14,6 +14,7 @@ const GENERATED_ARTIFACTS = new Set([
 ]);
 
 const CODE_FILE = /\.(?:[cm]?js|jsx|tsx?)$/u;
+const MARKDOWN_FILE = /\.md$/u;
 
 function quote(file) {
   return JSON.stringify(file);
@@ -34,6 +35,9 @@ module.exports = {
         )
     );
     const codeFiles = authoredFiles.filter((file) => CODE_FILE.test(file));
+    const markdownFiles = authoredFiles.filter((file) =>
+      MARKDOWN_FILE.test(file)
+    );
     const commands = [];
 
     if (authoredFiles.length > 0) {
@@ -45,6 +49,9 @@ module.exports = {
       commands.push(
         `eslint --fix --no-warn-ignored ${codeFiles.map(quote).join(" ")}`
       );
+    }
+    if (markdownFiles.length > 0) {
+      commands.push(`markdownlint ${markdownFiles.map(quote).join(" ")}`);
     }
 
     return commands;

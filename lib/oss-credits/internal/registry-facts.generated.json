@@ -2032,8 +2032,8 @@
       ],
       "notices": []
     },
-    "@next/env@16.4.3": {
-      "integrity": "sha512-a7tz1QCcWWkwC/rPJcPMJk/UNRu9CFhDd3OHYE5hddbJrs8BqRTalxI6GlKCWEGzRLHN+S/B7a4PAHCtm25aBQ==",
+    "@next/env@16.4.5": {
+      "integrity": "sha512-JwSPwpdkZL5VMl2jA/q+JI8MZdweAL3xmw5/tb9y/TLtmS0YXZnmYDzSihwk8xTj1OL+WM53gTqaj96yuLp6Xw==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": "Next.js Team",
@@ -2042,21 +2042,21 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/eslint-plugin-next@16.4.3": {
-      "integrity": "sha512-oxuC06wt/71h6ACYCV9GbKOfnf5a7VlRe/p80YHTut15TNgDEmynDnaq8t/xhy5rlvk7dhItIPs6H3rvIM4kyw==",
+    "@next/eslint-plugin-next@16.4.5": {
+      "integrity": "sha512-dNmc4y4En/34tWxaBFF2tG/R9GeiRwVPf7v8Az/Pqk8FcT4Uv0ePmrZKvWBL2nFy1QprPgJW+6XjfyV6jbRV3Q==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
       "licenses": [],
       "notices": []
     },
-    "@next/swc-darwin-arm64@16.4.3": {
-      "integrity": "sha512-4yq5EXBt+VDtAZwTyfijaFp5D2C5oz3Ikw5a2kiX2K9nw72vrZX2q5UuAlkPtUMO1tQz6JTKpaKWjS7OOefTDQ==",
+    "@next/swc-darwin-arm64@16.4.5": {
+      "integrity": "sha512-W5TniBzWKASbNNwHZ/S/f1MxQUXU/LdjklVMWA0Ujbfl7SZnUzFls45hO0i/sF7Bx1jJBWp7WWmoQajXtX/O8A==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2065,13 +2065,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-darwin-x64@16.4.3": {
-      "integrity": "sha512-1Rvkn/LUhnEF8WxnRkOrqGhbwXui1bkWFxONKIbN+r7C+9KHDSZ+iUoj4CzymVMWUyZIyx9szcb9+kbKhD500A==",
+    "@next/swc-darwin-x64@16.4.5": {
+      "integrity": "sha512-uWq4qkHapBDS1oFltWS4YxTb9pLHAtLNcpbuK6SmRsebLYZqpBML/j/C0op+50JYGTpZgVL/DWNt/6oWlamrrw==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2080,13 +2080,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-linux-arm64-gnu@16.4.3": {
-      "integrity": "sha512-dCKpXErGg3abUM6t5JTJV/ottVBTStJB5lRJTbgdUdQaQ+jNHiK56Hsc0YAEg/rinSh42hYG3HWiYmEMdilnxg==",
+    "@next/swc-linux-arm64-gnu@16.4.5": {
+      "integrity": "sha512-FdRcyOx5u5P51mlAqLB9EXdd8jZO5fsdHtk4BAQSkqOywCsbTNN/rmw+jO7pnmjNdAtu2AG46NzbCL2FPDrrgw==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2095,13 +2095,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-linux-arm64-musl@16.4.3": {
-      "integrity": "sha512-WwYbhWkhYBvBtib1K4W0kL8MW2snBD2A5b3SN4vPpqalZbZs5+bQ1yzAdepVoOqrFfEW3dmREy4Zs1MrWcrFbw==",
+    "@next/swc-linux-arm64-musl@16.4.5": {
+      "integrity": "sha512-cyvmmgtRXR8aGVT86wi9Py53IlfyCx7P2fZxuAXAoTummDnhKtUyjrMeXfapqp4qgD+gT5RqyGD/VfA16jEK7Q==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2110,13 +2110,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-linux-x64-gnu@16.4.3": {
-      "integrity": "sha512-QymWvfUwDEC5/lpJOsxX5VAbyoR2D13+2Jsjz4be7gT4LPqEgdpkeLIR/HFfCLgKzoMhpJbp6I/JnogyNZHcaA==",
+    "@next/swc-linux-x64-gnu@16.4.5": {
+      "integrity": "sha512-hPc+Fl+N22DAvqZHq559NmamXboOX5Lu8I5Wl0DezfrhTk1Zz21NQeYoZDmNI/NjTcrdsVxM72Fzn2lI+Q+vAw==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2125,13 +2125,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-linux-x64-musl@16.4.3": {
-      "integrity": "sha512-Vmjd9D7DpA4Vv3cUlr82QWgJD/BQZmns801vtC5VWHg6jCIA4a5vMKpQnfrM2pyCrp2eV0ENdUg4PlN3bAc2Yw==",
+    "@next/swc-linux-x64-musl@16.4.5": {
+      "integrity": "sha512-gbACYE8IP/jlprNTpiWXHb8N9CofOzpnEwH2SrIz1dUbiJf1FbDssDupCAPeP1Taxe8mgG20sGZamJI7KFOdZw==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2140,13 +2140,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-win32-arm64-msvc@16.4.3": {
-      "integrity": "sha512-lG1pPdPLk7gTyGb00n5JIMLdBJgjb+UEhSdZvFbhUMg0DyC6z4B7RnpSKF9VCd4imkLObVbXOFA0kFCpw7yFow==",
+    "@next/swc-win32-arm64-msvc@16.4.5": {
+      "integrity": "sha512-+8gj++ZMo8H20Xh2ijjNqyFk5LPLw0AC4Fs4Tq/G94rjjQXhOjN4jgSWsWKPFsyY26hfIeemJIwKtMxOsp5GBA==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2155,13 +2155,13 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
     },
-    "@next/swc-win32-x64-msvc@16.4.3": {
-      "integrity": "sha512-NmQC9RkJdnPXRaMxtkCzobB3teVjqF33oSOnwDfi+XYGWWYpt+xlGK3mtktSKLbdjwaWbJu2OkkMiRFGUUncKg==",
+    "@next/swc-win32-x64-msvc@16.4.5": {
+      "integrity": "sha512-qNZj66pYXnaWLiF9R9GUbfBdrCv7kC6TaZfIwB2KH5WPc/8pEM3nVOj8hpQhWJU8S94rlH5MPDcX15+RrgUhiw==",
       "homepage": "https://github.com/vercel/next.js#readme",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -2170,7 +2170,7 @@
           "kind": "inherited",
           "name": "license.md",
           "sha": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
-          "from": "next@16.4.3"
+          "from": "next@16.4.5"
         }
       ],
       "notices": []
@@ -7871,8 +7871,8 @@
       "licenses": [],
       "notices": []
     },
-    "eslint-config-next@16.4.3": {
-      "integrity": "sha512-j9IqBma6abp800frdUURaizYMgXOK+jNGyq6CsYcM9AxpSJs5D/TgMNGeAmRUilZvA7g9V1Tr71gNg9/SVTuMQ==",
+    "eslint-config-next@16.4.5": {
+      "integrity": "sha512-mvh39zYLoNjpT5tVmf8xZu7i5lEOb5jN5cW6qD9OpeCp4GEEOeYta0Z2XyKiD0pYdlvm5/Td6Bi890maPRlIjg==",
       "homepage": "https://nextjs.org/docs/app/api-reference/config/eslint",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,
@@ -10792,8 +10792,8 @@
       ],
       "notices": []
     },
-    "next@16.4.3": {
-      "integrity": "sha512-OqxKTGi9u80FydydsMNYNjnuje9Au+kvHlt2GZ//ftdpDHm1dxKqAaENoOOTX5wKzn+9vaKUNIfZeyZUuLhCnA==",
+    "next@16.4.5": {
+      "integrity": "sha512-rmdfsWosjTUO+6R0S3KokoIk6Kj0sWDRTe86tZHdqaWH/oXq/udX3/4xb+YQi7aWbyEFoglDU54kaifLCdXbBw==",
       "homepage": "https://nextjs.org",
       "repository": "git+https://github.com/vercel/next.js.git",
       "author": null,

@@ -1763,7 +1763,7 @@
     },
     {
       "name": "@next/env",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1772,7 +1772,7 @@
     },
     {
       "name": "@next/eslint-plugin-next",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -1781,7 +1781,7 @@
     },
     {
       "name": "@next/swc-darwin-arm64",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1790,7 +1790,7 @@
     },
     {
       "name": "@next/swc-darwin-x64",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1799,7 +1799,7 @@
     },
     {
       "name": "@next/swc-linux-arm64-gnu",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1808,7 +1808,7 @@
     },
     {
       "name": "@next/swc-linux-arm64-musl",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1817,7 +1817,7 @@
     },
     {
       "name": "@next/swc-linux-x64-gnu",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1826,7 +1826,7 @@
     },
     {
       "name": "@next/swc-linux-x64-musl",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1835,7 +1835,7 @@
     },
     {
       "name": "@next/swc-win32-arm64-msvc",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1844,7 +1844,7 @@
     },
     {
       "name": "@next/swc-win32-x64-msvc",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -6361,7 +6361,7 @@
     },
     {
       "name": "eslint-config-next",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -9033,7 +9033,7 @@
     },
     {
       "name": "next",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,

@@ -1178,20 +1178,22 @@ export class StudyProtocolEngine {
       formulaSubMap.set(k.toUpperCase(), v);
     }
 
+    const formulaPattern =
+      formulaSubMap.size > 0
+        ? new RegExp(
+            Array.from(formulaSubMap.keys())
+              .sort((a, b) => b.length - a.length)
+              .map((k) => `\\b${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`)
+              .join("|"),
+            "gi"
+          )
+        : null;
+
     // Helper for single-pass multi-token formula substitution (prevents cascade)
     const remapFormulaString = (formula: string): string => {
-      if (!formula || formulaSubMap.size === 0) return formula;
-      const sortedKeys = Array.from(formulaSubMap.keys()).sort(
-        (a, b) => b.length - a.length
-      );
-      const pattern = new RegExp(
-        sortedKeys
-          .map((k) => `\\b${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`)
-          .join("|"),
-        "gi"
-      );
+      if (!formula || !formulaPattern) return formula;
       return formula.replace(
-        pattern,
+        formulaPattern,
         (matched) => formulaSubMap.get(matched.toUpperCase()) || matched
       );
     };

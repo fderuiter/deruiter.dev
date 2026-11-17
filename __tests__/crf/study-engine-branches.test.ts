@@ -539,6 +539,38 @@ describe("form removal, restoration and duplication", () => {
     // The formula is still remapped from variable name to the new field id.
     expect(copy.sections[0].fields[1].calculationFormula).toBe("AVAR * 2");
   });
+
+  it("duplicateForm handles forms without formulas or substitution keys", () => {
+    const baseStudy = richStudy();
+    const emptyForm: CRFForm = {
+      id: "form_empty",
+      name: "Empty Form",
+      domain: "EM",
+      description: "No fields or formulas",
+      version: "1.0",
+      sections: [],
+      rules: [
+        rule("r_no_formula", {
+          formulaExpression: undefined,
+        }),
+        rule("r_static_formula", {
+          formulaExpression: "100 + 200",
+        }),
+      ],
+    };
+    const s: StudyProtocol = {
+      ...baseStudy,
+      forms: [...baseStudy.forms, emptyForm],
+    };
+
+    const res = StudyProtocolEngine.duplicateForm(s, "form_empty");
+    expect(res.error).toBeUndefined();
+    expect(res.duplicatedForm).toBeDefined();
+    const copy = res.duplicatedForm!;
+    expect(copy.id).not.toBe("form_empty");
+    expect(copy.rules[0].formulaExpression).toBeUndefined();
+    expect(copy.rules[1].formulaExpression).toBe("100 + 200");
+  });
 });
 
 describe("field duplication, sections and insertion", () => {

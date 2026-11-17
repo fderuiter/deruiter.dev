@@ -8,5 +8,15 @@
     "reason": "Rechecked 2026-11-16: GHSA-g3hv-75wg-m249 now affects minimatch >=7.0.0 <11.0.1, so minimatch 3 used by ESLint and the Next plugins is outside the advisory range. npm audit --package-lock-only reports only typedoc's minimatch 10.2.6, propagated through typedoc and typedoc-plugin-markdown. typedoc 0.28.20 remains the latest stable release, declares minimatch ^10.2.5, and calls Minimatch.matchOne, which minimatch 11 removed. This copy runs only during documentation generation on repository-controlled globs, with no site-user input or production runtime exposure. Retain the supported TypeDoc toolchain and the existing fixed minimatch/glob overrides; do not force incompatible APIs or downgrade documentation tooling. Recheck TypeDoc before the strict gate's 14-day warning window begins on 2026-12-02; remove this advisory-and-package-scoped moderate exception when a supported fixed parent is available. Renewal is limited to 30 days.",
     "owner": "fderuiter",
     "followUp": "https://github.com/fderuiter/deruiter.dev/issues/3667"
+  },
+  {
+    "advisory": "GHSA-mfr8-8qww-v76h",
+    "package": "next",
+    "severity": "moderate",
+    "createdAt": "2026-11-16",
+    "expiresAt": "2026-12-16",
+    "reason": "Rechecked 2026-11-16: GHSA-mfr8-8qww-v76h is a moderate advisory affecting Next.js >=16.3.0 <=16.4.4 regarding information disclosure across root params when a 'use cache' function is called through unstable_cache(). In this application, unstable_cache is only used in lib/github.ts to cache public repository statistics with repository-scoped parameters. The application does not define or call any 'use cache' functions inside unstable_cache, nor does it access root parameters in cached contexts. Upgrading Next.js is coordinated with the lint toolchain in #3671. Recheck Next.js before the strict gate's 14-day warning window begins on 2026-12-02.",
+    "owner": "fderuiter",
+    "followUp": "https://github.com/fderuiter/deruiter.dev/issues/3671"
   }
 ]

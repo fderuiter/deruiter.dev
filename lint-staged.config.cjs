@@ -43,7 +43,7 @@ module.exports = {
     }
     if (codeFiles.length > 0) {
       commands.push(
-        `eslint --fix --no-warn-ignored ${codeFiles.map(quote).join(" ")}`
+        `eslint --fix --no-warn-ignored --max-warnings=0 ${codeFiles.map(quote).join(" ")}`
       );
     }
 

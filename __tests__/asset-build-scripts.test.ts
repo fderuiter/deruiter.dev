@@ -195,6 +195,7 @@ describe("asset generation and staging workflow", () => {
     expect(commands[0]).toContain("Example File.tsx");
     expect(commands[0]).not.toContain("garmin-engine.js");
     expect(commands[1]).toContain("eslint");
+    expect(commands[1]).toContain("--max-warnings=0");
     expect(commands[1]).toContain("Example File.tsx");
   });
 

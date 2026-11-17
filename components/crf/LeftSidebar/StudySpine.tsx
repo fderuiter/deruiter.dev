@@ -15,6 +15,7 @@ import {
   IconLayersSubtract,
   IconX,
   IconGitFork,
+  IconCalendarPlus,
 } from "@tabler/icons-react";
 import { StudyProtocol, CRFForm } from "@/lib/crf/types";
 import {
@@ -27,6 +28,7 @@ import { CATALOG_DRAG_TYPE, FormCatalogList } from "../FormCatalogList";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
+import { AssignToVisitModal } from "./AssignToVisitModal";
 import { FormTemplatesPanel } from "./FormTemplatesPanel";
 
 export type LeftSidebarTab = "spine" | "forms" | "palette";
@@ -96,6 +98,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
   );
 
   const [variantFormId, setVariantFormId] = useState<string | null>(null);
+  const [assigningFormId, setAssigningFormId] = useState<string | null>(null);
   const formUseCounts = useMemo(
     () =>
       new Map(study.forms.map((f) => [f.id, getFormUses(study, f.id).length])),
@@ -671,6 +674,26 @@ export const StudySpine: React.FC<StudySpineProps> = ({
 
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAssigningFormId(form.id);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAssigningFormId(form.id);
+                            }
+                          }}
+                          className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                          title="Assign to Visit"
+                          aria-label={`Assign to visit: ${form.name}`}
+                          data-testid={`assign-form-visit-${form.id}`}
+                        >
+                          <IconCalendarPlus className="w-3.5 h-3.5" />
+                        </button>
                         {onCommitFormVariant && (
                           <button
                             onClick={(e) => {
@@ -790,6 +813,16 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             setVariantFormId(null);
             onCommitFormVariant(nextStudy, newFormId);
           }}
+        />
+      )}
+
+      {assigningFormId && (
+        <AssignToVisitModal
+          study={study}
+          formId={assigningFormId}
+          onClose={() => setAssigningFormId(null)}
+          onAssignFormToVisit={onAssignFormToVisit}
+          onUnassignFormFromVisit={onUnassignFormFromVisit}
         />
       )}
 

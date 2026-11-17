@@ -366,4 +366,414 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
 
     expect(onSelectForm).not.toHaveBeenCalled();
   });
+
+  describe("Assign to Visit Action & Modal (Accessibility WCAG 2.5.7 & 2.1.1)", () => {
+    it("renders an Assign to Visit button with an explicit accessible label on every form card", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const assignButtons = container.querySelectorAll(
+        'button[title="Assign to Visit"]'
+      );
+      expect(assignButtons.length).toBe(normalizedStudy.forms.length);
+
+      assignButtons.forEach((btn, index) => {
+        const form = normalizedStudy.forms[index];
+        expect(btn.getAttribute("aria-label")).toBe(
+          `Assign to visit: ${form.name}`
+        );
+      });
+    });
+
+    it("opens the assignment dialog when the button is activated via click, Enter, or Space", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+      expect(firstAssignBtn).not.toBeNull();
+
+      // Click opens dialog
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      let dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      );
+      expect(dialog).not.toBeNull();
+      expect(dialog?.getAttribute("aria-modal")).toBe("true");
+
+      // Close dialog
+      const closeBtn = dialog?.querySelector(
+        'button[aria-label="Close dialog"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        closeBtn.click();
+      });
+      expect(
+        container.querySelector(
+          '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+        )
+      ).toBeNull();
+
+      // Space key opens dialog
+      await act(async () => {
+        firstAssignBtn.focus();
+        firstAssignBtn.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: " ",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      );
+      expect(dialog).not.toBeNull();
+
+      // Close again
+      const closeBtn2 = dialog?.querySelector(
+        'button[aria-label="Close dialog"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        closeBtn2.click();
+      });
+
+      // Enter key on assign button opens dialog
+      await act(async () => {
+        firstAssignBtn.focus();
+        firstAssignBtn.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      );
+      expect(dialog).not.toBeNull();
+    });
+
+    it("lists study visits grouped by epoch with their current assignment status", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      const dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      ) as HTMLElement;
+      expect(dialog).not.toBeNull();
+
+      // Check fieldsets for epochs
+      const fieldsets = dialog.querySelectorAll("fieldset");
+      expect(fieldsets.length).toBeGreaterThan(0);
+
+      // Verify each visit is rendered with name and assignment status
+      normalizedStudy.visits.forEach((v) => {
+        expect(dialog.textContent).toContain(v.name);
+      });
+
+      // Form 0 is assigned to visit 0 in normalizedStudy
+      const targetForm = normalizedStudy.forms[0];
+      const isAssignedToVisit0 =
+        normalizedStudy.visits[0].assignedFormIds.includes(targetForm.id);
+      const visit0Checkbox = dialog.querySelector(
+        `#assign-visit-${normalizedStudy.visits[0].id}`
+      ) as HTMLInputElement;
+
+      expect(visit0Checkbox).not.toBeNull();
+      expect(visit0Checkbox.checked).toBe(isAssignedToVisit0);
+    });
+
+    it("toggles visit assignment, triggering onAssignFormToVisit and onUnassignFormFromVisit", async () => {
+      const onAssignFormToVisit = vi.fn();
+      const onUnassignFormFromVisit = vi.fn();
+
+      await act(async () => {
+        root = createRoot(container);
+        root.render(
+          <StudySpine
+            {...defaultProps}
+            activeTab="forms"
+            onAssignFormToVisit={onAssignFormToVisit}
+            onUnassignFormFromVisit={onUnassignFormFromVisit}
+          />
+        );
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      const dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      ) as HTMLElement;
+
+      const targetForm = normalizedStudy.forms[0];
+      const assignedVisit = normalizedStudy.visits[0]; // currently assigned
+      const unassignedVisit = normalizedStudy.visits[1]; // currently unassigned
+
+      // Toggle assigned visit -> unassign
+      const assignedCb = dialog.querySelector(
+        `#assign-visit-${assignedVisit.id}`
+      ) as HTMLInputElement;
+      await act(async () => {
+        assignedCb.click();
+      });
+
+      expect(onUnassignFormFromVisit).toHaveBeenCalledWith(
+        assignedVisit.id,
+        targetForm.id
+      );
+
+      // Toggle unassigned visit -> assign
+      const unassignedCb = dialog.querySelector(
+        `#assign-visit-${unassignedVisit.id}`
+      ) as HTMLInputElement;
+      await act(async () => {
+        unassignedCb.click();
+      });
+
+      expect(onAssignFormToVisit).toHaveBeenCalledWith(
+        unassignedVisit.id,
+        targetForm.id
+      );
+    });
+
+    it("announces assignment status updates to screen readers with aria-live='polite'", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      const dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      ) as HTMLElement;
+
+      const liveRegion = dialog.querySelector('[aria-live="polite"]');
+      expect(liveRegion).not.toBeNull();
+
+      const cb = dialog.querySelector(
+        `#assign-visit-${normalizedStudy.visits[0].id}`
+      ) as HTMLInputElement;
+
+      await act(async () => {
+        cb.click();
+      });
+
+      expect(liveRegion?.textContent).toContain(normalizedStudy.forms[0].name);
+      expect(liveRegion?.textContent).toContain(normalizedStudy.visits[0].name);
+    });
+
+    it("moves focus to the first interactive element inside the dialog on open (Condition 3)", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+      firstAssignBtn.focus();
+
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      const dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      ) as HTMLElement;
+      expect(dialog).not.toBeNull();
+
+      // First interactive element is the close button in the header
+      const firstInteractive = dialog.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement;
+
+      expect(document.activeElement).toBe(firstInteractive);
+    });
+
+    it("closes dialog on Escape and restores focus to the trigger button (Condition 4)", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+      firstAssignBtn.focus();
+      expect(document.activeElement).toBe(firstAssignBtn);
+
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      const dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      );
+      expect(dialog).not.toBeNull();
+
+      // Press Escape
+      await act(async () => {
+        window.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Escape",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      // Dialog is closed
+      expect(
+        container.querySelector(
+          '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+        )
+      ).toBeNull();
+
+      // Allow returnFocus to flush
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(document.activeElement).toBe(firstAssignBtn);
+    });
+
+    it("allows selecting visits using Enter key (Scenario 1 & Condition 5)", async () => {
+      const onAssignFormToVisit = vi.fn();
+
+      await act(async () => {
+        root = createRoot(container);
+        root.render(
+          <StudySpine
+            {...defaultProps}
+            activeTab="forms"
+            onAssignFormToVisit={onAssignFormToVisit}
+          />
+        );
+      });
+
+      const firstAssignBtn = container.querySelector(
+        'button[title="Assign to Visit"]'
+      ) as HTMLButtonElement;
+
+      await act(async () => {
+        firstAssignBtn.click();
+      });
+
+      const dialog = container.querySelector(
+        '[role="dialog"][data-testid="assign-to-visit-dialog"]'
+      ) as HTMLElement;
+
+      const unassignedVisit = normalizedStudy.visits[1];
+      const unassignedCb = dialog.querySelector(
+        `#assign-visit-${unassignedVisit.id}`
+      ) as HTMLInputElement;
+
+      await act(async () => {
+        unassignedCb.focus();
+        unassignedCb.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      expect(onAssignFormToVisit).toHaveBeenCalledWith(
+        unassignedVisit.id,
+        normalizedStudy.forms[0].id
+      );
+    });
+
+    it("updates study spine visit counts without page reload (Condition 6)", async () => {
+      let currentStudy = { ...normalizedStudy };
+
+      await act(async () => {
+        root = createRoot(container);
+        root.render(
+          <StudySpine
+            {...defaultProps}
+            study={currentStudy}
+            activeTab="spine"
+          />
+        );
+      });
+
+      // Initially, visit 0 has 2 assigned forms
+      expect(container.textContent).toContain("2 forms");
+
+      // Update study to assign form 2 to visit 0 as well
+      const updatedVisits = currentStudy.visits.map((v, idx) =>
+        idx === 0
+          ? {
+              ...v,
+              assignedFormIds: [
+                ...v.assignedFormIds,
+                normalizedStudy.forms[2].id,
+              ],
+            }
+          : v
+      );
+      currentStudy = { ...currentStudy, visits: updatedVisits };
+
+      await act(async () => {
+        root.render(
+          <StudySpine
+            {...defaultProps}
+            study={currentStudy}
+            activeTab="spine"
+          />
+        );
+      });
+
+      // Shows 3 forms immediately without reload
+      expect(container.textContent).toContain("3 forms");
+    });
+
+    it("preserves drag attributes on the form card for mouse users", async () => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(<StudySpine {...defaultProps} activeTab="forms" />);
+      });
+
+      const formRow = container.querySelector(
+        '[role="button"][aria-label^="Select form"]'
+      ) as HTMLElement;
+
+      expect(formRow.getAttribute("draggable")).toBe("true");
+    });
+  });
 });

@@ -184,10 +184,57 @@ describe("Synchronous Initial Term Swap Helper (resolveTermSwap)", () => {
     expect(swapped).toContain('>AST "Compiler"<');
   });
 
+  it("should escape angle brackets when unescaping attributes to prevent script or image tag injection", () => {
+    const exploitHtml = `<p>Clinical study narrative <span data-term="&lt;img src=x onerror=window.__xss_marker=1//&gt;">GxP</span> methodology.</p>`;
+    const swapped = resolveTermSwap(exploitHtml, true);
+    expect(swapped).not.toContain("<img");
+    expect(swapped).toContain(
+      "&lt;img src=x onerror=window.__xss_marker=1//&gt;"
+    );
+
+    // Partial tag without closing bracket
+    const partialExploitHtml = `<p>Clinical study narrative <span data-term="&lt;img src=x onerror=window.__xss_marker=1//">GxP</span> methodology.</p>`;
+    const partialSwapped = resolveTermSwap(partialExploitHtml, true);
+    expect(partialSwapped).not.toContain("<img");
+    expect(partialSwapped).toContain(
+      "&lt;img src=x onerror=window.__xss_marker=1//"
+    );
+  });
+
+  it("should escape raw angle brackets in data-term to prevent tag injection", () => {
+    const maliciousHtml = `<span data-term="<script>alert(1)</script>">GxP</span>`;
+    const swapped = resolveTermSwap(maliciousHtml, true);
+    expect(swapped).toContain(">&lt;script&gt;alert(1)&lt;/script&gt;<");
+    expect(swapped).not.toContain("><script>");
+
+    // Encoded script tag attribute
+    const encodedScriptHtml = `<span data-term="&lt;script&gt;alert(1)&lt;/script&gt;">GxP</span>`;
+    const encodedSwapped = resolveTermSwap(encodedScriptHtml, true);
+    expect(encodedSwapped).not.toContain("<script");
+    expect(encodedSwapped).toContain(">&lt;script&gt;alert(1)&lt;/script&gt;<");
+  });
+
+  it("should safely handle attributes containing quotes and ampersands without creating HTML elements", () => {
+    const html = `<span data-term="Research &amp; Development 'Core' &quot;Lead&quot;">R&amp;D</span>`;
+    const swapped = resolveTermSwap(html, true);
+    expect(swapped).toContain(">Research & Development 'Core' \"Lead\"<");
+  });
+
   it("should handle empty strings or HTML without terminology tags gracefully", () => {
     expect(resolveTermSwap("", true)).toBe("");
     const plainHtml = "<p>Standard paragraph without terms.</p>";
     expect(resolveTermSwap(plainHtml, true)).toBe(plainHtml);
+  });
+
+  it("should fall back gracefully to original tag when data-term is empty or whitespace-only", () => {
+    const emptyTermHtml = `<span data-term="">GxP</span>`;
+    expect(resolveTermSwap(emptyTermHtml, true)).toBe(emptyTermHtml);
+
+    const whitespaceTermHtml = `<span data-term="   ">GxP</span>`;
+    expect(resolveTermSwap(whitespaceTermHtml, true)).toBe(whitespaceTermHtml);
+
+    const malformedHtml = `<span>No data term</span>`;
+    expect(resolveTermSwap(malformedHtml, true)).toBe(malformedHtml);
   });
 });
 

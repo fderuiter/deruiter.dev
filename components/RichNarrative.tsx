@@ -47,21 +47,24 @@ export function resolveTermSwap(html: string, simplified: boolean): string {
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .replace(/&apos;/g, "'")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
       .replace(/&amp;/g, "&");
   };
 
-  const termTagRegex = /<(span|abbr)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+  const escapeAngleBrackets = (str: string): string => {
+    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  };
+
+  const termTagRegex =
+    /<(span|abbr)\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/\1>/gi;
 
   return html.replace(termTagRegex, (fullTag, tagName, attrs) => {
-    const termMatch = /data-term=["']([^"']*)["']/i.exec(attrs);
-    if (!termMatch || !termMatch[1]) {
+    const termMatch = /data-term=(?:"([^"]*)"|'([^']*)')/i.exec(attrs);
+    const rawTerm = termMatch ? (termMatch[1] ?? termMatch[2]) : null;
+    if (!rawTerm || !rawTerm.trim()) {
       return fullTag;
     }
 
-    const rawTerm = termMatch[1];
-    const visibleText = unescapeAttr(rawTerm);
+    const visibleText = escapeAngleBrackets(unescapeAttr(rawTerm));
     return `<${tagName}${attrs}>${visibleText}</${tagName}>`;
   });
 }

@@ -3118,3 +3118,15 @@ describe("TypeDoc comment Markdown regression (#3791)", () => {
     expect(read("lib/dx/doctor.ts")).not.toContain("` (AGENTS.md section N)`");
   });
 });
+
+describe("RichNarrative terminology HTML entity escaping regression", () => {
+  it("escapes angle brackets when substituting terms to prevent tag injection", async () => {
+    const { resolveTermSwap } = await import("@/components/RichNarrative");
+    const payload = `<p>Clinical study narrative <span data-term="&lt;img src=x onerror=window.__xss_marker=1//&gt;">GxP</span> methodology.</p>`;
+    const resolved = resolveTermSwap(payload, true);
+    expect(resolved).not.toContain("<img");
+    expect(resolved).toContain(
+      "&lt;img src=x onerror=window.__xss_marker=1//&gt;"
+    );
+  });
+});

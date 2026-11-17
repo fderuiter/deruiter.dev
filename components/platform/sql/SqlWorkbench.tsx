@@ -291,6 +291,9 @@ export function SqlWorkbench({
   const [engineState, setEngineState] = useState<EngineState>({
     status: "idle",
   });
+  const [lastFailureMessage, setLastFailureMessage] = useState<string | null>(
+    null
+  );
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const engine = useRef<SqlEngine | null>(null);
@@ -329,12 +332,15 @@ export function SqlWorkbench({
       }
       engine.current = started;
       setEngineState({ status: "ready", version: started.version });
+      setLastFailureMessage(null);
     } catch (error) {
       if (mounted.current) {
+        const message = error instanceof Error ? error.message : String(error);
         setEngineState({
           status: "failed",
-          message: error instanceof Error ? error.message : String(error),
+          message,
         });
+        setLastFailureMessage(message);
       }
     }
   };
@@ -343,20 +349,18 @@ export function SqlWorkbench({
     const current = engine.current;
     if (!current || running) return;
     const text = sql.trim().replace(/;\s*$/, "");
+    const findings = checkWorkbenchSql(text);
+    if (findings.length > 0) {
+      setOutcome({
+        kind: "failed",
+        failure: "refused",
+        message: findings.map((finding) => finding.message).join(" "),
+      });
+      return;
+    }
     setRunning(true);
     try {
       if (mode === "explain") {
-        // Checked as typed, so a refusal names the visitor's SQL rather
-        // than the EXPLAIN around it.
-        const findings = checkWorkbenchSql(text);
-        if (findings.length > 0) {
-          setOutcome({
-            kind: "failed",
-            failure: "refused",
-            message: findings.map((finding) => finding.message).join(" "),
-          });
-          return;
-        }
         const result = await current.run(`EXPLAIN ${text}`);
         if (mounted.current)
           setOutcome({ kind: "plan", plan: planText(result) });
@@ -367,10 +371,13 @@ export function SqlWorkbench({
     } catch (error) {
       if (!mounted.current) return;
       const failed = failureOf(error);
-      setOutcome(failed);
       if (failed.kind === "failed" && failed.failure === "stopped") {
         engine.current = null;
-        setEngineState({ status: "idle" });
+        setEngineState({ status: "failed", message: failed.message });
+        setLastFailureMessage(failed.message);
+        setOutcome(null);
+      } else {
+        setOutcome(failed);
       }
     } finally {
       if (mounted.current) setRunning(false);
@@ -436,12 +443,16 @@ export function SqlWorkbench({
                     : ""}
                 </p>
               </div>
-              {engineState.status === "failed" && (
+              {(engineState.status === "failed" ||
+                (engineState.status === "starting" &&
+                  lastFailureMessage !== null)) && (
                 <p
                   role="alert"
                   className="mt-3 border-l-2 border-red-500 pl-3 text-sm text-red-200"
                 >
-                  {engineState.message}
+                  {engineState.status === "failed"
+                    ? engineState.message
+                    : lastFailureMessage}
                 </p>
               )}
             </>
@@ -591,7 +602,7 @@ export function SqlWorkbench({
                 ? resultSummary(outcome.result)
                 : outcome?.kind === "plan"
                   ? "The plan DuckDB would run, without running it."
-                  : ""}
+                  : "Run a query to see rows here, or show the query plan to inspect how DuckDB will execute it."}
           </p>
           {outcome?.kind === "failed" && (
             <p
@@ -620,13 +631,6 @@ export function SqlWorkbench({
             >
               {outcome.plan}
             </pre>
-          )}
-          {!outcome && !running && (
-            <p className="mt-2 text-sm text-slate-400">
-              {ready
-                ? "Run a query to see its rows here."
-                : "Rows appear here once the engine is running."}
-            </p>
           )}
         </section>
       </div>

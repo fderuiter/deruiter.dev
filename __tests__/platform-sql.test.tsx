@@ -170,6 +170,11 @@ describe("before the engine starts", () => {
         "Start the engine to run queries. You can read and edit the SQL now."
       )
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Run a query to see rows here, or show the query plan to inspect how DuckDB will execute it."
+      )
+    ).toBeTruthy();
     expect(await violations(container)).toEqual([]);
   });
 
@@ -444,9 +449,33 @@ describe("running queries", () => {
     );
     expect(screen.getByRole("alert").textContent).toMatch(/shut it down/);
     expect(
-      screen.getByRole("button", { name: "Start SQL engine" })
+      screen.getByRole("button", { name: "Try starting the engine again" })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Run a query to see rows here, or show the query plan to inspect how DuckDB will execute it."
+      )
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Stop the query" })).toBeNull();
+
+    // Active error alerts stay visible while restarting the engine after a worker failure
+    fireEvent.click(
+      screen.getByRole("button", { name: "Try starting the engine again" })
+    );
+    expect(screen.getByRole("alert").textContent).toMatch(/shut it down/);
+  });
+
+  it("handles empty query text gracefully", async () => {
+    renderWorkbench();
+    await startEngine();
+    fireEvent.change(editor(), { target: { value: "   " } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Run" }));
+    });
+    expect(engine.run).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe(
+      "There is no query to run."
+    );
   });
 });
 

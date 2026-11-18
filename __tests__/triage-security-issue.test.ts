@@ -259,7 +259,7 @@ describe("Triage Security Issue Script", () => {
       );
     });
 
-    it("creates a new issue with governance labels when no existing issue is open", async () => {
+    it("creates one issue with governance labels and all affected audit entries", async () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
@@ -269,12 +269,21 @@ describe("Triage Security Issue Script", () => {
           stdout: JSON.stringify({
             auditReportVersion: 2,
             vulnerabilities: {
+              "tool-a": {
+                severity: "moderate",
+                via: ["bad-lib"],
+              },
+              "tool-b": {
+                severity: "high",
+                via: ["tool-a", "bad-lib"],
+              },
               "bad-lib": {
                 name: "bad-lib",
                 severity: "high",
                 via: [
                   {
                     source: "GHSA-new-issue-123",
+                    dependency: "bad-lib",
                     title: "High Flaw",
                     url: "https://example.com/high",
                     range: "<2.0.0",
@@ -326,6 +335,10 @@ describe("Triage Security Issue Script", () => {
       expect(postBody.labels).toContain("automated-alert");
       expect(postBody.title).toContain("scheduled-vulnerability-alert");
       expect(postBody.title.toLowerCase()).toContain("ghsa-new-issue-123");
+      expect(postBody.title).toContain("(bad-lib)");
+      expect(postBody.body).toContain(
+        "Affected audit entries:** bad-lib, tool-a, tool-b"
+      );
       expect(postBody.body).toContain("### Acceptance");
     });
 

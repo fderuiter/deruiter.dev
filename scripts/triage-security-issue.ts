@@ -13,6 +13,7 @@ export interface SecurityTriageItem {
   type: "unhandled" | "expired_rule" | "invalid_rule" | "expiring_rule";
   advisoryId: string;
   pkgName?: string;
+  affectedPackages?: string[];
   severity: "critical" | "high" | "moderate";
   title?: string;
   url?: string;
@@ -123,6 +124,10 @@ export function collectTriageItems(
     }
   }
 
+  const unhandled = new Map<
+    string,
+    SecurityTriageItem & { affectedPackages: string[] }
+  >();
   if (auditJson && auditJson.vulnerabilities) {
     for (const [pkgName, info] of Object.entries(auditJson.vulnerabilities)) {
       const vuln = info as VulnerabilityInfo;
@@ -154,10 +159,26 @@ export function collectTriageItems(
                     ? "high"
                     : "moderate";
 
-              items.push({
+              const advisoryPackage = adv.dependency || adv.name || pkgName;
+              const key = JSON.stringify([advId, advisoryPackage]);
+              const previous = unhandled.get(key);
+              if (previous) {
+                if (!previous.affectedPackages.includes(pkgName)) {
+                  previous.affectedPackages.push(pkgName);
+                }
+                if (
+                  getPriorityForSeverity(severity) <
+                  getPriorityForSeverity(previous.severity)
+                ) {
+                  previous.severity = severity;
+                }
+                continue;
+              }
+              unhandled.set(key, {
                 type: "unhandled",
                 advisoryId: advId,
-                pkgName,
+                pkgName: advisoryPackage,
+                affectedPackages: [pkgName],
                 severity,
                 title: adv.title,
                 url: adv.url,
@@ -169,6 +190,8 @@ export function collectTriageItems(
       }
     }
   }
+
+  items.push(...unhandled.values());
 
   // Deduplicate items by advisoryId and type
   const seen = new Set<string>();
@@ -502,6 +525,10 @@ export async function triageSecurityIssues(options?: {
         rawBodyLines.push("### Unhandled Advisory Details");
         rawBodyLines.push(`- **Title:** ${item.title || "N/A"}`);
         rawBodyLines.push(`- **Vulnerable Range:** \`${item.range || "N/A"}\``);
+        if (item.affectedPackages && item.affectedPackages.length > 1) {
+          const packages = [...item.affectedPackages].sort().join(", ");
+          rawBodyLines.push(`- **Affected audit entries:** ${packages}`);
+        }
         if (item.url) {
           rawBodyLines.push(`- **Reference:** [${item.url}](${item.url})`);
         }

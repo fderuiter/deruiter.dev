@@ -108,12 +108,14 @@ The `overrides` block in `package.json` pins transitive dependencies that an ups
 
 ### Current pins
 
-Re-audited on 2026-10-31 (#3671) by the method above. Eight global pins added nothing once removed, because their parents now resolve fixed releases by themselves, so they were dropped: `deepmerge-ts`, `mysql2`, `lodash-es`, `source-map-js`, `sharp`, `shell-quote` and `fast-uri` resolve to the same versions without a pin, and without the `browserslist` pin `@serwist/next` resolves its own browserslist 4.29.5. The rest were scoped to the parents that pull the vulnerable copies. With every pin in place, `npm audit` reports no advisories except the one waived below.
+Re-audited on 2026-10-31 (#3671) by the method above. Eight global pins added nothing once removed, because their parents now resolve fixed releases by themselves, so they were dropped: `deepmerge-ts`, `mysql2`, `lodash-es`, `source-map-js`, `sharp`, `shell-quote` and `fast-uri` resolve to the same versions without a pin, and without the `browserslist` pin `@serwist/next` resolves its own browserslist 4.29.5. The rest were scoped to the parents that pull the vulnerable copies.
+
+Serwist 9.5.15 declares supported Zod 4.6.7 and glob 14.0.6 ranges in
+its Next.js adapter and build package. The two `@serwist/next` overrides
+were removed after verifying the lockfile and rechecking the audit.
 
 | Override                                           | Pinned to  | Pulled in by                                       | Resolves to without the pin | Effect of removing it                                         | Drop it when                                                                                  |
 | -------------------------------------------------- | ---------- | -------------------------------------------------- | --------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `@serwist/next > zod`                              | `$zod`     | `@serwist/next`, `@serwist/build` and its plugins  | 4.6.5                       | 1 new high advisory (GHSA-mrhx-c7xc-m3w5)                     | Serwist depends on a zod release the advisory lists as fixed                                  |
-| `@serwist/next > glob`                             | `^14.0.2`  | `@serwist/build`, which pins glob 13.0.6           | 13.0.6                      | 1 new moderate advisory (GHSA-3g3m-2fjr-6pw4)                 | `@serwist/build` depends on glob 14.0.2 or later (the Serwist 10 previews pin 11.0.3)         |
 | `@sentry/bundler-plugins > glob`                   | `^14.0.2`  | `@sentry/nextjs` through `@sentry/bundler-plugins` | 13.0.6                      | 1 new moderate advisory (GHSA-3g3m-2fjr-6pw4)                 | `@sentry/bundler-plugins` depends on glob 14.0.2 or later                                     |
 | `typed-rest-client > qs`                           | `^6.16.1`  | Stryker through `typed-rest-client` 2.3            | 6.15.1                      | 4 new moderate advisories                                     | Stryker depends on `typed-rest-client` 3, which requires qs `^6.16.0`                         |
 | `isomorphic-dompurify > jsdom`                     | `26.1.0`   | `isomorphic-dompurify`                             | a second copy at 30.1.3     | no new advisories; kept for runtime compatibility (see below) | a deployed check of the routes that sanitize HTML passes on jsdom 27 or later                 |

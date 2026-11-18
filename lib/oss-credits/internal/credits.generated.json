@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1266,
+    "total": 1267,
     "runtime": 567,
-    "tooling": 699,
+    "tooling": 700,
     "direct": 80
   },
   "packages": [
@@ -1671,7 +1671,7 @@
     },
     {
       "name": "@isaacs/nonrecursive-glob-match",
-      "version": "1.0.3",
+      "version": "1.1.0",
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
@@ -2891,7 +2891,7 @@
     },
     {
       "name": "@serwist/build",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2900,7 +2900,7 @@
     },
     {
       "name": "@serwist/next",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2911,7 +2911,7 @@
     },
     {
       "name": "@serwist/sw",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2922,7 +2922,7 @@
     },
     {
       "name": "@serwist/utils",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2931,7 +2931,7 @@
     },
     {
       "name": "@serwist/webpack-plugin",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2940,7 +2940,7 @@
     },
     {
       "name": "@serwist/window",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -6981,7 +6981,7 @@
     },
     {
       "name": "glob",
-      "version": "14.0.3",
+      "version": "14.0.6",
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
@@ -8864,6 +8864,15 @@
       "name": "minimatch",
       "version": "11.0.3",
       "license": "BlueOak-1.0.0",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/isaacs/minimatch",
+      "repository": "https://github.com/isaacs/minimatch"
+    },
+    {
+      "name": "minimatch",
+      "version": "11.0.9",
+      "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/isaacs/minimatch",
@@ -10208,7 +10217,7 @@
     },
     {
       "name": "serwist",
-      "version": "9.5.13",
+      "version": "9.5.15",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,

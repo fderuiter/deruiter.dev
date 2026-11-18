@@ -148,17 +148,17 @@ LICENSE TEXT 1 of 88, applies to 173 package(s):
     Copyright (c) 2019 Functional Software, Inc. dba Sentry
 - @sentry/vercel-edge@11.10.0 (MIT)
     Copyright (c) 2023 Functional Software, Inc. dba Sentry
-- @serwist/build@9.5.13 (MIT)
+- @serwist/build@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
-- @serwist/next@9.5.13 (MIT)
+- @serwist/next@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
-- @serwist/sw@9.5.13 (MIT)
+- @serwist/sw@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
-- @serwist/utils@9.5.13 (MIT)
+- @serwist/utils@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
-- @serwist/webpack-plugin@9.5.13 (MIT)
+- @serwist/webpack-plugin@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
-- @serwist/window@9.5.13 (MIT)
+- @serwist/window@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
 - @standard-schema/spec@1.1.0 (MIT)
     Copyright (c) 2024 Colin McDonnell
@@ -323,7 +323,7 @@ LICENSE TEXT 1 of 88, applies to 173 package(s):
     Copyright (c) Meta Platforms, Inc. and affiliates.
 - server-only@0.0.1 (MIT)
     Copyright (c) server-only package authors (the package publishes no copyright line)
-- serwist@9.5.13 (MIT)
+- serwist@9.5.15 (MIT)
     Copyright (c) 2018-2023 Google LLC, 2019-2023 ShadowWalker w@weiw.io https://weiw.io, 2020-2023 Anthony Fu <https://github.com/antfu>, 2023-PRESENT Serwist
 - shebang-command@2.0.0 (MIT)
     Copyright (c) Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
@@ -2692,7 +2692,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 LICENSE TEXT 14 of 88, applies to 4 package(s):
 
-- @isaacs/nonrecursive-glob-match@1.0.3 (BlueOak-1.0.0)
+- @isaacs/nonrecursive-glob-match@1.1.0 (BlueOak-1.0.0)
     copyright in it.
 - lru-cache@11.5.3 (BlueOak-1.0.0)
     copyright in it.
@@ -4059,7 +4059,7 @@ IN THE SOFTWARE.
 ==============================================================================
 LICENSE TEXT 34 of 88, applies to 1 package(s):
 
-- minimatch@11.0.3 (BlueOak-1.0.0)
+- minimatch@11.0.9 (BlueOak-1.0.0)
     copyright in it.
 
 # Blue Oak Model License
@@ -6698,7 +6698,7 @@ The above copyright notice and this permission notice shall be included in all c
 ==============================================================================
 LICENSE TEXT 42 of 88, applies to 1 package(s):
 
-- glob@14.0.3 (BlueOak-1.0.0)
+- glob@14.0.6 (BlueOak-1.0.0)
     copyright in it.
 
 All packages under `src/` are licensed according to the terms in

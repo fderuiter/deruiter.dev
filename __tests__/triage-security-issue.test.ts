@@ -259,6 +259,24 @@ describe("Triage Security Issue Script", () => {
       );
     });
 
+    it.each([
+      ["registry error", JSON.stringify({ error: { code: "E503" } })],
+      ["malformed output", "unexpected response"],
+      ["nonzero empty report", JSON.stringify({ vulnerabilities: {} })],
+    ])("leaves GitHub untouched on %s", async (_scenario, stdout) => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({ status: 1, stdout })
+      );
+
+      await expect(
+        triageSecurityIssues({
+          token: "example_dev_token",
+          repo: "example/repo",
+        })
+      ).rejects.toThrow("npm audit failed or returned an invalid report");
+      expect(globalFetchSpy).not.toHaveBeenCalled();
+    });
+
     it("creates one issue with governance labels and all affected audit entries", async () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
@@ -506,14 +524,17 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Mock rate limit 403 on issue search
-      globalFetchSpy.mockResolvedValueOnce(
-        fromPartial<Response>({
-          ok: false,
-          status: 403,
-          statusText: "Forbidden (Rate Limit Exceeded)",
-        })
-      );
+      globalFetchSpy
+        .mockResolvedValue(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: false,
+            status: 403,
+            statusText: "Forbidden (Rate Limit Exceeded)",
+          })
+        );
 
       const result = await triageSecurityIssues({
         token: "fake-token",

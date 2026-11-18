@@ -30,6 +30,7 @@ import {
   checkSetStateInEffectCeiling,
   findSetStateInEffectSuppressions,
   SET_STATE_IN_EFFECT_CEILING,
+  checkVercelBuildCommands,
 } from "@/lib/dx/doctor";
 import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
@@ -42,6 +43,43 @@ describe("DX Invariant Doctor Engine", () => {
 
   afterEach(() => {
     fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  describe("checkVercelBuildCommands", () => {
+    const commands: Record<string, string> = {
+      installCommand: "npm ci",
+      buildCommand: "npm run build",
+      ignoreCommand: "node scripts/vercel-ignore-build.js",
+    };
+
+    it("passes when all commands are declared", () => {
+      fs.writeFileSync(
+        path.join(tempDir, "vercel.json"),
+        JSON.stringify(commands)
+      );
+      expect(checkVercelBuildCommands(tempDir).status).toBe("pass");
+    });
+
+    it.each(Object.keys(commands))("fails without %s", (key) => {
+      const config = { ...commands };
+      delete config[key];
+      fs.writeFileSync(
+        path.join(tempDir, "vercel.json"),
+        JSON.stringify(config)
+      );
+      expect(checkVercelBuildCommands(tempDir)).toMatchObject({
+        status: "fail",
+        message: expect.stringContaining(key),
+      });
+    });
+
+    it("fails when a command is blank", () => {
+      fs.writeFileSync(
+        path.join(tempDir, "vercel.json"),
+        JSON.stringify({ ...commands, buildCommand: "  " })
+      );
+      expect(checkVercelBuildCommands(tempDir).status).toBe("fail");
+    });
   });
 
   describe("checkRouteIndexing", () => {

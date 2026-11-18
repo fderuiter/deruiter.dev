@@ -225,6 +225,8 @@ curl -X POST http://localhost:3000/api/telemetry \
   train fires a Deploy Hook for Production; Vercel Dashboard → Deployments →
   Create Deployment is the break-glass path
   ([ADR 0063](../../adr/0063-weekly-release-train.md)).
+- **Build settings**: use the [Vercel dashboard settings checklist](vercel-dashboard-settings.md)
+  to compare the dashboard settings with the repository configuration.
 - **Cron**: `vercel.json` schedules `GET /api/cron/maintenance` daily
   (`0 0 * * *`). Vercel signs every cron invocation with an
   `Authorization: Bearer <CRON_SECRET>` header matching the `CRON_SECRET`

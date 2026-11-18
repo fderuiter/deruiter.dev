@@ -1,5 +1,7 @@
 # Check Vercel dashboard settings
 
+## Build and deployment settings
+
 Compare the portfolio project's Build and Deployment settings with
 [`vercel.json`](../../vercel.json) before an intentional configuration change.
 The project file supplies the install, build and ignore commands for the
@@ -17,6 +19,8 @@ review the commands.
 | Node.js version | Dashboard | 24.x, within the range in `package.json` |
 | Build heap limit | Repository | 3584 MB, set by `scripts/build.js` |
 | Automatic Git deployments | Repository | Disabled through `git.deploymentEnabled` |
+
+## Verification
 
 Run `npm run doctor` and look for **Vercel Build Commands**. This check reads
 the repository file. Inspect the dashboard directly to confirm any overrides

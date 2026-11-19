@@ -22,6 +22,9 @@ lookup rather than sequential reading.
 - [Clinical Data Platform data contracts](clinical-platform-data-contracts.md),
   the generated catalog of data products, their owners, classifications,
   service levels, retention and versioned contracts.
+- [Clinical Study Studio randomization rebuild traceability](randomization-rebuild.md),
+  the 155-requirement traceability register, compatibility policy, and
+  clean-room provenance inventory for `lib/randomization`.
 
 ## Operations and Release Evidence
 

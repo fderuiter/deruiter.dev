@@ -166,6 +166,7 @@ export default defineConfig({
         "lib/arcade/manuals/index.ts",
         "lib/patrol/types.ts",
         "lib/patrol/index.ts",
+        "lib/randomization/index.ts",
       ],
       thresholds: coverageThresholdsDeferred
         ? undefined

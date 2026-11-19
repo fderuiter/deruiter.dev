@@ -414,18 +414,19 @@ describe("randomization primitives (#3999)", () => {
       expect(mutatedDigest.hex).not.toBe(artifactT1.digest.hex);
 
       // Editing caller draft objects after building artifact cannot mutate the artifact
-      const mutableDraft = JSON.parse(JSON.stringify(request)) as {
-        name: string;
-        arms: { label: string }[];
+      const mutableArms = request.arms.map((arm) => ({ ...arm }));
+      const mutableDraft = {
+        ...request,
+        arms: mutableArms,
       };
       const frozen = buildImmutableArtifact({
-        request: mutableDraft as unknown as BlockRandomizationRequest,
+        request: mutableDraft,
         reducedRatios: [1, 1],
         rows,
         now: () => new Date("2026-11-19T12:00:00.000Z"),
       });
       mutableDraft.name = "Mutated Draft Name";
-      mutableDraft.arms[0].label = "Mutated Arm";
+      mutableArms[0].label = "Mutated Arm";
       expect(frozen.request.name).toBe("Integrity Test Plan");
       expect(frozen.request.arms[0].label).toBe("Active");
       expect(Object.isFrozen(frozen)).toBe(true);

@@ -779,6 +779,17 @@ describe("CI Execution Policy", () => {
       expect(field(jobBlock("security-gate"), "if")).toBeUndefined();
     });
 
+    it("security-gate scopes only the live npm audit step on pull_request while keeping licenses and secrets unconditional", () => {
+      const block = jobBlock("security-gate");
+      expect(needsList(block)).toEqual(["changes"]);
+      expect(block).toContain(
+        "if: github.event_name != 'pull_request' || needs.changes.outputs.run_security_audit == 'true'"
+      );
+      expect(block).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
+      expect(block).toContain("run: npm run audit:licenses");
+      expect(block).toContain("run: npm run audit:secrets");
+    });
+
     it("no gate runs the build+Playwright heavy path on a bare push; only the non-gating cache warm builds", () => {
       const heavyOnPush = jobNames.filter((name) => {
         if (name === "cross-device-matrix") return false;

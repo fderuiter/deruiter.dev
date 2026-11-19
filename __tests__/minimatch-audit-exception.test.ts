@@ -52,7 +52,10 @@ describe("minimatch exception lifecycle (#3667)", () => {
   for (const rule of exceptions) {
     const expiry = Date.parse(rule.expiresAt);
 
-    function run(daysRemaining: number, report: AuditReport): boolean {
+    async function run(
+      daysRemaining: number,
+      report: AuditReport
+    ): Promise<boolean> {
       vi.spyOn(console, "log").mockImplementation(() => {});
       vi.spyOn(console, "warn").mockImplementation(() => {});
       vi.spyOn(console, "error").mockImplementation(() => {});
@@ -66,7 +69,7 @@ describe("minimatch exception lifecycle (#3667)", () => {
         signal: null,
       });
       try {
-        return runSecurityAudit({
+        return await runSecurityAudit({
           now: new Date(expiry - daysRemaining * day),
           severity: "moderate",
           failOnWarning: true,
@@ -98,38 +101,38 @@ describe("minimatch exception lifecycle (#3667)", () => {
       };
     }
 
-    it("passes the strict gate for the waived advisory and its TypeDoc dependents with 15 days left", () => {
-      expect(run(15, report())).toBe(true);
+    it("passes the strict gate for the waived advisory and its TypeDoc dependents with 15 days left", async () => {
+      await expect(run(15, report())).resolves.toBe(true);
     });
 
     it.each([14, 0, -1])(
       "fails the strict gate with %i days left, including without advisories",
-      (daysRemaining) => {
-        expect(() => run(daysRemaining, report())).toThrow(
+      async (daysRemaining) => {
+        await expect(run(daysRemaining, report())).rejects.toThrow(
           "Security audit failed"
         );
-        expect(() =>
+        await expect(
           run(daysRemaining, { auditReportVersion: 2, vulnerabilities: {} })
-        ).toThrow("Security audit failed");
+        ).rejects.toThrow("Security audit failed");
       }
     );
 
     it.each(["high", "critical"])(
       "never suppresses the same advisory escalated to %s",
-      (severity) => {
-        expect(() => run(15, report(severity))).toThrow(
+      async (severity) => {
+        await expect(run(15, report(severity))).rejects.toThrow(
           "Security audit failed"
         );
       }
     );
 
-    it("does not suppress a different advisory or package", () => {
-      expect(() => run(15, report("moderate", "GHSA-aaaa-bbbb-cccc"))).toThrow(
-        "Security audit failed"
-      );
-      expect(() =>
+    it("does not suppress a different advisory or package", async () => {
+      await expect(
+        run(15, report("moderate", "GHSA-aaaa-bbbb-cccc"))
+      ).rejects.toThrow("Security audit failed");
+      await expect(
         run(15, report("moderate", advisory, "other-package"))
-      ).toThrow("Security audit failed");
+      ).rejects.toThrow("Security audit failed");
     });
   }
 });

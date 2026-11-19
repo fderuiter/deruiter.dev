@@ -131,6 +131,7 @@ export function isBotBranch(headRef) {
  * @property {boolean} draft
  * @property {boolean} runUnit
  * @property {boolean} runBrowser
+ * @property {boolean} runSecurityAudit
  * @property {boolean} strykerForce
  * @property {string} arcadeDeviceGrep `--grep` for the arcade device specs
  *   `device-gate` runs; empty runs none.
@@ -144,6 +145,23 @@ const STRYKER_INPUTS = [
   "package.json",
   "package-lock.json",
 ];
+
+/**
+ * Files whose change requires running the live npm vulnerability audit on a PR.
+ * Unrelated PRs still run license and secret-history checks; full lockfile
+ * vulnerability auditing always runs on push to `main` and daily in
+ * `scheduled-security-audit.yml`.
+ */
+export const SECURITY_AUDIT_INPUTS = Object.freeze([
+  "package.json",
+  "package-lock.json",
+  "config/security-audit-ignore.json",
+  "scripts/security-audit.ts",
+  "scripts/triage-security-issue.ts",
+  "scripts/ci-run-policy.mjs",
+  ".github/workflows/ci.yml",
+  ".github/workflows/scheduled-security-audit.yml",
+]);
 
 /**
  * Arcade games by the display name their device specs' `describe` titles
@@ -240,6 +258,7 @@ export function computeRunPolicy(input) {
       draft: false,
       runUnit: true,
       runBrowser: false,
+      runSecurityAudit: true,
       strykerForce: false,
       arcadeDeviceGrep: "",
       reason: `${eventName}: unit and mutation gates run; browser gates are pull_request only.`,
@@ -261,6 +280,10 @@ export function computeRunPolicy(input) {
   const quickOnly = (botPr && !promoted) || draft;
   const runUnit = !quickOnly;
   const runBrowser = !quickOnly && appChanged;
+  const runSecurityAudit =
+    !Array.isArray(files) ||
+    files.length === 0 ||
+    files.some((file) => SECURITY_AUDIT_INPUTS.includes(file));
   const strykerForce =
     !Array.isArray(files) ||
     files.some((file) => STRYKER_INPUTS.includes(file));
@@ -284,6 +307,7 @@ export function computeRunPolicy(input) {
     draft,
     runUnit,
     runBrowser,
+    runSecurityAudit,
     strykerForce,
     arcadeDeviceGrep: runBrowser ? arcadeDeviceGrep(files) : "",
     reason,
@@ -358,6 +382,7 @@ export function formatOutputs(policy) {
     `draft=${flag(policy.draft)}`,
     `run_unit=${flag(policy.runUnit)}`,
     `run_browser=${flag(policy.runBrowser)}`,
+    `run_security_audit=${flag(policy.runSecurityAudit)}`,
     `stryker_force=${flag(policy.strykerForce)}`,
     `arcade_device_grep=${policy.arcadeDeviceGrep}`,
     "",

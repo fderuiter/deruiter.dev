@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-import { spawnSync } from "child_process";
 import {
   loadIgnoreList,
   getAdvisoryIdentifiers,
   collectAdvisoriesForVulnerability,
   matchAdvisoryRule,
   isPretextRelated,
+  readNpmAuditReport,
 } from "./security-audit";
-import type { AuditReport, VulnerabilityInfo } from "./security-audit";
 
 export interface SecurityTriageItem {
   type: "unhandled" | "expired_rule" | "invalid_rule" | "expiring_rule";
   advisoryId: string;
   pkgName?: string;
+  affectedPackages?: string[];
   severity: "critical" | "high" | "moderate";
   title?: string;
   url?: string;
@@ -85,90 +85,79 @@ export function collectTriageItems(
     }
   }
 
-  const auditResult = spawnSync("npm", ["audit", "--json"], {
-    encoding: "utf8",
-    maxBuffer: 20 * 1024 * 1024,
-    shell: true,
-  });
-
-  let auditJson: AuditReport | null = null;
-  const rawOutput = (auditResult.stdout || "").trim();
-  const rawStderr = (auditResult.stderr || "").trim();
-
-  if (rawOutput) {
-    try {
-      const firstBrace = rawOutput.indexOf("{");
-      const lastBrace = rawOutput.lastIndexOf("}");
-      const jsonStr =
-        firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
-          ? rawOutput.slice(firstBrace, lastBrace + 1)
-          : rawOutput;
-      auditJson = JSON.parse(jsonStr) as AuditReport;
-    } catch (_e) {
-      // Failed to parse stdout as JSON
-    }
+  const vulnerabilities = readNpmAuditReport();
+  if (!vulnerabilities) {
+    throw new Error(
+      "npm audit failed or returned an invalid report. GitHub issues were left untouched."
+    );
   }
 
-  if (!auditJson && rawStderr && rawStderr.includes("{")) {
-    try {
-      const firstBrace = rawStderr.indexOf("{");
-      const lastBrace = rawStderr.lastIndexOf("}");
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        auditJson = JSON.parse(
-          rawStderr.slice(firstBrace, lastBrace + 1)
-        ) as AuditReport;
-      }
-    } catch (_e) {
-      // Failed to parse stderr as JSON
-    }
-  }
+  const unhandled = new Map<
+    string,
+    SecurityTriageItem & { affectedPackages: string[] }
+  >();
+  for (const [pkgName, info] of Object.entries(vulnerabilities)) {
+    const vuln = info;
+    const rawSeverity = (vuln.severity || "").toLowerCase();
 
-  if (auditJson && auditJson.vulnerabilities) {
-    for (const [pkgName, info] of Object.entries(auditJson.vulnerabilities)) {
-      const vuln = info as VulnerabilityInfo;
-      const rawSeverity = (vuln.severity || "").toLowerCase();
+    if (
+      rawSeverity === "critical" ||
+      rawSeverity === "high" ||
+      rawSeverity === "moderate"
+    ) {
+      if (!isPretextRelated(pkgName, vuln)) {
+        const advisories = collectAdvisoriesForVulnerability(
+          pkgName,
+          vulnerabilities
+        );
 
-      if (
-        rawSeverity === "critical" ||
-        rawSeverity === "high" ||
-        rawSeverity === "moderate"
-      ) {
-        if (!isPretextRelated(pkgName, vuln)) {
-          const advisories = collectAdvisoriesForVulnerability(
-            pkgName,
-            auditJson.vulnerabilities
+        for (const adv of advisories) {
+          const matchingRule = ignoreRules.find((r) =>
+            matchAdvisoryRule(r, adv, pkgName)
           );
 
-          for (const adv of advisories) {
-            const matchingRule = ignoreRules.find((r) =>
-              matchAdvisoryRule(r, adv, pkgName)
-            );
+          if (!matchingRule) {
+            const advId =
+              getAdvisoryIdentifiers(adv)[0] || adv.title || "Unknown";
+            const severity: "critical" | "high" | "moderate" =
+              rawSeverity === "critical"
+                ? "critical"
+                : rawSeverity === "high"
+                  ? "high"
+                  : "moderate";
 
-            if (!matchingRule) {
-              const advId =
-                getAdvisoryIdentifiers(adv)[0] || adv.title || "Unknown";
-              const severity: "critical" | "high" | "moderate" =
-                rawSeverity === "critical"
-                  ? "critical"
-                  : rawSeverity === "high"
-                    ? "high"
-                    : "moderate";
-
-              items.push({
-                type: "unhandled",
-                advisoryId: advId,
-                pkgName,
-                severity,
-                title: adv.title,
-                url: adv.url,
-                range: adv.range || vuln.range,
-              });
+            const advisoryPackage = adv.dependency || adv.name || pkgName;
+            const key = JSON.stringify([advId, advisoryPackage]);
+            const previous = unhandled.get(key);
+            if (previous) {
+              if (!previous.affectedPackages.includes(pkgName)) {
+                previous.affectedPackages.push(pkgName);
+              }
+              if (
+                getPriorityForSeverity(severity) <
+                getPriorityForSeverity(previous.severity)
+              ) {
+                previous.severity = severity;
+              }
+              continue;
             }
+            unhandled.set(key, {
+              type: "unhandled",
+              advisoryId: advId,
+              pkgName: advisoryPackage,
+              affectedPackages: [pkgName],
+              severity,
+              title: adv.title,
+              url: adv.url,
+              range: adv.range || vuln.range,
+            });
           }
         }
       }
     }
   }
+
+  items.push(...unhandled.values());
 
   // Deduplicate items by advisoryId and type
   const seen = new Set<string>();
@@ -502,6 +491,10 @@ export async function triageSecurityIssues(options?: {
         rawBodyLines.push("### Unhandled Advisory Details");
         rawBodyLines.push(`- **Title:** ${item.title || "N/A"}`);
         rawBodyLines.push(`- **Vulnerable Range:** \`${item.range || "N/A"}\``);
+        if (item.affectedPackages && item.affectedPackages.length > 1) {
+          const packages = [...item.affectedPackages].sort().join(", ");
+          rawBodyLines.push(`- **Affected audit entries:** ${packages}`);
+        }
         if (item.url) {
           rawBodyLines.push(`- **Reference:** [${item.url}](${item.url})`);
         }

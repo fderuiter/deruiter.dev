@@ -1904,8 +1904,8 @@
       "licenses": [],
       "notices": []
     },
-    "@isaacs/nonrecursive-glob-match@1.0.3": {
-      "integrity": "sha512-SI7kyKHq4XXDRozw+r9GlRZkia1ZkFrpLW98r2IC2Bpr8YkFGE3fvjzmxCG0x78A++69HmDNrDvSMYBZmHGpKA==",
+    "@isaacs/nonrecursive-glob-match@1.1.0": {
+      "integrity": "sha512-GPm/Dbvk5RLmhRnxXIa7nTpK0xtl4E0wj0MslsuNiJ1FIROU+2+9lgUC/dgF7Ey4QCWhfEsgxilMRMCdHPfDfw==",
       "homepage": null,
       "repository": null,
       "author": null,
@@ -3693,8 +3693,8 @@
       ],
       "notices": []
     },
-    "@serwist/build@9.5.13": {
-      "integrity": "sha512-3seu43B26paWNKixMJTJWXBJx8c07e+WZvPOUH5V/AByYfAoL4TKh9vMri8zukyj52shDyChs2Qjji5NObprMQ==",
+    "@serwist/build@9.5.15": {
+      "integrity": "sha512-NnRRuYDKA5nwyM63g9TvwQqC+adPirQgzEviSmiXoVgs6fpRk4BfekUAuqGj5WLOvHhnYSJ8TnQyqByiEgKljQ==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Google's Web DevRel Team",
@@ -3707,8 +3707,8 @@
       ],
       "notices": []
     },
-    "@serwist/next@9.5.13": {
-      "integrity": "sha512-NyRUmZIhfN+8p/rWLWRlULt+0YGN6G90R2WKbYj8cq0/4VDhDaOrFXyI458Ym98ApQHrNwkUhgPzZMxQoxxWWA==",
+    "@serwist/next@9.5.15": {
+      "integrity": "sha512-z5jUbIT4LdQl3OV3qeTXV9gVnOXTxPguOeLHOMeqferP0xrrZjcDL+gNn62tfMa7qT0WwGoqBx0JNHd3rxWQAg==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Serwist",
@@ -3721,8 +3721,8 @@
       ],
       "notices": []
     },
-    "@serwist/sw@9.5.13": {
-      "integrity": "sha512-+NqTYP5ca8KtzCZO3ZJZ0FPDBn3uyTB+06b7MuTrWPUDzhWwZWxhFiq2gb/Bg7A677Tfey0dXgxrORxPZfMyoA==",
+    "@serwist/sw@9.5.15": {
+      "integrity": "sha512-7G4irXaWGdWW7sg/HjrCQQDyDaW3zc/dj5N18KfWpQWlszUNlA9GiOlPLO2LY6tY5ukaVJxVDaj0fJIcnppRBA==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Google's Web DevRel Team",
@@ -3735,8 +3735,8 @@
       ],
       "notices": []
     },
-    "@serwist/utils@9.5.13": {
-      "integrity": "sha512-jJJSvl0pSc6udJ7pN2u0oduOfQqSY6oJNjbIc82YcVnkpzj1O+qFHYdrR6tu9bspa30Nc8ZVV+VncOcyguvk5w==",
+    "@serwist/utils@9.5.15": {
+      "integrity": "sha512-JhSSoiAfADr1Sn+zc9pdWjPL9WBqNe/3A99nkLj3yJRioqhR/p5WQovc1gJiDpptzAEJzB4qfFOObT0tsGf8Yw==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Serwist",
@@ -3749,8 +3749,8 @@
       ],
       "notices": []
     },
-    "@serwist/webpack-plugin@9.5.13": {
-      "integrity": "sha512-pXfrV0kVUjoXGOu7D+1xEz06tsDgBNiqV5YXvvBpVLQrIsXOnUTs5H4VLZ2p7OjfuPt8Ho5QFrS6xt08hTPxRA==",
+    "@serwist/webpack-plugin@9.5.15": {
+      "integrity": "sha512-uKQKQFscbOAXnQwGsT5P6A5gQaxH7EbDN0/O8s/sGENU6fXKKdBok3t8yWXB8zzas2uuhvURfi/bx85NOQIZhw==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Google's Web DevRel Team",
@@ -3763,8 +3763,8 @@
       ],
       "notices": []
     },
-    "@serwist/window@9.5.13": {
-      "integrity": "sha512-1xOBy3Cpe1qZ33GwQSeQk8fyklYc7wZsYzpmHq37RowRMaHvrKQkUFTUoZPyQG5YWwmvDbFVgOGba7UbXNhHfQ==",
+    "@serwist/window@9.5.15": {
+      "integrity": "sha512-OIfXK68StLcAP0eYxEQg5YtjhITdsijMsVmxuDyQL6+uIgXyY6eUAt2lvrKQcOIGbiX2Kma/nTYncWoLh0WjuA==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Google's Web DevRel Team",
@@ -8580,8 +8580,8 @@
       ],
       "notices": []
     },
-    "glob@14.0.3": {
-      "integrity": "sha512-A1vjIwC3qpdCso45Iw127gnp7sPhqgY8lUQhDrArIs+GbmfaaVPFuoyy7WyLT9EPZCRZ7j7aLdwUhQmHWesEow==",
+    "glob@14.0.6": {
+      "integrity": "sha512-OwXjVP2svY5EyLY75Vek96C8qK43gqrt4xsZ+qSILdnaEiJPXkd62mcfUSNx/TQErQRdu5uM5kF67sfONragKw==",
       "homepage": "https://github.com/isaacs/node-glob#readme",
       "repository": "git+ssh://git@github.com/isaacs/node-glob.git",
       "author": "Isaac Z. Schlueter",
@@ -10594,6 +10594,20 @@
       ],
       "notices": []
     },
+    "minimatch@11.0.9": {
+      "integrity": "sha512-KCFkfyjqerNlSstjlhIGNXIKZGA/6O4V4RlhZ+Dsr621SPPw0mzlypE9D9ZOoPiVefHID+j7/XuMMlqfD/F60Q==",
+      "homepage": "https://github.com/isaacs/minimatch#readme",
+      "repository": "git+ssh://git@github.com/isaacs/minimatch.git",
+      "author": "Isaac Z. Schlueter",
+      "licenses": [
+        {
+          "kind": "file",
+          "name": "LICENSE.md",
+          "sha": "2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901"
+        }
+      ],
+      "notices": []
+    },
     "minimatch@3.1.5": {
       "integrity": "sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==",
       "homepage": "https://github.com/isaacs/minimatch#readme",
@@ -12209,8 +12223,8 @@
       ],
       "notices": []
     },
-    "serwist@9.5.13": {
-      "integrity": "sha512-ZpskCei2d5Zcljeb6QvYP94pV5xY3GCdbOk0hOzMSEPFOqJDwJvMpQq7i1r/psuR1WQCsKX6p7UpLle6sTPYjw==",
+    "serwist@9.5.15": {
+      "integrity": "sha512-k//vx8zoecklv5d3KIIq1afVJOn91uhyj/k/9loEsAETHw/v3o3W7WdTnBrMGgJHZjC6OHPpOSgENprkROiFQw==",
       "homepage": "https://serwist.pages.dev",
       "repository": "https://github.com/serwist/serwist",
       "author": "Google's Web DevRel Team",

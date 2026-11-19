@@ -259,7 +259,25 @@ describe("Triage Security Issue Script", () => {
       );
     });
 
-    it("creates a new issue with governance labels when no existing issue is open", async () => {
+    it.each([
+      ["registry error", JSON.stringify({ error: { code: "E503" } })],
+      ["malformed output", "unexpected response"],
+      ["nonzero empty report", JSON.stringify({ vulnerabilities: {} })],
+    ])("leaves GitHub untouched on %s", async (_scenario, stdout) => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({ status: 1, stdout })
+      );
+
+      await expect(
+        triageSecurityIssues({
+          token: "example_dev_token",
+          repo: "example/repo",
+        })
+      ).rejects.toThrow("npm audit failed or returned an invalid report");
+      expect(globalFetchSpy).not.toHaveBeenCalled();
+    });
+
+    it("creates one issue with governance labels and all affected audit entries", async () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
@@ -269,12 +287,21 @@ describe("Triage Security Issue Script", () => {
           stdout: JSON.stringify({
             auditReportVersion: 2,
             vulnerabilities: {
+              "tool-a": {
+                severity: "moderate",
+                via: ["bad-lib"],
+              },
+              "tool-b": {
+                severity: "high",
+                via: ["tool-a", "bad-lib"],
+              },
               "bad-lib": {
                 name: "bad-lib",
                 severity: "high",
                 via: [
                   {
                     source: "GHSA-new-issue-123",
+                    dependency: "bad-lib",
                     title: "High Flaw",
                     url: "https://example.com/high",
                     range: "<2.0.0",
@@ -326,6 +353,10 @@ describe("Triage Security Issue Script", () => {
       expect(postBody.labels).toContain("automated-alert");
       expect(postBody.title).toContain("scheduled-vulnerability-alert");
       expect(postBody.title.toLowerCase()).toContain("ghsa-new-issue-123");
+      expect(postBody.title).toContain("(bad-lib)");
+      expect(postBody.body).toContain(
+        "Affected audit entries:** bad-lib, tool-a, tool-b"
+      );
       expect(postBody.body).toContain("### Acceptance");
     });
 
@@ -493,14 +524,17 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Mock rate limit 403 on issue search
-      globalFetchSpy.mockResolvedValueOnce(
-        fromPartial<Response>({
-          ok: false,
-          status: 403,
-          statusText: "Forbidden (Rate Limit Exceeded)",
-        })
-      );
+      globalFetchSpy
+        .mockResolvedValue(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: false,
+            status: 403,
+            statusText: "Forbidden (Rate Limit Exceeded)",
+          })
+        );
 
       const result = await triageSecurityIssues({
         token: "fake-token",

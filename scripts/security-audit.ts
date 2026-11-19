@@ -573,6 +573,66 @@ export function matchAdvisoryRule(
   return false;
 }
 
+/** Read the npm report, or return null when the scan did not complete. */
+export function readNpmAuditReport(): Record<string, VulnerabilityInfo> | null {
+  const auditResult = spawnSync("npm", ["audit", "--json"], {
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024,
+    shell: true,
+  });
+
+  let auditJson: AuditReport | null = null;
+  const rawOutput = (auditResult.stdout || "").trim();
+  const rawStderr = (auditResult.stderr || "").trim();
+
+  if (rawOutput) {
+    try {
+      const firstBrace = rawOutput.indexOf("{");
+      const lastBrace = rawOutput.lastIndexOf("}");
+      const jsonStr =
+        firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
+          ? rawOutput.slice(firstBrace, lastBrace + 1)
+          : rawOutput;
+      auditJson = JSON.parse(jsonStr) as AuditReport;
+    } catch (_e) {
+      // Failed to parse stdout as JSON
+    }
+  }
+
+  if (!auditJson && rawStderr && rawStderr.includes("{")) {
+    try {
+      const firstBrace = rawStderr.indexOf("{");
+      const lastBrace = rawStderr.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        auditJson = JSON.parse(
+          rawStderr.slice(firstBrace, lastBrace + 1)
+        ) as AuditReport;
+      }
+    } catch (_e) {
+      // Failed to parse stderr as JSON
+    }
+  }
+
+  if (
+    auditResult.error ||
+    !auditJson ||
+    typeof auditJson !== "object" ||
+    Array.isArray(auditJson) ||
+    !auditJson.vulnerabilities ||
+    typeof auditJson.vulnerabilities !== "object" ||
+    Array.isArray(auditJson.vulnerabilities) ||
+    "error" in auditJson ||
+    auditResult.signal ||
+    (auditResult.status != null &&
+      auditResult.status !== 0 &&
+      (auditResult.status !== 1 ||
+        Object.keys(auditJson.vulnerabilities).length === 0))
+  ) {
+    return null;
+  }
+  return auditJson.vulnerabilities;
+}
+
 export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
   console.log(
     `${colors.bold}${colors.cyan}🛡️  Parallelized Security Workflow Gate${colors.reset}`
@@ -652,59 +712,8 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     }
   }
 
-  const auditResult = spawnSync("npm", ["audit", "--json"], {
-    encoding: "utf8",
-    maxBuffer: 20 * 1024 * 1024,
-    shell: true,
-  });
-
-  let auditJson: AuditReport | null = null;
-  const rawOutput = (auditResult.stdout || "").trim();
-  const rawStderr = (auditResult.stderr || "").trim();
-
-  if (rawOutput) {
-    try {
-      const firstBrace = rawOutput.indexOf("{");
-      const lastBrace = rawOutput.lastIndexOf("}");
-      const jsonStr =
-        firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
-          ? rawOutput.slice(firstBrace, lastBrace + 1)
-          : rawOutput;
-      auditJson = JSON.parse(jsonStr) as AuditReport;
-    } catch (_e) {
-      // Failed to parse stdout as JSON
-    }
-  }
-
-  if (!auditJson && rawStderr && rawStderr.includes("{")) {
-    try {
-      const firstBrace = rawStderr.indexOf("{");
-      const lastBrace = rawStderr.lastIndexOf("}");
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        auditJson = JSON.parse(
-          rawStderr.slice(firstBrace, lastBrace + 1)
-        ) as AuditReport;
-      }
-    } catch (_e) {
-      // Failed to parse stderr as JSON
-    }
-  }
-
-  if (
-    auditResult.error ||
-    !auditJson ||
-    typeof auditJson !== "object" ||
-    Array.isArray(auditJson) ||
-    !auditJson.vulnerabilities ||
-    typeof auditJson.vulnerabilities !== "object" ||
-    Array.isArray(auditJson.vulnerabilities) ||
-    "error" in auditJson ||
-    auditResult.signal ||
-    (auditResult.status != null &&
-      auditResult.status !== 0 &&
-      (auditResult.status !== 1 ||
-        Object.keys(auditJson.vulnerabilities).length === 0))
-  ) {
+  const vulnerabilities = readNpmAuditReport();
+  if (!vulnerabilities) {
     console.error(
       `${colors.brightRed}❌ npm audit execution failed or returned an invalid audit report.${colors.reset}`
     );
@@ -718,7 +727,6 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     process.exit(1);
   }
 
-  const vulnerabilities = auditJson.vulnerabilities || {};
   const unhandledVulnerabilities: Array<{
     pkgName: string;
     info: VulnerabilityInfo;

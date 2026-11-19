@@ -11,6 +11,8 @@ import {
   isSupportedContractVersion,
   reduceAllocationRatios,
 } from "./contracts";
+import { validateSeedValue } from "./engines/seed";
+import { parseSubjectIdMask } from "./identity/subject-id";
 
 const VALID_CAP_SCOPES = new Set(["study-wide", "per-site"]);
 const VALID_BLOCK_CAP_STRATEGIES = new Set([
@@ -305,7 +307,7 @@ export function validateRandomizationPlan(
 
   if (
     !isRecord(input.seed) ||
-    !isNonEmptyString(input.seed.value) ||
+    typeof input.seed.value !== "string" ||
     typeof input.seed.source !== "string" ||
     !VALID_SEED_SOURCES.has(input.seed.source)
   ) {
@@ -316,11 +318,16 @@ export function validateRandomizationPlan(
       message:
         'Seed requires a non-empty value and source "custom" or "generated".',
     });
+  } else {
+    const seedValidation = validateSeedValue(input.seed.value);
+    if (!seedValidation.ok) {
+      findings.push(...seedValidation.findings);
+    }
   }
 
   if (
     !isRecord(input.subjectIdMask) ||
-    !isNonEmptyString(input.subjectIdMask.pattern)
+    typeof input.subjectIdMask.pattern !== "string"
   ) {
     findings.push({
       code: "INVALID_SUBJECT_ID_MASK",
@@ -328,6 +335,11 @@ export function validateRandomizationPlan(
       fieldPath: "subjectIdMask.pattern",
       message: "Subject ID mask pattern must be a non-empty string.",
     });
+  } else {
+    const maskValidation = parseSubjectIdMask(input.subjectIdMask.pattern);
+    if (!maskValidation.ok) {
+      findings.push(...maskValidation.findings);
+    }
   }
 
   const arms = Array.isArray(input.arms) ? input.arms : [];

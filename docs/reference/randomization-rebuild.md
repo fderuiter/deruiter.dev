@@ -37,6 +37,7 @@ No AGPL source code, runtime modules, or test fixtures from
 | Core contracts & validation | `lib/randomization/types.ts`, `lib/randomization/index.ts`, `lib/randomization/internal/*` | Apache-2.0 (fresh implementation, zero runtime dependencies) | `#3998` |
 | Boundary enforcement | `.dependency-cruiser.cjs` (`randomization-engine-purity`) | Apache-2.0 (host repository rule) | `#3998` |
 | Contract & traceability tests | `__tests__/randomization-contracts.test.ts`, `__tests__/dependency-cruiser-boundaries.test.ts` | Apache-2.0 (independently derived vectors and fixture trees) | `#3998` |
+| PRNG, identity & integrity primitives | `lib/randomization/internal/engines/*`, `internal/identity/*`, `internal/integrity/*` | Apache-2.0 (fresh implementation; NIST FIPS 180-4 SHA-256 & ISO C++11 MT19937 vectors, zero runtime dependencies) | `#3999` |
 
 ## Complete 155-requirement traceability matrix
 
@@ -63,9 +64,9 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-DESIG-009` | Factor editor | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-DESIG-010` | Factor reordering | `#4006` | `Deferred` | Ordered factor arrays in `lib/randomization/types.ts` (`#3998`); UI pending `#4006` | Not yet executed |
 | `RND-DESIG-011` | Factor and level validation | `#4006` | `Deferred` | Factor/level validation in `lib/randomization/index.ts` (`#3998`); UI pending `#4006` | Not yet executed |
-| `RND-DESIG-012` | Custom seed | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-DESIG-013` | Generated seed | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-DESIG-014` | Subject ID mask editor | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
+| `RND-DESIG-012` | Custom seed | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-DESIG-013` | Generated seed | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-DESIG-014` | Subject ID mask editor | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-BLOCK-001` | Block size editor | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
 | `RND-BLOCK-002` | Allocation preview | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
 | `RND-BLOCK-003` | Random pool | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
@@ -100,24 +101,24 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-MINIM-009` | No block semantics | `#4002` | `Deferred` | Type and runtime rejection in `lib/randomization` (`#3998`); engine pending `#4002` | Not yet executed |
 | `RND-MINIM-010` | No inactive candidates | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
 | `RND-MINIM-011` | Unsupported combinations | `#4002` | `Deferred` | Rejection of minimization+proportional/block in `lib/randomization` (`#3998`); engine pending `#4002` | Not yet executed |
-| `RND-IDENT-001` | Site token | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-002` | Stratum token | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-003` | Sequence token | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-004` | Random token | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-005` | Mask grammar | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-006` | Collision detection | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-007` | Stratum identity separation | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-008` | Checksum contract | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-IDENT-009` | Legacy mask migration | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-001` | MT19937 integer stream | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-002` | Float conversion | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-003` | Seed compression | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-004` | Seed character encoding | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-005` | Separate identifier stream | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-006` | Generation timestamp | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-007` | Canonical audit payload | `#3999` | `Deferred` | Pending `#3999` | Not yet executed |
-| `RND-REPRO-008` | Algorithm and format versions | `#3999` | `Deferred` | Version constants & compatibility metadata in `lib/randomization` (`#3998`); runtime hashing pending `#3999` | Not yet executed |
-| `RND-REPRO-009` | Immutable result provenance | `#3999` | `Deferred` | `RandomizationArtifact` provenance contract in `lib/randomization/types.ts` (`#3998`); pending `#3999` | Not yet executed |
+| `RND-IDENT-001` | Site token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-002` | Stratum token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-003` | Sequence token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-004` | Random token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-005` | Mask grammar | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-006` | Collision detection | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-007` | Stratum identity separation | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-008` | Checksum contract | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-IDENT-009` | Legacy mask migration | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-001` | MT19937 integer stream | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-002` | Float conversion | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-003` | Seed compression | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-004` | Seed character encoding | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-005` | Separate identifier stream | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-006` | Generation timestamp | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-007` | Canonical audit payload | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-008` | Algorithm and format versions | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
+| `RND-REPRO-009` | Immutable result provenance | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-EXECU-001` | Background generation | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
 | `RND-EXECU-002` | Worker correlation | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
 | `RND-EXECU-003` | Latest-request publication | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |

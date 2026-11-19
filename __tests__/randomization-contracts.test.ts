@@ -203,7 +203,7 @@ describe("randomization versioned contracts and compatibility policy", () => {
         ],
       },
     ],
-    seed: { value: "DEMO-SEED-2026", source: "custom" as const },
+    seed: { value: "DEMOSEED2026", source: "custom" as const },
     subjectIdMask: {
       pattern: "{SITE}-{SEQ:4}",
       checksumAlgorithm: "none" as const,

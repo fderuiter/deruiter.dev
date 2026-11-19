@@ -103,6 +103,7 @@ export const AGENTS_SECTION_BY_CHECK: Readonly<Record<string, number>> = {
   "env-client-reads": 15,
   "git-hygiene-config": 15,
   "workspace-ide-config": 15,
+  "vercel-build-commands": 22,
   "alternative-lockfiles": 15,
   "dead-code-review": 15,
   "dead-code-scanner": 15,
@@ -2729,6 +2730,50 @@ export function checkPackageLockfile(root: string): DiagnosticCheckResult {
 }
 
 /**
+ * Check that the repository declares the commands used for Vercel builds.
+ * @param root - Workspace root to inspect.
+ * @returns The diagnostic result for the project's Vercel configuration.
+ */
+export function checkVercelBuildCommands(root: string): DiagnosticCheckResult {
+  const base = {
+    id: "vercel-build-commands",
+    name: "Vercel Build Commands",
+    category: "architecture",
+  } as const;
+  let config: Record<string, unknown> | null;
+  try {
+    config = JSON.parse(
+      fs.readFileSync(path.join(root, "vercel.json"), "utf8")
+    );
+  } catch {
+    return {
+      ...base,
+      status: "fail",
+      message: "vercel.json is missing, unreadable or invalid JSON.",
+    };
+  }
+
+  const missing = ["installCommand", "buildCommand", "ignoreCommand"].filter(
+    (key) => {
+      const command = config?.[key];
+      return typeof command !== "string" || command.trim() === "";
+    }
+  );
+  if (missing.length > 0) {
+    return {
+      ...base,
+      status: "fail",
+      message: `Declare nonempty commands in vercel.json for ${missing.join(", ")}.`,
+    };
+  }
+  return {
+    ...base,
+    status: "pass",
+    message: "vercel.json declares the install, build and ignore commands.",
+  };
+}
+
+/**
  * Check SEO and social preview integrity (ADR 0053, #1256).
  *
  * Reads `lib/seo-metadata.ts` as source so the check needs no module loading.
@@ -3664,6 +3709,7 @@ export async function runDiagnostics(
     checkClientEnvironmentReads(root),
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),
+    checkVercelBuildCommands(root),
     checkPackageLockfile(root),
     checkSeoSocialIntegrity(root),
     checkDesignTokens(root),

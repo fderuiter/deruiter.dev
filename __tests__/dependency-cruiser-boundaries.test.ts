@@ -45,6 +45,23 @@ const FIXTURE: Record<string, string> = {
     'import { impl } from "../lib/pkg/internal/impl";\nexport const t = impl;\n',
   "__tests__/public.test.ts":
     'import { impl } from "../lib/pkg/index";\nexport const t = impl;\n',
+  // Pure randomization engine purity checks (#3998).
+  "lib/study-workspace/index.ts": "export const ws = 1;\n",
+  "lib/study-data/index.ts": "export const sd = 1;\n",
+  "components/providers/theme.ts": "export const theme = 1;\n",
+  "components/randomization/randomization.worker.ts": "export const w = 1;\n",
+  "lib/randomization/internal/pure.ts": "export const pure = 1;\n",
+  "lib/randomization/index.ts": 'export { pure } from "./internal/pure";\n',
+  "lib/randomization/internal/bad-workspace.ts":
+    'import { ws } from "../../study-workspace/index";\nexport const x = ws;\n',
+  "lib/randomization/internal/bad-study-data.ts":
+    'import { sd } from "../../study-data/index";\nexport const x = sd;\n',
+  "lib/randomization/internal/bad-app.ts":
+    'import { page } from "../../../app/page-public";\nexport const x = page;\n',
+  "lib/randomization/internal/bad-provider.ts":
+    'import { theme } from "../../../components/providers/theme";\nexport const x = theme;\n',
+  "lib/randomization/internal/bad-worker.ts":
+    'import { w } from "../../../components/randomization/randomization.worker";\nexport const x = w;\n',
 };
 
 let fixtureDir = "";
@@ -63,7 +80,7 @@ beforeAll(async () => {
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, source);
   }
-  const result = await cruise(["lib", "app", "__tests__"], {
+  const result = await cruise(["lib", "app", "components", "__tests__"], {
     baseDir: fixtureDir,
     validate: true,
     ruleSet: { forbidden: config.forbidden },
@@ -126,6 +143,23 @@ describe("deep-module boundary rules", () => {
       "__tests__/public.test.ts",
     ]) {
       expect(violationsFrom(file)).toEqual([]);
+    }
+  });
+
+  it("keeps lib/randomization pure from routes, providers, workspace, study-data, and workers (#3998)", () => {
+    expect(violationsFrom("lib/randomization/index.ts")).toEqual([]);
+    expect(violationsFrom("lib/randomization/internal/pure.ts")).toEqual([]);
+
+    for (const file of [
+      "lib/randomization/internal/bad-workspace.ts",
+      "lib/randomization/internal/bad-study-data.ts",
+      "lib/randomization/internal/bad-app.ts",
+      "lib/randomization/internal/bad-provider.ts",
+      "lib/randomization/internal/bad-worker.ts",
+    ]) {
+      expect(violationsFrom(file).map((v) => v.rule)).toContain(
+        "randomization-engine-purity"
+      );
     }
   });
 });

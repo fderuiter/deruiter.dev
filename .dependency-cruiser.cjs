@@ -106,6 +106,17 @@ module.exports = {
       to: { path: "^components/$1/views/" },
     },
     {
+      name: "randomization-engine-purity",
+      comment:
+        "The pure randomization engine (ADR 0073, #3998) cannot import React, Next.js, routes, components/providers, study-workspace, study-data, or worker files.",
+      severity: "error",
+      from: { path: "^lib/randomization/" },
+      to: {
+        path: "^(app|components)/|^lib/(study-workspace|study-data)/|(^|/)node_modules/(react|react-dom|next)(/|$)|\\.worker\\.(ts|tsx|js|mjs)$",
+        reachable: true,
+      },
+    },
+    {
       name: "no-circular",
       comment: "Zero circular dependency cycles allowed across the codebase.",
       severity: "error",

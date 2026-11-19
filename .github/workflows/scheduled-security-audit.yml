@@ -34,6 +34,8 @@ jobs:
 
       - name: Execute Security Audit Gate
         id: audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run audit:security -- --fail-on-warning --severity=moderate
         continue-on-error: true
 

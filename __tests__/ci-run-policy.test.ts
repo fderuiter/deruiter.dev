@@ -495,4 +495,57 @@ describe("CI run policy (#1773)", () => {
       );
     });
   });
+
+  describe("security audit PR scoping", () => {
+    it("skips live npm vulnerability auditing on PRs that do not touch dependencies or security policy", () => {
+      const policy = computeRunPolicy({
+        eventName: "pull_request",
+        headRef: "feat/ui-polish",
+        changedFiles: ["app/page.tsx", "docs/README.md"],
+      });
+      expect(policy.runSecurityAudit).toBe(false);
+      expect(formatOutputs(policy)).toContain("run_security_audit=false");
+    });
+
+    it.each([
+      "package.json",
+      "package-lock.json",
+      "config/security-audit-ignore.json",
+      "scripts/security-audit.ts",
+      "scripts/triage-security-issue.ts",
+      "scripts/ci-run-policy.mjs",
+      ".github/workflows/ci.yml",
+      ".github/workflows/scheduled-security-audit.yml",
+    ])("runs live npm vulnerability auditing when %s changes", (file) => {
+      const policy = computeRunPolicy({
+        eventName: "pull_request",
+        headRef: "chore/deps-update",
+        changedFiles: ["app/page.tsx", file],
+      });
+      expect(policy.runSecurityAudit).toBe(true);
+      expect(formatOutputs(policy)).toContain("run_security_audit=true");
+    });
+
+    it("fails safe to running the security audit when changed files are unknown or empty, and always on push", () => {
+      expect(
+        computeRunPolicy({
+          eventName: "pull_request",
+          headRef: "feat/unknown",
+          changedFiles: null,
+        }).runSecurityAudit
+      ).toBe(true);
+      expect(
+        computeRunPolicy({
+          eventName: "pull_request",
+          headRef: "feat/empty",
+          changedFiles: [],
+        }).runSecurityAudit
+      ).toBe(true);
+      expect(
+        computeRunPolicy({
+          eventName: "push",
+        }).runSecurityAudit
+      ).toBe(true);
+    });
+  });
 });

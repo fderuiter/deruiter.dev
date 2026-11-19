@@ -107,6 +107,7 @@ jobs:
       draft: ${{ steps.policy.outputs.draft }}
       run_unit: ${{ steps.policy.outputs.run_unit }}
       run_browser: ${{ steps.policy.outputs.run_browser }}
+      run_security_audit: ${{ steps.policy.outputs.run_security_audit }}
       stryker_force: ${{ steps.policy.outputs.stryker_force }}
       arcade_device_grep: ${{ steps.policy.outputs.arcade_device_grep }}
 
@@ -415,6 +416,7 @@ jobs:
 
   security-gate:
     name: Security Gate (Vulnerability Audit)
+    needs: [changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -433,7 +435,16 @@ jobs:
         run: npm ci
 
       - name: Execute Security Audit Gate
+        if: github.event_name != 'pull_request' || needs.changes.outputs.run_security_audit == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run audit:security -- --fail-on-warning --severity=moderate
+
+      - name: Note Skipped Dependency Vulnerability Audit
+        if: github.event_name == 'pull_request' && needs.changes.outputs.run_security_audit != 'true'
+        run: |
+          echo "Skipping npm vulnerability audit: PR does not touch dependencies or security audit policy."
+          echo "Full lockfile auditing still runs on every push to main and daily in Scheduled Security Audit."
 
       - name: Verify Lockfile Dependency Licenses
         run: npm run audit:licenses

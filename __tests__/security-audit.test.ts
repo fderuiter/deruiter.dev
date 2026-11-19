@@ -25,6 +25,9 @@ import {
   runSecurityAudit,
   collectAdvisoriesForVulnerability,
   matchAdvisoryRule,
+  extractGhsaId,
+  fetchAdvisoryWithdrawalStatus,
+  filterWithdrawnAdvisories,
   WARN_THRESHOLD_DAYS,
   writeStepSummary,
   writeAuditFailureStepSummary,
@@ -618,7 +621,7 @@ describe("Security Audit Script", () => {
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
     });
 
-    it("should pass when there are no vulnerabilities", () => {
+    it("should pass when there are no vulnerabilities", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -628,14 +631,14 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 0"
       );
       expect(exitSpy).toHaveBeenCalledWith(0);
       expect(logSpy).toHaveBeenCalled();
     });
 
-    it("should ignore low and moderate vulnerabilities and pass by default", () => {
+    it("should ignore low and moderate vulnerabilities and pass by default", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -654,13 +657,13 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 0"
       );
       expect(exitSpy).toHaveBeenCalledWith(0);
     });
 
-    it("should evaluate moderate vulnerabilities and fail when run with severity=moderate", () => {
+    it("should evaluate moderate vulnerabilities and fail when run with severity=moderate", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -681,13 +684,13 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() =>
+      await expect(
         runSecurityAudit({ now: testNow, severity: "moderate" })
-      ).toThrowError("process.exit called with 1");
+      ).rejects.toThrowError("process.exit called with 1");
       expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
-    it("should pass when high/critical vulnerabilities match a valid, active advisory ignore rule", () => {
+    it("should pass when high/critical vulnerabilities match a valid, active advisory ignore rule", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -725,13 +728,13 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 0"
       );
       expect(exitSpy).toHaveBeenCalledWith(0);
     });
 
-    it("should fail when high/critical vulnerabilities do NOT match the ignore list", () => {
+    it("should fail when high/critical vulnerabilities do NOT match the ignore list", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -769,13 +772,13 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 1"
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
-    it("should fail when an ignore override is missing an advisory ID", () => {
+    it("should fail when an ignore override is missing an advisory ID", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -797,7 +800,7 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 1"
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
@@ -808,7 +811,7 @@ describe("Security Audit Script", () => {
       expect(errorCalls).toContain("missing a valid advisory ID");
     });
 
-    it("should fail when an ignore override sets an expiration date exceeding max lifespan", () => {
+    it("should fail when an ignore override sets an expiration date exceeding max lifespan", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -833,7 +836,7 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 1"
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
@@ -844,7 +847,7 @@ describe("Security Audit Script", () => {
       expect(errorCalls).toContain("exceeds the maximum 14-day lifespan");
     });
 
-    it("should reject expired vulnerability overrides and fail when vulnerabilities exist", () => {
+    it("should reject expired vulnerability overrides and fail when vulnerabilities exist", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -880,7 +883,7 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 1"
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
@@ -893,7 +896,7 @@ describe("Security Audit Script", () => {
       );
     });
 
-    it("should fail when unignored high/critical vulnerabilities exist", () => {
+    it("should fail when unignored high/critical vulnerabilities exist", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -915,13 +918,13 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 1"
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
-    it("should handle pretext vulnerabilities by failing and logging redacted message", () => {
+    it("should handle pretext vulnerabilities by failing and logging redacted message", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -943,7 +946,7 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 1"
       );
       expect(exitSpy).toHaveBeenCalledWith(1);
@@ -962,7 +965,7 @@ describe("Security Audit Script", () => {
       );
     });
 
-    it("should fail closed on empty stdout, non-JSON stderr, and status 1", () => {
+    it("should fail closed on empty stdout, non-JSON stderr, and status 1", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           status: 1,
@@ -971,12 +974,14 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() =>
+      await expect(
         runSecurityAudit({ now: testNow, throwOnError: true })
-      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+      ).rejects.toThrowError(
+        "npm audit execution failed or returned invalid JSON."
+      );
     });
 
-    it("rejects non-report JSON even after a successful child exit", () => {
+    it("rejects non-report JSON even after a successful child exit", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           status: 0,
@@ -984,15 +989,17 @@ describe("Security Audit Script", () => {
           stderr: "private-error-output",
         })
       );
-      expect(() =>
+      await expect(
         runSecurityAudit({ now: testNow, throwOnError: true })
-      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+      ).rejects.toThrowError(
+        "npm audit execution failed or returned invalid JSON."
+      );
       expect(errorSpy.mock.calls.flat().join(" ")).not.toContain(
         "private-error-output"
       );
     });
 
-    it("fails on a nonzero process exit even with a clean report", () => {
+    it("fails on a nonzero process exit even with a clean report", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           status: 1,
@@ -1002,12 +1009,14 @@ describe("Security Audit Script", () => {
           }),
         })
       );
-      expect(() =>
+      await expect(
         runSecurityAudit({ now: testNow, throwOnError: true })
-      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+      ).rejects.toThrowError(
+        "npm audit execution failed or returned invalid JSON."
+      );
     });
 
-    it("should fail closed on spawn execution error", () => {
+    it("should fail closed on spawn execution error", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           error: new Error("spawn npm ENOENT"),
@@ -1016,12 +1025,14 @@ describe("Security Audit Script", () => {
         })
       );
 
-      expect(() =>
+      await expect(
         runSecurityAudit({ now: testNow, throwOnError: true })
-      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+      ).rejects.toThrowError(
+        "npm audit execution failed or returned invalid JSON."
+      );
     });
 
-    it("should parse warning-prefixed valid JSON output in stdout or stderr successfully", () => {
+    it("should parse warning-prefixed valid JSON output in stdout or stderr successfully", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           status: 0,
@@ -1035,11 +1046,14 @@ describe("Security Audit Script", () => {
         })
       );
 
-      const result = runSecurityAudit({ now: testNow, throwOnError: true });
+      const result = await runSecurityAudit({
+        now: testNow,
+        throwOnError: true,
+      });
       expect(result).toBe(true);
     });
 
-    it("should write GITHUB_STEP_SUMMARY when process.env.GITHUB_STEP_SUMMARY is set", () => {
+    it("should write GITHUB_STEP_SUMMARY when process.env.GITHUB_STEP_SUMMARY is set", async () => {
       const summaryPath = "/tmp/test-step-summary.md";
       const appendSpy = vi
         .spyOn(fs, "appendFileSync")
@@ -1056,7 +1070,7 @@ describe("Security Audit Script", () => {
         })
       );
 
-      runSecurityAudit({ now: testNow, throwOnError: true });
+      await runSecurityAudit({ now: testNow, throwOnError: true });
       expect(appendSpy).toHaveBeenCalledWith(
         summaryPath,
         expect.stringContaining("Security Vulnerability Audit Report"),
@@ -1066,7 +1080,7 @@ describe("Security Audit Script", () => {
       delete process.env.GITHUB_STEP_SUMMARY;
     });
 
-    it("logs yellow warning with console.warn for active rules approaching expiration within 14 days", () => {
+    it("logs yellow warning with console.warn for active rules approaching expiration within 14 days", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -1092,7 +1106,7 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 0"
       );
       expect(exitSpy).toHaveBeenCalledWith(0);
@@ -1110,7 +1124,7 @@ describe("Security Audit Script", () => {
       expect(warnCalls).toContain("#888");
     });
 
-    it("fails the audit when failOnWarning is true and an override is approaching expiration", () => {
+    it("fails the audit when failOnWarning is true and an override is approaching expiration", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -1135,9 +1149,9 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() =>
+      await expect(
         runSecurityAudit({ now: testNow, failOnWarning: true })
-      ).toThrowError("process.exit called with 1");
+      ).rejects.toThrowError("process.exit called with 1");
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       const errorCalls = errorSpy.mock.calls
@@ -1146,7 +1160,7 @@ describe("Security Audit Script", () => {
       expect(errorCalls).toContain("strict pre-expiration warning policy");
     });
 
-    it("logs warning when matching a vulnerability with an override rule approaching expiration", () => {
+    it("logs warning when matching a vulnerability with an override rule approaching expiration", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -1183,7 +1197,7 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
         "process.exit called with 0"
       );
 
@@ -1193,6 +1207,202 @@ describe("Security Audit Script", () => {
       expect(warnCalls).toContain(
         '⚠️ WARNING: Vulnerability override for advisory "GHSA-c2qf-rxjj-4v5w" (concurrently) expires in 5 days'
       );
+    });
+
+    it("ignores advisories withdrawn in the GitHub Advisory Database and deduplicates lookups across packages", async () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 1,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              picomatch: {
+                name: "picomatch",
+                severity: "high",
+                via: [
+                  {
+                    source: 1247710,
+                    title:
+                      "picomatch vulnerable to ReDoS through single-branch repeated extglobs",
+                    url: "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+                    range: "<=4.0.7",
+                  },
+                ],
+              },
+              vitest: {
+                name: "vitest",
+                severity: "high",
+                via: ["picomatch"],
+              },
+            },
+          }),
+        })
+      );
+
+      const fetchImpl = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ghsa_id: "GHSA-fc5q-39xc-vjpf",
+          withdrawn_at: "2026-11-18T15:38:56Z",
+        }),
+      });
+
+      const result = await runSecurityAudit({
+        now: testNow,
+        throwOnError: true,
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        githubToken: "test-token",
+      });
+
+      expect(result).toBe(true);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      expect(fetchImpl).toHaveBeenCalledWith(
+        "https://api.github.com/advisories/GHSA-fc5q-39xc-vjpf",
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        })
+      );
+    });
+
+    it("fails closed when the GitHub Advisory API returns an error or network failure", async () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 1,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              picomatch: {
+                name: "picomatch",
+                severity: "high",
+                via: [
+                  {
+                    source: 1247710,
+                    title: "picomatch ReDoS",
+                    url: "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+                  },
+                ],
+              },
+            },
+          }),
+        })
+      );
+
+      const fetchImpl = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      });
+
+      await expect(
+        runSecurityAudit({
+          now: testNow,
+          throwOnError: true,
+          fetchImpl: fetchImpl as unknown as typeof fetch,
+        })
+      ).rejects.toThrowError("Security audit failed");
+
+      const warnCalls = warnSpy.mock.calls
+        .map((call) => call[0] as string)
+        .join("\n");
+      expect(warnCalls).toContain("failing closed");
+    });
+
+    it("makes zero GitHub Advisory API calls on a clean audit", async () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      const fetchImpl = vi.fn();
+      const result = await runSecurityAudit({
+        now: testNow,
+        throwOnError: true,
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      });
+
+      expect(result).toBe(true);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("extractGhsaId & withdrawn advisory helpers", () => {
+    it("extracts canonical GHSA identifiers from URL, fallback ID, or title", () => {
+      expect(
+        extractGhsaId({
+          url: "https://github.com/advisories/GHSA-FC5Q-39XC-VJPF",
+        })
+      ).toBe("GHSA-fc5q-39xc-vjpf");
+      expect(extractGhsaId(undefined, "ghsa-abcd-1234-ef56")).toBe(
+        "GHSA-abcd-1234-ef56"
+      );
+      expect(extractGhsaId({ source: 1247710, title: "No GHSA here" })).toBe(
+        null
+      );
+    });
+
+    it("fails closed when fetch throws or withdrawn_at is null", async () => {
+      const activeRes = await fetchAdvisoryWithdrawalStatus(
+        "GHSA-fc5q-39xc-vjpf",
+        {
+          fetchImpl: vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ withdrawn_at: null }),
+          }) as unknown as typeof fetch,
+        }
+      );
+      expect(activeRes).toEqual({ withdrawn: false });
+
+      const errRes = await fetchAdvisoryWithdrawalStatus(
+        "GHSA-fc5q-39xc-vjpf",
+        {
+          fetchImpl: vi
+            .fn()
+            .mockRejectedValue(new Error("timeout")) as unknown as typeof fetch,
+        }
+      );
+      expect(errRes.withdrawn).toBe(false);
+      expect(errRes.error).toContain("timeout");
+    });
+
+    it("keeps active items and excludes only withdrawn items in a mixed set", async () => {
+      const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+        if (url.endsWith("GHSA-1111-2222-3333")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ withdrawn_at: "2026-11-18T15:38:56Z" }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ withdrawn_at: null }),
+        };
+      });
+
+      const items = [
+        { id: "GHSA-1111-2222-3333", pkg: "a" },
+        { id: "GHSA-4444-5555-6666", pkg: "b" },
+        { id: "no-ghsa", pkg: "c" },
+      ];
+
+      const { active, withdrawn } = await filterWithdrawnAdvisories(
+        items,
+        (item) => extractGhsaId(undefined, item.id),
+        { fetchImpl: fetchImpl as unknown as typeof fetch }
+      );
+
+      expect(active.map((i) => i.pkg)).toEqual(["b", "c"]);
+      expect(withdrawn).toHaveLength(1);
+      expect(withdrawn[0].ghsaId).toBe("GHSA-1111-2222-3333");
     });
   });
 

@@ -6,6 +6,8 @@ import {
   matchAdvisoryRule,
   isPretextRelated,
   readNpmAuditReport,
+  extractGhsaId,
+  filterWithdrawnAdvisories,
 } from "./security-audit";
 
 export interface SecurityTriageItem {
@@ -198,6 +200,8 @@ export async function triageSecurityIssues(options?: {
   token?: string;
   repo?: string;
   now?: Date;
+  checkWithdrawnAdvisories?: boolean;
+  fetchImpl?: typeof fetch;
 }): Promise<{ created: number; updated: number; closed: number }> {
   const token =
     options?.token || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
@@ -209,7 +213,29 @@ export async function triageSecurityIssues(options?: {
     return { created: 0, updated: 0, closed: 0 };
   }
 
-  const items = collectTriageItems(options?.now);
+  let items = collectTriageItems(options?.now);
+  const shouldCheckWithdrawn =
+    options?.checkWithdrawnAdvisories ??
+    (Boolean(options?.fetchImpl) || typeof process.env.VITEST === "undefined");
+  if (shouldCheckWithdrawn && items.some((item) => item.type === "unhandled")) {
+    const unhandledItems = items.filter((item) => item.type === "unhandled");
+    const nonUnhandledItems = items.filter((item) => item.type !== "unhandled");
+    const { active, withdrawn } = await filterWithdrawnAdvisories(
+      unhandledItems,
+      (item) =>
+        extractGhsaId({ url: item.url, title: item.title }, item.advisoryId),
+      {
+        githubToken: token,
+        fetchImpl: options?.fetchImpl,
+      }
+    );
+    for (const entry of withdrawn) {
+      console.log(
+        `Skipping triage for withdrawn advisory ${entry.ghsaId} (withdrawn at ${entry.withdrawnAt}).`
+      );
+    }
+    items = [...nonUnhandledItems, ...active];
+  }
 
   const fetchIssuesByLabel = async (
     label: string

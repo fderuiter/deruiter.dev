@@ -53,13 +53,14 @@ The security audit CLI evaluates vulnerability severity levels and enforces the 
 - **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `config/security-audit-ignore.json`.
 - **Low & Moderate Severities:** Do not block a local run by default, though developers are encouraged to remediate them during routine maintenance.
 - **CI Security Gate:** CI runs `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window also fail the Security Gate.
+- **Withdrawn Advisory Verification:** When `npm audit --json` reports an unhandled blocking advisory with a `GHSA-*` identifier, `scripts/security-audit.ts` (and `scripts/triage-security-issue.ts`) cross-checks `GET /advisories/<GHSA-ID>` in the GitHub Advisory Database. Advisories whose `withdrawn_at` timestamp is set are logged and excluded so npm registry cache lag after a withdrawal cannot cause false-positive failures. Any API, network, or timeout error fails closed and keeps the advisory blocking.
 
 ## CI Pipeline Security Gate Enforcement
 
 Automated security checks are enforced across continuous integration and release workflows:
 
 - **Pre-Commit Hook Gate:** Local commits perform dependency security vulnerability checks via `npm run audit:security` in `.husky/pre-commit` before remote push.
-- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job executes three audits (dependency vulnerabilities, licenses and secrets in full Git history) on every push to `main` and pull request targeting `main`. Unhandled vulnerabilities or unallowlisted secret-shaped values fail the gate.
+- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job runs unconditionally on every push to `main` and pull request targeting `main`. Lockfile license verification (`npm run audit:licenses`) and reachable Git-history secret scanning (`npm run audit:secrets`) run on every PR and push. The live npm vulnerability audit (`npm run audit:security`) runs on every push to `main`, daily in `.github/workflows/scheduled-security-audit.yml`, and on pull requests that touch dependencies or security-audit policy/scripts (`package.json`, `package-lock.json`, `config/security-audit-ignore.json`, `scripts/security-audit.ts`, `scripts/triage-security-issue.ts`, `scripts/ci-run-policy.mjs`, `.github/workflows/ci.yml`, `.github/workflows/scheduled-security-audit.yml`), or when changed files cannot be determined (fail-safe). This prevents unrelated PRs from freezing on upstream advisory churn while preserving continuous monitoring on `main`.
 - **Production Build Gate:** Vercel’s production build of `main` runs the offline migration integrity checks, applies migrations through the environment-guarded block in `scripts/build.js`, and then compiles the application. Dependency and secret audits remain mandatory CI and pre-commit gates; production database credentials remain confined to Vercel.
 
 ## Vulnerability Override Governance Rules

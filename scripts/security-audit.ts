@@ -64,6 +64,24 @@ export interface SecurityAuditOptions {
   failOnWarning?: boolean;
   warnThresholdDays?: number;
   severity?: Severity;
+  checkWithdrawnAdvisories?: boolean;
+  githubToken?: string;
+  githubApiUrl?: string;
+  fetchImpl?: typeof fetch;
+  advisoryLookupTimeoutMs?: number;
+}
+
+export interface AdvisoryWithdrawalLookupOptions {
+  githubToken?: string;
+  githubApiUrl?: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+}
+
+export interface AdvisoryWithdrawalStatus {
+  withdrawn: boolean;
+  withdrawnAt?: string;
+  error?: string;
 }
 
 // Fail closed by default. Temporary exceptions must live in the reviewed policy
@@ -573,6 +591,154 @@ export function matchAdvisoryRule(
   return false;
 }
 
+const GHSA_ID_PATTERN = /\b(ghsa-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})\b/i;
+
+/**
+ * Extracts a canonical GitHub Security Advisory ID (`GHSA-xxxx-xxxx-xxxx`)
+ * from an npm audit advisory or fallback identifier string.
+ */
+export function extractGhsaId(
+  advisory?: Advisory,
+  fallbackId?: string
+): string | null {
+  const candidates = [
+    advisory?.url,
+    fallbackId,
+    advisory?.title,
+    advisory?.source !== undefined ? String(advisory.source) : undefined,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const match = candidate.match(GHSA_ID_PATTERN);
+    if (match) {
+      return `GHSA-${match[1].slice(5).toLowerCase()}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Queries the GitHub Advisory Database to determine whether a GHSA has been
+ * withdrawn (`withdrawn_at` set). Fails closed (`withdrawn: false`) on any
+ * API, network, timeout, or parsing error so an outage can never bypass a
+ * real vulnerability.
+ */
+export async function fetchAdvisoryWithdrawalStatus(
+  ghsaId: string,
+  options: AdvisoryWithdrawalLookupOptions = {}
+): Promise<AdvisoryWithdrawalStatus> {
+  if (!/^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/.test(ghsaId)) {
+    return { withdrawn: false, error: `Invalid GHSA identifier: ${ghsaId}` };
+  }
+
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  if (typeof fetchImpl !== "function") {
+    return { withdrawn: false, error: "fetch is unavailable" };
+  }
+
+  const apiUrl = (
+    options.githubApiUrl ||
+    process.env.GITHUB_API_URL ||
+    "https://api.github.com"
+  ).replace(/\/$/, "");
+  const token =
+    options.githubToken ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+  const timeoutMs = options.timeoutMs ?? 5000;
+
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "deruiter.dev-security-audit",
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetchImpl(`${apiUrl}/advisories/${ghsaId}`, {
+      headers,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (!response.ok) {
+      return {
+        withdrawn: false,
+        error: `GitHub Advisory API returned HTTP ${response.status}`,
+      };
+    }
+
+    const body = (await response.json()) as { withdrawn_at?: unknown };
+    if (
+      typeof body?.withdrawn_at === "string" &&
+      body.withdrawn_at.trim().length > 0
+    ) {
+      return { withdrawn: true, withdrawnAt: body.withdrawn_at.trim() };
+    }
+    return { withdrawn: false };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { withdrawn: false, error: message };
+  }
+}
+
+/**
+ * Filters out items whose canonical GHSA has been withdrawn in the GitHub
+ * Advisory Database. Deduplicates lookups per unique GHSA ID and fails closed
+ * if verification fails or no GHSA ID is present.
+ */
+export async function filterWithdrawnAdvisories<T>(
+  items: T[],
+  getGhsaId: (item: T) => string | null,
+  options: AdvisoryWithdrawalLookupOptions = {}
+): Promise<{
+  active: T[];
+  withdrawn: Array<{ item: T; ghsaId: string; withdrawnAt: string }>;
+}> {
+  if (items.length === 0) {
+    return { active: [], withdrawn: [] };
+  }
+
+  const uniqueGhsaIds = new Set<string>();
+  const itemGhsaIds = items.map((item) => {
+    const ghsaId = getGhsaId(item);
+    if (ghsaId) uniqueGhsaIds.add(ghsaId);
+    return ghsaId;
+  });
+
+  if (uniqueGhsaIds.size === 0) {
+    return { active: items, withdrawn: [] };
+  }
+
+  const statuses = new Map<string, AdvisoryWithdrawalStatus>();
+  await Promise.all(
+    Array.from(uniqueGhsaIds).map(async (ghsaId) => {
+      const status = await fetchAdvisoryWithdrawalStatus(ghsaId, options);
+      if (status.error) {
+        console.warn(
+          `${colors.brightYellow}⚠️ WARNING: Could not verify withdrawal status for ${ghsaId} (${status.error}); failing closed and keeping advisory active.${colors.reset}`
+        );
+      }
+      statuses.set(ghsaId, status);
+    })
+  );
+
+  const active: T[] = [];
+  const withdrawn: Array<{ item: T; ghsaId: string; withdrawnAt: string }> = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const ghsaId = itemGhsaIds[i];
+    const status = ghsaId ? statuses.get(ghsaId) : undefined;
+    if (ghsaId && status?.withdrawn && status.withdrawnAt) {
+      withdrawn.push({ item, ghsaId, withdrawnAt: status.withdrawnAt });
+    } else {
+      active.push(item);
+    }
+  }
+
+  return { active, withdrawn };
+}
+
 /** Read the npm report, or return null when the scan did not complete. */
 export function readNpmAuditReport(): Record<string, VulnerabilityInfo> | null {
   const auditResult = spawnSync("npm", ["audit", "--json"], {
@@ -633,7 +799,9 @@ export function readNpmAuditReport(): Record<string, VulnerabilityInfo> | null {
   return auditJson.vulnerabilities;
 }
 
-export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
+export async function runSecurityAudit(
+  options: SecurityAuditOptions = {}
+): Promise<boolean> {
   console.log(
     `${colors.bold}${colors.cyan}🛡️  Parallelized Security Workflow Gate${colors.reset}`
   );
@@ -820,7 +988,7 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
   }
 
   const seenUnhandled = new Set<string>();
-  const uniqueUnhandled = unhandledVulnerabilities.filter((item) => {
+  let uniqueUnhandled = unhandledVulnerabilities.filter((item) => {
     const advId = item.advisory
       ? getAdvisoryIdentifiers(item.advisory)[0] || item.advisory.title || "N/A"
       : "N/A";
@@ -829,6 +997,34 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     seenUnhandled.add(key);
     return true;
   });
+
+  const shouldCheckWithdrawn =
+    options.checkWithdrawnAdvisories ??
+    (Boolean(options.fetchImpl) || typeof process.env.VITEST === "undefined");
+
+  if (uniqueUnhandled.length > 0 && shouldCheckWithdrawn) {
+    const { active, withdrawn } = await filterWithdrawnAdvisories(
+      uniqueUnhandled,
+      (item) => extractGhsaId(item.advisory),
+      {
+        githubToken: options.githubToken,
+        githubApiUrl: options.githubApiUrl,
+        fetchImpl: options.fetchImpl,
+        timeoutMs: options.advisoryLookupTimeoutMs,
+      }
+    );
+    if (withdrawn.length > 0) {
+      const loggedWithdrawn = new Set<string>();
+      for (const entry of withdrawn) {
+        if (loggedWithdrawn.has(entry.ghsaId)) continue;
+        loggedWithdrawn.add(entry.ghsaId);
+        console.log(
+          `${colors.gray}ℹ️ Ignoring withdrawn advisory ${entry.ghsaId} (withdrawn at ${entry.withdrawnAt} in GitHub Advisory Database).${colors.reset}`
+        );
+      }
+    }
+    uniqueUnhandled = active;
+  }
 
   if (uniqueUnhandled.length > 0) {
     const criticalUnhandled = uniqueUnhandled.filter(
@@ -1204,5 +1400,5 @@ if (
   (require.main === module ||
     (process.argv[1] && process.argv[1].includes("security-audit")))
 ) {
-  runSecurityAudit();
+  void runSecurityAudit();
 }

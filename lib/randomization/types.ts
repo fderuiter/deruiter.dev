@@ -463,3 +463,114 @@ export interface PlanValidationResult {
   readonly ok: boolean;
   readonly findings: readonly ValidationFinding[];
 }
+
+/** Maximum permitted length of a validated ASCII alphanumeric seed. */
+export const SEED_MAX_LENGTH = 128 as const;
+
+/** Maximum permitted length of a subject identifier mask pattern. */
+export const SUBJECT_ID_MASK_MAX_LENGTH = 128 as const;
+
+/** Bounds for `{SEQ:n}` width and `{RND:n}` token length. */
+export const SUBJECT_ID_TOKEN_BOUNDS = Object.freeze({
+  minSeqWidth: 1,
+  maxSeqWidth: 12,
+  minRndLength: 1,
+  maxRndLength: 32,
+  maxCollisionRetries: 100,
+});
+
+/** Opaque deterministic PRNG stream exposing only uint32 and [0, 1) float draws. */
+export interface PrngStream {
+  nextUint32(): number;
+  nextFloat(): number;
+}
+
+/** Injectable entropy callback for cryptographic seed generation. */
+export type EntropySource = (buffer: Uint32Array) => Uint32Array;
+
+/** Result of validating a seed string. */
+export interface SeedValidationResult {
+  readonly ok: boolean;
+  readonly findings: readonly ValidationFinding[];
+}
+
+/** Reduced seed representation produced by SHA-256 / hex compression and FNV-1a. */
+export interface DerivedSeedComponents {
+  readonly seed: string;
+  readonly compressedHex: string;
+  readonly numericSeed: number;
+}
+
+/** Domain-separated allocation and identifier PRNG streams for one seed. */
+export interface RandomizationStreams {
+  readonly allocationSeed: DerivedSeedComponents;
+  readonly identifierNumericSeed: number;
+  readonly allocation: PrngStream;
+  readonly identifier: PrngStream;
+}
+
+/** One authoritative factor/level identity pair within a structural stratum key. */
+export interface StructuralStratumEntry {
+  readonly factorId: string;
+  readonly levelId: string;
+}
+
+/** Ordered structural stratum identity separated from human-readable labels. */
+export type StructuralStratumKey = readonly StructuralStratumEntry[];
+
+/** Result of migrating legacy bracket mask tokens to modern syntax. */
+export interface LegacyMaskMigrationResult {
+  readonly changed: boolean;
+  readonly pattern: string;
+}
+
+/** One parsed segment inside a validated subject ID mask. */
+export type SubjectIdMaskSegment =
+  | { readonly kind: "literal"; readonly value: string }
+  | { readonly kind: "site" }
+  | { readonly kind: "stratum" }
+  | { readonly kind: "seq"; readonly width: number }
+  | { readonly kind: "rnd"; readonly length: number }
+  | { readonly kind: "checksum" };
+
+/** Validated representation of a subject ID mask. */
+export interface ParsedSubjectIdMask {
+  readonly pattern: string;
+  readonly segments: readonly SubjectIdMaskSegment[];
+  readonly hasRandomToken: boolean;
+  readonly hasChecksum: boolean;
+}
+
+/** Outcome of parsing and validating a subject ID mask. */
+export type ParsedSubjectIdMaskResult =
+  | { readonly ok: true; readonly mask: ParsedSubjectIdMask }
+  | { readonly ok: false; readonly findings: readonly ValidationFinding[] };
+
+/** Inputs supplied to generate one randomization subject identifier. */
+export interface SubjectIdContext {
+  readonly siteCode: string;
+  readonly stratumLabel: string;
+}
+
+/** Outcome of rendering a deterministic mask preview without consuming PRNG state. */
+export type SubjectIdMaskPreviewResult =
+  | { readonly ok: true; readonly exampleId: string }
+  | { readonly ok: false; readonly findings: readonly ValidationFinding[] };
+
+/** Stateful subject ID generator with per-site counters and global collision checks. */
+export interface SubjectIdGenerator {
+  nextId(context: SubjectIdContext): string;
+}
+
+/** Input payload hashed by `computeContentDigest` (excludes generation clock). */
+export interface ArtifactContentInput {
+  readonly request: RandomizationRequest;
+  readonly reducedRatios: readonly number[];
+  readonly rows: readonly AllocationRow[];
+}
+
+/** Input for assembling an immutable, deeply frozen randomization artifact. */
+export interface BuildArtifactInput extends ArtifactContentInput {
+  /** Injectable clock for deterministic tests; defaults to `() => new Date()`. */
+  readonly now?: () => Date;
+}

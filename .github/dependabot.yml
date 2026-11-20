@@ -1,10 +1,21 @@
 version: 2
 updates:
-  # One weekly PR for every action bump instead of one PR per action.
+  # One weekly PR for every action bump instead of one PR per action. It runs
+  # on the same Monday slot as npm so a week's dependency work lands together,
+  # ahead of the Sunday release train (ADR 0063).
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "13:00"
+      timezone: "America/Chicago"
+    commit-message:
+      prefix: "ci"
+    # A release has to be a week old before it is proposed, so a tag that is
+    # yanked or found compromised in its first days never reaches a PR.
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
@@ -14,9 +25,13 @@ updates:
   # (#2511). Majors are ignored here and taken one per PR by hand, because
   # each needs its own migration (vitest, eslint, jsdom, framer-motion).
   # `next` and `eslint-config-next` are exact pins that must move together,
-  # so they get their own group. Every npm PR then needs `npm run deps:fix`,
-  # which regenerates the OSS credits and moves the Playwright CI images to a
-  # new @playwright/test (#2730). The recipe is in
+  # so they get their own group. Security updates skip the cooldown and the
+  # weekly slot, and arrive together in one `npm-security` PR.
+  #
+  # Dependabot cannot run project scripts, so every npm PR arrives red on the
+  # Security Gate until `npm run deps:fix` regenerates the OSS credits and
+  # moves the Playwright CI images to a new @playwright/test (#2730). Carry it
+  # on a `chore/` branch; the recipe is in
   # docs/how-to/manage-dependency-licenses.md.
   - package-ecosystem: "npm"
     directory: "/"
@@ -25,10 +40,17 @@ updates:
       day: "monday"
       time: "13:00"
       timezone: "America/Chicago"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "build"
       include: "scope"
+    # Version updates wait for a release to age: 3 days for a patch, 7 for a
+    # minor. Malicious npm releases are usually caught and pulled within that
+    # window. Security updates are not delayed.
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -41,10 +63,20 @@ updates:
       - dependency-name: "markdownlint-cli"
         versions: ["0.50.0"]
     groups:
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       nextjs:
         patterns:
           - "next"
           - "eslint-config-next"
+      # A new @playwright/test also needs the Playwright CI container images
+      # moved (`npm run deps:fix`), which Dependabot cannot do, so it gets a
+      # PR of its own and the rest of the week's bumps are not held up by it.
+      playwright:
+        patterns:
+          - "@playwright/test"
       npm-minor-and-patch:
         update-types:
           - "minor"

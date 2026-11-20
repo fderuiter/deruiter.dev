@@ -15,11 +15,12 @@ cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
 # `npm ci` only when node_modules is missing or stale against the lockfile,
 # so resumed sessions skip the reinstall. `npm ci` never rewrites
 # package-lock.json, which keeps the docs-drift and lockfile checks clean.
-# postinstall runs `prisma generate`; prepare installs the husky git hooks.
+# postinstall runs `prisma generate` and writes the open source credits and
+# notices (scripts/oss-credits.ts); prepare installs the husky git hooks.
 if [ ! -f node_modules/.package-lock.json ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
   npm ci --no-audit --no-fund
 else
-  npx prisma generate
+  npm run -s postinstall
 fi
 
 # The container preinstalls Chromium under /opt/pw-browsers, usually at an

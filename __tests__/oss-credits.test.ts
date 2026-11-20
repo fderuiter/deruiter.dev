@@ -537,11 +537,12 @@ describe("renderThirdPartyNotices", () => {
   });
 });
 
-describe("committed credits match the repository", () => {
+describe("generated credits match the repository", () => {
   const lock = readJson<LockfileShape>("package-lock.json");
   const pkg = readJson<RootPackageShape>("package.json");
-  // Everything below reads committed files only: no node_modules, no network.
-  // That is what makes the check identical on Linux, macOS and Windows.
+  // postinstall writes these files from package-lock.json (ADR 0057,
+  // amendment 2026-11-20); they are not committed. Everything below reads
+  // them and the lockfile only: no node_modules, no network.
 
   it("registry facts cover the lockfile exactly (fix: npm run oss:credits)", () => {
     expect(
@@ -556,7 +557,7 @@ describe("committed credits match the repository", () => {
     });
   });
 
-  it("committed files are byte-identical to what the generator renders", () => {
+  it("generated files are byte-identical to what the generator renders", () => {
     const rendered = renderOutputs(REGISTRY_FACTS, lock, pkg);
     expect(readText(DATASET_PATH) === rendered.dataset).toBe(true);
     expect(readText(NOTICES_PATH) === rendered.notices).toBe(true);

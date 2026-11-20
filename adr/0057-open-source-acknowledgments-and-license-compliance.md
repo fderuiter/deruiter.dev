@@ -8,7 +8,8 @@ Accepted on 2026-10-03, under the epic
 [#1804](https://github.com/fderuiter/deruiter.dev/issues/1804). Extends
 [ADR 0045](0045-source-code-licensing-and-three-layer-reuse-boundary.md),
 which covers this project's own licensing, with the matching rules for the
-software it depends on.
+software it depends on. Amended on 2026-11-20: the generated files are no
+longer committed (see the amendment at the end).
 
 ## Context
 
@@ -80,7 +81,7 @@ no author). There is no identifier-only exemption. The audit fails when a
 shipped package does not sit under a license text of real length, so a name or
 an SPDX identifier alone never satisfies it.
 
-**7. The `/acknowledgments` page is static.** It renders from the committed
+**7. The `/acknowledgments` page is static.** It renders from the generated
 dataset: no database, no network, no client fetch for the main content. It
 is registered across the usual discovery matrix.
 
@@ -94,3 +95,36 @@ The dataset is a snapshot of the lockfile, not a legal opinion. Code that
 Next.js vendors inside its own compiled output is credited through `next`
 itself; a vendored package with a different license would not be visible to
 this tooling.
+
+## Amendment 2026-11-20: generated at install, not committed
+
+Decision 1 committed the three generated files. In practice every change to
+`package-lock.json` made them stale, and the byte-for-byte check then failed
+CI. Dependabot cannot run project scripts, so every one of its npm PRs arrived
+red and had to be carried by hand (#3995 and #3996 were closed for this), and
+a one-line version bump came with thousands of lines of generated diff.
+
+The three files are now build output. `postinstall` runs
+`scripts/oss-credits.ts` after `prisma generate`, so `npm ci`, `npm install`,
+CI and the Vercel build all write them from the lockfile before anything reads
+them. `.gitignore` lists them. Nothing else in the decision changes:
+
+- The sources are still the lockfile and the npm registry, addressed by
+  resolved URL and integrity hash, never `node_modules`.
+- `registry-facts.generated.json` stays on disk between installs as a cache,
+  so a local install fetches only what is new. A cold run takes about 30
+  seconds.
+- `__tests__/oss-credits.test.ts` still re-renders the dataset and notices from
+  the facts and compares them byte for byte, and `npm run audit:licenses`
+  still fails a shipped package that is missing from the notices. Those checks
+  now confirm the generator ran and agrees with itself, rather than that a
+  person remembered to commit its output.
+- A package with no resolvable license text now stops the install instead of
+  a later test run, with the same fix (`LICENSE_HOLDER_OVERRIDES` or
+  `LICENSE_TEXT_INHERITANCE`).
+
+The cost is that every install needs the npm registry and the SPDX license
+list, which an install already needs, and the fetch retries with backoff.
+`npm run deps:fix` is now only needed to move the Playwright CI images after a
+`@playwright/test` bump, so `.github/dependabot.yml` gives that package its
+own group.

@@ -1,6 +1,6 @@
 # Manage Dependency Licenses
 
-Documentation last reconciled: 2026-10-24.
+Documentation last reconciled: 2026-11-20.
 
 This page covers what to do when you add or upgrade a dependency, when the
 license audit fails, and how credits and notices stay current. The reasoning
@@ -11,8 +11,10 @@ is in [ADR 0057](../../adr/0057-open-source-acknowledgments-and-license-complian
 1. Install it as usual. If it is a direct dependency, add an entry for it in
    `lib/oss-credits/presets.ts`: a purpose group from `GROUP_ORDER` and one
    line saying why this project uses it.
-2. Regenerate the credits and notices. This works on any platform and needs
-   network access to the npm registry; it fetches only what is new or changed:
+2. The install regenerates the credits and notices. `postinstall` runs the
+   generator, which reads the lockfile, needs network access to the npm
+   registry and fetches only what is new or changed. The files are not
+   committed. To rerun it by hand:
 
    ```bash
    npm run oss:credits
@@ -29,21 +31,23 @@ is in [ADR 0057](../../adr/0057-open-source-acknowledgments-and-license-complian
    npm run audit:licenses
    ```
 
-4. Commit `package-lock.json`, `lib/oss-credits/internal/credits.generated.json`,
-   `lib/oss-credits/internal/registry-facts.generated.json` and
-   `public/third-party-notices.txt` together.
+4. Commit `package.json` and `package-lock.json`. The generated
+   `lib/oss-credits/internal/*.generated.json` and
+   `public/third-party-notices.txt` are git-ignored build output
+   ([ADR 0057 amendment](../../adr/0057-open-source-acknowledgments-and-license-compliance.md#amendment-2026-11-20-generated-at-install-not-committed)).
 
 `npm test` fails with the exact fix command if any of these drift. The check is
-byte-exact and offline. To confirm the committed facts against the registry
+byte-exact and offline. To confirm the cached facts against the registry
 itself, run `npm run oss:credits -- --verify-registry`.
 
 ## When a Dependabot PR is red
 
-Dependabot cannot run project scripts, so its npm PRs arrive with stale
-credits, and a `@playwright/test` bump arrives with CI still pinned to the old
-Playwright image. The pre-push guard only accepts the branch prefixes in
-`validateBranchName()`, so carry the PR on a `chore/` branch instead of pushing
-to `dependabot/*`:
+The credits are generated at install, so Dependabot's npm PRs pass without
+help, except for the `playwright` group. A `@playwright/test` bump arrives with
+CI still pinned to the old Playwright image, and Dependabot cannot run project
+scripts to move it. The pre-push guard only accepts the branch prefixes in
+`validateBranchName()`, so carry that PR on a `chore/` branch instead of
+pushing to `dependabot/*`:
 
 ```bash
 git fetch origin dependabot/npm_and_yarn/<group-branch>
@@ -87,7 +91,7 @@ a fresh review or remove the dependency.
 
 ## What the page shows
 
-`/acknowledgments` is built from the committed dataset. Direct runtime
+`/acknowledgments` is built from the generated dataset. Direct runtime
 dependencies are grouped by purpose with a link to each project, its version
 and its license. Every shipped package is searchable, and the full license
 texts are at `/third-party-notices.txt`.

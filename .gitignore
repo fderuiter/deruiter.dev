@@ -72,6 +72,11 @@ next-env.d.ts
 *.db-journal
 *.log
 app/theme.css
+# Open source credits and notices, generated from package-lock.json by
+# postinstall (scripts/oss-credits.ts, ADR 0057 amendment 2026-11-20)
+/lib/oss-credits/internal/credits.generated.json
+/lib/oss-credits/internal/registry-facts.generated.json
+/public/third-party-notices.txt
 /.scratch
 /scratch/
 /.jules/

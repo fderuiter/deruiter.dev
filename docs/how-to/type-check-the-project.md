@@ -58,8 +58,8 @@ through `typescript.tsdk` in `.vscode/settings.json`.
 ## Upgrade either compiler
 
 Raise `@typescript/native` (7.x) and `typescript` (the 6.0 compatibility
-package) separately in `package.json`, then run `npm install` and
-`npm run deps:fix`. After a TypeScript 7 bump, run `npm run typecheck:budget`
+package) separately in `package.json`, then run `npm install`, which
+regenerates the credits. After a TypeScript 7 bump, run `npm run typecheck:budget`
 and the full test suite.
 
 Once TypeScript 7.1 ships its API and the tools above support it, the alias

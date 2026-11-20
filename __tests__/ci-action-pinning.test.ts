@@ -70,8 +70,21 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     expect(content).toMatch(/npm-minor-and-patch:[\s\S]*"minor"[\s\S]*"patch"/);
   });
 
+  it("groups npm security updates apart from version updates and lets releases age first", () => {
+    const content = fs.readFileSync(dependabotPath, "utf8");
+    expect(content).toMatch(/npm-security:\n\s+applies-to: security-updates/);
+    expect(content).toMatch(
+      /playwright:\n\s+patterns:\n\s+- "@playwright\/test"/
+    );
+    expect(content).toMatch(
+      /cooldown:\n\s+default-days: 7\n\s+semver-patch-days: 3/
+    );
+  });
+
   it("skips only markdownlint-cli 0.50.0, whose re2js and argparse fail the audits (SECURITY.md)", () => {
     const content = fs.readFileSync(dependabotPath, "utf8");
-    expect(content).toMatch(/- dependency-name: "markdownlint-cli"\n\s+versions: \["0\.50\.0"\]/);
+    expect(content).toMatch(
+      /- dependency-name: "markdownlint-cli"\n\s+versions: \["0\.50\.0"\]/
+    );
   });
 });

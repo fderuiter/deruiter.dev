@@ -126,6 +126,9 @@ were removed after verifying the lockfile and rechecking the audit.
 | `markdownlint-cli > smol-toml`                     | `^1.9.0`   | `markdownlint-cli` 0.49                            | 1.7.2                       | 1 new moderate advisory (GHSA-r4xh-jqrq-34v2)                 | the upgrade to `markdownlint-cli` 0.50 (smol-toml `~1.9.1`), once it adds no advisory (below) |
 | `@typescript-eslint/typescript-estree > minimatch` | `^11.0.1`  | `typescript-eslint` through `eslint-config-next`   | 10.2.5                      | 1 new moderate advisory (GHSA-g3hv-75wg-m249)                 | `@typescript-eslint/typescript-estree` depends on minimatch 11.0.1 or later                   |
 | `@stryker-mutator/core > minimatch`                | `^11.0.1`  | Stryker                                            | 10.2.6                      | 1 new moderate advisory (GHSA-g3hv-75wg-m249)                 | `@stryker-mutator/core` depends on minimatch 11.0.1 or later (10.1.1 asks for `~10.2.4`)      |
+| `@prisma/config > effect`                          | `^3.22.1`  | `prisma` through `@prisma/config` 7.10.1           | 3.20.0 (exact pin)          | 1 new high advisory (GHSA-7589-6fvf-x4pw)                     | `@prisma/config` depends on effect 3.22.1 or later                                            |
+
+The `effect` pin answers a high ReDoS advisory in `Schema.TemplateLiteral` (GHSA-7589-6fvf-x4pw, #4064), which affects effect `<=3.22.0`. `@prisma/config` 7.10.1, the newest Prisma 7 release, pins effect `3.20.0` exactly, and the next Prisma release line is 8, a major migration. effect 3.22 is a minor release inside the same major line. The copy runs only in the Prisma CLI (`prisma generate`, `prisma validate` and migrations), which is a development dependency and never ships to the site.
 
 The `qs` pin was exact (`6.16.1`) with no stated reason; it is now a floor at the same release. `typed-rest-client` is its only consumer.
 

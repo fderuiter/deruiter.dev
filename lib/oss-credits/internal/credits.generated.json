@@ -6114,7 +6114,7 @@
     },
     {
       "name": "effect",
-      "version": "3.20.0",
+      "version": "3.22.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,

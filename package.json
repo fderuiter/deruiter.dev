@@ -63,7 +63,7 @@
     "check": "npm run typecheck && npm run lint && npm run lint:boundaries",
     "prepare": "husky",
     "preinstall": "node scripts/enforce-npm.js",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && node --import tsx scripts/oss-credits.ts",
     "pretest": "prisma generate",
     "test": "vitest run",
     "test:staged": "tsx scripts/test-staged.ts",

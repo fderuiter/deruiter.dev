@@ -41,13 +41,14 @@ either one fails until you make the other match.
    npx vitest run __tests__/ci-toolchain-pinning.test.ts
    ```
 
-5. Refresh the dependency credits, which read the lockfile:
+5. `npm install` regenerates the dependency credits from the lockfile in
+   postinstall, and they are not committed. To rerun the generator by hand:
 
    ```bash
    npm run oss:credits
    ```
 
-   Commit `lib/oss-credits/internal/credits.generated.json` if it changed. Dev-only
+   Dev-only
    bundled entries (a wasm package's own dependencies, which Dependabot's npm
    records with no `resolved` URL or integrity) are skipped, so they no
    longer need a manual fix. A shipped entry without them still fails. See

@@ -28,11 +28,11 @@ updates:
   # so they get their own group. Security updates skip the cooldown and the
   # weekly slot, and arrive together in one `npm-security` PR.
   #
-  # Dependabot cannot run project scripts, so every npm PR arrives red on the
-  # Security Gate until `npm run deps:fix` regenerates the OSS credits and
-  # moves the Playwright CI images to a new @playwright/test (#2730). Carry it
-  # on a `chore/` branch; the recipe is in
-  # docs/how-to/manage-dependency-licenses.md.
+  # The OSS credits and notices are generated at install, not committed (ADR
+  # 0057 amendment), so these PRs pass CI by themselves. The exception is the
+  # `playwright` group: Dependabot cannot run `npm run deps:fix` to move the
+  # Playwright CI images (#2730), so carry that PR on a `chore/` branch; the
+  # recipe is in docs/how-to/manage-dependency-licenses.md.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:

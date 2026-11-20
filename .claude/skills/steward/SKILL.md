@@ -90,9 +90,10 @@ parallel; merge one at a time.
   device suite only run in CI. Tools built on
   `launchChromiumWithFallback()` (`bench:pages`, the mermaid test) do run
   locally.
-- **Dependabot npm PRs need `npm run deps:fix`.** It regenerates the OSS
-  credits and moves the Playwright CI images to a bumped
-  `@playwright/test`. Pushes to `dependabot/*` fail the branch guard, so
-  carry the PR on a `chore/` branch, merge `main` in when it is behind and
-  close Dependabot's PR with a link (recipe in
+- **Only the Dependabot `playwright` PR needs `npm run deps:fix`.** The OSS
+  credits and notices are generated at install and not committed, so the
+  other npm groups pass by themselves. A bumped `@playwright/test` still needs
+  the Playwright CI images moved. Pushes to `dependabot/*` fail the branch
+  guard, so carry that PR on a `chore/` branch, merge `main` in when it is
+  behind and close Dependabot's PR with a link (recipe in
   `docs/how-to/manage-dependency-licenses.md`).

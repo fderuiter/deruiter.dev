@@ -114,6 +114,9 @@
     },
     "@stryker-mutator/core": {
       "minimatch": "^11.0.1"
+    },
+    "@prisma/config": {
+      "effect": "^3.22.1"
     }
   },
   "dependencies": {

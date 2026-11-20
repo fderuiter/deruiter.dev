@@ -220,7 +220,7 @@ LICENSE TEXT 1 of 88, applies to 173 package(s):
     Copyright (c) Pooya Parsa <pooya@pi0.io>
 - destr@2.0.5 (MIT)
     Copyright (c) Pooya Parsa <pooya@pi0.io>
-- effect@3.20.0 (MIT)
+- effect@3.22.5 (MIT)
     Copyright (c) 2023 Effectful Technologies Inc
 - empathic@2.0.0 (MIT)
     Copyright (c) Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)

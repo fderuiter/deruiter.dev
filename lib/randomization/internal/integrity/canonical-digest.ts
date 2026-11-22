@@ -102,6 +102,21 @@ export function computeContentDigest(
 }
 
 /**
+ * Computes the SHA-256 identity of a plan as submitted, over its canonical
+ * JSON (#4004). The worker client sends it with each generation request and
+ * every response echoes it, so a result is published only for the exact plan
+ * that produced it. Throws for a value that is not canonical JSON.
+ */
+export function computePlanDigest(plan: unknown): string {
+  return sha256Utf8Hex(
+    canonicalizeAuditValue({
+      planDigestVersion: 1,
+      plan,
+    })
+  );
+}
+
+/**
  * Computes a separate SHA-256 event provenance digest binding the numerical
  * content digest to a UTC ISO generation timestamp and host study provenance.
  */

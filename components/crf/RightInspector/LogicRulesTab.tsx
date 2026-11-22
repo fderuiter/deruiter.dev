@@ -12,6 +12,7 @@ import { explainRule, describeRuleLogic } from "@/lib/crf";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { AstRuleEditor } from "./AstRuleEditor";
 import { RuleWireEditor } from "./RuleWireEditor";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface LogicRulesTabProps {
   form: CRFForm;
@@ -356,13 +357,14 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                     >
                       {isEditing ? "Close" : "Configure"}
                     </button>
-                    <button
+                    <TooltipButton
                       onClick={() => handleDeleteRule(rule.id)}
                       className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
-                      title="Delete Rule"
+                      tooltip="Delete Rule"
+                      aria-label="Delete Rule"
                     >
                       <IconTrash className="w-3.5 h-3.5" />
-                    </button>
+                    </TooltipButton>
                   </div>
                 </div>
 
@@ -574,13 +576,13 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
         </span>
         <div className="flex items-center gap-2">
           {groups.length > 1 && (
-            <button
+            <TooltipButton
               onClick={onToggleOuterOperator}
               className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan"
-              title="Toggle how groups are combined"
+              tooltip="Toggle how groups are combined"
             >
               Groups: {outerOperator}
-            </button>
+            </TooltipButton>
           )}
           <button
             onClick={onAddGroup}
@@ -597,13 +599,13 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
           className="p-2 rounded-lg bg-zinc-925 border border-zinc-800 space-y-2"
         >
           <div className="flex items-center justify-between">
-            <button
+            <TooltipButton
               onClick={() => onToggleGroupOperator(gIdx)}
               className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan"
-              title="Toggle AND/OR within this group"
+              tooltip="Toggle AND/OR within this group"
             >
               Group {gIdx + 1}: {group.logicalOperator}
-            </button>
+            </TooltipButton>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onAddCondition(gIdx)}
@@ -612,13 +614,14 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                 + Condition
               </button>
               {groups.length > 1 && (
-                <button
+                <TooltipButton
                   onClick={() => onDeleteGroup(gIdx)}
                   className="p-1 text-zinc-500 hover:text-red-400"
-                  title="Delete Group"
+                  tooltip="Delete Group"
+                  aria-label="Delete Group"
                 >
                   <IconTrash className="w-3 h-3" />
-                </button>
+                </TooltipButton>
               )}
             </div>
           </div>

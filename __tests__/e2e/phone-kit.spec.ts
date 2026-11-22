@@ -184,7 +184,7 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
 
     await page.locator(`${IMMERSIVE} button[title="Setup"]`).tap();
     await page
-      .locator(`${IMMERSIVE} button[title="Pre-Game Setup Wizard"]`)
+      .locator(`${IMMERSIVE} button:has-text("Game setup: difficulty")`)
       .tap();
     const skip = page.getByRole("button", { name: "Skip Setup" });
     await expect(skip).toBeVisible();
@@ -219,7 +219,9 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     expect(
       results.violations
         .filter((v) => BLOCKING.has(v.impact ?? ""))
-        .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)
+        .map(
+          (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`
+        )
     ).toEqual([]);
 
     await sheet.getByRole("button", { name: "Large" }).tap();
@@ -237,7 +239,9 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
           (selector) =>
             !!document.activeElement &&
             document.activeElement !== document.body &&
-            !!document.querySelector(selector)?.contains(document.activeElement),
+            !!document
+              .querySelector(selector)
+              ?.contains(document.activeElement),
           IMMERSIVE
         )
       )

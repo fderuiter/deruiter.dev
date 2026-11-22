@@ -63,6 +63,7 @@ import {
   type LabyrinthActionName,
   type LabyrinthInputContext,
 } from "@/lib/retro-labyrinth/actions";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 const MAZE = STAGE_1_MAZE;
 
@@ -754,15 +755,15 @@ export function LabyrinthLayout({
 
             {/* CRT Calibration Trigger */}
             <span className="w-px h-3 bg-neutral-800 mx-0.5" />
-            <button
+            <TooltipButton
               onClick={() => setIsCRTModalOpen(true)}
-              title="Calibrate CRT Display & Phosphor Shaders"
+              tooltip="Calibrate CRT Display & Phosphor Shaders"
               aria-label="Calibrate CRT Display & Phosphor Shaders"
               className="px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-emerald-400 cursor-pointer flex items-center gap-1 transition-colors [@media(pointer:coarse)]:min-h-11"
             >
               <IconDeviceTv className="w-3 h-3" />
               <span className="hidden sm:inline">CRT</span>
-            </button>
+            </TooltipButton>
           </div>
 
           <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg text-xs">

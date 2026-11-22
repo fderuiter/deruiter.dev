@@ -119,7 +119,9 @@ describe("Garmin cabinet setup wizard starts the run (#1209)", () => {
       fireEvent.click(screen.getByTitle("Setup"));
     });
     await act(async () => {
-      fireEvent.click(screen.getByTitle("Pre-Game Setup Wizard"));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Game setup: difficulty/ })
+      );
     });
     await pickOption(/Hard/);
     await next();
@@ -156,7 +158,9 @@ describe("Garmin cabinet setup wizard starts the run (#1209)", () => {
       fireEvent.click(screen.getByTitle("Setup"));
     });
     await act(async () => {
-      fireEvent.click(screen.getByTitle("Pre-Game Setup Wizard"));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Game setup: difficulty/ })
+      );
     });
     expect(status()).toBe("paused");
 
@@ -175,7 +179,9 @@ describe("Garmin cabinet setup wizard starts the run (#1209)", () => {
       fireEvent.click(screen.getByTitle("Setup"));
     });
     await act(async () => {
-      fireEvent.click(screen.getByTitle("Pre-Game Setup Wizard"));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Game setup: difficulty/ })
+      );
     });
     expect(status()).toBe("paused");
     await next();

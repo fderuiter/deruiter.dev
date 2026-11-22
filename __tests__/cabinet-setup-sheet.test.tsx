@@ -43,7 +43,9 @@ function setWidth(width: number) {
   });
 }
 
-function renderSheet(props: Partial<React.ComponentProps<typeof CabinetSetupSheet>> = {}) {
+function renderSheet(
+  props: Partial<React.ComponentProps<typeof CabinetSetupSheet>> = {}
+) {
   const onClose = vi.fn();
   const onOpenWizard = vi.fn();
   const view = render(
@@ -103,19 +105,21 @@ describe("CabinetSetupSheet (#2923)", () => {
     const dialog = screen.getByRole("dialog", { name: "Setup" });
 
     fireEvent.click(
-      within(within(dialog).getByRole("group", { name: "Dominant hand" })).getByRole(
-        "button",
-        { name: "Left" }
-      )
+      within(
+        within(dialog).getByRole("group", { name: "Dominant hand" })
+      ).getByRole("button", { name: "Left" })
     );
     fireEvent.click(within(dialog).getByRole("button", { name: "Large" }));
     fireEvent.click(within(dialog).getByRole("button", { name: "Tablet" }));
     fireEvent.click(
       within(dialog).getByRole("switch", { name: "Reduced effects" })
     );
-    fireEvent.change(within(dialog).getByRole("slider", { name: "Sound effects" }), {
-      target: { value: "40" },
-    });
+    fireEvent.change(
+      within(dialog).getByRole("slider", { name: "Sound effects" }),
+      {
+        target: { value: "40" },
+      }
+    );
     fireEvent.change(within(dialog).getByRole("slider", { name: "Music" }), {
       target: { value: "15" },
     });
@@ -130,9 +134,9 @@ describe("CabinetSetupSheet (#2923)", () => {
       music: 0.15,
     });
     expect(
-      within(dialog).getByRole("button", { name: "Left" }).getAttribute(
-        "aria-pressed"
-      )
+      within(dialog)
+        .getByRole("button", { name: "Left" })
+        .getAttribute("aria-pressed")
     ).toBe("true");
   });
 
@@ -190,9 +194,9 @@ describe("CabinetSetupSheet (#2923)", () => {
     renderSheet();
     const layout = screen.getByRole("group", { name: "Layout" });
     expect(
-      within(layout).getByRole("button", { name: "Desktop" }).getAttribute(
-        "aria-pressed"
-      )
+      within(layout)
+        .getByRole("button", { name: "Desktop" })
+        .getAttribute("aria-pressed")
     ).toBe("true");
     expect(screen.getByTestId("setup-layout-note").textContent).toMatch(
       /Desktop needs a window 1024px wide, so Auto applies/
@@ -204,7 +208,9 @@ describe("CabinetSetupSheet (#2923)", () => {
     const { onClose, onOpenWizard } = renderSheet();
     fireEvent.keyDown(document.activeElement!, { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
-    fireEvent.click(screen.getByTitle("Pre-Game Setup Wizard"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Game setup: difficulty/ })
+    );
     expect(onOpenWizard).toHaveBeenCalled();
   });
 
@@ -248,7 +254,9 @@ describe("PlayCabinet Setup key (#2923)", () => {
     expect(screen.queryByTestId("pregame-setup-wizard-overlay")).toBeNull();
 
     act(() => {
-      fireEvent.click(within(dialog).getByTitle("Pre-Game Setup Wizard"));
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: /Game setup: difficulty/ })
+      );
     });
     expect(screen.queryByRole("dialog", { name: "Setup" })).toBeNull();
     expect(screen.getByTestId("pregame-setup-wizard-overlay")).toBeTruthy();

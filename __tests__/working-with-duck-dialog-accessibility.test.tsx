@@ -114,7 +114,10 @@ Object.defineProperty(globalThis, "localStorage", {
 });
 
 function firstByTitle(container: HTMLElement, title: string): HTMLElement {
-  const el = container.querySelector<HTMLElement>(`[title="${title}"]`);
+  // Buttons moved off `title` keep the same text as their aria-label.
+  const el = container.querySelector<HTMLElement>(
+    `[title="${title}"], [aria-label="${title}"]`
+  );
   expect(el).not.toBeNull();
   return el!;
 }

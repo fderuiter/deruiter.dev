@@ -139,7 +139,9 @@ describe("NeuroRecon Subcomponents Suite", () => {
         />
       );
 
-      const clearBtn = screen.getByTitle("Clear terminal buffer");
+      const clearBtn = screen.getByRole("button", {
+        name: "Clear terminal buffer",
+      });
       fireEvent.click(clearBtn);
 
       expect(handleClear).toHaveBeenCalledTimes(1);

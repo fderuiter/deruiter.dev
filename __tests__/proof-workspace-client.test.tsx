@@ -177,7 +177,11 @@ describe("Proof Studio canvas controls", () => {
     runCommand("connect C E");
     runCommand("connect D E");
     expect(provenConclusion()).toBeTruthy();
-    fireEvent.click(screen.getByTitle("Reset node positions & connections"));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Reset node positions and connections",
+      })
+    );
     expect(provenConclusion()).toBeNull();
   });
 

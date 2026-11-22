@@ -15,6 +15,7 @@ import {
   type DeviceHandedness,
   type DeviceLayout,
 } from "@/lib/arcade";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 /** Props for {@link CabinetSetupSheet}. */
 interface CabinetSetupSheetProps {
@@ -285,15 +286,15 @@ export function CabinetSetupSheet({
           {setupItems}
         </section>
       )}
-      <button
+      <TooltipButton
         type="button"
         onClick={onOpenWizard}
-        title="Pre-Game Setup Wizard"
+        tooltip="Pre-Game Setup Wizard"
         className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-neutral-900/90 px-3 text-xs font-bold text-amber-400 touch-manipulation hover:bg-neutral-800 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
       >
         <IconAdjustments className="h-4 w-4" aria-hidden="true" />
         Game setup: difficulty, loadout and CRT
-      </button>
+      </TooltipButton>
       {onOpenTutorial && (
         <button
           type="button"

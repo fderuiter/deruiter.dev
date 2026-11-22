@@ -267,7 +267,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
       'button[title="Step Forward"]'
     ) as HTMLButtonElement;
     const resetBtn = container.querySelector(
-      'button[title="Reset"]'
+      'button[aria-label="Reset"]'
     ) as HTMLButtonElement;
 
     // Run step 1

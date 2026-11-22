@@ -28,6 +28,7 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
 import { FormTemplatesPanel } from "./FormTemplatesPanel";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 export type LeftSidebarTab = "spine" | "forms" | "palette";
 
@@ -349,14 +350,14 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               <IconTimeline className="w-3.5 h-3.5 text-brand-cyan" />
               Study Timeline ({study.visits.length} Visits)
             </span>
-            <button
+            <TooltipButton
               onClick={onAddVisit}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-mono transition-colors border border-zinc-700"
-              title="Add New Protocol Visit"
+              tooltip="Add New Protocol Visit"
             >
               <IconPlus className="w-3 h-3" />
               <span>Visit</span>
-            </button>
+            </TooltipButton>
           </div>
 
           {/* Epochs & Visits Tree */}
@@ -586,14 +587,14 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">
                 Study Forms ({study.forms.length})
               </span>
-              <button
+              <TooltipButton
                 onClick={onAddForm}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-mono transition-colors border border-zinc-700"
-                title="Add Blank Form"
+                tooltip="Add Blank Form"
               >
                 <IconPlus className="w-3 h-3" />
                 <span>New</span>
-              </button>
+              </TooltipButton>
             </div>
 
             <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">

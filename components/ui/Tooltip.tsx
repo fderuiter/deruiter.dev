@@ -8,6 +8,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { clamp } from "@/lib/utils";
 
 const noopSubscribe = () => () => {};
 
@@ -28,25 +29,11 @@ const HIDE_DELAY_MS = 120;
 const TIP_CLASSES =
   "w-max max-w-xs p-2 text-xs font-sans not-italic font-normal normal-case text-left tracking-normal text-neutral-200 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg pointer-events-auto";
 
-export const Tooltip = ({
-  children,
-  text,
-}: {
-  children: React.ReactNode;
-  text: string;
-}) => {
+// Shared show/hide state for both tooltip forms. The popover mirrors the
+// state, and the browser's light dismiss (Escape, another popover) closes it.
+function useHint(native: boolean) {
   const [show, setShow] = useState(false);
-  const tooltipId = useId();
-  const anchorName = `--tip-${tooltipId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const native = useSyncExternalStore(
-    noopSubscribe,
-    supportsAnchoredPopover,
-    () => false
-  );
   const tipRef = useRef<HTMLDivElement | null>(null);
-  // The popover stays in the DOM, so it can always describe the trigger.
-  // Without it the tip exists only while shown, as before.
-  const describedBy = native || show ? tooltipId : undefined;
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelHide = useCallback(() => {
@@ -71,8 +58,6 @@ export const Tooltip = ({
 
   useEffect(() => cancelHide, [cancelHide]);
 
-  // Mirror the state onto the popover, and follow the browser when it
-  // light-dismisses a hint (Escape, or another popover opening).
   useEffect(() => {
     if (!native) return;
     const tip = tipRef.current;
@@ -89,6 +74,40 @@ export const Tooltip = ({
     tip.addEventListener("toggle", onToggle);
     return () => tip.removeEventListener("toggle", onToggle);
   }, [native, show]);
+
+  return { show, open, close, closeSoon, cancelHide, tipRef };
+}
+
+const useAnchoredPopover = () =>
+  useSyncExternalStore(noopSubscribe, supportsAnchoredPopover, () => false);
+
+const anchorNameFor = (id: string) =>
+  `--tip-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
+const anchoredTipStyle = (anchorName: string): React.CSSProperties => ({
+  positionAnchor: anchorName,
+  positionArea: "top",
+  positionTryFallbacks: "flip-block, flip-inline",
+  inset: "auto",
+  // Side margins keep a flipped or shifted tip off the viewport edge.
+  margin: "0 0.5rem 0.5rem",
+  maxWidth: "min(20rem, calc(100vw - 1rem))",
+});
+
+export const Tooltip = ({
+  children,
+  text,
+}: {
+  children: React.ReactNode;
+  text: string;
+}) => {
+  const tooltipId = useId();
+  const anchorName = anchorNameFor(tooltipId);
+  const native = useAnchoredPopover();
+  const { show, open, close, closeSoon, cancelHide, tipRef } = useHint(native);
+  // The popover stays in the DOM, so it can always describe the trigger.
+  // Without it the tip exists only while shown, as before.
+  const describedBy = native || show ? tooltipId : undefined;
 
   return (
     <span
@@ -127,15 +146,7 @@ export const Tooltip = ({
           {...{ popover: "hint" }}
           onMouseEnter={cancelHide}
           onMouseLeave={closeSoon}
-          style={{
-            positionAnchor: anchorName,
-            positionArea: "top",
-            positionTryFallbacks: "flip-block, flip-inline",
-            inset: "auto",
-            // Side margins keep a flipped or shifted tip off the viewport edge.
-            margin: "0 0.5rem 0.5rem",
-            maxWidth: "min(20rem, calc(100vw - 1rem))",
-          }}
+          style={anchoredTipStyle(anchorName)}
           className={`${TIP_CLASSES} overflow-visible`}
         >
           {text}
@@ -158,5 +169,133 @@ export const Tooltip = ({
         </AnimatePresence>
       )}
     </span>
+  );
+};
+
+/** Gap in pixels between a fallback tip and its button or the viewport. */
+const FALLBACK_GAP_PX = 8;
+
+/** A button whose tooltip text replaces the native `title` tooltip. */
+type TooltipButtonProps = React.ComponentPropsWithRef<"button"> & {
+  /** Hint shown on hover and focus; no tip when undefined. */
+  readonly tooltip?: string;
+};
+
+/**
+ * A button with a hint that keyboard, touch and pointer users all see, in
+ * place of `title`, which only shows on mouse hover (#3978). The hint shows
+ * on hover and focus, hides on Escape and blur, and stays hoverable. It
+ * describes the button unless it repeats the button's `aria-label`. An
+ * icon-only button still needs its own `aria-label`.
+ */
+export const TooltipButton = ({
+  tooltip,
+  ref,
+  style,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
+  onKeyDown,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: TooltipButtonProps) => {
+  const tipId = useId();
+  const anchorName = anchorNameFor(tipId);
+  const native = useAnchoredPopover();
+  const { show, open, close, closeSoon, cancelHide, tipRef } = useHint(native);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [fallbackPosition, setFallbackPosition] =
+    useState<React.CSSProperties | null>(null);
+  const hasTip = typeof tooltip === "string" && tooltip.length > 0;
+
+  const setRefs = useCallback(
+    (node: HTMLButtonElement | null) => {
+      buttonRef.current = node;
+      if (typeof ref === "function") return ref(node);
+      if (ref) ref.current = node;
+    },
+    [ref]
+  );
+
+  const reveal = useCallback(() => {
+    if (!hasTip) return;
+    if (!native && buttonRef.current) {
+      // Without anchor positioning, place a fixed tip above the button, or
+      // below it near the top edge, and keep its centre on screen.
+      const rect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || rect.right;
+      const centre = clamp(
+        rect.left + rect.width / 2,
+        FALLBACK_GAP_PX,
+        Math.max(FALLBACK_GAP_PX, viewportWidth - FALLBACK_GAP_PX)
+      );
+      const above = rect.top > 48;
+      setFallbackPosition({
+        position: "fixed",
+        left: centre,
+        top: above ? rect.top - FALLBACK_GAP_PX : rect.bottom + FALLBACK_GAP_PX,
+        transform: above ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+        maxWidth: `min(20rem, calc(100vw - ${FALLBACK_GAP_PX * 2}px))`,
+      });
+    }
+    open();
+  }, [hasTip, native, open]);
+
+  // As in Tooltip, the fallback tip exists only while shown.
+  const tipInDom = hasTip && (native || show);
+  const describes = tipInDom && tooltip !== props["aria-label"];
+  const describedBy =
+    [ariaDescribedBy, describes ? tipId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  return (
+    <>
+      <button
+        {...props}
+        ref={setRefs}
+        aria-describedby={describedBy}
+        style={native && hasTip ? { ...style, anchorName } : style}
+        onMouseEnter={(event) => {
+          onMouseEnter?.(event);
+          reveal();
+        }}
+        onMouseLeave={(event) => {
+          onMouseLeave?.(event);
+          closeSoon();
+        }}
+        onFocus={(event) => {
+          onFocus?.(event);
+          reveal();
+        }}
+        onBlur={(event) => {
+          onBlur?.(event);
+          close();
+        }}
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          if (event.key === "Escape" && show) close();
+        }}
+      />
+      {tipInDom ? (
+        <div
+          ref={tipRef}
+          id={tipId}
+          role="tooltip"
+          {...(native ? { popover: "hint" } : null)}
+          onMouseEnter={cancelHide}
+          onMouseLeave={closeSoon}
+          style={
+            native
+              ? anchoredTipStyle(anchorName)
+              : (fallbackPosition ?? undefined)
+          }
+          className={`${TIP_CLASSES} ${native ? "overflow-visible" : "z-50"}`}
+        >
+          {tooltip}
+        </div>
+      ) : null}
+    </>
   );
 };

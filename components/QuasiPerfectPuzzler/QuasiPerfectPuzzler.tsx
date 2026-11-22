@@ -49,6 +49,7 @@ import {
   CURRICULUM_LABEL,
   useQuasiSession,
 } from "./useQuasiSession";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 // Matches the level heading's scroll-mt-nav-24 offset (6rem), which clears the fixed Navbar.
 const NAVBAR_CLEARANCE_PX = 96;
@@ -620,10 +621,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             {activeTab === "campaign" && (
               <>
-                <button
+                <TooltipButton
                   type="button"
                   onClick={() => setShowBriefingModal(true)}
-                  title="Theory Briefing (B)"
+                  tooltip="Theory Briefing (B)"
                   className={quietButtonClass}
                 >
                   <IconSparkles className="w-3.5 h-3.5 qp-text-accent" />
@@ -633,7 +634,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                     <span className="sr-only">Theory </span>
                     <span className="sr-only xl:not-sr-only">Briefing</span>
                   </span>
-                </button>
+                </TooltipButton>
                 <button
                   type="button"
                   data-tutorial-target="hint"

@@ -309,7 +309,9 @@ describe("EDC Simulation State Integration", () => {
     render(<CRFStudioContainer />);
 
     // Enroll a custom subject in active EDC simulation
-    const enrollBtn = await screen.findByTitle(/Enroll New Simulated Subject/i);
+    const enrollBtn = await screen.findByRole("button", {
+      name: /Enroll New Simulated Subject/i,
+    });
     fireEvent.click(enrollBtn);
 
     const subjectInput = await screen.findByPlaceholderText(/e.g. 001-104/i);
@@ -359,9 +361,9 @@ describe("EDC Simulation State Integration", () => {
 
     // 2. Same-ID JSON Replacement
     // Enroll another custom subject on the new active study
-    const enrollBtn2 = await screen.findByTitle(
-      /Enroll New Simulated Subject/i
-    );
+    const enrollBtn2 = await screen.findByRole("button", {
+      name: /Enroll New Simulated Subject/i,
+    });
     fireEvent.click(enrollBtn2);
 
     const subjectInput2 = await screen.findByPlaceholderText(/e.g. 001-104/i);

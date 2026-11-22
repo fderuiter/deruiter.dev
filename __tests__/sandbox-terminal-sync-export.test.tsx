@@ -49,7 +49,9 @@ describe("SandboxTerminal State Sync & Script Export Suite", () => {
   it("clears console logs and local storage when Clear History button is clicked", () => {
     render(<SandboxTerminal slug="test-study-clear" />);
 
-    const clearButtons = screen.getAllByTitle("Clear Terminal Logs & History");
+    const clearButtons = screen.getAllByRole("button", {
+      name: "Clear History",
+    });
     fireEvent.click(clearButtons[0]);
 
     expect(screen.queryByText(/iMednet Python SDK CLI Sandbox/i)).toBeNull();
@@ -79,9 +81,9 @@ describe("SandboxTerminal State Sync & Script Export Suite", () => {
   it("renders Export Script dropdown controls and options", () => {
     render(<SandboxTerminal slug="test-study-export" />);
 
-    const exportButtons = screen.getAllByTitle(
-      "Export Executed Commands as Pipeline Script"
-    );
+    const exportButtons = screen.getAllByRole("button", {
+      name: "Export Script",
+    });
     expect(exportButtons[0]).toBeDefined();
 
     fireEvent.click(exportButtons[0]);

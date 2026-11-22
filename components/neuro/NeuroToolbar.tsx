@@ -15,6 +15,7 @@ import {
   IconEye,
   IconEyeOff,
 } from "@tabler/icons-react";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface NeuroToolbarProps {
   toolMode: ToolMode;
@@ -187,18 +188,18 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
           </span>
         </button>
 
-        <button
+        <TooltipButton
           onClick={onReset}
-          title="Reset this case: clears its edits and control points (other cases keep their drafts). Undo is offered afterward."
+          tooltip="Reset this case: clears its edits and control points (other cases keep their drafts). Undo is offered afterward."
           aria-label="Reset workspace"
           className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
         >
           <IconRotateClockwise2 className="w-4 h-4" />
-        </button>
+        </TooltipButton>
 
-        <button
+        <TooltipButton
           onClick={onOpenFieldManual}
-          title="Open FreeSurfer Field Manual & Defect Guide [M]"
+          tooltip="Open FreeSurfer Field Manual & Defect Guide [M]"
           aria-label="Open Field Manual, M"
           aria-keyshortcuts="M"
           className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl bg-zinc-950 border border-zinc-800 text-brand-cyan hover:bg-zinc-900 text-xs font-mono font-bold transition-all"
@@ -208,7 +209,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
           <span className="text-[10px] text-zinc-400 font-mono hidden lg:inline">
             [M]
           </span>
-        </button>
+        </TooltipButton>
       </div>
     </div>
   );

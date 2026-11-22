@@ -67,7 +67,9 @@ for (const layout of [
         .locator('[aria-live="assertive"]')
         .filter({ hasText: /Connection rejected:/ })
     ).toContainText("Connection rejected:");
-    const reset = page.getByTitle("Reset node positions & connections");
+    const reset = page.getByRole("button", {
+      name: "Reset node positions and connections",
+    });
     await reset.focus();
     await page.keyboard.press("Enter");
     await tabToNode(page, canvas, node("C"));

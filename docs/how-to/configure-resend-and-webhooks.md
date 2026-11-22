@@ -96,13 +96,26 @@ cheap, so the upsert is enough.
 
 ### Suppression-check failure policy
 
-`EmailService.isSuppressed` (the *read* path, consulted before every
-outbound send) fails **open** on a database error. It returns
-`{ suppressed: false }` and the send goes ahead, because a brief outage on the
-read path should not stop all outbound mail. The *write* path above fails the
-other way on purpose. A failed suppression-list write is never accepted
-silently, because losing it could mean a bounced or complaining address keeps
-getting mail.
+`EmailService.checkRecipientEligibility` (the *read* path, consulted before
+every outbound send and before every queued retry) fails **closed** on a
+database error (#3806). It returns `{ status: "unknown" }`, which is never
+treated as eligible, so an outage cannot bypass an unsubscribe, bounce or
+complaint:
+
+- An inline send makes no provider call. It is stored in the outbound queue as
+  a deferred intent and reported as queued only if that write succeeds;
+  otherwise it returns `errorCode: "RECIPIENT_ELIGIBILITY_UNKNOWN"` with
+  `retryable: true`.
+- A queued row stays `RETRYING` with its attempt count and idempotency key
+  unchanged and moves its next run on the usual backoff. The daily
+  maintenance run reports these rows as `eligibilityDeferred`.
+- Newsletter dispatch fails the phase when its batch lookup fails, so no
+  recipient is marked dispatched.
+
+A known suppression is still terminal. The *write* path above fails the same
+way on purpose: a failed suppression-list write is never accepted silently,
+because losing it could mean a bounced or complaining address keeps getting
+mail.
 
 ### Secret rotation
 

@@ -177,10 +177,12 @@ function createProductionAdapters(batchSize: number): MaintenanceAdapters {
         processed: retry.data.processed,
         succeeded: retry.data.succeeded,
         failed: retry.data.failed,
+        deferred: retry.data.deferred,
         queueDepth: health.depth,
         oldestPendingAgeMs: health.oldestPendingAgeMs,
         terminalFailures: health.terminalFailures,
         retryExhausted: health.retryExhausted,
+        eligibilityDeferred: health.eligibilityDeferred,
       });
     },
     async runRetention(now) {

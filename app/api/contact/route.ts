@@ -80,8 +80,10 @@ export const POST = createApiHandler(
       if (!result.success) {
         return NextResponse.json(
           {
+            // An unknown-eligibility failure (#3806) is internal detail; the
+            // visitor gets the plain fallback.
             error:
-              result.adminResult.error ||
+              (!result.adminResult.errorCode && result.adminResult.error) ||
               "Unable to deliver message at this time. Please reach out directly via email.",
           },
           { status: 500 }

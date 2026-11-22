@@ -205,13 +205,14 @@ describe("unified maintenance pipeline (#714)", () => {
         })
       );
       vi.spyOn(EmailService, "processRetryQueue").mockResolvedValue(
-        createSuccess({ processed: 0, succeeded: 0, failed: 0 })
+        createSuccess({ processed: 0, succeeded: 0, failed: 0, deferred: 0 })
       );
       vi.spyOn(EmailService, "getRetryQueueHealth").mockResolvedValue({
         depth: 0,
         oldestPendingAgeMs: null,
         terminalFailures: 0,
         retryExhausted: 0,
+        eligibilityDeferred: 0,
       });
       vi.spyOn(TelemetryService, "rollupAndPruneRawEvents").mockResolvedValue(
         createSuccess({ rollupsUpserted: 0, rawEventsDeleted: 0 })

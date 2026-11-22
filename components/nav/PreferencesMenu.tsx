@@ -16,6 +16,7 @@ import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { useFontPreference } from "@/hooks/useFontPreference";
 import { PERSONA_ANNOUNCEMENTS, type PersonaType } from "@/lib/persona";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 type PreferencesVariant = "popover" | "drawer";
 
 const SOUND_PROFILES = [
@@ -112,12 +113,12 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
           aria-label="Reading Mode Selection"
           aria-describedby={readingHelpId}
         >
-          <button
+          <TooltipButton
             type="button"
             onClick={() => selectPersona("behind-the-scenes")}
             aria-pressed={persona === "behind-the-scenes"}
             aria-label="Switch to Behind the Scenes Mode: Candid reality and engineering stories"
-            title="Behind the Scenes Mode: Candid reality and engineering stories"
+            tooltip="Behind the Scenes Mode: Candid reality and engineering stories"
             className={cn(
               segment,
               "min-w-0 flex-1 rounded-lg px-2 font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400",
@@ -128,13 +129,13 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
           >
             <IconFlame className="h-3.5 w-3.5 shrink-0 text-amber-400" />
             <span>{drawer ? "BEHIND THE SCENES" : "STORY"}</span>
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             onClick={() => selectPersona("professional")}
             aria-pressed={persona === "professional"}
             aria-label="Switch to Professional Mode: Concise overview of technical responsibilities and systems impact"
-            title="Professional Mode: Concise overview of technical responsibilities and systems impact"
+            tooltip="Professional Mode: Concise overview of technical responsibilities and systems impact"
             className={cn(
               segment,
               "min-w-0 flex-1 rounded-lg px-2 font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
@@ -145,7 +146,7 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
           >
             <IconBriefcase className="h-3.5 w-3.5 shrink-0 text-accent" />
             <span>PROFESSIONAL</span>
-          </button>
+          </TooltipButton>
         </div>
       </section>
 

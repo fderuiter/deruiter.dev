@@ -17,6 +17,7 @@ import {
   AstTraceNode,
 } from "@/lib/proof";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface InteractiveTruthTableProps {
   diagnosis: FallacyDiagnosis;
   onClear?: () => void;
@@ -313,31 +314,31 @@ export function InteractiveTruthTable({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button
+            <TooltipButton
               type="button"
               onClick={jumpToCounterexample}
               className="px-2 py-1 rounded text-[10px] font-mono font-semibold bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/80 transition-colors flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-red-400"
-              title="Jump to the counterexample valuation that exposes the fallacy"
+              tooltip="Jump to the counterexample valuation that exposes the fallacy"
             >
               <IconFlame className="w-3 h-3 text-red-400" />
               Counterexample
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               onClick={() => setAllVariables(true)}
               className="px-1.5 py-1 rounded text-[10px] font-mono text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors"
-              title="Set all premise variables to True"
+              tooltip="Set all premise variables to True"
             >
               All T
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               onClick={() => setAllVariables(false)}
               className="px-1.5 py-1 rounded text-[10px] font-mono text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors"
-              title="Set all premise variables to False"
+              tooltip="Set all premise variables to False"
             >
               All F
-            </button>
+            </TooltipButton>
           </div>
         </div>
 

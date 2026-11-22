@@ -13,6 +13,7 @@ import {
 } from "@testing-library/react";
 import { NeuroReconClient } from "@/components/neuro/NeuroReconClient";
 
+import { getByTooltip } from "./helpers/tooltip";
 /**
  * Issue #1580: the NeuroRecon studio binds its shortcuts through useHotkeys
  * with the same keys, modifiers, preventDefault and input suppression as the
@@ -64,8 +65,7 @@ const TOOL_TITLES = {
 
 function activeTool(): string | undefined {
   return (Object.keys(TOOL_TITLES) as (keyof typeof TOOL_TITLES)[]).find(
-    (tool) =>
-      screen.getByTitle(TOOL_TITLES[tool]).className.includes("font-bold")
+    (tool) => getByTooltip(TOOL_TITLES[tool]).className.includes("font-bold")
   );
 }
 

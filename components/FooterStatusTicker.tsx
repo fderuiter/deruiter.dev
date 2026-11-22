@@ -26,6 +26,7 @@ import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useInterval } from "@/hooks/useInterval";
 import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 function subscribeVaultUnlock(callback: () => void) {
   if (typeof window === "undefined") return () => {};
   const offVaultChange = onAppEvent("meme_vault_unlocked_change", callback);
@@ -163,12 +164,12 @@ export const FooterStatusTicker: React.FC = () => {
           <span className="text-zinc-400 uppercase tracking-wider text-[10px] font-semibold shrink-0">
             Footnotes:
           </span>
-          <button
+          <TooltipButton
             type="button"
             onClick={togglePause}
             aria-label="Pause ticker"
             aria-pressed={isPaused}
-            title="Pause ticker"
+            tooltip="Pause ticker"
             className="inline-flex items-center justify-center p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-colors shrink-0 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
           >
             {isPaused ? (
@@ -176,7 +177,7 @@ export const FooterStatusTicker: React.FC = () => {
             ) : (
               <IconPlayerPause className="w-3.5 h-3.5" aria-hidden="true" />
             )}
-          </button>
+          </TooltipButton>
           <div
             ref={tickerLineRef}
             className="h-5 overflow-hidden relative flex-1 sm:w-80"
@@ -244,11 +245,11 @@ export const FooterStatusTicker: React.FC = () => {
               </motion.span>
             ))}
 
-            <button
+            <TooltipButton
               onClick={handleDuckClick}
               type="button"
               className="group flex items-center gap-1.5 px-2.5 py-1 pointer-coarse:min-h-11 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] transition-transform active:scale-95 focus:outline-none focus:ring-1 focus:ring-amber-400"
-              title="Click to pet Duck the Golden Retriever puppy!"
+              tooltip="Click to pet Duck the Golden Retriever puppy!"
               aria-label={`Duck, ${duckBarks > 0 ? `+${duckBarks} barks` : "pet me"}: pet Duck the puppy`}
             >
               <span className="text-sm transition-transform group-hover:scale-125">
@@ -258,7 +259,7 @@ export const FooterStatusTicker: React.FC = () => {
               <span className="text-[10px] text-amber-400/80 bg-amber-400/10 px-1 rounded">
                 {duckBarks > 0 ? `+${duckBarks} barks` : "pet me"}
               </span>
-            </button>
+            </TooltipButton>
           </div>
         </div>
       </div>

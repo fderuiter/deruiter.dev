@@ -142,7 +142,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     });
 
     const stepForwardBtn = container.querySelector(
-      'button[title="Step Forward"]'
+      'button[data-tooltip="Step Forward"]'
     ) as HTMLButtonElement;
     expect(stepForwardBtn).toBeDefined();
 
@@ -173,7 +173,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     });
 
     const playBtn = container.querySelector(
-      'button[title="Play Sequence"]'
+      'button[data-tooltip="Play Sequence"]'
     ) as HTMLButtonElement;
     expect(playBtn).toBeDefined();
 
@@ -193,7 +193,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
 
     // Pause playback (playback delay between steps is 1500ms)
     const pauseBtn = container.querySelector(
-      'button[title="Pause Playback"]'
+      'button[data-tooltip="Pause Playback"]'
     ) as HTMLButtonElement;
     expect(pauseBtn).toBeDefined();
 
@@ -219,10 +219,10 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     });
 
     const stepForwardBtn = container.querySelector(
-      'button[title="Step Forward"]'
+      'button[data-tooltip="Step Forward"]'
     ) as HTMLButtonElement;
     const stepBackBtn = container.querySelector(
-      'button[title="Step Back"]'
+      'button[data-tooltip="Step Back"]'
     ) as HTMLButtonElement;
 
     // Run step 1
@@ -264,7 +264,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     });
 
     const stepForwardBtn = container.querySelector(
-      'button[title="Step Forward"]'
+      'button[data-tooltip="Step Forward"]'
     ) as HTMLButtonElement;
     const resetBtn = container.querySelector(
       'button[aria-label="Reset"]'
@@ -301,7 +301,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     });
 
     const stepForwardBtn = container.querySelector(
-      'button[title="Step Forward"]'
+      'button[data-tooltip="Step Forward"]'
     ) as HTMLButtonElement;
     await act(async () => {
       stepForwardBtn.click();

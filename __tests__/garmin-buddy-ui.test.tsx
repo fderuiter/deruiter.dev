@@ -253,8 +253,10 @@ describe("Medicine Ball and Running Buddy in the simulator (#2024)", () => {
         name: "X / Throw Heat Bolt, Cape Spin or Spin Jump Button",
       })
     ).toBeTruthy();
-    const action = document.querySelector('[title*="Spin Jump in mid-air"]');
-    expect(action?.getAttribute("title")).toMatch(/medicine ball/);
+    const action = document.querySelector(
+      '[data-tooltip*="Spin Jump in mid-air"]'
+    );
+    expect(action?.getAttribute("data-tooltip")).toMatch(/medicine ball/);
   });
 });
 

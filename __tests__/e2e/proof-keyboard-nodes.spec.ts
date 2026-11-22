@@ -78,7 +78,7 @@ for (const layout of [
     await page.keyboard.press("Shift+Space");
     await expect(node("C")).toHaveAttribute("aria-pressed", "true");
     await expect(node("D")).toHaveAttribute("aria-pressed", "true");
-    const mp = page.getByTitle(/^Modus Ponens:/);
+    const mp = page.locator('[data-tooltip^="Modus Ponens:"]');
     await mp.focus();
     await page.keyboard.press("Enter");
     await expect(node("E")).toHaveAccessibleName(

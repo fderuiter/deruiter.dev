@@ -55,6 +55,7 @@ import {
   useMonkeyCSession,
 } from "@/components/garmin-watch/useMonkeyCSession";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /** Where the canvas sits over the watch's round screen. */
 const SCREEN_BOX = screenBoxPercent();
 
@@ -561,11 +562,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 const anchor = pusherAnchorPercent(pusher.id);
                 const left = anchor.side === "left";
                 return (
-                  <button
+                  <TooltipButton
                     key={pusher.id}
                     type="button"
                     onClick={(e) => handlePusherClick(pusher.id, e)}
-                    title={pusher.title}
+                    tooltip={pusher.title}
                     aria-label={pusher.ariaLabel}
                     data-pusher={pusher.id}
                     className={`group absolute flex -translate-y-1/2 items-center gap-1.5 rounded-md font-mono leading-none active:scale-[0.98] focus-visible:outline-none ${
@@ -597,7 +598,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                         {pusher.hint}
                       </span>
                     </span>
-                  </button>
+                  </TooltipButton>
                 );
               })}
             </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, cleanup } from "@testing-library/react";
 import { ProofCanvas } from "../components/proof/ProofCanvas";
 import {
   scanApplicableRules,
@@ -8,6 +8,7 @@ import {
   THEOREMS,
 } from "@/lib/proof";
 
+import { getByTooltip } from "./helpers/tooltip";
 afterEach(() => {
   cleanup();
 });
@@ -134,8 +135,8 @@ describe("AST Rule Matcher & Solver Engine", () => {
       />
     );
 
-    const mpBtn = screen.getByTitle(/^Modus Ponens:/);
+    const mpBtn = getByTooltip(/^Modus Ponens:/);
     expect(mpBtn).toBeDefined();
-    expect(mpBtn.getAttribute("title")).toMatch(/^Modus Ponens:/);
+    expect(mpBtn.getAttribute("data-tooltip")).toMatch(/^Modus Ponens:/);
   });
 });

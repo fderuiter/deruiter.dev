@@ -20,6 +20,7 @@ import { useProofGraph } from "./schemaflow/useProofGraph";
 import { useSolverTelemetry } from "./schemaflow/useSolverTelemetry";
 import { useTacticConsole } from "./schemaflow/useTacticConsole";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 const QUICK_COMMANDS = [
   "connect A C",
   "connect B C",
@@ -126,15 +127,15 @@ export default function SchemaFlowWorkspace() {
 
             {/* Reset / Rollback quick actions */}
             <div className="flex gap-2">
-              <button
+              <TooltipButton
                 onClick={executeRollback}
                 disabled={history.length === 0}
                 className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl hover:border-brand-cyan/40 disabled:opacity-40 disabled:hover:border-zinc-800 transition-colors cursor-pointer"
-                title="Rollback last logical node branch connection"
+                tooltip="Rollback last logical node branch connection"
               >
                 <IconHistory className="w-3.5 h-3.5" />
                 Rollback ({history.length})
-              </button>
+              </TooltipButton>
               <button
                 onClick={resetCanvas}
                 className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 rounded-xl hover:text-white cursor-pointer"
@@ -666,14 +667,15 @@ export default function SchemaFlowWorkspace() {
                 />
               </div>
 
-              <button
+              <TooltipButton
                 onClick={() => runCliCommand(consoleInput)}
                 disabled={!consoleInput.trim()}
                 className="p-0.5 text-zinc-600 hover:text-brand-cyan disabled:text-zinc-850 disabled:hover:text-zinc-850 transition-colors cursor-pointer"
-                title="Execute CLI Tactic"
+                tooltip="Execute CLI Tactic"
+                aria-label="Execute CLI Tactic"
               >
                 <IconCornerDownLeft className="w-3.5 h-3.5" />
-              </button>
+              </TooltipButton>
             </div>
 
             {/* Suggested command line helpers */}

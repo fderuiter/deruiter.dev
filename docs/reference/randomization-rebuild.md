@@ -85,9 +85,9 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-CAPS-004` | Largest remainder allocation | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
 | `RND-CAPS-005` | Joint distribution assumption | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
 | `RND-CAPS-006` | Computed matrix editing | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-007` | Marginal caps | `#4001` | `Deferred` | Pending `#4001` | Not yet executed |
-| `RND-CAPS-008` | Marginal termination safeguard | `#4001` | `Deferred` | Pending `#4001` | Not yet executed |
-| `RND-CAPS-009` | Marginal site fairness | `#4001` | `Deferred` | Pending `#4001` | Not yet executed |
+| `RND-CAPS-007` | Marginal caps | `#4001` | `Implemented` | `__tests__/randomization-marginal.test.ts` | Pass (`vitest`, `#4001`, 2026-11-22) |
+| `RND-CAPS-008` | Marginal termination safeguard | `#4001` | `Implemented` | `__tests__/randomization-marginal.test.ts` | Pass (`vitest`, `#4001`, 2026-11-22) |
+| `RND-CAPS-009` | Marginal site fairness | `#4001` | `Implemented` | `__tests__/randomization-marginal.test.ts` | Pass (`vitest`, `#4001`, 2026-11-22) |
 | `RND-CAPS-010` | Stale derived cap handling | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
 | `RND-CAPS-011` | Proportional compute precondition | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
 | `RND-MINIM-001` | Virtual cohort size | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |

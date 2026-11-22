@@ -162,11 +162,27 @@ export interface ManualCapConfig {
   readonly intersectionCaps: readonly ManualIntersectionCap[];
 }
 
+/**
+ * How a planned marginal-cap block schedule shares capacity across sites
+ * (RND-CAPS-009). `round-robin-v1` gives each active site one subject per
+ * turn, in declared order. `site-major-v1` fills each site before the next
+ * and reproduces the source tool's first-site consumption. Neither applies
+ * recruitment weights.
+ */
+export type MarginalSitePolicy = "round-robin-v1" | "site-major-v1";
+
 /** Marginal cap configuration. */
 export interface MarginalCapConfig {
   readonly strategy: "marginal";
   readonly capScope: CapScope;
   readonly levelCaps: readonly MarginalLevelCap[];
+  /** Required for BLOCK schedules; ignored by minimization. */
+  readonly sitePolicy?: MarginalSitePolicy;
+  /**
+   * Optional hard total (per site when `capScope` is "per-site"). Required
+   * when no factor has a finite cap on every level.
+   */
+  readonly totalEnrollment?: number;
 }
 
 /** Cap configurations permitted for BLOCK designs. */

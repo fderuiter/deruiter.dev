@@ -288,17 +288,18 @@ describe("manual caps (RND-CAPS-001, -002)", () => {
     ).toBeGreaterThanOrEqual(4);
   });
 
-  it("refuses marginal caps until the marginal engine lands", () => {
+  it("sends marginal caps to resolveMarginalCaps instead of building a matrix", () => {
     const resolved = resolveBlockCapacities(
       request([binary("a")], {
         strategy: "marginal",
         capScope: "study-wide",
+        sitePolicy: "round-robin-v1",
         levelCaps: [{ factorId: "a", levelId: "a-1", cap: 3 }],
       })
     );
     expect(resolved).toMatchObject({
       ok: false,
-      findings: [{ code: "UNSUPPORTED_METHOD_COMBINATION" }],
+      findings: [{ code: "INVALID_CAP_STRATEGY" }],
     });
   });
 

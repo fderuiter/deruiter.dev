@@ -95,6 +95,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               key={tool.id}
               onClick={() => onToolModeChange(tool.id)}
               tooltip={`${tool.label} [${tool.key}]`}
+              aria-label={tool.label}
               className={`flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded-lg text-xs font-mono transition-all select-none ${
                 isActive
                   ? "bg-zinc-800 text-white font-bold border border-zinc-700 shadow-sm"

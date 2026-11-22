@@ -101,7 +101,19 @@
     "/api/case-studies/feedback": {
       "post": {
         "summary": "Submit structured learning feedback",
-        "description": "Validates and persists structured learning takeaways and free-form constructive text.",
+        "description": "Validates and persists structured learning takeaways and free-form constructive text. A request with an Idempotency-Key that this visitor already used returns the row that key created, with 201, instead of adding a second row.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Identifies one submission across retries. The offline queue sends `<entry id>:<revision>`. 1 to 128 letters, digits, `.`, `_`, `:` or `-`; anything else is rejected with 400.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -124,7 +136,7 @@
             }
           },
           "400": {
-            "description": "Validation error on payload",
+            "description": "Validation error on payload, or a malformed Idempotency-Key header",
             "content": {
               "application/json": {
                 "schema": {

@@ -6,7 +6,7 @@ changes the schema without adding an entry to Prisma's migration history.
 
 ## Active migrations
 
-The repository contains eighteen active Prisma migrations:
+The repository contains nineteen active Prisma migrations:
 
 1. `20260417215437_init`: Initial database baseline and core models.
 2. `20260528000000_add_telemetry_event`: Telemetry event ingestion table.
@@ -26,6 +26,7 @@ The repository contains eighteen active Prisma migrations:
 16. `20261024000000_add_telemetry_event_compound_idx`: Adds a compound index on `TelemetryEvent(eventType, projectSlug)` for accelerated grouping queries.
 17. `20261025000000_reorder_blog_post_reaction_unique_constraint`: Reorders unique constraint columns on `BlogPostReaction` to `(blogPostSlug, connectionHash, reactionType)` to enable prefix index matching.
 18. `20261026000000_reorder_case_study_reaction_unique_constraint`: Reorders unique constraint columns on `CaseStudyReaction` to `(caseStudySlug, connectionHash, reactionType)` to enable prefix index matching.
+19. `20261122000000_add_case_study_feedback_operation_key`: Adds a nullable `operationKey` to `CaseStudyFeedback` with a unique index on `(connectionHash, operationKey)`, so a replayed offline-queue submission returns its first row instead of adding a second (#3807).
 
 ## Normal workflow
 
@@ -91,9 +92,9 @@ npx prisma migrate status
 
 When resolving the initial baseline migrations on an unledgered setup,
 `npx prisma migrate status` after `resolve` and before the Vercel production build will report the
-remaining 16 of the 18 committed migrations (one per `prisma/migrations/` directory,
+remaining 17 of the 19 committed migrations (one per `prisma/migrations/` directory,
 from `20260814000000_add_simulated_telemetry` through
-`20261026000000_reorder_case_study_reaction_unique_constraint`) as pending.
+`20261122000000_add_case_study_feedback_operation_key`) as pending.
 
 **Halt Condition:** Stop the deployment only if `prisma migrate status`
 reports missing migration files, migrations outside the active inventory, or
@@ -120,9 +121,9 @@ Trigger the Vercel production build after the ledger-only baseline is complete.
 The build applies all remaining committed migrations before compilation.
 
 After the production build, re-run the ledger query and confirm every committed
-migration (one per `prisma/migrations/` directory, currently 18, from
+migration (one per `prisma/migrations/` directory, currently 19, from
 `20260417215437_init` through
-`20261026000000_reorder_case_study_reaction_unique_constraint`) is recorded as
+`20261122000000_add_case_study_feedback_operation_key`) is recorded as
 finished and not rolled back. Then confirm the `simulated_telemetry` column that
 `20260814000000_add_simulated_telemetry` adds:
 

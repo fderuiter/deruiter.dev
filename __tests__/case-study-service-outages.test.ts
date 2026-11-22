@@ -1018,6 +1018,63 @@ describe("feedback with Neon up/down", () => {
     });
   });
 
+  it("returns the stored row for a replayed operation key without inserting (#3807)", async () => {
+    const { CaseStudyService } = await load();
+    m.prisma.caseStudyFeedback.findFirst.mockResolvedValueOnce({
+      id: "first",
+      caseStudySlug: "s",
+      comments: "great",
+      createdAt: "t",
+    });
+
+    const result = await CaseStudyService.submitFeedback(
+      { caseStudySlug: "s", takeaways: ["x"], comments: "great" },
+      "me",
+      "feedback_1:0"
+    );
+
+    expect(result).toMatchObject({
+      rateLimited: false,
+      success: true,
+      replayed: true,
+      feedback: { id: "first" },
+    });
+    expect(m.prisma.caseStudyFeedback.findFirst).toHaveBeenCalledWith({
+      where: { connectionHash: "me", operationKey: "feedback_1:0" },
+    });
+    expect(m.prisma.caseStudyFeedback.create).not.toHaveBeenCalled();
+  });
+
+  it("returns the winner when a concurrent replay inserts the key first (#3807)", async () => {
+    const { CaseStudyService } = await load();
+    m.prisma.caseStudyFeedback.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "winner",
+        caseStudySlug: "s",
+        comments: "great",
+        createdAt: "t",
+      });
+    m.prisma.caseStudyFeedback.create.mockRejectedValueOnce(
+      Object.assign(new Error("Unique constraint failed"), { code: "P2002" })
+    );
+
+    const result = await CaseStudyService.submitFeedback(
+      { caseStudySlug: "s", takeaways: ["x"], comments: "great" },
+      "me",
+      "feedback_1:0"
+    );
+
+    expect(result).toMatchObject({
+      replayed: true,
+      feedback: { id: "winner" },
+    });
+    expect(m.prisma.caseStudyFeedback.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ operationKey: "feedback_1:0" }),
+    });
+  });
+
   it("Neon down: accepts feedback into memory, rate-limits a repeat and reads it back", async () => {
     const { CaseStudyService } = await load("production-runtime");
     m.prisma.caseStudyFeedback.findFirst.mockRejectedValue(neonDown());

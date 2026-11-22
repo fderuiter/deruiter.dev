@@ -66,6 +66,7 @@ describe("Prisma migration integrity", () => {
     "20261024000000_add_telemetry_event_compound_idx",
     "20261025000000_reorder_blog_post_reaction_unique_constraint",
     "20261026000000_reorder_case_study_reaction_unique_constraint",
+    "20261122000000_add_case_study_feedback_operation_key",
   ];
 
   it("validates every checked-in migration file", () => {
@@ -263,6 +264,21 @@ describe("Prisma migration integrity", () => {
       'CREATE UNIQUE INDEX "CaseStudyReaction_caseStudySlug_connectionHash_reactionType_key" ON "CaseStudyReaction"("caseStudySlug", "connectionHash", "reactionType")'
     );
     expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN)\b/i);
+  });
+
+  it("adds a nullable feedback operation key with a per-visitor unique index", () => {
+    const migration = readMigrationSql(
+      "20261122000000_add_case_study_feedback_operation_key"
+    );
+
+    expect(migration).toContain(
+      'ALTER TABLE "CaseStudyFeedback" ADD COLUMN     "operationKey" TEXT;'
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "CaseStudyFeedback_connectionHash_operationKey_key" ON "CaseStudyFeedback"("connectionHash", "operationKey")'
+    );
+    expect(migration).not.toMatch(/NOT NULL/i);
+    expect(migration).not.toMatch(/\bDROP\b/i);
   });
 
   it("fails migration file validation when a migration asset is missing or empty", () => {

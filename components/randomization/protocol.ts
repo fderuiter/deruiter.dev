@@ -13,6 +13,7 @@ import type {
   AllocationRow,
   RandomizationRequest,
   RandomizationSafeErrorCode,
+  SimulationReport,
   ValidationFinding,
 } from "@/lib/randomization";
 
@@ -54,9 +55,9 @@ export interface RandomizationOperationIdentity {
   readonly workspaceRevision: number;
 }
 
-/** Phases reported while a generation runs. */
+/** Phases reported while a generation or simulation runs. */
 export type RandomizationProgressPhase =
-  "validating" | "generating" | "hashing";
+  "validating" | "generating" | "hashing" | "simulating";
 
 /** Counts and identity of a completed schedule. Rows come by page. */
 export interface RandomizationGenerationSummary {
@@ -103,6 +104,15 @@ export type RandomizationCommand =
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      /** Runs a Monte Carlo simulation request (#4007). */
+      readonly kind: "simulate";
+      readonly requestId: number;
+      /** Its plan digest covers the whole simulation request. */
+      readonly identity: RandomizationOperationIdentity;
+      readonly request: unknown;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
       readonly kind: "cancel";
       readonly requestId: number;
       readonly operationId: number;
@@ -116,6 +126,9 @@ export type RandomizationResponse =
       readonly requestId: number;
       readonly identity: RandomizationOperationIdentity;
       readonly phase: RandomizationProgressPhase;
+      /** Repetitions finished so far, while simulating. */
+      readonly completed?: number;
+      readonly total?: number;
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
@@ -123,6 +136,13 @@ export type RandomizationResponse =
       readonly requestId: number;
       readonly identity: RandomizationOperationIdentity;
       readonly summary: RandomizationGenerationSummary;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      readonly kind: "simulation-complete";
+      readonly requestId: number;
+      readonly identity: RandomizationOperationIdentity;
+      readonly report: SimulationReport;
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
@@ -200,6 +220,10 @@ export function parseRandomizationCommand(
       return isOperationIdentity(value.identity) && "plan" in value
         ? (value as RandomizationCommand)
         : null;
+    case "simulate":
+      return isOperationIdentity(value.identity) && "request" in value
+        ? (value as RandomizationCommand)
+        : null;
     case "page":
       return isOperationIdentity(value.identity) &&
         isCount(value.offset) &&
@@ -233,9 +257,22 @@ export function parseRandomizationResponse(
       return isOperationIdentity(value.identity) &&
         (value.phase === "validating" ||
           value.phase === "generating" ||
-          value.phase === "hashing")
+          value.phase === "hashing" ||
+          value.phase === "simulating") &&
+        (value.completed === undefined || isCount(value.completed)) &&
+        (value.total === undefined || isCount(value.total))
         ? (value as RandomizationResponse)
         : null;
+    case "simulation-complete": {
+      const report = value.report;
+      return isOperationIdentity(value.identity) &&
+        isRecord(report) &&
+        isCount(report.attempted) &&
+        isCount(report.succeeded) &&
+        Array.isArray(report.arms)
+        ? (value as RandomizationResponse)
+        : null;
+    }
     case "complete": {
       const summary = value.summary;
       return isOperationIdentity(value.identity) &&

@@ -126,17 +126,17 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-EXECU-005` | Failure completion | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts`, `__tests__/randomization-cancel-contract.test.ts` | Pass (`vitest`, `#4004`, 2026-11-22) |
 | `RND-EXECU-006` | Resource budgets | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (preflight estimate, fallback row budget, bounded pages) | Pass (`vitest`, `#4004`, 2026-11-22) |
 | `RND-EXECU-007` | Ready/busy/result states | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (client state contract; the visible states ship with the work area in `#4006`) | Pass (`vitest`, `#4004`, 2026-11-22) |
-| `RND-SIMUL-001` | Monte Carlo repetitions | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-002` | Simulation reproducibility | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-003` | Attrition range | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-004` | Independent attrition stream | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-005` | Progress reporting | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-006` | Cancel simulation | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-007` | Worker isolation | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-008` | Aggregate arm statistics | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-009` | Deviation display | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-010` | QA interpretation | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
-| `RND-SIMUL-011` | Bridge to code | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
+| `RND-SIMUL-001` | Monte Carlo repetitions | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts` (attempted, succeeded, failed and canceled counts; capped at 200 repetitions per the ticket, not 10,000) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-002` | Simulation reproducibility | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts` (versioned master-seed derivation; one repetition reproduces its full request) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-003` | Attrition range | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts` (0 and 50% boundaries; non-finite or out-of-range input is refused, not clamped) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-004` | Independent attrition stream | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts` (separate MT19937 stream per repetition, one draw per row; allocations unchanged) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-005` | Progress reporting | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts`, `__tests__/randomization-simulation-panel.test.tsx` (monotonic, throttled to at most 20 messages, announced in a polite live region) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-006` | Cancel simulation | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts`, `__tests__/randomization-simulation-panel.test.tsx` | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-007` | Worker isolation | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts` (simulation runs on its own client; a concurrent generation completes) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-008` | Aggregate arm statistics | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts` (expected counts from the matching allocated or retained mean total) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-009` | Deviation display | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts`, `__tests__/randomization-simulation-panel.test.tsx` (under 0.1%, under 1%, otherwise; retained warning above 2%) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-010` | QA interpretation | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts`, `__tests__/randomization-simulation-panel.test.tsx` (zero successes and incomplete runs never read as a pass) | Pass (`vitest`, `#4007`, 2026-11-22) |
+| `RND-SIMUL-011` | Bridge to code | `#4007` | `Implemented` | `__tests__/randomization-simulation-panel.test.tsx` (downloads the Monte Carlo request or one repetition's single-cohort request; the code package itself is `#4012`) | Pass (`vitest`, `#4007`, 2026-11-22) |
 | `RND-RESUL-001` | Flat allocation table | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
 | `RND-RESUL-002` | Grouped block view | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
 | `RND-RESUL-003` | Sorting | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |

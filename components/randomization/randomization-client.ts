@@ -15,9 +15,15 @@
  * to stop at its next phase boundary and its answer is dropped.
  *
  * This client owns its worker. It never shares one with the study-data
- * pipeline, so cancelling here never stops a pipeline run.
+ * pipeline, so cancelling here never stops a pipeline run. Monte Carlo QA
+ * (#4007) uses `simulate` on its own client instance, so a simulation and a
+ * generation never cancel each other.
  */
-import { computePlanDigest, type ValidationFinding } from "@/lib/randomization";
+import {
+  computePlanDigest,
+  type SimulationReport,
+  type ValidationFinding,
+} from "@/lib/randomization";
 import { clamp } from "@/lib/utils";
 import {
   MAIN_THREAD_ROW_BUDGET,
@@ -47,17 +53,19 @@ interface RandomizationClientState {
   readonly identity: RandomizationOperationIdentity | null;
   readonly phase: RandomizationProgressPhase | null;
   readonly summary: RandomizationGenerationSummary | null;
+  /** The report of a completed simulation. */
+  readonly report: SimulationReport | null;
+  /** Repetitions finished, while a simulation runs. */
+  readonly progress: {
+    readonly completed: number;
+    readonly total: number;
+  } | null;
   readonly errorCode: RandomizationOperationErrorCode | null;
   readonly findings: readonly ValidationFinding[];
 }
 
-/** How a generation ended. A generation never rejects. */
-type RandomizationOutcome =
-  | {
-      readonly status: "complete";
-      readonly identity: RandomizationOperationIdentity;
-      readonly summary: RandomizationGenerationSummary;
-    }
+/** How an operation ended without a result. */
+type UnfinishedOutcome =
   | {
       readonly status: "failed";
       readonly identity: RandomizationOperationIdentity | null;
@@ -69,6 +77,26 @@ type RandomizationOutcome =
       readonly identity: RandomizationOperationIdentity | null;
       readonly reason: "canceled" | "superseded" | "disposed";
     };
+
+/** How a generation ended. A generation never rejects. */
+type RandomizationOutcome =
+  | {
+      readonly status: "complete";
+      readonly identity: RandomizationOperationIdentity;
+      readonly summary: RandomizationGenerationSummary;
+    }
+  | UnfinishedOutcome;
+
+/** How a simulation ended. A simulation never rejects. */
+type SimulationOutcome =
+  | {
+      readonly status: "complete";
+      readonly identity: RandomizationOperationIdentity;
+      readonly report: SimulationReport;
+    }
+  | UnfinishedOutcome;
+
+type AnyOutcome = RandomizationOutcome | SimulationOutcome;
 
 /** Raised by `page` with a safe code only. */
 export class RandomizationClientError extends Error {
@@ -100,7 +128,15 @@ export interface RandomizationClient {
     readonly plan: unknown;
     readonly workspaceRevision: number;
   }): Promise<RandomizationOutcome>;
-  /** Reads a bounded window of the completed result. */
+  /**
+   * Runs a Monte Carlo simulation request (#4007). Same publication rules
+   * as `generate`: it supersedes a running operation and never rejects.
+   */
+  simulate(input: {
+    readonly request: unknown;
+    readonly workspaceRevision: number;
+  }): Promise<SimulationOutcome>;
+  /** Reads a bounded window of the completed generation. */
   page(offset: number, limit?: number): Promise<RandomizationRowPage>;
   /** Cancels the running generation, if any. */
   cancel(): void;
@@ -124,10 +160,12 @@ interface Transport {
 }
 
 interface ActiveOperation {
+  readonly kind: "generate" | "simulate";
   readonly requestId: number;
   identity: RandomizationOperationIdentity;
-  readonly plan: unknown;
-  readonly resolve: (outcome: RandomizationOutcome) => void;
+  /** The plan, or the whole simulation request. */
+  readonly payload: unknown;
+  readonly resolve: (outcome: AnyOutcome) => void;
 }
 
 interface PendingPage {
@@ -142,9 +180,21 @@ const INITIAL_STATE: RandomizationClientState = Object.freeze({
   identity: null,
   phase: null,
   summary: null,
+  report: null,
+  progress: null,
   errorCode: null,
   findings: Object.freeze([]) as readonly ValidationFinding[],
 });
+
+/** State fields every terminal or fresh state clears. */
+const CLEARED = {
+  phase: null,
+  summary: null,
+  report: null,
+  progress: null,
+  errorCode: null,
+  findings: INITIAL_STATE.findings,
+} as const;
 
 function defaultCreateWorker(): Worker | null {
   if (typeof Worker === "undefined") return null;
@@ -193,36 +243,32 @@ export function createRandomizationClient(
   };
 
   /** Settles the active operation and publishes its terminal state. */
-  const settle = (outcome: RandomizationOutcome) => {
+  const settle = (outcome: AnyOutcome) => {
     const operation = active;
     if (!operation) return;
     active = null;
     if (outcome.status === "complete") {
       setState({
+        ...CLEARED,
         status: "complete",
         identity: outcome.identity,
-        phase: null,
-        summary: outcome.summary,
-        errorCode: null,
-        findings: INITIAL_STATE.findings,
+        ...("report" in outcome
+          ? { report: outcome.report }
+          : { summary: outcome.summary }),
       });
     } else if (outcome.status === "failed") {
       setState({
+        ...CLEARED,
         status: "failed",
         identity: outcome.identity,
-        phase: null,
-        summary: null,
         errorCode: outcome.code,
         findings: Object.freeze([...outcome.findings]),
       });
     } else if (outcome.reason !== "superseded") {
       setState({
+        ...CLEARED,
         status: outcome.reason === "disposed" ? "ready" : "canceled",
         identity: outcome.reason === "disposed" ? null : outcome.identity,
-        phase: null,
-        summary: null,
-        errorCode: null,
-        findings: INITIAL_STATE.findings,
       });
     }
     operation.resolve(outcome);
@@ -277,14 +323,37 @@ export function createRandomizationClient(
     if (!sameOperation(response.identity, active.identity)) return;
     switch (response.kind) {
       case "progress":
-        setState({ phase: response.phase });
+        setState({
+          phase: response.phase,
+          ...(response.completed !== undefined && response.total !== undefined
+            ? {
+                progress: {
+                  completed: response.completed,
+                  total: response.total,
+                },
+              }
+            : {}),
+        });
         return;
       case "complete":
-        settle({
-          status: "complete",
-          identity: active.identity,
-          summary: response.summary,
-        });
+        if (active.kind !== "generate") fail("PROTOCOL_VIOLATION");
+        else {
+          settle({
+            status: "complete",
+            identity: active.identity,
+            summary: response.summary,
+          });
+        }
+        return;
+      case "simulation-complete":
+        if (active.kind !== "simulate") fail("PROTOCOL_VIOLATION");
+        else {
+          settle({
+            status: "complete",
+            identity: active.identity,
+            report: response.report,
+          });
+        }
         return;
       case "failed":
         fail(response.code, response.findings ?? []);
@@ -388,22 +457,25 @@ export function createRandomizationClient(
   const dispatch = (operation: ActiveOperation) => {
     const target = ensureTransport();
     operation.identity = { ...operation.identity, sessionId: target.sessionId };
-    setState({
-      status: "running",
-      identity: operation.identity,
-      phase: null,
-      summary: null,
-      errorCode: null,
-      findings: INITIAL_STATE.findings,
-    });
+    setState({ ...CLEARED, status: "running", identity: operation.identity });
     try {
-      target.send({
-        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
-        kind: "generate",
-        requestId: operation.requestId,
-        identity: operation.identity,
-        plan: operation.plan,
-      });
+      target.send(
+        operation.kind === "generate"
+          ? {
+              protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+              kind: "generate",
+              requestId: operation.requestId,
+              identity: operation.identity,
+              plan: operation.payload,
+            }
+          : {
+              protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+              kind: "simulate",
+              requestId: operation.requestId,
+              identity: operation.identity,
+              request: operation.payload,
+            }
+      );
     } catch {
       fail("POST_MESSAGE_FAILED");
     }
@@ -428,57 +500,77 @@ export function createRandomizationClient(
     }
   };
 
+  /** Supersedes any running operation and starts a new one. */
+  const start = (
+    kind: ActiveOperation["kind"],
+    payload: unknown,
+    workspaceRevision: number
+  ): Promise<AnyOutcome> => {
+    if (active) {
+      const previous = active;
+      stopRunning();
+      settle({
+        status: "canceled",
+        identity: previous.identity,
+        reason: "superseded",
+      });
+    }
+    rejectPages("RESULT_RELEASED");
+    let planDigest: string;
+    try {
+      planDigest = computePlanDigest(payload);
+    } catch {
+      setState({
+        ...CLEARED,
+        status: "failed",
+        identity: null,
+        errorCode: "PLAN_NOT_SERIALIZABLE",
+      });
+      return Promise.resolve({
+        status: "failed",
+        identity: null,
+        code: "PLAN_NOT_SERIALIZABLE",
+        findings: [],
+      });
+    }
+    return new Promise<AnyOutcome>((resolve) => {
+      const operation: ActiveOperation = {
+        kind,
+        requestId: nextRequestId++,
+        identity: {
+          operationId: nextOperationId++,
+          sessionId: "pending",
+          planDigest,
+          workspaceRevision,
+        },
+        payload,
+        resolve,
+      };
+      active = operation;
+      dispatch(operation);
+    });
+  };
+
   return {
     generate({ plan, workspaceRevision }) {
-      if (active) {
-        const previous = active;
-        stopRunning();
-        settle({
-          status: "canceled",
-          identity: previous.identity,
-          reason: "superseded",
-        });
-      }
-      rejectPages("RESULT_RELEASED");
-      let planDigest: string;
-      try {
-        planDigest = computePlanDigest(plan);
-      } catch {
-        setState({
-          status: "failed",
-          identity: null,
-          phase: null,
-          summary: null,
-          errorCode: "PLAN_NOT_SERIALIZABLE",
-          findings: INITIAL_STATE.findings,
-        });
-        return Promise.resolve({
-          status: "failed",
-          identity: null,
-          code: "PLAN_NOT_SERIALIZABLE",
-          findings: [],
-        });
-      }
-      return new Promise<RandomizationOutcome>((resolve) => {
-        const operation: ActiveOperation = {
-          requestId: nextRequestId++,
-          identity: {
-            operationId: nextOperationId++,
-            sessionId: "pending",
-            planDigest,
-            workspaceRevision,
-          },
-          plan,
-          resolve,
-        };
-        active = operation;
-        dispatch(operation);
-      });
+      return start(
+        "generate",
+        plan,
+        workspaceRevision
+      ) as Promise<RandomizationOutcome>;
+    },
+
+    simulate({ request, workspaceRevision }) {
+      return start(
+        "simulate",
+        request,
+        workspaceRevision
+      ) as Promise<SimulationOutcome>;
     },
 
     page(offset, limit = MAX_RANDOMIZATION_PAGE_ROWS) {
       const identity = state.identity;
-      if (state.status !== "complete" || !identity) {
+      if (state.status !== "complete" || !identity || !state.summary) {
         return Promise.reject(
           new RandomizationClientError("NO_COMPLETED_RESULT")
         );

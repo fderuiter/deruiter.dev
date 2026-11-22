@@ -1,6 +1,7 @@
 /**
  * Public entry point for the Clinical Study Studio randomization engine
- * (epic #3997, tickets #3998, #3999, #4000, #4001, #4002, #4004 and #4005, ADR 0073).
+ * (epic #3997, ADR 0073), built in tickets #3998 to #4007. The paragraph
+ * below says which ticket added what.
  *
  * Pure, framework-free contracts, compatibility metadata, ratio reduction,
  * overflow-safe resource preflight, plan validation, deterministic MT19937
@@ -11,7 +12,8 @@
  * ratio-normalized minimization cohorts and sessions from #4002.
  * Display masking, the single export disclosure gate and code-only error
  * reports come from #4005. Plan digests that bind worker answers to their
- * request come from #4004.
+ * request come from #4004, and reproducible Monte Carlo allocation QA
+ * comes from #4007.
  */
 export * from "./types";
 export {
@@ -144,3 +146,27 @@ export type {
   RandomizationSafeErrorCode,
   SafeRandomizationErrorReport,
 } from "./internal/disclosure/privacy";
+export {
+  DEFAULT_SIMULATION_REPETITIONS,
+  MAX_SIMULATION_ATTRITION_PERCENT,
+  MONTE_CARLO_SIMULATION_VERSION,
+  RETAINED_DEVIATION_WARNING,
+  createSimulationRunner,
+  deriveRepetitionSeeds,
+  isSimulationReportCurrent,
+  reproduceRepetitionRequest,
+  validateSimulationRequest,
+} from "./internal/simulation/monte-carlo";
+export type {
+  ArmCountStatistics,
+  DeviationBand,
+  RepetitionSeeds,
+  SimulationArmReport,
+  SimulationInterpretation,
+  SimulationRepetitionFailure,
+  SimulationReport,
+  SimulationReportIdentity,
+  SimulationRequest,
+  SimulationRunner,
+  SimulationRunnerResult,
+} from "./internal/simulation/monte-carlo";

@@ -4,6 +4,7 @@ import React, { useContext } from "react";
 import { CabinetFullscreenContext } from "./CabinetFullscreen";
 import { IconMaximize, IconMinimize } from "@tabler/icons-react";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface FullscreenButtonProps {
   isFullscreen: boolean;
   onToggle: () => void;
@@ -35,15 +36,15 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
   if (variant === "floating") {
     if (!isFullscreen) return null;
     return (
-      <button
+      <TooltipButton
         type="button"
         onClick={onToggle}
         aria-label={`Exit Fullscreen${compatibilitySuffix} (Esc or F)`}
-        title={`Exit Fullscreen${compatibilitySuffix} (Esc or F)`}
+        tooltip={`Exit Fullscreen${compatibilitySuffix} (Esc or F)`}
         className={`absolute top-3 right-3 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center p-2.5 rounded-xl bg-black/85 hover:bg-black text-zinc-300 hover:text-white border border-zinc-700/80 shadow-2xl backdrop-blur-md transition-all touch-manipulation select-none active:scale-[0.98] cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:outline-none ${className}`}
       >
         <IconMinimize className="w-5 h-5 text-amber-400" />
-      </button>
+      </TooltipButton>
     );
   }
 
@@ -52,11 +53,11 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
       ? `Exit Fullscreen${compatibilitySuffix}`
       : "Enter Fullscreen";
     return (
-      <button
+      <TooltipButton
         type="button"
         onClick={onToggle}
         aria-label={label}
-        title={label}
+        tooltip={label}
         className={`h-12 w-12 inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:outline-none ${
           isFullscreen
             ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
@@ -68,12 +69,12 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
         ) : (
           <IconMaximize className="w-4 h-4" aria-hidden="true" />
         )}
-      </button>
+      </TooltipButton>
     );
   }
 
   return (
-    <button
+    <TooltipButton
       type="button"
       onClick={onToggle}
       aria-label={
@@ -81,7 +82,7 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
           ? `Exit Fullscreen${compatibilitySuffix} (F)`
           : "Enter Fullscreen (F)"
       }
-      title={
+      tooltip={
         isFullscreen
           ? `Exit Fullscreen${compatibilitySuffix} (F)`
           : "Enter Fullscreen (F)"
@@ -103,6 +104,6 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
           <span className="hidden sm:inline font-bold">Fullscreen</span>
         </>
       )}
-    </button>
+    </TooltipButton>
   );
 };

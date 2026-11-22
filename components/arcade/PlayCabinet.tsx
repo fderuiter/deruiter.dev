@@ -86,13 +86,10 @@ import {
   type TutorialScript,
 } from "@/lib/arcade";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /** Lifecycle phases of the arcade cabinet launch gate (#3794). */
 type CabinetLaunchPhase =
-  | "attract"
-  | "loading"
-  | "warming"
-  | "launched"
-  | "failed";
+  "attract" | "loading" | "warming" | "launched" | "failed";
 
 interface ControlItem {
   key: string;
@@ -1061,7 +1058,8 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   // Escape cancels launch warmup or exits the failure screen back to attract mode (#3794).
   // Catches Escape globally regardless of whether focus sits on document.body.
   useEffect(() => {
-    if (phase !== "loading" && phase !== "warming" && phase !== "failed") return;
+    if (phase !== "loading" && phase !== "warming" && phase !== "failed")
+      return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -1270,36 +1268,36 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               />
             )}
             {touchTutorialKey && (
-              <button
+              <TooltipButton
                 type="button"
                 onClick={startTutorial}
                 aria-label="Tutorial"
-                title="Tutorial"
+                tooltip="Tutorial"
                 className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
               >
                 <IconSchool className="w-4 h-4" aria-hidden="true" />
-              </button>
+              </TooltipButton>
             )}
-            <button
+            <TooltipButton
               ref={setupKeyRef}
               type="button"
               onClick={() => setShowSetup(true)}
               aria-label="Setup"
-              title="Setup"
+              tooltip="Setup"
               aria-haspopup="dialog"
               className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
             >
               <IconAdjustments className="w-4 h-4" aria-hidden="true" />
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               onClick={handleExit}
               aria-label="Reset / Power Off Cabinet"
-              title="Reset / Power Off Cabinet"
+              tooltip="Reset / Power Off Cabinet"
               className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 border border-neutral-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
             >
               <IconPower className="w-4 h-4 text-red-500" aria-hidden="true" />
-            </button>
+            </TooltipButton>
           </div>
         ) : immersive ? (
           <div
@@ -1315,38 +1313,39 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               />
             )}
             {tutorialRun.available && (
-              <button
+              <TooltipButton
                 type="button"
                 onClick={startTutorial}
                 aria-label="Tutorial"
                 className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-                title="Tutorial"
+                tooltip="Tutorial"
               >
                 <IconSchool className="w-3.5 h-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">Tutorial</span>
-              </button>
+              </TooltipButton>
             )}
-            <button
+            <TooltipButton
               ref={setupKeyRef}
               type="button"
               onClick={() => setShowSetup(true)}
               aria-label="Setup"
               aria-haspopup="dialog"
               className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-              title="Setup"
+              tooltip="Setup"
             >
               <IconAdjustments className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Setup</span>
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               onClick={handleExit}
               className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 hover:text-red-400 rounded-xl border border-neutral-800 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-              title="Reset / Power Off Cabinet"
+              tooltip="Reset / Power Off Cabinet"
+              aria-label="Reset / Power Off Cabinet"
             >
               <IconPower className="w-3.5 h-3.5 text-red-500" />
               <span className="hidden sm:inline">Power</span>
-            </button>
+            </TooltipButton>
           </div>
         ) : (
           /* Windowed Mode: Cabinet Marquee / Top Frame Bezel Header Bar */
@@ -1394,41 +1393,42 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               )}
 
               {tutorialRun.available && (
-                <button
+                <TooltipButton
                   type="button"
                   onClick={startTutorial}
                   aria-label="Tutorial"
                   data-testid="cabinet-tutorial-key"
                   className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-                  title="Tutorial"
+                  tooltip="Tutorial"
                 >
                   <IconSchool className="w-3.5 h-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Tutorial</span>
-                </button>
+                </TooltipButton>
               )}
 
-              <button
+              <TooltipButton
                 ref={setupKeyRef}
                 type="button"
                 onClick={() => setShowSetup(true)}
                 aria-label="Setup"
                 aria-haspopup="dialog"
                 className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-                title="Setup"
+                tooltip="Setup"
               >
                 <IconAdjustments className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Setup</span>
-              </button>
+              </TooltipButton>
 
-              <button
+              <TooltipButton
                 type="button"
                 onClick={handleExit}
                 className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 hover:text-red-400 rounded-xl border border-neutral-800 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-                title="Reset / Power Off Cabinet"
+                tooltip="Reset / Power Off Cabinet"
+                aria-label="Reset / Power Off Cabinet"
               >
                 <IconPower className="w-3.5 h-3.5 text-red-500" />
                 <span className="hidden sm:inline">Power</span>
-              </button>
+              </TooltipButton>
             </div>
           </div>
         )}
@@ -1774,7 +1774,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
             {/* Header / Diagnostic Tag */}
             <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-3 text-[10px] text-zinc-400">
               <div className="flex items-center gap-2 text-rose-400">
-                <IconAlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <IconAlertTriangle
+                  className="w-4 h-4 shrink-0"
+                  aria-hidden="true"
+                />
                 <span className="uppercase tracking-wider font-bold">
                   System Diagnostic: Load Failed
                 </span>

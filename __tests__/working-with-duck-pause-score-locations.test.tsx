@@ -122,7 +122,7 @@ function visibleScore(container: HTMLElement): number {
 
 function dockButton(container: HTMLElement, title: string): HTMLButtonElement {
   const btn = container.querySelector<HTMLButtonElement>(
-    `[data-testid="duck-action-dock"] button[title="${title}"]`
+    `[data-testid="duck-action-dock"] button[data-tooltip="${title}"]`
   );
   expect(btn).not.toBeNull();
   return btn!;

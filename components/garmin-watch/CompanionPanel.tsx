@@ -40,6 +40,7 @@ import {
   type GroundStripLayout,
 } from "@/lib/garmin/ground-strip";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /** Gauge fill colours: the shared arcade signals, never the world's cyan. */
 const TONE_STROKE: Record<MeterTone, string> = {
   ok: "#10b981",
@@ -296,7 +297,7 @@ function ChoiceGroup<T extends string>({
       {options.map((option) => {
         const checked = option.value === value;
         return (
-          <button
+          <TooltipButton
             key={option.value}
             type="button"
             role="radio"
@@ -304,7 +305,7 @@ function ChoiceGroup<T extends string>({
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             disabled={disabled}
-            title={option.title}
+            tooltip={option.title}
             onClick={(e) => {
               onChange(option.value);
               onPick?.(e);
@@ -317,7 +318,7 @@ function ChoiceGroup<T extends string>({
             }`}
           >
             {option.label}
-          </button>
+          </TooltipButton>
         );
       })}
     </div>
@@ -893,7 +894,7 @@ export function CompanionPanel({
             Developer tools
           </legend>
           <div className="grid gap-1.5">
-            <button
+            <TooltipButton
               type="button"
               role="switch"
               aria-checked={devMode && !fitnessOnly}
@@ -901,7 +902,7 @@ export function CompanionPanel({
               aria-disabled={fitnessOnly}
               disabled={fitnessOnly}
               onClick={onToggleDevMode}
-              title={
+              tooltip={
                 fitnessOnly
                   ? `${planMode ? "The Training Plan runs" : "Races run"} with Dev Mode off. Your Dev Mode setting is kept.`
                   : "Brings back the firmware rules: heap, garbage collection, flash, battery and fog. Applies from the next run."
@@ -916,7 +917,7 @@ export function CompanionPanel({
               state.gameState !== "idle"
                 ? " (next run)"
                 : ""}
-            </button>
+            </TooltipButton>
             {!fitnessView && (
               <>
                 <button
@@ -933,11 +934,11 @@ export function CompanionPanel({
                 >
                   Clear Flash Storage
                 </button>
-                <button
+                <TooltipButton
                   type="button"
                   onClick={onDrainBattery}
                   disabled={!isPlaying}
-                  title={
+                  tooltip={
                     isPlaying
                       ? undefined
                       : "Start a run first: each run begins on a full battery"
@@ -945,7 +946,7 @@ export function CompanionPanel({
                   className={`${toolClass} border-rose-500/30 bg-rose-500/[0.06] text-rose-200 hover:bg-rose-500/[0.12]`}
                 >
                   Drain Battery (-20%)
-                </button>
+                </TooltipButton>
               </>
             )}
           </div>

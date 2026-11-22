@@ -118,6 +118,7 @@ import {
   useTeSound,
 } from "@/components/trial-and-error/useTeSound";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface CardTableProps {
   /**
    * The act to play on its own, or the campaign whose acts are played in
@@ -1835,7 +1836,7 @@ export function CardTable({
                         data-testid="consumable"
                         data-kind="amendment"
                       >
-                        <button
+                        <TooltipButton
                           type="button"
                           onClick={() => setAmendingId(item.id)}
                           disabled={
@@ -1844,7 +1845,7 @@ export function CardTable({
                             !preview ||
                             preview.refusal !== null
                           }
-                          title={preview?.refusal ?? amendment.description}
+                          tooltip={preview?.refusal ?? amendment.description}
                           // The name holds the badge, name and line the tile
                           // shows, in order, so speech input users can say
                           // what they see (axe label-content-name-mismatch).
@@ -1865,7 +1866,7 @@ export function CardTable({
                           <span className="block text-zinc-300 break-words">
                             {shown}
                           </span>
-                        </button>
+                        </TooltipButton>
                         {sellButton}
                       </span>
                     );
@@ -1881,7 +1882,7 @@ export function CardTable({
                         data-testid="consumable"
                         data-kind="guidance"
                       >
-                        <button
+                        <TooltipButton
                           type="button"
                           onClick={() =>
                             send(
@@ -1890,7 +1891,7 @@ export function CardTable({
                             )
                           }
                           disabled={view.status !== "REVIEWING" || playing}
-                          title={`${guidance.document}. ${guidance.flavor}`}
+                          tooltip={`${guidance.document}. ${guidance.flavor}`}
                           aria-label={`Use GD ${guidance.name}, Use: ${HAND_NAMES[guidance.handType]} Lv.${level + 1} · +${bonus.chips} Chips +${bonus.mult} Mult. Levels ${HAND_NAMES[guidance.handType]} up from Lv.${level} to Lv.${level + 1}.`}
                           className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
                         >
@@ -1909,7 +1910,7 @@ export function CardTable({
                             Use: {HAND_NAMES[guidance.handType]} Lv.{level + 1}{" "}
                             · +{bonus.chips} Chips +{bonus.mult} Mult
                           </span>
-                        </button>
+                        </TooltipButton>
                         {sellButton}
                       </span>
                     );
@@ -1922,7 +1923,7 @@ export function CardTable({
                       className={`flex w-56 min-w-0 border text-[10px] lg:w-full ${isArmed ? "border-amber-400 bg-amber-500/10" : "border-zinc-700"}`}
                       data-testid="consumable"
                     >
-                      <button
+                      <TooltipButton
                         type="button"
                         draggable={view.status === "REVIEWING"}
                         onDragStart={(e) => {
@@ -1932,7 +1933,7 @@ export function CardTable({
                         onClick={() => toggleArmed(item.id)}
                         aria-pressed={isArmed}
                         disabled={view.status !== "REVIEWING" || playing}
-                        title={seal.footnote}
+                        tooltip={seal.footnote}
                         className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
                       >
                         <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-amber-300">
@@ -1950,7 +1951,7 @@ export function CardTable({
                           {sealSummary(seal)}
                           {isArmed ? " · pick a card" : ""}
                         </span>
-                      </button>
+                      </TooltipButton>
                       {sellButton}
                     </span>
                   );

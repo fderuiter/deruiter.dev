@@ -15,6 +15,7 @@ import {
 import { IconGolf, IconLock } from "@tabler/icons-react";
 import { layoutLevelMap, levelMapBadge } from "./boardArt";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface LevelMapProps {
   levels: PuzzlerLevelDef[];
   currentLevelIndex: number;
@@ -161,7 +162,7 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                   className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
                   style={{ left: `${pos.x * 100}%`, top: pos.y }}
                 >
-                  <button
+                  <TooltipButton
                     ref={isCurrent ? currentButtonRef : undefined}
                     type="button"
                     onClick={() =>
@@ -170,7 +171,7 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                     aria-current={isCurrent ? "step" : undefined}
                     aria-describedby={badgeId}
                     aria-disabled={locked ? "true" : undefined}
-                    title={
+                    tooltip={
                       locked
                         ? `${lvl.title} · locked`
                         : par !== null
@@ -182,7 +183,7 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                     className="qp-map-node qp-focus min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums transition-colors hover:border-[color:var(--qp-accent)] active:scale-[0.98]"
                   >
                     L{lvl.id}
-                  </button>
+                  </TooltipButton>
                   <span
                     id={badgeId}
                     data-golfed={golfed ? "true" : undefined}

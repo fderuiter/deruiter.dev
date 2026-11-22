@@ -20,6 +20,7 @@ import {
   TOUCH_DEVICE_QUERY,
 } from "../components/arcade/mobile";
 
+import { getByTooltip } from "./helpers/tooltip";
 const lockMock = vi.hoisted(() => vi.fn(() => () => {}));
 
 vi.mock("@/components/arcade/mobile", async (importOriginal) => {
@@ -149,7 +150,7 @@ function pressKey(key: string) {
 }
 
 function powerOff() {
-  fireEvent.click(screen.getByTitle("Reset / Power Off Cabinet"));
+  fireEvent.click(getByTooltip("Reset / Power Off Cabinet"));
 }
 
 describe("PlayCabinet immersive touch mode (ADR 0061)", () => {

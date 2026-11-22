@@ -8,6 +8,7 @@ import { CHIP_DRAG_TYPE, placeChip } from "./PipelineCanvas";
 import { useProtocolDriftStore } from "./store";
 import { useChipPickContext, type ChipPick } from "./chip-pick";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 const TOOLBOX_ORDER: ChipKind[] = [
   "SourceIngest",
   "ExtractField",
@@ -182,7 +183,7 @@ function ToolboxChip({
     void placeChip(kind, { touch });
   };
   return (
-    <button
+    <TooltipButton
       ref={ref}
       type="button"
       draggable={editable}
@@ -199,7 +200,7 @@ function ToolboxChip({
       )}: ${spec.summary}`}
       aria-pressed={pick ? picked : undefined}
       data-picked={picked ? "true" : undefined}
-      title={`${kind}: ${spec.summary}`}
+      tooltip={`${kind}: ${spec.summary}`}
       className={`min-w-0 border bg-[#0d0e11] p-1.5 text-left text-[11px] transition-colors hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] ${
         picked ? "border-amber-500 ring-2 ring-amber-500" : "border-zinc-800"
       }${pick ? " select-none [-webkit-touch-callout:none]" : ""} ${
@@ -223,7 +224,7 @@ function ToolboxChip({
           </span>
         </>
       )}
-    </button>
+    </TooltipButton>
   );
 }
 

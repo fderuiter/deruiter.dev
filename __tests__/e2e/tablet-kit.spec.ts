@@ -188,7 +188,9 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         // stop before the one tap.
         await settleScroll(page);
         await page
-          .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
+          .locator(
+            `${IMMERSIVE} button[data-tooltip="Reset / Power Off Cabinet"]`
+          )
           .tap();
         await expect(page.locator("[data-immersive]")).toHaveCount(0);
         // Exit hands the page back at the offset the player left: it returns to
@@ -209,7 +211,9 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         );
 
         await page
-          .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
+          .locator(
+            `${IMMERSIVE} button[data-tooltip="Reset / Power Off Cabinet"]`
+          )
           .tap();
         await expect(page.locator("[data-immersive]")).toHaveCount(0);
         expect(
@@ -1298,8 +1302,19 @@ async function openClassicDesk(page: Page) {
   await expect(page.locator(SD_DESK)).toBeVisible();
 }
 
-/** Every box the view draws sits inside the viewport. */
+/**
+ * Every box the view draws sits inside the viewport. The check retries until
+ * motion settles: dealt cards fly in from off screen, so a measurement taken
+ * the moment the first card shows can catch the hand mid-deal.
+ */
 async function expectInsideViewport(page: Page, selectors: string[]) {
+  await expect(async () => {
+    await expectInsideViewportNow(page, selectors);
+  }).toPass({ timeout: 5000 });
+}
+
+/** One measurement of {@link expectInsideViewport}, with no retry. */
+async function expectInsideViewportNow(page: Page, selectors: string[]) {
   const viewport = page.viewportSize();
   expect(viewport).not.toBeNull();
   for (const selector of selectors) {

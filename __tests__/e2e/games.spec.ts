@@ -120,7 +120,7 @@ test.describe("Arcade Games & Simulators Suite", () => {
 
     // Open Setup, then its wizard; pick Hard + Heavy Scanlines, and confirm.
     await expect(async () => {
-      await page.getByTitle("Setup", { exact: true }).first().click();
+      await page.locator('[data-tooltip="Setup"]').first().click();
       await page
         .getByRole("button", { name: /Game setup: difficulty/ })
         .first()
@@ -146,7 +146,7 @@ test.describe("Arcade Games & Simulators Suite", () => {
 
     // Reopening Setup mid-run pauses the run underneath the sheet and the
     // wizard.
-    await page.getByTitle("Setup", { exact: true }).first().click();
+    await page.locator('[data-tooltip="Setup"]').first().click();
     await expect(watch).toHaveAttribute("aria-label", /Status: paused/);
     await page
       .getByRole("button", { name: /Game setup: difficulty/ })
@@ -171,7 +171,7 @@ test.describe("Arcade Games & Simulators Suite", () => {
       });
     }).toPass({ timeout: 20000 });
 
-    const setupKey = page.getByTitle("Setup", { exact: true }).first();
+    const setupKey = page.locator('[data-tooltip="Setup"]').first();
     const dialog = page.getByRole("dialog", { name: "Setup" });
     await expect(async () => {
       await setupKey.click();

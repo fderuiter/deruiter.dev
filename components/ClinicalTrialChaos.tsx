@@ -89,6 +89,7 @@ import {
   useClinicalChaosSession,
 } from "@/components/clinical-trial-chaos/useClinicalChaosSession";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 const AUDITOR_BEHAVIOR_LABELS: Record<AuditorState["behavior"], string> = {
   patrolling: "Patrolling",
   inspecting: "Inspecting",
@@ -1183,12 +1184,14 @@ export const ClinicalTrialChaos: React.FC = () => {
           {playState === "playing" && (
             // Compact, like the audio toggles beside it, so the header keeps
             // one row with a four-digit score at 1280px.
-            <button
+            <TooltipButton
               type="button"
               onClick={togglePause}
               aria-label={isPaused ? "Resume shift" : "Pause shift"}
               aria-keyshortcuts="P"
-              title={isPaused ? "Resume the shift (P)" : "Pause the shift (P)"}
+              tooltip={
+                isPaused ? "Resume the shift (P)" : "Pause the shift (P)"
+              }
               className="flex h-11 min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-[#13151a] px-2 text-xs font-bold text-zinc-300 transition hover:text-white"
             >
               {isPaused ? (
@@ -1202,19 +1205,19 @@ export const ClinicalTrialChaos: React.FC = () => {
               >
                 P
               </kbd>
-            </button>
+            </TooltipButton>
           )}
           <FieldManualButton
             manualId="clinical-chaos"
             label="Manual"
             onOpenChange={setIsManualOpen}
           />
-          <button
+          <TooltipButton
             type="button"
             onClick={() => setBgmEnabled(!bgmEnabled)}
             aria-pressed={bgmEnabled}
             aria-label="Background music"
-            title="Toggle 8-bit background music"
+            tooltip="Toggle 8-bit background music"
             className={`flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border transition ${
               bgmEnabled
                 ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
@@ -1222,13 +1225,15 @@ export const ClinicalTrialChaos: React.FC = () => {
             }`}
           >
             <IconMusic className="h-4 w-4" />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
             aria-pressed={soundEnabled}
             aria-label="Sound effects"
-            title={soundEnabled ? "Mute sound effects" : "Unmute sound effects"}
+            tooltip={
+              soundEnabled ? "Mute sound effects" : "Unmute sound effects"
+            }
             className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-800 bg-[#13151a] text-zinc-400 transition hover:text-white"
           >
             {soundEnabled ? (
@@ -1236,7 +1241,7 @@ export const ClinicalTrialChaos: React.FC = () => {
             ) : (
               <IconVolumeOff className="h-4 w-4 text-zinc-400" />
             )}
-          </button>
+          </TooltipButton>
           <FullscreenButton
             isFullscreen={isFullscreen}
             onToggle={toggleFullscreen}
@@ -1302,11 +1307,11 @@ export const ClinicalTrialChaos: React.FC = () => {
           {/* Stress Control & BIMO Stream Toggle Button. Its visible words
               are its name, so speech input users can say what they see (axe
               label-content-name-mismatch, #2571); the title says more. */}
-          <button
+          <TooltipButton
             type="button"
             onClick={() => setIsStressDrawerOpen((prev) => !prev)}
             aria-expanded={isStressDrawerOpen}
-            title="Toggle the interactive stress control panel and live BIMO stream"
+            tooltip="Toggle the interactive stress control panel and live BIMO stream"
             className={`flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition border ${
               isStressDrawerOpen
                 ? "border-amber-500 bg-amber-500/20 text-amber-200"
@@ -1330,7 +1335,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                 {headerBimoReport.verdict.split(" ")[0]})
               </span>
             )}
-          </button>
+          </TooltipButton>
         </div>
         <span className="hidden min-w-0 items-center gap-1.5 text-[10px] text-zinc-400 sm:flex">
           <span
@@ -1689,11 +1694,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                       const isFlashing = flashStationId === station.id;
                       const isWatched = watchedStationId === station.id;
                       return (
-                        <button
+                        <TooltipButton
                           key={station.id}
                           type="button"
                           onClick={() => handleInitiateSubmission(station.id)}
-                          title={`${station.label}: ${station.name}${
+                          tooltip={`${station.label}: ${station.name}${
                             isWatched
                               ? " (GCP spot inspection: a misroute here counts double)"
                               : ""
@@ -1765,7 +1770,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                                   ? "Other domain"
                                   : station.name}
                           </span>
-                        </button>
+                        </TooltipButton>
                       );
                     })}
                   </div>
@@ -2697,12 +2702,12 @@ export const ClinicalTrialChaos: React.FC = () => {
                           ? POWER_UP_REFUSAL_LABELS[refusal]
                           : null;
                       return (
-                        <button
+                        <TooltipButton
                           key={type}
                           type="button"
                           onClick={() => triggerPowerUp(type)}
                           disabled={refusal !== null}
-                          title={
+                          tooltip={
                             refusal && blockedLabel
                               ? describePowerUpRefusal(refusal, p.name)
                               : p.description
@@ -2766,7 +2771,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                                     : `${p.charge}/${p.maxCharge}`}
                             </span>
                           </span>
-                        </button>
+                        </TooltipButton>
                       );
                     })}
                   </div>

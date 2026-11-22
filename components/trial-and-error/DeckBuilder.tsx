@@ -25,6 +25,7 @@ import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { CHALLENGE_PATH } from "@/components/trial-and-error/useChallenge";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 const BUTTON =
   "min-h-[48px] min-w-[48px] border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-bold uppercase tracking-wider text-zinc-200 touch-manipulation hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
 
@@ -552,14 +553,14 @@ export function DeckBuilder({
         {/* Action Controls */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-3">
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <TooltipButton
               type="button"
               onClick={handleExportJson}
               className={BUTTON}
-              title="Download this scenario as a JSON file"
+              tooltip="Download this scenario as a JSON file"
             >
               Export JSON
-            </button>
+            </TooltipButton>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -574,14 +575,14 @@ export function DeckBuilder({
               className="hidden"
               onChange={handleImportJson}
             />
-            <button
+            <TooltipButton
               type="button"
               onClick={handleCopyLink}
               className={BUTTON}
-              title="Copy a link that opens this scenario"
+              tooltip="Copy a link that opens this scenario"
             >
               Copy Challenge Link
-            </button>
+            </TooltipButton>
           </div>
 
           <div className="flex items-center gap-2">

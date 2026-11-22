@@ -2580,7 +2580,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       : undefined;
 
   const renderPauseButton = (isQuickMeta: boolean) => (
-    <button
+    <TooltipButton
       onClick={toggleManualPause}
       disabled={uiState.status !== "running" && !isManuallyPaused}
       className={`${
@@ -2592,7 +2592,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             ? "border-amber-500/50 bg-amber-500/20 text-amber-300 hover:text-white cursor-pointer"
             : "border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white cursor-pointer"
       }`}
-      title={
+      tooltip={
         isManuallyPaused
           ? `Resume ${sessionLabel}${isQuickMeta ? " (P)" : ""}`
           : `Pause ${sessionLabel}${isQuickMeta ? " (P)" : ""}`
@@ -2608,7 +2608,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       ) : (
         <IconPlayerPause className="w-4 h-4" />
       )}
-    </button>
+    </TooltipButton>
   );
 
   return (
@@ -2795,15 +2795,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300"
               />
               <span>{visibleTip}</span>
-              <button
+              <TooltipButton
                 type="button"
                 onClick={() => setDismissedTip(visibleTip)}
                 aria-label="Dismiss tip"
-                title="Dismiss tip"
+                tooltip="Dismiss tip"
                 className="pointer-events-auto -my-1 inline-flex min-h-[28px] min-w-[28px] shrink-0 cursor-pointer items-center justify-center rounded-md text-zinc-400 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
               >
                 <IconX className="h-3.5 w-3.5" />
-              </button>
+              </TooltipButton>
             </div>
           </div>
         )}
@@ -3308,29 +3308,31 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 <IconBook className="w-4 h-4" />
               </TooltipButton>
 
-              <button
+              <TooltipButton
                 onClick={() => setIsMusicMuted(!isMusicMuted)}
                 className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title={isMusicMuted ? "Unmute Music" : "Mute Music"}
+                tooltip={isMusicMuted ? "Unmute Music" : "Mute Music"}
+                aria-label={isMusicMuted ? "Unmute Music" : "Mute Music"}
               >
                 {isMusicMuted ? (
                   <IconMusicOff className="w-4 h-4 text-zinc-500" />
                 ) : (
                   <IconMusic className="w-4 h-4 text-emerald-400" />
                 )}
-              </button>
+              </TooltipButton>
 
-              <button
+              <TooltipButton
                 onClick={() => setMuted(!muted)}
                 className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title={muted ? "Unmute Audio" : "Mute Audio"}
+                tooltip={muted ? "Unmute Audio" : "Mute Audio"}
+                aria-label={muted ? "Unmute Audio" : "Mute Audio"}
               >
                 {muted ? (
                   <IconVolumeOff className="w-4 h-4" />
                 ) : (
                   <IconVolume className="w-4 h-4 text-zinc-200" />
                 )}
-              </button>
+              </TooltipButton>
 
               <FieldManualButton
                 manualId="working-with-duck"
@@ -3357,7 +3359,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 <span aria-hidden="true" className={DOCK_CAPTION}>
                   Toys
                 </span>
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => {
@@ -3368,14 +3370,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }}
                   aria-pressed={uiState.selectedItem === "tennis-ball"}
                   className={`${DOCK_BUTTON} ${uiState.selectedItem === "tennis-ball" ? TOY_SELECTED : TOY_IDLE}`}
-                  title="Throw ball to play fetch & drain Excitement"
+                  tooltip="Throw ball to play fetch & drain Excitement"
                 >
                   <kbd className={DOCK_KEY}>1</kbd>
                   <IconBallTennis aria-hidden="true" className={DOCK_ICON} />
                   <span>Tennis Ball</span>
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => {
@@ -3386,13 +3388,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }}
                   aria-pressed={uiState.selectedItem === "kong"}
                   className={`${DOCK_BUTTON} ${uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE}`}
-                  title="Drop chew toy to distract Duck away from desk hazards"
+                  tooltip="Drop chew toy to distract Duck away from desk hazards"
                 >
                   <kbd className={DOCK_KEY}>2</kbd>
                   <span>Kong Chew</span>
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => {
@@ -3403,24 +3405,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }}
                   aria-pressed={uiState.selectedItem === "squeaky-toy"}
                   className={`${DOCK_BUTTON} ${uiState.selectedItem === "squeaky-toy" ? TOY_SELECTED : TOY_IDLE}`}
-                  title="Squeak to instantly get Duck's attention and recall"
+                  tooltip="Squeak to instantly get Duck's attention and recall"
                 >
                   <kbd className={DOCK_KEY}>3</kbd>
                   <IconBone aria-hidden="true" className={DOCK_ICON} />
                   <span>Squeaky</span>
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   disabled={isPlayFrozen}
                   aria-describedby={pausedReasonId}
                   onClick={handleGiveTreat}
                   aria-pressed={uiState.selectedItem === "treat"}
                   className={`${DOCK_BUTTON} ${TOY_IDLE}`}
-                  title="Give treat (trades ball during No Take Only Throw)"
+                  tooltip="Give treat (trades ball during No Take Only Throw)"
                 >
                   <kbd className={DOCK_KEY}>4</kbd>
                   <span>Treat</span>
-                </button>
+                </TooltipButton>
               </div>
 
               {/* Training Tricks [Q-W-E-R] */}
@@ -3428,49 +3430,49 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 <span aria-hidden="true" className={DOCK_CAPTION}>
                   Tricks
                 </span>
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => handlePerformTrick("SIT")}
                   className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                  title="Command Sit: Calms Excitement (-20) & boosts Good Boy scale"
+                  tooltip="Command Sit: Calms Excitement (-20) & boosts Good Boy scale"
                 >
                   <kbd className={TRICK_KEY}>Q</kbd>
                   <span>Sit</span>
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => handlePerformTrick("HIGH_FIVE")}
                   className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                  title="Command High Five: Morale boost (+45 pts) & tail wag"
+                  tooltip="Command High Five: Morale boost (+45 pts) & tail wag"
                 >
                   <kbd className={TRICK_KEY}>W</kbd>
                   <span>High Five</span>
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => handlePerformTrick("DROP_IT")}
                   className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                  title="Command Drop It: Immediately drops stolen hazards or ball (+60-75 pts)"
+                  tooltip="Command Drop It: Immediately drops stolen hazards or ball (+60-75 pts)"
                 >
                   <kbd className={TRICK_KEY}>E</kbd>
                   <span>Drop It</span>
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   disabled={officeOnlyDisabled}
                   aria-describedby={officeOnlyReasonId}
                   onClick={() => handlePerformTrick("SPIN")}
                   className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                  title="Command Spin: Playful trick (+50 pts) with 360 rotation"
+                  tooltip="Command Spin: Playful trick (+50 pts) with 360 rotation"
                 >
                   <kbd className={TRICK_KEY}>R</kbd>
                   <span>Spin</span>
-                </button>
+                </TooltipButton>
               </div>
             </div>
 
@@ -3479,21 +3481,21 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               {/* Active Action Button */}
               <div className="flex items-center gap-2">
                 {!uiState.inDogPark && !uiState.inBathtub ? (
-                  <button
+                  <TooltipButton
                     disabled={isPlayFrozen}
                     aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => activeCodeBurst(state));
                     }}
                     className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
-                    title="Focus work sprint at desk (Spacebar)"
+                    tooltip="Focus work sprint at desk (Spacebar)"
                   >
                     <IconCode aria-hidden="true" className="w-4 h-4" />
                     <span>Focus Work Sprint</span>
                     <kbd className="hidden xl:inline rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
                       Space
                     </kbd>
-                  </button>
+                  </TooltipButton>
                 ) : uiState.inBathtub ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -3566,12 +3568,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 {!uiState.inDogPark && !uiState.inBathtub && (
                   <>
                     {packageWaiting && (
-                      <button
+                      <TooltipButton
                         data-testid="duck-package-button"
                         disabled={isPlayFrozen}
                         aria-describedby={pausedReasonId}
                         onClick={() => runDuckCommand("package")}
-                        title="Get the package at the back door (D)"
+                        tooltip="Get the package at the back door (D)"
                         className={`${DOCK_BUTTON} ${TOY_SELECTED}`}
                       >
                         <IconPackage aria-hidden="true" className="w-4 h-4" />
@@ -3579,7 +3581,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                         <kbd className="hidden xl:inline rounded border border-white/20 bg-white/10 px-1 font-mono text-[10px]">
                           D
                         </kbd>
-                      </button>
+                      </TooltipButton>
                     )}
 
                     <button
@@ -3640,10 +3642,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   <IconBook className="w-4 h-4" />
                 </TooltipButton>
 
-                <button
+                <TooltipButton
                   onClick={() => setIsMusicMuted(!isMusicMuted)}
                   className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                  title={
+                  tooltip={
+                    isMusicMuted ? "Unmute Lo-Fi Music" : "Mute Lo-Fi Music"
+                  }
+                  aria-label={
                     isMusicMuted ? "Unmute Lo-Fi Music" : "Mute Lo-Fi Music"
                   }
                 >
@@ -3652,19 +3657,20 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   ) : (
                     <IconMusic className="w-4 h-4 text-emerald-400" />
                   )}
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   onClick={() => setMuted(!muted)}
                   className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                  title={muted ? "Unmute Audio" : "Mute Audio"}
+                  tooltip={muted ? "Unmute Audio" : "Mute Audio"}
+                  aria-label={muted ? "Unmute Audio" : "Mute Audio"}
                 >
                   {muted ? (
                     <IconVolumeOff className="w-4 h-4" />
                   ) : (
                     <IconVolume className="w-4 h-4 text-zinc-200" />
                   )}
-                </button>
+                </TooltipButton>
 
                 <FieldManualButton
                   manualId="working-with-duck"
@@ -3745,17 +3751,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             ) : (
               <>
                 {packageWaiting && (
-                  <button
+                  <TooltipButton
                     data-testid="duck-package-button"
                     disabled={isPlayFrozen}
                     aria-describedby={pausedReasonId}
                     onClick={() => runDuckCommand("package")}
-                    title="Get the package at the back door (D)"
+                    tooltip="Get the package at the back door (D)"
                     className={CABINET_ACTION}
                   >
                     <IconPackage aria-hidden="true" className="w-4 h-4" />
                     <span>Get the package (D)</span>
-                  </button>
+                  </TooltipButton>
                 )}
                 <button
                   disabled={isPlayFrozen}
@@ -3803,10 +3809,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             >
               <IconBook className="w-4 h-4" aria-hidden="true" />
             </TooltipButton>
-            <button
+            <TooltipButton
               onClick={() => setIsMusicMuted(!isMusicMuted)}
               className={CABINET_ICON}
-              title={isMusicMuted ? "Unmute Music" : "Mute Music"}
+              tooltip={isMusicMuted ? "Unmute Music" : "Mute Music"}
               aria-label={isMusicMuted ? "Unmute Music" : "Mute Music"}
             >
               {isMusicMuted ? (
@@ -3820,11 +3826,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   aria-hidden="true"
                 />
               )}
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               onClick={() => setMuted(!muted)}
               className={CABINET_ICON}
-              title={muted ? "Unmute Audio" : "Mute Audio"}
+              tooltip={muted ? "Unmute Audio" : "Mute Audio"}
               aria-label={muted ? "Unmute Audio" : "Mute Audio"}
             >
               {muted ? (
@@ -3835,7 +3841,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   aria-hidden="true"
                 />
               )}
-            </button>
+            </TooltipButton>
             <FieldManualButton
               manualId="working-with-duck"
               label="Manual"

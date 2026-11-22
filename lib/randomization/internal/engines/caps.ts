@@ -411,7 +411,8 @@ function proportionalFingerprint(request: BlockRandomizationRequest): string {
 
 /**
  * Resolves manual or proportional capacities for a BLOCK request. Marginal
- * caps are resolved by the marginal engine (#4001) and are refused here.
+ * caps have no intersection matrix; resolve them with `resolveMarginalCaps`
+ * (#4001).
  */
 export function resolveBlockCapacities(
   request: BlockRandomizationRequest,
@@ -429,10 +430,11 @@ export function resolveBlockCapacities(
         ok: false,
         findings: [
           {
-            code: "UNSUPPORTED_METHOD_COMBINATION",
+            code: "INVALID_CAP_STRATEGY",
             severity: "error",
             fieldPath: "caps.strategy",
-            message: "Marginal caps for block schedules are not available yet.",
+            message:
+              "Marginal caps have no intersection matrix; resolve them with resolveMarginalCaps.",
           },
         ],
       };

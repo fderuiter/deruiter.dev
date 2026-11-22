@@ -4,7 +4,8 @@
  *
  * Both paths share one rule resolver, one block-size selector and one
  * Fisher-Yates shuffle, so an interleaved profile session uses exactly the
- * primitives a standard schedule uses.
+ * primitives a standard schedule uses. Marginal (factor-level) caps (#4001)
+ * reuse the same primitives behind a different capacity ledger.
  */
 
 import {
@@ -13,6 +14,7 @@ import {
   type ArmSpec,
   type BlockRandomizationRequest,
   type BlockSizeRule,
+  type MarginalSitePolicy,
   type ParticipantProfile,
   type PrngStream,
   type ProfileAssignmentOutcome,
@@ -34,6 +36,16 @@ import {
   type CapResolutionResult,
   type StratumIntersection,
 } from "./caps";
+import {
+  MarginalLedger,
+  resolveMarginalCaps,
+  type MarginalCapResolution,
+} from "./marginal";
+
+type IntersectionCapResolution = Extract<CapResolutionResult, { ok: true }>;
+
+/** Resolved capacities of either kind: an intersection matrix or level caps. */
+export type BlockCapacities = IntersectionCapResolution | MarginalCapResolution;
 
 /** Composition of one legal block size (RND-BLOCK-002). */
 export interface BlockCompositionPreview {
@@ -252,7 +264,7 @@ interface PreparedBlockPlan {
   readonly request: BlockRandomizationRequest;
   readonly reducedRatios: readonly number[];
   readonly intersections: readonly StratumIntersection[];
-  readonly capacities: Extract<CapResolutionResult, { ok: true }>;
+  readonly capacities: BlockCapacities;
 }
 
 function prepareBlockPlan(
@@ -333,13 +345,16 @@ function prepareBlockPlan(
   });
   if (findings.length > 0) return { ok: false, findings };
 
-  const capacities = resolveBlockCapacities(request, intersections);
+  const capacities =
+    request.caps.strategy === "marginal"
+      ? resolveMarginalCaps(request)
+      : resolveBlockCapacities(request, intersections);
   if (!capacities.ok) return { ok: false, findings: capacities.findings };
 
-  const totalCapacity = capacities.caps.reduce(
-    (sum, c) => sum + BigInt(c.cap),
-    BigInt(0)
-  );
+  const totalCapacity =
+    capacities.strategy === "marginal"
+      ? BigInt(capacities.terminationBound)
+      : capacities.caps.reduce((sum, c) => sum + BigInt(c.cap), BigInt(0));
   if (totalCapacity > BigInt(limits.maxRows)) {
     return {
       ok: false,
@@ -363,11 +378,17 @@ function prepareBlockPlan(
 }
 
 /** Capacity counters shared by schedules and sessions. */
-class CapacityLedger {
+interface CapacityLedger {
+  left(siteId: string, intersection: StratumIntersection): number;
+  take(siteId: string, intersection: StratumIntersection, count: number): void;
+}
+
+/** Per-intersection caps from a manual or proportional matrix. */
+class IntersectionLedger implements CapacityLedger {
   private readonly remaining = new Map<string, number>();
   private readonly perSite: boolean;
 
-  constructor(capacities: Extract<CapResolutionResult, { ok: true }>) {
+  constructor(capacities: IntersectionCapResolution) {
     this.perSite = capacities.capScope === "per-site";
     for (const cap of capacities.caps) {
       this.remaining.set(this.key(cap.siteId ?? "", cap.stratumKey), cap.cap);
@@ -378,14 +399,20 @@ class CapacityLedger {
     return JSON.stringify([this.perSite ? siteId : "", stratumKey]);
   }
 
-  left(siteId: string, stratumKey: string): number {
-    return this.remaining.get(this.key(siteId, stratumKey)) ?? 0;
+  left(siteId: string, intersection: StratumIntersection): number {
+    return this.remaining.get(this.key(siteId, intersection.stratumKey)) ?? 0;
   }
 
-  take(siteId: string, stratumKey: string, count: number): void {
-    const key = this.key(siteId, stratumKey);
+  take(siteId: string, intersection: StratumIntersection, count: number): void {
+    const key = this.key(siteId, intersection.stratumKey);
     this.remaining.set(key, (this.remaining.get(key) ?? 0) - count);
   }
+}
+
+function createLedger(capacities: BlockCapacities): CapacityLedger {
+  return capacities.strategy === "marginal"
+    ? new MarginalLedger(capacities)
+    : new IntersectionLedger(capacities);
 }
 
 /** Generates blocks for one (site, intersection) cell with the shared rule state. */
@@ -440,14 +467,41 @@ export interface PartialBlockRecord {
   readonly emittedSlots: number;
 }
 
+/** Why a marginal schedule stopped. */
+export type MarginalStopReason =
+  /** The termination bound was zero, so nothing could be emitted. */
+  | "ZERO_CAPACITY"
+  /** The caps allowed at least the enrollment target. */
+  | "BOUND_REACHED"
+  /**
+   * The caps ran out before the enrollment target, for example because one
+   * factor's level caps add up to less than another's. The rows are not
+   * topped up with invented subjects.
+   */
+  | "MARGINAL_CAPACITY_EXHAUSTED";
+
+/** How a marginal schedule ran and why it stopped (RND-CAPS-007 to -009). */
+export interface MarginalScheduleSummary {
+  readonly sitePolicy: MarginalSitePolicy;
+  readonly terminationBound: number;
+  /** The request's enrollment target. */
+  readonly requestedRows: number;
+  readonly emittedRows: number;
+  /** Rows short of the enrollment target, or 0. */
+  readonly shortfall: number;
+  readonly stopReason: MarginalStopReason;
+}
+
 /** Result of generating a standard block schedule. */
 export type BlockScheduleResult =
   | {
       readonly ok: true;
       readonly reducedRatios: readonly number[];
-      readonly capacities: Extract<CapResolutionResult, { ok: true }>;
+      readonly capacities: BlockCapacities;
       readonly rows: readonly AllocationRow[];
       readonly partialBlocks: readonly PartialBlockRecord[];
+      /** Present only for marginal caps. */
+      readonly marginal?: MarginalScheduleSummary;
     }
   | { readonly ok: false; readonly findings: readonly ValidationFinding[] };
 
@@ -459,6 +513,14 @@ export type BlockScheduleResult =
  * is shuffled in full first, then truncated and reported in `partialBlocks`;
  * when the design sets `allowPartialFinalBlock: false`, that is refused.
  * Site recruitment weights do not affect this traversal.
+ *
+ * With marginal caps there is no intersection matrix, so the schedule
+ * samples profiles instead (#4001). On each turn a site draws one
+ * intersection uniformly from those that still fit every capped level, and
+ * takes the next slot of that cell's current block. `round-robin-v1` gives
+ * each active site one turn in declared order until none can take another
+ * subject; `site-major-v1` fills each site before the next. Blocks left
+ * unfinished at the end are reported in `partialBlocks`.
  */
 export function generateBlockSchedule(
   request: RandomizationRequest,
@@ -469,7 +531,7 @@ export function generateBlockSchedule(
   const { plan } = prepared;
   const streams = createRandomizationStreams(plan.request.seed.value);
   const factory = new BlockFactory(plan, streams.allocation);
-  const ledger = new CapacityLedger(plan.capacities);
+  const ledger = createLedger(plan.capacities);
   const ids = createSubjectIdGenerator(
     plan.request.subjectIdMask.pattern,
     streams.identifier
@@ -478,12 +540,41 @@ export function generateBlockSchedule(
 
   const rows: AllocationRow[] = [];
   const partialBlocks: PartialBlockRecord[] = [];
-  let emittedThisPass = true;
+  let marginal: MarginalScheduleSummary | undefined;
+  if (plan.capacities.strategy === "marginal") {
+    marginal = emitMarginalRows(
+      plan,
+      plan.capacities,
+      factory,
+      ledger,
+      streams.allocation,
+      (site, intersection, block, position) =>
+        rows.push(
+          Object.freeze({
+            sequence: rows.length + 1,
+            subjectId: ids.nextId({
+              siteCode: site.code,
+              stratumLabel: formatStratumHumanCode(intersection.labels),
+            }),
+            siteId: site.id,
+            stratumKey: intersection.stratumKey,
+            stratumLevels: intersection.levels,
+            armId: block.arms[position],
+            armCode: armCode.get(block.arms[position])!,
+            blockIndex: block.blockIndex,
+            blockSize: block.blockSize,
+            positionInBlock: position + 1,
+          })
+        ),
+      partialBlocks
+    );
+  }
+  let emittedThisPass = plan.capacities.strategy !== "marginal";
   while (emittedThisPass) {
     emittedThisPass = false;
     for (const intersection of plan.intersections) {
       for (const site of plan.request.sites) {
-        const left = ledger.left(site.id, intersection.stratumKey);
+        const left = ledger.left(site.id, intersection);
         if (left <= 0) continue;
         const block = factory.next(site.id, intersection.stratumKey);
         const emit = Math.min(left, block.arms.length);
@@ -516,7 +607,7 @@ export function generateBlockSchedule(
             })
           );
         }
-        ledger.take(site.id, intersection.stratumKey, emit);
+        ledger.take(site.id, intersection, emit);
         emittedThisPass = true;
       }
     }
@@ -543,6 +634,108 @@ export function generateBlockSchedule(
     capacities: plan.capacities,
     rows: Object.freeze(rows),
     partialBlocks: Object.freeze(partialBlocks),
+    ...(marginal ? { marginal: Object.freeze(marginal) } : {}),
+  };
+}
+
+interface DrawnBlock {
+  readonly blockIndex: number;
+  readonly blockSize: number;
+  readonly arms: readonly string[];
+}
+
+/**
+ * Emits a marginal schedule one subject per site turn. Each emitted row
+ * takes one unit from every capped level it carries, so no level ever goes
+ * past its cap, and the loop ends within the termination bound.
+ */
+function emitMarginalRows(
+  plan: PreparedBlockPlan,
+  capacities: MarginalCapResolution,
+  factory: BlockFactory,
+  ledger: CapacityLedger,
+  stream: PrngStream,
+  emit: (
+    site: BlockRandomizationRequest["sites"][number],
+    intersection: StratumIntersection,
+    block: DrawnBlock,
+    position: number
+  ) => void,
+  partialBlocks: PartialBlockRecord[]
+): MarginalScheduleSummary {
+  const queues = new Map<
+    string,
+    { block: DrawnBlock; next: number; siteId: string; stratumKey: string }
+  >();
+  let emitted = 0;
+
+  function turn(site: BlockRandomizationRequest["sites"][number]): boolean {
+    if (emitted >= capacities.terminationBound) return false;
+    const options = plan.intersections.filter(
+      (i) => ledger.left(site.id, i) > 0
+    );
+    if (options.length === 0) return false;
+    const intersection =
+      options[Math.floor(stream.nextFloat() * options.length)];
+    const cellKey = JSON.stringify([site.id, intersection.stratumKey]);
+    let queue = queues.get(cellKey);
+    if (!queue || queue.next >= queue.block.arms.length) {
+      queue = {
+        block: factory.next(site.id, intersection.stratumKey),
+        next: 0,
+        siteId: site.id,
+        stratumKey: intersection.stratumKey,
+      };
+      queues.set(cellKey, queue);
+    }
+    emit(site, intersection, queue.block, queue.next);
+    queue.next += 1;
+    ledger.take(site.id, intersection, 1);
+    emitted += 1;
+    return true;
+  }
+
+  if (capacities.sitePolicy === "site-major-v1") {
+    for (const site of plan.request.sites) {
+      while (turn(site)) {
+        // fill this site before moving on
+      }
+    }
+  } else {
+    let active = [...plan.request.sites];
+    while (active.length > 0) {
+      active = active.filter((site) => turn(site));
+    }
+  }
+
+  for (const queue of queues.values()) {
+    if (queue.next < queue.block.arms.length) {
+      partialBlocks.push(
+        Object.freeze({
+          siteId: queue.siteId,
+          stratumKey: queue.stratumKey,
+          blockIndex: queue.block.blockIndex,
+          blockSize: queue.block.blockSize,
+          emittedSlots: queue.next,
+        })
+      );
+    }
+  }
+
+  const bound = capacities.terminationBound;
+  const requested = plan.request.enrollmentTarget;
+  return {
+    sitePolicy: capacities.sitePolicy,
+    terminationBound: bound,
+    requestedRows: requested,
+    emittedRows: emitted,
+    shortfall: Math.max(0, requested - emitted),
+    stopReason:
+      bound === 0
+        ? "ZERO_CAPACITY"
+        : emitted < requested
+          ? "MARGINAL_CAPACITY_EXHAUSTED"
+          : "BOUND_REACHED",
   };
 }
 
@@ -571,7 +764,7 @@ export function createBlockAllocationSession(
   const { plan } = prepared;
   const streams = createRandomizationStreams(plan.request.seed.value);
   const factory = new BlockFactory(plan, streams.allocation);
-  const ledger = new CapacityLedger(plan.capacities);
+  const ledger = createLedger(plan.capacities);
   const armCode = new Map(plan.request.arms.map((a) => [a.id, a.code]));
   const sites = new Set(plan.request.sites.map((s) => s.id));
   const byKey = new Map(plan.intersections.map((i) => [i.stratumKey, i]));
@@ -609,7 +802,8 @@ export function createBlockAllocationSession(
       };
     }
     const stratumKey = serializeStructuralStratumKey(entries);
-    if (!byKey.has(stratumKey)) {
+    const intersection = byKey.get(stratumKey);
+    if (!intersection) {
       return {
         status: "unmapped-stratum",
         subjectId: profile.subjectId,
@@ -617,13 +811,16 @@ export function createBlockAllocationSession(
         missingFactorIds: Object.freeze([]),
       };
     }
-    if (ledger.left(profile.siteId, stratumKey) <= 0) {
+    if (ledger.left(profile.siteId, intersection) <= 0) {
       return {
         status: "cap-exhausted",
         subjectId: profile.subjectId,
         siteId: profile.siteId,
         stratumKey,
-        reason: "CAPACITY_EXHAUSTED",
+        reason:
+          plan.capacities.strategy === "marginal"
+            ? "MARGINAL_CAPACITY_EXHAUSTED"
+            : "CAPACITY_EXHAUSTED",
       };
     }
     const cellKey = JSON.stringify([profile.siteId, stratumKey]);
@@ -636,7 +833,7 @@ export function createBlockAllocationSession(
     const slotIndex = queue.next;
     const armId = queue.arms[slotIndex];
     queue.next += 1;
-    ledger.take(profile.siteId, stratumKey, 1);
+    ledger.take(profile.siteId, intersection, 1);
     allocations += 1;
     return {
       status: "assigned",

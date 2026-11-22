@@ -39,3 +39,26 @@ export {
 } from "./internal/ops";
 export { exportValidatedStudyUsdm } from "./internal/export";
 export { TAVR_DEVICE_USDM, TAVR_SAVR_USDM } from "./reference";
+export {
+  StudyDesignError,
+  projectStudyDesignGrid,
+} from "./internal/design-grid";
+export {
+  addStudyArm,
+  addStudyElement,
+  addStudyEpoch,
+  moveStudyArm,
+  moveStudyElement,
+  moveStudyEpoch,
+  removeStudyArm,
+  removeStudyElement,
+  removeStudyEpoch,
+  renameStudyArm,
+  renameStudyElement,
+  renameStudyEpoch,
+} from "./internal/design-ops";
+export {
+  DATA_GENERATED_WITHIN_STUDY,
+  STUDY_ARM_TYPES,
+  STUDY_EPOCH_TYPES,
+} from "./internal/design-terms";

@@ -14,6 +14,7 @@ import { getOncologyPresetSync } from "@/lib/crf";
 import type { CodelistDefinition, CRFField } from "@/lib/crf";
 import { FieldPropertiesTab } from "@/components/crf/RightInspector/FieldPropertiesTab";
 
+import { getByTooltip } from "../helpers/tooltip";
 const study = getOncologyPresetSync();
 const codelists: CodelistDefinition[] = study.codelists ?? [];
 
@@ -746,8 +747,8 @@ describe("FieldPropertiesTab custom options builder", () => {
 
   it("disables moving the first option up and the last option down", () => {
     setup({ field: customRadio });
-    const ups = screen.getAllByTitle("Move Up");
-    const downs = screen.getAllByTitle("Move Down");
+    const ups = screen.getAllByRole("button", { name: "Move Up" });
+    const downs = screen.getAllByRole("button", { name: "Move Down" });
     expect(ups[0]).toHaveProperty("disabled", true);
     expect(ups[1]).toHaveProperty("disabled", false);
     expect(downs[2]).toHaveProperty("disabled", true);
@@ -756,7 +757,7 @@ describe("FieldPropertiesTab custom options builder", () => {
 
   it("moves an option up and renumbers the order", () => {
     const { onUpdateField } = setup({ field: customRadio });
-    fireEvent.click(screen.getAllByTitle("Move Up")[2]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Move Up" })[2]);
     expect(onUpdateField).toHaveBeenCalledWith({
       customOptions: [
         { code: "MILD", label: "Mild", order: 1 },
@@ -768,7 +769,7 @@ describe("FieldPropertiesTab custom options builder", () => {
 
   it("moves an option down and renumbers the order", () => {
     const { onUpdateField } = setup({ field: customRadio });
-    fireEvent.click(screen.getAllByTitle("Move Down")[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Move Down" })[0]);
     expect(onUpdateField).toHaveBeenCalledWith({
       customOptions: [
         { code: "MODERATE", label: "Moderate", order: 1 },
@@ -822,7 +823,7 @@ describe("FieldPropertiesTab custom options builder", () => {
 
   it("replaces the options with a quick template", () => {
     const { onUpdateField } = setup({ field: customRadio });
-    fireEvent.click(screen.getByTitle("Load 2 options for Pass / Fail"));
+    fireEvent.click(getByTooltip("Load 2 options for Pass / Fail"));
     expect(onUpdateField).toHaveBeenCalledWith({
       customOptions: [
         {

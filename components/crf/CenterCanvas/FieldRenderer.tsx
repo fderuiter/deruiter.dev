@@ -17,6 +17,7 @@ import {
 } from "@tabler/icons-react";
 import { CRFField, CodelistDefinition } from "@/lib/crf/types";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface FieldRendererProps {
   field: CRFField;
   isSelected: boolean;
@@ -150,7 +151,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           </span>
 
           {/* Quick Requirement Tier Badge / Toggle */}
-          <button
+          <TooltipButton
             onClick={(e) => {
               e.stopPropagation();
               const nextTier =
@@ -173,7 +174,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   ? "bg-red-500/15 text-red-400 border-red-500/30 font-bold"
                   : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
             } pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:min-h-11`}
-            title={`Requirement Tier: ${
+            tooltip={`Requirement Tier: ${
               field.requirementTier === "auto_query"
                 ? "Auto-Query on empty"
                 : field.requirementTier === "hard_stop" ||
@@ -188,7 +189,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   (!field.requirementTier && field.required)
                 ? "* Hard Stop"
                 : "Opt"}
-          </button>
+          </TooltipButton>
 
           {field.requiresSdv && (
             <span
@@ -227,31 +228,33 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
             }`}
           >
-            <button
+            <TooltipButton
               onClick={(e) => {
                 e.stopPropagation();
                 handleAdjustSpan(-1);
               }}
               disabled={field.columnSpan <= 1}
               className="hover:text-white disabled:opacity-30 px-0.5 font-bold"
-              title="Shrink column span"
+              tooltip="Shrink column span"
+              aria-label="Shrink column span"
             >
               -
-            </button>
+            </TooltipButton>
             <span className="text-brand-cyan font-bold">
               {field.columnSpan}/12
             </span>
-            <button
+            <TooltipButton
               onClick={(e) => {
                 e.stopPropagation();
                 handleAdjustSpan(1);
               }}
               disabled={field.columnSpan >= 12}
               className="hover:text-white disabled:opacity-30 px-0.5 font-bold"
-              title="Expand column span"
+              tooltip="Expand column span"
+              aria-label="Expand column span"
             >
               +
-            </button>
+            </TooltipButton>
           </div>
 
           {/* Responsive Action Buttons (Single Pair of Move Buttons) */}
@@ -263,7 +266,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             }`}
           >
             {onMoveUp && (
-              <button
+              <TooltipButton
                 type="button"
                 data-action="move-up"
                 onClick={(e) => {
@@ -272,14 +275,14 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 }}
                 disabled={!canMoveUp}
                 className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
-                title="Move Field Up"
+                tooltip="Move Field Up"
                 aria-label="Move Field Up"
               >
                 <IconArrowUp className="w-3.5 h-3.5" />
-              </button>
+              </TooltipButton>
             )}
             {onMoveDown && (
-              <button
+              <TooltipButton
                 type="button"
                 data-action="move-down"
                 onClick={(e) => {
@@ -288,13 +291,13 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 }}
                 disabled={!canMoveDown}
                 className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
-                title="Move Field Down"
+                tooltip="Move Field Down"
                 aria-label="Move Field Down"
               >
                 <IconArrowDown className="w-3.5 h-3.5" />
-              </button>
+              </TooltipButton>
             )}
-            <button
+            <TooltipButton
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
@@ -307,7 +310,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 }
               }}
               className="hidden sm:inline-flex p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-brand-cyan transition-colors"
-              title={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
+              tooltip={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
               aria-label={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
             >
               {isInlineEditing ? (
@@ -315,46 +318,46 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               ) : (
                 <IconEdit className="w-3.5 h-3.5" />
               )}
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDuplicate();
               }}
               className="hidden sm:inline-flex p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-              title="Duplicate Field"
+              tooltip="Duplicate Field"
               aria-label="Duplicate Field"
             >
               <IconCopy className="w-3.5 h-3.5" />
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
               className="hidden sm:inline-flex p-1 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
-              title="Delete Field"
+              tooltip="Delete Field"
               aria-label="Delete Field"
             >
               <IconTrash className="w-3.5 h-3.5" />
-            </button>
+            </TooltipButton>
           </div>
 
           {/* Mobile Touch 3-Dot Kebab Menu */}
           <div className="relative sm:hidden">
-            <button
+            <TooltipButton
               onClick={(e) => {
                 e.stopPropagation();
                 setIsMobileMenuOpen((prev) => !prev);
               }}
               className="p-1 rounded bg-zinc-900 text-zinc-400 hover:text-white pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-              title="Field Actions"
+              tooltip="Field Actions"
               aria-label="Field Actions"
             >
               <IconDots className="w-3.5 h-3.5" />
-            </button>
+            </TooltipButton>
 
             {isMobileMenuOpen && (
               <>

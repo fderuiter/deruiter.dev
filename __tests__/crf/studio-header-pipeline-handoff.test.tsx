@@ -5,13 +5,7 @@
 // tab. When the browser cannot store it, the studio opens Exports instead.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 
@@ -35,6 +29,7 @@ import {
   STUDY_DATA_HANDOFF_PATH,
 } from "@/components/study-data/handoff-storage";
 
+import { getByTooltip } from "../helpers/tooltip";
 /** The standard in-memory Storage (AGENTS.md §1). */
 class MockStorage implements Storage {
   private store = new Map<string, string>();
@@ -113,7 +108,7 @@ describe("CRF Studio header: Run Pipeline (#2927)", () => {
     const storage = new MockStorage();
     installSessionStorage(storage);
     renderHeader();
-    fireEvent.click(screen.getByTitle(PIPELINE_TITLE));
+    fireEvent.click(getByTooltip(PIPELINE_TITLE));
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith(STUDY_DATA_HANDOFF_PATH)
     );
@@ -127,7 +122,7 @@ describe("CRF Studio header: Run Pipeline (#2927)", () => {
   it("opens Exports instead when the browser cannot store the study", async () => {
     installSessionStorage(new ThrowingStorage());
     const onChangeMode = renderHeader();
-    fireEvent.click(screen.getByTitle(PIPELINE_TITLE));
+    fireEvent.click(getByTooltip(PIPELINE_TITLE));
     await waitFor(() => expect(onChangeMode).toHaveBeenCalledWith("export"));
     expect(push).not.toHaveBeenCalled();
   });

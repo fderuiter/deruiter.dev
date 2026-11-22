@@ -256,6 +256,9 @@ export const TooltipButton = ({
         {...props}
         ref={setRefs}
         aria-describedby={describedBy}
+        // The hint text, readable without showing the tip: tests and
+        // end-to-end specs find a button by it, as they once did by title.
+        data-tooltip={hasTip ? tooltip : undefined}
         style={native && hasTip ? { ...style, anchorName } : style}
         onMouseEnter={(event) => {
           onMouseEnter?.(event);

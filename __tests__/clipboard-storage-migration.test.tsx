@@ -52,6 +52,7 @@ import { StudioTerminal } from "@/components/crf/Terminal/StudioTerminal";
 import { StudioHeader } from "@/components/crf/StudioHeader";
 import { AssetDistributionViewer } from "@/components/laser-loon/AssetDistributionHub";
 
+import { getByTooltip } from "./helpers/tooltip";
 /** The standard in-memory Storage (AGENTS.md §1). */
 class MockStorage implements Storage {
   private store = new Map<string, string>();
@@ -231,7 +232,7 @@ describe("CRF Studio simulation hand-off (#1514)", () => {
         onOpenWizard={vi.fn()}
       />
     );
-    return screen.getByTitle(
+    return getByTooltip(
       "Opens the Clinical Trial Chaos game with this protocol loaded"
     );
   }
@@ -275,7 +276,7 @@ describe("clipboard call sites on useClipboard (#1565)", () => {
         onCommitReviewTargetChange={vi.fn()}
       />
     );
-    return screen.getByTitle("Copy exact CLI command for this element");
+    return getByTooltip("Copy exact CLI command for this element");
   }
 
   function renderTerminal() {

@@ -5,6 +5,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { AstRuleEditor } from "@/components/crf/RightInspector/AstRuleEditor";
 import { CRFField } from "@/lib/crf/types";
 
+import { getByTooltip } from "../helpers/tooltip";
 describe("AstRuleEditor Component", () => {
   afterEach(() => {
     cleanup();
@@ -51,7 +52,9 @@ describe("AstRuleEditor Component", () => {
     );
 
     expect(screen.getByText("AST Dynamic Formula")).toBeTruthy();
-    expect(screen.getByPlaceholderText("e.g. weight / ((height/100) * (height/100))")).toBeTruthy();
+    expect(
+      screen.getByPlaceholderText("e.g. weight / ((height/100) * (height/100))")
+    ).toBeTruthy();
     expect(screen.getByText("Ready to compose")).toBeTruthy();
   });
 
@@ -80,7 +83,9 @@ describe("AstRuleEditor Component", () => {
       />
     );
 
-    expect(screen.getByText(/Expression ends unexpectedly with trailing "\+"/)).toBeTruthy();
+    expect(
+      screen.getByText(/Expression ends unexpectedly with trailing "\+"/)
+    ).toBeTruthy();
     expect(screen.getByText(/1 Error/)).toBeTruthy();
   });
 
@@ -107,7 +112,7 @@ describe("AstRuleEditor Component", () => {
       />
     );
 
-    const weightBtn = screen.getByTitle("Weight (number)");
+    const weightBtn = getByTooltip("Weight (number)");
     fireEvent.click(weightBtn);
 
     expect(handleChange).toHaveBeenCalled();
@@ -116,20 +121,18 @@ describe("AstRuleEditor Component", () => {
   it("allows selecting clinical presets", () => {
     const handleChange = vi.fn();
     render(
-      <AstRuleEditor
-        formula=""
-        onChange={handleChange}
-        fields={sampleFields}
-      />
+      <AstRuleEditor formula="" onChange={handleChange} fields={sampleFields} />
     );
 
-    const presetsBtn = screen.getByTitle("Select Clinical Derivation Preset");
+    const presetsBtn = getByTooltip("Select Clinical Derivation Preset");
     fireEvent.click(presetsBtn);
 
     const mostellerPreset = screen.getByText("Mosteller BSA (m²)");
     fireEvent.click(mostellerPreset);
 
-    expect(handleChange).toHaveBeenCalledWith(expect.stringContaining("round(sqrt((HEIGHT * WEIGHT) / 3600), 2)"));
+    expect(handleChange).toHaveBeenCalledWith(
+      expect.stringContaining("round(sqrt((HEIGHT * WEIGHT) / 3600), 2)")
+    );
   });
 
   it("toggles live test evaluation and displays calculation preview", () => {
@@ -141,7 +144,7 @@ describe("AstRuleEditor Component", () => {
       />
     );
 
-    const testBtn = screen.getByTitle("Toggle Live Test Evaluation");
+    const testBtn = getByTooltip("Toggle Live Test Evaluation");
     fireEvent.click(testBtn);
 
     expect(screen.getByText("Live Evaluation Preview")).toBeTruthy();

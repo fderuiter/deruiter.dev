@@ -292,14 +292,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Schedule Intelligence Drawer Toggle */}
-          <button
+          <TooltipButton
             onClick={() => setIsIntelligenceOpen(!isIntelligenceOpen)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all border ${
               isIntelligenceOpen
                 ? "bg-purple-500/20 border-purple-500 text-purple-300"
                 : "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700"
             }`}
-            title="Toggle Schedule Intelligence & Forecasting Drawer"
+            tooltip="Toggle Schedule Intelligence & Forecasting Drawer"
           >
             <IconChartBar className="w-4 h-4 text-purple-400" />
             <span>Schedule Intelligence</span>
@@ -308,34 +308,36 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 {conflictSummary.totalConflicts}
               </span>
             )}
-          </button>
+          </TooltipButton>
 
           {/* Mobile/Tablet Format Switcher */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
-            <button
+            <TooltipButton
               onClick={() => setViewFormat("table")}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
                 viewFormat === "table"
                   ? "bg-brand-cyan text-black font-bold"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
-              title="Full Matrix Table"
+              tooltip="Full Matrix Table"
+              aria-label="Full Matrix Table"
             >
               <IconTable className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Table</span>
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               onClick={() => setViewFormat("cards")}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
                 viewFormat === "cards"
                   ? "bg-brand-cyan text-black font-bold"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
-              title="Mobile Visit Cards View"
+              tooltip="Mobile Visit Cards View"
+              aria-label="Mobile Visit Cards View"
             >
               <IconCards className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Cards</span>
-            </button>
+            </TooltipButton>
           </div>
 
           <button
@@ -754,7 +756,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <button
+                  <TooltipButton
                     onClick={() =>
                       setEditingVisitId(
                         editingVisitId === currentCardVisit.id
@@ -763,10 +765,11 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                       )
                     }
                     className="p-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
-                    title="Edit Visit Timing"
+                    tooltip="Edit Visit Timing"
+                    aria-label="Edit Visit Timing"
                   >
                     <IconEdit className="w-3.5 h-3.5" />
-                  </button>
+                  </TooltipButton>
                   {study.visits.length > 1 && (
                     <TooltipButton
                       onClick={() => handleDeleteVisit(currentCardVisit.id)}
@@ -1155,12 +1158,12 @@ function BulkToggle({
   const ariaChecked =
     state === "full" ? true : state === "partial" ? "mixed" : false;
   return (
-    <button
+    <TooltipButton
       type="button"
       role="checkbox"
       aria-checked={ariaChecked}
       aria-label={label}
-      title={state === "full" ? `Clear ${label}` : `Assign ${label}`}
+      tooltip={state === "full" ? `Clear ${label}` : `Assign ${label}`}
       onClick={onToggle}
       data-testid={testId}
       className={`p-1 rounded-md border transition-colors flex items-center justify-center shrink-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
@@ -1178,6 +1181,6 @@ function BulkToggle({
       ) : (
         <IconPlus className="w-3.5 h-3.5" aria-hidden="true" />
       )}
-    </button>
+    </TooltipButton>
   );
 }

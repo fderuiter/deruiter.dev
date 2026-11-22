@@ -60,7 +60,7 @@ describe("FieldRenderer keyboard activation boundary (#659)", () => {
     });
 
     const tierButton = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.title?.startsWith("Requirement Tier:")
+      (b) => b.dataset.tooltip?.startsWith("Requirement Tier:")
     ) as HTMLButtonElement;
     expect(tierButton).toBeTruthy();
 

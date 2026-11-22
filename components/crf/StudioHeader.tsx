@@ -52,6 +52,7 @@ import {
   storeStudyHandoff,
 } from "@/components/study-data/handoff-storage";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /** Tooltip of the last stage's next-step button, the pipeline handoff. */
 const PIPELINE_HANDOFF_TITLE =
   "Open this study in the Study Data Pipeline, which tabulates it into SDTM, ADaM and tables";
@@ -454,11 +455,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Study Omnibar Trigger (#544) */}
           {onOpenOmnibar && (
-            <button
+            <TooltipButton
               type="button"
               onClick={onOpenOmnibar}
               className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98] pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center"
-              title="Find forms, fields, visits and actions (F)"
+              tooltip="Find forms, fields, visits and actions (F)"
               aria-label="Find, F: search the study"
               aria-keyshortcuts="F"
             >
@@ -467,7 +468,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               <kbd className="hidden lg:inline-block text-[9px] px-1 rounded bg-zinc-950 border border-zinc-700 text-zinc-400">
                 F
               </kbd>
-            </button>
+            </TooltipButton>
           )}
 
           <StudioActionsDrawer
@@ -539,7 +540,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               {modesOf(stage.modes).map((item) => {
                 const isActive = activeMode === item.mode;
                 return (
-                  <button
+                  <TooltipButton
                     ref={(node) => {
                       tabRefs.current[item.mode] = node;
                     }}
@@ -549,7 +550,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     tabIndex={isActive ? 0 : -1}
                     onClick={() => onChangeMode(item.mode)}
                     onKeyDown={(e) => handleModeKeyDown(e, item.mode)}
-                    title={`${item.description} (${item.shortcut})`}
+                    tooltip={`${item.description} (${item.shortcut})`}
                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 ${
                       isActive
                         ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"
@@ -571,7 +572,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     >
                       {item.shortcut}
                     </span>
-                  </button>
+                  </TooltipButton>
                 );
               })}
             </div>
@@ -581,9 +582,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         {/* The one step to take next, so the stages read as a path. It is
             each stage's only primary action, at every width (#3395); in the
             last stage it hands the study to the pipeline. */}
-        <button
+        <TooltipButton
           type="button"
-          title={
+          tooltip={
             nextStep.kind === "pipeline" ? PIPELINE_HANDOFF_TITLE : undefined
           }
           onClick={() =>
@@ -598,7 +599,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <span className="hidden md:inline text-amber-400/80">Next:</span>
           {nextStep.label}
           <IconArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-        </button>
+        </TooltipButton>
       </div>
     </header>
   );

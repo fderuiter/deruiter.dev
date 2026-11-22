@@ -145,14 +145,15 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </TooltipButton>
           )}
 
-          <button
+          <TooltipButton
             onClick={handleCopyCli}
             className={`p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border ${
               hasCopiedCli
                 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                 : "bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800"
             }`}
-            title="Copy exact CLI command for this element"
+            tooltip="Copy exact CLI command for this element"
+            aria-label="Copy exact CLI command for this element"
           >
             {hasCopiedCli ? (
               <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -162,7 +163,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             <span className="text-[10px] hidden sm:inline">
               {hasCopiedCli ? "Copied" : "CLI"}
             </span>
-          </button>
+          </TooltipButton>
 
           <TooltipButton
             onClick={onClose}

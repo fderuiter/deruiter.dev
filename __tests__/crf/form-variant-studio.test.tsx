@@ -134,7 +134,7 @@ describe("CRFStudioContainer form variant wiring (#675)", () => {
       });
 
       const formsTab = container.querySelector<HTMLButtonElement>(
-        'button[title*="Protocol Forms"]'
+        'button[data-tooltip*="Protocol Forms"]'
       )!;
       await act(async () => formsTab.click());
 

@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -55,7 +57,9 @@ describe("Canvas Field Ergonomics & Micro-Interactions", () => {
       );
     });
 
-    const plusBtn = container.querySelector('button[title="Expand column span"]');
+    const plusBtn = container.querySelector(
+      'button[data-tooltip="Expand column span"]'
+    );
     expect(plusBtn).not.toBeNull();
 
     await act(async () => {
@@ -82,8 +86,8 @@ describe("Canvas Field Ergonomics & Micro-Interactions", () => {
       );
     });
 
-    const reqBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Opt")
+    const reqBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Opt")
     );
     expect(reqBtn).toBeDefined();
 
@@ -113,7 +117,9 @@ describe("Canvas Field Ergonomics & Micro-Interactions", () => {
       );
     });
 
-    const editBtn = container.querySelector("button[title='Quick Edit']");
+    const editBtn = container.querySelector(
+      "button[data-tooltip='Quick Edit']"
+    );
     expect(editBtn).toBeDefined();
 
     await act(async () => {
@@ -123,7 +129,9 @@ describe("Canvas Field Ergonomics & Micro-Interactions", () => {
     expect(container.textContent).toContain("Prompt / Label");
     expect(container.textContent).toContain("SDTM Variable");
 
-    const saveBtn = container.querySelector("button[title='Save Inline Edit']");
+    const saveBtn = container.querySelector(
+      "button[data-tooltip='Save Inline Edit']"
+    );
     expect(saveBtn).toBeDefined();
 
     await act(async () => {
@@ -155,8 +163,12 @@ describe("Canvas Field Ergonomics & Micro-Interactions", () => {
       );
     });
 
-    const dupBtn = container.querySelector("button[title='Duplicate Field']");
-    const delBtn = container.querySelector("button[title='Delete Field']");
+    const dupBtn = container.querySelector(
+      "button[data-tooltip='Duplicate Field']"
+    );
+    const delBtn = container.querySelector(
+      "button[data-tooltip='Delete Field']"
+    );
 
     await act(async () => {
       (dupBtn as HTMLButtonElement)?.click();

@@ -355,17 +355,18 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <TooltipButton
               onClick={() => {
                 onClose();
                 onStartSpotlightTour();
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-medium transition-all"
-              title="Launch interactive UI Spotlight Tour"
+              tooltip="Launch interactive UI Spotlight Tour"
+              aria-label="Launch interactive UI Spotlight Tour"
             >
               <IconPlayerPlay className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Spotlight Tour</span>
-            </button>
+            </TooltipButton>
 
             <button
               onClick={onClose}

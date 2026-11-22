@@ -102,7 +102,7 @@ describe("StudioHeader mode bar", () => {
     });
     const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
     expect(tabs).toHaveLength(7);
-    expect(tabs.map((tab) => tab.getAttribute("title"))).toEqual([
+    expect(tabs.map((tab) => tab.getAttribute("data-tooltip"))).toEqual([
       expect.stringMatching(/Build the open form.*\(1\)$/),
       expect.stringMatching(/Edit every field.*\(2\)$/),
       expect.stringMatching(/Edit checks.*\(3\)$/),

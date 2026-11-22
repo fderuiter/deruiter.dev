@@ -9,6 +9,7 @@ import {
   type FormCatalogSource,
 } from "@/lib/crf";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /** Drag payload type for a catalog form dropped on a visit. */
 export const CATALOG_DRAG_TYPE = "catalog";
 
@@ -176,7 +177,7 @@ export function FormCatalogList({
                       </p>
                     </div>
                   </div>
-                  <button
+                  <TooltipButton
                     type="button"
                     disabled={disabled}
                     onClick={() => onAdd(entry)}
@@ -185,14 +186,14 @@ export function FormCatalogList({
                         ? `Insert ${entry.title} into the open form`
                         : `Add ${entry.title} to the study`
                     }
-                    title={
+                    tooltip={
                       disabled ? "Open a form to insert a block" : undefined
                     }
                     className="inline-flex min-h-[28px] shrink-0 items-center gap-1 rounded border border-amber-500/30 bg-zinc-900 px-2 py-1 text-[10px] font-mono font-bold text-amber-300 transition-colors hover:bg-amber-950/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <IconPlus className="h-3 w-3" aria-hidden="true" />
                     {isBlock ? "Insert" : "Add"}
-                  </button>
+                  </TooltipButton>
                 </div>
               </li>
             );

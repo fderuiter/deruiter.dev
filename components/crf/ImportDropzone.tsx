@@ -14,6 +14,7 @@ import { detectAndParseStudyFile, ParsedStudyFileResult } from "@/lib/crf";
 import { clamp, formatBytes } from "@/lib/utils";
 import { NoPhiNotice } from "./NoPhiNotice";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface ImportDropzoneProps {
   onFileParsed: (result: ParsedStudyFileResult, rawText: string) => void;
   onError: (errorMsg: string | null) => void;
@@ -223,15 +224,15 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
                   Format: {activeFile.formatLabel}
                 </span>
               )}
-              <button
+              <TooltipButton
                 type="button"
                 onClick={clearSelectedFile}
                 className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
-                title="Remove selected file"
+                tooltip="Remove selected file"
                 aria-label="Remove selected file"
               >
                 <IconX className="w-4 h-4" />
-              </button>
+              </TooltipButton>
             </div>
           )}
 

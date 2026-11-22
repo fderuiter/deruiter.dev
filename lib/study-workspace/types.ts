@@ -137,3 +137,55 @@ export type StudyWorkspaceFileProblem =
 export type OpenStudyWorkspaceResult =
   | { readonly status: "ok"; readonly workspace: StudyWorkspace }
   | { readonly status: "invalid"; readonly problem: StudyWorkspaceFileProblem };
+
+/** A value a blank study holds only because the USDM v4 schema needs it. */
+export interface BlankStudyPlaceholder {
+  /** Dotted path into the USDM document, e.g. `study.versions.0.titles`. */
+  readonly path: string;
+  /** A short human label for the studio to show. */
+  readonly label: string;
+  /** The value filled in, as the studio shows it. */
+  readonly value: string;
+}
+
+/** A workspace started from a blank study (#3399). */
+export interface BlankStudyWorkspace {
+  readonly workspace: StudyWorkspace;
+  /** Schema issues of the blank document; empty unless this module is wrong. */
+  readonly schemaIssues: readonly string[];
+  /** Every value filled in only to satisfy the schema, for the studio to show. */
+  readonly placeholders: readonly BlankStudyPlaceholder[];
+}
+
+/**
+ * One RFC 6902 JSON Patch operation on the working USDM document. `path` is
+ * an RFC 6901 JSON Pointer such as `/study/versions/0/studyDesigns/0/name`.
+ */
+export type StudyPatchOperation =
+  | { readonly op: "add"; readonly path: string; readonly value: unknown }
+  | { readonly op: "remove"; readonly path: string }
+  | { readonly op: "replace"; readonly path: string; readonly value: unknown };
+
+/** A reversible edit: the patch, the patch that undoes it, and its note. */
+export interface StudyEdit {
+  readonly note: string;
+  readonly forward: readonly StudyPatchOperation[];
+  readonly inverse: readonly StudyPatchOperation[];
+}
+
+/** Edits that can be undone and redone, most recent last. */
+export interface StudyEditHistory {
+  readonly undo: readonly StudyEdit[];
+  readonly redo: readonly StudyEdit[];
+}
+
+/** The result of a validating USDM export. */
+export type ValidatedStudyExport =
+  | {
+      readonly status: "ok";
+      /** Canonical JSON: sorted keys, no whitespace. */
+      readonly json: string;
+      /** SHA-256 of `json`, the current revision's hash. */
+      readonly sha256: string;
+    }
+  | { readonly status: "invalid"; readonly issues: readonly string[] };

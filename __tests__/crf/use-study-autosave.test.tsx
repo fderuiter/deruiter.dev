@@ -342,7 +342,7 @@ describe("useStudyAutosave Hook Suite", () => {
     expect(downloadFileName).toBe("crf-study.json");
   });
 
-  it("cleans up pending timeouts on component unmount to prevent memory leaks", async () => {
+  it("checkpoints the latest edit when the editor unmounts before 800ms, then never writes again", async () => {
     const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
     const study1 = createMockStudy();
     const study2 = createMockStudy({ studyName: "Unmount Test" });
@@ -350,26 +350,272 @@ describe("useStudyAutosave Hook Suite", () => {
     await act(async () => {
       root.render(<TestHarness study={study1} />);
     });
-
     await act(async () => {
       root.render(<TestHarness study={study2} />);
     });
-
-    // Advance halfway to 400ms
     await act(async () => {
       vi.advanceTimersByTime(400);
     });
 
-    // Unmount before 800ms
+    // Route departure unmounts the editor before the debounce fires.
     await act(async () => {
       root.unmount();
     });
 
-    // Advance time past 800ms
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledWith(study2);
+    expect(draftStorage.loadStudyDraft()).toMatchObject({
+      status: "recovered",
+      study: { studyName: "Unmount Test" },
+    });
+
+    // The cancelled debounce timer must not write a second time.
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+  });
 
+  it("does not write on unmount when nothing changed since the last acknowledged save", async () => {
+    const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
+    const study1 = createMockStudy();
+
+    await act(async () => {
+      root.render(<TestHarness study={study1} />);
+    });
+    await act(async () => {
+      root.unmount();
+    });
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+});
+
+function setVisibility(state: DocumentVisibilityState) {
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    get: () => state,
+  });
+}
+
+function UnsavedHarness({ study }: TestHarnessProps) {
+  const { status, hasUnsavedChanges, errorMessage, downloadDraft } =
+    useStudyAutosave(study);
+  return (
+    <div>
+      <span data-testid="status">{status}</span>
+      <span data-testid="unsaved">{String(hasUnsavedChanges)}</span>
+      <span data-testid="error-message">{errorMessage ?? "none"}</span>
+      <button data-testid="download-btn" onClick={downloadDraft}>
+        Download Draft
+      </button>
+    </div>
+  );
+}
+
+describe("useStudyAutosave lifecycle checkpoints (#3804)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  const text = (id: string) =>
+    container.querySelector(`[data-testid="${id}"]`)?.textContent;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    setVisibility("visible");
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  async function renderEdited(edits: StudyProtocol[]) {
+    await act(async () => {
+      root.render(<UnsavedHarness study={createMockStudy()} />);
+    });
+    for (const study of edits) {
+      await act(async () => {
+        root.render(<UnsavedHarness study={study} />);
+      });
+    }
+  }
+
+  it("checkpoints synchronously when the tab becomes hidden, without waiting for the debounce", async () => {
+    const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
+    const edited = createMockStudy({ studyName: "Hidden" });
+    await renderEdited([edited]);
+    expect(text("unsaved")).toBe("true");
+
+    await act(async () => {
+      setVisibility("hidden");
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledWith(edited);
+    expect(text("status")).toBe("saved");
+    expect(text("unsaved")).toBe("false");
+
+    // The pending debounce was cancelled by the checkpoint.
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores visibilitychange back to visible", async () => {
+    const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
+    await renderEdited([createMockStudy({ studyName: "Visible" })]);
+    await act(async () => {
+      setVisibility("visible");
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it("saves only the newest of rapid edits on pagehide and writes once for duplicate events", async () => {
+    const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
+    const newest = createMockStudy({ version: "1.3" });
+    await renderEdited([
+      createMockStudy({ version: "1.1" }),
+      createMockStudy({ version: "1.2" }),
+      newest,
+    ]);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+      window.dispatchEvent(new Event("pagehide"));
+      setVisibility("hidden");
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledWith(newest);
+  });
+
+  it("never reports saved when storage is full, keeps the revision for download, and retries on the next lifecycle event", async () => {
+    const saveSpy = vi
+      .spyOn(draftStorage, "saveStudyDraft")
+      .mockReturnValueOnce({
+        status: "error",
+        message: "QuotaExceededError",
+      });
+    const edited = createMockStudy({ id: "quota-study", studyName: "Quota" });
+    await renderEdited([edited]);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(text("status")).toBe("error");
+    expect(text("error-message")).toBe("QuotaExceededError");
+    expect(text("unsaved")).toBe("true");
+
+    const blobs: Blob[] = [];
+    vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+      blobs.push(blob as Blob);
+      return "blob:test";
+    });
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    await act(async () => {
+      (
+        container.querySelector('[data-testid="download-btn"]') as HTMLElement
+      ).click();
+    });
+    expect(JSON.parse(await blobs[0].text())).toMatchObject({
+      studyName: "Quota",
+    });
+
+    // Storage recovers: the next checkpoint writes the same revision.
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(saveSpy).toHaveBeenCalledTimes(2);
+    expect(saveSpy).toHaveBeenLastCalledWith(edited);
+    expect(text("status")).toBe("saved");
+    expect(text("unsaved")).toBe("false");
+  });
+
+  it("reports unavailable storage as an error, never as saved", async () => {
+    vi.spyOn(draftStorage, "saveStudyDraft").mockReturnValue({
+      status: "unavailable",
+    });
+    await renderEdited([createMockStudy({ studyName: "Denied" })]);
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(text("status")).toBe("error");
+    expect(text("unsaved")).toBe("true");
+  });
+
+  it("removes its lifecycle listeners on unmount", async () => {
+    await renderEdited([createMockStudy({ studyName: "Gone" })]);
+    act(() => root.unmount());
+    const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
+    window.dispatchEvent(new Event("pagehide"));
+    setVisibility("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(saveSpy).not.toHaveBeenCalled();
+    root = createRoot(container);
+  });
+
+  it("does not duplicate saves or overwrite a newer draft under Strict Mode", async () => {
+    const saveSpy = vi.spyOn(draftStorage, "saveStudyDraft");
+    const initial = createMockStudy();
+    const edited = createMockStudy({ studyName: "Strict" });
+    await act(async () => {
+      root.render(
+        <React.StrictMode>
+          <UnsavedHarness study={initial} />
+        </React.StrictMode>
+      );
+    });
+    // Strict Mode's simulated unmount/remount must not write the untouched study.
+    expect(saveSpy).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.render(
+        <React.StrictMode>
+          <UnsavedHarness study={edited} />
+        </React.StrictMode>
+      );
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledWith(edited);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    act(() => root.unmount());
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    root = createRoot(container);
+  });
+
+  it("tracks locally-unsaved separately from baseline-dirty", async () => {
+    // An edit that returns the study to its baseline content is still a new
+    // committed revision that storage has not acknowledged.
+    const baseline = createMockStudy();
+    const sameContent = createMockStudy();
+    await act(async () => {
+      root.render(<UnsavedHarness study={baseline} />);
+    });
+    expect(text("unsaved")).toBe("false");
+    await act(async () => {
+      root.render(<UnsavedHarness study={sameContent} />);
+    });
+    expect(draftStorage.isDraftDirty(sameContent, baseline)).toBe(false);
+    expect(text("unsaved")).toBe("true");
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+    expect(text("unsaved")).toBe("false");
   });
 });

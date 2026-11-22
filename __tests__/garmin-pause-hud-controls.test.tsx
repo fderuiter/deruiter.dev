@@ -343,7 +343,7 @@ describe("Garmin controls (#1318)", () => {
     await render(createInitialState("fenix", 0));
     const startButton = () =>
       container.querySelector<HTMLButtonElement>(
-        'button[title$="(Enter / P)"]'
+        'button[data-tooltip$="(Enter / P)"]'
       )!;
     expect(startButton().textContent).toContain("START");
 

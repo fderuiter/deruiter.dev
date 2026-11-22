@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import SchemaFlowWorkspace from "@/components/SchemaFlowWorkspace";
 
+import { getByTooltip } from "../helpers/tooltip";
 afterEach(() => {
   cleanup();
 });
@@ -192,7 +193,7 @@ describe("SchemaFlow tactic shell", () => {
 
   it("fills the prompt from a quick command and runs it from the button", () => {
     const { container } = render(<SchemaFlowWorkspace />);
-    const run = screen.getByTitle("Execute CLI Tactic") as HTMLButtonElement;
+    const run = getByTooltip("Execute CLI Tactic") as HTMLButtonElement;
     expect(run.disabled).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "connect B C" }));

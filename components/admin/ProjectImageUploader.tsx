@@ -15,6 +15,7 @@ import {
 } from "@tabler/icons-react";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface ProjectOption {
   slug: string;
   title: string;
@@ -423,15 +424,15 @@ export function ProjectImageUploader({
               </span>
             </div>
           </div>
-          <button
+          <TooltipButton
             type="button"
             onClick={handleClearImage}
             disabled={status === "uploading"}
             className="p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 text-xs font-mono flex items-center gap-1 transition-colors shrink-0"
-            title="Remove active project image"
+            tooltip="Remove active project image"
           >
             <IconTrash className="w-4 h-4" /> Clear
-          </button>
+          </TooltipButton>
         </div>
       )}
 
@@ -506,7 +507,7 @@ export function ProjectImageUploader({
               </span>
             </div>
           </div>
-          <button
+          <TooltipButton
             type="button"
             onClick={() => {
               cleanupPreviewUrl();
@@ -515,10 +516,11 @@ export function ProjectImageUploader({
               setStatus("idle");
             }}
             className="p-1 rounded text-zinc-400 hover:text-zinc-100"
-            title="Remove selected file"
+            tooltip="Remove selected file"
+            aria-label="Remove selected file"
           >
             <IconX className="w-4 h-4" />
-          </button>
+          </TooltipButton>
         </div>
       )}
 

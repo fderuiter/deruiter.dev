@@ -15,6 +15,7 @@ import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { dictionary, TimelineItem } from "@/lib/i18n-dictionary";
 import type { TimelineMode } from "@/hooks/useTimelineState";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 export type { TimelineItem };
 
 const TIMELINE_ANNOUNCEMENTS: Record<TimelineMode, string> = {
@@ -98,12 +99,12 @@ export const Timeline: React.FC = () => {
           aria-label="Timeline Reading Perspective"
           aria-describedby="timeline-perspective-desc"
         >
-          <button
+          <TooltipButton
             type="button"
             onClick={() => handleGlobalToggle("behind-the-scenes")}
             aria-pressed={globalMode === "behind-the-scenes"}
             aria-label="Behind the Scenes Reality: Candid reality and engineering stories"
-            title="Behind the Scenes Reality: Candid reality and engineering stories"
+            tooltip="Behind the Scenes Reality: Candid reality and engineering stories"
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
               globalMode === "behind-the-scenes"
                 ? "bg-[#1f232d] text-amber-300 border border-amber-500/40 shadow-sm"
@@ -114,13 +115,13 @@ export const Timeline: React.FC = () => {
             <span className="text-[11px] sm:text-xs">
               BEHIND THE SCENES REALITY
             </span>
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             onClick={() => handleGlobalToggle("professional")}
             aria-pressed={globalMode === "professional"}
             aria-label="Professional Summary: Concise overview of technical responsibilities and systems impact"
-            title="Professional Summary: Concise overview of technical responsibilities and systems impact"
+            tooltip="Professional Summary: Concise overview of technical responsibilities and systems impact"
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
               globalMode === "professional"
                 ? "bg-[#1f232d] text-amber-300 border border-amber-500/40 shadow-sm"
@@ -129,7 +130,7 @@ export const Timeline: React.FC = () => {
           >
             <IconBriefcase className="w-3.5 h-3.5 shrink-0" />
             <span className="text-[11px] sm:text-xs">PROFESSIONAL SUMMARY</span>
-          </button>
+          </TooltipButton>
         </div>
       </div>
 
@@ -195,11 +196,11 @@ export const Timeline: React.FC = () => {
                     </span>
 
                     {/* Quick Flip Toggle Button */}
-                    <button
+                    <TooltipButton
                       type="button"
                       onClick={() => handleCardToggle(idx, item.role)}
                       aria-label={`${isReality ? "Behind the Scenes" : "Professional"} view of ${item.role}. Switch to ${MODE_LABELS[isReality ? "professional" : "behind-the-scenes"]}`}
-                      title="Toggle perspective for this role"
+                      tooltip="Toggle perspective for this role"
                       className={`inline-flex items-center gap-1 min-h-8 px-2.5 py-1 text-[10px] font-mono rounded-lg border transition-colors cursor-pointer ${
                         isReality
                           ? "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
@@ -210,7 +211,7 @@ export const Timeline: React.FC = () => {
                       <span>
                         {isReality ? "Behind the Scenes" : "Professional"}
                       </span>
-                    </button>
+                    </TooltipButton>
                   </div>
 
                   <h3 className="text-sm sm:text-base md:text-lg font-bold text-zinc-100 group-hover:text-white transition-colors">

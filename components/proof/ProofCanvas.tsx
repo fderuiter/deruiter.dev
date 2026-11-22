@@ -198,14 +198,14 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             aria-label="Proof canvas controls"
             className="flex items-center gap-2"
           >
-            <button
+            <TooltipButton
               onClick={toggleSnapping}
               className={`px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
                 isSnappingEnabled
                   ? "bg-brand-cyan/15 border-brand-cyan/50 text-brand-cyan shadow-sm shadow-cyan-500/20"
                   : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
               }`}
-              title="Toggle magnetic snapping & alignment guides [Shortcut: G]"
+              tooltip="Toggle magnetic snapping & alignment guides [Shortcut: G]"
               aria-pressed={isSnappingEnabled}
               aria-label={`SNAP G, Magnetic Snapping: ${isSnappingEnabled ? "Enabled" : "Disabled"}. Press G to toggle.`}
             >
@@ -220,8 +220,8 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               <kbd className="hidden md:inline text-[9px] px-1 py-0.2 rounded bg-slate-950/70 border border-slate-800 text-slate-400 font-mono">
                 G
               </kbd>
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               onClick={handleUndo}
               disabled={!canUndo}
               className={`p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border text-xs font-mono transition cursor-pointer active:scale-[0.98] ${
@@ -229,13 +229,13 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
                   : "bg-slate-950/40 border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
               }`}
-              title="Undo proof step [Shortcut: Mod+Z]"
+              tooltip="Undo proof step [Shortcut: Mod+Z]"
               aria-label="Undo proof step"
               aria-keyshortcuts="Meta+Z Control+Z"
             >
               <IconArrowBackUp className="w-4 h-4" />
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               onClick={handleRedo}
               disabled={!canRedo}
               className={`p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border text-xs font-mono transition cursor-pointer active:scale-[0.98] ${
@@ -243,12 +243,12 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
                   : "bg-slate-950/40 border-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
               }`}
-              title="Redo proof step [Shortcut: Mod+Shift+Z]"
+              tooltip="Redo proof step [Shortcut: Mod+Shift+Z]"
               aria-label="Redo proof step"
               aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z"
             >
               <IconArrowForwardUp className="w-4 h-4" />
-            </button>
+            </TooltipButton>
             <TooltipButton
               onClick={handleAutoStep}
               className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
@@ -663,17 +663,17 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   </button>
 
                   {/* Connection Anchor Handle Port (Right Edge) */}
-                  <button
+                  <TooltipButton
                     type="button"
                     tabIndex={0}
                     onPointerDown={(e) => handleHandlePointerDown(e, node.id)}
                     onClick={() => handleNodeClick(node.id)}
                     className="absolute -right-6 top-1/2 -translate-y-1/2 w-11 h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 rounded-full bg-slate-950 border-2 border-brand-cyan/80 hover:border-brand-cyan hover:scale-125 hover:bg-brand-cyan transition-all shadow-md shadow-cyan-500/40 flex items-center justify-center cursor-crosshair z-20 group-hover:opacity-100 opacity-80"
-                    title={`Connect Node ${node.id}: drag, or press Enter/Space then activate the target node`}
+                    tooltip={`Connect Node ${node.id}: drag, or press Enter/Space then activate the target node`}
                     aria-label={`Drag connection handle from Node ${node.id}, ${node.label}`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan group-hover:bg-slate-950" />
-                  </button>
+                  </TooltipButton>
 
                   {/* Fallacy Counterexample Diagnostics Popover */}
                   {activePopoverNodeId === node.id && currentFallacy && (
@@ -820,7 +820,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               const isRecommended = Boolean(match?.isRecommended);
 
               return (
-                <button
+                <TooltipButton
                   key={rule.id}
                   onClick={() => handleApplyRule(rule.id)}
                   className={`min-h-8 pointer-coarse:min-h-11 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98] ${
@@ -830,7 +830,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                         : "bg-brand-cyan/20 border-brand-cyan text-white shadow-lg shadow-cyan-500/20 ring-1 ring-brand-cyan/60"
                       : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 opacity-80 hover:opacity-100"
                   }`}
-                  title={`${rule.name}: ${match?.explanation || rule.template}`}
+                  tooltip={`${rule.name}: ${match?.explanation || rule.template}`}
                   aria-label={`${rule.name} ${rule.symbol}${isApplicable && match?.resultFormula ? ` ${match.resultFormula}` : ""}: ${isApplicable ? `Applicable deriving ${match?.resultFormula}` : match?.explanation || rule.template}`}
                 >
                   {/* The name comes first in the DOM and the symbol is moved
@@ -862,7 +862,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       → {match.resultFormula}
                     </span>
                   )}
-                </button>
+                </TooltipButton>
               );
             })}
           </div>

@@ -9,12 +9,9 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { InteractiveTruthTable } from "@/components/proof/InteractiveTruthTable";
-import {
-  FallacyDiagnosis,
-  TheoremDefinition,
-  LedgerStep,
-} from "@/lib/proof";
+import { FallacyDiagnosis, TheoremDefinition, LedgerStep } from "@/lib/proof";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface ProofLedgerProps {
   activeTab: "ledger" | "systems" | "fallacy";
   setActiveTab: (tab: "ledger" | "systems" | "fallacy") => void;
@@ -149,15 +146,15 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
                               : "⏳ PENDING"}
                         </span>
                         {step.isDeletable && (
-                          <button
+                          <TooltipButton
                             type="button"
                             onClick={() => handleDeleteStep(step.stepNumber)}
                             aria-label={`Delete Step ${step.stepNumber} and prune downstream dependencies`}
-                            title={`Delete Step ${step.stepNumber} (prune dependencies)`}
+                            tooltip={`Delete Step ${step.stepNumber} (prune dependencies)`}
                             className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-950/50 transition-colors focus:outline-none focus:ring-1 focus:ring-red-500/50 cursor-pointer"
                           >
                             <IconX className="w-3.5 h-3.5" />
-                          </button>
+                          </TooltipButton>
                         )}
                       </div>
                     </div>

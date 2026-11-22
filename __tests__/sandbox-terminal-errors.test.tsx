@@ -25,6 +25,7 @@ import {
   generatePythonScript,
 } from "@/lib/terminal-script-generator";
 
+import { getByTooltip } from "./helpers/tooltip";
 const mocks = vi.hoisted(() => ({
   announce: vi.fn(),
   playKeystroke: vi.fn(),
@@ -454,10 +455,8 @@ describe("SandboxTerminal error paths and untaken branches", () => {
 
     it("runs the input through the execute button", () => {
       render(<SandboxTerminal />);
-      const execute = screen.getByTitle<HTMLButtonElement>(
-        "Execute Command (Enter)"
-      );
-      expect(execute.disabled).toBe(true);
+      const execute = getByTooltip("Execute Command (Enter)");
+      expect((execute as HTMLButtonElement).disabled).toBe(true);
       typeInto("ls");
       fireEvent.click(execute);
       advance(RESPONSE_LAG_MS);
@@ -695,9 +694,9 @@ describe("SandboxTerminal error paths and untaken branches", () => {
 
     /** Click play and let the first step finish, leaving it in the 1.5s gap. */
     const playFirstStep = () => {
-      fireEvent.click(screen.getByTitle("Play Sequence"));
+      fireEvent.click(getByTooltip("Play Sequence"));
       advance(typingTime("help") + RESPONSE_LAG_MS);
-      expect(screen.getByTitle("Pause Playback").hasAttribute("disabled")).toBe(
+      expect(getByTooltip("Pause Playback").hasAttribute("disabled")).toBe(
         false
       );
     };
@@ -706,8 +705,8 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       render(<SandboxTerminal playback={TWO_STEPS} />);
       playFirstStep();
 
-      fireEvent.click(screen.getByTitle("Step Forward"));
-      expect(screen.getByTitle("Play Sequence")).toBeTruthy();
+      fireEvent.click(getByTooltip("Step Forward"));
+      expect(getByTooltip("Play Sequence")).toBeTruthy();
       advance(typingTime("ls") + RESPONSE_LAG_MS + 2000);
 
       expect(stepLabel().textContent).toBe('Step 2 of 2: "ls"');
@@ -721,8 +720,8 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       render(<SandboxTerminal playback={TWO_STEPS} />);
       playFirstStep();
 
-      fireEvent.click(screen.getByTitle("Step Back"));
-      expect(screen.getByTitle("Play Sequence")).toBeTruthy();
+      fireEvent.click(getByTooltip("Step Back"));
+      expect(getByTooltip("Play Sequence")).toBeTruthy();
       expect(stepLabel().textContent).toContain("Ready to start");
       advance(3000);
       expect(getLog().textContent).not.toContain("imednet-sdk $");
@@ -738,12 +737,12 @@ describe("SandboxTerminal error paths and untaken branches", () => {
           ]}
         />
       );
-      fireEvent.click(screen.getByTitle("Step Forward"));
+      fireEvent.click(getByTooltip("Step Forward"));
       advance(typingTime("bogus-step") + RESPONSE_LAG_MS);
-      fireEvent.click(screen.getByTitle("Step Forward"));
+      fireEvent.click(getByTooltip("Step Forward"));
       advance(typingTime("ls") + RESPONSE_LAG_MS);
 
-      fireEvent.click(screen.getByTitle("Step Back"));
+      fireEvent.click(getByTooltip("Step Back"));
       expect(errorLines()).toEqual([
         "✖ Command not found: 'bogus-step'. Type 'help' to review supported registry entries.",
       ]);
@@ -754,24 +753,24 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       render(
         <SandboxTerminal playback={[{ command: "ls", description: "list" }]} />
       );
-      fireEvent.click(screen.getByTitle("Step Forward"));
+      fireEvent.click(getByTooltip("Step Forward"));
       advance(typingTime("ls") + RESPONSE_LAG_MS);
       runCommand("matrix");
 
-      fireEvent.click(screen.getByTitle("Play Sequence"));
+      fireEvent.click(getByTooltip("Play Sequence"));
       // Logs reset to the banner before replaying.
       expect(getLog().textContent).not.toContain("The Matrix has you.");
       advance(typingTime("ls") + RESPONSE_LAG_MS);
-      expect(screen.getByTitle("Pause Playback")).toBeTruthy();
+      expect(getByTooltip("Pause Playback")).toBeTruthy();
       advance(1500);
 
-      expect(screen.getByTitle("Play Sequence")).toBeTruthy();
+      expect(getByTooltip("Play Sequence")).toBeTruthy();
       expect(getLog().textContent).toContain("duck_treats.db");
     });
 
     it("reset mid-typing cancels the typist", () => {
       render(<SandboxTerminal playback={TWO_STEPS} />);
-      fireEvent.click(screen.getByTitle("Play Sequence"));
+      fireEvent.click(getByTooltip("Play Sequence"));
       advance(80);
       expect(getInput().value).toBe("he");
 
@@ -789,7 +788,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Reset" }));
       advance(3000);
-      expect(screen.getByTitle("Play Sequence")).toBeTruthy();
+      expect(getByTooltip("Play Sequence")).toBeTruthy();
       expect(getLog().textContent).not.toContain("duck_treats.db");
     });
 
@@ -797,7 +796,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       render(<SandboxTerminal playback={TWO_STEPS} />);
       playFirstStep();
 
-      fireEvent.click(screen.getByTitle("Pause Playback"));
+      fireEvent.click(getByTooltip("Pause Playback"));
       advance(3000);
       expect(stepLabel().textContent).toBe('Step 1 of 2: "help"');
       expect(getLog().textContent).not.toContain("duck_treats.db");

@@ -1167,7 +1167,7 @@ export const NeuroReconClient: React.FC = () => {
                 const dCfg = datasetConfigs[dId];
                 const isSelected = activeDataset === dId;
                 return (
-                  <button
+                  <TooltipButton
                     key={dId}
                     onClick={() => {
                       setActiveDataset(dId);
@@ -1176,7 +1176,7 @@ export const NeuroReconClient: React.FC = () => {
                       }
                       playNote(440, 0.08);
                     }}
-                    title={dCfg ? dCfg.subtitle : dId}
+                    tooltip={dCfg ? dCfg.subtitle : dId}
                     className={`px-2.5 py-2 min-h-[44px] flex items-center justify-center rounded-lg transition-all ${
                       isSelected
                         ? "bg-zinc-800 text-white font-bold border border-zinc-700 shadow-sm"
@@ -1190,7 +1190,7 @@ export const NeuroReconClient: React.FC = () => {
                           ? "MNI152 (GLB)"
                           : "OASIS (OBJ)"}
                     </span>
-                  </button>
+                  </TooltipButton>
                 );
               }
             )}
@@ -1202,11 +1202,11 @@ export const NeuroReconClient: React.FC = () => {
               const isResolved = scoreState.resolvedScenarios.includes(scId);
               const isActive = activeScenarioId === scId;
               return (
-                <button
+                <TooltipButton
                   key={scId}
                   onClick={() => handleSelectScenario(scId)}
                   disabled={!isNeuroSelectionValid(activeDataset, scId)}
-                  title={
+                  tooltip={
                     isNeuroSelectionValid(activeDataset, scId)
                       ? undefined
                       : "Defect cases use synthetic slices and QA; switch to QA Scenarios to open them."
@@ -1234,7 +1234,7 @@ export const NeuroReconClient: React.FC = () => {
                       <span className="sr-only">has unsaved edits</span>
                     </>
                   )}
-                </button>
+                </TooltipButton>
               );
             })}
           </div>

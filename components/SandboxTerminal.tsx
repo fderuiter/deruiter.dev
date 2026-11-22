@@ -1258,17 +1258,18 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
         {/* Control Buttons */}
         <div className="flex items-center gap-2">
           {/* Step Back Button */}
-          <button
+          <TooltipButton
             onClick={stepBackward}
             disabled={isTyping || isExecuting || currentStepIndex <= -1}
             className="p-2 bg-zinc-950 border border-zinc-900 hover:border-brand-cyan/40 text-zinc-400 hover:text-brand-cyan rounded-lg transition-all disabled:opacity-30 disabled:hover:border-zinc-900 disabled:hover:text-zinc-400 cursor-pointer focus:outline-none"
-            title="Step Back"
+            tooltip="Step Back"
+            aria-label="Step Back"
           >
             <IconPlayerSkipBack className="w-4 h-4" />
-          </button>
+          </TooltipButton>
 
           {/* Play / Pause Button */}
-          <button
+          <TooltipButton
             onClick={handlePlay}
             disabled={isTyping || isExecuting}
             className={`px-4 py-2 flex items-center gap-2 font-mono text-xs font-bold border rounded-lg transition-all cursor-pointer focus:outline-none ${
@@ -1276,7 +1277,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
                 ? "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
                 : "bg-brand-cyan/10 border-brand-cyan/30 text-brand-cyan hover:bg-brand-cyan/20"
             }`}
-            title={isPlaying ? "Pause Playback" : "Play Sequence"}
+            tooltip={isPlaying ? "Pause Playback" : "Play Sequence"}
           >
             {isPlaying ? (
               <>
@@ -1289,10 +1290,10 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
                 <span>PLAY</span>
               </>
             )}
-          </button>
+          </TooltipButton>
 
           {/* Step Forward Button */}
-          <button
+          <TooltipButton
             onClick={stepForward}
             disabled={
               isTyping ||
@@ -1300,10 +1301,11 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
               currentStepIndex >= activePlayback.length - 1
             }
             className="p-2 bg-zinc-950 border border-zinc-900 hover:border-brand-cyan/40 text-zinc-400 hover:text-brand-cyan rounded-lg transition-all disabled:opacity-30 disabled:hover:border-zinc-900 disabled:hover:text-zinc-400 cursor-pointer focus:outline-none"
-            title="Step Forward"
+            tooltip="Step Forward"
+            aria-label="Step Forward"
           >
             <IconPlayerSkipForward className="w-4 h-4" />
-          </button>
+          </TooltipButton>
 
           {/* Reset Button */}
           <TooltipButton
@@ -1514,15 +1516,15 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             autoCorrect="off"
             spellCheck="false"
           />
-          <button
+          <TooltipButton
             onClick={() => executeCommand(input)}
             disabled={isExecuting || isTyping || !input.trim()}
             className="p-1.5 text-zinc-600 hover:text-brand-cyan hover:bg-brand-cyan/10 active:scale-90 disabled:text-zinc-800 disabled:hover:text-zinc-800 disabled:hover:bg-transparent transition-all rounded-lg cursor-pointer focus:outline-none focus:text-brand-cyan focus:ring-2 focus:ring-brand-cyan/50 focus:ring-offset-1 focus:ring-offset-zinc-950 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
-            title="Execute Command (Enter)"
+            tooltip="Execute Command (Enter)"
             aria-label="Execute command"
           >
             <IconCornerDownLeft className="w-4 h-4" />
-          </button>
+          </TooltipButton>
         </div>
       </div>
     </div>

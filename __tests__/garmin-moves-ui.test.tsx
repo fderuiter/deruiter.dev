@@ -154,9 +154,11 @@ describe("Burpee Slam on the Down button (#2023)", () => {
 
   it("the DOWN button title describes the slam and the station", () => {
     render(<GarminWatchSimulator initialState={airborneFitness()} />);
-    const titled = document.querySelector('[title*="Burpee Slam in mid-air"]');
+    const titled = document.querySelector(
+      '[data-tooltip*="Burpee Slam in mid-air"]'
+    );
     expect(titled).not.toBeNull();
-    expect(titled?.getAttribute("title")).toContain("Water Station");
+    expect(titled?.getAttribute("data-tooltip")).toContain("Water Station");
   });
 
   it("on a Water Station, Down still enters the bonus room and does not slam", () => {
@@ -189,7 +191,9 @@ describe("Burpee Slam on the Down button (#2023)", () => {
         name: "X / Throw Heat Bolt, Cape Spin or Spin Jump Button",
       })
     ).toBeTruthy();
-    const action = document.querySelector('[title*="Spin Jump in mid-air"]');
+    const action = document.querySelector(
+      '[data-tooltip*="Spin Jump in mid-air"]'
+    );
     expect(action).not.toBeNull();
   });
 

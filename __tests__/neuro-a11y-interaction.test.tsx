@@ -161,7 +161,7 @@ describe("NeuroRecon: Accessibility & Keyboard Interactions Suite", () => {
     const paintButton = Array.from(container.querySelectorAll("button")).find(
       (btn) =>
         btn.textContent?.includes("Voxel Paint") ||
-        btn.title?.includes("Voxel Paint")
+        btn.dataset.tooltip?.includes("Voxel Paint")
     );
     await act(async () => {
       paintButton?.click();

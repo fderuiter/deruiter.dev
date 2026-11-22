@@ -91,10 +91,10 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
         {tools.map((tool) => {
           const isActive = toolMode === tool.id;
           return (
-            <button
+            <TooltipButton
               key={tool.id}
               onClick={() => onToolModeChange(tool.id)}
-              title={`${tool.label} [${tool.key}]`}
+              tooltip={`${tool.label} [${tool.key}]`}
               className={`flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded-lg text-xs font-mono transition-all select-none ${
                 isActive
                   ? "bg-zinc-800 text-white font-bold border border-zinc-700 shadow-sm"
@@ -108,7 +108,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               <span className="text-[10px] text-zinc-400 hidden lg:inline">
                 [{tool.key}]
               </span>
-            </button>
+            </TooltipButton>
           );
         })}
       </div>
@@ -173,10 +173,10 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
 
       {/* Pipeline Action Trigger & Reset */}
       <div className="flex items-center gap-2">
-        <button
+        <TooltipButton
           onClick={onRunRecon}
           disabled={isProcessing}
-          title={`Run FreeSurfer recon-all pipeline [${NEURO_RUN_RECON_KEY}]`}
+          tooltip={`Run FreeSurfer recon-all pipeline [${NEURO_RUN_RECON_KEY}]`}
           className="flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] bg-brand-cyan hover:bg-brand-cyan/90 text-zinc-950 font-mono font-bold text-xs rounded-xl shadow-lg shadow-brand-cyan/15 transition-all disabled:opacity-50"
         >
           <IconPlayerPlay
@@ -186,7 +186,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
           <span className="text-[10px] opacity-75 font-mono hidden md:inline">
             [{NEURO_RUN_RECON_KEY}]
           </span>
-        </button>
+        </TooltipButton>
 
         <TooltipButton
           onClick={onReset}

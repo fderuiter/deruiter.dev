@@ -10,7 +10,8 @@
  * marginal (factor-level) caps and their site policies from #4001;
  * ratio-normalized minimization cohorts and sessions from #4002.
  * Display masking, the single export disclosure gate and code-only error
- * reports come from #4005.
+ * reports come from #4005. Plan digests for worker correlation come from
+ * #4004.
  */
 export * from "./types";
 export {
@@ -43,6 +44,7 @@ export {
   canonicalizeAuditValue,
   computeContentDigest,
   computeEventProvenanceDigest,
+  computePlanDigest,
 } from "./internal/integrity/canonical-digest";
 export {
   allocateLargestRemainder,

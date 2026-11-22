@@ -119,13 +119,13 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-REPRO-007` | Canonical audit payload | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-REPRO-008` | Algorithm and format versions | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-REPRO-009` | Immutable result provenance | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
-| `RND-EXECU-001` | Background generation | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
-| `RND-EXECU-002` | Worker correlation | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
-| `RND-EXECU-003` | Latest-request publication | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
-| `RND-EXECU-004` | Fallback generation | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
-| `RND-EXECU-005` | Failure completion | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
-| `RND-EXECU-006` | Resource budgets | `#4004` | `Deferred` | Overflow-safe `checkResourcePreflight` and `RANDOMIZATION_RESOURCE_LIMITS` in `lib/randomization` (`#3998`); worker enforcement pending `#4004` | Not yet executed |
-| `RND-EXECU-007` | Ready/busy/result states | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
+| `RND-EXECU-001` | Background generation | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts`; dedicated worker in `components/randomization/randomization.worker.ts` | Pass (`vitest`, `#4004`, 2026-11-22) |
+| `RND-EXECU-002` | Worker correlation | `#4004` | `Implemented` | `__tests__/randomization-cancel-contract.test.ts` | Pass (`vitest`, `#4004`, 2026-11-22) |
+| `RND-EXECU-003` | Latest-request publication | `#4004` | `Implemented` | `__tests__/randomization-cancel-contract.test.ts` | Pass (`vitest`, `#4004`, 2026-11-22) |
+| `RND-EXECU-004` | Fallback generation | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (worker and fallback parity, construction and CSP failure) | Pass (`vitest`, `#4004`, 2026-11-22) |
+| `RND-EXECU-005` | Failure completion | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts`, `__tests__/randomization-cancel-contract.test.ts` | Pass (`vitest`, `#4004`, 2026-11-22) |
+| `RND-EXECU-006` | Resource budgets | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (preflight estimate, fallback row budget, bounded pages) | Pass (`vitest`, `#4004`, 2026-11-22) |
+| `RND-EXECU-007` | Ready/busy/result states | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (client state contract; the visible states ship with the work area in `#4006`) | Pass (`vitest`, `#4004`, 2026-11-22) |
 | `RND-SIMUL-001` | Monte Carlo repetitions | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
 | `RND-SIMUL-002` | Simulation reproducibility | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
 | `RND-SIMUL-003` | Attrition range | `#4007` | `Deferred` | Pending `#4007` | Not yet executed |
@@ -189,7 +189,7 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-EXPER-002` | Theme and density | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-EXPER-003` | Keyboard and announcements | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-EXPER-004` | Rendering scalability | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-PLATF-001` | Local design computation | `#4004` | `Deferred` | Pending `#4004` | Not yet executed |
+| `RND-PLATF-001` | Local design computation | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (generation runs in the browser with no network call) | Pass (`vitest`, `#4004`, 2026-11-22) |
 | `RND-PLATF-002` | Host privacy policy | `#4005` | `Deferred` | Pending `#4005` | Not yet executed |
 | `RND-PLATF-003` | Offline assets | `#4016` | `Deferred` | Pending `#4016` | Not yet executed |
 | `RND-PLATF-004` | Update notification | `#4016` | `Deferred` | Pending `#4016` | Not yet executed |

@@ -22,6 +22,73 @@ export interface BlogPostData {
 // before it ships; the wording guards in __tests__/ still apply (#3041).
 const rawFallbackBlogPosts: BlogPostData[] = [
   {
+    id: "fallback-blog-22",
+    slug: "oxidizemath-when-the-paper-is-part-of-the-build",
+    title: "OxidizeMath: when the paper is part of the build",
+    dek: "A Rust workspace where the LaTeX papers, the code and the CI gates check each other. What that catches, what it misses, and what I would reuse.",
+    pillar: "formal-verification",
+    tags: "rust, formal-verification, scientific-computing, webassembly, traceability, coding-agents",
+    published: true,
+    reading_time_minutes: 9,
+    hero_image_url: null,
+    created_at: new Date("2026-11-22T17:00:00.000Z"),
+    updated_at: new Date("2026-11-22T17:00:00.000Z"),
+    body: `
+<p>A scientific model usually lives in two places. There is the paper, where the equation is derived and argued for, and there is the code, where it runs. On day one they agree. By month three somebody has fixed a sign in the code, the paper still has the old one, and a comment halfway down the file has a third version that was copied in by hand and never touched again.</p>
+<p><a href="https://github.com/fderuiter/OxidizeMath">OxidizeMath</a> is my attempt to make the build notice. It is a Rust workspace for scientific simulation, and the README calls it a verifiable playground. I think that is fair. It is a playground: the topics run from an MRI Bloch simulator and Lattice Boltzmann fluids to Hodgkin-Huxley neurons, Turing patterns, SIR epidemics, pharmacokinetics, a clinical win ratio and a short satirical paper proving the uniqueness of the favorite child. The verifiable part is what this post is about.</p>
+<p>You can run it in a browser on <a href="https://fderuiter.github.io/OxidizeMath/">GitHub Pages</a>, or read the shorter <a href="/case-studies/oxidizemath">case study</a>.</p>
+
+<h2>What is in the repository</h2>
+<p>On the default branch today: 1,353 commits since October 2024, 20 workspace crates, 28 LaTeX papers, about 184,000 lines of Rust and 1,696 unit tests. The crates are layered. Developer tooling sits at the bottom, then a verification core (<code>verified_engine</code>, its macros, <code>oxidize_core</code>), then shared math (<code>pure_math</code>, <code>math_commons</code>, <code>scientific_metadata</code>), then one crate per domain (AI, physics, biology, applied, climate, epidemiology), and the egui application on top.</p>
+<p>The same GUI compiles to native binaries for Linux, Windows and macOS and to WebAssembly. Simulations that would block a browser tab run in a web worker, and a tool's settings live in the URL hash, so a link reopens the simulation you were looking at.</p>
+<p>More than half the commits come from coding agents. That shaped the design more than anything else. When a lot of code arrives quickly, you want the rules in the compiler and the CI, where they apply to every change, and not in a style guide somebody has to remember to read.</p>
+
+<h2>The equation comes from the paper</h2>
+<p>The central idea is a procedural macro called <code>embed_theory</code>. On the chirp-z transform used for radar gating, it looks like this:</p>
+<pre><code class="language-rust">#[verified_engine::embed_theory("papers/mmwave_radiotherapy_setup.tex", label = "eq:czt")]
+#[verified_engine::verified]
+pub fn chirp_z_transform(/* ... */) { /* ... */ }</code></pre>
+<p>At compile time the macro opens the paper, finds the environment carrying <code>\\label{eq:czt}</code>, converts it and puts it in the function's rustdoc. If the label is gone because someone renamed it in the paper, the crate stops compiling. If a developer also writes display math by hand in that doc comment, the macro rejects it, so the equation exists once, in the paper.</p>
+<p>Then it does a rough consistency check. It parses the LaTeX into a set of operators, walks the Rust function's syntax tree for the same, and fails if the paper uses an operator the code never does. The repository's own test is a good example: the paper says <code>\\frac{f}{2 B}</code>, the function body is <code>beat * bw</code>, and the build fails with "expected Div".</p>
+<p>It is a set comparison, so it catches a missing division but not a division in the wrong place. I still like it. It is cheap, it runs on every build, and it catches the drift I described at the top of this post, where code and paper disagree because one of them changed alone.</p>
+
+<h2>Rules the compiler enforces</h2>
+<p>The <code>#[verified]</code> attribute is on 2,575 functions. It applies two of NASA's Power of Ten rules at compile time: no direct recursion (rule 1) and no function longer than 60 statements (rule 4). Breaking either is a compile error. An exemption has to be written into the attribute as <code>opt_out = "reason"</code>, which means it shows up in review and in a search.</p>
+<p>The same macro injects counters into the function body for arithmetic operations, indexed loads and calls. Those feed a <code>ComplexityMetrics</code> struct you get back from a verified run, which turns "this solver got slower" into a number a test can assert on.</p>
+<p>Rule 3, no dynamic allocation after initialization, is enforced at run time instead. <code>VerifiedAllocator</code> wraps the system allocator, and while a verified run holds the lock, any call to <code>alloc</code>, <code>alloc_zeroed</code> or <code>realloc</code> panics:</p>
+<pre><code class="language-rust">unsafe fn alloc(&amp;self, layout: Layout) -&gt; *mut u8 {
+    if MEMORY_LOCK.load(Ordering::SeqCst) &amp;&amp; crate::metrics::is_verification_enabled() {
+        runtime_violation!("VIOLATION: Dynamic memory allocation after initialization.");
+    }
+    unsafe { System.alloc(layout) }
+}</code></pre>
+<p>Setup can allocate whatever it needs. The inner loop can't. The Lattice Boltzmann fluid solver keeps two grids and swaps them each step, which is how a grid simulation stays inside that rule.</p>
+<p>Models also carry their provenance as data. A <code>#[derive(Theory)]</code> on the hidden Markov model, for instance, records a description and a citation to Rabiner's 1989 tutorial, so the source travels with the type.</p>
+
+<h2>Gates outside the compiler</h2>
+<p>A workspace tool, <code>unified_verification</code>, runs the checks that a macro can't. Before any build, CI lints the workflow files, checks the release profile, looks for duplicated code by comparing syntax trees, compares the public API against a recorded baseline, checks that architecture decisions have records, runs the paper traceability check, holds every file to 500 lines, scans for secrets and high-entropy strings, and runs documentation, doctest and link checks. Clippy denies <code>too_many_lines</code> and <code>cognitive_complexity</code> across the workspace.</p>
+<p>After that, the four platform builds run. The web bundle has to fit a 3 MB compressed budget and pass a Playwright smoke test in Chromium before it deploys to Pages.</p>
+<p>One setting I would copy anywhere: the release profile keeps <code>overflow-checks = true</code> and sets <code>panic = "abort"</code>. An integer overflow in a shipped build stops the program. In a numerical tool, a crash is much easier to notice than an overflow that quietly wraps around and produces a believable wrong number.</p>
+
+<h2>What the numbers say</h2>
+<p>The repository publishes a <code>Verification_Certificate.json</code>. It reports 84.5% native line coverage and 64.2% coverage on the WebAssembly path. The browser build is the less-tested build by about twenty points, and that is the build most people will open first. I would rather have that written down in the repository than find it out from a bug report.</p>
+
+<h2>What the checks can't tell</h2>
+<p>The traceability gate checks that every domain module links to a paper, that the paper exists, and that no paper is orphaned. It passes. But some links in <code>traceability.toml</code> point at papers that are only loosely related, and the MRI module currently points at the favorite-child paper. Nothing in the check can know that. It confirms a link exists. Whether the link is right takes someone reading both ends.</p>
+<p>Clinical statistics has the same gap. An analysis plan and the program that runs it are separate documents, and a traceability matrix between them proves only that someone filled in the matrix. OxidizeMath's win ratio module is a small example of the alternative: the paper is <code>papers/win_ratio.tex</code>, and the code implements matched and unmatched pairing over a hierarchy of endpoints, with each comparison rule (higher is better, lower is better, a threshold) as its own strategy. The link is still only as good as the review, but at least the paper and the code are in the same commit.</p>
+
+<h2>What I would reuse</h2>
+<ul>
+  <li>Keep one copy of an equation and generate the others. A doc comment built from the paper can't drift from it.</li>
+  <li>Put the rules where every change meets them. A compile error applies to a coding agent and a tired human the same way.</li>
+  <li>Make exceptions write down their reason. An <code>opt_out</code> with a sentence attached is something a reviewer can disagree with.</li>
+  <li>Publish the coverage of each build separately, especially the one people open first.</li>
+  <li>Treat a trace link as a claim until someone has read both ends.</li>
+</ul>
+<p>The code is AGPL licensed, and the GUI runs in the browser if you want to poke at it.</p>
+`.trim(),
+  },
+  {
     id: "fallback-blog-21",
     slug: "ai-in-clinical-data-management-show-me-the-source",
     title: "AI in clinical data management: show me the source",

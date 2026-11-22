@@ -42,6 +42,7 @@ import {
 } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
 import { workspaceCommandRegistry } from "@/lib/workspace-command-registry";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface ParsedCliFlags {
   commandName: string;
@@ -1305,13 +1306,14 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
           </button>
 
           {/* Reset Button */}
-          <button
+          <TooltipButton
             onClick={handleReset}
             className="p-2 bg-zinc-950 border border-zinc-900 hover:border-brand-cyan/40 text-zinc-400 hover:text-brand-cyan rounded-lg transition-all cursor-pointer focus:outline-none"
-            title="Reset"
+            tooltip="Reset"
+            aria-label="Reset"
           >
             <IconRotate className="w-4 h-4" />
-          </button>
+          </TooltipButton>
         </div>
       </div>
 
@@ -1350,28 +1352,29 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Clear History Control */}
-            <button
+            <TooltipButton
               onClick={handleClearHistory}
               className="px-2.5 py-1 text-[10px] font-mono font-bold text-zinc-400 hover:text-red-400 bg-zinc-900/60 hover:bg-red-500/10 border border-zinc-800 hover:border-red-500/30 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none"
-              title="Clear Terminal Logs & History"
+              tooltip="Clear Terminal Logs & History"
+              aria-label="Clear History"
             >
               <IconTrash className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Clear History</span>
-            </button>
+            </TooltipButton>
 
             {/* Export Script Dropdown Control */}
             <div className="relative" ref={exportDropdownRef}>
-              <button
+              <TooltipButton
                 onClick={() => setShowExportMenu((prev) => !prev)}
                 className="px-2.5 py-1 text-[10px] font-mono font-bold text-brand-cyan hover:text-brand-cyan bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none"
-                title="Export Executed Commands as Pipeline Script"
+                tooltip="Export Executed Commands as Pipeline Script"
                 aria-expanded={showExportMenu}
                 aria-haspopup="true"
               >
                 <IconDownload className="w-3.5 h-3.5" />
                 <span>Export Script</span>
                 <IconChevronDown className="w-3 h-3" />
-              </button>
+              </TooltipButton>
 
               {showExportMenu && (
                 <div className="absolute right-0 mt-2 w-56 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl py-1.5 z-50 flex flex-col font-mono text-xs">

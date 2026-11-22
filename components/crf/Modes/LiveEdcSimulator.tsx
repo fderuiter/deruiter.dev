@@ -38,6 +38,7 @@ import {
   IconDeviceFloppy,
   IconEyeOff,
 } from "@tabler/icons-react";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 function generateAuditId(): string {
   return generateId("aud_");
@@ -882,13 +883,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                       </option>
                     ))}
                   </select>
-                  <button
+                  <TooltipButton
                     onClick={() => setIsAddingSubject(true)}
                     className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono"
-                    title="Enroll New Simulated Subject"
+                    tooltip="Enroll New Simulated Subject"
+                    aria-label="Enroll New Simulated Subject"
                   >
                     <IconPlus className="w-3.5 h-3.5" />
-                  </button>
+                  </TooltipButton>
                 </div>
               )}
             </div>
@@ -954,14 +956,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <button
+                <TooltipButton
                   onClick={handleSaveForm}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-brand-cyan text-black hover:bg-white transition-all shadow-sm"
-                  title="Save Form Data and run 3-Tier Missing Data Engine"
+                  tooltip="Save Form Data and run 3-Tier Missing Data Engine"
                 >
                   <IconDeviceFloppy className="w-4 h-4" />
                   <span>Save Form</span>
-                </button>
+                </TooltipButton>
 
                 {currentRole === "Principal Investigator" && (
                   <button

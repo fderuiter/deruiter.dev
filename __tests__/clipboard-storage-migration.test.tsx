@@ -287,7 +287,7 @@ describe("clipboard call sites on useClipboard (#1565)", () => {
         onUpdateStudy={vi.fn()}
       />
     );
-    return screen.getAllByTitle("Copy Output")[0];
+    return screen.getAllByRole("button", { name: "Copy Output" })[0];
   }
 
   function renderAssets() {

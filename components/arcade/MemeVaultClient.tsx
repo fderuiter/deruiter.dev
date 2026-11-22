@@ -42,6 +42,7 @@ import {
   MEME_VAULT_TUTORIAL,
   MEME_VAULT_TUTORIAL_SIGNALS,
 } from "@/lib/meme-vault";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 /**
  * A copy button's word, shown on a phone or a touch screen so the 44px key
@@ -268,14 +269,14 @@ export const MemeVaultClient: React.FC = () => {
               if (open) tutorialSignal(MEME_VAULT_TUTORIAL_SIGNALS.manual);
             }}
           />
-          <button
+          <TooltipButton
             onClick={triggerChaosMode}
-            title="A shortcut to the Konami show. It awards no trophy: type the code for that."
+            tooltip="A shortcut to the Konami show. It awards no trophy: type the code for that."
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98] pointer-coarse:min-h-11"
           >
             <IconSparkles className="w-4 h-4 text-amber-400" />
             <span>Launch Retro Chaos Mode</span>
-          </button>
+          </TooltipButton>
         </div>
       </div>
 

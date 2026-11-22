@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { buildFormCatalog } from "@/lib/crf";
-import { fireEvent } from "@testing-library/react";
+import { fireEvent, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 (
@@ -138,9 +138,9 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
       );
     });
 
-    const addVisitBtn = container.querySelector(
-      'button[title*="Add New Protocol Visit"]'
-    ) as HTMLButtonElement;
+    const addVisitBtn = within(container).getByRole("button", {
+      name: "Visit",
+    });
     expect(addVisitBtn).not.toBeNull();
 
     await act(async () => {

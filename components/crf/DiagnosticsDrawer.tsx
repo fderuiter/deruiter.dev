@@ -20,6 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCrfService } from "@/hooks/useCrfService";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface DiagnosticsDrawerProps {
   isOpen: boolean;
@@ -293,14 +294,14 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                       {v.autoFixAvailable && onUpdateStudy && (
-                        <button
+                        <TooltipButton
                           onClick={() => handleFixSingle(v)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-cyan/15 hover:bg-brand-cyan/25 border border-brand-cyan/40 text-brand-cyan text-[11px] font-mono transition-colors"
-                          title="Apply instant schema fix"
+                          tooltip="Apply instant schema fix"
                         >
                           <IconWand className="w-3 h-3" />
                           <span>Fix Rule</span>
-                        </button>
+                        </TooltipButton>
                       )}
 
                       <button

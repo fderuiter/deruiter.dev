@@ -528,9 +528,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
     });
 
     const openMenu = () =>
-      fireEvent.click(
-        screen.getByTitle("Export Executed Commands as Pipeline Script")
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Export Script" }));
 
     it("exports executed commands as a bash script with a sanitised filename", () => {
       render(<SandboxTerminal slug="my study!" />);
@@ -598,7 +596,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       expect(document.activeElement).not.toBe(getInput());
 
       vi.mocked(window.getSelection).mockReturnValue(null);
-      fireEvent.click(screen.getByTitle("Clear Terminal Logs & History"));
+      fireEvent.click(screen.getByRole("button", { name: "Clear History" }));
       expect(document.activeElement).not.toBe(getInput());
     });
   });
@@ -777,7 +775,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       advance(80);
       expect(getInput().value).toBe("he");
 
-      fireEvent.click(screen.getByTitle("Reset"));
+      fireEvent.click(screen.getByRole("button", { name: "Reset" }));
       advance(3000);
       expect(getInput().value).toBe("");
       expect(getInput().hasAttribute("disabled")).toBe(false);
@@ -789,7 +787,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
       render(<SandboxTerminal playback={TWO_STEPS} />);
       playFirstStep();
 
-      fireEvent.click(screen.getByTitle("Reset"));
+      fireEvent.click(screen.getByRole("button", { name: "Reset" }));
       advance(3000);
       expect(screen.getByTitle("Play Sequence")).toBeTruthy();
       expect(getLog().textContent).not.toContain("duck_treats.db");

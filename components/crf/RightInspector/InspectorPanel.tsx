@@ -26,6 +26,7 @@ import {
   IconCopy,
 } from "@tabler/icons-react";
 import { useClipboard } from "@/hooks/useClipboard";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface InspectorPanelProps {
   form: CRFForm;
@@ -121,27 +122,27 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
         <div className="flex items-center gap-1 shrink-0">
           {selectedField && onDuplicateField && (
-            <button
+            <TooltipButton
               onClick={() => onDuplicateField(selectedField.id)}
               className="p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800"
-              title="Duplicate Field"
+              tooltip="Duplicate Field"
               aria-label="Duplicate Field"
             >
               <IconCopy className="w-3.5 h-3.5 text-brand-cyan" />
               <span className="text-[10px] hidden sm:inline">Duplicate</span>
-            </button>
+            </TooltipButton>
           )}
 
           {!selectedField && onDuplicateForm && (
-            <button
+            <TooltipButton
               onClick={() => onDuplicateForm(form.id)}
               className="p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800"
-              title="Duplicate Form"
+              tooltip="Duplicate Form"
               aria-label="Duplicate Form"
             >
               <IconCopy className="w-3.5 h-3.5 text-brand-cyan" />
               <span className="text-[10px] hidden sm:inline">Duplicate</span>
-            </button>
+            </TooltipButton>
           )}
 
           <button
@@ -163,13 +164,14 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </span>
           </button>
 
-          <button
+          <TooltipButton
             onClick={onClose}
             className="p-1 text-zinc-500 hover:text-white rounded hover:bg-zinc-800 transition-colors"
-            title="Deselect"
+            tooltip="Deselect"
+            aria-label="Deselect"
           >
             <IconX className="w-4 h-4" />
-          </button>
+          </TooltipButton>
         </div>
       </div>
 

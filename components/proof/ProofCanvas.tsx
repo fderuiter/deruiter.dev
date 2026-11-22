@@ -24,6 +24,7 @@ import {
   RuleMatch,
 } from "@/lib/proof";
 import { IconX } from "@tabler/icons-react";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface ProofCanvasProps {
   activeTheorem: TheoremDefinition;
@@ -248,22 +249,22 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             >
               <IconArrowForwardUp className="w-4 h-4" />
             </button>
-            <button
+            <TooltipButton
               onClick={handleAutoStep}
               className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
-              title="Advance next valid deduction step"
+              tooltip="Advance next valid deduction step"
             >
               <IconWand className="w-3.5 h-3.5" />
               Auto-Step
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               onClick={handleResetLayout}
               className="p-1.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
-              title="Reset node positions & connections"
+              tooltip="Reset node positions & connections"
               aria-label="Reset node positions and connections"
             >
               <IconRefresh className="w-4 h-4" />
-            </button>
+            </TooltipButton>
           </div>
         </div>
 

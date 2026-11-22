@@ -81,7 +81,7 @@ describe("Working With Duck Halloween wardrobe (#2737)", () => {
       root.render(<WorkingWithDuck />);
     });
     const button = container.querySelector<HTMLButtonElement>(
-      'button[title="Duck Wardrobe & Accessories"]'
+      'button[aria-label="Duck Wardrobe & Accessories"]'
     );
     expect(button).not.toBeNull();
     await act(async () => {

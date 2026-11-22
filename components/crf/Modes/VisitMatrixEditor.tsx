@@ -25,6 +25,7 @@ import {
   IconX,
   IconInfoCircle,
 } from "@tabler/icons-react";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 type FillState = "full" | "partial" | "none";
 
@@ -393,13 +394,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 Schedule Intelligence & Milestone Forecasting Engine
               </h3>
             </div>
-            <button
+            <TooltipButton
               onClick={() => setIsIntelligenceOpen(false)}
               className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"
-              title="Close Drawer"
+              tooltip="Close Drawer"
+              aria-label="Close Drawer"
             >
               <IconX className="w-4 h-4" />
-            </button>
+            </TooltipButton>
           </div>
 
           {/* Key Metrics Overview Grid */}
@@ -766,13 +768,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                     <IconEdit className="w-3.5 h-3.5" />
                   </button>
                   {study.visits.length > 1 && (
-                    <button
+                    <TooltipButton
                       onClick={() => handleDeleteVisit(currentCardVisit.id)}
                       className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
-                      title="Delete Visit"
+                      tooltip="Delete Visit"
+                      aria-label="Delete Visit"
                     >
                       <IconTrash className="w-3.5 h-3.5" />
-                    </button>
+                    </TooltipButton>
                   )}
                 </div>
               </div>
@@ -948,13 +951,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                             {editingVisitId === visit.id ? "Done" : "Edit"}
                           </button>
                           {study.visits.length > 1 && (
-                            <button
+                            <TooltipButton
                               onClick={() => handleDeleteVisit(visit.id)}
                               className="text-[9px] font-mono text-zinc-500 hover:text-red-400 p-0.5"
-                              title="Delete Visit"
+                              tooltip="Delete Visit"
+                              aria-label="Delete Visit"
                             >
                               <IconTrash className="w-3 h-3" />
-                            </button>
+                            </TooltipButton>
                           )}
                         </div>
                       </div>

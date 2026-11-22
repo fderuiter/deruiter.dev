@@ -278,7 +278,9 @@ describe("Standardized Pre-Game Setup Wizard", () => {
         // The cabinet's Setup key opens the Setup sheet, which leads to the
         // wizard (#2923).
         fireEvent.click(screen.getByTitle("Setup"));
-        const setupBtn = screen.getByTitle(/Pre-Game Setup Wizard/i);
+        const setupBtn = screen.getByRole("button", {
+          name: /Game setup: difficulty/,
+        });
         fireEvent.click(setupBtn);
 
         // Setup wizard is visible

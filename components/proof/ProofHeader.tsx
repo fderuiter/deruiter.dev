@@ -13,12 +13,8 @@ import {
 } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FieldManualButton } from "@/components/FieldManualButton";
-import {
-  THEOREMS,
-  TheoremId,
-  Edge,
-  evaluateProofStatus,
-} from "@/lib/proof";
+import { THEOREMS, TheoremId, Edge, evaluateProofStatus } from "@/lib/proof";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface ProofHeaderProps {
   activeTheoremId: TheoremId;
@@ -102,14 +98,14 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <button
+          <TooltipButton
             onClick={handleCopyShareLink}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
-            title="Copy Shareable Proof Link with Active Theorem & Tab"
+            tooltip="Copy Shareable Proof Link with Active Theorem & Tab"
           >
             <IconLink className="w-4 h-4 text-brand-cyan" />
             Share
-          </button>
+          </TooltipButton>
           <button
             onClick={(event) => {
               // Safari pointer clicks do not focus buttons automatically.

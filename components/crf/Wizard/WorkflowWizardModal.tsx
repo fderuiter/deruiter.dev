@@ -28,6 +28,7 @@ import {
 } from "@/lib/crf";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { cloneDeep } from "@/lib/utils";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface WorkflowWizardModalProps {
   isOpen: boolean;
@@ -664,13 +665,14 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                         </span>
                       </div>
                       {draftStudy.visits.length > 1 && (
-                        <button
+                        <TooltipButton
                           onClick={() => handleRemoveVisit(visit.id)}
                           className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
-                          title="Delete visit"
+                          tooltip="Delete visit"
+                          aria-label="Delete visit"
                         >
                           <IconTrash className="w-3.5 h-3.5" />
-                        </button>
+                        </TooltipButton>
                       )}
                     </div>
 

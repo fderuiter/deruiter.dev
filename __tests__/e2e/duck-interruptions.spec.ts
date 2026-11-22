@@ -109,7 +109,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     const progressMeter = page.locator('[aria-label="Work Progress"]');
     const scrapbookBtn = page
-      .locator('button[title*="Scrapbook"]:visible')
+      .locator('button[aria-label*="Scrapbook"]:visible')
       .first();
     await expect(scrapbookBtn).toBeVisible({ timeout: 5000 });
 
@@ -162,7 +162,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // 2. Open scrapbook
     const scrapbookBtn = page
-      .locator('button[title*="Scrapbook"]:visible')
+      .locator('button[aria-label*="Scrapbook"]:visible')
       .first();
     await scrapbookBtn.click();
     const scrapbookDialog = page.locator(
@@ -211,7 +211,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     const progressMeter = page.locator('[aria-label="Work Progress"]');
     const wardrobeBtn = page
-      .locator('button[title*="Wardrobe"]:visible')
+      .locator('button[aria-label*="Wardrobe"]:visible')
       .first();
     await expect(wardrobeBtn).toBeVisible({ timeout: 5000 });
 
@@ -254,7 +254,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // Open scrapbook
     const scrapbookBtn = page
-      .locator('button[title*="Scrapbook"]:visible')
+      .locator('button[aria-label*="Scrapbook"]:visible')
       .first();
     await scrapbookBtn.click();
 

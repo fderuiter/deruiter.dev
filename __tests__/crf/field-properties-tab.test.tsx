@@ -780,7 +780,9 @@ describe("FieldPropertiesTab custom options builder", () => {
 
   it("deletes an option and renumbers the rest", () => {
     const { onUpdateField } = setup({ field: customRadio });
-    fireEvent.click(screen.getAllByTitle("Delete Choice")[0]);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Delete Choice" })[0]
+    );
     expect(onUpdateField).toHaveBeenCalledWith({
       customOptions: [
         { code: "MODERATE", label: "Moderate", order: 1 },

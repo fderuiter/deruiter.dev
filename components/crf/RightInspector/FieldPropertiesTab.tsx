@@ -21,6 +21,7 @@ import {
   IconListDetails,
 } from "@tabler/icons-react";
 import { useToast } from "@/hooks/useToast";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 interface FieldPropertiesTabProps {
   field: CRFField;
@@ -1013,13 +1014,14 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                         >
                           <IconArrowDown className="w-2.5 h-2.5" />
                         </button>
-                        <button
+                        <TooltipButton
                           onClick={() => handleDeleteOptionItem(idx)}
                           className="p-0.5 text-zinc-500 hover:text-red-400 transition-colors"
-                          title="Delete Choice"
+                          tooltip="Delete Choice"
+                          aria-label="Delete Choice"
                         >
                           <IconTrash className="w-2.5 h-2.5" />
-                        </button>
+                        </TooltipButton>
                       </div>
                     </div>
                   ))}
@@ -1045,14 +1047,14 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
                   {onSaveToStudyCodelist &&
                     (field.customOptions?.length || 0) > 0 && (
-                      <button
+                      <TooltipButton
                         onClick={handleSaveAsStudyCodelist}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan border border-brand-cyan/40 text-[10px] font-mono font-bold transition-all"
-                        title="Promote these choices into a reusable study-level controlled codelist"
+                        tooltip="Promote these choices into a reusable study-level controlled codelist"
                       >
                         <IconDeviceFloppy className="w-3 h-3" />
                         <span>Save to Study Codelists</span>
-                      </button>
+                      </TooltipButton>
                     )}
                 </div>
               </div>

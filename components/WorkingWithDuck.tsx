@@ -119,6 +119,7 @@ import {
   parseSprintBests,
   useDuckSession,
 } from "@/components/working-with-duck/useDuckSession";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 /** Stage height the guided tip needs above the room in the touch cabinet, two or three lines. */
 const TOUCH_TIP_BAND_PX = 80;
@@ -3289,21 +3290,23 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2 border-t border-zinc-800/80">
               {renderPauseButton(false)}
 
-              <button
+              <TooltipButton
                 onClick={openWardrobe}
                 className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title="Wardrobe"
+                tooltip="Wardrobe"
+                aria-label="Wardrobe"
               >
                 <IconShirt className="w-4 h-4" />
-              </button>
+              </TooltipButton>
 
-              <button
+              <TooltipButton
                 onClick={openScrapbook}
                 className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title="Scrapbook"
+                tooltip="Scrapbook"
+                aria-label="Scrapbook"
               >
                 <IconBook className="w-4 h-4" />
-              </button>
+              </TooltipButton>
 
               <button
                 onClick={() => setIsMusicMuted(!isMusicMuted)}
@@ -3619,21 +3622,23 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               <div className="flex items-center gap-2">
                 {renderPauseButton(true)}
 
-                <button
+                <TooltipButton
                   onClick={openWardrobe}
                   className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                  title="Duck Wardrobe & Accessories"
+                  tooltip="Duck Wardrobe & Accessories"
+                  aria-label="Duck Wardrobe & Accessories"
                 >
                   <IconShirt className="w-4 h-4" />
-                </button>
+                </TooltipButton>
 
-                <button
+                <TooltipButton
                   onClick={openScrapbook}
                   className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                  title="Duck Scrapbook & Facts"
+                  tooltip="Duck Scrapbook & Facts"
+                  aria-label="Duck Scrapbook & Facts"
                 >
                   <IconBook className="w-4 h-4" />
-                </button>
+                </TooltipButton>
 
                 <button
                   onClick={() => setIsMusicMuted(!isMusicMuted)}
@@ -3782,22 +3787,22 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </>
             )}
 
-            <button
+            <TooltipButton
               onClick={openWardrobe}
               className={CABINET_ICON}
-              title="Wardrobe"
+              tooltip="Wardrobe"
               aria-label="Wardrobe"
             >
               <IconShirt className="w-4 h-4" aria-hidden="true" />
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               onClick={openScrapbook}
               className={CABINET_ICON}
-              title="Scrapbook"
+              tooltip="Scrapbook"
               aria-label="Scrapbook"
             >
               <IconBook className="w-4 h-4" aria-hidden="true" />
-            </button>
+            </TooltipButton>
             <button
               onClick={() => setIsMusicMuted(!isMusicMuted)}
               className={CABINET_ICON}

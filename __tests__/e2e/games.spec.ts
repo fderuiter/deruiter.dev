@@ -121,7 +121,10 @@ test.describe("Arcade Games & Simulators Suite", () => {
     // Open Setup, then its wizard; pick Hard + Heavy Scanlines, and confirm.
     await expect(async () => {
       await page.getByTitle("Setup", { exact: true }).first().click();
-      await page.getByTitle("Pre-Game Setup Wizard").first().click();
+      await page
+        .getByRole("button", { name: /Game setup: difficulty/ })
+        .first()
+        .click();
       await expect(page.getByTestId("wizard-step-1")).toBeVisible({
         timeout: 2000,
       });
@@ -145,7 +148,10 @@ test.describe("Arcade Games & Simulators Suite", () => {
     // wizard.
     await page.getByTitle("Setup", { exact: true }).first().click();
     await expect(watch).toHaveAttribute("aria-label", /Status: paused/);
-    await page.getByTitle("Pre-Game Setup Wizard").first().click();
+    await page
+      .getByRole("button", { name: /Game setup: difficulty/ })
+      .first()
+      .click();
     await expect(watch).toHaveAttribute("aria-label", /Status: paused/);
     await page.getByRole("button", { name: /Skip Setup/i }).click();
     await expect(watch).toHaveAttribute("aria-label", /Status: playing/);
@@ -187,7 +193,9 @@ test.describe("Arcade Games & Simulators Suite", () => {
       .analyze();
     expect(
       results.violations
-        .filter((v) => ["critical", "serious", "moderate"].includes(v.impact ?? ""))
+        .filter((v) =>
+          ["critical", "serious", "moderate"].includes(v.impact ?? "")
+        )
         .map((v) => v.id)
     ).toEqual([]);
 

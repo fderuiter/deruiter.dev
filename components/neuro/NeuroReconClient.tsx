@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { logger } from "@/lib/logger";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
@@ -130,6 +136,7 @@ import {
   IconCompass,
   IconAlertCircle,
 } from "@tabler/icons-react";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 type NeuroViewMode = "split" | "3d" | "2d";
 
@@ -1049,14 +1056,14 @@ export const NeuroReconClient: React.FC = () => {
                 First Action Guide · How to Repair Cortical Surfaces
               </h2>
             </div>
-            <button
+            <TooltipButton
               onClick={() => setShowOnboarding(false)}
-              title="Dismiss Guide"
+              tooltip="Dismiss Guide"
               aria-label="Dismiss First Action Guide"
               className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <IconX className="w-4 h-4" />
-            </button>
+            </TooltipButton>
           </div>
 
           <p className="text-xs text-zinc-300 leading-relaxed font-sans">
@@ -1144,14 +1151,14 @@ export const NeuroReconClient: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-stretch md:self-auto">
           {/* Share Link Button */}
-          <button
+          <TooltipButton
             onClick={handleCopyShareLink}
             className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-300 hover:text-white transition-all shadow-sm"
-            title="Copy a link to this case, view and tool. Edits are not included in the link."
+            tooltip="Copy a link to this case, view and tool. Edits are not included in the link."
           >
             <IconLink className="w-3.5 h-3.5 text-brand-cyan" />
             <span>Share</span>
-          </button>
+          </TooltipButton>
 
           {/* Dataset Source Selector */}
           <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs font-mono">

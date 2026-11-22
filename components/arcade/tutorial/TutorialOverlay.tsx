@@ -17,6 +17,7 @@ import {
 import { isStepComplete, practiceTarget } from "@/lib/arcade";
 import { clamp } from "@/lib/game-utils";
 import type { TutorialRun } from "./useTutorialRun";
+import { TooltipButton } from "@/components/ui/Tooltip";
 
 /** Props for {@link TutorialOverlay}. */
 export interface TutorialOverlayProps {
@@ -456,10 +457,10 @@ export function TutorialOverlay({
               {step.chapter} · {state.index + 1} of {total}
             </span>
           </p>
-          <button
+          <TooltipButton
             type="button"
             aria-label="Leave the tutorial"
-            title="Leave the tutorial"
+            tooltip="Leave the tutorial"
             onMouseDown={keepFocus}
             onClick={() => {
               dispatch({ type: "exit" });
@@ -468,7 +469,7 @@ export function TutorialOverlay({
             className="-m-1.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
           >
             <IconX className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </TooltipButton>
         </div>
         <div
           aria-hidden="true"

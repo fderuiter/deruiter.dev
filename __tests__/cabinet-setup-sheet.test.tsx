@@ -21,6 +21,7 @@ import {
   setDeviceSettings,
 } from "@/lib/arcade";
 
+import { getByTooltip } from "./helpers/tooltip";
 vi.mock("@/hooks/useAnnouncer", () => ({
   useAnnouncer: () => ({ announce: vi.fn() }),
 }));
@@ -244,7 +245,7 @@ describe("PlayCabinet Setup key (#2923)", () => {
       vi.advanceTimersByTime(2000);
     });
 
-    const setupKey = screen.getByTitle("Setup");
+    const setupKey = getByTooltip("Setup");
     expect(setupKey.getAttribute("aria-haspopup")).toBe("dialog");
     act(() => {
       fireEvent.click(setupKey);

@@ -22,6 +22,7 @@ import {
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 
+import { getByTooltip } from "./helpers/tooltip";
 global.ResizeObserver = class {
   observe = vi.fn();
   unobserve = vi.fn();
@@ -116,7 +117,7 @@ describe("Garmin cabinet setup wizard starts the run (#1209)", () => {
     expect(status()).toBe("idle");
 
     await act(async () => {
-      fireEvent.click(screen.getByTitle("Setup"));
+      fireEvent.click(getByTooltip("Setup"));
     });
     await act(async () => {
       fireEvent.click(
@@ -155,7 +156,7 @@ describe("Garmin cabinet setup wizard starts the run (#1209)", () => {
     expect(status()).toBe("playing");
 
     await act(async () => {
-      fireEvent.click(screen.getByTitle("Setup"));
+      fireEvent.click(getByTooltip("Setup"));
     });
     await act(async () => {
       fireEvent.click(
@@ -176,7 +177,7 @@ describe("Garmin cabinet setup wizard starts the run (#1209)", () => {
       fireEvent.click(screen.getByText(/START SIMULATION/i));
     });
     await act(async () => {
-      fireEvent.click(screen.getByTitle("Setup"));
+      fireEvent.click(getByTooltip("Setup"));
     });
     await act(async () => {
       fireEvent.click(

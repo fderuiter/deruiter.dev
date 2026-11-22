@@ -188,7 +188,9 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         // stop before the one tap.
         await settleScroll(page);
         await page
-          .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
+          .locator(
+            `${IMMERSIVE} button[data-tooltip="Reset / Power Off Cabinet"]`
+          )
           .tap();
         await expect(page.locator("[data-immersive]")).toHaveCount(0);
         // Exit hands the page back at the offset the player left: it returns to
@@ -209,7 +211,9 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         );
 
         await page
-          .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
+          .locator(
+            `${IMMERSIVE} button[data-tooltip="Reset / Power Off Cabinet"]`
+          )
           .tap();
         await expect(page.locator("[data-immersive]")).toHaveCount(0);
         expect(

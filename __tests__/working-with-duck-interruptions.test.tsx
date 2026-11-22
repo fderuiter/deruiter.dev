@@ -116,7 +116,7 @@ async function clickByText(container: HTMLElement, text: string | RegExp) {
 function firstByTitle(container: HTMLElement, title: string): HTMLElement {
   // Buttons moved off `title` keep the same text as their aria-label.
   const el = container.querySelector<HTMLElement>(
-    `[title="${title}"], [aria-label="${title}"]`
+    `[data-tooltip="${title}"], [aria-label="${title}"]`
   );
   expect(el).not.toBeNull();
   return el!;
@@ -339,7 +339,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Desktop pause button
     const desktopPauseBtn = container.querySelector<HTMLElement>(
-      'button[title="Pause Sprint (P)"]'
+      'button[data-tooltip="Pause Sprint (P)"]'
     );
     expect(desktopPauseBtn).not.toBeNull();
     await clickEl(desktopPauseBtn!);
@@ -349,7 +349,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
       container.querySelector('[data-testid="duck-pause-overlay"]')
     ).not.toBeNull();
     expect(
-      container.querySelector('button[title="Resume Sprint (P)"]')
+      container.querySelector('button[data-tooltip="Resume Sprint (P)"]')
     ).not.toBeNull();
 
     const progressAtPause = readWorkProgressPercent(container);
@@ -358,7 +358,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Click Desktop Resume button
     const desktopResumeBtn = container.querySelector<HTMLElement>(
-      'button[title="Resume Sprint (P)"]'
+      'button[data-tooltip="Resume Sprint (P)"]'
     )!;
     await clickEl(desktopResumeBtn);
 
@@ -425,7 +425,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // 1. Manually pause via button
     const pauseBtn = container.querySelector<HTMLElement>(
-      'button[title="Pause Sprint (P)"]'
+      'button[data-tooltip="Pause Sprint (P)"]'
     )!;
     await clickEl(pauseBtn);
     expect(
@@ -465,7 +465,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // 4. Finally resume manual pause
     const resumeBtn = container.querySelector<HTMLElement>(
-      'button[title="Resume Sprint (P)"]'
+      'button[data-tooltip="Resume Sprint (P)"]'
     )!;
     await clickEl(resumeBtn);
     expect(
@@ -713,7 +713,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Manually pause
     const pauseBtn = container.querySelector<HTMLElement>(
-      'button[title="Pause Sprint (P)"]'
+      'button[data-tooltip="Pause Sprint (P)"]'
     )!;
     await clickEl(pauseBtn);
     expect(
@@ -727,7 +727,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Resume
     const resumeBtn = container.querySelector<HTMLElement>(
-      'button[title="Resume Sprint (P)"]'
+      'button[data-tooltip="Resume Sprint (P)"]'
     )!;
     await clickEl(resumeBtn);
     expect(
@@ -990,7 +990,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Pause button in the background deck should NOT say Resume Sprint
     const pauseBtn = container.querySelector(
-      'button[title*="Resume Sprint"], button[aria-label*="Resume Sprint"]'
+      'button[data-tooltip*="Resume Sprint"], button[aria-label*="Resume Sprint"]'
     );
     expect(pauseBtn).toBeNull();
 
@@ -1001,7 +1001,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Pause button still says Pause Sprint
     const activePauseBtn = container.querySelector(
-      'button[title="Pause Sprint (P)"]'
+      'button[data-tooltip="Pause Sprint (P)"]'
     );
     expect(activePauseBtn).not.toBeNull();
   });
@@ -1021,7 +1021,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
 
     // Check pause button copy
     const pauseBtn = testContainer.querySelector<HTMLButtonElement>(
-      'button[title="Pause Run (P)"]'
+      'button[data-tooltip="Pause Run (P)"]'
     );
     expect(pauseBtn).not.toBeNull();
 

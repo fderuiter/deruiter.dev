@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { MountainMap } from "@/components/patrol/MountainMap";
 
+import { getByTooltip } from "./helpers/tooltip";
 describe("Patrol Shift — MountainMap Interactive Viewport Integration (Issue #835)", () => {
   beforeEach(() => {
     vi.useFakeTimers({
@@ -92,14 +93,14 @@ describe("Patrol Shift — MountainMap Interactive Viewport Integration (Issue #
         />
       );
 
-      const mainChaletBtn = screen.getByTitle("Pan to Main Chalet");
+      const mainChaletBtn = getByTooltip("Pan to Main Chalet");
       fireEvent.click(mainChaletBtn);
 
       const rootG = container.querySelector("svg > g");
       expect(rootG?.getAttribute("transform")).toContain("scale(1.2)");
 
       // Quick jump to Back Bowl switches zone and pans
-      const bowlJumpBtn = screen.getByTitle("Pan to The Back Bowl");
+      const bowlJumpBtn = getByTooltip("Pan to The Back Bowl");
       fireEvent.click(bowlJumpBtn);
 
       const bowlBtn = screen.getByRole("button", { name: "The Back Bowl" });

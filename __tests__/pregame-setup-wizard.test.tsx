@@ -21,6 +21,7 @@ import {
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { hasSeenCoachMarks, setCoachMarksSeen } from "@/lib/arcade";
 
+import { getByTooltip } from "./helpers/tooltip";
 // Mock A11yProvider & AudioProvider hooks
 const mockAnnounce = vi.fn();
 const mockPlayNote = vi.fn();
@@ -277,7 +278,7 @@ describe("Standardized Pre-Game Setup Wizard", () => {
 
         // The cabinet's Setup key opens the Setup sheet, which leads to the
         // wizard (#2923).
-        fireEvent.click(screen.getByTitle("Setup"));
+        fireEvent.click(getByTooltip("Setup"));
         const setupBtn = screen.getByRole("button", {
           name: /Game setup: difficulty/,
         });

@@ -91,7 +91,7 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
 
     // Exit through the cabinet's Power control.
     await page
-      .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
+      .locator(`${IMMERSIVE} button[data-tooltip="Reset / Power Off Cabinet"]`)
       .tap();
     await expect(page.locator("[data-immersive]")).toHaveCount(0);
     await expect(
@@ -182,7 +182,7 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
   }) => {
     await launchCabinet(page);
 
-    await page.locator(`${IMMERSIVE} button[title="Setup"]`).tap();
+    await page.locator(`${IMMERSIVE} button[data-tooltip="Setup"]`).tap();
     await page
       .locator(`${IMMERSIVE} button:has-text("Game setup: difficulty")`)
       .tap();
@@ -198,7 +198,7 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     page,
   }) => {
     await launchCabinet(page);
-    const setupKey = page.locator(`${IMMERSIVE} button[title="Setup"]`);
+    const setupKey = page.locator(`${IMMERSIVE} button[data-tooltip="Setup"]`);
     await setupKey.tap();
     const sheet = page.getByRole("dialog", { name: "Setup" });
     await expect(sheet).toBeVisible();
@@ -345,7 +345,7 @@ test.describe("Mobile arcade kit: phone and browser Back", () => {
     const sheet = page.getByTestId("cabinet-setup-sheet");
     await expect(async () => {
       await page
-        .locator(`${CABINET} button[title="Setup"]`)
+        .locator(`${CABINET} button[data-tooltip="Setup"]`)
         .first()
         .click({ timeout: 2000 });
       await expect(sheet).toBeVisible({ timeout: 3000 });
@@ -381,7 +381,7 @@ test.describe("Mobile arcade kit: phone and browser Back", () => {
     expect(await onCabinetEntry(page)).toBe(true);
 
     await page
-      .locator(`${CABINET} button[title="Reset / Power Off Cabinet"]`)
+      .locator(`${CABINET} button[data-tooltip="Reset / Power Off Cabinet"]`)
       .first()
       .click();
     await expect(page.locator(CABINET)).toHaveCount(0);

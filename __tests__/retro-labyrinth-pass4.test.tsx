@@ -470,7 +470,7 @@ describe("Retro Labyrinth pass-4 fixes", () => {
       await mount();
       await press("ArrowDown");
       const badge = container.querySelector<HTMLButtonElement>(
-        'button[title="Change Cyberdeck Class"]'
+        'button[data-tooltip="Change Cyberdeck Class"]'
       );
       await act(async () => {
         badge?.click();

@@ -486,7 +486,9 @@ test.describe("Trial & Error presentation hardening (#925, #1591)", () => {
       await expect.poll(sources).toBeGreaterThan(resumedFrom);
 
       await expect(async () => {
-        await page.getByTitle("Reset / Power Off Cabinet").click();
+        await page
+          .locator('[data-tooltip="Reset / Power Off Cabinet"]')
+          .click();
         await expect(page.getByTestId("hand")).toHaveCount(0, {
           timeout: 2000,
         });

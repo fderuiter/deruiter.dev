@@ -31,6 +31,7 @@ import {
   type PlayMode,
 } from "@/components/study-director/useStudyDirectorSession";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 const StudyDirectorWorld = dynamic(
   () =>
     import("@/components/study-director-world/StudyDirectorWorld").then(
@@ -250,15 +251,15 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
           Skip to next message
         </button>
       ) : null}
-      <button
+      <TooltipButton
         type="button"
         onClick={() => setShowShortcuts(true)}
         aria-label="Keyboard shortcuts"
-        title="Keyboard shortcuts (?)"
+        tooltip="Keyboard shortcuts (?)"
         className="min-h-[44px] min-w-[44px] border border-zinc-700 text-sm text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
       >
         ?
-      </button>
+      </TooltipButton>
       <div className="min-w-0 flex-1 basis-56">
         <p
           className={`text-[11px] ${criticalOpen > 0 ? "font-semibold text-red-400" : "text-[var(--sd-muted)]"}`}

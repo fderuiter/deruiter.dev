@@ -559,7 +559,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
 
     // Trigger a non-coordinate state update, e.g. switching CRT phosphor theme
     const amberThemeBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.getAttribute("title")?.includes("Amber Hacker")
+      (b) => b.getAttribute("data-tooltip")?.includes("Amber Hacker")
     );
     expect(amberThemeBtn).toBeTruthy();
 

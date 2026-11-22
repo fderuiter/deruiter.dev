@@ -187,7 +187,8 @@ describe("Working With Duck - UI & Component Suite", () => {
     const buttons = container.querySelectorAll("button");
     const wardrobeBtn = Array.from(buttons).find(
       (b) =>
-        b.textContent?.includes("Wardrobe") || b.title?.includes("Wardrobe")
+        b.textContent?.includes("Wardrobe") ||
+        b.dataset.tooltip?.includes("Wardrobe")
     );
     expect(wardrobeBtn).toBeDefined();
 
@@ -389,7 +390,9 @@ describe("Working With Duck - UI & Component Suite", () => {
     });
 
     const muteButtons = Array.from(container.querySelectorAll("button")).filter(
-      (b) => b.title?.includes("Mute") || b.title?.includes("Music")
+      (b) =>
+        b.dataset.tooltip?.includes("Mute") ||
+        b.dataset.tooltip?.includes("Music")
     );
     expect(muteButtons.length).toBeGreaterThan(0);
 

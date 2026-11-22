@@ -692,19 +692,19 @@ export function LabyrinthLayout({
           </span>
 
           {/* Class Badge */}
-          <button
+          <TooltipButton
             onClick={() => {
               if (touchCabinet) setOptionsOpen(false);
               openOverlay("class_select");
             }}
             className="px-2.5 py-1 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 rounded-full flex items-center gap-1 cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11"
-            title="Change Cyberdeck Class"
+            tooltip="Change Cyberdeck Class"
           >
             <span>{selectedClass.icon}</span>
             <span className="font-bold text-zinc-100">
               {selectedClass.name}
             </span>
-          </button>
+          </TooltipButton>
         </div>
 
         {/* Mode Selector, CRT Palette & Expand */}
@@ -730,11 +730,11 @@ export function LabyrinthLayout({
             className="flex items-center gap-0.5 bg-neutral-900 p-0.5 rounded-lg text-xs"
           >
             {PHOSPHOR_THEME_OPTIONS.map((option) => (
-              <button
+              <TooltipButton
                 key={option.id}
                 type="button"
                 onClick={() => intents.setTheme(option.id)}
-                title={CRT_THEMES[option.id].name}
+                tooltip={CRT_THEMES[option.id].name}
                 aria-pressed={crtThemeId === option.id}
                 className={`px-2 py-1 rounded cursor-pointer inline-flex items-center gap-1.5 [@media(pointer:coarse)]:min-h-11 ${
                   crtThemeId === option.id
@@ -750,7 +750,7 @@ export function LabyrinthLayout({
                   }}
                 />
                 {option.label}
-              </button>
+              </TooltipButton>
             ))}
 
             {/* CRT Calibration Trigger */}
@@ -1120,17 +1120,17 @@ export function LabyrinthLayout({
               </button>
             )}
 
-            <button
+            <TooltipButton
               onClick={() => openOverlay("darknet_shop")}
               disabled={!marketOpen}
               aria-describedby={
                 marketOpen ? undefined : "labyrinth-market-closed"
               }
-              title={marketOpen ? undefined : MARKET_CLOSED_REASON}
+              tooltip={marketOpen ? undefined : MARKET_CLOSED_REASON}
               className="px-1.5 py-0.5 rounded border bg-amber-950/40 text-amber-300 border-amber-700/50 hover:bg-amber-900/40 cursor-pointer font-bold disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-amber-950/40"
             >
               🛒 Market
-            </button>
+            </TooltipButton>
             {!marketOpen && (
               <span
                 id="labyrinth-market-closed"

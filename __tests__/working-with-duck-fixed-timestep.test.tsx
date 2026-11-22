@@ -399,7 +399,7 @@ describe("Working With Duck - Fixed-Timestep Simulation (#600)", () => {
 
     // Pause the game
     const pauseBtn = container.querySelector<HTMLElement>(
-      'button[title="Pause Sprint (P)"]'
+      'button[data-tooltip="Pause Sprint (P)"]'
     );
     expect(pauseBtn).not.toBeNull();
     await act(async () => {
@@ -416,7 +416,7 @@ describe("Working With Duck - Fixed-Timestep Simulation (#600)", () => {
 
     // Resume the game
     const resumeBtn = container.querySelector<HTMLElement>(
-      'button[title="Resume Sprint (P)"]'
+      'button[data-tooltip="Resume Sprint (P)"]'
     );
     expect(resumeBtn).not.toBeNull();
     await act(async () => {

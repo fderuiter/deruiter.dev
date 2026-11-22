@@ -61,7 +61,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     const progressMeter = page.locator('[aria-label="Work Progress"]');
     const pauseBtn = page
-      .locator('button[title*="Pause Sprint"]:visible')
+      .locator('button[data-tooltip*="Pause Sprint"]:visible')
       .first();
     await expect(pauseBtn).toBeVisible({ timeout: 5000 });
 
@@ -154,7 +154,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // 1. Manually pause
     const pauseBtn = page
-      .locator('button[title*="Pause Sprint"]:visible')
+      .locator('button[data-tooltip*="Pause Sprint"]:visible')
       .first();
     await pauseBtn.click();
     const pauseOverlay = page.getByTestId("duck-pause-overlay");
@@ -262,7 +262,9 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Header pause button must NOT display Resume Sprint while reading
-    const resumeBtn = page.locator('button[title*="Resume Sprint"]:visible');
+    const resumeBtn = page.locator(
+      'button[data-tooltip*="Resume Sprint"]:visible'
+    );
     await expect(resumeBtn).toHaveCount(0);
 
     // Dismiss dialog
@@ -271,7 +273,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // Now header button is back to active Pause Sprint
     const pauseBtn = page
-      .locator('button[title*="Pause Sprint"]:visible')
+      .locator('button[data-tooltip*="Pause Sprint"]:visible')
       .first();
     await expect(pauseBtn).toBeVisible();
   });
@@ -327,7 +329,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // 1. Manually pause via button
     const pauseBtn = page
-      .locator('button[title*="Pause Sprint"]:visible')
+      .locator('button[data-tooltip*="Pause Sprint"]:visible')
       .first();
     await pauseBtn.click();
     const pauseOverlay = page.getByTestId("duck-pause-overlay");

@@ -27,6 +27,7 @@ import {
 import { EDGE_KEEP_OUT_PX, inEdgeKeepOut } from "@/components/arcade/mobile";
 import { CounterSessionHolder } from "./fixtures/three-view-game/session";
 
+import { getAllByTooltip } from "./helpers/tooltip";
 vi.mock("@/hooks/useAnnouncer", () => ({
   useAnnouncer: () => ({ announce: vi.fn() }),
 }));
@@ -409,7 +410,7 @@ describe("PlayCabinet phone Back (#2545)", () => {
     const popped = new Promise<void>((resolve) =>
       window.addEventListener("popstate", () => resolve(), { once: true })
     );
-    fireEvent.click(screen.getAllByTitle("Reset / Power Off Cabinet")[0]);
+    fireEvent.click(getAllByTooltip("Reset / Power Off Cabinet")[0]);
     await popped;
     await flush();
 

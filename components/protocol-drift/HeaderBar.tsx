@@ -11,6 +11,7 @@ import { STUDY_ID, trialDayOf, type SimSpeed } from "@/lib/protocol-drift";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { isTracerComplete, useProtocolDriftStore } from "./store";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 const SPEEDS: SimSpeed[] = [1, 2, 5];
 const BUTTON =
   "inline-flex min-h-9 items-center gap-1 border px-2.5 font-mono text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]";
@@ -254,7 +255,7 @@ export function HeaderBar() {
           <IconPlayerTrackNext className="h-4 w-4" aria-hidden="true" />
           <span>N</span>
         </button>
-        <button
+        <TooltipButton
           type="button"
           onClick={() => void skip()}
           disabled={
@@ -263,12 +264,12 @@ export function HeaderBar() {
             tracerDone
           }
           aria-label="Skip to next event (S)"
-          title="Skip to next event (S)"
+          tooltip="Skip to next event (S)"
           className={NEUTRAL}
         >
           <IconPlayerSkipForward className="h-4 w-4" aria-hidden="true" />
           <span>Skip</span>
-        </button>
+        </TooltipButton>
       </div>
 
       {touch ? <div className="pd-touch-row-end" aria-hidden="true" /> : null}

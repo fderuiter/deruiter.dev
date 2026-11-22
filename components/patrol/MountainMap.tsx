@@ -44,6 +44,7 @@ import { ModalContainer } from "@/components/ui/ModalContainer";
 import { clamp } from "@/lib/game-utils";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /**
  * Props for the MountainMap component.
  */
@@ -623,7 +624,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
         {/* Viewport Control Buttons */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Night Skiing Toggle */}
-          <button
+          <TooltipButton
             type="button"
             onClick={() => setIsNightMode((prev) => !prev)}
             className={`min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-mono font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
@@ -631,7 +632,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                 ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
                 : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
             }`}
-            title="Toggle night skiing floodlights"
+            tooltip="Toggle night skiing floodlights"
             aria-label="Toggle night skiing floodlights"
           >
             {isNightMode ? (
@@ -642,7 +643,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
             <span className="hidden sm:inline">
               {isNightMode ? "Day View" : "Night Skiing"}
             </span>
-          </button>
+          </TooltipButton>
 
           {/* Responsibility Code Modal Button */}
           <button
@@ -1797,38 +1798,38 @@ export const MountainMap: React.FC<MountainMapProps> = ({
               </div>
               {/* Quick Jump Anchors */}
               <div className="grid grid-cols-4 gap-1 pt-1 border-t border-zinc-800/80">
-                <button
+                <TooltipButton
                   type="button"
                   onClick={() => panToAnchor("main", 1250, 1170)}
                   className="min-h-[44px] min-w-[44px] text-[8px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded text-center truncate px-0.5 cursor-pointer flex items-center justify-center"
-                  title="Pan to Main Chalet"
+                  tooltip="Pan to Main Chalet"
                 >
                   Main
-                </button>
-                <button
+                </TooltipButton>
+                <TooltipButton
                   type="button"
                   onClick={() => panToAnchor("main", 420, 1160)}
                   className="min-h-[44px] min-w-[44px] text-[8px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded text-center truncate px-0.5 cursor-pointer flex items-center justify-center"
-                  title="Pan to East Chalet"
+                  tooltip="Pan to East Chalet"
                 >
                   East
-                </button>
-                <button
+                </TooltipButton>
+                <TooltipButton
                   type="button"
                   onClick={() => panToAnchor("main", 1000, 160)}
                   className="min-h-[44px] min-w-[44px] text-[8px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded text-center truncate px-0.5 cursor-pointer flex items-center justify-center"
-                  title="Pan to Summit Shack"
+                  tooltip="Pan to Summit Shack"
                 >
                   Top
-                </button>
-                <button
+                </TooltipButton>
+                <TooltipButton
                   type="button"
                   onClick={() => panToAnchor("back-bowl", 600, 460)}
                   className="min-h-[44px] min-w-[44px] text-[8px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded text-center truncate px-0.5 cursor-pointer flex items-center justify-center"
-                  title="Pan to The Back Bowl"
+                  tooltip="Pan to The Back Bowl"
                 >
                   Bowl
-                </button>
+                </TooltipButton>
               </div>
             </div>
           )}

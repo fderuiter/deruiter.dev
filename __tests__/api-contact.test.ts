@@ -4,11 +4,16 @@ import { POST } from "@/app/api/contact/route";
 import { NextRequest } from "next/server";
 import { resetSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { EmailService } from "@/lib/services/email-service";
+import { prisma } from "@/lib/db";
 
 describe("API: /api/contact Route Handler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetSubmissionAttemptRateLimit();
+    // Recipients are known eligible; an unknown lookup defers mail (#3806).
+    vi.spyOn(prisma.suppressionList, "findUnique").mockResolvedValue(
+      null as never
+    );
   });
 
   const createRequest = (

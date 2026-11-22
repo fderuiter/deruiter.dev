@@ -1,3 +1,4 @@
+import { RandomizationError } from "../disclosure/privacy";
 import {
   SUBJECT_ID_MASK_MAX_LENGTH,
   SUBJECT_ID_TOKEN_BOUNDS,
@@ -318,7 +319,7 @@ export function createSubjectIdGenerator(
 ): SubjectIdGenerator {
   const parsed = parseSubjectIdMask(pattern);
   if (!parsed.ok) {
-    throw new Error(parsed.findings[0].message);
+    throw new RandomizationError("SUBJECT_ID_MASK_INVALID");
   }
   const mask = parsed.mask;
   const siteCounters = new Map<string, number>();
@@ -357,13 +358,10 @@ export function createSubjectIdGenerator(
     }
 
     if (mask.hasRandomToken) {
-      throw new Error(
-        `Subject ID collision persisted after ${SUBJECT_ID_TOKEN_BOUNDS.maxCollisionRetries} retries for mask "${mask.pattern}".`
-      );
+      // The code alone leaves the process, never the site code or mask.
+      throw new RandomizationError("SUBJECT_ID_COLLISION");
     }
-    throw new Error(
-      `Deterministic subject ID collision for site "${context.siteCode}" using mask "${mask.pattern}".`
-    );
+    throw new RandomizationError("SUBJECT_ID_COLLISION");
   }
 
   return Object.freeze({ nextId });

@@ -118,9 +118,13 @@ Every integration in this catalog has an explicit fallback for "the service
 is unreachable or unconfigured" rather than throwing an unhandled error at
 request time:
 
-- **Neon Postgres unreachable**: `EmailService.isSuppressed` fails open
-  (treats every address as not-suppressed rather than blocking sends);
-  `EmailService.recordSuppression` now (as of #697) lets the error propagate
+- **Neon Postgres unreachable**: `EmailService.checkRecipientEligibility`
+  fails closed (#3806). A failed lookup is `unknown`, never eligible, so no
+  provider call is made: inline mail is queued as a deferred intent when the
+  queue write succeeds (and returns a typed retryable failure when it does
+  not), and queued rows wait for the next run with their attempt count and
+  idempotency key unchanged. `getRetryQueueHealth` reports them as
+  `eligibilityDeferred`. `EmailService.recordSuppression` now (as of #697) lets the error propagate
   so the Resend webhook route can return a retryable non-2xx instead of
   silently losing the write. See
   [how-to: configure Resend and webhooks](../how-to/configure-resend-and-webhooks.md).

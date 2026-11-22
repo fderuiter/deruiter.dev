@@ -41,6 +41,11 @@ export interface EmailDispatchResult {
   error?: string;
   simulated?: boolean;
   queued?: boolean;
+  /** Queued without a provider call because recipient eligibility was unknown. */
+  deferred?: boolean;
+  /** A later attempt may succeed; nothing was sent or stored. */
+  retryable?: boolean;
+  errorCode?: "RECIPIENT_ELIGIBILITY_UNKNOWN";
   queueId?: string;
 }
 
@@ -66,7 +71,27 @@ export interface EmailRetryCounts {
   processed: number;
   succeeded: number;
   failed: number;
+  /** Rows kept for a later run because recipient eligibility was unknown (#3806). */
+  deferred: number;
 }
+
+/**
+ * Recipient eligibility at the email-service boundary (#3806).
+ *
+ * `unknown` means the suppression lookup failed. It is never read as
+ * eligible: production mail waits until eligibility is known again.
+ */
+export type RecipientEligibility =
+  | { status: "eligible" }
+  | { status: "suppressed"; reason: string }
+  | { status: "unknown"; code: "SUPPRESSION_LOOKUP_FAILED" };
+
+/**
+ * `lastError` written on a queue row deferred for unknown eligibility. It
+ * holds no address or provider detail, so health reporting can count it.
+ */
+export const ELIGIBILITY_DEFERRED_REASON =
+  "ELIGIBILITY_UNKNOWN: suppression lookup failed before send";
 
 /** Result envelope of {@link EmailService.processRetryQueue}. */
 export type EmailRetryResult = ServiceResult<
@@ -111,9 +136,7 @@ export interface EmailServiceSpec {
     exhaustedDeadLetterCount: number;
   }>;
   handleWebhookEvent(event: ResendWebhookEvent): Promise<boolean>;
-  isSuppressed(
-    email: string
-  ): Promise<{ suppressed: boolean; reason?: string }>;
+  checkRecipientEligibility(email: string): Promise<RecipientEligibility>;
   getSuppressedEmails(emails: string[]): Promise<Set<string>>;
   recordSuppression(email: string, reason: SuppressionReason): Promise<void>;
 }
@@ -355,23 +378,49 @@ export class EmailService {
   }
 
   /**
-   * Checks if an email address is in the suppression list (bounced, complained, unsubscribed).
+   * Looks up one address in the suppression list (bounced, complained,
+   * unsubscribed). A failed lookup returns `unknown`, never `eligible`
+   * (#3806), so an outage cannot bypass an unsubscribe or a bounce.
    */
-  static async isSuppressed(
+  static async checkRecipientEligibility(
     email: string
-  ): Promise<{ suppressed: boolean; reason?: string }> {
+  ): Promise<RecipientEligibility> {
     try {
       const record = await prisma.suppressionList.findUnique({
         where: { email: email.toLowerCase().trim() },
       });
       if (record) {
-        return { suppressed: true, reason: record.reason };
+        return { status: "suppressed", reason: record.reason };
       }
-      return { suppressed: false };
-    } catch {
-      // If database is offline or unseeded in tests, defensively fail open
-      return { suppressed: false };
+      return { status: "eligible" };
+    } catch (err) {
+      logger.error(
+        "Suppression lookup failed; recipient eligibility unknown:",
+        err
+      );
+      return { status: "unknown", code: "SUPPRESSION_LOOKUP_FAILED" };
     }
+  }
+
+  /**
+   * Combines per-recipient eligibility for one message. A known suppression
+   * wins and is terminal; otherwise any unknown recipient makes the whole
+   * message unknown, so a retry never drops or rewrites part of its payload.
+   */
+  private static async checkMessageEligibility(
+    recipients: string[]
+  ): Promise<RecipientEligibility> {
+    let unknown: RecipientEligibility | null = null;
+    for (const recipient of recipients) {
+      const check = await this.checkRecipientEligibility(recipient);
+      if (check.status === "suppressed") {
+        return check;
+      }
+      if (check.status === "unknown") {
+        unknown = check;
+      }
+    }
+    return unknown ?? { status: "eligible" };
   }
 
   /**
@@ -603,6 +652,7 @@ export class EmailService {
 
     let succeeded = 0;
     let failed = 0;
+    let deferred = 0;
 
     try {
       for (const item of items) {
@@ -620,20 +670,30 @@ export class EmailService {
           skipQueue: true,
         };
 
-        // Suppression check
+        // Recheck every recipient before each attempt (#3806).
         const toRecipients = Array.isArray(rawOptions.to)
           ? rawOptions.to
           : [rawOptions.to];
-        let isAnySuppressed = false;
-        for (const rec of toRecipients) {
-          const check = await this.isSuppressed(rec);
-          if (check.suppressed) {
-            isAnySuppressed = true;
-            break;
-          }
+        const eligibility = await this.checkMessageEligibility(toRecipients);
+
+        if (eligibility.status === "unknown") {
+          // No provider request is made, so the attempt count and the
+          // idempotency key stay as they are; the row only moves its next
+          // eligible time on the existing bounded backoff.
+          const delay = getRetryDelayMs(item.id, Math.max(1, item.attempts));
+          await prisma.outboundEmailQueue.update({
+            where: { id: item.id },
+            data: {
+              status: "RETRYING",
+              nextRetryAt: new Date(now.getTime() + delay),
+              lastError: ELIGIBILITY_DEFERRED_REASON,
+            },
+          });
+          deferred++;
+          continue;
         }
 
-        if (isAnySuppressed) {
+        if (eligibility.status === "suppressed") {
           await prisma.outboundEmailQueue.update({
             where: { id: item.id },
             data: {
@@ -738,11 +798,24 @@ export class EmailService {
       return createFailure(
         "QUEUE_UPDATE_FAILED",
         "An outbound email queue row could not be updated during retry",
-        { details: { error: err, succeeded, failed, leased: items.length } }
+        {
+          details: {
+            error: err,
+            succeeded,
+            failed,
+            deferred,
+            leased: items.length,
+          },
+        }
       );
     }
 
-    return createSuccess({ processed: items.length, succeeded, failed });
+    return createSuccess({
+      processed: items.length,
+      succeeded,
+      failed,
+      deferred,
+    });
   }
 
   /**
@@ -771,23 +844,31 @@ export class EmailService {
     oldestPendingAgeMs: number | null;
     terminalFailures: number;
     retryExhausted: number;
+    eligibilityDeferred: number;
   }> {
     const pendingStatuses: OutboundEmailStatus[] = ["PENDING", "RETRYING"];
     const pendingWhere = { status: { in: pendingStatuses } };
-    const [depth, oldest, terminalFailures, retryExhausted] = await Promise.all(
-      [
-        prisma.outboundEmailQueue.count({ where: pendingWhere }),
-        prisma.outboundEmailQueue.findFirst({
-          where: pendingWhere,
-          orderBy: { createdAt: "asc" },
-          select: { createdAt: true },
-        }),
-        prisma.outboundEmailQueue.count({ where: { status: "FAILED" } }),
-        prisma.outboundEmailQueue.count({
-          where: { status: "FAILED", attempts: { gte: MAX_RETRY_ATTEMPTS } },
-        }),
-      ]
-    );
+    const [
+      depth,
+      oldest,
+      terminalFailures,
+      retryExhausted,
+      eligibilityDeferred,
+    ] = await Promise.all([
+      prisma.outboundEmailQueue.count({ where: pendingWhere }),
+      prisma.outboundEmailQueue.findFirst({
+        where: pendingWhere,
+        orderBy: { createdAt: "asc" },
+        select: { createdAt: true },
+      }),
+      prisma.outboundEmailQueue.count({ where: { status: "FAILED" } }),
+      prisma.outboundEmailQueue.count({
+        where: { status: "FAILED", attempts: { gte: MAX_RETRY_ATTEMPTS } },
+      }),
+      prisma.outboundEmailQueue.count({
+        where: { ...pendingWhere, lastError: ELIGIBILITY_DEFERRED_REASON },
+      }),
+    ]);
 
     return {
       depth,
@@ -796,6 +877,7 @@ export class EmailService {
         : null,
       terminalFailures,
       retryExhausted,
+      eligibilityDeferred,
     };
   }
 
@@ -838,20 +920,45 @@ export class EmailService {
   ): Promise<EmailDispatchResult> {
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
-    // Pre-check suppression list before transmitting
-    for (const recipient of recipients) {
-      const check = await this.isSuppressed(recipient);
-      if (check.suppressed) {
-        return {
-          success: false,
-          error: `Recipient address ${recipient} is suppressed due to previous ${check.reason || "rejection"}.`,
-        };
-      }
-    }
-
     const client = getResendClient();
     const fromAddress =
       options.from || env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+
+    // Pre-check suppression list before transmitting (#3806).
+    const eligibility = await this.checkMessageEligibility(recipients);
+    if (eligibility.status === "suppressed") {
+      return {
+        success: false,
+        error: `A recipient is suppressed due to previous ${eligibility.reason || "rejection"}.`,
+      };
+    }
+    if (eligibility.status === "unknown") {
+      // No provider call. Store a durable intent so the retry queue sends
+      // it once eligibility is known; report queued only if that write held.
+      if (!options.skipQueue) {
+        const queueId = await this.queueOutboundEmail(
+          options,
+          fromAddress,
+          ELIGIBILITY_DEFERRED_REASON
+        );
+        if (queueId) {
+          return {
+            success: true,
+            queued: true,
+            deferred: true,
+            queueId,
+            data: { id: queueId },
+          };
+        }
+      }
+      return {
+        success: false,
+        retryable: true,
+        errorCode: "RECIPIENT_ELIGIBILITY_UNKNOWN",
+        error:
+          "Recipient eligibility is unknown (suppression lookup failed); message not sent or queued.",
+      };
+    }
 
     const apiKey = getEffectiveApiKey();
     // Preview and development are explicitly simulated.

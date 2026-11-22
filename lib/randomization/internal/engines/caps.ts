@@ -11,6 +11,7 @@
 
 import type {
   BlockRandomizationRequest,
+  RandomizationRequest,
   ManualIntersectionCap,
   StratificationFactorSpec,
   StructuralStratumKey,
@@ -122,7 +123,7 @@ function percentToScaled(value: unknown): bigint | null {
 }
 
 function resolveManualCaps(
-  request: BlockRandomizationRequest,
+  request: RandomizationRequest,
   intersections: readonly StratumIntersection[]
 ): CapResolutionResult {
   const caps = request.caps;
@@ -439,6 +440,25 @@ export function resolveBlockCapacities(
         ],
       };
   }
+}
+
+/**
+ * Resolves a manual intersection matrix for a MINIMIZATION request (#4002).
+ * Proportional caps are refused for minimization by plan validation.
+ */
+export function resolveManualCapacities(
+  request: RandomizationRequest,
+  intersections: readonly StratumIntersection[] = enumerateStratumIntersections(
+    request.factors
+  )
+): CapResolutionResult {
+  if (request.caps.strategy !== "manual") {
+    return {
+      ok: false,
+      findings: [capFinding("caps.strategy", "Expected a manual cap matrix.")],
+    };
+  }
+  return resolveManualCaps(request, intersections);
 }
 
 /**

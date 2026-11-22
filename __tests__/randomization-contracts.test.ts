@@ -313,7 +313,7 @@ describe("randomization versioned contracts and compatibility policy", () => {
       },
       minimizationSettings: {
         virtualCohortSize: 120,
-        biasedCoinProbability: 0.5,
+        biasedCoinProbability: 0.49,
       },
     });
     expect(invalidMinimization.ok).toBe(false);
@@ -341,7 +341,7 @@ describe("randomization versioned contracts and compatibility policy", () => {
         { id: "arm-1", code: "B", label: "B", allocationRatio: 1 },
       ],
       sites: [
-        { id: "site-1", code: "S01", label: "Site 1", recruitmentWeight: 0 },
+        { id: "site-1", code: "S01", label: "Site 1", recruitmentWeight: -1 },
       ],
       caps: {
         strategy: "manual",

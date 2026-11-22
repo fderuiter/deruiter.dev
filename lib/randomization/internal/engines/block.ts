@@ -24,28 +24,24 @@ import {
 } from "../../types";
 import { reduceAllocationRatios } from "../contracts";
 import { validateRandomizationPlan } from "../validate-plan";
-import {
-  formatStratumHumanCode,
-  serializeStructuralStratumKey,
-} from "../identity/stratum-identity";
+import { formatStratumHumanCode } from "../identity/stratum-identity";
 import { createSubjectIdGenerator } from "../identity/subject-id";
 import { createRandomizationStreams } from "./seed";
 import {
   enumerateStratumIntersections,
   resolveBlockCapacities,
-  type CapResolutionResult,
   type StratumIntersection,
 } from "./caps";
+import { resolveMarginalCaps, type MarginalCapResolution } from "./marginal";
 import {
-  MarginalLedger,
-  resolveMarginalCaps,
-  type MarginalCapResolution,
-} from "./marginal";
-
-type IntersectionCapResolution = Extract<CapResolutionResult, { ok: true }>;
+  createLedger,
+  mapProfileToIntersection,
+  type CapacityLedger,
+  type ResolvedCapacities,
+} from "./capacity";
 
 /** Resolved capacities of either kind: an intersection matrix or level caps. */
-export type BlockCapacities = IntersectionCapResolution | MarginalCapResolution;
+export type BlockCapacities = ResolvedCapacities;
 
 /** Composition of one legal block size (RND-BLOCK-002). */
 export interface BlockCompositionPreview {
@@ -377,44 +373,6 @@ function prepareBlockPlan(
   };
 }
 
-/** Capacity counters shared by schedules and sessions. */
-interface CapacityLedger {
-  left(siteId: string, intersection: StratumIntersection): number;
-  take(siteId: string, intersection: StratumIntersection, count: number): void;
-}
-
-/** Per-intersection caps from a manual or proportional matrix. */
-class IntersectionLedger implements CapacityLedger {
-  private readonly remaining = new Map<string, number>();
-  private readonly perSite: boolean;
-
-  constructor(capacities: IntersectionCapResolution) {
-    this.perSite = capacities.capScope === "per-site";
-    for (const cap of capacities.caps) {
-      this.remaining.set(this.key(cap.siteId ?? "", cap.stratumKey), cap.cap);
-    }
-  }
-
-  private key(siteId: string, stratumKey: string): string {
-    return JSON.stringify([this.perSite ? siteId : "", stratumKey]);
-  }
-
-  left(siteId: string, intersection: StratumIntersection): number {
-    return this.remaining.get(this.key(siteId, intersection.stratumKey)) ?? 0;
-  }
-
-  take(siteId: string, intersection: StratumIntersection, count: number): void {
-    const key = this.key(siteId, intersection.stratumKey);
-    this.remaining.set(key, (this.remaining.get(key) ?? 0) - count);
-  }
-}
-
-function createLedger(capacities: BlockCapacities): CapacityLedger {
-  return capacities.strategy === "marginal"
-    ? new MarginalLedger(capacities)
-    : new IntersectionLedger(capacities);
-}
-
 /** Generates blocks for one (site, intersection) cell with the shared rule state. */
 class BlockFactory {
   private readonly ruleStates = new Map<string, RuleState>();
@@ -725,7 +683,8 @@ function emitMarginalRows(
   const bound = capacities.terminationBound;
   const requested = plan.request.enrollmentTarget;
   return {
-    sitePolicy: capacities.sitePolicy,
+    // resolveMarginalCaps requires a site policy for every BLOCK request.
+    sitePolicy: capacities.sitePolicy!,
     terminationBound: bound,
     requestedRows: requested,
     emittedRows: emitted,
@@ -766,7 +725,6 @@ export function createBlockAllocationSession(
   const factory = new BlockFactory(plan, streams.allocation);
   const ledger = createLedger(plan.capacities);
   const armCode = new Map(plan.request.arms.map((a) => [a.id, a.code]));
-  const sites = new Set(plan.request.sites.map((s) => s.id));
   const byKey = new Map(plan.intersections.map((i) => [i.stratumKey, i]));
   const queues = new Map<
     string,
@@ -775,42 +733,10 @@ export function createBlockAllocationSession(
   let allocations = 0;
 
   function assign(profile: ParticipantProfile): ProfileAssignmentOutcome {
-    if (!sites.has(profile.siteId)) {
-      return {
-        status: "unmapped-site",
-        subjectId: profile.subjectId,
-        siteId: profile.siteId,
-      };
-    }
-    const missing: string[] = [];
-    const entries = plan.request.factors.map((factor) => {
-      const levelId = profile.stratumLevels[factor.id];
-      if (
-        typeof levelId !== "string" ||
-        !factor.levels.some((l) => l.id === levelId)
-      ) {
-        missing.push(factor.id);
-      }
-      return { factorId: factor.id, levelId };
-    });
-    if (missing.length > 0) {
-      return {
-        status: "unmapped-stratum",
-        subjectId: profile.subjectId,
-        siteId: profile.siteId,
-        missingFactorIds: Object.freeze(missing),
-      };
-    }
-    const stratumKey = serializeStructuralStratumKey(entries);
-    const intersection = byKey.get(stratumKey);
-    if (!intersection) {
-      return {
-        status: "unmapped-stratum",
-        subjectId: profile.subjectId,
-        siteId: profile.siteId,
-        missingFactorIds: Object.freeze([]),
-      };
-    }
+    const mapped = mapProfileToIntersection(plan.request, byKey, profile);
+    if (!mapped.ok) return mapped.outcome;
+    const { intersection } = mapped;
+    const stratumKey = intersection.stratumKey;
     if (ledger.left(profile.siteId, intersection) <= 0) {
       return {
         status: "cap-exhausted",

@@ -67,40 +67,40 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-DESIG-012` | Custom seed | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-DESIG-013` | Generated seed | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-DESIG-014` | Subject ID mask editor | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
-| `RND-BLOCK-001` | Block size editor | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-002` | Allocation preview | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-003` | Random pool | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-004` | Fixed size sequence | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-005` | Site rule override | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-006` | Intersection rule override | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-007` | Rule tracking scope | `#4000` | `Deferred` | `BlockRuleTrackingScope` contract in `lib/randomization/types.ts` (`#3998`); engine pending `#4000` | Not yet executed |
-| `RND-BLOCK-008` | Block-size usage limits | `#4000` | `Deferred` | Soft limit fallback contract in `lib/randomization/types.ts` (`#3998`); engine pending `#4000` | Not yet executed |
-| `RND-BLOCK-009` | Balanced block composition | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-010` | Fisher-Yates shuffle | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-011` | Partial final blocks | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-BLOCK-012` | Standard traversal order | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-001` | Manual intersection matrix | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-002` | Enrollment scope | `#4000` | `Deferred` | Explicit `CapScope` contract in `lib/randomization/types.ts` (`#3998`); engine pending `#4000` | Not yet executed |
-| `RND-CAPS-003` | Proportional percentages | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-004` | Largest remainder allocation | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-005` | Joint distribution assumption | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-006` | Computed matrix editing | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
+| `RND-BLOCK-001` | Block size editor | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` (engine); UI pending `#4006` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-002` | Allocation preview | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` (engine); UI pending `#4006` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-003` | Random pool | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-004` | Fixed size sequence | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-005` | Site rule override | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-006` | Intersection rule override | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-007` | Rule tracking scope | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-008` | Block-size usage limits | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-009` | Balanced block composition | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-010` | Fisher-Yates shuffle | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-011` | Partial final blocks | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-BLOCK-012` | Standard traversal order | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-001` | Manual intersection matrix | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-002` | Enrollment scope | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-003` | Proportional percentages | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-004` | Largest remainder allocation | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-005` | Joint distribution assumption | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-006` | Computed matrix editing | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` (engine); UI pending `#4006` | Pass (`vitest`, `#4000`, 2026-11-22) |
 | `RND-CAPS-007` | Marginal caps | `#4001` | `Implemented` | `__tests__/randomization-marginal.test.ts` | Pass (`vitest`, `#4001`, 2026-11-22) |
 | `RND-CAPS-008` | Marginal termination safeguard | `#4001` | `Implemented` | `__tests__/randomization-marginal.test.ts` | Pass (`vitest`, `#4001`, 2026-11-22) |
 | `RND-CAPS-009` | Marginal site fairness | `#4001` | `Implemented` | `__tests__/randomization-marginal.test.ts` | Pass (`vitest`, `#4001`, 2026-11-22) |
-| `RND-CAPS-010` | Stale derived cap handling | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-CAPS-011` | Proportional compute precondition | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
-| `RND-MINIM-001` | Virtual cohort size | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-002` | Biased coin probability | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-003` | Expected level distributions | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-004` | Valid profile sampling | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-005` | Per-site marginal state | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-006` | Ratio-normalized scoring | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-007` | Preferred-group selection | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-008` | Capacity stop | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-009` | No block semantics | `#4002` | `Deferred` | Type and runtime rejection in `lib/randomization` (`#3998`); engine pending `#4002` | Not yet executed |
-| `RND-MINIM-010` | No inactive candidates | `#4002` | `Deferred` | Pending `#4002` | Not yet executed |
-| `RND-MINIM-011` | Unsupported combinations | `#4002` | `Deferred` | Rejection of minimization+proportional/block in `lib/randomization` (`#3998`); engine pending `#4002` | Not yet executed |
+| `RND-CAPS-010` | Stale derived cap handling | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-CAPS-011` | Proportional compute precondition | `#4000` | `Implemented` | `__tests__/randomization-caps.test.ts` | Pass (`vitest`, `#4000`, 2026-11-22) |
+| `RND-MINIM-001` | Virtual cohort size | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-002` | Biased coin probability | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-003` | Expected level distributions | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-004` | Valid profile sampling | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-005` | Per-site marginal state | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-006` | Ratio-normalized scoring | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-007` | Preferred-group selection | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-008` | Capacity stop | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-009` | No block semantics | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-010` | No inactive candidates | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` | Pass (`vitest`, `#4002`, 2026-11-22) |
+| `RND-MINIM-011` | Unsupported combinations | `#4002` | `Implemented` | `__tests__/randomization-minimization.test.ts` (engine and import); UI pending `#4006`, script export pending its ticket | Pass (`vitest`, `#4002`, 2026-11-22) |
 | `RND-IDENT-001` | Site token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-IDENT-002` | Stratum token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
 | `RND-IDENT-003` | Sequence token | `#3999` | `Implemented` | `__tests__/randomization-primitives.test.ts` | Pass (`vitest`, `#3999`, 2026-11-19) |
@@ -195,6 +195,6 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-PLATF-004` | Update notification | `#4016` | `Deferred` | Pending `#4016` | Not yet executed |
 | `RND-PLATF-005` | Host shell ownership | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-QUALI-001` | Traceable acceptance | `#3998` | `Implemented` | `__tests__/randomization-contracts.test.ts` (155-ID register assertion) | Pass (`vitest`, `#3998`, 2026-11-19) |
-| `RND-QUALI-002` | Meaningful golden vectors | `#4000` | `Deferred` | Pending `#4000` | Not yet executed |
+| `RND-QUALI-002` | Meaningful golden vectors | `#4000` | `Implemented` | `__tests__/randomization-blocks.test.ts` (block vector), `__tests__/randomization-minimization.test.ts` (hand-calculated minimization cohort) | Pass (`vitest`, `#4000` and `#4002`, 2026-11-22) |
 | `RND-QUALI-003` | Cross-browser consistency | `#4016` | `Deferred` | Pending `#4016` | Not yet executed |
 | `RND-QUALI-004` | Artifact and dependency provenance | `#3998` | `Implemented` | `__tests__/randomization-contracts.test.ts`, `__tests__/dependency-cruiser-boundaries.test.ts` | Pass (`vitest` + `depcruise`, `#3998`, 2026-11-19) |

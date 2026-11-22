@@ -156,8 +156,96 @@ function validateBlockRule(
   }
 }
 
+/** Checks a percentage with at most four decimals and returns it scaled to an integer. */
+function scaledPercent(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  const scaled = Math.round(value * 10_000);
+  return Math.abs(scaled - value * 10_000) > 1e-6 ? null : scaled;
+}
+
+/**
+ * Validates expected level distributions (RND-MINIM-003): percentages per
+ * factor that name exactly that factor's levels, have at most four decimals,
+ * add up to exactly 100 and leave at least one level above zero. A factor
+ * without an entry samples its levels evenly.
+ */
+function validateExpectedDistributions(
+  distributions: unknown,
+  factors: readonly unknown[],
+  findings: ValidationFinding[]
+): void {
+  if (distributions === undefined) return;
+  const path = "minimizationSettings.expectedLevelDistributions";
+  const fail = (fieldPath: string, message: string) =>
+    findings.push({
+      code: "INVALID_MINIMIZATION_SETTINGS",
+      severity: "error",
+      fieldPath,
+      message,
+    });
+  if (!isRecord(distributions)) {
+    fail(path, "Expected level distributions must be an object.");
+    return;
+  }
+  const levelsByFactor = new Map<string, string[]>();
+  for (const factor of factors) {
+    if (isRecord(factor) && typeof factor.id === "string") {
+      const levels = Array.isArray(factor.levels) ? factor.levels : [];
+      levelsByFactor.set(
+        factor.id,
+        levels.flatMap((l) =>
+          isRecord(l) && typeof l.id === "string" ? [l.id] : []
+        )
+      );
+    }
+  }
+  for (const [factorId, entry] of Object.entries(distributions)) {
+    const factorPath = `${path}.${factorId}`;
+    const levels = levelsByFactor.get(factorId);
+    if (!levels) {
+      fail(factorPath, "Distribution names an unknown factor.");
+      continue;
+    }
+    if (!isRecord(entry)) {
+      fail(factorPath, "A factor distribution must be an object.");
+      continue;
+    }
+    const keys = Object.keys(entry);
+    if (
+      keys.length !== levels.length ||
+      !levels.every((levelId) => keys.includes(levelId))
+    ) {
+      fail(
+        factorPath,
+        "A factor distribution must give a percentage for exactly that factor's levels."
+      );
+      continue;
+    }
+    let total = 0;
+    let valid = true;
+    for (const levelId of levels) {
+      const scaled = scaledPercent(entry[levelId]);
+      if (scaled === null) {
+        fail(
+          `${factorPath}.${levelId}`,
+          "A level percentage must be a non-negative number with at most four decimals."
+        );
+        valid = false;
+      } else {
+        total += scaled;
+      }
+    }
+    if (valid && total !== 1_000_000) {
+      fail(factorPath, "A factor's level percentages must add up to 100.");
+    }
+  }
+}
+
 function validateMinimizationSettings(
   settings: unknown,
+  factors: readonly unknown[],
   findings: ValidationFinding[]
 ): void {
   if (!isRecord(settings)) {
@@ -183,7 +271,7 @@ function validateMinimizationSettings(
   if (
     typeof prob !== "number" ||
     !Number.isFinite(prob) ||
-    prob <= 0.5 ||
+    prob < 0.5 ||
     prob > 1
   ) {
     findings.push({
@@ -191,9 +279,15 @@ function validateMinimizationSettings(
       severity: "error",
       fieldPath: "minimizationSettings.biasedCoinProbability",
       message:
-        "biasedCoinProbability must be a finite number strictly greater than 0.5 and at most 1.0.",
+        "biasedCoinProbability must be a finite number from 0.5 to 1.0 inclusive.",
     });
   }
+
+  validateExpectedDistributions(
+    settings.expectedLevelDistributions,
+    factors,
+    findings
+  );
 }
 
 /**
@@ -381,15 +475,32 @@ export function validateRandomizationPlan(
         !isRecord(site) ||
         typeof site.recruitmentWeight !== "number" ||
         !Number.isFinite(site.recruitmentWeight) ||
-        site.recruitmentWeight <= 0
+        site.recruitmentWeight < 0
       ) {
         findings.push({
           code: "INVALID_SITE_WEIGHT",
           severity: "error",
           fieldPath: `sites[${i}].recruitmentWeight`,
-          message: "Site recruitmentWeight must be a positive finite number.",
+          message:
+            "Site recruitmentWeight must be a non-negative finite number.",
         });
       }
+    }
+    // A zero-weight site is never sampled; at least one site must be able to be.
+    if (
+      sites.every(
+        (site) =>
+          isRecord(site) &&
+          typeof site.recruitmentWeight === "number" &&
+          site.recruitmentWeight === 0
+      )
+    ) {
+      findings.push({
+        code: "INVALID_SITE_WEIGHT",
+        severity: "error",
+        fieldPath: "sites",
+        message: "At least one site needs a recruitmentWeight above zero.",
+      });
     }
   }
 
@@ -518,7 +629,7 @@ export function validateRandomizationPlan(
         message: "MINIMIZATION designs cannot include blockSettings.",
       });
     }
-    validateMinimizationSettings(input.minimizationSettings, findings);
+    validateMinimizationSettings(input.minimizationSettings, factors, findings);
   }
 
   const preflight = checkResourcePreflight(

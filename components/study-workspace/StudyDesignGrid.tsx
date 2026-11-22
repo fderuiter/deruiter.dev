@@ -70,9 +70,9 @@ interface Session {
 }
 
 const BUTTON =
-  "rounded border border-white/[0.08] bg-[#0d0e11] px-3 py-1.5 text-sm text-[#f4f4f6] hover:border-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]";
+  "min-h-12 rounded border border-white/[0.08] bg-[#0d0e11] px-3 py-1.5 text-sm text-[#f4f4f6] hover:border-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]";
 const FIELD =
-  "min-w-0 rounded border border-white/[0.08] bg-[#0d0e11] px-2 py-1.5 text-sm text-[#f4f4f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400";
+  "min-h-12 min-w-0 rounded border border-white/[0.08] bg-[#0d0e11] px-2 py-1.5 text-sm text-[#f4f4f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400";
 const MONO = "font-[family-name:var(--font-geist-mono)]";
 
 const sameCell = (a: StudyDesignCellRef, b: StudyDesignCellRef) =>
@@ -299,7 +299,7 @@ function GridTable({
                     <button
                       type="button"
                       aria-label={label}
-                      className={`${BUTTON} min-h-12 w-full text-left aria-pressed:border-amber-400`}
+                      className={`${BUTTON} w-full text-left aria-pressed:border-amber-400`}
                       {...pick({
                         kind: "cell",
                         ref: { armId: cell.armId, epochId: cell.epochId },
@@ -364,7 +364,7 @@ function NameForm({
           onChange={(event) => setName(event.target.value)}
         />
       </label>
-      <button type="submit" className={BUTTON}>
+      <button type="submit" className={`${BUTTON} min-w-12`}>
         {submitLabel}
       </button>
     </form>
@@ -682,7 +682,7 @@ function ElementInspector({
               ))}
             </select>
           </label>
-          <button type="submit" className={BUTTON}>
+          <button type="submit" className={`${BUTTON} min-w-12`}>
             Move
           </button>
         </form>
@@ -756,7 +756,7 @@ function AddForm({
             ))}
           </select>
         </label>
-        <button type="submit" className={BUTTON}>
+        <button type="submit" className={`${BUTTON} min-w-12`}>
           Add
         </button>
       </fieldset>

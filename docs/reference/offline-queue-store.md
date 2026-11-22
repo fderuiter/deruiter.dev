@@ -20,10 +20,11 @@ transaction, and the data survives a restart.
 | Slice | Scope | State |
 | --- | --- | --- |
 | 1 | `lib/offline-queue`: store schema, atomic entry operations and the legacy import | Implemented, tested in `__tests__/offline-queue-store.test.ts` |
-| 2 | Claims with owner tokens and leases, persisted deadlines in the dispatcher, timeout and expiry recovery, and moving `hooks/useOfflineQueue.ts` and `components/CaseStudyFeedbackSection.tsx` onto the store | Pending |
+| 2a | Claims with owner tokens and leases, and a dispatcher with persisted deadlines, request timeouts and lease-expiry recovery | Implemented, tested in `__tests__/offline-queue-dispatcher.test.ts` |
+| 2b | Moving `hooks/useOfflineQueue.ts` and `components/CaseStudyFeedbackSection.tsx` onto the store and dispatcher, and retiring the legacy keys | Pending |
 | 3 | Endpoint work where the audit below finds a gap | Pending |
 
-Until slice 2 lands, the site still uses the localStorage queue. Nothing reads
+Until slice 2b lands, the site still uses the localStorage queue. Nothing reads
 or writes the IndexedDB store yet.
 
 ## Schema (version 1)
@@ -32,7 +33,7 @@ The database is `portfolio_offline_queue`.
 
 | Object store | Key | Holds |
 | --- | --- | --- |
-| `queue` | `id` | `OfflineQueueEntry`: the request, `revision`, `retries`, `maxRetries`, `nextAttemptAt` (wall-clock milliseconds) and `order` (first in, first out) |
+| `queue` | `id` | `OfflineQueueEntry`: the request, `revision`, `retries`, `maxRetries`, `nextAttemptAt` (wall-clock milliseconds), `order` (first in, first out) and, while a context is sending it, `claim` (`ownerToken` and `leaseUntil`) |
 | `deadLetters` | `id` | `OfflineDeadLetter`: an entry plus `failedAt`, `statusCode` and `failureReason`. The newest 50 are kept. |
 | `meta` | string | `nextOrder` counter and the `legacyImport` marker |
 
@@ -43,10 +44,11 @@ was sent, so a replacement made while a request is in flight survives (#3795).
 
 | Operation | Rule |
 | --- | --- |
-| `enqueue(input, now)` | A new id goes to the end of the line. A queued id is replaced in place: its revision goes up by one, its retries go back to 0 and it is due at once. |
-| `acknowledge(sent)` | Deletes the entry only if it is still the sent revision. |
-| `recordRetry(sent, retries, nextAttemptAt)` | Stores the retry count and the deadline together, on the sent revision only. |
-| `moveToDeadLetters(sent, failure)` | Moves the sent revision into `deadLetters`, replacing any dead letter with the same id and capping at 50, in one transaction. |
+| `enqueue(input, now)` | A new id goes to the end of the line. A queued id is replaced in place: its revision goes up by one, its retries go back to 0, it is due at once and any claim on the old revision is dropped. |
+| `claimNext(ownerToken, now, options)` | Claims the first entry in send order that is due and unclaimed, or whose lease has passed, and returns when the next one becomes claimable. |
+| `acknowledge(sent)` | Deletes the entry only if it is still the sent revision and, when `sent` names an owner, that owner still holds the claim. |
+| `recordRetry(sent, retries, nextAttemptAt)` | Stores the retry count and the deadline together and releases the claim, under the same revision and owner check. |
+| `moveToDeadLetters(sent, failure)` | Moves the sent revision into `deadLetters`, under the same check, replacing any dead letter with the same id and capping at 50, in one transaction. |
 | `retryDeadLetter(id, now)` | Re-queues a dead letter, unless a newer request with the same id is already queued. In that case the dead letter is only dismissed. |
 | `importLegacy(queue, deadLetters, now)` | See below. |
 
@@ -55,6 +57,26 @@ A transaction that aborts writes nothing. It rejects with
 `QUOTA_EXCEEDED`. If IndexedDB is missing or blocked, opening the store
 returns `STORE_UNAVAILABLE`. Callers must then report the queue as volatile
 and must not treat a write as stored.
+
+## Dispatcher
+
+`createOfflineDispatcher` sends due entries for one browsing context. It takes
+the store, a `send` function that returns `ok`, `permanent` or `transient`, and
+optional clock, timers and online check, which tests replace.
+
+| Step | Rule |
+| --- | --- |
+| Claim | One transaction claims the next due entry with this context's random owner token. The lease lasts the 15 second request timeout plus a 5 second margin, so a live owner always settles before anyone else may take over. |
+| Send | Runs with no transaction open. A request still running at the timeout is aborted and counts as a transient failure, as does a throw. |
+| Settle | A second transaction checks the id, the revision and the owner token. A late response from an owner whose lease was taken over, or for a revision that was replaced, changes nothing. |
+| Retry | A transient failure stores `retries + 1` and the next deadline together (2, 4, 8 and 16 seconds, then 30), then stops the pass and wakes when that entry is due. Reaching `maxRetries`, or a permanent failure, moves the entry to the dead letters. |
+| Wake | Each pass schedules one timer for the earliest deadline or lease. Every flush, whether it comes from an enqueue, an online event or a reload, honors the stored deadlines, so none of them can skip a retry delay. |
+| Clocks | Deadlines and leases are wall-clock times. A deadline more than 30 seconds ahead, or a lease more than one lease length ahead, can only come from a clock that moved back, so it counts as passed. A wake timer never waits longer than one lease. Delivery still depends on the clock: a clock that jumps forward makes entries due early. |
+| Concurrency | Calls to `flush` in one context share one pass. Another context runs its own dispatcher, and the claim keeps the two from sending the same revision at once. |
+
+A lease can run out after the server has accepted a request, for example when
+a tab freezes, and another context then sends it again. See the endpoint audit
+below.
 
 ## Legacy import
 

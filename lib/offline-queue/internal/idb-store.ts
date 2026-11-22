@@ -1,5 +1,5 @@
 /**
- * IndexedDB queue store (#3807, slice 1). Every mutation, including each
+ * IndexedDB queue store (#3807). Every mutation, including each
  * read-modify-write, runs in one short IndexedDB transaction, so two tabs
  * can never lose each other's rows the way the shared localStorage array
  * could. No network call happens inside a transaction.
@@ -10,6 +10,7 @@
 import type {
   LegacyImportResult,
   OfflineDeadLetter,
+  OfflineQueueClaimResult,
   OfflineQueueEntry,
   OfflineQueueInput,
   OfflineQueueMethod,
@@ -113,6 +114,12 @@ function stringRecord(value: unknown): Record<string, string> | null {
   return entries.every(([, v]) => typeof v === "string")
     ? (Object.fromEntries(entries) as Record<string, string>)
     : null;
+}
+
+/** The entry without its claim. */
+function unclaimed<T extends OfflineQueueEntry>(entry: T): T {
+  const { claim: _claim, ...rest } = entry;
+  return rest as T;
 }
 
 function byOrder<T extends { readonly order: number }>(rows: T[]): T[] {
@@ -243,7 +250,10 @@ function createStore(db: IDBDatabase): OfflineQueueStore {
     };
   }
 
-  /** Reads the queued row for `sent` and passes it only if it is that revision. */
+  /**
+   * Reads the queued row for `sent` and passes it only if it is that
+   * revision and, when `sent` names an owner, that owner still holds it.
+   */
   function withSent(
     queue: IDBObjectStore,
     sent: SentRevision,
@@ -252,7 +262,10 @@ function createStore(db: IDBDatabase): OfflineQueueStore {
     const read = queue.get(sent.id);
     read.onsuccess = () => {
       const entry = read.result as OfflineQueueEntry | undefined;
-      next(entry && entry.revision === sent.revision ? entry : null);
+      const owned =
+        sent.ownerToken === undefined ||
+        entry?.claim?.ownerToken === sent.ownerToken;
+      next(entry && entry.revision === sent.revision && owned ? entry : null);
     };
   }
 
@@ -319,6 +332,43 @@ function createStore(db: IDBDatabase): OfflineQueueStore {
       );
     },
 
+    claimNext(ownerToken, now, { leaseMs, maxDelayMs }) {
+      return run<OfflineQueueClaimResult>([QUEUE], "readwrite", (t, done) => {
+        const queue = t.objectStore(QUEUE);
+        const all = queue.getAll();
+        all.onsuccess = () => {
+          let nextWakeAt: number | null = null;
+          const wakeAt = (at: number) => {
+            nextWakeAt = nextWakeAt === null ? at : Math.min(nextWakeAt, at);
+          };
+          for (const entry of byOrder(all.result as OfflineQueueEntry[])) {
+            // A time further ahead than any delay we set means the clock
+            // moved back, so the deadline or lease counts as passed.
+            const dueAt =
+              entry.nextAttemptAt > now + maxDelayMs
+                ? now
+                : entry.nextAttemptAt;
+            const lease = entry.claim?.leaseUntil;
+            const freeAt =
+              lease === undefined || lease > now + leaseMs ? now : lease;
+            const claimableAt = Math.max(dueAt, freeAt);
+            if (claimableAt > now) {
+              wakeAt(claimableAt);
+              continue;
+            }
+            const claimed: OfflineQueueEntry = {
+              ...entry,
+              claim: { ownerToken, leaseUntil: now + leaseMs },
+            };
+            queue.put(claimed);
+            done({ entry: claimed, nextWakeAt });
+            return;
+          }
+          done({ entry: null, nextWakeAt });
+        };
+      });
+    },
+
     remove(id) {
       return run<void>([QUEUE], "readwrite", (t) => {
         t.objectStore(QUEUE).delete(id);
@@ -349,7 +399,7 @@ function createStore(db: IDBDatabase): OfflineQueueStore {
         done(false);
         withSent(queue, sent, (entry) => {
           if (!entry) return;
-          queue.put({ ...entry, retries, nextAttemptAt });
+          queue.put({ ...unclaimed(entry), retries, nextAttemptAt });
           done(true);
         });
       });
@@ -363,7 +413,11 @@ function createStore(db: IDBDatabase): OfflineQueueStore {
         withSent(queue, sent, (entry) => {
           if (!entry) return;
           takeOrder(t.objectStore(META), (order) => {
-            const letter: OfflineDeadLetter = { ...entry, ...failure, order };
+            const letter: OfflineDeadLetter = {
+              ...unclaimed(entry),
+              ...failure,
+              order,
+            };
             dead.put(letter);
             queue.delete(sent.id);
             capDeadLetters(dead);

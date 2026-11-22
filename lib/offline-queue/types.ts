@@ -1,5 +1,5 @@
 /**
- * Types of the IndexedDB offline queue store (#3807, slice 1).
+ * Types of the IndexedDB offline queue store and its dispatcher (#3807).
  */
 
 /** HTTP methods a queued request may use. */
@@ -25,6 +25,19 @@ export interface OfflineQueueEntry<T = unknown> {
   readonly nextAttemptAt: number;
   /** Insertion order, so entries flush first in, first out. */
   readonly order: number;
+  /**
+   * The context sending this revision now, if any. A claim whose lease has
+   * passed may be taken over, so a frozen or closed tab never strands it.
+   */
+  readonly claim?: OfflineQueueClaim;
+}
+
+/** Ownership of one network attempt. */
+export interface OfflineQueueClaim {
+  /** Random token naming the attempt's owner. */
+  readonly ownerToken: string;
+  /** Wall-clock time (ms) after which another context may take over. */
+  readonly leaseUntil: number;
 }
 
 /** A request that failed for good. */
@@ -49,6 +62,35 @@ export interface OfflineQueueInput<T = unknown> {
 export interface SentRevision {
   readonly id: string;
   readonly revision: number;
+  /**
+   * The attempt's owner. When given, the response settles the entry only
+   * while that owner still holds the claim, so a late response from an
+   * owner whose lease was taken over changes nothing.
+   */
+  readonly ownerToken?: string;
+}
+
+/** Result of trying to claim the next due entry. */
+export interface OfflineQueueClaimResult {
+  /** The claimed entry, carrying its new claim, or null if none was due. */
+  readonly entry: OfflineQueueEntry | null;
+  /**
+   * When the next entry that could not be claimed becomes claimable, by
+   * its deadline or its lease, or null if nothing else is queued.
+   */
+  readonly nextWakeAt: number | null;
+}
+
+/** Timing bounds a claim applies. */
+export interface OfflineQueueClaimOptions {
+  /** Lease length in ms. */
+  readonly leaseMs: number;
+  /**
+   * Longest retry delay in ms. A deadline further ahead than this, or a
+   * lease further ahead than `leaseMs`, can only come from a clock that
+   * moved back, so it is treated as passed.
+   */
+  readonly maxDelayMs: number;
 }
 
 /** Why a store operation failed. None of these acknowledge durability. */
@@ -92,9 +134,21 @@ export interface OfflineQueueStore {
   /** Removes an id whatever its revision (the author withdrew it). */
   remove(id: string): Promise<void>;
   clear(): Promise<void>;
+  /**
+   * In one transaction, claims the first entry in send order that is due
+   * and unowned, or whose lease has passed.
+   */
+  claimNext(
+    ownerToken: string,
+    now: number,
+    options: OfflineQueueClaimOptions
+  ): Promise<OfflineQueueClaimResult>;
   /** Removes the sent revision only; returns false if it was replaced. */
   acknowledge(sent: SentRevision): Promise<boolean>;
-  /** Records a retry and its deadline on the sent revision only. */
+  /**
+   * Records a retry and its deadline on the sent revision only, and
+   * releases its claim.
+   */
   recordRetry(
     sent: SentRevision,
     retries: number,
@@ -106,11 +160,7 @@ export interface OfflineQueueStore {
    */
   moveToDeadLetters(
     sent: SentRevision,
-    failure: {
-      readonly statusCode: number;
-      readonly failureReason: string;
-      readonly failedAt: number;
-    }
+    failure: OfflineDeadLetterFailure
   ): Promise<boolean>;
   dismissDeadLetter(id: string): Promise<void>;
   clearDeadLetters(): Promise<void>;
@@ -133,6 +183,75 @@ export interface OfflineQueueStore {
     now: number
   ): Promise<LegacyImportResult>;
   close(): void;
+}
+
+/** How one network attempt ended. */
+export type OfflineSendOutcome =
+  | { readonly kind: "ok" }
+  /** Retrying cannot help, such as a 4xx other than 408 or 429. */
+  | {
+      readonly kind: "permanent";
+      readonly status: number;
+      readonly reason: string;
+    }
+  /** Worth retrying after a delay: a network error, timeout, 408, 429 or 5xx. */
+  | {
+      readonly kind: "transient";
+      readonly status: number;
+      readonly reason: string;
+    };
+
+/** Why a request was moved to the dead-letter store. */
+export interface OfflineDeadLetterFailure {
+  readonly statusCode: number;
+  readonly failureReason: string;
+  readonly failedAt: number;
+}
+
+/** What a dispatcher needs. Timers and clock are injectable for tests. */
+export interface OfflineDispatcherOptions {
+  readonly store: OfflineQueueStore;
+  /**
+   * Sends one entry. Must not settle the entry itself. A throw counts as a
+   * transient failure.
+   */
+  readonly send: (
+    entry: OfflineQueueEntry,
+    signal: AbortSignal | undefined
+  ) => Promise<OfflineSendOutcome>;
+  /** Owner token for this context; random when omitted. */
+  readonly ownerToken?: string;
+  /** Wall clock in ms. */
+  readonly now?: () => number;
+  readonly setTimer?: (run: () => void, ms: number) => unknown;
+  readonly clearTimer?: (handle: unknown) => void;
+  readonly isOnline?: () => boolean;
+  /** Called after an entry this context sent moves to the dead letters. */
+  readonly onDeadLetter?: (
+    entry: OfflineQueueEntry,
+    failure: OfflineDeadLetterFailure
+  ) => void;
+  /** Longest a request may run; the lease lasts this plus a margin. */
+  readonly requestTimeoutMs?: number;
+}
+
+/** Counts from one flush. */
+export interface OfflineFlushResult {
+  processed: number;
+  failed: number;
+}
+
+/** Sends due entries for one browsing context. */
+export interface OfflineDispatcher {
+  readonly ownerToken: string;
+  /**
+   * Sends every due entry it can claim, in order, and schedules a wake for
+   * the next deadline. Concurrent calls share one pass.
+   */
+  flush(): Promise<OfflineFlushResult>;
+  isFlushing(): boolean;
+  /** Stops scheduling wakes; an attempt in flight still settles. */
+  dispose(): void;
 }
 
 /** Result of opening the store. */

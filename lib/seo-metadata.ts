@@ -180,6 +180,23 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  studyStudio: {
+    title: "Clinical Study Studio: USDM Workspace",
+    description:
+      "Work on a USDM study's design, schedule, narrative, analysis intent and randomization as views of one workspace, so every clinical tool reads the same facts.",
+    path: "/study-studio",
+    keywords: [
+      "Clinical Study Studio",
+      "USDM",
+      "Study Design",
+      "Schedule of Activities",
+      "Randomization",
+      "CDISC",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platform: {
     title: "Clinical Data Platform Architecture",
     description:

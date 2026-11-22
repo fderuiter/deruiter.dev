@@ -25,6 +25,7 @@ describe("Clinical Study Studio page", () => {
       "Narrative",
       "Analysis intent",
       "Randomization",
+      "Design grid",
     ]);
     expect(screen.getByText("In development")).toBeTruthy();
     expect(String(metadata.title)).toContain("Clinical Study Studio");

@@ -74,8 +74,9 @@ workspace, never separate modules. A view projects the working document by the
 USDM `id` of each object, and reports a finding where the study leaves
 something out instead of inventing a value. Views edit the study only through
 `createStudyEdit` and `applyStudyEdit`, so every change can be undone. Still to
-come: the grid component for the design view (#3401), and its interventions
-list and trial schema figure (#3406).
+come: the design view's interventions list and trial schema figure (#3406).
+The arms-by-epochs grid is `components/study-workspace/StudyDesignGrid.tsx`,
+shown on `/study-studio`.
 
 Each view adds its public projection types to `types.ts` together with the code
 that produces them. Routes and layout live outside this module (#3400).

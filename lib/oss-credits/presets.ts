@@ -209,6 +209,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Testing",
     reason: "Property-based fuzz testing of the engines.",
   },
+  "fake-indexeddb": {
+    group: "Testing",
+    reason:
+      "In-memory IndexedDB for the offline queue store tests, with two connections standing in for two tabs.",
+  },
   "@duckdb/node-api": {
     group: "Testing",
     reason:

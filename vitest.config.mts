@@ -167,6 +167,8 @@ export default defineConfig({
         "lib/patrol/types.ts",
         "lib/patrol/index.ts",
         "lib/randomization/index.ts",
+        "lib/offline-queue/types.ts",
+        "lib/offline-queue/index.ts",
       ],
       thresholds: coverageThresholdsDeferred
         ? undefined

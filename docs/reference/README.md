@@ -47,6 +47,8 @@ lookup rather than sequential reading.
   on small, typical and stress studies (`npm run bench:crf`).
 - [CRF Studio local draft recovery](crf-local-draft-recovery.md), when the
   studio writes its local draft and what a crash or storage eviction loses.
+- [Offline queue store](offline-queue-store.md), the IndexedDB store, legacy
+  import and endpoint replay audit for the offline request queue (#3807).
 
 Provider inventories are dated snapshots. Re-run their documented commands
 before making an operational decision; do not infer live provider state from an

@@ -187,6 +187,7 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "16.4.6",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "fake-indexeddb": "6.2.8",
     "fast-check": "^4.10.3",
     "husky": "^9.1.7",
     "jsdom": "26.1.0",

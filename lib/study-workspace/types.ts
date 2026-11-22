@@ -189,3 +189,78 @@ export type ValidatedStudyExport =
       readonly sha256: string;
     }
   | { readonly status: "invalid"; readonly issues: readonly string[] };
+
+/** A coded term the design view shows: its NCI code and decode. */
+export interface StudyDesignTerm {
+  readonly code: string;
+  readonly decode: string;
+}
+
+/** One arm of the design grid, keyed by its USDM id. */
+export interface StudyDesignArm {
+  readonly id: string;
+  readonly name: string;
+  /** The arm type, or null when the study leaves it out. */
+  readonly type: StudyDesignTerm | null;
+  /** The data origin type, or null when the study leaves it out. */
+  readonly dataOrigin: StudyDesignTerm | null;
+}
+
+/** One epoch of the design grid, keyed by its USDM id. */
+export interface StudyDesignEpoch {
+  readonly id: string;
+  readonly name: string;
+  /** The epoch type, or null when the study leaves it out. */
+  readonly type: StudyDesignTerm | null;
+}
+
+/** A study element placed in a cell. */
+export interface StudyDesignElement {
+  readonly id: string;
+  readonly name: string;
+}
+
+/** The cell at one arm and epoch. `cellId` is null when there is none. */
+export interface StudyDesignGridCell {
+  readonly armId: string;
+  readonly epochId: string;
+  readonly cellId: string | null;
+  readonly elements: readonly StudyDesignElement[];
+}
+
+/** One row of the grid: an arm and its cell in each epoch, in epoch order. */
+export interface StudyDesignGridRow {
+  readonly arm: StudyDesignArm;
+  readonly cells: readonly StudyDesignGridCell[];
+}
+
+/** What the design view found the study leaves out or gets wrong. */
+export type StudyDesignFindingKind =
+  | "missing-cell"
+  | "duplicate-cell"
+  | "orphan-cell"
+  | "unknown-element"
+  | "epoch-order";
+
+/** A finding, with the USDM ids it is about. */
+export interface StudyDesignFinding {
+  readonly kind: StudyDesignFindingKind;
+  readonly message: string;
+  readonly ids: readonly string[];
+}
+
+/** The arms-by-epochs view of the selected study design. */
+export interface StudyDesignGrid {
+  readonly designId: string;
+  readonly arms: readonly StudyDesignArm[];
+  /** Epochs in study order: the `previousId`/`nextId` chain when it holds. */
+  readonly epochs: readonly StudyDesignEpoch[];
+  readonly rows: readonly StudyDesignGridRow[];
+  readonly findings: readonly StudyDesignFinding[];
+}
+
+/** An arm and epoch pair that names one cell. */
+export interface StudyDesignCellRef {
+  readonly armId: string;
+  readonly epochId: string;
+}

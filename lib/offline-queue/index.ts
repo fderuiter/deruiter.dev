@@ -1,11 +1,11 @@
 /**
  * Public entry point for the IndexedDB offline queue store (#3807).
  *
- * Slice 1 provides the store: atomic enqueue, replacement, acknowledgement,
+ * The store gives atomic enqueue, replacement, claim, acknowledgement,
  * retry and dead-letter operations, and a one-time, restart-safe import of
- * the legacy localStorage arrays. Claims, leases and deadlines in the
- * dispatcher, and the move of `hooks/useOfflineQueue.ts` onto this store,
- * are slice 2.
+ * the legacy localStorage arrays. The dispatcher claims due entries with an
+ * owner token and a lease, sends them with a timeout and settles only its
+ * own claim. Moving `hooks/useOfflineQueue.ts` onto them comes next.
  */
 export * from "./types";
 export {
@@ -15,3 +15,10 @@ export {
   OfflineQueueStoreError,
   openOfflineQueueStore,
 } from "./internal/idb-store";
+export {
+  OFFLINE_LEASE_MARGIN_MS,
+  OFFLINE_MAX_RETRY_DELAY_MS,
+  OFFLINE_REQUEST_TIMEOUT_MS,
+  createOfflineDispatcher,
+  offlineRetryDelay,
+} from "./internal/dispatcher";

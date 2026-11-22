@@ -275,7 +275,7 @@ describe("randomization primitives (#3999)", () => {
       draws = 0;
       expect(() =>
         rndGen.nextId({ siteCode: "S01", stratumLabel: "ALL" })
-      ).toThrow(/100/);
+      ).toThrow(/SUBJECT_ID_COLLISION/);
       // Initial attempt + 100 retries = 101 draws
       expect(draws).toBe(101);
     });

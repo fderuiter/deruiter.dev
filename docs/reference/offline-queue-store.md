@@ -22,7 +22,7 @@ transaction, and the data survives a restart.
 | 1 | `lib/offline-queue`: store schema, atomic entry operations and the legacy import | Implemented, tested in `__tests__/offline-queue-store.test.ts` |
 | 2a | Claims with owner tokens and leases, and a dispatcher with persisted deadlines, request timeouts and lease-expiry recovery | Implemented, tested in `__tests__/offline-queue-dispatcher.test.ts` |
 | 2b | Moving `hooks/useOfflineQueue.ts` and `components/CaseStudyFeedbackSection.tsx` onto the store and dispatcher, a memory fallback, and retiring the legacy keys | Implemented, tested in `__tests__/offline-queue-hook-storage.test.ts`, `__tests__/offline-queue-memory-store.test.ts` and the hook suites |
-| 3 | Endpoint work where the audit below finds a gap | Pending |
+| 3 | Endpoint work where the audit below finds a gap: an idempotency key for feedback | Implemented, tested in `__tests__/case-study-feedback-api.test.ts`, `__tests__/case-study-service-outages.test.ts` and the hook suites |
 
 The site queues through the IndexedDB store. The old localStorage keys are
 read once, by the legacy import below, and then removed.
@@ -108,10 +108,10 @@ and resolve once the store has committed.
 | Concern | Rule |
 | --- | --- |
 | Persistence | `getOfflineQueuePersistence()` and the hook's `persistence` are `pending` until the store opens, then `durable`. If IndexedDB is missing or blocked, the hook uses the memory store (`createMemoryOfflineQueueStore`, same contract) and reports `volatile`. Callers must not tell the visitor a volatile write survives a reload. |
-| Sending | `POST`, `PUT`, `PATCH` and `DELETE` map to the API client. A 2xx is `ok`. A 4xx other than 408 or 429 is `permanent`, with the reason read from the response. Everything else, and a network error, is `transient`. |
+| Sending | Each request carries an `Idempotency-Key` of `<id>:<revision>:<createdAt>`, the same for every retry of one stored version, unless the caller set its own. `POST`, `PUT`, `PATCH` and `DELETE` map to the API client. A 2xx is `ok`. A 4xx other than 408 or 429 is `permanent`, with the reason read from the response. Everything else, and a network error, is `transient`. |
 | Dead letters | Each one is logged and announced as a `portfolio-offline-queue-error` event with the dead letter as its detail. |
 | Other tabs | Each change is announced on the `portfolio-offline-queue` BroadcastChannel. Other tabs re-read the store, then flush. |
-| Feedback form | `CaseStudyFeedbackSection` shows success only after the write committed. A volatile write says the feedback will be sent when the visitor is back online and asks them to keep the page open. A write the store rejects shows an error. |
+| Feedback form | `CaseStudyFeedbackSection` sends one generated key with the direct request and, if that fails, queues the retry with the same key, so a direct send the server stored but the visitor never heard back from is not stored twice. It shows success only after the write committed. A volatile write says the feedback will be sent when the visitor is back online and asks them to keep the page open. A write the store rejects shows an error. |
 
 ## Endpoint audit
 
@@ -122,7 +122,7 @@ each endpoint must tolerate a replay.
 | Consumer | Endpoint | Replay behavior today | Gap |
 | --- | --- | --- | --- |
 | Reactions (`CaseStudyFeedbackSection`) | `POST /api/case-studies/reactions` | The direct path uses `createMany` with `skipDuplicates`, backed by `@@unique([caseStudySlug, connectionHash, reactionType])`. The buffered path pins each event's primary key. A replay adds no second reaction. | None known. |
-| Feedback (`CaseStudyFeedbackSection`) | `POST /api/case-studies/feedback` | `submitFeedback` looks for feedback from the same connection hash in the last hour, then creates a row. The check and the insert are separate statements. | Pending. Two concurrent replays can both pass the check, and a replay more than an hour later creates a second row. Fixing this needs an operation key per payload revision, bound atomically to the stored row (slice 3). |
+| Feedback (`CaseStudyFeedbackSection`) | `POST /api/case-studies/feedback` | Each request carries an `Idempotency-Key`. `submitFeedback` first looks up a row with that key for the same connection hash and returns it with 201, so a replay neither adds a row, nor reports the hourly limit, nor sends a second notification email. The key is stored in `CaseStudyFeedback.operationKey` under a unique index on `(connectionHash, operationKey)`, so when two replays race, one insert fails and returns the winner's row. | None known. A replay that reaches the server with a different connection hash (a new IP address, for example) is treated as a new submission and meets the hourly limit. |
 
 Telemetry uses its own outbox (`telemetryOutbox`) and is outside this
 migration.

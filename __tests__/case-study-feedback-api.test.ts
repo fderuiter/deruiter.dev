@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import * as feedbackRoute from "@/app/api/case-studies/feedback/route";
+import { EmailService } from "@/lib/services/email-service";
 import {
   POST as reactionPOST,
   GET as reactionGET,
@@ -150,6 +151,59 @@ describe("Case Study Feedback & Reaction API Routes", () => {
       expect(res2.status).toBe(429);
       const json = await res2.json();
       expect(json.error).toContain("already submitted");
+    });
+  });
+
+  describe("Feedback replays with an Idempotency-Key (#3807)", () => {
+    const post = (ip: string, slug: string, key?: string, comments?: string) =>
+      feedbackRoute.POST(
+        new NextRequest("http://localhost/api/case-studies/feedback", {
+          method: "POST",
+          headers: {
+            "x-forwarded-for": ip,
+            "user-agent": "replay-agent",
+            ...(key ? { "Idempotency-Key": key } : {}),
+          },
+          body: JSON.stringify({
+            caseStudySlug: slug,
+            takeaways: ["Testing Protocols & QA"],
+            comments: comments ?? "A careful look at the replay path.",
+          }),
+        })
+      );
+
+    it("returns the first row for a replay instead of a duplicate or a 429", async () => {
+      const email = vi
+        .spyOn(EmailService, "sendFeedbackNotification")
+        .mockResolvedValue(undefined as never);
+      const ip = `10.1.0.${Math.floor(Math.random() * 200) + 10}`;
+      const slug = `replay-study-${Date.now()}`;
+
+      const first = await post(ip, slug, "feedback_1:0");
+      const replay = await post(ip, slug, "feedback_1:0");
+      const other = await post(
+        ip,
+        slug,
+        "feedback_2:0",
+        "A second, separate submission."
+      );
+
+      expect(first.status).toBe(201);
+      expect(replay.status).toBe(201);
+      const firstJson = await first.json();
+      const replayJson = await replay.json();
+      expect(replayJson.success).toBe(true);
+      expect(replayJson.feedback.comments).toBe(firstJson.feedback.comments);
+      // A new key is a new submission, so the hourly limit still applies.
+      expect(other.status).toBe(429);
+      // One stored row, one notification.
+      expect(email).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects a malformed Idempotency-Key with 400", async () => {
+      const res = await post("10.2.0.1", "any-study", "has spaces in it");
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Invalid Idempotency-Key header");
     });
   });
 

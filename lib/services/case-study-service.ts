@@ -91,9 +91,19 @@ const mockFeedbackStore = new Map<
     takeaways: string[];
     comments: string;
     connectionHash: string;
+    operationKey?: string;
     createdAt: string;
   }>
 >();
+
+/** Prisma's unique-constraint violation, raised when a replay races its first send. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
 const mockReactionsStore = new Map<string, Map<string, number>>();
 
 function getDefaultReactionCounts(): Record<string, number> {
@@ -889,14 +899,114 @@ export class CaseStudyService {
 
   /**
    * Submits feedback for a case study with duplicate rate-limiting.
+   *
+   * With an `operationKey` (the request's Idempotency-Key), a replay of a
+   * request that already created a row returns that row with `replayed`
+   * set, instead of adding a second row or reporting a rate limit (#3807).
+   * The key is unique per connection hash, so two replays racing each other
+   * still leave one row.
    */
   static async submitFeedback(
     input: FeedbackSubmissionInput,
-    connectionHash: string
+    connectionHash: string,
+    operationKey?: string
   ) {
     const { caseStudySlug, takeaways, comments } = input;
 
+    const accepted = (
+      row: {
+        id: string;
+        caseStudySlug: string;
+        comments: string;
+        createdAt: Date | string;
+      },
+      replayed: boolean
+    ) => ({
+      rateLimited: false as const,
+      success: true,
+      replayed,
+      message: "Feedback submitted successfully",
+      feedback: {
+        id: row.id,
+        caseStudySlug: row.caseStudySlug,
+        takeaways,
+        comments: row.comments,
+        createdAt: row.createdAt,
+      },
+    });
+
+    const limited = {
+      rateLimited: true as const,
+      message:
+        "Feedback already submitted for this case study. Please try again later.",
+    };
+
+    const findReplay = () =>
+      operationKey
+        ? prisma.caseStudyFeedback.findFirst({
+            where: { connectionHash, operationKey },
+          })
+        : Promise.resolve(null);
+
+    // The database is unreachable or failed: keep the write in memory.
+    const fallback = (dbErr: unknown) => {
+      if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
+        logger.error(
+          "Database feedback creation failed, using fallback:",
+          dbErr
+        );
+      }
+      const mockList = mockFeedbackStore.get(caseStudySlug) || [];
+      const mockReplay = operationKey
+        ? mockList.findIndex(
+            (f) =>
+              f.connectionHash === connectionHash &&
+              f.operationKey === operationKey
+          )
+        : -1;
+      if (mockReplay !== -1) {
+        const row = mockList[mockReplay];
+        return accepted(
+          {
+            id: `mock-${mockReplay}`,
+            caseStudySlug,
+            comments: row.comments,
+            createdAt: row.createdAt,
+          },
+          true
+        );
+      }
+      const existingMock = mockList.find(
+        (f) => f.connectionHash === connectionHash
+      );
+      if (existingMock) {
+        return limited;
+      }
+
+      const newEntry = {
+        takeaways,
+        comments,
+        connectionHash,
+        ...(operationKey ? { operationKey } : {}),
+        createdAt: new Date().toISOString(),
+      };
+      mockFeedbackStore.set(caseStudySlug, [...mockList, newEntry]);
+
+      return accepted(
+        {
+          id: `mock-${Date.now()}`,
+          caseStudySlug,
+          comments,
+          createdAt: newEntry.createdAt,
+        },
+        false
+      );
+    };
+
     try {
+      const replay = await findReplay();
+      if (replay) return accepted(replay, true);
+
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const existing = await prisma.caseStudyFeedback.findFirst({
         where: {
@@ -907,73 +1017,30 @@ export class CaseStudyService {
       });
 
       if (existing) {
-        return {
-          rateLimited: true,
-          message:
-            "Feedback already submitted for this case study. Please try again later.",
-        };
+        return limited;
       }
 
-      const created = await prisma.caseStudyFeedback.create({
-        data: {
-          caseStudySlug,
-          takeaways: JSON.stringify(takeaways),
-          comments,
-          connectionHash,
-        },
-      });
-
-      return {
-        rateLimited: false,
-        success: true,
-        message: "Feedback submitted successfully",
-        feedback: {
-          id: created.id,
-          caseStudySlug: created.caseStudySlug,
-          takeaways,
-          comments: created.comments,
-          createdAt: created.createdAt,
-        },
-      };
+      try {
+        const created = await prisma.caseStudyFeedback.create({
+          data: {
+            caseStudySlug,
+            takeaways: JSON.stringify(takeaways),
+            comments,
+            connectionHash,
+            ...(operationKey ? { operationKey } : {}),
+          },
+        });
+        return accepted(created, false);
+      } catch (createErr) {
+        // A concurrent replay of the same request created the row first.
+        if (operationKey && isUniqueViolation(createErr)) {
+          const winner = await findReplay();
+          if (winner) return accepted(winner, true);
+        }
+        return fallback(createErr);
+      }
     } catch (dbErr) {
-      if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        logger.error(
-          "Database feedback creation failed, using fallback:",
-          dbErr
-        );
-      }
-      const existingMock = (mockFeedbackStore.get(caseStudySlug) || []).find(
-        (f) => f.connectionHash === connectionHash
-      );
-      if (existingMock) {
-        return {
-          rateLimited: true,
-          message:
-            "Feedback already submitted for this case study. Please try again later.",
-        };
-      }
-
-      const list = mockFeedbackStore.get(caseStudySlug) || [];
-      const newEntry = {
-        takeaways,
-        comments,
-        connectionHash,
-        createdAt: new Date().toISOString(),
-      };
-      mockFeedbackStore.set(caseStudySlug, [...list, newEntry]);
-
-      return {
-        rateLimited: false,
-        success: true,
-        message: "Feedback submitted successfully",
-        feedback: {
-          id: `mock-${Date.now()}`,
-          caseStudySlug,
-          takeaways,
-          comments,
-          createdAt: newEntry.createdAt,
-        },
-      };
+      return fallback(dbErr);
     }
   }
 

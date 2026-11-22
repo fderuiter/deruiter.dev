@@ -9,9 +9,24 @@ import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The offline queue sends one key per queued revision, so a replay of the
+ * same request carries the same key (#3807).
+ */
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{1,128}$/;
+
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
     try {
+      const rawKey = req.headers.get("idempotency-key");
+      if (rawKey !== null && !IDEMPOTENCY_KEY.test(rawKey)) {
+        return NextResponse.json(
+          { error: "Invalid Idempotency-Key header" },
+          { status: 400 }
+        );
+      }
+      const operationKey = rawKey ?? undefined;
+
       const connectionHash = await getConnectionHashFromRequest(req);
 
       const rateLimitCheck = checkSubmissionAttemptRateLimit(connectionHash);
@@ -24,15 +39,16 @@ export const POST = createApiHandler(
 
       const result = await CaseStudyService.submitFeedback(
         data,
-        connectionHash
+        connectionHash,
+        operationKey
       );
 
       if (result.rateLimited) {
         return NextResponse.json({ error: result.message }, { status: 429 });
       }
 
-      // Non-blocking notification dispatch
-      if (result.success) {
+      // Non-blocking notification dispatch, once per stored row
+      if (result.success && !result.replayed) {
         EmailService.sendFeedbackNotification({
           caseStudySlug: data.caseStudySlug,
           takeaways: data.takeaways,

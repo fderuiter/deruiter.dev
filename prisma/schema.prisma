@@ -81,8 +81,12 @@ model CaseStudyFeedback {
   takeaways      String
   comments       String
   connectionHash String
+  /// Idempotency-Key of the request that created the row, so a replay of
+  /// that request returns this row instead of adding another (#3807).
+  operationKey   String?
   createdAt      DateTime @default(now())
 
+  @@unique([connectionHash, operationKey])
   @@index([caseStudySlug])
   @@index([connectionHash])
   @@index([caseStudySlug, createdAt])

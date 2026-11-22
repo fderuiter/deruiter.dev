@@ -222,6 +222,38 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
     });
   });
 
+  describe("Idempotent feedback retries (#3807)", () => {
+    it("queues a failed direct send with the same Idempotency-Key it sent", async () => {
+      fetchMock.mockImplementation(async (url: string) =>
+        url.includes("/api/case-studies/feedback")
+          ? { ok: false, status: 503, json: async () => ({}) }
+          : { ok: true, status: 200, json: async () => ({}) }
+      );
+      render(<CaseStudyFeedbackSection slug="clinical-trial-chaos" />);
+
+      fireEvent.click(
+        screen.getAllByRole("button", {
+          name: /Architecture & System Design/i,
+        })[0]
+      );
+      fireEvent.change(
+        screen.getByLabelText(/Constructive Comments & Key Takeaways/i),
+        { target: { value: "Clear walkthrough of the retry design." } }
+      );
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Submit Learning Feedback/i })[0]
+      );
+
+      await waitFor(() => expect(getOfflineQueue()).toHaveLength(1));
+      const direct = fetchMock.mock.calls.find(([url]) =>
+        String(url).includes("/api/case-studies/feedback")
+      );
+      const sentKey = new Headers(direct?.[1]?.headers).get("Idempotency-Key");
+      expect(sentKey).toMatch(/^feedback_/);
+      expect(getOfflineQueue()[0].headers["Idempotency-Key"]).toBe(sentKey);
+    });
+  });
+
   describe("Requirement 2 & Acceptance Criterion 2: Telemetry Retention Across Reloads", () => {
     it("persists offline telemetry events in client storage across reloads", async () => {
       Object.defineProperty(navigator, "onLine", {

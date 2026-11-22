@@ -23,6 +23,7 @@ import {
 import { FeedbackSubmissionSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
+import { generateId } from "@/lib/utils";
 
 interface CaseStudyFeedbackSectionProps {
   slug: string;
@@ -232,9 +233,13 @@ export function CaseStudyFeedbackSection({
     });
   };
 
-  const queueFeedback = async (payload: unknown) => {
+  const queueFeedback = async (payload: unknown, idempotencyKey: string) => {
     const queued = await queueWrite({
       type: "feedback",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
       endpoint: "/api/case-studies/feedback",
       body: payload,
     });
@@ -322,15 +327,20 @@ export function CaseStudyFeedbackSection({
 
     setSubmitting(true);
 
+    // One key for the direct send and any queued retry of it, so a retry
+    // of a send the server already stored returns that row (#3807).
+    const idempotencyKey = generateId("feedback_", { timestamp: true });
+
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      await queueFeedback(payload);
+      await queueFeedback(payload, idempotencyKey);
       setSubmitting(false);
       return;
     }
 
     const res = await apiClient.post<FeedbackSubmitResponse>(
       "/api/case-studies/feedback",
-      payload
+      payload,
+      { headers: { "Idempotency-Key": idempotencyKey } }
     );
 
     if (res.ok) {
@@ -349,7 +359,7 @@ export function CaseStudyFeedbackSection({
       setSuccessMsg(null);
     } else {
       // Network failure or 5xx: queue for background retry.
-      await queueFeedback(payload);
+      await queueFeedback(payload, idempotencyKey);
     }
     setSubmitting(false);
   };

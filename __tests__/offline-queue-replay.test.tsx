@@ -775,6 +775,50 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       expect(getOfflineQueueLength()).toBe(0);
     });
 
+    it("sends one Idempotency-Key per stored version, so a replay can be recognized (#3807)", async () => {
+      vi.setSystemTime(1_000);
+      await enqueueTelemetry("v1", { id: "K" });
+      mockPost.mockResolvedValueOnce(response({ status: 503 }));
+      setOnline(true);
+      await act(async () => {
+        await flushOfflineQueue();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      await settle();
+      // The id is enqueued again after its first request was acknowledged.
+      setOnline(false);
+      vi.setSystemTime(9_000);
+      await enqueueTelemetry("v2", { id: "K" });
+      await enqueueTelemetry("v3", { id: "K" });
+      await enqueueOfflineRequest({
+        type: "telemetry",
+        endpoint: "/api/own-key",
+        headers: { "idempotency-key": "caller-key" },
+        body: {},
+      });
+      setOnline(true);
+      await act(async () => {
+        await flushOfflineQueue();
+      });
+
+      const headers = mockPost.mock.calls.map(
+        (call) => (call[2] as RequestInit).headers as Record<string, string>
+      );
+      expect(
+        headers.map((h) => h["Idempotency-Key"] ?? h["idempotency-key"])
+      ).toEqual([
+        // The retry of the first version reuses its key.
+        "K:0:1000",
+        "K:0:1000",
+        // The re-enqueued id restarts at revision 0, and its replacement
+        // gets revision 1: both differ from the first key.
+        "K:1:9000",
+        "caller-key",
+      ]);
+    });
+
     it("parses string bodies that hold JSON and passes other strings through", async () => {
       await enqueueOfflineRequest({
         type: "telemetry",

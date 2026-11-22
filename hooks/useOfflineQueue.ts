@@ -195,12 +195,32 @@ async function failureReasonOf(
   return failureReason;
 }
 
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{1,128}$/;
+
+/**
+ * The Idempotency-Key for one stored version of a queued request, or
+ * undefined when the id cannot form one. Every retry of that version sends
+ * the same key, so an endpoint can return the row the first send created
+ * (#3807). The enqueue time is part of it, because an id can be enqueued
+ * again after its first request was acknowledged and its revision restarts
+ * at 0. A caller that sets its own Idempotency-Key header keeps it.
+ */
+function idempotencyKeyOf(entry: OfflineQueueEntry): string | undefined {
+  const key = `${entry.id}:${entry.revision}:${entry.createdAt}`;
+  return IDEMPOTENCY_KEY.test(key) ? key : undefined;
+}
+
 /** Sends one queued entry and says how it ended. */
 async function sendQueued(
   entry: OfflineQueueEntry,
   signal: AbortSignal | undefined
 ): Promise<OfflineSendOutcome> {
-  const init: RequestInit = { headers: { ...entry.headers }, signal };
+  const headers: Record<string, string> = { ...entry.headers };
+  const key = idempotencyKeyOf(entry);
+  if (key && !Object.keys(headers).some((h) => /^idempotency-key$/i.test(h))) {
+    headers["Idempotency-Key"] = key;
+  }
+  const init: RequestInit = { headers, signal };
   let body = entry.body;
   if (typeof body === "string") {
     try {

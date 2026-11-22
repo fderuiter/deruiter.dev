@@ -45,8 +45,10 @@ model CaseStudyFeedback {
   takeaways      String
   comments       String
   connectionHash String
+  operationKey   String?
   createdAt      DateTime @default(now())
 
+  @@unique([connectionHash, operationKey])
   @@index([caseStudySlug])
   @@index([connectionHash])
   @@index([caseStudySlug, createdAt])

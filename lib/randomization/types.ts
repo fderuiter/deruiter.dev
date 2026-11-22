@@ -96,7 +96,11 @@ export interface SiteSpec {
   readonly id: string;
   readonly code: string;
   readonly label: string;
-  /** Positive finite recruitment weight; stored outside protocol USDM facts. */
+  /**
+   * Non-negative finite recruitment weight; stored outside protocol USDM
+   * facts. Minimization cohorts never sample a zero-weight site, and at
+   * least one site must be above zero.
+   */
   readonly recruitmentWeight: number;
 }
 
@@ -239,10 +243,15 @@ export interface BlockSettings {
 
 /** Settings specific to ratio-normalized minimization. */
 export interface MinimizationSettings {
+  /** Rows a planned (virtual cohort) schedule generates, at most. */
   readonly virtualCohortSize: number;
-  /** Biased coin probability strictly greater than 0.5 and at most 1.0. */
+  /** Biased coin probability from 0.5 to 1.0 inclusive; 0.8 is the usual choice. */
   readonly biasedCoinProbability: number;
-  /** Optional map of factorId to map of levelId to expected weight/proportion. */
+  /**
+   * Optional map of factorId to map of levelId to percentage. Each factor's
+   * percentages name exactly its levels and add up to 100; a factor without
+   * an entry samples its levels evenly. Used only when sampling profiles.
+   */
   readonly expectedLevelDistributions?: Readonly<
     Record<string, Readonly<Record<string, number>>>
   >;

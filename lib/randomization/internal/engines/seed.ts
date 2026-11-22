@@ -2,6 +2,7 @@ import {
   SEED_MAX_LENGTH,
   type DerivedSeedComponents,
   type EntropySource,
+  type PrngStream,
   type RandomizationStreams,
   type SeedValidationResult,
   type ValidationFinding,
@@ -112,4 +113,16 @@ export function createRandomizationStreams(seed: string): RandomizationStreams {
     allocation: createMt19937Stream(allocationSeed.numericSeed),
     identifier: createMt19937Stream(identifierNumericSeed),
   });
+}
+
+/**
+ * Creates the MT19937 stream that samples sites and profiles for a
+ * minimization virtual cohort (#4002), seeded from `${seed}-cohort`. Keeping
+ * it apart from the allocation stream means replaying the same profiles
+ * through a session reproduces the same arms.
+ */
+export function createCohortStream(seed: string): PrngStream {
+  deriveSeedComponents(seed); // validates the seed
+  const cohortHex = sha256BytesHex(asciiToBytes(`${seed}-cohort`)).slice(0, 32);
+  return createMt19937Stream(fnv1aHexToUint31(cohortHex));
 }

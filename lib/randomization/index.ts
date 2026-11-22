@@ -1,13 +1,14 @@
 /**
  * Public entry point for the Clinical Study Studio randomization engine
- * (epic #3997, tickets #3998, #3999, #4000, #4001 and #4005, ADR 0073).
+ * (epic #3997, tickets #3998, #3999, #4000, #4001, #4002 and #4005, ADR 0073).
  *
  * Pure, framework-free contracts, compatibility metadata, ratio reduction,
  * overflow-safe resource preflight, plan validation, deterministic MT19937
  * seeds/streams, structural stratum and subject ID masks, and canonical
  * immutable artifact integrity. Permuted-block schedules, actual-profile
  * block sessions and manual or proportional capacities come from #4000;
- * marginal (factor-level) caps and their site policies from #4001.
+ * marginal (factor-level) caps and their site policies from #4001;
+ * ratio-normalized minimization cohorts and sessions from #4002.
  * Display masking, the single export disclosure gate and code-only error
  * reports come from #4005.
  */
@@ -74,6 +75,19 @@ export {
   MARGINAL_SITE_POLICIES,
   resolveMarginalCaps,
 } from "./internal/engines/marginal";
+export {
+  createMinimizationSession,
+  generateMinimizationSchedule,
+} from "./internal/engines/minimization";
+export type { ResolvedCapacities } from "./internal/engines/capacity";
+export type {
+  MinimizationAllocationSession,
+  MinimizationAllocationSessionResult,
+  MinimizationDecision,
+  MinimizationScheduleResult,
+  MinimizationScheduleSummary,
+  MinimizationStopReason,
+} from "./internal/engines/minimization";
 export type {
   MarginalCapResolution,
   ResolvedLevelCap,

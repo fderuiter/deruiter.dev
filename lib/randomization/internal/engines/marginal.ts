@@ -8,8 +8,8 @@
  */
 
 import type {
-  BlockRandomizationRequest,
   MarginalSitePolicy,
+  RandomizationRequest,
   ValidationFinding,
 } from "../../types";
 
@@ -30,7 +30,8 @@ export interface MarginalCapResolution {
   readonly ok: true;
   readonly strategy: "marginal";
   readonly capScope: "study-wide" | "per-site";
-  readonly sitePolicy: MarginalSitePolicy;
+  /** Present for BLOCK requests; minimization has no site ordering policy. */
+  readonly sitePolicy?: MarginalSitePolicy;
   /** Every finite level cap, expanded per site when the scope is per-site. */
   readonly levelCaps: readonly ResolvedLevelCap[];
   /** Hard total per scope, when one was set. */
@@ -63,7 +64,7 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
 }
 
 /**
- * Resolves marginal caps for a BLOCK request. Every entry must name a known
+ * Resolves marginal caps for a BLOCK or MINIMIZATION request. Every entry must name a known
  * factor level, carry a non-negative integer cap and be unique for its
  * (factor, level, site). A per-site entry overrides the general entry for
  * that site. The design must be bounded: in every scope at least one factor
@@ -71,7 +72,7 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
  * (RND-CAPS-008).
  */
 export function resolveMarginalCaps(
-  request: BlockRandomizationRequest
+  request: RandomizationRequest
 ):
   | MarginalCapResolution
   | { readonly ok: false; readonly findings: readonly ValidationFinding[] } {
@@ -90,8 +91,9 @@ export function resolveMarginalCaps(
   );
 
   if (
-    typeof caps.sitePolicy !== "string" ||
-    !MARGINAL_SITE_POLICIES.includes(caps.sitePolicy)
+    request.method === "BLOCK" &&
+    (typeof caps.sitePolicy !== "string" ||
+      !MARGINAL_SITE_POLICIES.includes(caps.sitePolicy))
   ) {
     findings.push(
       capFinding(
@@ -246,7 +248,9 @@ export function resolveMarginalCaps(
     ok: true as const,
     strategy: "marginal" as const,
     capScope: caps.capScope,
-    sitePolicy: caps.sitePolicy as MarginalSitePolicy,
+    ...(request.method === "BLOCK" && caps.sitePolicy
+      ? { sitePolicy: caps.sitePolicy }
+      : {}),
     levelCaps: Object.freeze(levelCaps),
     ...(caps.totalEnrollment !== undefined
       ? { totalEnrollment: caps.totalEnrollment }

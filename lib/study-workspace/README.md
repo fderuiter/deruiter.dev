@@ -73,10 +73,10 @@ The design, schedule, narrative and analysis-intent screens are views of this
 workspace, never separate modules. A view projects the working document by the
 USDM `id` of each object, and reports a finding where the study leaves
 something out instead of inventing a value. Views edit the study only through
-`createStudyEdit` and `applyStudyEdit`, so every change can be undone. Still to
-come: the design view's interventions list and trial schema figure (#3406).
-The arms-by-epochs grid is `components/study-workspace/StudyDesignGrid.tsx`,
-shown on `/study-studio`.
+`createStudyEdit` and `applyStudyEdit`, so every change can be undone. The
+arms-by-epochs grid (`components/study-workspace/StudyDesignGrid.tsx`) and the
+trial schema figure drawn from it (`TrialSchemaFigure.tsx`) are on
+`/study-studio`. Still to come: the design view's interventions list (#3406).
 
 Each view adds its public projection types to `types.ts` together with the code
 that produces them. Routes and layout live outside this module (#3400).

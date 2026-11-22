@@ -25,6 +25,7 @@ import {
   importBaselinesBundle,
 } from "@/lib/crf";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface BaselineManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -352,15 +353,15 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                 </span>
                 <div className="flex items-center gap-2">
                   {baselines.length > 0 && (
-                    <button
+                    <TooltipButton
                       type="button"
                       onClick={handleExportAll}
                       className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] transition-colors"
-                      title="Export all baselines as JSON bundle"
+                      tooltip="Export all baselines as JSON bundle"
                     >
                       <IconDownload className="w-3 h-3 text-brand-cyan" />
                       <span>Export All</span>
-                    </button>
+                    </TooltipButton>
                   )}
                   <label className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] cursor-pointer transition-colors">
                     <IconUpload className="w-3 h-3 text-brand-cyan" />
@@ -423,37 +424,37 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
 
                         {/* Actions */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button
+                          <TooltipButton
                             type="button"
                             onClick={() => setBaselinePendingRestore(base)}
                             className="px-2.5 py-1 bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan border border-brand-cyan/30 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1"
-                            title="Restore baseline into a new draft"
+                            tooltip="Restore baseline into a new draft"
                           >
                             <IconArrowBackUp className="w-3.5 h-3.5" />
                             <span>Restore Draft</span>
-                          </button>
+                          </TooltipButton>
 
-                          <button
+                          <TooltipButton
                             type="button"
                             onClick={() => handleDownloadSingle(base)}
                             className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
-                            title="Download study JSON"
+                            tooltip="Download study JSON"
                             aria-label={`Download ${base.versionTag} JSON`}
                           >
                             <IconDownload className="w-4 h-4" />
-                          </button>
+                          </TooltipButton>
 
-                          <button
+                          <TooltipButton
                             type="button"
                             onClick={() =>
                               handleDeleteBaseline(base.id, base.versionTag)
                             }
                             className="p-1 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors"
-                            title="Delete baseline"
+                            tooltip="Delete baseline"
                             aria-label={`Delete ${base.versionTag}`}
                           >
                             <IconTrash className="w-4 h-4" />
-                          </button>
+                          </TooltipButton>
                         </div>
                       </div>
 

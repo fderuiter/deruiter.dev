@@ -26,6 +26,7 @@ import { ViewportSwitcher } from "./ViewportSwitcher";
 import { generateId } from "@/lib/utils";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface FormCanvasProps {
   form: CRFForm;
   selectedFieldId: string | null;
@@ -383,20 +384,20 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
             gridCols={12}
           />
           {onSwitchMode && (
-            <button
+            <TooltipButton
               onClick={(e) => {
                 e.stopPropagation();
                 onSwitchMode("grid");
               }}
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 text-xs font-mono transition-all shadow-sm whitespace-nowrap pointer-coarse:min-h-11"
-              title="Edit this form's fields as a table (Form Grid)"
+              tooltip="Edit this form's fields as a table (Form Grid)"
               aria-label="Grid View"
             >
               <IconFileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-cyan" />
               <span className="hidden @2xl:inline">Grid View</span>
-            </button>
+            </TooltipButton>
           )}
-          <button
+          <TooltipButton
             onClick={(e) => {
               e.stopPropagation();
               if (onOpenSlashPalette) {
@@ -406,7 +407,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
               }
             }}
             className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono transition-all shadow-sm whitespace-nowrap pointer-coarse:min-h-11"
-            title="Open Slash Command Palette (/)"
+            tooltip="Open Slash Command Palette (/)"
             aria-label="Slash Commands"
           >
             <IconSparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -414,7 +415,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
             <kbd className="hidden md:inline-block text-[9px] px-1 py-0.2 rounded bg-zinc-900 border border-zinc-700 text-zinc-400">
               /
             </kbd>
-          </button>
+          </TooltipButton>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -514,34 +515,34 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
 
                 <div className="flex items-center gap-1 shrink-0">
                   {onSaveAsTemplate && (
-                    <button
+                    <TooltipButton
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSaveAsTemplate(form.id);
                       }}
                       className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 shrink-0 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                      title="Save as Form Template"
+                      tooltip="Save as Form Template"
                       aria-label={`Save form ${form.name} as a template`}
                     >
                       <IconBookmark className="w-4 h-4 text-amber-400" />
-                    </button>
+                    </TooltipButton>
                   )}
                   {onDuplicateForm && (
-                    <button
+                    <TooltipButton
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDuplicateForm(form.id);
                       }}
                       className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                      title="Duplicate Form"
+                      tooltip="Duplicate Form"
                       aria-label={`Duplicate form ${form.name}`}
                     >
                       <IconCopy className="w-4 h-4 text-brand-cyan" />
-                    </button>
+                    </TooltipButton>
                   )}
-                  <button
+                  <TooltipButton
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -551,11 +552,11 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                       setIsEditingTitle(true);
                     }}
                     className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                    title="Edit Form Properties"
+                    tooltip="Edit Form Properties"
                     aria-label="Edit Form Properties"
                   >
                     <IconEdit className="w-4 h-4" />
-                  </button>
+                  </TooltipButton>
                 </div>
               </div>
             )}
@@ -609,53 +610,53 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                       <h2 className="text-xs sm:text-sm font-bold text-zinc-100 font-mono truncate">
                         {section.title}
                       </h2>
-                      <button
+                      <TooltipButton
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingSectionId(section.id);
                           setSectionTitleInput(section.title);
                         }}
                         className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                        title="Rename Section"
+                        tooltip="Rename Section"
                         aria-label="Rename Section"
                       >
                         <IconEdit className="w-3.5 h-3.5" />
-                      </button>
+                      </TooltipButton>
                     </div>
                   )}
 
                   <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     {/* Section Move Up / Down Buttons */}
-                    <button
+                    <TooltipButton
                       onClick={(e) => {
                         e.stopPropagation();
                         handleMoveSection(sIdx, "up");
                       }}
                       disabled={sIdx === 0}
                       className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white disabled:opacity-25 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                      title="Move Section Up"
+                      tooltip="Move Section Up"
                       aria-label="Move Section Up"
                     >
                       <IconArrowUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                    </TooltipButton>
+                    <TooltipButton
                       onClick={(e) => {
                         e.stopPropagation();
                         handleMoveSection(sIdx, "down");
                       }}
                       disabled={sIdx === form.sections.length - 1}
                       className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white disabled:opacity-25 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                      title="Move Section Down"
+                      tooltip="Move Section Down"
                       aria-label="Move Section Down"
                     >
                       <IconArrowDown className="w-3.5 h-3.5" />
-                    </button>
+                    </TooltipButton>
 
                     <span className="text-[10px] font-mono text-zinc-500 ml-1 hidden xs:inline">
                       {section.fields.length}{" "}
                       {section.fields.length === 1 ? "field" : "fields"}
                     </span>
-                    <button
+                    <TooltipButton
                       onClick={(e) => {
                         e.stopPropagation();
                         if (onOpenSlashPalette) {
@@ -665,23 +666,23 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                         }
                       }}
                       className="p-1 rounded hover:bg-zinc-800 text-brand-cyan hover:text-white transition-colors ml-1 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                      title="Insert Field or Smart Block into Section (/)"
+                      tooltip="Insert Field or Smart Block into Section (/)"
                       aria-label={`Add field to ${section.title}`}
                     >
                       <IconPlus className="w-3.5 h-3.5" />
-                    </button>
+                    </TooltipButton>
                     {form.sections.length > 1 && (
-                      <button
+                      <TooltipButton
                         onClick={(e) => {
                           e.stopPropagation();
                           onDeleteSection(section.id);
                         }}
                         className="p-1 text-zinc-500 hover:text-red-400 transition-colors ml-1 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                        title="Delete Section"
+                        tooltip="Delete Section"
                         aria-label="Delete Section"
                       >
                         <IconTrash className="w-3.5 h-3.5" />
-                      </button>
+                      </TooltipButton>
                     )}
                   </div>
                 </div>
@@ -781,18 +782,18 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
       </div>
 
       {/* Floating Action Button (FAB) for Mobile Quick Widget Addition */}
-      <button
+      <TooltipButton
         onClick={(e) => {
           e.stopPropagation();
           onOpenPalette();
         }}
         className="sm:hidden self-end mt-5 flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-brand-cyan text-black font-mono text-xs font-extrabold shadow-lg hover:bg-white transition-all active:scale-[0.98]"
-        title="Add Field / Open Widget Palette"
+        tooltip="Add Field / Open Widget Palette"
         aria-label="Add Field Widget"
       >
         <IconSparkles className="w-4 h-4" />
         <span>+ Widget</span>
-      </button>
+      </TooltipButton>
     </div>
   );
 };

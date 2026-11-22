@@ -12,6 +12,7 @@ import {
   IconFocus2,
 } from "@tabler/icons-react";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface SpotlightTourOverlayProps {
   isOpen: boolean;
   onClose: () => void;
@@ -298,7 +299,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
           {/* Step Progress Dots */}
           <div className="flex items-center justify-center gap-1.5 pt-1">
             {TOUR_STEPS.map((s, idx) => (
-              <button
+              <TooltipButton
                 key={s.id}
                 onClick={() => setCurrentStepIdx(idx)}
                 className={`h-1.5 rounded-full transition-all ${
@@ -308,7 +309,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
                       ? "w-2 bg-emerald-500"
                       : "w-2 bg-zinc-800"
                 }`}
-                title={s.title}
+                tooltip={s.title}
                 aria-label={`Jump to step ${idx + 1}`}
               />
             ))}

@@ -64,7 +64,7 @@ describe("Try in Clinical Trial Chaos (#3135)", () => {
     const menuEntry = within(menu).getByRole("menuitem", {
       name: SIMULATE_IN_GAME_LABEL,
     });
-    expect(menuEntry.getAttribute("title")).toMatch(/game/i);
+    expect(menuEntry.getAttribute("data-tooltip")).toMatch(/game/i);
     fireEvent.keyDown(menuEntry, { key: "Escape" });
 
     fireEvent.click(

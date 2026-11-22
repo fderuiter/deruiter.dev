@@ -83,7 +83,7 @@ describe("CRF Studio Mobile & Tablet Responsiveness", () => {
     });
 
     const fabBtn = container.querySelector(
-      "button[title='Add Field / Open Widget Palette']"
+      "button[data-tooltip='Add Field / Open Widget Palette']"
     );
     expect(fabBtn).not.toBeNull();
 

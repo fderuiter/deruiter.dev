@@ -153,7 +153,7 @@ describe("FormCanvas & FieldRenderer Component Suite", () => {
 
     // Find column increment button
     const plusBtn = container.querySelector(
-      'button[title="Expand column span"]'
+      'button[data-tooltip="Expand column span"]'
     );
     expect(plusBtn).not.toBeNull();
 
@@ -165,7 +165,7 @@ describe("FormCanvas & FieldRenderer Component Suite", () => {
 
     // Find column decrement button
     const minusBtn = container.querySelector(
-      'button[title="Shrink column span"]'
+      'button[data-tooltip="Shrink column span"]'
     );
     expect(minusBtn).not.toBeNull();
 
@@ -201,7 +201,7 @@ describe("FormCanvas & FieldRenderer Component Suite", () => {
     });
 
     const duplicateBtn = container.querySelector(
-      'button[title="Duplicate Field"]'
+      'button[data-tooltip="Duplicate Field"]'
     );
     expect(duplicateBtn).not.toBeNull();
 
@@ -210,7 +210,9 @@ describe("FormCanvas & FieldRenderer Component Suite", () => {
     });
     expect(onDuplicateField).toHaveBeenCalledWith("sec_1", "f_height");
 
-    const deleteBtn = container.querySelector('button[title="Delete Field"]');
+    const deleteBtn = container.querySelector(
+      'button[data-tooltip="Delete Field"]'
+    );
     expect(deleteBtn).not.toBeNull();
 
     await act(async () => {

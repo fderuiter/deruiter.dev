@@ -72,10 +72,14 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
       root.render(<StudySpine {...defaultProps} />);
     });
 
-    const spineBtn = container.querySelector('button[title*="Study Spine"]');
-    const formsBtn = container.querySelector('button[title*="Protocol Forms"]');
+    const spineBtn = container.querySelector(
+      'button[data-tooltip*="Study Spine"]'
+    );
+    const formsBtn = container.querySelector(
+      'button[data-tooltip*="Protocol Forms"]'
+    );
     const paletteBtn = container.querySelector(
-      'button[title*="Widget Palette"]'
+      'button[data-tooltip*="Widget Palette"]'
     );
 
     expect(spineBtn).not.toBeNull();
@@ -353,7 +357,7 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
       '[role="button"][aria-label^="Select form"]'
     ) as HTMLElement;
     const duplicateBtn = formRow.querySelector(
-      'button[title="Duplicate Form"]'
+      'button[data-tooltip="Duplicate Form"]'
     ) as HTMLButtonElement;
     expect(duplicateBtn).toBeTruthy();
 

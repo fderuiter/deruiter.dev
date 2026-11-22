@@ -34,6 +34,8 @@ describe("TooltipButton without anchor positioning (fallback)", () => {
     expect(button.hasAttribute("title")).toBe(false);
     expect(screen.queryByRole("tooltip")).toBeNull();
     expect(button.getAttribute("aria-describedby")).toBeNull();
+    // The hint stays readable for tests and specs without showing the tip.
+    expect(button.dataset.tooltip).toBe("Delete the visit");
   });
 
   it("shows on hover and describes the button", () => {
@@ -121,6 +123,7 @@ describe("TooltipButton without anchor positioning (fallback)", () => {
     const button = screen.getByRole("button", { name: "Go" });
     fireEvent.mouseEnter(button);
     expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(button.hasAttribute("data-tooltip")).toBe(false);
   });
 
   it("keeps the fallback tip inside the viewport near the right edge", () => {

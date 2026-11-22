@@ -15,6 +15,7 @@ import {
   type StudioMenuItemSpec,
 } from "./studio-stages";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 /** What the header supplies for one menu item. */
 interface StudioMenuAction {
   icon: React.ReactNode;
@@ -263,7 +264,7 @@ export function StudioHeaderMenus({
         const isCheck = menu.id === "check";
         return (
           <div key={menu.id} className="relative">
-            <button
+            <TooltipButton
               ref={(node) => {
                 triggerRefs.current[menu.id] = node;
               }}
@@ -273,7 +274,7 @@ export function StudioHeaderMenus({
               aria-expanded={isOpen}
               aria-controls={isOpen ? panelId : undefined}
               data-tour={isCheck ? "conformance" : undefined}
-              title={
+              tooltip={
                 isCheck
                   ? "Open CDISC Conformance Diagnostics and checks"
                   : undefined
@@ -296,7 +297,7 @@ export function StudioHeaderMenus({
                   isOpen ? "rotate-180" : ""
                 }`}
               />
-            </button>
+            </TooltipButton>
 
             <div
               ref={(node) => {
@@ -319,7 +320,7 @@ export function StudioHeaderMenus({
                         className="my-1 border-t border-zinc-800"
                       />
                     )}
-                    <button
+                    <TooltipButton
                       type="button"
                       role={
                         action.checked === undefined
@@ -331,7 +332,7 @@ export function StudioHeaderMenus({
                       aria-keyshortcuts={item.keyshortcuts}
                       aria-describedby={`${idPrefix}-description`}
                       tabIndex={-1}
-                      title={item.description}
+                      tooltip={item.description}
                       disabled={!action.run}
                       onClick={() => {
                         close(menu.id);
@@ -345,7 +346,7 @@ export function StudioHeaderMenus({
                         action={action}
                         idPrefix={idPrefix}
                       />
-                    </button>
+                    </TooltipButton>
                   </React.Fragment>
                 );
               })}
@@ -379,12 +380,12 @@ export function StudioActionsDrawer({
 
   return (
     <div className="relative lg:hidden">
-      <button
+      <TooltipButton
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="min-h-8 pointer-coarse:min-h-11 min-w-8 pointer-coarse:min-w-11 justify-center p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 shrink-0"
-        title="More Actions & Tools"
+        tooltip="More Actions & Tools"
         aria-label="More Studio Actions"
         aria-haspopup="dialog"
         aria-expanded={isOpen}
@@ -396,7 +397,7 @@ export function StudioActionsDrawer({
             className="w-2 h-2 rounded-full bg-amber-400"
           />
         )}
-      </button>
+      </TooltipButton>
 
       {isOpen && (
         <>
@@ -443,14 +444,14 @@ export function StudioActionsDrawer({
                   const action = actions[item.id];
                   const idPrefix = `studio-drawer-${item.id}`;
                   return (
-                    <button
+                    <TooltipButton
                       key={item.id}
                       type="button"
                       aria-pressed={action.checked}
                       aria-label={itemName(item, action)}
                       aria-keyshortcuts={item.keyshortcuts}
                       aria-describedby={`${idPrefix}-description`}
-                      title={item.description}
+                      tooltip={item.description}
                       disabled={!action.run}
                       onClick={() => {
                         setIsOpen(false);
@@ -463,7 +464,7 @@ export function StudioActionsDrawer({
                         action={action}
                         idPrefix={idPrefix}
                       />
-                    </button>
+                    </TooltipButton>
                   );
                 })}
               </section>

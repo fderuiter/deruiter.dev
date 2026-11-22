@@ -1155,7 +1155,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                           <div className="flex items-center gap-1 shrink-0">
                             {/* CRA SDV Toggle */}
                             {currentRole === "CRA Monitor" && (
-                              <button
+                              <TooltipButton
                                 onClick={() =>
                                   handleToggleSdv(field.id, field.variableName)
                                 }
@@ -1164,10 +1164,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                                     : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-white"
                                 }`}
-                                title="Source Data Verification"
+                                tooltip="Source Data Verification"
                               >
                                 {isSdv ? "✓ SDV Done" : "SDV Verify"}
-                              </button>
+                              </TooltipButton>
                             )}
 
                             {/* CDISC Null Flavor Toggle Pills */}
@@ -1176,7 +1176,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 {(["ND", "NA", "UNK"] as const).map((nf) => {
                                   const isSelectedNf = currentVal === nf;
                                   return (
-                                    <button
+                                    <TooltipButton
                                       key={nf}
                                       type="button"
                                       onClick={() => {
@@ -1195,10 +1195,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                           ? "bg-brand-cyan text-black border-brand-cyan font-extrabold"
                                           : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
                                       }`}
-                                      title={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
+                                      tooltip={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
                                     >
                                       {nf}
-                                    </button>
+                                    </TooltipButton>
                                   );
                                 })}
                               </div>
@@ -1889,7 +1889,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                               );
 
                               return (
-                                <button
+                                <TooltipButton
                                   key={form.id}
                                   onClick={() => {
                                     setSubjectId(subj);
@@ -1906,14 +1906,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                           ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
                                           : "bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:text-white"
                                   }`}
-                                  title={`Open ${form.name} for ${subj}`}
+                                  tooltip={`Open ${form.name} for ${subj}`}
                                 >
                                   <span>{form.domain}</span>
                                   {status.openQueriesCount > 0 && (
                                     <span> !</span>
                                   )}
                                   {status.isLocked && <span> 🔒</span>}
-                                </button>
+                                </TooltipButton>
                               );
                             })}
                           </div>

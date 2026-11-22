@@ -434,14 +434,14 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
         )}
         {onRenameEverywhere && varValidation.isValid && variableNameDraft && (
           <div className="mt-1.5 flex items-center gap-2">
-            <button
+            <TooltipButton
               type="button"
               onClick={() => handleRenameEverywhere(variableNameDraft)}
               className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
-              title="Atomically updates variable name and all AST rules, conditions, and formulas"
+              tooltip="Atomically updates variable name and all AST rules, conditions, and formulas"
             >
               <span>Rename Everywhere (Atomic)</span>
-            </button>
+            </TooltipButton>
             {renameSuccess && (
               <span className="text-[10px] font-mono text-emerald-400 animate-in fade-in">
                 ✓ {renameSuccess}
@@ -886,17 +886,17 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {QUICK_TEMPLATES.map((tpl) => (
-                    <button
+                    <TooltipButton
                       key={tpl.name}
                       onClick={() => handleApplyTemplate(tpl)}
                       className="px-2 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-brand-cyan/40 text-[10px] font-sans text-zinc-300 hover:text-white transition-all flex items-center gap-1"
-                      title={`Load ${tpl.options.length} options for ${tpl.name}`}
+                      tooltip={`Load ${tpl.options.length} options for ${tpl.name}`}
                     >
                       <span>{tpl.name}</span>
                       <span className="text-[9px] font-mono text-brand-cyan/80 bg-brand-cyan/10 px-1 rounded">
                         {tpl.options.length}
                       </span>
-                    </button>
+                    </TooltipButton>
                   ))}
                 </div>
               </div>
@@ -996,24 +996,26 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                         placeholder="C-Code"
                       />
                       <div className="col-span-1 flex items-center justify-end gap-0.5">
-                        <button
+                        <TooltipButton
                           onClick={() => handleMoveOption(idx, -1)}
                           disabled={idx === 0}
                           className="p-0.5 text-zinc-500 hover:text-white disabled:opacity-20"
-                          title="Move Up"
+                          tooltip="Move Up"
+                          aria-label="Move Up"
                         >
                           <IconArrowUp className="w-2.5 h-2.5" />
-                        </button>
-                        <button
+                        </TooltipButton>
+                        <TooltipButton
                           onClick={() => handleMoveOption(idx, 1)}
                           disabled={
                             idx === (field.customOptions?.length || 0) - 1
                           }
                           className="p-0.5 text-zinc-500 hover:text-white disabled:opacity-20"
-                          title="Move Down"
+                          tooltip="Move Down"
+                          aria-label="Move Down"
                         >
                           <IconArrowDown className="w-2.5 h-2.5" />
-                        </button>
+                        </TooltipButton>
                         <TooltipButton
                           onClick={() => handleDeleteOptionItem(idx)}
                           className="p-0.5 text-zinc-500 hover:text-red-400 transition-colors"

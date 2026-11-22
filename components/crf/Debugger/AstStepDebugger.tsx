@@ -24,6 +24,7 @@ import {
   AstDebugStep,
 } from "@/lib/crf";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface AstStepDebuggerProps {
   rule: EditCheckRule;
   fields: CRFField[];
@@ -241,15 +242,15 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
         <div className="flex flex-wrap gap-1.5">
           {SAMPLE_SUBJECT_PROFILES.map((profile) => (
-            <button
+            <TooltipButton
               key={profile.id}
               type="button"
               onClick={() => handleSelectProfile(profile)}
               className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-[11px] font-mono border border-zinc-800 hover:border-brand-cyan/40 transition-colors"
-              title={profile.description}
+              tooltip={profile.description}
             >
               {profile.name}
-            </button>
+            </TooltipButton>
           ))}
         </div>
       </div>
@@ -292,25 +293,26 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
       {/* STEPPER CONTROLS BAR */}
       <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
-          <button
+          <TooltipButton
             type="button"
             onClick={() => setRawStepIndex(0)}
             disabled={activeStepIndex === 0}
             className="p-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono transition-colors"
-            title="First Step"
+            tooltip="First Step"
+            aria-label="First Step"
           >
             <IconPlayerSkipBack className="w-3.5 h-3.5" />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             onClick={() => setRawStepIndex((prev) => Math.max(0, prev - 1))}
             disabled={activeStepIndex === 0}
             className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono flex items-center gap-1 transition-colors"
-            title="Step Back"
+            tooltip="Step Back"
           >
             <IconChevronLeft className="w-3.5 h-3.5" />
             <span>Back</span>
-          </button>
+          </TooltipButton>
           <button
             type="button"
             onClick={() => setIsPlaying(!isPlaying)}
@@ -332,7 +334,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
               </>
             )}
           </button>
-          <button
+          <TooltipButton
             type="button"
             onClick={() =>
               setRawStepIndex((prev) =>
@@ -341,20 +343,21 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
             }
             disabled={activeStepIndex >= trace.steps.length - 1}
             className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono flex items-center gap-1 transition-colors"
-            title="Step Next"
+            tooltip="Step Next"
           >
             <span>Next</span>
             <IconChevronRight className="w-3.5 h-3.5" />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             onClick={() => setRawStepIndex(trace.steps.length - 1)}
             disabled={activeStepIndex >= trace.steps.length - 1}
             className="p-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono transition-colors"
-            title="End Step"
+            tooltip="End Step"
+            aria-label="End Step"
           >
             <IconPlayerSkipForward className="w-3.5 h-3.5" />
-          </button>
+          </TooltipButton>
         </div>
 
         <div className="flex items-center gap-2">

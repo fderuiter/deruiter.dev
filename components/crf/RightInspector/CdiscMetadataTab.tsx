@@ -6,6 +6,7 @@ import { CRFField, CRFForm, CdashVariableMetadata } from "@/lib/crf/types";
 import { CDASH_STANDARD_VARIABLES } from "@/lib/crf";
 import { IconDatabase, IconSparkles } from "@tabler/icons-react";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface CdiscMetadataTabProps {
   field: CRFField;
   form: CRFForm;
@@ -65,14 +66,14 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           </div>
           <div className="flex flex-wrap gap-1">
             {domainStandards.map((std) => (
-              <button
+              <TooltipButton
                 key={std.sdtmVariable}
                 onClick={() => handleAutoMapStandard(std)}
                 className="px-2 py-1 rounded bg-zinc-900 hover:bg-brand-cyan/20 border border-zinc-800 text-[10px] font-mono text-zinc-300 hover:text-brand-cyan transition-colors"
-                title={`${std.cdashLabel} (${std.core})`}
+                tooltip={`${std.cdashLabel} (${std.core})`}
               >
                 {std.sdtmVariable}
-              </button>
+              </TooltipButton>
             ))}
           </div>
         </div>

@@ -22,6 +22,7 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface AstRuleEditorProps {
   formula: string;
   onChange: (formula: string) => void;
@@ -299,15 +300,15 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
         <div className="flex items-center gap-1">
           {/* Clinical Presets Dropdown Trigger */}
           <div className="relative">
-            <button
+            <TooltipButton
               type="button"
               onClick={() => setShowPresets(!showPresets)}
               className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
-              title="Select Clinical Derivation Preset"
+              tooltip="Select Clinical Derivation Preset"
             >
               <IconSparkles className="w-3 h-3" />
               <span>Presets</span>
-            </button>
+            </TooltipButton>
 
             {showPresets && (
               <div className="absolute right-0 top-full mt-1.5 w-72 max-h-80 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
@@ -343,7 +344,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
           </div>
 
           {/* Test & Simulation Trigger */}
-          <button
+          <TooltipButton
             type="button"
             onClick={() => setShowTester(!showTester)}
             className={`px-2 py-0.5 rounded border text-[10px] font-mono flex items-center gap-1 transition-colors ${
@@ -351,21 +352,22 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                 ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
                 : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700 text-zinc-300"
             }`}
-            title="Toggle Live Test Evaluation"
+            tooltip="Toggle Live Test Evaluation"
           >
             <IconPlayerPlay className="w-3 h-3" />
             <span>Test</span>
-          </button>
+          </TooltipButton>
 
           {/* Functions Reference Trigger */}
-          <button
+          <TooltipButton
             type="button"
             onClick={() => setShowFunctionsGuide(!showFunctionsGuide)}
             className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white transition-colors"
-            title="Formula Reference Guide"
+            tooltip="Formula Reference Guide"
+            aria-label="Formula Reference Guide"
           >
             <IconHelpCircle className="w-3 h-3" />
-          </button>
+          </TooltipButton>
         </div>
       </div>
 
@@ -649,7 +651,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                 f.dataType === "nrs_scale";
 
               return (
-                <button
+                <TooltipButton
                   key={f.id}
                   type="button"
                   onClick={() => insertToken(f.variableName || f.id)}
@@ -658,7 +660,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                       ? "bg-zinc-900 hover:bg-brand-cyan/20 border-zinc-800 text-zinc-300 hover:text-brand-cyan hover:border-brand-cyan/40"
                       : "bg-zinc-950 hover:bg-amber-500/10 border-zinc-800 text-zinc-500 hover:text-amber-300 hover:border-amber-500/40"
                   }`}
-                  title={`${f.label} (${f.dataType})`}
+                  tooltip={`${f.label} (${f.dataType})`}
                 >
                   <IconPlus className="w-2.5 h-2.5 opacity-60" />
                   <span className="font-semibold">
@@ -667,7 +669,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                   <span className="text-[8px] opacity-60 uppercase">
                     {f.dataType.slice(0, 3)}
                   </span>
-                </button>
+                </TooltipButton>
               );
             })}
         </div>

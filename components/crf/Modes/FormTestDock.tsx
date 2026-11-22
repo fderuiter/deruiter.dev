@@ -28,6 +28,7 @@ import {
 } from "@/lib/crf";
 import { AstStepDebugger } from "@/components/crf/Debugger/AstStepDebugger";
 
+import { TooltipButton } from "@/components/ui/Tooltip";
 interface FormTestDockProps {
   isOpen: boolean;
   form: CRFForm | null;
@@ -202,15 +203,15 @@ export const FormTestDock: React.FC<FormTestDockProps> = ({
       <div className="px-3 sm:px-4 py-1 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-mono flex items-center gap-2 overflow-x-auto shrink-0 scrollbar-none">
         <span className="text-zinc-500 whitespace-nowrap">Load Profile:</span>
         {SAMPLE_SUBJECT_PROFILES.map((p) => (
-          <button
+          <TooltipButton
             key={p.id}
             type="button"
             onClick={() => handleApplyProfile(p.values)}
             className="px-2 py-0.5 rounded bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-brand-cyan border border-zinc-800 whitespace-nowrap transition-colors"
-            title={p.description}
+            tooltip={p.description}
           >
             {p.name}
-          </button>
+          </TooltipButton>
         ))}
       </div>
 

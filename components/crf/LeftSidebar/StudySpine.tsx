@@ -264,7 +264,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
         role="tablist"
         aria-label="Study Spine Navigation"
       >
-        <button
+        <TooltipButton
           ref={(node) => {
             tabRefs.current.spine = node;
           }}
@@ -281,13 +281,13 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
               : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
           }`}
-          title="Study Spine (Longitudinal Timeline)"
+          tooltip="Study Spine (Longitudinal Timeline)"
         >
           <IconTimeline className="w-3.5 h-3.5 shrink-0 hidden 2xl:inline" />
           <span className="truncate">Spine</span>
-        </button>
+        </TooltipButton>
 
-        <button
+        <TooltipButton
           ref={(node) => {
             tabRefs.current.forms = node;
           }}
@@ -304,13 +304,13 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
               : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
           }`}
-          title="Protocol Forms & Global Library"
+          tooltip="Protocol Forms & Global Library"
         >
           <IconBook2 className="w-3.5 h-3.5 shrink-0 hidden 2xl:inline" />
           <span className="truncate">Forms ({study.forms.length})</span>
-        </button>
+        </TooltipButton>
 
-        <button
+        <TooltipButton
           ref={(node) => {
             tabRefs.current.palette = node;
           }}
@@ -327,11 +327,11 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
               : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
           }`}
-          title="Widget Palette"
+          tooltip="Widget Palette"
         >
           <IconComponents className="w-3.5 h-3.5 shrink-0 hidden 2xl:inline" />
           <span className="truncate">Palette</span>
-        </button>
+        </TooltipButton>
       </div>
 
       {/* Main Tab Content */}
@@ -485,16 +485,17 @@ export const StudySpine: React.FC<StudySpineProps> = ({
 
                                 {/* Delete Visit Action */}
                                 {study.visits.length > 1 && (
-                                  <button
+                                  <TooltipButton
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onDeleteVisit(visit.id);
                                     }}
                                     className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-all"
-                                    title="Delete Visit"
+                                    tooltip="Delete Visit"
+                                    aria-label="Delete Visit"
                                   >
                                     <IconTrash className="w-3.5 h-3.5" />
-                                  </button>
+                                  </TooltipButton>
                                 )}
                               </div>
 
@@ -538,7 +539,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                             <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
                                               {form.domain || "CRF"}
                                             </span>
-                                            <button
+                                            <TooltipButton
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
@@ -548,11 +549,11 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                                 );
                                               }}
                                               className="p-0.5 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
-                                              title={`Unassign ${form.name} from ${visit.name}`}
+                                              tooltip={`Unassign ${form.name} from ${visit.name}`}
                                               aria-label={`Unassign ${form.name} from ${visit.name}`}
                                             >
                                               <IconLayersSubtract className="w-3 h-3" />
-                                            </button>
+                                            </TooltipButton>
                                           </div>
                                         </div>
                                       );
@@ -673,41 +674,41 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         {onCommitFormVariant && (
-                          <button
+                          <TooltipButton
                             onClick={(e) => {
                               e.stopPropagation();
                               setVariantFormId(form.id);
                             }}
                             className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
-                            title="Visit uses & variants"
+                            tooltip="Visit uses & variants"
                             aria-label={`Inspect visit uses of form ${form.name}`}
                           >
                             <IconGitFork className="w-3.5 h-3.5" />
-                          </button>
+                          </TooltipButton>
                         )}
-                        <button
+                        <TooltipButton
                           onClick={(e) => {
                             e.stopPropagation();
                             onDuplicateForm(form.id);
                           }}
                           className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
-                          title="Duplicate Form"
+                          tooltip="Duplicate Form"
                           aria-label={`Duplicate form ${form.name}`}
                         >
                           <IconCopy className="w-3.5 h-3.5" />
-                        </button>
+                        </TooltipButton>
                         {study.forms.length > 1 && (
-                          <button
+                          <TooltipButton
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteFormClick(form);
                             }}
                             className="p-1 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
-                            title="Delete Form"
+                            tooltip="Delete Form"
                             aria-label={`Delete form ${form.name}`}
                           >
                             <IconTrash className="w-3.5 h-3.5" />
-                          </button>
+                          </TooltipButton>
                         )}
                       </div>
                     </div>

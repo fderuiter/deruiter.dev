@@ -2794,8 +2794,8 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
     vi.resetModules();
     const { apiClient } = await import("@/lib/api-client");
     const queue = await import("@/hooks/useOfflineQueue");
-    queue.clearOfflineQueue();
-    queue.clearDLQ();
+    await queue.clearOfflineQueue();
+    await queue.clearDLQ();
     return { apiClient, queue };
   }
 
@@ -2822,7 +2822,7 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
       );
 
     setOnline(false);
-    queue.enqueueOfflineRequest({
+    await queue.enqueueOfflineRequest({
       type: "feedback",
       endpoint: "/api/case-studies/feedback",
       body: { caseStudySlug: "s" },
@@ -2839,7 +2839,7 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
         failureReason: "Service Unavailable",
       }),
     ]);
-    queue.clearDLQ();
+    await queue.clearDLQ();
   });
 
   it("sends the newer body when a second write reuses a queued id", async () => {
@@ -2850,8 +2850,8 @@ describe("Offline queue keeps every write it cannot send (#2552)", () => {
 
     setOnline(false);
     const write = { type: "reaction", endpoint: "/api/r", id: "same" };
-    queue.enqueueOfflineRequest({ ...write, body: { v: 1 } });
-    queue.enqueueOfflineRequest({ ...write, body: { v: 2 } });
+    await queue.enqueueOfflineRequest({ ...write, body: { v: 1 } });
+    await queue.enqueueOfflineRequest({ ...write, body: { v: 2 } });
     setOnline(true);
     await queue.flushOfflineQueue();
 

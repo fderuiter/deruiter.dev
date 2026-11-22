@@ -1,5 +1,14 @@
+// A real (in-memory) IndexedDB, so the hook runs on the durable store.
+import "fake-indexeddb/auto";
 import React from "react";
-import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   useOfflineQueue,
@@ -7,8 +16,11 @@ import {
   clearOfflineQueue,
   getOfflineQueue,
   getOfflineQueueLength,
+  getOfflineQueuePersistence,
   flushOfflineQueue,
+  loadOfflineQueue,
 } from "@/hooks/useOfflineQueue";
+import { openOfflineQueueStore } from "@/lib/offline-queue";
 import { CaseStudyFeedbackSection } from "@/components/CaseStudyFeedbackSection";
 
 // Standard mock storage implementation
@@ -33,7 +45,8 @@ class MockStorage {
 }
 
 function TestOfflineQueueComponent() {
-  const { queue, queueLength, isOnline, enqueue, clear, flush } = useOfflineQueue();
+  const { queue, queueLength, isOnline, enqueue, clear, flush } =
+    useOfflineQueue();
 
   return (
     <div>
@@ -67,9 +80,8 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
   let originalLocalStorage: Storage;
   let fetchMock: ReturnType<typeof vi.fn>;
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    clearOfflineQueue();
+  beforeEach(async () => {
+    await clearOfflineQueue();
 
     const mockStorage = new MockStorage();
     originalLocalStorage = globalThis.localStorage;
@@ -85,7 +97,12 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
           ok: true,
           status: 200,
           json: async () => ({
-            counts: { insightful: 1, mind_blowing: 0, actionable: 0, thorough: 0 },
+            counts: {
+              insightful: 1,
+              mind_blowing: 0,
+              actionable: 0,
+              thorough: 0,
+            },
             userReactions: ["insightful"],
           }),
         };
@@ -122,10 +139,9 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
-    clearOfflineQueue();
-    vi.useRealTimers();
+    await clearOfflineQueue();
     vi.restoreAllMocks();
     Object.defineProperty(globalThis, "localStorage", {
       value: originalLocalStorage,
@@ -136,11 +152,16 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
 
   describe("Requirement 1 & Acceptance Criterion 1: Optimistic UI & Offline Queueing", () => {
     it("preserves optimistic reaction state when offline without error banners", async () => {
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
 
       render(<CaseStudyFeedbackSection slug="clinical-trial-chaos" />);
 
-      const reactionBtn = screen.getByRole("button", { name: /React with Insightful/i });
+      const reactionBtn = screen.getByRole("button", {
+        name: /React with Insightful/i,
+      });
       fireEvent.click(reactionBtn);
 
       // Reaction state remains active and optimistic
@@ -150,32 +171,45 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
       expect(screen.queryByRole("alert")).toBeNull();
 
       // Request is safely queued locally
+      await waitFor(() => expect(getOfflineQueue()).toHaveLength(1));
       const queue = getOfflineQueue();
-      expect(queue.length).toBe(1);
       expect(queue[0].type).toBe("reaction");
       expect(queue[0].endpoint).toBe("/api/case-studies/reactions");
     });
 
     it("preserves optimistic feedback submission state when offline without error banners", async () => {
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
 
       render(<CaseStudyFeedbackSection slug="clinical-trial-chaos" />);
 
       // Select takeaway pill
-      const takeawayBtn = screen.getAllByRole("button", { name: /Architecture & System Design/i })[0];
+      const takeawayBtn = screen.getAllByRole("button", {
+        name: /Architecture & System Design/i,
+      })[0];
       fireEvent.click(takeawayBtn);
 
       // Enter comment
-      const commentInput = screen.getByLabelText(/Constructive Comments & Key Takeaways/i);
-      fireEvent.change(commentInput, { target: { value: "Great post-mortem breakdown of system resilience." } });
+      const commentInput = screen.getByLabelText(
+        /Constructive Comments & Key Takeaways/i
+      );
+      fireEvent.change(commentInput, {
+        target: { value: "Great post-mortem breakdown of system resilience." },
+      });
 
       // Submit feedback
-      const submitBtn = screen.getAllByRole("button", { name: /Submit Learning Feedback/i })[0];
+      const submitBtn = screen.getAllByRole("button", {
+        name: /Submit Learning Feedback/i,
+      })[0];
       fireEvent.click(submitBtn);
 
-      // Optimistic success state displayed
-      expect(screen.getByText("Feedback Submitted!")).toBeDefined();
-      expect(screen.getByText("Thank you! Your learning feedback has been recorded.")).toBeDefined();
+      // Optimistic success state displayed once the store committed it
+      expect(await screen.findByText("Feedback Submitted!")).toBeDefined();
+      expect(
+        screen.getByText("Thank you! Your learning feedback has been recorded.")
+      ).toBeDefined();
 
       // No error banner
       expect(screen.queryByText(/Network error/i)).toBeNull();
@@ -190,10 +224,13 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
 
   describe("Requirement 2 & Acceptance Criterion 2: Telemetry Retention Across Reloads", () => {
     it("persists offline telemetry events in client storage across reloads", async () => {
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
 
       // Enqueue telemetry request via offline queue utility
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "telemetry",
         endpoint: "/api/telemetry",
         body: { projectSlug: "proof-studio", eventType: "page_view" },
@@ -201,29 +238,38 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
 
       expect(getOfflineQueueLength()).toBe(1);
 
-      // Verify serialized item in LocalStorage
-      const rawStored = localStorage.getItem("portfolio_offline_queue");
-      expect(rawStored).toContain("proof-studio");
-      expect(rawStored).toContain("page_view");
+      expect(getOfflineQueuePersistence()).toBe("durable");
 
-      // Simulate browser reload by reading queue from storage
-      const reloadedQueue = getOfflineQueue();
-      expect(reloadedQueue.length).toBe(1);
-      expect(reloadedQueue[0].body).toEqual({ projectSlug: "proof-studio", eventType: "page_view" });
+      // Stored in IndexedDB, not in the legacy localStorage key
+      expect(localStorage.getItem("portfolio_offline_queue")).toBeNull();
+
+      // Simulate a reload by reading the queue through a new connection
+      const reopened = await openOfflineQueueStore();
+      if (!reopened.ok) throw new Error("store did not open");
+      const stored = await reopened.store.list();
+      reopened.store.close();
+      expect(stored).toHaveLength(1);
+      expect(stored[0].body).toEqual({
+        projectSlug: "proof-studio",
+        eventType: "page_view",
+      });
     });
   });
 
   describe("Requirement 3 & Acceptance Criterion 3: Sequential Online Event Flush", () => {
     it("automatically flushes queued requests sequentially when browser fires online event", async () => {
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "reaction",
         endpoint: "/api/case-studies/reactions",
         body: { caseStudySlug: "imednet-sdk", reactionType: "mind_blowing" },
       });
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "telemetry",
         endpoint: "/api/telemetry",
         body: { projectSlug: "imednet-sdk", eventType: "project_click" },
@@ -232,7 +278,10 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
       expect(getOfflineQueueLength()).toBe(2);
 
       // Reconnect network
-      Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+      Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true,
+      });
 
       await act(async () => {
         window.dispatchEvent(new Event("online"));
@@ -255,7 +304,10 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
     });
 
     it("applies exponential backoff on retryable 500 server errors", async () => {
-      Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+      Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true,
+      });
 
       fetchMock.mockImplementationOnce(async () => ({
         ok: false,
@@ -263,7 +315,7 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
         json: async () => ({ error: "Internal Server Error" }),
       }));
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "telemetry",
         endpoint: "/api/telemetry",
         body: { projectSlug: "test", eventType: "page_view" },
@@ -281,44 +333,47 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
   });
 
   describe("Requirement 4 & Acceptance Criterion 5: Cross-Tab Queue State Synchronization", () => {
-    it("synchronizes queue updates across browser tabs via storage events", async () => {
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+    it("synchronizes queue updates across browser tabs via BroadcastChannel", async () => {
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
 
       const { unmount } = render(<TestOfflineQueueComponent />);
 
       expect(screen.getByTestId("queue-length").textContent).toBe("0");
 
-      // Simulate queue update in another tab
-      const externalItems = [
+      await act(async () => {
+        await loadOfflineQueue();
+      });
+
+      // Another tab writes to the shared store and announces the change
+      const otherTab = await openOfflineQueueStore();
+      if (!otherTab.ok) throw new Error("store did not open");
+      await otherTab.store.enqueue(
         {
           id: "ext-1",
           type: "reaction",
           endpoint: "/api/case-studies/reactions",
           body: { caseStudySlug: "test", reactionType: "thorough" },
-          createdAt: Date.now(),
-          retries: 0,
         },
-      ];
-
-      await act(async () => {
-        localStorage.setItem("portfolio_offline_queue", JSON.stringify(externalItems));
-        window.dispatchEvent(
-          new StorageEvent("storage", {
-            key: "portfolio_offline_queue",
-            newValue: JSON.stringify(externalItems),
-          })
-        );
-        window.dispatchEvent(new CustomEvent("portfolio-offline-queue-change"));
-      });
+        Date.now()
+      );
+      otherTab.store.close();
+      const announce = new BroadcastChannel("portfolio-offline-queue");
+      announce.postMessage("changed");
+      announce.close();
 
       // Active tab reflects synchronized queue count
-      expect(screen.getByTestId("queue-length").textContent).toBe("1");
+      await waitFor(() =>
+        expect(screen.getByTestId("queue-length").textContent).toBe("1")
+      );
       unmount();
     });
   });
 
   describe("Requirement 5 & Acceptance Criterion 4: Hydration Mismatch Safety", () => {
-    it("reads storage synchronously with referential stability and zero SSR hydration warnings", () => {
+    it("reads storage synchronously with referential stability and zero SSR hydration warnings", async () => {
       const initialQueue = getOfflineQueue();
       const secondRead = getOfflineQueue();
 

@@ -231,6 +231,8 @@ export interface OfflineDispatcherOptions {
     entry: OfflineQueueEntry,
     failure: OfflineDeadLetterFailure
   ) => void;
+  /** Called after each attempt this context settles, whatever its outcome. */
+  readonly onSettled?: () => void;
   /** Longest a request may run; the lease lasts this plus a margin. */
   readonly requestTimeoutMs?: number;
 }

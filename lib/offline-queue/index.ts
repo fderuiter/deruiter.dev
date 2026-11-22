@@ -5,7 +5,8 @@
  * retry and dead-letter operations, and a one-time, restart-safe import of
  * the legacy localStorage arrays. The dispatcher claims due entries with an
  * owner token and a lease, sends them with a timeout and settles only its
- * own claim. Moving `hooks/useOfflineQueue.ts` onto them comes next.
+ * own claim. The memory store keeps the same contract for a page where
+ * IndexedDB is unavailable; its entries are volatile.
  */
 export * from "./types";
 export {
@@ -22,3 +23,4 @@ export {
   createOfflineDispatcher,
   offlineRetryDelay,
 } from "./internal/dispatcher";
+export { createMemoryOfflineQueueStore } from "./internal/memory-store";

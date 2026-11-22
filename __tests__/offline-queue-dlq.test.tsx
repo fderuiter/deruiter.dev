@@ -85,10 +85,10 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let loggerErrorSpy: ReturnType<typeof vi.spyOn>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.useFakeTimers();
-    clearOfflineQueue();
-    clearDLQ();
+    await clearOfflineQueue();
+    await clearDLQ();
 
     loggerErrorSpy = vi.spyOn(logger, "error").mockImplementation(() => ({
       level: "error",
@@ -145,10 +145,10 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
-    clearOfflineQueue();
-    clearDLQ();
+    await clearOfflineQueue();
+    await clearDLQ();
     vi.useRealTimers();
     vi.restoreAllMocks();
     Object.defineProperty(globalThis, "localStorage", {
@@ -159,14 +159,14 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
   });
 
   describe("Requirement 1 & Requirement 2: 4xx Errors Moved to DLQ", () => {
-    it("increments failed count, excludes from processed count, and saves 4xx non-retriable items to portfolio_offline_dlq", async () => {
+    it("increments failed count, excludes from processed count, and moves 4xx non-retriable items to the dead letters", async () => {
       fetchMock.mockImplementationOnce(async () => ({
         ok: false,
         status: 400,
         json: async () => ({ error: "Validation failed: Invalid comments" }),
       }));
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "feedback",
         endpoint: "/api/case-studies/feedback",
         body: {
@@ -202,10 +202,8 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
       );
       expect(typeof dlqItems[0].failedAt).toBe("number");
 
-      // 4. Verify LocalStorage key portfolio_offline_dlq
-      const rawDLQ = localStorage.getItem("portfolio_offline_dlq");
-      expect(rawDLQ).toBeDefined();
-      expect(rawDLQ).toContain("Validation failed: Invalid comments");
+      // 4. The legacy localStorage key is no longer written
+      expect(localStorage.getItem("portfolio_offline_dlq")).toBeNull();
     });
 
     it("continues processing remaining queued items after moving a 4xx item to DLQ", async () => {
@@ -222,14 +220,14 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
           json: async () => ({ ok: true }),
         }));
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         id: "item-422",
         type: "feedback",
         endpoint: "/api/case-studies/feedback",
         body: { caseStudySlug: "slug-1" },
       });
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         id: "item-200",
         type: "telemetry",
         endpoint: "/api/telemetry",
@@ -261,7 +259,7 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
         json: async () => ({ error: "Rate limit exceeded" }),
       }));
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "telemetry",
         endpoint: "/api/telemetry",
         body: { event: "rate_test" },
@@ -289,7 +287,7 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
         json: async () => ({ error: "Forbidden access" }),
       }));
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         id: "item-403",
         type: "feedback",
         endpoint: "/api/case-studies/feedback",
@@ -326,7 +324,7 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
 
       // Enqueue 55 failing requests
       for (let i = 1; i <= 55; i++) {
-        enqueueOfflineRequest({
+        await enqueueOfflineRequest({
           id: `req-${i}`,
           type: "telemetry",
           endpoint: `/api/test-${i}`,
@@ -354,7 +352,7 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
         json: async () => ({ error: "Invalid parameters" }),
       }));
 
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         id: "dlq-target",
         type: "feedback",
         endpoint: "/api/case-studies/feedback",
@@ -440,9 +438,14 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
       const submitBtn = screen.getAllByRole("button", {
         name: /Submit Learning Feedback/i,
       })[0];
-      fireEvent.click(submitBtn);
+      await act(async () => {
+        fireEvent.click(submitBtn);
+        await vi.advanceTimersByTimeAsync(0);
+      });
 
       expect(screen.getByText("Feedback Submitted!")).toBeDefined();
+      // Without IndexedDB the queue is held in memory, and the copy says so.
+      expect(screen.getByText(/Keep this page open until then/)).toBeDefined();
 
       // Simulate coming back online where server returns 422 Unprocessable Entity
       Object.defineProperty(navigator, "onLine", {

@@ -413,3 +413,32 @@ describe("dispatcher", () => {
     expect(await first).toEqual({ processed: 2, failed: 0 });
   });
 });
+
+describe("retry delay and settle callback", () => {
+  it("doubles the retry delay from 2 seconds and caps it at 30", () => {
+    expect([1, 2, 3, 4, 5, 9].map(offlineRetryDelay)).toEqual([
+      2_000,
+      4_000,
+      8_000,
+      16_000,
+      OFFLINE_MAX_RETRY_DELAY_MS,
+      OFFLINE_MAX_RETRY_DELAY_MS,
+    ]);
+  });
+
+  it("calls onSettled after each acknowledgement, retry and dead letter", async () => {
+    const store = await open();
+    await store.enqueue(input("ok"), clock);
+    await store.enqueue({ ...input("bad"), maxRetries: 1 }, clock);
+    const onSettled = vi.fn();
+    const send = vi
+      .fn<OfflineDispatcherOptions["send"]>()
+      .mockImplementationOnce(ok)
+      .mockImplementationOnce(transient);
+    const d = dispatcher(store, send, { onSettled });
+
+    expect(await d.flush()).toEqual({ processed: 1, failed: 1 });
+    expect(onSettled).toHaveBeenCalledTimes(2);
+    expect(await store.deadLetters()).toHaveLength(1);
+  });
+});

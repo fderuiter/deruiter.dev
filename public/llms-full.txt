@@ -266,15 +266,15 @@ Source: https://github.com/fderuiter/OxidizeMath
 
 Abstract:
 
-A **Rust** scientific computing framework exploring numerical solvers, compile-time checks, and interactive simulations. The aim is to keep the mathematical model and the code that runs it close together.
+A **Rust** workspace for scientific simulation where the LaTeX papers, the code and the CI gates check each other. It builds for the desktop and for the browser from one codebase.
 
 Architecture and trade-offs:
 
 The problem
 
-Scientific software often separates the mathematical description from the code that runs quickly. OxidizeMath explores bringing those closer together in Rust, with numerical solvers, compile-time checks, and interactive views of simulation state.
+A scientific model usually lives in two places: the paper that derives it and the code that runs it. They drift. Someone fixes a sign in the code and not the paper, or copies an equation into a comment and edits only one copy. OxidizeMath tries to make the build notice.
 
-The approach: Rust modules separate numerical domains, while procedural macros and buffered state updates support checking and simulation.
+The approach: procedural macros read equations out of the LaTeX papers at compile time and check the Rust against them, a custom global allocator refuses heap allocation inside verified runs, and a workspace tool runs the structural checks in CI.
 
 ### Polyglot-TSP: One Problem, 50+ Languages
 

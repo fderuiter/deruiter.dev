@@ -41,6 +41,7 @@ export const PUBLIC_ROUTE_REGISTRY = [
   { path: "/crf", name: "CRF Builder & AST", category: "tool" },
   { path: "/platform", name: "Clinical Data Platform", category: "tool" },
   { path: "/study-data", name: "Study Data Pipeline", category: "tool" },
+  { path: "/study-studio", name: "Clinical Study Studio", category: "tool" },
   {
     path: "/platform/strategy",
     name: "Platform Strategy Toolkit",

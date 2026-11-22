@@ -106,6 +106,7 @@ const EXPECTED_ROWS = [
   "nav-labs | Labs",
   "nav-platform | Clinical Data Platform",
   "nav-study-data | Study Data Pipeline",
+  "nav-study-studio | Clinical Study Studio",
   "action-macro-start | ⏺ Start Macro Recording",
 ];
 

@@ -151,6 +151,19 @@ const JOURNEY_ITEMS: NavItem[] = CLINICAL_JOURNEY.flatMap((step, index) => {
 });
 
 /** Tools that hang off the Clinical Data Platform hub. */
+/** Clinical tools that are being built, listed so visitors can follow them. */
+const CLINICAL_IN_DEVELOPMENT_ITEMS: NavItem[] = [
+  {
+    id: "study-studio",
+    title: "Clinical Study Studio",
+    subtitle: "One USDM study workspace, in development",
+    href: "/study-studio",
+    icon: "clipboard",
+    tone: "amber",
+    badge: "Studio",
+  },
+];
+
 const PLATFORM_TOOL_ITEMS: NavItem[] = [
   {
     id: "platform-portfolio",
@@ -526,6 +539,11 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
       },
       { id: "evidence", label: "Evidence", items: CLINICAL_EVIDENCE_ITEMS },
       { id: "practice", label: "Practice", items: CLINICAL_GAME_ITEMS },
+      {
+        id: "in-development",
+        label: "In development",
+        items: CLINICAL_IN_DEVELOPMENT_ITEMS,
+      },
     ],
     activeWhen: {
       exact: [
@@ -534,6 +552,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
         "/crf",
         PIPELINE_SIMULATOR_PATH,
         "/study-data",
+        "/study-studio",
         ...CLINICAL_GAME_ROUTES,
       ],
       prefixes: ["/platform", "/m/crf"],

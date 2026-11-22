@@ -1268,4 +1268,23 @@ export const STATIC_NAVS: readonly StaticNavEntry[] = [
       "Datasets and outputs as downloadable packages",
     ],
   },
+  {
+    id: "nav-study-studio",
+    title: "Clinical Study Studio",
+    subtitle:
+      "One USDM study workspace for design, schedule and randomization.",
+    category: "navigation",
+    url: "/study-studio",
+    icon: { name: "IconFileCode", className: "h-4 w-4 text-amber-400" },
+    badge: "Studio",
+    status: "In development",
+    description:
+      "Work on a USDM study's design, schedule, narrative, analysis intent and randomization as views of one workspace that CRF Studio and the Study Data Pipeline also read.",
+    techStack: ["TypeScript", "USDM", "JSON Patch", "Web Worker"],
+    highlights: [
+      "One versioned workspace with undo and redo",
+      "Imported study first, nothing invented",
+      "Five work areas, built one at a time",
+    ],
+  },
 ];

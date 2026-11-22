@@ -437,6 +437,7 @@ The approach: A Next.js site with a home page (our story, the schedule, the venu
 - [In-Browser Clinical SQL Workbench](https://deruiter.dev/platform/sql): Run read-only SQL on a synthetic clinical warehouse in your browser with DuckDB-WASM: saved queries, governed metric SQL in three dialects and a schema browser.
 - [Clinical Platform Strategy Toolkit](https://deruiter.dev/platform/strategy): Compare fictional platform vendors with weighted scoring, sensitivity, five-year build versus buy economics, maturity and roadmap tools, then export a memo.
 - [Study Data Pipeline: USDM to TLFs](https://deruiter.dev/study-data): Run a synthetic study from a USDM definition through SDTM, conformance checks, ADaM, Define-XML and tables, then trace any result back to its source.
+- [Clinical Study Studio: USDM Workspace](https://deruiter.dev/study-studio): Work on a USDM study's design, schedule, narrative, analysis intent and randomization as views of one workspace, so every clinical tool reads the same facts.
 
 ## Labs
 

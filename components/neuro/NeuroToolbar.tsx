@@ -95,7 +95,6 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               key={tool.id}
               onClick={() => onToolModeChange(tool.id)}
               tooltip={`${tool.label} [${tool.key}]`}
-              aria-label={tool.label}
               className={`flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded-lg text-xs font-mono transition-all select-none ${
                 isActive
                   ? "bg-zinc-800 text-white font-bold border border-zinc-700 shadow-sm"
@@ -103,7 +102,9 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               }`}
             >
               {tool.icon}
-              <span className="hidden sm:inline">
+              {/* Below sm the word is visually hidden but still names the
+                  button, so the name matches the visible text at every width. */}
+              <span className="sr-only sm:not-sr-only sm:inline">
                 {tool.label.split(" ")[0]}
               </span>
               <span className="text-[10px] text-zinc-400 hidden lg:inline">

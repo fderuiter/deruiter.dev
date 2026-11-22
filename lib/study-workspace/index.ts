@@ -62,3 +62,15 @@ export {
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
 } from "./internal/design-terms";
+export { applyStudyPayloadPatch, createStudyPayloadEdit } from "./internal/ops";
+export {
+  addStudyRandomizationPlan,
+  bindStudyRandomizationEvidence,
+  checkStudyRandomizationEvidence,
+  removeStudyRandomizationPlan,
+  resolveStudyRandomizationPlan,
+  updateStudyRandomizationPlan,
+  type NewStudyRandomizationPlan,
+  type StudyRandomizationPlanChanges,
+} from "./internal/randomization";
+export type { StudyWorkspacePayload } from "./internal/revision";

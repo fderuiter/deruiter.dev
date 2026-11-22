@@ -3,8 +3,34 @@ import {
   STUDY_WORKSPACE_VERSION,
   type OpenStudyWorkspaceResult,
   type PreservedReason,
+  type StudyRandomizationPlan,
   type StudyWorkspace,
 } from "../types";
+
+/** The parts of a workspace that one revision fixes. */
+export interface StudyWorkspacePayload {
+  readonly usdm: UsdmV4Document;
+  readonly analyses: readonly unknown[];
+  readonly randomizationPlans: readonly StudyRandomizationPlan[];
+}
+
+/** SHA-256 of the canonical JSON of the working payload. */
+export function payloadContentHash(payload: StudyWorkspacePayload): string {
+  return usdmContentHash({
+    usdm: payload.usdm,
+    analyses: payload.analyses,
+    randomizationPlans: payload.randomizationPlans,
+  });
+}
+
+/** The working payload of a workspace. */
+export function payloadOf(workspace: StudyWorkspace): StudyWorkspacePayload {
+  return {
+    usdm: workspace.usdm,
+    analyses: workspace.analyses,
+    randomizationPlans: workspace.randomizationPlans,
+  };
+}
 
 /** Thrown when an edit was made against a revision that is no longer current. */
 export class StudyWorkspaceConflictError extends Error {
@@ -38,20 +64,45 @@ export function commitStudyRevision(
   usdm: UsdmV4Document,
   change: { readonly expectedRevisionId: string; readonly note: string }
 ): StudyWorkspace {
+  return commitStudyPayload(
+    workspace,
+    { ...payloadOf(workspace), usdm },
+    change
+  );
+}
+
+/**
+ * Makes the next revision from an edited payload: the USDM document,
+ * analyses and randomization plans together.
+ *
+ * @throws StudyWorkspaceConflictError when `expectedRevisionId` is not the
+ *   current revision.
+ */
+export function commitStudyPayload(
+  workspace: StudyWorkspace,
+  payload: StudyWorkspacePayload,
+  change: { readonly expectedRevisionId: string; readonly note: string }
+): StudyWorkspace {
   if (change.expectedRevisionId !== workspace.revision.id) {
     throw new StudyWorkspaceConflictError(
       change.expectedRevisionId,
       workspace.revision.id
     );
   }
+  const next = structuredClone({
+    usdm: payload.usdm,
+    analyses: payload.analyses,
+    randomizationPlans: payload.randomizationPlans,
+  });
   return {
     ...workspace,
-    usdm: structuredClone(usdm),
+    ...next,
     revision: {
       id: `R${revisionNumber(workspace.revision.id) + 1}`,
       parentId: workspace.revision.id,
       note: change.note,
-      sha256: usdmContentHash(usdm),
+      sha256: usdmContentHash(next.usdm),
+      payloadSha256: payloadContentHash(next),
     },
   };
 }
@@ -169,7 +220,10 @@ export function openStudyWorkspace(text: string): OpenStudyWorkspaceResult {
   ) {
     return { status: "invalid", problem: "not-a-workspace" };
   }
-  if (value.workspaceVersion !== STUDY_WORKSPACE_VERSION) {
+  if (
+    value.workspaceVersion !== 1 &&
+    value.workspaceVersion !== STUDY_WORKSPACE_VERSION
+  ) {
     return { status: "invalid", problem: "unsupported-version" };
   }
   if (!hasWorkspaceShape(value)) {
@@ -178,5 +232,61 @@ export function openStudyWorkspace(text: string): OpenStudyWorkspaceResult {
   if (usdmContentHash(value.usdm) !== value.revision.sha256) {
     return { status: "invalid", problem: "revision-hash-mismatch" };
   }
-  return { status: "ok", workspace: value as unknown as StudyWorkspace };
+  if (value.workspaceVersion === 1) {
+    // A version 1 file has no analyses or plans; it opens as version 2
+    // with empty collections and keeps its USDM-only revision hash.
+    const migrated = {
+      ...value,
+      workspaceVersion: STUDY_WORKSPACE_VERSION,
+      analyses: [],
+      randomizationPlans: [],
+    } as unknown as StudyWorkspace;
+    return {
+      status: "ok",
+      workspace: {
+        ...migrated,
+        revision: {
+          ...migrated.revision,
+          payloadSha256: payloadContentHash(migrated),
+        },
+      },
+    };
+  }
+  if (
+    !Array.isArray(value.analyses) ||
+    !Array.isArray(value.randomizationPlans) ||
+    !value.randomizationPlans.every(isPlanShape) ||
+    !isString(value.revision.payloadSha256)
+  ) {
+    return { status: "invalid", problem: "not-a-workspace" };
+  }
+  const workspace = value as unknown as StudyWorkspace;
+  if (payloadContentHash(workspace) !== workspace.revision.payloadSha256) {
+    return { status: "invalid", problem: "revision-hash-mismatch" };
+  }
+  return { status: "ok", workspace };
+}
+
+/** Whether a saved plan holds the fields readers rely on. */
+function isPlanShape(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    value.schemaVersion === 1 &&
+    isString(value.name) &&
+    (value.state === "draft" ||
+      value.state === "exploration" ||
+      value.state === "acknowledged-reference") &&
+    isString(value.studyVersionId) &&
+    isString(value.studyDesignId) &&
+    Array.isArray(value.arms) &&
+    value.arms.every(
+      (arm) =>
+        isRecord(arm) &&
+        isString(arm.armId) &&
+        isString(arm.code) &&
+        typeof arm.allocationRatio === "number"
+    ) &&
+    isRecord(value.mechanics)
+  );
 }

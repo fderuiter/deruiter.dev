@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MT19937_MINIMIZATION_ALGORITHM_ID,
@@ -116,7 +117,7 @@ function scriptedClient() {
     createWorker: () => {
       const worker = new ScriptedWorker();
       workers.push(worker);
-      return worker as unknown as Worker;
+      return fromAny<Worker, ScriptedWorker>(worker);
     },
   });
   clients.push(client);

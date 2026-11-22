@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   MT19937_BLOCK_ALGORITHM_ID,
@@ -159,10 +160,12 @@ class HostWorker {
   }
 
   fail(message = "boom") {
-    this.onerror?.({
-      message,
-      preventDefault() {},
-    } as unknown as ErrorEvent);
+    this.onerror?.(
+      fromPartial<ErrorEvent>({
+        message,
+        preventDefault() {},
+      })
+    );
   }
 }
 
@@ -175,7 +178,7 @@ const workerClient = (
       const worker = new HostWorker();
       setup(worker);
       workers.push(worker);
-      return worker as unknown as Worker;
+      return fromAny<Worker, HostWorker>(worker);
     },
   });
 

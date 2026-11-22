@@ -1,14 +1,14 @@
 # Offline queue store
 
-Reference for the IndexedDB store that will replace the localStorage offline
+Reference for the IndexedDB store that replaced the localStorage offline
 queue ([#3807](https://github.com/fderuiter/deruiter.dev/issues/3807)). It
 records the store contract, the slice plan, and what each queue consumer's
 endpoint already does about duplicate requests.
 
 ## Why IndexedDB
 
-The current queue in `hooks/useOfflineQueue.ts` keeps its entries in one
-localStorage array, and every change reads, modifies and writes that whole
+The queue in `hooks/useOfflineQueue.ts` used to keep its entries in one
+localStorage array, and every change read, modified and wrote that whole
 array. Two tabs can interleave those steps and lose each other's rows.
 localStorage offers no atomic compare-and-swap, so a lease kept there can't
 fix this, and a Web Lock around flushing doesn't cover enqueue, replacement
@@ -21,11 +21,11 @@ transaction, and the data survives a restart.
 | --- | --- | --- |
 | 1 | `lib/offline-queue`: store schema, atomic entry operations and the legacy import | Implemented, tested in `__tests__/offline-queue-store.test.ts` |
 | 2a | Claims with owner tokens and leases, and a dispatcher with persisted deadlines, request timeouts and lease-expiry recovery | Implemented, tested in `__tests__/offline-queue-dispatcher.test.ts` |
-| 2b | Moving `hooks/useOfflineQueue.ts` and `components/CaseStudyFeedbackSection.tsx` onto the store and dispatcher, and retiring the legacy keys | Pending |
+| 2b | Moving `hooks/useOfflineQueue.ts` and `components/CaseStudyFeedbackSection.tsx` onto the store and dispatcher, a memory fallback, and retiring the legacy keys | Implemented, tested in `__tests__/offline-queue-hook-storage.test.ts`, `__tests__/offline-queue-memory-store.test.ts` and the hook suites |
 | 3 | Endpoint work where the audit below finds a gap | Pending |
 
-Until slice 2b lands, the site still uses the localStorage queue. Nothing reads
-or writes the IndexedDB store yet.
+The site queues through the IndexedDB store. The old localStorage keys are
+read once, by the legacy import below, and then removed.
 
 ## Schema (version 1)
 
@@ -94,8 +94,24 @@ same transaction as the `legacyImport` marker.
 - If the import aborts, nothing is imported and the marker isn't written, so
   the next start tries again. Once the import has committed, it does nothing.
 
-Slice 2 decides when the legacy keys are retired and stops the old dispatcher
-from reading them once the import has committed.
+The hook removes both legacy keys once the import has committed, or once the
+marker shows an earlier start already imported them. A tab still running the
+old build then finds them empty and stops sending those rows. If the import
+fails, the keys stay for the next start.
+
+## Hook
+
+`hooks/useOfflineQueue.ts` opens the store once per page, imports the legacy
+keys and starts one dispatcher. Its exports that change the queue are async
+and resolve once the store has committed.
+
+| Concern | Rule |
+| --- | --- |
+| Persistence | `getOfflineQueuePersistence()` and the hook's `persistence` are `pending` until the store opens, then `durable`. If IndexedDB is missing or blocked, the hook uses the memory store (`createMemoryOfflineQueueStore`, same contract) and reports `volatile`. Callers must not tell the visitor a volatile write survives a reload. |
+| Sending | `POST`, `PUT`, `PATCH` and `DELETE` map to the API client. A 2xx is `ok`. A 4xx other than 408 or 429 is `permanent`, with the reason read from the response. Everything else, and a network error, is `transient`. |
+| Dead letters | Each one is logged and announced as a `portfolio-offline-queue-error` event with the dead letter as its detail. |
+| Other tabs | Each change is announced on the `portfolio-offline-queue` BroadcastChannel. Other tabs re-read the store, then flush. |
+| Feedback form | `CaseStudyFeedbackSection` shows success only after the write committed. A volatile write says the feedback will be sent when the visitor is back online and asks them to keep the page open. A write the store rejects shows an error. |
 
 ## Endpoint audit
 

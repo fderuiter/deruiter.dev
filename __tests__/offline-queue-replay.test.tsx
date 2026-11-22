@@ -37,9 +37,6 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
-const QUEUE_KEY = "portfolio_offline_queue";
-const DLQ_KEY = "portfolio_offline_dlq";
-
 class MockStorage {
   private store: Record<string, string> = {};
 
@@ -57,13 +54,6 @@ class MockStorage {
 
   clear(): void {
     this.store = {};
-  }
-}
-
-/** Storage whose writes always fail, as in a full or locked-down browser. */
-class ThrowingWriteStorage extends MockStorage {
-  setItem(): void {
-    throw new Error("QuotaExceededError");
   }
 }
 
@@ -110,12 +100,6 @@ function enqueueTelemetry(label: string, extra: Partial<QueuedRequest> = {}) {
   });
 }
 
-/** Writes a queue directly to storage, as another tab or an older build would. */
-function seedQueueFromAnotherTab(items: unknown) {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new StorageEvent("storage", { key: QUEUE_KEY }));
-}
-
 function postedEndpoints(): string[] {
   return mockPost.mock.calls.map((call) => String(call[0]));
 }
@@ -123,11 +107,11 @@ function postedEndpoints(): string[] {
 describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
   let originalLocalStorage: Storage;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.useFakeTimers();
     setOnline(false);
-    clearOfflineQueue();
-    clearDLQ();
+    await clearOfflineQueue();
+    await clearDLQ();
     originalLocalStorage = globalThis.localStorage;
     Object.defineProperty(globalThis, "localStorage", {
       value: new MockStorage(),
@@ -153,8 +137,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
   afterEach(async () => {
     cleanup();
     setOnline(false);
-    clearOfflineQueue();
-    clearDLQ();
+    await clearOfflineQueue();
+    await clearDLQ();
     await vi.advanceTimersByTimeAsync(0);
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -167,9 +151,9 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
 
   describe("replay on reconnect", () => {
     it("sends three items queued offline in FIFO order when the browser comes online", async () => {
-      enqueueTelemetry("a");
-      enqueueTelemetry("b");
-      enqueueTelemetry("c");
+      await enqueueTelemetry("a");
+      await enqueueTelemetry("b");
+      await enqueueTelemetry("c");
       expect(getOfflineQueueLength()).toBe(3);
       expect(mockPost).not.toHaveBeenCalled();
 
@@ -188,9 +172,9 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("keeps a 5xx item and every item behind it queued, then replays them in order after backoff", async () => {
-      enqueueTelemetry("a");
-      enqueueTelemetry("b");
-      enqueueTelemetry("c");
+      await enqueueTelemetry("a");
+      await enqueueTelemetry("b");
+      await enqueueTelemetry("c");
       mockPost
         .mockResolvedValueOnce(ok())
         .mockResolvedValueOnce(response({ status: 503 }));
@@ -235,8 +219,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("treats a network failure (status 0) as retryable, not as a dead letter", async () => {
-      enqueueTelemetry("a");
-      enqueueTelemetry("b");
+      await enqueueTelemetry("a");
+      await enqueueTelemetry("b");
       mockPost.mockResolvedValueOnce(
         response({ status: 0, networkError: true })
       );
@@ -251,9 +235,9 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("moves a 4xx item to the DLQ but carries on with the items behind it", async () => {
-      enqueueTelemetry("a");
-      enqueueTelemetry("b");
-      enqueueTelemetry("c");
+      await enqueueTelemetry("a");
+      await enqueueTelemetry("b");
+      await enqueueTelemetry("c");
       mockPost
         .mockResolvedValueOnce(ok())
         .mockResolvedValueOnce(response({ status: 422, error: "bad" }));
@@ -271,8 +255,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("stops replaying when the browser drops offline mid-flush", async () => {
-      enqueueTelemetry("a");
-      enqueueTelemetry("b");
+      await enqueueTelemetry("a");
+      await enqueueTelemetry("b");
       mockPost.mockImplementationOnce(async () => {
         setOnline(false);
         return ok();
@@ -293,10 +277,10 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
 
   describe("duplicate ids", () => {
     it("replaces the queued entry in place, so the newer body is the one sent (#2552)", async () => {
-      enqueueTelemetry("first");
-      enqueueTelemetry("dup", { id: "same-id" });
-      enqueueTelemetry("last");
-      enqueueTelemetry("dup-second", { id: "same-id" });
+      await enqueueTelemetry("first");
+      await enqueueTelemetry("dup", { id: "same-id" });
+      await enqueueTelemetry("last");
+      await enqueueTelemetry("dup-second", { id: "same-id" });
 
       expect(getOfflineQueue().map((i) => i.endpoint)).toEqual([
         "/api/telemetry/first",
@@ -321,7 +305,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("restarts the retry count when a failed entry is replaced (#2552)", async () => {
-      enqueueTelemetry("dup", { id: "same-id" });
+      await enqueueTelemetry("dup", { id: "same-id" });
       mockPost.mockResolvedValueOnce(response({ status: 500 }));
 
       setOnline(true);
@@ -331,7 +315,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       expect(getOfflineQueue().map((i) => i.retries)).toEqual([1]);
 
       setOnline(false);
-      enqueueTelemetry("dup-second", { id: "same-id" });
+      await enqueueTelemetry("dup-second", { id: "same-id" });
 
       expect(getOfflineQueue()).toHaveLength(1);
       expect(getOfflineQueue()[0]).toMatchObject({
@@ -375,11 +359,11 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     }
 
     it("keeps and then sends the newer body when the older one succeeds", async () => {
-      enqueueTelemetry("v1", { id: "K" });
+      await enqueueTelemetry("v1", { id: "K" });
       const held = holdNextPost();
       const { done: flush } = await startFlush();
 
-      enqueueTelemetry("v2", { id: "K" });
+      await enqueueTelemetry("v2", { id: "K" });
       held.finish(ok());
       await act(async () => {
         await flush;
@@ -390,45 +374,50 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("leaves the newer body's retry count alone when the older one gets a retryable error", async () => {
-      enqueueTelemetry("v1", { id: "K" });
+      await enqueueTelemetry("v1", { id: "K" });
       const held = holdNextPost();
       const { done: flush } = await startFlush();
 
-      enqueueTelemetry("v2", { id: "K" });
+      await enqueueTelemetry("v2", { id: "K" });
+      mockPost.mockResolvedValueOnce(response({ status: 503 }));
       held.finish(response({ status: 503 }));
       await act(async () => {
         await flush;
       });
 
+      // v2's own attempt failed once; v1's failure was not counted against it.
+      expect(bodies()).toEqual([{ label: "v1" }, { label: "v2" }]);
       expect(getOfflineQueue()).toHaveLength(1);
       expect(getOfflineQueue()[0]).toMatchObject({
         body: { label: "v2" },
-        retries: 0,
+        retries: 1,
       });
     });
 
     it("keeps the newer body when the older one is rejected for good", async () => {
-      enqueueTelemetry("v1", { id: "K" });
+      await enqueueTelemetry("v1", { id: "K" });
       const held = holdNextPost();
       const { done: flush } = await startFlush();
 
-      enqueueTelemetry("v2", { id: "K" });
+      await enqueueTelemetry("v2", { id: "K" });
       held.finish(response({ status: 422, error: "bad v1" }));
       await act(async () => {
         await flush;
       });
 
-      expect(getDLQ().map((item) => item.body)).toEqual([{ label: "v1" }]);
+      // The rejected body was already replaced, so it is not dead-lettered.
+      expect(getDLQLength()).toBe(0);
       expect(bodies()).toEqual([{ label: "v1" }, { label: "v2" }]);
       expect(getOfflineQueueLength()).toBe(0);
     });
 
     it("keeps the newer body when the older send throws", async () => {
-      enqueueTelemetry("v1", { id: "K" });
+      await enqueueTelemetry("v1", { id: "K" });
       const held = holdNextPost();
       const { done: flush } = await startFlush();
 
-      enqueueTelemetry("v2", { id: "K" });
+      await enqueueTelemetry("v2", { id: "K" });
+      mockPost.mockRejectedValueOnce(new Error("still down"));
       held.fail(new Error("socket hang up"));
       await act(async () => {
         await flush;
@@ -436,12 +425,12 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
 
       expect(getOfflineQueue()[0]).toMatchObject({
         body: { label: "v2" },
-        retries: 0,
+        retries: 1,
       });
     });
 
     it("does not let a DLQ retry overwrite a newer queued body", async () => {
-      enqueueTelemetry("v1", { id: "K" });
+      await enqueueTelemetry("v1", { id: "K" });
       mockPost.mockResolvedValueOnce(response({ status: 400, error: "bad" }));
       setOnline(true);
       await act(async () => {
@@ -450,38 +439,20 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       expect(getDLQLength()).toBe(1);
 
       setOnline(false);
-      enqueueTelemetry("v2", { id: "K" });
-      retryDLQItem("K");
+      await enqueueTelemetry("v2", { id: "K" });
+      await retryDLQItem("K");
 
       expect(getDLQLength()).toBe(0);
-      expect(getOfflineQueue().map((item) => item.body)).toEqual([{ label: "v2" }]);
-    });
-
-    it("reads entries stored without a revision as revision 0", async () => {
-      seedQueueFromAnotherTab([
-        {
-          id: "legacy",
-          type: "telemetry",
-          endpoint: "/api/telemetry/legacy",
-          method: "POST",
-          body: { label: "legacy" },
-          createdAt: 1,
-          retries: 0,
-        },
+      expect(getOfflineQueue().map((item) => item.body)).toEqual([
+        { label: "v2" },
       ]);
-      setOnline(true);
-      await act(async () => {
-        await flushOfflineQueue();
-      });
-      expect(bodies()).toEqual([{ label: "legacy" }]);
-      expect(getOfflineQueueLength()).toBe(0);
     });
   });
 
   describe("retry paths", () => {
     it("dead-letters a retryable item with its last failure reason once maxRetries is exhausted, and continues with the next (#2552)", async () => {
-      enqueueTelemetry("a", { maxRetries: 1 });
-      enqueueTelemetry("b");
+      await enqueueTelemetry("a", { maxRetries: 1 });
+      await enqueueTelemetry("b");
       mockPost.mockResolvedValueOnce(
         response({ status: 503, error: "Service Unavailable" })
       );
@@ -509,8 +480,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("names the status, or a network error, when an exhausted response carries no error text (#2552)", async () => {
-      enqueueTelemetry("a", { maxRetries: 1 });
-      enqueueTelemetry("b", { maxRetries: 1 });
+      await enqueueTelemetry("a", { maxRetries: 1 });
+      await enqueueTelemetry("b", { maxRetries: 1 });
       mockPost
         .mockResolvedValueOnce(response({ status: 500 }))
         .mockResolvedValueOnce(response({ status: 0, networkError: true }));
@@ -529,7 +500,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("retries 429 and 408 with backoff instead of dead-lettering them", async () => {
-      enqueueTelemetry("a");
+      await enqueueTelemetry("a");
       mockPost
         .mockResolvedValueOnce(response({ status: 429 }))
         .mockResolvedValueOnce(response({ status: 408 }));
@@ -557,8 +528,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("treats a thrown client error as retryable and schedules a backoff", async () => {
-      enqueueTelemetry("a");
-      enqueueTelemetry("b");
+      await enqueueTelemetry("a");
+      await enqueueTelemetry("b");
       mockPost.mockRejectedValueOnce(new Error("boom"));
 
       setOnline(true);
@@ -578,9 +549,9 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("dead-letters a thrown item with the error message once its maxRetries is exhausted, and continues (#2552)", async () => {
-      enqueueTelemetry("a", { maxRetries: 1 });
-      enqueueTelemetry("b");
-      enqueueTelemetry("c", { maxRetries: 1 });
+      await enqueueTelemetry("a", { maxRetries: 1 });
+      await enqueueTelemetry("b");
+      await enqueueTelemetry("c", { maxRetries: 1 });
       mockPost
         .mockRejectedValueOnce(new Error("boom"))
         .mockResolvedValueOnce(ok())
@@ -602,54 +573,39 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       ]);
     });
 
-    it("defaults maxRetries to 5 for stored items that predate the field", async () => {
-      seedQueueFromAnotherTab([
-        {
-          id: "legacy",
-          type: "telemetry",
-          endpoint: "/api/legacy",
-          body: {},
-          createdAt: 0,
-          retries: 4,
-        },
-      ]);
-      mockPost.mockResolvedValueOnce(response({ status: 500 }));
+    it("caps the backoff delay at 30 seconds", async () => {
+      await enqueueTelemetry("a", { maxRetries: 10 });
+      mockPost.mockResolvedValue(response({ status: 500 }));
 
       setOnline(true);
       await act(async () => {
         await flushOfflineQueue();
       });
+      // Retries 1 to 4 wait 2, 4, 8 and 16 seconds.
+      for (const delay of [2000, 4000, 8000, 16000]) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(delay);
+        });
+      }
+      expect(mockPost).toHaveBeenCalledTimes(5);
+      expect(getOfflineQueue()[0].retries).toBe(5);
 
-      // retries 4 -> 5 reaches the default ceiling of 5, so it is dropped.
+      // 1000 * 2^5 would be 32s; the cap brings it to 30s.
+      mockPost.mockResolvedValue(ok());
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(29999);
+      });
+      expect(mockPost).toHaveBeenCalledTimes(5);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      await settle();
+      expect(mockPost).toHaveBeenCalledTimes(6);
       expect(getOfflineQueueLength()).toBe(0);
     });
 
-    it("defaults maxRetries to 5 for legacy items when the client throws", async () => {
-      seedQueueFromAnotherTab([
-        {
-          id: "legacy",
-          type: "telemetry",
-          endpoint: "/api/legacy",
-          body: {},
-          createdAt: 0,
-          retries: 3,
-        },
-      ]);
-      mockPost.mockRejectedValueOnce(new Error("boom"));
-
-      setOnline(true);
-      await act(async () => {
-        await flushOfflineQueue();
-      });
-
-      expect(getOfflineQueue()[0].retries).toBe(4);
-    });
-
-    it("caps the backoff delay at 30 seconds", async () => {
-      enqueueTelemetry("a", { maxRetries: 10 });
-      seedQueueFromAnotherTab(
-        getOfflineQueue().map((i) => ({ ...i, retries: 6 }))
-      );
+    it("holds the retry deadline when a manual flush starts early", async () => {
+      await enqueueTelemetry("a");
       mockPost.mockResolvedValueOnce(response({ status: 500 }));
 
       setOnline(true);
@@ -658,32 +614,21 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       });
       expect(mockPost).toHaveBeenCalledTimes(1);
 
-      // 1000 * 2^7 would be 128s; the cap brings it to 30s.
+      // Not due yet, so an early flush sends nothing.
+      let early = { processed: -1, failed: -1 };
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(30000);
+        early = await flushOfflineQueue();
+      });
+      expect(early).toEqual({ processed: 0, failed: 0 });
+      expect(mockPost).toHaveBeenCalledTimes(1);
+
+      // The rescheduled wake sends it once at the deadline, and only once.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
       });
       await settle();
       expect(mockPost).toHaveBeenCalledTimes(2);
       expect(getOfflineQueueLength()).toBe(0);
-    });
-
-    it("cancels a pending backoff timer when a manual flush starts", async () => {
-      enqueueTelemetry("a");
-      mockPost.mockResolvedValueOnce(response({ status: 500 }));
-
-      setOnline(true);
-      await act(async () => {
-        await flushOfflineQueue();
-      });
-      expect(mockPost).toHaveBeenCalledTimes(1);
-
-      await act(async () => {
-        await flushOfflineQueue();
-      });
-      expect(mockPost).toHaveBeenCalledTimes(2);
-      expect(getOfflineQueueLength()).toBe(0);
-
-      // The cancelled timer must not fire a third request.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(5000);
       });
@@ -691,15 +636,15 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("cancels a pending backoff timer when the queue is cleared", async () => {
-      enqueueTelemetry("a");
+      await enqueueTelemetry("a");
       mockPost.mockResolvedValueOnce(response({ status: 500 }));
 
       setOnline(true);
       await act(async () => {
         await flushOfflineQueue();
       });
-      clearOfflineQueue();
-      enqueueTelemetry("b");
+      await clearOfflineQueue();
+      await enqueueTelemetry("b");
       // Enqueue while online schedules its own microtask flush.
       await settle();
       expect(postedEndpoints()).toEqual([
@@ -713,8 +658,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       expect(mockPost).toHaveBeenCalledTimes(2);
     });
 
-    it("ignores a flush that starts while another is still running", async () => {
-      enqueueTelemetry("a");
+    it("shares one pass between flushes that overlap", async () => {
+      await enqueueTelemetry("a");
       let release: (value: ApiClientResponse<unknown>) => void = () => {};
       mockPost.mockImplementationOnce(
         () =>
@@ -725,11 +670,15 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
 
       setOnline(true);
       const first = flushOfflineQueue();
-      const second = await flushOfflineQueue();
-      expect(second).toEqual({ processed: 0, failed: 0 });
+      await vi.advanceTimersByTimeAsync(0);
+      const second = flushOfflineQueue();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(mockPost).toHaveBeenCalledTimes(1);
 
       release(ok());
       await expect(first).resolves.toEqual({ processed: 1, failed: 0 });
+      await expect(second).resolves.toEqual({ processed: 1, failed: 0 });
+      expect(mockPost).toHaveBeenCalledTimes(1);
     });
 
     it("returns an empty summary when offline or when nothing is queued", async () => {
@@ -737,7 +686,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
         processed: 0,
         failed: 0,
       });
-      enqueueTelemetry("a");
+      await enqueueTelemetry("a");
       await expect(flushOfflineQueue()).resolves.toEqual({
         processed: 0,
         failed: 0,
@@ -746,7 +695,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("re-enqueues a dead-lettered item on retryDLQItem and ignores unknown ids", async () => {
-      enqueueTelemetry("a", { id: "dl-1" });
+      await enqueueTelemetry("a", { id: "dl-1" });
       mockPost.mockResolvedValueOnce(response({ status: 400, error: "bad" }));
       setOnline(true);
       await act(async () => {
@@ -754,11 +703,11 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       });
       expect(getDLQLength()).toBe(1);
 
-      retryDLQItem("does-not-exist");
+      await retryDLQItem("does-not-exist");
       expect(getDLQLength()).toBe(1);
 
       setOnline(false);
-      retryDLQItem("dl-1");
+      await retryDLQItem("dl-1");
       expect(getDLQLength()).toBe(0);
       const requeued = getOfflineQueue();
       expect(requeued).toHaveLength(1);
@@ -766,23 +715,19 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("keeps one dead letter per id when a dead letter fails again (#2552)", async () => {
-      enqueueTelemetry("a", { id: "dl-1" });
+      await enqueueTelemetry("a", { id: "dl-1" });
       mockPost.mockResolvedValueOnce(response({ status: 400, error: "bad" }));
       setOnline(true);
       await act(async () => {
         await flushOfflineQueue();
       });
-
-      // A stale copy left behind by another tab.
-      localStorage.setItem(DLQ_KEY, JSON.stringify([...getDLQ(), ...getDLQ()]));
-      window.dispatchEvent(new StorageEvent("storage", { key: DLQ_KEY }));
-      expect(getDLQLength()).toBe(2);
+      expect(getDLQLength()).toBe(1);
 
       mockPost.mockResolvedValueOnce(
         response({ status: 422, error: "still bad" })
       );
-      enqueueTelemetry("a", { id: "dl-1" });
       await act(async () => {
+        await enqueueTelemetry("a", { id: "dl-1" });
         await flushOfflineQueue();
       });
 
@@ -794,29 +739,14 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
 
   describe("HTTP methods and bodies", () => {
     it("dispatches each method to the matching client call", async () => {
-      enqueueTelemetry("put", { method: "PUT" });
-      enqueueTelemetry("patch", { method: "PATCH" });
-      enqueueTelemetry("delete", { method: "DELETE" });
-      seedQueueFromAnotherTab([
-        ...getOfflineQueue(),
-        {
-          id: "get",
-          type: "telemetry",
-          endpoint: "/api/get",
-          method: "get",
-          body: null,
-          createdAt: 0,
-          retries: 0,
-        },
-        {
-          id: "nomethod",
-          type: "telemetry",
-          endpoint: "/api/no-method",
-          body: { x: 1 },
-          createdAt: 0,
-          retries: 0,
-        },
-      ]);
+      await enqueueTelemetry("put", { method: "PUT" });
+      await enqueueTelemetry("patch", { method: "PATCH" });
+      await enqueueTelemetry("delete", { method: "DELETE" });
+      await enqueueOfflineRequest({
+        type: "telemetry",
+        endpoint: "/api/no-method",
+        body: { x: 1 },
+      });
 
       setOnline(true);
       await act(async () => {
@@ -837,7 +767,6 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
         "/api/telemetry/delete",
         expect.any(Object)
       );
-      expect(mockGet).toHaveBeenCalledWith("/api/get", expect.any(Object));
       expect(mockPost).toHaveBeenCalledWith(
         "/api/no-method",
         { x: 1 },
@@ -847,12 +776,12 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("parses string bodies that hold JSON and passes other strings through", async () => {
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "telemetry",
         endpoint: "/api/json-string",
         body: '{"a":1}',
       });
-      enqueueOfflineRequest({
+      await enqueueOfflineRequest({
         type: "telemetry",
         endpoint: "/api/plain-string",
         body: "not json",
@@ -872,8 +801,8 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     async function deadLetterReason(
       res: ApiClientResponse<unknown>
     ): Promise<string> {
-      clearDLQ();
-      enqueueTelemetry("reason");
+      await clearDLQ();
+      await enqueueTelemetry("reason");
       mockPost.mockResolvedValueOnce(res);
       setOnline(true);
       await act(async () => {
@@ -1028,62 +957,6 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
   });
 
-  describe("storage edge cases", () => {
-    it("ignores a malformed queue and dead-letter queue in storage", () => {
-      localStorage.setItem(QUEUE_KEY, JSON.stringify({ not: "an array" }));
-      localStorage.setItem(DLQ_KEY, JSON.stringify({ not: "an array" }));
-      window.dispatchEvent(new StorageEvent("storage", { key: null }));
-
-      expect(getOfflineQueue()).toEqual([]);
-      expect(getDLQ()).toEqual([]);
-      expect(logger.warn).toHaveBeenCalledWith(
-        "Ignoring malformed offline queue in storage."
-      );
-      expect(logger.warn).toHaveBeenCalledWith(
-        "Ignoring malformed dead-letter queue in storage."
-      );
-    });
-
-    it("picks up a dead-letter queue written by another tab", () => {
-      const item = {
-        id: "other-tab",
-        type: "telemetry",
-        endpoint: "/api/x",
-        body: {},
-        createdAt: 0,
-        retries: 0,
-        failedAt: 0,
-        statusCode: 400,
-        failureReason: "from another tab",
-      };
-      localStorage.setItem(DLQ_KEY, JSON.stringify([item]));
-      window.dispatchEvent(new StorageEvent("storage", { key: DLQ_KEY }));
-      window.dispatchEvent(new CustomEvent("portfolio-offline-dlq-change"));
-
-      expect(getDLQ()).toEqual([item]);
-    });
-
-    it("keeps queuing in memory when localStorage writes fail", () => {
-      Object.defineProperty(globalThis, "localStorage", {
-        value: new ThrowingWriteStorage(),
-        writable: true,
-        configurable: true,
-      });
-      const listener = vi.fn();
-      window.addEventListener("portfolio-offline-queue-change", listener);
-
-      enqueueTelemetry("memory-only");
-      clearDLQ();
-
-      expect(getOfflineQueue().map((i) => i.endpoint)).toEqual([
-        "/api/telemetry/memory-only",
-      ]);
-      // No cross-tab change event is dispatched for a write that never persisted.
-      expect(listener).not.toHaveBeenCalled();
-      window.removeEventListener("portfolio-offline-queue-change", listener);
-    });
-  });
-
   describe("hook surface", () => {
     it("tracks online/offline transitions", async () => {
       setOnline(true);
@@ -1098,7 +971,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("does not auto-flush on mount when autoFlushOnOnline is false", async () => {
-      enqueueTelemetry("a");
+      await enqueueTelemetry("a");
       setOnline(true);
       const { result } = renderHook(() =>
         useOfflineQueue({ autoFlushOnOnline: false })
@@ -1117,7 +990,7 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     });
 
     it("auto-flushes a non-empty queue on mount when online", async () => {
-      enqueueTelemetry("a");
+      await enqueueTelemetry("a");
       setOnline(true);
       const { result } = renderHook(() => useOfflineQueue());
       await settle();
@@ -1132,12 +1005,14 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       );
       let firstId = "";
       await act(async () => {
-        firstId = result.current.enqueue({
-          type: "telemetry",
-          endpoint: "/api/one",
-          body: {},
-        }).id;
-        result.current.enqueue({
+        firstId = (
+          await result.current.enqueue({
+            type: "telemetry",
+            endpoint: "/api/one",
+            body: {},
+          })
+        ).id;
+        await result.current.enqueue({
           type: "telemetry",
           endpoint: "/api/two",
           body: {},
@@ -1146,12 +1021,12 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
       expect(result.current.queueLength).toBe(2);
 
       await act(async () => {
-        result.current.dequeue(firstId);
+        await result.current.dequeue(firstId);
       });
       expect(result.current.queue.map((i) => i.endpoint)).toEqual(["/api/two"]);
 
       await act(async () => {
-        result.current.clear();
+        await result.current.clear();
       });
       expect(result.current.queueLength).toBe(0);
     });

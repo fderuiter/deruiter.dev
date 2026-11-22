@@ -15,8 +15,10 @@ import {
 import { isProductionEnvironment } from "@/lib/env";
 import {
   useOfflineQueue,
-  getOfflineQueue,
+  getOfflineQueuePersistence,
+  loadOfflineQueue,
   type DeadLetterItem,
+  type OfflineRequestInput,
 } from "@/hooks/useOfflineQueue";
 import { FeedbackSubmissionSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
@@ -168,7 +170,7 @@ export function CaseStudyFeedbackSection({
         }
       } finally {
         if (isMounted) {
-          const pendingItems = getOfflineQueue();
+          const pendingItems = await loadOfflineQueue();
           for (const item of pendingItems) {
             if (item.endpoint === "/api/case-studies/reactions" && item.body) {
               const body = item.body as {
@@ -210,6 +212,48 @@ export function CaseStudyFeedbackSection({
     };
   }, [slug]);
 
+  // Queue a write for background retry. The store commits asynchronously,
+  // and only a durable queue survives a reload, so the message says which.
+  const queueWrite = async (request: OfflineRequestInput) => {
+    try {
+      await enqueue(request);
+      return true;
+    } catch (error) {
+      logger.warn("Could not queue the request for retry.", { error });
+      return false;
+    }
+  };
+
+  const queueReaction = async (type: ReactionType) => {
+    await queueWrite({
+      type: "reaction",
+      endpoint: "/api/case-studies/reactions",
+      body: { caseStudySlug: slug, reactionType: type },
+    });
+  };
+
+  const queueFeedback = async (payload: unknown) => {
+    const queued = await queueWrite({
+      type: "feedback",
+      endpoint: "/api/case-studies/feedback",
+      body: payload,
+    });
+    if (!queued) {
+      setErrorMsg("Your feedback could not be saved. Please try again.");
+      setHasSubmittedFeedback(false);
+      return;
+    }
+    setHasSubmittedFeedback(true);
+    // Read after the write, since the store may have opened during it.
+    setSuccessMsg(
+      getOfflineQueuePersistence() === "volatile"
+        ? "Thank you! Your feedback will be sent when you are back online. Keep this page open until then."
+        : "Thank you! Your learning feedback has been recorded."
+    );
+    setSelectedTakeaways([]);
+    setComments("");
+  };
+
   // Handle Quick Reaction click
   const handleReactionClick = async (type: ReactionType) => {
     if (reactionLoading) return;
@@ -224,11 +268,7 @@ export function CaseStudyFeedbackSection({
     }
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      enqueue({
-        type: "reaction",
-        endpoint: "/api/case-studies/reactions",
-        body: { caseStudySlug: slug, reactionType: type },
-      });
+      await queueReaction(type);
       setReactionLoading(null);
       return;
     }
@@ -246,11 +286,7 @@ export function CaseStudyFeedbackSection({
         setUserReactions(res.data.userReactions);
       }
     } else {
-      enqueue({
-        type: "reaction",
-        endpoint: "/api/case-studies/reactions",
-        body: { caseStudySlug: slug, reactionType: type },
-      });
+      await queueReaction(type);
     }
     setReactionLoading(null);
   };
@@ -287,15 +323,7 @@ export function CaseStudyFeedbackSection({
     setSubmitting(true);
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      enqueue({
-        type: "feedback",
-        endpoint: "/api/case-studies/feedback",
-        body: payload,
-      });
-      setHasSubmittedFeedback(true);
-      setSuccessMsg("Thank you! Your learning feedback has been recorded.");
-      setSelectedTakeaways([]);
-      setComments("");
+      await queueFeedback(payload);
       setSubmitting(false);
       return;
     }
@@ -321,15 +349,7 @@ export function CaseStudyFeedbackSection({
       setSuccessMsg(null);
     } else {
       // Network failure or 5xx: queue for background retry.
-      enqueue({
-        type: "feedback",
-        endpoint: "/api/case-studies/feedback",
-        body: payload,
-      });
-      setHasSubmittedFeedback(true);
-      setSuccessMsg("Thank you! Your learning feedback has been recorded.");
-      setSelectedTakeaways([]);
-      setComments("");
+      await queueFeedback(payload);
     }
     setSubmitting(false);
   };

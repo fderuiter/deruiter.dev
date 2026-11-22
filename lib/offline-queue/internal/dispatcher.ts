@@ -52,13 +52,14 @@ export function createOfflineDispatcher(
   const {
     store,
     send,
-    now = Date.now,
+    now = () => Date.now(),
     setTimer = (run, ms) => setTimeout(run, ms),
     clearTimer = (handle) =>
       clearTimeout(handle as ReturnType<typeof setTimeout>),
     isOnline = () =>
       typeof navigator === "undefined" ? true : navigator.onLine !== false,
     onDeadLetter,
+    onSettled,
     requestTimeoutMs = OFFLINE_REQUEST_TIMEOUT_MS,
   } = options;
   const ownerToken = options.ownerToken ?? randomToken();
@@ -129,6 +130,7 @@ export function createOfflineDispatcher(
       { id: entry.id, revision: entry.revision, ownerToken },
       failure
     );
+    onSettled?.();
     if (moved) onDeadLetter?.(entry, failure);
   }
 
@@ -150,6 +152,7 @@ export function createOfflineDispatcher(
       const sent = { id: entry.id, revision: entry.revision, ownerToken };
       if (outcome.kind === "ok") {
         await store.acknowledge(sent);
+        onSettled?.();
         processed += 1;
         continue;
       }
@@ -173,6 +176,7 @@ export function createOfflineDispatcher(
       }
       const nextAttemptAt = now() + offlineRetryDelay(retries);
       await store.recordRetry(sent, retries, nextAttemptAt);
+      onSettled?.();
       // A transient failure usually means the network is down, so stop and
       // wake when this entry is due rather than trying the rest now.
       scheduleWake(nextAttemptAt);

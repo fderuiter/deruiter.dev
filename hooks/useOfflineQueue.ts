@@ -3,226 +3,264 @@
 import { useSyncExternalStore, useCallback, useEffect } from "react";
 import { logger } from "@/lib/logger";
 import { generateId } from "@/lib/utils";
-import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
+import { safeGetItem, safeRemoveItem } from "@/lib/safe-storage";
 import { apiClient, type ApiClientResponse } from "@/lib/api-client";
+import {
+  createMemoryOfflineQueueStore,
+  createOfflineDispatcher,
+  openOfflineQueueStore,
+  type OfflineDeadLetter,
+  type OfflineDeadLetterFailure,
+  type OfflineDispatcher,
+  type OfflineQueueEntry,
+  type OfflineQueueMethod,
+  type OfflineQueueStore,
+  type OfflineSendOutcome,
+} from "@/lib/offline-queue";
+
+/**
+ * The offline request queue, on the IndexedDB store and dispatcher in
+ * `lib/offline-queue` (#3807). Every change is one store transaction, and
+ * tabs coordinate sends through claims with leases, so two tabs neither
+ * lose each other's writes nor send the same revision at once.
+ *
+ * Changes are asynchronous: a promise resolves once the store committed and
+ * the snapshot below shows it. Where IndexedDB is unavailable, the queue
+ * falls back to memory and reports `persistence: "volatile"`; callers must
+ * not tell the visitor such a write was saved.
+ */
 
 export type QueueItemType = "telemetry" | "reaction" | "feedback" | string;
 
-export interface QueuedRequest<T = unknown> {
-  id: string;
+/** A queued request, as the store holds it. */
+export type QueuedRequest<T = unknown> = OfflineQueueEntry<T>;
+
+/** A request that failed for good. */
+export type DeadLetterItem<T = unknown> = OfflineDeadLetter<T>;
+
+/**
+ * Whether queued writes survive a reload: `pending` until the store opens,
+ * then `durable` (IndexedDB) or `volatile` (memory only).
+ */
+export type OfflineQueuePersistence = "pending" | "durable" | "volatile";
+
+/** What a caller provides to enqueue. */
+export interface OfflineRequestInput<T = unknown> {
+  id?: string;
   type: QueueItemType;
   endpoint: string;
-  method?: "POST" | "PUT" | "PATCH" | "DELETE";
+  method?: OfflineQueueMethod;
   headers?: Record<string, string>;
   body: T;
-  createdAt: number;
-  retries: number;
   maxRetries?: number;
-  /**
-   * How many times this `id` has been replaced while queued. A response only
-   * acknowledges, retries or dead-letters the revision that was sent, so a
-   * newer replacement made mid-flight survives (#3795). Entries stored before
-   * this field existed read as revision 0.
-   */
-  revision?: number;
 }
 
-export interface DeadLetterItem<T = unknown> extends QueuedRequest<T> {
-  failedAt: number;
-  statusCode: number;
-  failureReason: string;
-}
-
-const STORAGE_KEY = "portfolio_offline_queue";
-const QUEUE_CHANGE_EVENT = "portfolio-offline-queue-change";
-
-const DLQ_STORAGE_KEY = "portfolio_offline_dlq";
-const DLQ_CHANGE_EVENT = "portfolio-offline-dlq-change";
+/** Legacy localStorage keys, imported once and then removed. */
+const LEGACY_QUEUE_KEY = "portfolio_offline_queue";
+const LEGACY_DLQ_KEY = "portfolio_offline_dlq";
+/** Event fired on `window` when a request this tab sent is dead-lettered. */
 const DLQ_ERROR_EVENT = "portfolio-offline-queue-error";
+/** Channel that tells other tabs to reread the store. */
+const CHANNEL_NAME = "portfolio-offline-queue";
 
-interface CacheEntry {
-  /** The value safeStorage last returned, used to detect external changes. */
-  source: unknown;
-  items: QueuedRequest[];
+interface Snapshot {
+  readonly queue: readonly QueuedRequest[];
+  readonly dlq: readonly DeadLetterItem[];
+  readonly persistence: OfflineQueuePersistence;
 }
 
-interface DLQCacheEntry {
-  source: unknown;
-  items: DeadLetterItem[];
+interface Runtime {
+  readonly store: OfflineQueueStore;
+  readonly dispatcher: OfflineDispatcher;
 }
 
-/** Forces the next read to rebuild the cache even if safeStorage is unchanged. */
-const STALE = Symbol("stale");
+const SERVER_SNAPSHOT: Snapshot = Object.freeze({
+  queue: Object.freeze([]) as readonly QueuedRequest[],
+  dlq: Object.freeze([]) as readonly DeadLetterItem[],
+  persistence: "pending",
+});
 
-let memoryCache: CacheEntry = {
-  source: null,
-  items: [],
-};
-
-let memoryDLQCache: DLQCacheEntry = {
-  source: null,
-  items: [],
-};
-
+let snapshot: Snapshot = SERVER_SNAPSHOT;
+let runtimePromise: Promise<Runtime> | null = null;
+let channel: BroadcastChannel | null = null;
 const subscribers = new Set<() => void>();
-const dlqSubscribers = new Set<() => void>();
 const onlineSubscribers = new Set<() => void>();
 
-let isProcessingQueue = false;
-let retryTimer: ReturnType<typeof setTimeout> | null = null;
-
-function notifySubscribers() {
+function notify() {
   subscribers.forEach((cb) => cb());
 }
 
-function notifyDLQSubscribers() {
-  dlqSubscribers.forEach((cb) => cb());
+function setSnapshot(next: Partial<Snapshot>) {
+  snapshot = { ...snapshot, ...next };
+  notify();
 }
 
-function notifyOnlineSubscribers() {
-  onlineSubscribers.forEach((cb) => cb());
+/** Rereads the store into the snapshot. */
+async function refresh(store: OfflineQueueStore): Promise<void> {
+  try {
+    const [queue, dlq] = await Promise.all([store.list(), store.deadLetters()]);
+    setSnapshot({ queue, dlq });
+  } catch (error) {
+    logger.warn("Could not read the offline queue.", { error });
+  }
 }
 
-function readStorage(): QueuedRequest[] {
-  // safeStorage returns the same parsed reference while the stored string is
-  // unchanged, and holds the queue in memory when localStorage is unavailable.
-  const stored = safeGetItem<unknown>(STORAGE_KEY);
-  if (stored === memoryCache.source) {
-    return memoryCache.items;
+/** Rereads the store and tells other tabs to do the same. */
+async function changed(store: OfflineQueueStore): Promise<void> {
+  await refresh(store);
+  try {
+    channel?.postMessage("changed");
+  } catch {
+    // The channel closed; other tabs reread on their next change.
   }
-
-  if (Array.isArray(stored)) {
-    memoryCache = { source: stored, items: stored as QueuedRequest[] };
-    return memoryCache.items;
-  }
-
-  if (stored !== null) {
-    logger.warn("Ignoring malformed offline queue in storage.");
-  }
-  memoryCache = { source: stored, items: [] };
-  return memoryCache.items;
 }
 
-function writeStorage(items: QueuedRequest[]): void {
-  // Stored as a bare JSON array (no envelope) so queued requests from earlier
-  // visits are still read back and flushed.
-  const persisted = safeSetRawItem(STORAGE_KEY, JSON.stringify(items));
-  memoryCache = { source: safeGetItem<unknown>(STORAGE_KEY), items };
-  if (persisted && typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(QUEUE_CHANGE_EVENT));
-  }
-  notifySubscribers();
-}
-
-function readDLQStorage(): DeadLetterItem[] {
-  const stored = safeGetItem<unknown>(DLQ_STORAGE_KEY);
-  if (stored === memoryDLQCache.source) {
-    return memoryDLQCache.items;
-  }
-
-  if (Array.isArray(stored)) {
-    memoryDLQCache = { source: stored, items: stored as DeadLetterItem[] };
-    return memoryDLQCache.items;
-  }
-
-  if (stored !== null) {
-    logger.warn("Ignoring malformed dead-letter queue in storage.");
-  }
-  memoryDLQCache = { source: stored, items: [] };
-  return memoryDLQCache.items;
-}
-
-function writeDLQStorage(items: DeadLetterItem[]): void {
-  // Cap dead-letter queue size at 50 items using FIFO eviction.
-  const capped = items.slice(-50);
-  const persisted = safeSetRawItem(DLQ_STORAGE_KEY, JSON.stringify(capped));
-  memoryDLQCache = {
-    source: safeGetItem<unknown>(DLQ_STORAGE_KEY),
-    items: capped,
-  };
-  if (persisted && typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(DLQ_CHANGE_EVENT));
-  }
-  notifyDLQSubscribers();
-}
-
-// Global window event listeners setup
-if (typeof window !== "undefined") {
-  window.addEventListener("storage", (e) => {
-    if (e.key === STORAGE_KEY || e.key === null) {
-      memoryCache = { source: STALE, items: [] };
-      readStorage();
-      notifySubscribers();
-    }
-    if (e.key === DLQ_STORAGE_KEY || e.key === null) {
-      memoryDLQCache = { source: STALE, items: [] };
-      readDLQStorage();
-      notifyDLQSubscribers();
-    }
-  });
-
-  window.addEventListener(QUEUE_CHANGE_EVENT, () => {
-    readStorage();
-    notifySubscribers();
-  });
-
-  window.addEventListener(DLQ_CHANGE_EVENT, () => {
-    readDLQStorage();
-    notifyDLQSubscribers();
-  });
-
-  window.addEventListener("online", () => {
-    notifyOnlineSubscribers();
-    flushOfflineQueue();
-  });
-
-  window.addEventListener("offline", () => {
-    notifyOnlineSubscribers();
-  });
+function isOnline(): boolean {
+  return typeof navigator === "undefined" || navigator.onLine !== false;
 }
 
 /**
- * Moves a queued item to the dead-letter queue, replacing any dead letter that
- * already holds its id, then logs it and announces it to listeners.
+ * Picks the most specific failure reason a rejected response carries: the
+ * envelope error, a detail message, or a message read from its body.
  */
-/** Whether a stored entry is the same revision as the one that was sent. */
-function isSameRevision(entry: QueuedRequest, sent: QueuedRequest): boolean {
-  return entry.id === sent.id && (entry.revision ?? 0) === (sent.revision ?? 0);
+async function failureReasonOf(
+  res: ApiClientResponse<unknown>
+): Promise<string> {
+  let failureReason = res.error || `HTTP ${res.status}: Client Error`;
+  try {
+    if (typeof res.error === "string" && res.error.trim().length > 0) {
+      failureReason = res.error;
+    } else if (
+      Array.isArray(res.details) &&
+      res.details.length > 0 &&
+      typeof res.details[0]?.message === "string"
+    ) {
+      failureReason = res.details[0].message;
+    } else if (res.body && typeof res.body === "object") {
+      const obj = res.body as Record<string, unknown>;
+      if (typeof obj.message === "string") failureReason = obj.message;
+      else if (typeof obj.error === "string") failureReason = obj.error;
+      else if (
+        Array.isArray(obj.details) &&
+        typeof (obj.details[0] as Record<string, unknown>)?.message === "string"
+      ) {
+        failureReason = (obj.details[0] as Record<string, unknown>)
+          .message as string;
+      }
+    } else if (typeof res.body === "string" && res.body.trim().length > 0) {
+      failureReason = res.body;
+    } else {
+      const resObj = res as unknown as Record<string, unknown>;
+      const targetRes =
+        typeof resObj.clone === "function"
+          ? (resObj.clone() as Record<string, unknown>)
+          : resObj;
+
+      let data: unknown;
+
+      if (typeof targetRes.json === "function") {
+        try {
+          data = await (targetRes.json as () => Promise<unknown>)();
+        } catch {
+          if (typeof targetRes.text === "function") {
+            data = await (targetRes.text as () => Promise<unknown>)();
+          }
+        }
+      } else if (typeof targetRes.text === "function") {
+        data = await (targetRes.text as () => Promise<unknown>)();
+      }
+
+      if (data && typeof data === "object") {
+        const obj = data as Record<string, unknown>;
+
+        if (typeof obj.message === "string") {
+          failureReason = obj.message;
+        } else if (typeof obj.error === "string") {
+          failureReason = obj.error;
+        } else if (
+          Array.isArray(obj.details) &&
+          typeof (obj.details[0] as Record<string, unknown>)?.message ===
+            "string"
+        ) {
+          failureReason = (obj.details[0] as Record<string, unknown>)
+            .message as string;
+        }
+      } else if (typeof data === "string" && data.trim().length > 0) {
+        failureReason = data;
+      }
+    }
+  } catch {
+    // ignore parsing error
+  }
+  return failureReason;
 }
 
-/** Removes the sent revision only; a newer replacement stays queued. */
-function acknowledgeSent(sent: QueuedRequest): void {
-  writeStorage(readStorage().filter((entry) => !isSameRevision(entry, sent)));
-}
+/** Sends one queued entry and says how it ended. */
+async function sendQueued(
+  entry: OfflineQueueEntry,
+  signal: AbortSignal | undefined
+): Promise<OfflineSendOutcome> {
+  const init: RequestInit = { headers: { ...entry.headers }, signal };
+  let body = entry.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      // Keep as string if not valid JSON
+    }
+  }
 
-/** Records a retry on the sent revision only. */
-function recordRetry(sent: QueuedRequest, retries: number): void {
-  writeStorage(
-    readStorage().map((entry) =>
-      isSameRevision(entry, sent) ? { ...entry, retries } : entry
-    )
-  );
-}
+  let res: ApiClientResponse<unknown>;
+  switch (entry.method) {
+    case "PUT":
+      res = await apiClient.put(entry.endpoint, body, init);
+      break;
+    case "PATCH":
+      res = await apiClient.patch(entry.endpoint, body, init);
+      break;
+    case "DELETE":
+      res = await apiClient.delete(entry.endpoint, init);
+      break;
+    case "POST":
+    default:
+      res = await apiClient.post(entry.endpoint, body, init);
+      break;
+  }
 
-function moveToDeadLetterQueue(
-  item: QueuedRequest,
-  statusCode: number,
-  failureReason: string,
-  message: string
-): void {
-  const deadLetterItem: DeadLetterItem = {
-    ...item,
-    failedAt: Date.now(),
-    statusCode,
-    failureReason,
+  if (res.ok) return { kind: "ok" };
+  if (
+    res.status >= 400 &&
+    res.status < 500 &&
+    res.status !== 429 &&
+    res.status !== 408
+  ) {
+    return {
+      kind: "permanent",
+      status: res.status,
+      reason: await failureReasonOf(res),
+    };
+  }
+  return {
+    kind: "transient",
+    status: res.status,
+    reason:
+      typeof res.error === "string" && res.error.trim().length > 0
+        ? res.error
+        : res.status > 0
+          ? `HTTP ${res.status}`
+          : "Network error",
   };
+}
 
-  const currentDLQ = readDLQStorage().filter((i) => i.id !== item.id);
-  writeDLQStorage([...currentDLQ, deadLetterItem]);
-  acknowledgeSent(item);
-
-  logger.error(message, { deadLetterItem });
-
+function announceDeadLetter(
+  entry: OfflineQueueEntry,
+  failure: OfflineDeadLetterFailure
+) {
+  const deadLetterItem: DeadLetterItem = { ...entry, ...failure };
+  logger.error(
+    `Offline request failed with status ${failure.statusCode} and moved to DLQ`,
+    { deadLetterItem }
+  );
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent(DLQ_ERROR_EVENT, { detail: deadLetterItem })
@@ -231,393 +269,204 @@ function moveToDeadLetterQueue(
 }
 
 /**
- * Enqueue a request to be executed when online.
- *
- * An `id` that is already queued replaces that entry in place: the newer body
- * is the one sent, once, and its retry count starts again from zero.
- *
- * @param request Request configuration excluding auto-generated metadata.
- * @returns Complete QueuedRequest object with assigned ID.
+ * Imports the legacy localStorage arrays once. The keys are removed only
+ * after the import committed, so an older tab still running the
+ * localStorage queue sees them empty and stops sending them.
  */
-export function enqueueOfflineRequest<T = unknown>(
-  request: Omit<QueuedRequest<T>, "id" | "createdAt" | "retries"> & {
-    id?: string;
-  }
-): QueuedRequest<T> {
-  const current = readStorage();
-
-  const id = request.id || generateId("offline_", { timestamp: true });
-
-  const newEntry: QueuedRequest<T> = {
-    id,
-    type: request.type,
-    endpoint: request.endpoint,
-    method: request.method || "POST",
-    headers: request.headers || { "Content-Type": "application/json" },
-    body: request.body,
-    createdAt: Date.now(),
-    retries: 0,
-    maxRetries: request.maxRetries ?? 5,
-  };
-
-  const existingIndex = current.findIndex((item) => item.id === id);
-  if (existingIndex !== -1) {
-    newEntry.revision = (current[existingIndex].revision ?? 0) + 1;
-  }
-  const updated =
-    existingIndex === -1
-      ? [...current, newEntry as QueuedRequest]
-      : current.map((item, index) =>
-          index === existingIndex ? (newEntry as QueuedRequest) : item
-        );
-  writeStorage(updated);
-
-  if (typeof navigator !== "undefined" && navigator.onLine) {
-    Promise.resolve().then(() => flushOfflineQueue());
-  }
-
-  return newEntry;
-}
-
-/**
- * Remove an item from the offline queue by its unique ID.
- *
- * @param id Unique identifier of the queued request.
- */
-export function dequeueOfflineRequest(id: string): void {
-  const current = readStorage();
-  const updated = current.filter((item) => item.id !== id);
-  writeStorage(updated);
-}
-
-/**
- * Clear all items from the offline queue.
- */
-export function clearOfflineQueue(): void {
-  writeStorage([]);
-  if (retryTimer) {
-    clearTimeout(retryTimer);
-    retryTimer = null;
+async function importLegacy(store: OfflineQueueStore): Promise<void> {
+  const legacyQueue = safeGetItem<unknown>(LEGACY_QUEUE_KEY);
+  const legacyDead = safeGetItem<unknown>(LEGACY_DLQ_KEY);
+  try {
+    const result = await store.importLegacy(
+      legacyQueue,
+      legacyDead,
+      Date.now()
+    );
+    if (legacyQueue !== null) safeRemoveItem(LEGACY_QUEUE_KEY);
+    if (legacyDead !== null) safeRemoveItem(LEGACY_DLQ_KEY);
+    if (result.status === "imported" && result.skipped > 0) {
+      logger.warn("Skipped malformed rows in the legacy offline queue.", {
+        skipped: result.skipped,
+      });
+    }
+  } catch (error) {
+    // Nothing was imported and the keys stay, so the next start tries again.
+    logger.warn("Could not import the legacy offline queue.", { error });
   }
 }
 
-/**
- * Get shallow array copy of current offline queue items.
- *
- * @returns Array of currently queued requests.
- */
-export function getOfflineQueue(): QueuedRequest[] {
-  return [...readStorage()];
+/** Opens the store once, imports legacy rows and starts the dispatcher. */
+function runtime(): Promise<Runtime> {
+  runtimePromise ??= (async () => {
+    const opened = await openOfflineQueueStore();
+    const store = opened.ok ? opened.store : createMemoryOfflineQueueStore();
+    if (opened.ok) {
+      await importLegacy(store);
+    } else {
+      logger.warn(
+        "IndexedDB is unavailable; offline requests are held in memory only.",
+        { code: opened.code }
+      );
+    }
+    const dispatcher = createOfflineDispatcher({
+      store,
+      send: sendQueued,
+      isOnline,
+      onSettled: () => void changed(store),
+      onDeadLetter: announceDeadLetter,
+    });
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        channel = new BroadcastChannel(CHANNEL_NAME);
+        channel.onmessage = () => {
+          void refresh(store).then(() => {
+            if (isOnline()) void dispatcher.flush();
+          });
+        };
+      } catch {
+        channel = null;
+      }
+    }
+    setSnapshot({ persistence: opened.ok ? "durable" : "volatile" });
+    await refresh(store);
+    return { store, dispatcher };
+  })();
+  return runtimePromise;
 }
 
-/**
- * Get length of current offline queue.
- *
- * @returns Total count of queued items.
- */
-export function getOfflineQueueLength(): number {
-  return readStorage().length;
+/** Runs a store change, then refreshes this tab and tells the others. */
+async function mutate<T>(
+  work: (store: OfflineQueueStore) => Promise<T>
+): Promise<T> {
+  const { store } = await runtime();
+  const result = await work(store);
+  await changed(store);
+  return result;
 }
 
-/**
- * Get shallow array copy of current dead-letter queue items.
- *
- * @returns Array of dead-letter queued requests.
- */
-export function getDLQ(): DeadLetterItem[] {
-  return [...readDLQStorage()];
-}
-
-/**
- * Get length of current dead-letter queue.
- *
- * @returns Total count of dead-letter items.
- */
-export function getDLQLength(): number {
-  return readDLQStorage().length;
-}
-
-/**
- * Clear all items from the dead-letter queue.
- */
-export function clearDLQ(): void {
-  writeDLQStorage([]);
-}
-
-/**
- * Remove an item from the dead-letter queue by its unique ID.
- *
- * @param id Unique identifier of the dead-letter item.
- */
-export function dismissDLQItem(id: string): void {
-  const current = readDLQStorage();
-  const updated = current.filter((item) => item.id !== id);
-  writeDLQStorage(updated);
-}
-
-/**
- * Retry an item from the dead-letter queue by re-enqueueing it into the offline queue.
- *
- * @param id Unique identifier of the dead-letter item to retry.
- */
-export function retryDLQItem(id: string): void {
-  const currentDLQ = readDLQStorage();
-  const itemToRetry = currentDLQ.find((item) => item.id === id);
-  if (!itemToRetry) return;
-
-  dismissDLQItem(id);
-  // A newer request with this id is already queued; it supersedes the failed
-  // one, so retrying must not overwrite it (#3795).
-  if (readStorage().some((item) => item.id === id)) return;
-  enqueueOfflineRequest({
-    id: itemToRetry.id,
-    type: itemToRetry.type,
-    endpoint: itemToRetry.endpoint,
-    method: itemToRetry.method,
-    headers: itemToRetry.headers,
-    body: itemToRetry.body,
-    maxRetries: itemToRetry.maxRetries,
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    onlineSubscribers.forEach((cb) => cb());
+    void flushOfflineQueue();
+  });
+  window.addEventListener("offline", () => {
+    onlineSubscribers.forEach((cb) => cb());
   });
 }
 
 /**
- * Process queued requests sequentially with exponential backoff retries.
+ * Enqueues a request to send when online.
  *
- * @returns Object summarizing processed and failed items count.
+ * An `id` that is already queued replaces that entry in place: the newer
+ * body is the one sent, once, and its retry count starts again from zero.
+ * Resolves with the stored entry once the store committed it; check
+ * {@link getOfflineQueuePersistence} before saying it will survive a reload.
+ */
+export async function enqueueOfflineRequest<T = unknown>(
+  request: OfflineRequestInput<T>
+): Promise<QueuedRequest<T>> {
+  const id = request.id || generateId("offline_", { timestamp: true });
+  const entry = await mutate((store) =>
+    store.enqueue(
+      {
+        id,
+        type: request.type,
+        endpoint: request.endpoint,
+        method: request.method ?? "POST",
+        headers: request.headers ?? { "Content-Type": "application/json" },
+        body: request.body,
+        maxRetries: request.maxRetries ?? 5,
+      },
+      Date.now()
+    )
+  );
+  if (isOnline()) void flushOfflineQueue();
+  return entry;
+}
+
+/** Removes a queued request by id, whatever its revision. */
+export function dequeueOfflineRequest(id: string): Promise<void> {
+  return mutate((store) => store.remove(id));
+}
+
+/** Removes every queued request. */
+export function clearOfflineQueue(): Promise<void> {
+  return mutate((store) => store.clear());
+}
+
+/** The queued requests as last read, in send order. */
+export function getOfflineQueue(): QueuedRequest[] {
+  return [...snapshot.queue];
+}
+
+/** Waits for the store to open, then returns the queued requests. */
+export async function loadOfflineQueue(): Promise<QueuedRequest[]> {
+  await runtime();
+  return getOfflineQueue();
+}
+
+/** How many requests are queued, as last read. */
+export function getOfflineQueueLength(): number {
+  return snapshot.queue.length;
+}
+
+/** Whether queued requests survive a reload. */
+export function getOfflineQueuePersistence(): OfflineQueuePersistence {
+  return snapshot.persistence;
+}
+
+/** The dead letters as last read. */
+export function getDLQ(): DeadLetterItem[] {
+  return [...snapshot.dlq];
+}
+
+/** How many dead letters there are, as last read. */
+export function getDLQLength(): number {
+  return snapshot.dlq.length;
+}
+
+/** Removes every dead letter. */
+export function clearDLQ(): Promise<void> {
+  return mutate((store) => store.clearDeadLetters());
+}
+
+/** Removes one dead letter. */
+export function dismissDLQItem(id: string): Promise<void> {
+  return mutate((store) => store.dismissDeadLetter(id));
+}
+
+/**
+ * Queues a dead letter again, unless a newer request with its id is already
+ * queued, in which case the dead letter is only dismissed.
+ */
+export async function retryDLQItem(id: string): Promise<void> {
+  const outcome = await mutate((store) =>
+    store.retryDeadLetter(id, Date.now())
+  );
+  if (outcome === "requeued" && isOnline()) void flushOfflineQueue();
+}
+
+/**
+ * Sends every due request this tab can claim, in order. Stored retry
+ * deadlines hold, so calling this early sends nothing that is not due.
  */
 export async function flushOfflineQueue(): Promise<{
   processed: number;
   failed: number;
 }> {
-  if (isProcessingQueue) {
-    return { processed: 0, failed: 0 };
-  }
-
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
-    return { processed: 0, failed: 0 };
-  }
-
-  const initialItems = readStorage();
-  if (initialItems.length === 0) {
-    return { processed: 0, failed: 0 };
-  }
-
-  isProcessingQueue = true;
-  let processed = 0;
-  let failed = 0;
-
-  if (retryTimer) {
-    clearTimeout(retryTimer);
-    retryTimer = null;
-  }
-
-  while (readStorage().length > 0) {
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      break;
-    }
-
-    const currentQueue = readStorage();
-    if (currentQueue.length === 0) break;
-
-    const item = currentQueue[0];
-
-    try {
-      const method = (item.method || "POST").toUpperCase();
-      const init: RequestInit = {
-        headers: item.headers,
-      };
-
-      let body = item.body;
-      if (typeof body === "string") {
-        try {
-          body = JSON.parse(body);
-        } catch {
-          // Keep as string if not valid JSON
-        }
-      }
-
-      let res: ApiClientResponse<unknown>;
-      switch (method) {
-        case "GET":
-          res = await apiClient.get(item.endpoint, init);
-          break;
-        case "PUT":
-          res = await apiClient.put(item.endpoint, body, init);
-          break;
-        case "PATCH":
-          res = await apiClient.patch(item.endpoint, body, init);
-          break;
-        case "DELETE":
-          res = await apiClient.delete(item.endpoint, init);
-          break;
-        case "POST":
-        default:
-          res = await apiClient.post(item.endpoint, body, init);
-          break;
-      }
-
-      if (res.ok) {
-        acknowledgeSent(item);
-        processed++;
-      } else if (
-        res.status >= 400 &&
-        res.status < 500 &&
-        res.status !== 429 &&
-        res.status !== 408
-      ) {
-        failed++;
-        let failureReason = res.error || `HTTP ${res.status}: Client Error`;
-        try {
-          if (typeof res.error === "string" && res.error.trim().length > 0) {
-            failureReason = res.error;
-          } else if (
-            Array.isArray(res.details) &&
-            res.details.length > 0 &&
-            typeof res.details[0]?.message === "string"
-          ) {
-            failureReason = res.details[0].message;
-          } else if (res.body && typeof res.body === "object") {
-            const obj = res.body as Record<string, unknown>;
-            if (typeof obj.message === "string") failureReason = obj.message;
-            else if (typeof obj.error === "string") failureReason = obj.error;
-            else if (
-              Array.isArray(obj.details) &&
-              typeof (obj.details[0] as Record<string, unknown>)?.message ===
-                "string"
-            ) {
-              failureReason = (obj.details[0] as Record<string, unknown>)
-                .message as string;
-            }
-          } else if (
-            typeof res.body === "string" &&
-            res.body.trim().length > 0
-          ) {
-            failureReason = res.body;
-          } else {
-            const resObj = res as unknown as Record<string, unknown>;
-            const targetRes =
-              typeof resObj.clone === "function"
-                ? (resObj.clone() as Record<string, unknown>)
-                : resObj;
-
-            let data: unknown;
-
-            if (typeof targetRes.json === "function") {
-              try {
-                data = await (targetRes.json as () => Promise<unknown>)();
-              } catch {
-                if (typeof targetRes.text === "function") {
-                  data = await (targetRes.text as () => Promise<unknown>)();
-                }
-              }
-            } else if (typeof targetRes.text === "function") {
-              data = await (targetRes.text as () => Promise<unknown>)();
-            }
-
-            if (data && typeof data === "object") {
-              const obj = data as Record<string, unknown>;
-
-              if (typeof obj.message === "string") {
-                failureReason = obj.message;
-              } else if (typeof obj.error === "string") {
-                failureReason = obj.error;
-              } else if (
-                Array.isArray(obj.details) &&
-                typeof (obj.details[0] as Record<string, unknown>)?.message ===
-                  "string"
-              ) {
-                failureReason = (obj.details[0] as Record<string, unknown>)
-                  .message as string;
-              }
-            } else if (typeof data === "string" && data.trim().length > 0) {
-              failureReason = data;
-            }
-          }
-        } catch {
-          // ignore parsing error
-        }
-
-        moveToDeadLetterQueue(
-          item,
-          res.status,
-          failureReason,
-          `Offline request failed with status ${res.status} and moved to DLQ`
-        );
-      } else {
-        failed++;
-        const nextRetries = item.retries + 1;
-        const maxRetries = item.maxRetries ?? 5;
-
-        if (nextRetries >= maxRetries) {
-          const failureReason =
-            typeof res.error === "string" && res.error.trim().length > 0
-              ? res.error
-              : res.status > 0
-                ? `HTTP ${res.status}`
-                : "Network error";
-          moveToDeadLetterQueue(
-            item,
-            res.status,
-            failureReason,
-            `Offline request exhausted ${maxRetries} retries (last status ${res.status}) and moved to DLQ`
-          );
-        } else {
-          recordRetry(item, nextRetries);
-
-          const delay = Math.min(1000 * Math.pow(2, nextRetries), 30000);
-          retryTimer = setTimeout(() => {
-            retryTimer = null;
-            flushOfflineQueue();
-          }, delay);
-
-          break;
-        }
-      }
-    } catch (error) {
-      failed++;
-      const nextRetries = item.retries + 1;
-      const maxRetries = item.maxRetries ?? 5;
-
-      if (nextRetries >= maxRetries) {
-        const failureReason =
-          error instanceof Error && error.message.trim().length > 0
-            ? error.message
-            : "Request failed";
-        moveToDeadLetterQueue(
-          item,
-          0,
-          failureReason,
-          `Offline request exhausted ${maxRetries} retries after a thrown error and moved to DLQ`
-        );
-      } else {
-        recordRetry(item, nextRetries);
-
-        const delay = Math.min(1000 * Math.pow(2, nextRetries), 30000);
-        retryTimer = setTimeout(() => {
-          retryTimer = null;
-          flushOfflineQueue();
-        }, delay);
-
-        break;
-      }
-    }
-  }
-
-  isProcessingQueue = false;
-  return { processed, failed };
+  if (!isOnline()) return { processed: 0, failed: 0 };
+  const { store, dispatcher } = await runtime();
+  const result = await dispatcher.flush();
+  await refresh(store);
+  return result;
 }
 
 function subscribe(callback: () => void) {
   subscribers.add(callback);
+  // Open the store on first use in the browser, so the snapshot loads.
+  if (typeof window !== "undefined") void runtime();
   return () => {
     subscribers.delete(callback);
-  };
-}
-
-function subscribeDLQ(callback: () => void) {
-  dlqSubscribers.add(callback);
-  return () => {
-    dlqSubscribers.delete(callback);
   };
 }
 
@@ -628,71 +477,45 @@ function subscribeOnline(callback: () => void) {
   };
 }
 
-function getSnapshot(): QueuedRequest[] {
-  return readStorage();
-}
-
-function getDLQSnapshot(): DeadLetterItem[] {
-  return readDLQStorage();
-}
-
-const SERVER_SNAPSHOT: QueuedRequest[] = [];
-const SERVER_DLQ_SNAPSHOT: DeadLetterItem[] = [];
-
-function getServerSnapshot(): QueuedRequest[] {
-  return SERVER_SNAPSHOT;
-}
-
-function getServerDLQSnapshot(): DeadLetterItem[] {
-  return SERVER_DLQ_SNAPSHOT;
-}
-
-function getOnlineSnapshot(): boolean {
-  return typeof navigator !== "undefined" ? navigator.onLine : true;
-}
-
-function getServerOnlineSnapshot(): boolean {
-  return true;
-}
+const getSnapshot = () => snapshot;
+const getServerSnapshot = () => SERVER_SNAPSHOT;
+const getOnlineSnapshot = () => isOnline();
+const getServerOnlineSnapshot = () => true;
 
 export interface UseOfflineQueueOptions {
   autoFlushOnOnline?: boolean;
 }
 
 /**
- * Custom hook providing access to the persistent offline request queue, dead-letter queue, and online status.
- * Uses useSyncExternalStore for hydration-safe, referentially stable, cross-tab synchronized state.
+ * The offline request queue, dead letters and online status, through
+ * useSyncExternalStore so server and first client render agree.
  *
  * @param options Optional hook configuration options.
  */
 export function useOfflineQueue(options?: UseOfflineQueueOptions) {
-  const queue = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const dlqQueue = useSyncExternalStore(
-    subscribeDLQ,
-    getDLQSnapshot,
-    getServerDLQSnapshot
-  );
-  const isOnline = useSyncExternalStore(
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isOnlineNow = useSyncExternalStore(
     subscribeOnline,
     getOnlineSnapshot,
     getServerOnlineSnapshot
   );
+  const queueLength = state.queue.length;
 
   useEffect(() => {
-    if (options?.autoFlushOnOnline !== false && isOnline && queue.length > 0) {
-      flushOfflineQueue();
+    if (
+      options?.autoFlushOnOnline !== false &&
+      isOnlineNow &&
+      queueLength > 0
+    ) {
+      void flushOfflineQueue();
     }
-  }, [isOnline, queue.length, options?.autoFlushOnOnline]);
+  }, [isOnlineNow, queueLength, options?.autoFlushOnOnline]);
 
   const enqueue = useCallback(
-    <T = unknown>(
-      request: Omit<QueuedRequest<T>, "id" | "createdAt" | "retries"> & {
-        id?: string;
-      }
-    ) => enqueueOfflineRequest(request),
+    <T = unknown>(request: OfflineRequestInput<T>) =>
+      enqueueOfflineRequest(request),
     []
   );
-
   const dequeue = useCallback((id: string) => dequeueOfflineRequest(id), []);
   const clear = useCallback(() => clearOfflineQueue(), []);
   const flush = useCallback(() => flushOfflineQueue(), []);
@@ -707,12 +530,12 @@ export function useOfflineQueue(options?: UseOfflineQueueOptions) {
   );
 
   return {
-    queue,
-    queueLength: queue.length,
-    dlqQueue,
-    dlqLength: dlqQueue.length,
-    isOnline,
-    isProcessing: isProcessingQueue,
+    queue: state.queue,
+    queueLength,
+    dlqQueue: state.dlq,
+    dlqLength: state.dlq.length,
+    persistence: state.persistence,
+    isOnline: isOnlineNow,
     enqueue,
     dequeue,
     clear,

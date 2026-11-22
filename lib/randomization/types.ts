@@ -438,6 +438,7 @@ export type ValidationFindingCode =
   | "INVALID_ENROLLMENT_TARGET"
   | "INVALID_SEED"
   | "INVALID_SUBJECT_ID_MASK"
+  | "INVALID_SIMULATION_SETTINGS"
   | "RESOURCE_LIMIT_EXCEEDED";
 
 /** Structured validation finding with stable code and dotted field path. */

@@ -10,6 +10,10 @@
  * engine phase cannot be interrupted, so the fallback refuses plans above
  * its row budget instead.
  *
+ * A Monte Carlo simulation (#4007) runs one repetition per step and yields
+ * between steps, with throttled progress. It holds no rows; its answer is
+ * the aggregate report.
+ *
  * This module never imports the client that constructs the worker
  * (chunk cycle guard, #853).
  */
@@ -17,10 +21,12 @@ import {
   RANDOMIZATION_RESOURCE_LIMITS,
   computeContentDigest,
   computePlanDigest,
+  createSimulationRunner,
   generateBlockSchedule,
   generateMinimizationSchedule,
   toSafeRandomizationErrorReport,
   validateRandomizationPlan,
+  validateSimulationRequest,
   type AllocationRow,
   type RandomizationRequest,
   type RandomizationResourceLimits,
@@ -59,6 +65,10 @@ interface RandomizationHost {
 
 type GenerateCommand = Extract<RandomizationCommand, { kind: "generate" }>;
 type PageCommand = Extract<RandomizationCommand, { kind: "page" }>;
+type SimulateCommand = Extract<RandomizationCommand, { kind: "simulate" }>;
+
+/** Progress messages per simulation, at most. */
+const SIMULATION_PROGRESS_MESSAGES = 20;
 
 class Stale extends Error {}
 
@@ -272,6 +282,108 @@ export function createRandomizationHost(
     }
   };
 
+  /**
+   * Runs a Monte Carlo simulation one repetition at a time, yielding between
+   * repetitions so a cancel or a newer request stops it within one run.
+   */
+  const simulate = async (command: SimulateCommand) => {
+    const { identity, requestId } = command;
+    const operationId = identity.operationId;
+    active = operationId;
+    held = null;
+    let stop: (() => void) | null = null;
+    try {
+      send({
+        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+        kind: "progress",
+        requestId,
+        identity,
+        phase: "validating",
+      });
+      let digest: string;
+      try {
+        digest = computePlanDigest(command.request);
+      } catch {
+        throw new OperationFailure("PLAN_NOT_SERIALIZABLE");
+      }
+      if (digest !== identity.planDigest) {
+        throw new OperationFailure("PLAN_DIGEST_MISMATCH");
+      }
+      const validation = validateSimulationRequest(command.request, limits);
+      if (!validation.ok) {
+        throw new OperationFailure(
+          findingCode(validation.findings),
+          validation.findings
+        );
+      }
+      const opened = createSimulationRunner(command.request, engineLimits);
+      if (!opened.ok) {
+        throw new OperationFailure(
+          engineLimits !== limits
+            ? "FALLBACK_BUDGET_EXCEEDED"
+            : findingCode(opened.findings),
+          opened.findings
+        );
+      }
+      const runner = opened.runner;
+      stop = () => runner.cancel();
+      const every = Math.max(
+        1,
+        Math.ceil(runner.total / SIMULATION_PROGRESS_MESSAGES)
+      );
+      let done = false;
+      while (!done) {
+        await pause();
+        if (disposed || active !== operationId) throw new Stale();
+        done = runner.step(1);
+        const completed = runner.attempted();
+        if (done || completed % every === 0) {
+          send({
+            protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+            kind: "progress",
+            requestId,
+            identity,
+            phase: "simulating",
+            completed,
+            total: runner.total,
+          });
+        }
+      }
+      active = null;
+      send({
+        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+        kind: "simulation-complete",
+        requestId,
+        identity,
+        report: runner.report(),
+      });
+    } catch (error) {
+      stop?.();
+      if (error instanceof Stale) {
+        send({
+          protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+          kind: "canceled",
+          requestId,
+          identity,
+        });
+        return;
+      }
+      if (active === operationId) active = null;
+      send({
+        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+        kind: "failed",
+        requestId,
+        identity,
+        ...(error instanceof OperationFailure
+          ? {
+              code: error.code,
+              ...(error.findings ? { findings: error.findings } : {}),
+            }
+          : { code: toSafeRandomizationErrorReport(error).code }),
+      });
+    }
+  };
+
   const page = (command: PageCommand) => {
     const { identity, requestId } = command;
     const fail = (code: RandomizationOperationErrorCode) =>
@@ -326,6 +438,8 @@ export function createRandomizationHost(
       }
       if (command.kind === "generate") {
         void generate(command);
+      } else if (command.kind === "simulate") {
+        void simulate(command);
       } else if (command.kind === "page") {
         page(command);
       } else if (active === command.operationId) {

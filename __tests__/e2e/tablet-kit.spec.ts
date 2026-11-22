@@ -1302,8 +1302,19 @@ async function openClassicDesk(page: Page) {
   await expect(page.locator(SD_DESK)).toBeVisible();
 }
 
-/** Every box the view draws sits inside the viewport. */
+/**
+ * Every box the view draws sits inside the viewport. The check retries until
+ * motion settles: dealt cards fly in from off screen, so a measurement taken
+ * the moment the first card shows can catch the hand mid-deal.
+ */
 async function expectInsideViewport(page: Page, selectors: string[]) {
+  await expect(async () => {
+    await expectInsideViewportNow(page, selectors);
+  }).toPass({ timeout: 5000 });
+}
+
+/** One measurement of {@link expectInsideViewport}, with no retry. */
+async function expectInsideViewportNow(page: Page, selectors: string[]) {
   const viewport = page.viewportSize();
   expect(viewport).not.toBeNull();
   for (const selector of selectors) {

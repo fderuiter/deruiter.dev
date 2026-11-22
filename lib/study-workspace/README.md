@@ -15,22 +15,29 @@ Import it only through `@/lib/study-workspace` (`index.ts`). Files under
 
 ## Public entry points
 
-| Export                                         | What it does                                                                                                                                                                                                                                                           |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `importUsdmStudy(input, options)`              | Imports USDM v4 JSON (`{ text }` or `{ document }`). Returns `ok` with a workspace and an import report, `needs-selection` with the study versions and designs to choose from, or `rejected` with the problems. Schema issues are reported and do not stop the import. |
-| `commitStudyRevision(workspace, usdm, change)` | Makes the next revision from an edited document. `change.expectedRevisionId` must be the current revision, or it throws `StudyWorkspaceConflictError`. The workspace passed in is left as it was.                                                                      |
-| `exportStudyUsdm(workspace)`                   | Returns the working USDM document for export or a hand-off.                                                                                                                                                                                                            |
-| `serializeStudyWorkspace(workspace)`           | Writes the workspace file as JSON text.                                                                                                                                                                                                                                |
-| `openStudyWorkspace(text)`                     | Opens a saved workspace file. Checks its shape and version, and that the working document still matches its revision hash. Returns `ok` or `invalid` with the problem.                                                                                                 |
-| `StudyWorkspaceConflictError`                  | Thrown when an edit names a revision that is no longer current.                                                                                                                                                                                                        |
-| `TAVR_DEVICE_USDM`, `TAVR_SAVR_USDM`           | The two synthetic device reference studies: single-arm TAVR, and randomised TAVR versus SAVR analysed by win ratio.                                                                                                                                                    |
+| Export                                                    | What it does                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `importUsdmStudy(input, options)`                         | Imports USDM v4 JSON (`{ text }` or `{ document }`). Returns `ok` with a workspace and an import report, `needs-selection` with the study versions and designs to choose from, or `rejected` with the problems. Schema issues are reported and do not stop the import. |
+| `commitStudyRevision(workspace, usdm, change)`            | Makes the next revision from an edited document. `change.expectedRevisionId` must be the current revision, or it throws `StudyWorkspaceConflictError`. The workspace passed in is left as it was.                                                                      |
+| `exportStudyUsdm(workspace)`                              | Returns the working USDM document for export or a hand-off.                                                                                                                                                                                                            |
+| `serializeStudyWorkspace(workspace)`                      | Writes the workspace file as JSON text.                                                                                                                                                                                                                                |
+| `openStudyWorkspace(text)`                                | Opens a saved workspace file. Checks its shape and version, and that the working document still matches its revision hash. Returns `ok` or `invalid` with the problem.                                                                                                 |
+| `StudyWorkspaceConflictError`                             | Thrown when an edit names a revision that is no longer current.                                                                                                                                                                                                        |
+| `createBlankStudyWorkspace(options)`                      | Starts a workspace from a blank USDM v4 study holding only what the schema requires. Every value filled in only for the schema, such as the Intervention Model term C82639 Parallel Study, is listed in `placeholders` for the studio to show.                         |
+| `createStudyEdit(workspace, patch, note)`                 | Makes a reversible edit from an RFC 6902 JSON Patch and works out the patch that undoes it. Throws `StudyPatchError` when a path does not exist.                                                                                                                       |
+| `applyStudyEdit`, `undoStudyEdit`, `redoStudyEdit`        | Commit an edit, its inverse or the edit again as the next revision, and return the updated undo and redo stacks. Undo and redo add revisions; they never remove one.                                                                                                   |
+| `applyStudyPatch(usdm, patch)`, `emptyStudyEditHistory()` | Apply a patch to a copy of a document, all or nothing; start an empty history.                                                                                                                                                                                         |
+| `exportValidatedStudyUsdm(workspace)`                     | Checks the working study against the USDM v4.0.0 schema and returns canonical JSON with the revision hash, or the schema issues.                                                                                                                                       |
+| `TAVR_DEVICE_USDM`, `TAVR_SAVR_USDM`                      | The two synthetic device reference studies: single-arm TAVR, and randomised TAVR versus SAVR analysed by win ratio.                                                                                                                                                    |
 
 The public types are in `types.ts`: `StudyWorkspace` and its parts
 (`StudyWorkspaceSource`, `StudyWorkspaceSelection`, `StudyWorkspaceRevision`,
 `StudyWorkspaceLocks`, `PreservedItem`), the import results
 (`StudyImportResult`, `StudyImportReport`, `StudyImportProblem`,
-`StudyVersionChoice`, `StudyContentCounts`), and the open results
-(`OpenStudyWorkspaceResult`, `StudyWorkspaceFileProblem`).
+`StudyVersionChoice`, `StudyContentCounts`), the open results
+(`OpenStudyWorkspaceResult`, `StudyWorkspaceFileProblem`), the blank start
+(`BlankStudyWorkspace`, `BlankStudyPlaceholder`), edits (`StudyPatchOperation`,
+`StudyEdit`, `StudyEditHistory`) and `ValidatedStudyExport`.
 
 ## Versioning
 
@@ -57,12 +64,10 @@ design on the person's behalf.
 The design, schedule, narrative and analysis-intent screens are views of this
 workspace, never separate modules. A view projects the working document by the
 USDM `id` of each object, and reports a finding where the study leaves
-something out instead of inventing a value. These are still to come:
-
-- the blank workspace envelope, reversible operations with undo and redo, and
-  validating export (#3399);
-- the design view's arms-by-epochs grid (#3401), and its interventions list and
-  trial schema figure (#3406).
+something out instead of inventing a value. Views edit the study only through
+`createStudyEdit` and `applyStudyEdit`, so every change can be undone. Still to
+come: the design view's arms-by-epochs grid (#3401), and its interventions list
+and trial schema figure (#3406).
 
 Each view adds its public projection types to `types.ts` together with the code
 that produces them. Routes and layout live outside this module (#3400).

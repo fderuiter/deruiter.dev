@@ -23,4 +23,19 @@ export {
   openStudyWorkspace,
   serializeStudyWorkspace,
 } from "./internal/revision";
+export {
+  createBlankStudyWorkspace,
+  type CreateBlankStudyOptions,
+} from "./internal/workspace";
+export {
+  StudyPatchError,
+  applyStudyEdit,
+  applyStudyPatch,
+  createStudyEdit,
+  emptyStudyEditHistory,
+  redoStudyEdit,
+  undoStudyEdit,
+  type StudyEditResult,
+} from "./internal/ops";
+export { exportValidatedStudyUsdm } from "./internal/export";
 export { TAVR_DEVICE_USDM, TAVR_SAVR_USDM } from "./reference";

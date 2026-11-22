@@ -6,7 +6,7 @@ import type { BlankStudyPlaceholder, BlankStudyWorkspace } from "../types";
 import { importUsdmStudy } from "./import";
 
 /** The USDM version a blank study is written in. */
-const BLANK_USDM_VERSION = "4.0.0";
+const BLANK_USDM_VERSION = CLINICAL_STANDARDS_PROFILE.USDM;
 
 /** Fixed ids, so two blank studies are byte-identical. */
 const VERSION_ID = "StudyVersion_1";
@@ -16,8 +16,8 @@ const MODEL_ID = "Code_1";
 
 /**
  * The CDISC Intervention Model term the USDM v4 schema requires on every
- * interventional design: C82639 "Parallel Study" in codelist C99076
- * (INTMODEL), the same term the reference studies use. It is shown to the
+ * interventional design: C82639 "Parallel Study" in the
+ * INTMODEL codelist, the same term the reference studies use. It is shown to the
  * person as a placeholder, not offered as a decision made for them.
  */
 const PARALLEL_STUDY_CODE = "C82639";

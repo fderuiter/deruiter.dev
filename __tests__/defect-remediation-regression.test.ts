@@ -2979,6 +2979,10 @@ describe("Email queue preservation when production transport is unconfigured (#3
     expect(querySpy).toHaveBeenCalledTimes(1);
     expect(updateSpy).not.toHaveBeenCalled();
 
+    // Known eligible, so the inline send reaches the transport check (#3806).
+    vi.spyOn(prisma.suppressionList, "findUnique").mockResolvedValue(
+      null as never
+    );
     const rawResult = await EmailService.sendRawEmail({
       to: "client@example.com",
       subject: "Direct send attempt",
@@ -3116,5 +3120,47 @@ describe("TypeDoc comment Markdown regression (#3791)", () => {
 
     expect(read("lib/crf/types.ts")).not.toMatch(/^\s*\* #\d/m);
     expect(read("lib/dx/doctor.ts")).not.toContain("` (AGENTS.md section N)`");
+  });
+});
+
+describe("Unknown suppression eligibility never sends (#3806)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    EmailService.resetClient();
+  });
+
+  it("returns unknown, not eligible, when the suppression lookup throws", async () => {
+    vi.spyOn(prisma.suppressionList, "findUnique").mockRejectedValue(
+      new Error("Neon unreachable")
+    );
+    await expect(
+      EmailService.checkRecipientEligibility("someone@example.com")
+    ).resolves.toEqual({
+      status: "unknown",
+      code: "SUPPRESSION_LOOKUP_FAILED",
+    });
+  });
+
+  it("makes no provider call and no success claim when lookup and queue both fail", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("RESEND_API_KEY", "re_regression_key");
+    EmailService.resetClient();
+    vi.spyOn(prisma.suppressionList, "findUnique").mockRejectedValue(
+      new Error("Neon unreachable")
+    );
+    vi.spyOn(prisma.outboundEmailQueue, "create").mockRejectedValue(
+      new Error("Neon unreachable")
+    );
+
+    const result = await EmailService.sendRawEmail({
+      to: "someone@example.com",
+      subject: "Regression",
+      html: "<p>Regression</p>",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.queued).toBeUndefined();
+    expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
   });
 });

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EmailService } from "@/lib/services/email-service";
 import { env } from "@/lib/env";
+import { prisma } from "@/lib/db";
 import * as Sentry from "@sentry/nextjs";
 
 // Mock Sentry
@@ -25,6 +26,11 @@ describe("EmailService (Spec & Handler)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     EmailService.resetClient();
+    // No suppression record: recipients are known eligible. A failed lookup
+    // is unknown, not eligible (#3806), so tests must state eligibility.
+    vi.spyOn(prisma.suppressionList, "findUnique").mockResolvedValue(
+      null as never
+    );
   });
 
   afterEach(() => {
@@ -251,7 +257,6 @@ describe("EmailService (Spec & Handler)", () => {
 
   describe("getSuppressedEmails", () => {
     it("returns empty set when given an empty list without querying database", async () => {
-      const { prisma } = await import("@/lib/db");
       const findManySpy = vi.spyOn(prisma.suppressionList, "findMany");
       const result = await EmailService.getSuppressedEmails([]);
       expect(result.size).toBe(0);
@@ -259,7 +264,6 @@ describe("EmailService (Spec & Handler)", () => {
     });
 
     it("queries suppressionList with normalized emails and returns matching lowercase emails", async () => {
-      const { prisma } = await import("@/lib/db");
       const findManySpy = vi
         .spyOn(prisma.suppressionList, "findMany")
         .mockResolvedValueOnce([
@@ -285,7 +289,6 @@ describe("EmailService (Spec & Handler)", () => {
     });
 
     it("propagates database rejections so caller can handle unknown eligibility (#3806)", async () => {
-      const { prisma } = await import("@/lib/db");
       vi.spyOn(prisma.suppressionList, "findMany").mockRejectedValueOnce(
         new Error("Neon connection terminated")
       );

@@ -277,20 +277,22 @@ describe("Resend Webhook Receiver & Suppression Engine (#545)", () => {
       expect(result.error).toBeUndefined();
     });
 
-    it("fails open (does not block sending) when a suppression-list read fails", async () => {
+    it("fails closed (never sends) when a suppression-list read fails (#3806)", async () => {
       findUniqueShouldFail = true;
 
       const result = await EmailService.sendRawEmail({
         to: "unknown.status@example.com",
         subject: "Hello",
         html: "<p>Hi</p>",
+        skipQueue: true,
       });
 
-      // Documented policy: a suppression-list *read* failure fails open so a
-      // transient database outage does not block all outbound mail. This is
-      // distinct from a suppression *write* failure (see below), which must
-      // never be silently swallowed.
-      expect(result.success).toBe(true);
+      // Accepted policy (#3806): a failed *read* is unknown eligibility, not
+      // permission, so an outage cannot bypass an unsubscribe, bounce or
+      // complaint. Like a failed suppression *write*, it is never swallowed.
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+      expect(result.retryable).toBe(true);
     });
   });
 

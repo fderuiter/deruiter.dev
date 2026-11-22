@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  ELIGIBILITY_DEFERRED_REASON,
   EmailService,
   RawEmailOptions,
   type EmailRetryCounts,
@@ -726,5 +727,216 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       const deliveredItem = mockQueueStore.get(queueId);
       expect(deliveredItem?.status).toBe("DELIVERED");
     });
+  });
+});
+
+describe("unknown recipient eligibility fails closed (#3806)", () => {
+  const findUnique = () => vi.mocked(prisma.suppressionList.findUnique);
+
+  const seedRow = (
+    id: string,
+    to: string,
+    overrides: Partial<MockQueueItem> = {}
+  ) =>
+    mockQueueStore.set(id, {
+      id,
+      to,
+      from: "sender@deruiter.dev",
+      replyTo: null,
+      subject: "Eligibility",
+      html: "<p>eligibility</p>",
+      text: null,
+      tags: null,
+      attempts: 1,
+      status: "RETRYING",
+      nextRetryAt: new Date(0),
+      lastError: "temporary",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+      ...overrides,
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockQueueStore.clear();
+    mockSuppressionStore.clear();
+    EmailService.resetClient();
+    process.env.RESEND_API_KEY = "re_test_mock_api_key";
+    process.env.VITEST = "";
+  });
+
+  afterEach(() => {
+    EmailService.resetClient();
+    process.env.VITEST = "1";
+    vi.unstubAllEnvs();
+  });
+
+  it("reports eligible, suppressed and unknown as separate outcomes", async () => {
+    mockSuppressionStore.set("gone@example.com", {
+      email: "gone@example.com",
+      reason: "COMPLAINT",
+    });
+    await expect(
+      EmailService.checkRecipientEligibility("ok@example.com")
+    ).resolves.toEqual({ status: "eligible" });
+    await expect(
+      EmailService.checkRecipientEligibility("Gone@Example.com ")
+    ).resolves.toEqual({ status: "suppressed", reason: "COMPLAINT" });
+    findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
+    await expect(
+      EmailService.checkRecipientEligibility("ok@example.com")
+    ).resolves.toEqual({
+      status: "unknown",
+      code: "SUPPRESSION_LOOKUP_FAILED",
+    });
+  });
+
+  it("defers an inline send to the durable queue without calling the provider", async () => {
+    findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
+
+    const result = await EmailService.sendRawEmail({
+      to: "visitor@example.com",
+      subject: "Thanks for writing",
+      html: "<p>confirmation</p>",
+    });
+
+    expect(mockSendFn).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      success: true,
+      queued: true,
+      deferred: true,
+    });
+    const row = mockQueueStore.get(result.queueId!);
+    expect(row?.lastError).toBe(ELIGIBILITY_DEFERRED_REASON);
+    expect(row?.status).toBe("RETRYING");
+  });
+
+  it("returns a typed retryable failure when eligibility and storage are both unavailable", async () => {
+    findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
+    const create = vi.mocked(prisma.outboundEmailQueue.create);
+    create.mockRejectedValueOnce(new Error("Neon unreachable"));
+
+    const result = await EmailService.sendRawEmail({
+      to: "visitor@example.com",
+      subject: "Thanks for writing",
+      html: "<p>confirmation</p>",
+    });
+
+    expect(mockSendFn).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      success: false,
+      retryable: true,
+      errorCode: "RECIPIENT_ELIGIBILITY_UNKNOWN",
+      error: expect.stringContaining("not sent or queued"),
+    });
+    expect(result.queued).toBeUndefined();
+  });
+
+  it("does not queue a skipQueue send when eligibility is unknown", async () => {
+    findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
+    const result = await EmailService.sendRawEmail({
+      to: "visitor@example.com",
+      subject: "s",
+      html: "<p>h</p>",
+      skipQueue: true,
+    });
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+    expect(mockQueueStore.size).toBe(0);
+    expect(mockSendFn).not.toHaveBeenCalled();
+  });
+
+  it("keeps a queued row on lookup failure, then sends it once eligibility is restored", async () => {
+    seedRow("queue-unknown", "visitor@example.com", { attempts: 2 });
+    findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
+    const now = new Date("2026-11-22T12:00:00Z");
+
+    const first = await retryCounts(EmailService.processRetryQueue({ now }));
+
+    expect(first).toEqual({
+      processed: 1,
+      succeeded: 0,
+      failed: 0,
+      deferred: 1,
+    });
+    expect(mockSendFn).not.toHaveBeenCalled();
+    const held = mockQueueStore.get("queue-unknown")!;
+    expect(held.status).toBe("RETRYING");
+    expect(held.attempts).toBe(2);
+    expect(held.lastError).toBe(ELIGIBILITY_DEFERRED_REASON);
+    expect(held.nextRetryAt.getTime()).toBeGreaterThan(now.getTime());
+
+    mockSendFn.mockResolvedValueOnce({ data: { id: "msg_1" }, error: null });
+    const second = await retryCounts(
+      EmailService.processRetryQueue({
+        now: new Date(held.nextRetryAt.getTime() + 1),
+      })
+    );
+
+    expect(second).toEqual({
+      processed: 1,
+      succeeded: 1,
+      failed: 0,
+      deferred: 0,
+    });
+    expect(mockSendFn).toHaveBeenCalledTimes(1);
+    expect(mockSendFn.mock.calls[0][1]).toEqual({
+      idempotencyKey: "portfolio-email-queue-unknown",
+    });
+    expect(mockQueueStore.get("queue-unknown")?.status).toBe("DELIVERED");
+  });
+
+  it("skips a recipient suppressed while the row was deferred", async () => {
+    seedRow("queue-later-suppressed", "visitor@example.com", {
+      lastError: ELIGIBILITY_DEFERRED_REASON,
+    });
+    mockSuppressionStore.set("visitor@example.com", {
+      email: "visitor@example.com",
+      reason: "UNSUBSCRIBED",
+    });
+
+    const summary = await retryCounts(EmailService.processRetryQueue());
+
+    expect(summary).toEqual({
+      processed: 1,
+      succeeded: 0,
+      failed: 1,
+      deferred: 0,
+    });
+    expect(mockSendFn).not.toHaveBeenCalled();
+    expect(mockQueueStore.get("queue-later-suppressed")?.status).toBe("FAILED");
+  });
+
+  it("defers a mixed-recipient message whole when one lookup fails and none is suppressed", async () => {
+    seedRow("queue-mixed", "a@example.com, b@example.com");
+    findUnique()
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error("Neon unreachable"));
+
+    const summary = await retryCounts(EmailService.processRetryQueue());
+
+    expect(summary.deferred).toBe(1);
+    expect(mockSendFn).not.toHaveBeenCalled();
+    expect(mockQueueStore.get("queue-mixed")?.to).toBe(
+      "a@example.com, b@example.com"
+    );
+  });
+
+  it("treats a known suppression as terminal even when another recipient is unknown", async () => {
+    seedRow("queue-mixed-suppressed", "a@example.com, b@example.com");
+    findUnique()
+      .mockRejectedValueOnce(new Error("Neon unreachable"))
+      .mockResolvedValueOnce({
+        id: "sup_b",
+        email: "b@example.com",
+        reason: "BOUNCE",
+        createdAt: new Date(0),
+      });
+
+    const summary = await retryCounts(EmailService.processRetryQueue());
+
+    expect(summary).toMatchObject({ failed: 1, deferred: 0 });
+    expect(mockSendFn).not.toHaveBeenCalled();
+    expect(mockQueueStore.get("queue-mixed-suppressed")?.status).toBe("FAILED");
   });
 });

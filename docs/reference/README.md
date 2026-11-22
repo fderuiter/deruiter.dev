@@ -45,6 +45,8 @@ lookup rather than sequential reading.
 - [CRF Studio workload capacity](crf-workload-capacity.md), measured latency,
   responsiveness, memory and storage headroom of the CRF authoring workflows
   on small, typical and stress studies (`npm run bench:crf`).
+- [CRF Studio local draft recovery](crf-local-draft-recovery.md), when the
+  studio writes its local draft and what a crash or storage eviction loses.
 
 Provider inventories are dated snapshots. Re-run their documented commands
 before making an operational decision; do not infer live provider state from an

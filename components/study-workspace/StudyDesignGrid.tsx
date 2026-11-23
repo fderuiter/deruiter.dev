@@ -32,6 +32,7 @@ import {
   type StudyEditHistory,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
+import { TrialSchemaFigure } from "./TrialSchemaFigure";
 
 /** The studies the grid can open: two reference studies and a blank one. */
 const SOURCES = [
@@ -206,6 +207,12 @@ export function StudyDesignGrid() {
 
       <AddForms apply={apply} />
       <Findings grid={grid} />
+      <section aria-labelledby="trial-schema" className="min-w-0">
+        <h3 id="trial-schema" className="mb-3 font-semibold">
+          Trial schema
+        </h3>
+        <TrialSchemaFigure grid={grid} />
+      </section>
     </div>
   );
 }

@@ -194,8 +194,6 @@ export function useStudyWorkspaceDraft(
     if (previous.workspace === workspace && previous.ui === ui) return;
     previousRef.current = { workspace, ui };
     if (!enabled || blockedRef.current) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatus("saving");
     timerRef.current = setTimeout(checkpoint, STUDY_WORKSPACE_AUTOSAVE_MS);
     return clearTimer;
   }, [workspace, ui, enabled, checkpoint, clearTimer]);
@@ -208,13 +206,20 @@ export function useStudyWorkspaceDraft(
     });
   }, []);
 
+  const hasUnsavedChanges =
+    workspace !== acknowledged.workspace || ui !== acknowledged.ui;
+  // A change waiting for its timer reads as saving; no effect sets it.
+  const shown: StudyWorkspaceDraftStatus =
+    enabled && hasUnsavedChanges && (status === "idle" || status === "saved")
+      ? "saving"
+      : status;
+
   return {
-    status,
+    status: shown,
     savedAt,
     errorMessage,
     conflict,
-    hasUnsavedChanges:
-      workspace !== acknowledged.workspace || ui !== acknowledged.ui,
+    hasUnsavedChanges,
     checkpoint,
     keepMine,
     downloadDraft,

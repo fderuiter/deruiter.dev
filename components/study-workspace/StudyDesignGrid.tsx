@@ -332,7 +332,11 @@ function DraftOffer({
         >
           Restore draft
         </button>
-        <button type="button" className={BUTTON} onClick={onDiscard}>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={onDiscard}
+        >
           Discard draft
         </button>
       </div>
@@ -367,10 +371,18 @@ function QuarantineNotice({
         set aside; download it before you dismiss it.
       </p>
       <div className="flex flex-wrap gap-3">
-        <button type="button" className={BUTTON} onClick={download}>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={download}
+        >
           Download unreadable draft
         </button>
-        <button type="button" className={BUTTON} onClick={dismiss}>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={dismiss}
+        >
           Dismiss
         </button>
       </div>
@@ -414,12 +426,20 @@ function DraftAutosave({
         {text}
       </p>
       {draft.status === "conflict" && (
-        <button type="button" className={BUTTON} onClick={draft.keepMine}>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={draft.keepMine}
+        >
           Keep this tab&apos;s draft
         </button>
       )}
       {problem && (
-        <button type="button" className={BUTTON} onClick={draft.downloadDraft}>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={draft.downloadDraft}
+        >
           Download workspace
         </button>
       )}

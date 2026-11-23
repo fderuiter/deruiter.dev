@@ -38,6 +38,7 @@ No AGPL source code, runtime modules, or test fixtures from
 | Boundary enforcement | `.dependency-cruiser.cjs` (`randomization-engine-purity`) | Apache-2.0 (host repository rule) | `#3998` |
 | Contract & traceability tests | `__tests__/randomization-contracts.test.ts`, `__tests__/dependency-cruiser-boundaries.test.ts` | Apache-2.0 (independently derived vectors and fixture trees) | `#3998` |
 | PRNG, identity & integrity primitives | `lib/randomization/internal/engines/*`, `internal/identity/*`, `internal/integrity/*` | Apache-2.0 (fresh implementation; NIST FIPS 180-4 SHA-256 & ISO C++11 MT19937 vectors, zero runtime dependencies) | `#3999` |
+| Work area UI presets | `lib/randomization/presets.ts`, `__tests__/randomization-presets.test.ts` | Apache-2.0 (fresh implementation; synthetic values from the #4006 acceptance contract) | `#4006` |
 
 ## Complete 155-requirement traceability matrix
 
@@ -46,10 +47,10 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-WORKS-001` | Study metadata | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-WORKS-002` | Seven-stage design journey | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-WORKS-003` | Use acknowledgment | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-WORKS-004` | Simple UI preset | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-WORKS-005` | Standard UI preset | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-WORKS-006` | Complex UI preset | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-WORKS-007` | Preset replacement contract | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
+| `RND-WORKS-004` | Simple UI preset | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
+| `RND-WORKS-005` | Standard UI preset | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
+| `RND-WORKS-006` | Complex UI preset | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
+| `RND-WORKS-007` | Preset replacement contract | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
 | `RND-WORKS-008` | Exploration mode | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-WORKS-009` | Explicit artifact lifecycle | `#4003` | `Deferred` | Contract types in `lib/randomization/types.ts` (`#3998`); persistence pending `#4003` | Not yet executed |
 | `RND-WORKS-010` | Host study linkage | `#4015` | `Deferred` | Provenance contract in `lib/randomization/types.ts` (`#3998`); pipeline linkage pending `#4015` | Not yet executed |

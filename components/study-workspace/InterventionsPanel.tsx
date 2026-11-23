@@ -144,7 +144,7 @@ function InterventionCard({
                     )
                   }
                 >
-                  Remove
+                  Stop giving
                 </button>
               </li>
             ))}

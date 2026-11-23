@@ -313,7 +313,13 @@ function DraftOffer({
           `, with ${plans} randomization plan${plans === 1 ? "" : "s"}`}
         {record.savedAt && (
           <>
-            , saved <time dateTime={record.savedAt}>{record.savedAt}</time>
+            , saved{" "}
+            <time dateTime={record.savedAt}>
+              {new Date(record.savedAt).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </time>
           </>
         )}
         . It is not changed until you choose.

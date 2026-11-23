@@ -45,8 +45,8 @@ No AGPL source code, runtime modules, or test fixtures from
 | Requirement ID | Capability | Primary Ticket | Status | Test Definition | Latest Execution Evidence |
 | --- | --- | --- | --- | --- | --- |
 | `RND-WORKS-001` | Study metadata | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-WORKS-002` | Seven-stage design journey | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-WORKS-003` | Use acknowledgment | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
+| `RND-WORKS-002` | Seven-stage design journey | `#4006` | `Implemented` | `__tests__/randomization-workspace.test.tsx` (editor); generation gate pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
+| `RND-WORKS-003` | Use acknowledgment | `#4006` | `Implemented` | `__tests__/randomization-workspace.test.tsx` (editor); generation gate pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
 | `RND-WORKS-004` | Simple UI preset | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
 | `RND-WORKS-005` | Standard UI preset | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |
 | `RND-WORKS-006` | Complex UI preset | `#4006` | `Implemented` | `__tests__/randomization-presets.test.ts` (presets); UI pending `#4006` | Pass (`vitest`, `#4006`, 2026-11-23) |

@@ -43,6 +43,7 @@ import {
 import { InterventionsPanel } from "./InterventionsPanel";
 import { useStudyWorkspaceDraft } from "./useStudyWorkspaceDraft";
 import { TrialSchemaFigure } from "./TrialSchemaFigure";
+import { RandomizationWorkspace } from "@/components/randomization/RandomizationWorkspace";
 
 /** The studies the grid can open: two reference studies and a blank one. */
 const SOURCES = [
@@ -290,6 +291,7 @@ export function StudyDesignGrid() {
         </h3>
         <TrialSchemaFigure grid={grid} />
       </section>
+      <RandomizationWorkspace workspace={session.workspace} apply={apply} />
     </div>
   );
 }

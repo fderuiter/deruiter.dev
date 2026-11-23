@@ -70,6 +70,11 @@ describe("importUsdmStudy: both reference studies", () => {
       parentId: null,
       note: "Imported.",
       sha256: usdmContentHash(usdm),
+      payloadSha256: usdmContentHash({
+        usdm,
+        analyses: [],
+        randomizationPlans: [],
+      }),
     });
     expect(workspace.source.sha256).toBe(usdmContentHash(usdm));
     expect(report.counts.arms).toBeGreaterThan(0);
@@ -248,6 +253,11 @@ describe("revisions and saved files", () => {
       parentId: "R1",
       note: "Describe the study.",
       sha256: usdmContentHash(edited),
+      payloadSha256: usdmContentHash({
+        usdm: edited,
+        analyses: [],
+        randomizationPlans: [],
+      }),
     });
     expect(r1.usdm.study.description).not.toBe("Edited");
     expect(r2.source).toBe(r1.source);
@@ -376,7 +386,7 @@ describe("revisions and saved files", () => {
     const { workspace } = ok(
       await importUsdmStudy({ document: DEMO_301_USDM })
     );
-    const saved = { ...workspace, workspaceVersion: 2 };
+    const saved = { ...workspace, workspaceVersion: 3 };
     expect(openStudyWorkspace(JSON.stringify(saved))).toEqual({
       status: "invalid",
       problem: "unsupported-version",

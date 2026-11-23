@@ -13,6 +13,7 @@ import {
   type StudyVersionChoice,
   type StudyWorkspaceSelection,
 } from "../types";
+import { payloadContentHash } from "./revision";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -249,7 +250,17 @@ export async function importUsdmStudy(
       original: document,
     },
     selection,
-    revision: { id: "R1", parentId: null, note: "Imported.", sha256 },
+    revision: {
+      id: "R1",
+      parentId: null,
+      note: "Imported.",
+      sha256,
+      payloadSha256: payloadContentHash({
+        usdm: document as unknown as UsdmV4Document,
+        analyses: [],
+        randomizationPlans: [],
+      }),
+    },
     // The working copy starts as a deep copy so edits never reach the original.
     usdm: structuredClone(document) as unknown as UsdmV4Document,
     locks: {
@@ -257,6 +268,8 @@ export async function importUsdmStudy(
       ctPackageDate: CLINICAL_STANDARDS_PROFILE.CT.packageDate,
     },
     preserved,
+    analyses: [],
+    randomizationPlans: [],
   } as const;
   return {
     status: "ok",

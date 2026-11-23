@@ -1,4 +1,9 @@
 import type { UsdmV4Document } from "@/lib/clinical-standards";
+import type {
+  RandomizationAlgorithmId,
+  RandomizationRequest,
+  ValidationFinding,
+} from "@/lib/randomization";
 
 /**
  * Type contracts for the study workspace: one file that holds a USDM study
@@ -6,8 +11,13 @@ import type { UsdmV4Document } from "@/lib/clinical-standards";
  * worked on, and which revision this is (epic #3071, step 2).
  */
 
-/** Version of the workspace file shape. Bump it when the fields change. */
-export const STUDY_WORKSPACE_VERSION = 1;
+/**
+ * Version of the workspace file shape. Bump it when the fields change.
+ * Version 2 adds `analyses`, `randomizationPlans` and the revision's
+ * `payloadSha256` (#4003, ADR 0073 section 6); version 1 files still open
+ * and are read as version 2 with empty collections.
+ */
+export const STUDY_WORKSPACE_VERSION = 2;
 
 /** Where the study came from. Never edited after import. */
 export interface StudyWorkspaceSource {
@@ -41,6 +51,12 @@ export interface StudyWorkspaceRevision {
   readonly note: string;
   /** SHA-256 of the working USDM document's canonical JSON. */
   readonly sha256: string;
+  /**
+   * SHA-256 of the canonical JSON of the whole working payload: `usdm`,
+   * `analyses` and `randomizationPlans`. `sha256` keeps the USDM-only
+   * meaning version 1 files had, so a plan edit changes this hash only.
+   */
+  readonly payloadSha256: string;
 }
 
 /** Standards versions the workspace was checked against. */
@@ -72,6 +88,13 @@ export interface StudyWorkspace {
   readonly usdm: UsdmV4Document;
   readonly locks: StudyWorkspaceLocks;
   readonly preserved: readonly PreservedItem[];
+  /**
+   * Analysis specifications (#3423). The workspace keeps them exactly as
+   * written and never edits or drops them; their shape belongs to #3423.
+   */
+  readonly analyses: readonly unknown[];
+  /** Randomization plans bound to the selected design (#4003). */
+  readonly randomizationPlans: readonly StudyRandomizationPlan[];
 }
 
 /** One study version and its designs, offered when a choice is needed. */
@@ -166,9 +189,19 @@ export type StudyPatchOperation =
   | { readonly op: "remove"; readonly path: string }
   | { readonly op: "replace"; readonly path: string; readonly value: unknown };
 
-/** A reversible edit: the patch, the patch that undoes it, and its note. */
+/**
+ * A reversible edit: the patch, the patch that undoes it, and its note.
+ * Paths are rooted at the USDM document, or with `scope: "payload"` at the
+ * working payload `{ usdm, analyses, randomizationPlans }`.
+ */
 export interface StudyEdit {
   readonly note: string;
+  readonly scope?: "usdm" | "payload";
+  /**
+   * The revision the edit was made on. `applyStudyEdit` refuses the edit
+   * on any other revision, so an edit from a stale view never lands.
+   */
+  readonly madeOn?: string;
   readonly forward: readonly StudyPatchOperation[];
   readonly inverse: readonly StudyPatchOperation[];
 }
@@ -264,3 +297,112 @@ export interface StudyDesignCellRef {
   readonly armId: string;
   readonly epochId: string;
 }
+
+/**
+ * Where a randomization plan stands. None of these means clinical approval:
+ * "acknowledged-reference" only records that someone marked the plan as the
+ * one to compare against (RND-WORKS-009).
+ */
+export type StudyRandomizationPlanState =
+  "draft" | "exploration" | "acknowledged-reference";
+
+/** One USDM arm in a plan, by its USDM id, with its allocation ratio. */
+export interface StudyRandomizationPlanArm {
+  readonly armId: string;
+  /** The short code shown in schedules, such as "A". */
+  readonly code: string;
+  readonly allocationRatio: number;
+}
+
+/**
+ * A randomization plan kept in the workspace. Arms refer to the selected
+ * design by USDM id and take their labels from it. Everything else the
+ * engine needs (method, algorithm, sites, factors, caps, seed, subject id
+ * mask, enrollment target and settings) is in `mechanics` as written, and
+ * is checked when the plan is resolved, never guessed. Sites and
+ * recruitment weights are simulation assumptions, not USDM facts.
+ */
+export interface StudyRandomizationPlan {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly name: string;
+  readonly state: StudyRandomizationPlanState;
+  readonly studyVersionId: string;
+  readonly studyDesignId: string;
+  readonly arms: readonly StudyRandomizationPlanArm[];
+  readonly mechanics: Readonly<Record<string, unknown>>;
+}
+
+/** Why a plan cannot be run yet. */
+export type StudyRandomizationPlanFindingCode =
+  | "unknown-plan"
+  | "different-design"
+  | "unknown-arm"
+  | "unmapped-arm"
+  | "duplicate-arm"
+  | "invalid-request";
+
+/** A draft finding on a plan, with the engine's own finding when it has one. */
+export interface StudyRandomizationPlanFinding {
+  readonly code: StudyRandomizationPlanFindingCode;
+  readonly message: string;
+  readonly engineFinding?: ValidationFinding;
+}
+
+/** A plan resolved against the current workspace revision. */
+export type ResolvedStudyRandomizationPlan =
+  | {
+      readonly status: "ready";
+      readonly request: RandomizationRequest;
+      /** Digest of the whole request, provenance included. */
+      readonly planDigest: string;
+      /** Digest of the request without provenance: the numerical inputs. */
+      readonly inputsDigest: string;
+    }
+  | {
+      readonly status: "draft";
+      readonly findings: readonly StudyRandomizationPlanFinding[];
+    };
+
+/**
+ * What a randomization artifact was made from. It is kept with the
+ * artifact, outside the workspace payload, so it never changes the hash of
+ * the revision it names.
+ */
+export interface StudyRandomizationEvidenceBinding {
+  readonly planId: string;
+  readonly sourceSha256: string;
+  readonly studyVersionId: string;
+  readonly studyDesignId: string;
+  readonly workspaceRevisionId: string;
+  readonly usdmSha256: string;
+  readonly payloadSha256: string;
+  readonly planDigest: string;
+  readonly inputsDigest: string;
+  readonly algorithmId: RandomizationAlgorithmId;
+  readonly contractVersion: number;
+  readonly planSchemaVersion: number;
+  readonly artifactSchemaVersion: number;
+}
+
+/** Why evidence no longer matches the workspace. */
+export type StudyRandomizationStaleReason =
+  | "different-source"
+  | "different-design"
+  | "plan-removed"
+  | "plan-not-ready"
+  | "inputs-changed"
+  | "engine-changed";
+
+/**
+ * Whether evidence still matches: `current` when nothing changed,
+ * `provenance-changed` when the revision moved on but the numerical inputs
+ * are the same, and `stale` with the reasons otherwise.
+ */
+export type StudyRandomizationEvidenceStatus =
+  | { readonly status: "current" }
+  | { readonly status: "provenance-changed" }
+  | {
+      readonly status: "stale";
+      readonly reasons: readonly StudyRandomizationStaleReason[];
+    };

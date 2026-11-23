@@ -5,7 +5,13 @@ import type {
   StudyPatchOperation,
   StudyWorkspace,
 } from "../types";
-import { commitStudyRevision } from "./revision";
+import {
+  StudyWorkspaceConflictError,
+  commitStudyPayload,
+  commitStudyRevision,
+  payloadOf,
+  type StudyWorkspacePayload,
+} from "./revision";
 
 /** Thrown when a patch names a path the document does not have. */
 export class StudyPatchError extends Error {
@@ -143,6 +149,47 @@ export function applyStudyPatch(
   return { usdm: working, inverse: inverse.reverse() };
 }
 
+/**
+ * Applies a patch rooted at the working payload `{ usdm, analyses,
+ * randomizationPlans }` to a copy. Used for edits that reach beyond the
+ * USDM document, such as randomization plans.
+ *
+ * @throws StudyPatchError when an operation names a missing path.
+ */
+export function applyStudyPayloadPatch(
+  payload: StudyWorkspacePayload,
+  patch: readonly StudyPatchOperation[]
+): { payload: StudyWorkspacePayload; inverse: StudyPatchOperation[] } {
+  const working = structuredClone({
+    usdm: payload.usdm,
+    analyses: payload.analyses,
+    randomizationPlans: payload.randomizationPlans,
+  });
+  const inverse = patch.map((operation) => applyOne(working, operation));
+  return { payload: working, inverse: inverse.reverse() };
+}
+
+/**
+ * Makes an edit whose paths are rooted at the working payload, so it can
+ * change analyses or randomization plans as well as the USDM document.
+ *
+ * @throws StudyPatchError when the patch does not fit the payload.
+ */
+export function createStudyPayloadEdit(
+  workspace: StudyWorkspace,
+  patch: readonly StudyPatchOperation[],
+  note: string
+): StudyEdit {
+  const { inverse } = applyStudyPayloadPatch(payloadOf(workspace), patch);
+  return {
+    note,
+    scope: "payload",
+    madeOn: workspace.revision.id,
+    forward: [...patch],
+    inverse,
+  };
+}
+
 /** A history with nothing to undo or redo. */
 export function emptyStudyEditHistory(): StudyEditHistory {
   return { undo: [], redo: [] };
@@ -160,7 +207,7 @@ export function createStudyEdit(
   note: string
 ): StudyEdit {
   const { inverse } = applyStudyPatch(workspace.usdm, patch);
-  return { note, forward: [...patch], inverse };
+  return { note, madeOn: workspace.revision.id, forward: [...patch], inverse };
 }
 
 /** A workspace and its edit history after an edit, undo or redo. */
@@ -171,14 +218,17 @@ export interface StudyEditResult {
 
 function commitPatch(
   workspace: StudyWorkspace,
+  edit: StudyEdit,
   patch: readonly StudyPatchOperation[],
   note: string
 ): StudyWorkspace {
+  const change = { expectedRevisionId: workspace.revision.id, note };
+  if (edit.scope === "payload") {
+    const { payload } = applyStudyPayloadPatch(payloadOf(workspace), patch);
+    return commitStudyPayload(workspace, payload, change);
+  }
   const { usdm } = applyStudyPatch(workspace.usdm, patch);
-  return commitStudyRevision(workspace, usdm, {
-    expectedRevisionId: workspace.revision.id,
-    note,
-  });
+  return commitStudyRevision(workspace, usdm, change);
 }
 
 /**
@@ -190,8 +240,11 @@ export function applyStudyEdit(
   history: StudyEditHistory,
   edit: StudyEdit
 ): StudyEditResult {
+  if (edit.madeOn !== undefined && edit.madeOn !== workspace.revision.id) {
+    throw new StudyWorkspaceConflictError(edit.madeOn, workspace.revision.id);
+  }
   return {
-    workspace: commitPatch(workspace, edit.forward, edit.note),
+    workspace: commitPatch(workspace, edit, edit.forward, edit.note),
     history: { undo: [...history.undo, edit], redo: [] },
   };
 }
@@ -207,7 +260,7 @@ export function undoStudyEdit(
   const edit = history.undo.at(-1);
   if (!edit) return { workspace, history };
   return {
-    workspace: commitPatch(workspace, edit.inverse, `Undo: ${edit.note}`),
+    workspace: commitPatch(workspace, edit, edit.inverse, `Undo: ${edit.note}`),
     history: {
       undo: history.undo.slice(0, -1),
       redo: [...history.redo, edit],
@@ -226,7 +279,7 @@ export function redoStudyEdit(
   const edit = history.redo.at(-1);
   if (!edit) return { workspace, history };
   return {
-    workspace: commitPatch(workspace, edit.forward, `Redo: ${edit.note}`),
+    workspace: commitPatch(workspace, edit, edit.forward, `Redo: ${edit.note}`),
     history: {
       undo: [...history.undo, edit],
       redo: history.redo.slice(0, -1),

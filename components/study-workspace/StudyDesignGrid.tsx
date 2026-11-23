@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import {
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
@@ -32,6 +32,15 @@ import {
   type StudyEditHistory,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
+import { downloadFile } from "@/lib/download";
+import {
+  discardStudyWorkspaceDraft,
+  dismissQuarantinedStudyWorkspaceDraft,
+  loadStudyWorkspaceDraft,
+  type QuarantinedStudyWorkspaceDraft,
+  type StudyWorkspaceDraftRecord,
+} from "./randomization-draft-storage";
+import { useStudyWorkspaceDraft } from "./useStudyWorkspaceDraft";
 import { TrialSchemaFigure } from "./TrialSchemaFigure";
 
 /** The studies the grid can open: two reference studies and a blank one. */
@@ -42,6 +51,9 @@ const SOURCES = [
 ] as const;
 
 type SourceId = (typeof SOURCES)[number]["id"];
+
+const isSourceId = (value: unknown): value is SourceId =>
+  SOURCES.some((option) => option.id === value);
 
 async function openSource(id: SourceId): Promise<StudyWorkspace> {
   if (id === "blank") return (await createBlankStudyWorkspace()).workspace;
@@ -92,20 +104,39 @@ export function StudyDesignGrid() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("");
+  // A stored draft waiting for the person to restore or discard it.
+  const [offer, setOffer] = useState<StudyWorkspaceDraftRecord | null>(null);
+  const [quarantined, setQuarantined] =
+    useState<QuarantinedStudyWorkspaceDraft | null>(null);
+  const [baseWriteId, setBaseWriteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let live = true;
-    void openSource(source).then((workspace) => {
-      if (!live) return;
+  const open = (id: SourceId) => {
+    setSource(id);
+    void openSource(id).then((workspace) => {
       setSession({ workspace, history: emptyStudyEditHistory() });
       setSelection(null);
       setError(null);
       setStatus(`Opened ${workspace.usdm.study.name}.`);
     });
+  };
+
+  useEffect(() => {
+    let live = true;
+    // Storage is read after mount, so the server render never depends on it.
+    const draft = loadStudyWorkspaceDraft();
+    void openSource("tavr-savr").then((workspace) => {
+      if (!live) return;
+      setSession({ workspace, history: emptyStudyEditHistory() });
+      setStatus(`Opened ${workspace.usdm.study.name}.`);
+      if (draft.status === "recovered") setOffer(draft.record);
+      if (draft.status === "quarantined") setQuarantined(draft.entry);
+    });
     return () => {
       live = false;
     };
-  }, [source]);
+  }, []);
+
+  const ui = useMemo(() => ({ source }), [source]);
 
   if (!session) {
     return (
@@ -116,6 +147,26 @@ export function StudyDesignGrid() {
   }
 
   const grid = projectStudyDesignGrid(session.workspace);
+
+  const restore = (record: StudyWorkspaceDraftRecord) => {
+    setSession({
+      workspace: record.workspace,
+      history: emptyStudyEditHistory(),
+    });
+    if (isSourceId(record.ui.source)) setSource(record.ui.source);
+    setBaseWriteId(record.writeId);
+    setSelection(null);
+    setOffer(null);
+    setStatus(
+      `Restored the draft of ${record.workspace.usdm.study.name} at ${record.workspace.revision.id}.`
+    );
+  };
+  const discard = () => {
+    discardStudyWorkspaceDraft();
+    setBaseWriteId(null);
+    setOffer(null);
+    setStatus("Discarded the saved draft.");
+  };
 
   const apply = (make: (workspace: StudyWorkspace) => StudyEdit) => {
     try {
@@ -152,7 +203,7 @@ export function StudyDesignGrid() {
           <select
             className={FIELD}
             value={source}
-            onChange={(event) => setSource(event.target.value as SourceId)}
+            onChange={(event) => open(event.target.value as SourceId)}
           >
             {SOURCES.map((option) => (
               <option key={option.id} value={option.id}>
@@ -181,6 +232,26 @@ export function StudyDesignGrid() {
           Revision {session.workspace.revision.id}
         </p>
       </div>
+
+      {offer && (
+        <DraftOffer record={offer} onRestore={restore} onDiscard={discard} />
+      )}
+      {quarantined && (
+        <QuarantineNotice
+          entry={quarantined}
+          onDone={() => setQuarantined(null)}
+        />
+      )}
+      <DraftAutosave
+        workspace={session.workspace}
+        ui={ui}
+        baseWriteId={baseWriteId}
+        // Only the person's edits are saved, and never over an offered draft.
+        enabled={
+          !offer &&
+          session.history.undo.length + session.history.redo.length > 0
+        }
+      />
 
       <p role="status" aria-live="polite" className="sr-only">
         {status}
@@ -213,6 +284,165 @@ export function StudyDesignGrid() {
         </h3>
         <TrialSchemaFigure grid={grid} />
       </section>
+    </div>
+  );
+}
+
+function DraftOffer({
+  record,
+  onRestore,
+  onDiscard,
+}: {
+  readonly record: StudyWorkspaceDraftRecord;
+  readonly onRestore: (record: StudyWorkspaceDraftRecord) => void;
+  readonly onDiscard: () => void;
+}) {
+  const plans = record.workspace.randomizationPlans.length;
+  return (
+    <section
+      aria-labelledby="draft-offer"
+      className="space-y-3 rounded border border-white/[0.08] bg-[#13151a] px-4 py-3 text-sm"
+    >
+      <h3 id="draft-offer" className="font-semibold text-[#f4f4f6]">
+        A saved draft is in this browser
+      </h3>
+      <p className="text-slate-300">
+        {record.workspace.usdm.study.name} at revision{" "}
+        <span className={MONO}>{record.workspace.revision.id}</span>
+        {plans > 0 &&
+          `, with ${plans} randomization plan${plans === 1 ? "" : "s"}`}
+        {record.savedAt && (
+          <>
+            , saved{" "}
+            <time dateTime={record.savedAt}>
+              {new Date(record.savedAt).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </time>
+          </>
+        )}
+        . It is not changed until you choose.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          className={BUTTON}
+          onClick={() => onRestore(record)}
+        >
+          Restore draft
+        </button>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={onDiscard}
+        >
+          Discard draft
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function QuarantineNotice({
+  entry,
+  onDone,
+}: {
+  readonly entry: QuarantinedStudyWorkspaceDraft;
+  readonly onDone: () => void;
+}) {
+  const download = () => {
+    downloadFile(entry.raw, `study-draft-${entry.id}.json`, {
+      mimeType: "application/json",
+    });
+  };
+  const dismiss = () => {
+    dismissQuarantinedStudyWorkspaceDraft(entry.id);
+    onDone();
+  };
+  return (
+    <section
+      role="alert"
+      className="space-y-3 rounded border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+    >
+      <p>
+        A saved draft could not be opened (
+        <span className={MONO}>{entry.problem}</span>). Its original text was
+        set aside; download it before you dismiss it.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={download}
+        >
+          Download unreadable draft
+        </button>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={dismiss}
+        >
+          Dismiss
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function DraftAutosave({
+  workspace,
+  ui,
+  baseWriteId,
+  enabled,
+}: {
+  readonly workspace: StudyWorkspace;
+  readonly ui: Readonly<Record<string, unknown>>;
+  readonly baseWriteId: string | null;
+  readonly enabled: boolean;
+}) {
+  const draft = useStudyWorkspaceDraft(workspace, ui, {
+    baseWriteId,
+    enabled,
+  });
+  const text = {
+    idle: "Edits are saved in this browser as you work.",
+    saving: "Saving draft…",
+    saved: "Draft saved in this browser.",
+    unavailable: draft.errorMessage,
+    error: draft.errorMessage,
+    conflict: "Another tab saved a different draft, so this one was not saved.",
+  }[draft.status];
+  const problem =
+    draft.status === "error" ||
+    draft.status === "unavailable" ||
+    draft.status === "conflict";
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs">
+      <p
+        className={`min-w-0 ${problem ? "text-amber-200" : "text-slate-400"}`}
+        role={problem ? "alert" : undefined}
+      >
+        {text}
+      </p>
+      {draft.status === "conflict" && (
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={draft.keepMine}
+        >
+          Keep this tab&apos;s draft
+        </button>
+      )}
+      {problem && (
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={draft.downloadDraft}
+        >
+          Download workspace
+        </button>
+      )}
     </div>
   );
 }

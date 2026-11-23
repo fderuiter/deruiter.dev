@@ -41,7 +41,7 @@ function usedIds(node: unknown, ids = new Set<string>()): Set<string> {
 }
 
 /** Makes `Prefix_n` ids with the smallest unused `n`. */
-function idMaker(workspace: StudyWorkspace) {
+export function idMaker(workspace: StudyWorkspace) {
   const ids = usedIds(workspace.usdm);
   return (prefix: string): string => {
     let n = 1;
@@ -67,7 +67,7 @@ function mentions(node: unknown, id: string): boolean {
  * grid still names a removed id (a schedule entry, a population or an
  * extension), so a removal never leaves a dangling reference.
  */
-function removal(
+export function removal(
   workspace: StudyWorkspace,
   patch: StudyPatchOperation[],
   removedIds: readonly string[],
@@ -84,13 +84,13 @@ function removal(
   return createStudyEdit(workspace, patch, note);
 }
 
-function cleanName(name: string, what: string): string {
+export function cleanName(name: string, what: string): string {
   const trimmed = name.trim();
   if (!trimmed) throw new StudyDesignError(`A ${what} needs a name.`);
   return trimmed;
 }
 
-function findTerm(
+export function findTerm(
   terms: readonly StudyDesignTerm[],
   code: string,
   what: string

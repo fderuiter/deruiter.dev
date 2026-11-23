@@ -32,6 +32,7 @@ import {
   type StudyEditHistory,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
+import { InterventionsPanel } from "./InterventionsPanel";
 import { TrialSchemaFigure } from "./TrialSchemaFigure";
 
 /** The studies the grid can open: two reference studies and a blank one. */
@@ -207,6 +208,11 @@ export function StudyDesignGrid() {
 
       <AddForms apply={apply} />
       <Findings grid={grid} />
+      <InterventionsPanel
+        workspace={session.workspace}
+        grid={grid}
+        apply={apply}
+      />
       <section aria-labelledby="trial-schema" className="min-w-0">
         <h3 id="trial-schema" className="mb-3 font-semibold">
           Trial schema

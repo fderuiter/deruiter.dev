@@ -23,11 +23,11 @@ import {
 export const STUDY_WORKSPACE_AUTOSAVE_MS = 750;
 
 /** Where the latest edit stands. */
-export type StudyWorkspaceDraftStatus =
+type StudyWorkspaceDraftStatus =
   "idle" | "saving" | "saved" | "unavailable" | "error" | "conflict";
 
 /** What `useStudyWorkspaceDraft` gives the studio. */
-export interface UseStudyWorkspaceDraftResult {
+interface UseStudyWorkspaceDraftResult {
   readonly status: StudyWorkspaceDraftStatus;
   readonly savedAt: string | null;
   readonly errorMessage: string | null;
@@ -44,7 +44,7 @@ export interface UseStudyWorkspaceDraftResult {
 }
 
 /** Options for `useStudyWorkspaceDraft`. */
-export interface UseStudyWorkspaceDraftOptions extends StudyWorkspaceDraftStorageOptions {
+interface UseStudyWorkspaceDraftOptions extends StudyWorkspaceDraftStorageOptions {
   /**
    * The write id of the stored draft this studio builds on: the record it
    * recovered, or null when it saw none. A new value re-bases the writer,

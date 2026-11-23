@@ -29,7 +29,7 @@ export const STUDY_WORKSPACE_DRAFT_QUARANTINE_KEY =
   "study_workspace_draft_v1_quarantine";
 
 /** Version of the draft record envelope. */
-export const STUDY_WORKSPACE_DRAFT_RECORD_VERSION = 1;
+const STUDY_WORKSPACE_DRAFT_RECORD_VERSION = 1;
 
 /** View state saved with a draft. Kept as plain JSON values. */
 export type StudyWorkspaceDraftUi = Readonly<Record<string, unknown>>;
@@ -45,7 +45,7 @@ export interface StudyWorkspaceDraftRecord {
 }
 
 /** Why a stored draft was quarantined. */
-export type StudyWorkspaceDraftProblem =
+type StudyWorkspaceDraftProblem =
   | "not-json"
   | "not-a-draft"
   | "unsupported-record-version"
@@ -61,7 +61,7 @@ export interface QuarantinedStudyWorkspaceDraft {
 }
 
 /** Result of `loadStudyWorkspaceDraft`. */
-export type LoadStudyWorkspaceDraftResult =
+type LoadStudyWorkspaceDraftResult =
   | { readonly status: "empty" }
   | { readonly status: "unavailable" }
   | {
@@ -81,7 +81,7 @@ export type LoadStudyWorkspaceDraftResult =
     };
 
 /** Result of `saveStudyWorkspaceDraft`. */
-export type SaveStudyWorkspaceDraftResult =
+type SaveStudyWorkspaceDraftResult =
   | {
       readonly status: "saved";
       readonly savedAt: string;
@@ -110,7 +110,7 @@ export interface StudyWorkspaceDraftStorageOptions {
 }
 
 /** Fields of a save. */
-export interface SaveStudyWorkspaceDraftInput {
+interface SaveStudyWorkspaceDraftInput {
   readonly workspace: StudyWorkspace;
   readonly ui?: StudyWorkspaceDraftUi;
   /**

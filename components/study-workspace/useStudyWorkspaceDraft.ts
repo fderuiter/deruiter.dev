@@ -46,10 +46,11 @@ export interface UseStudyWorkspaceDraftResult {
 /** Options for `useStudyWorkspaceDraft`. */
 export interface UseStudyWorkspaceDraftOptions extends StudyWorkspaceDraftStorageOptions {
   /**
-   * The write id of the draft the studio started from: the record it
-   * recovered, or null when it started without one.
+   * The write id of the stored draft this studio builds on: the record it
+   * recovered, or null when it saw none. A new value re-bases the writer,
+   * as after restoring or discarding a draft.
    */
-  readonly initialWriteId: string | null;
+  readonly baseWriteId: string | null;
   /** Set false to stop writing, e.g. while a recovery choice is shown. */
   readonly enabled?: boolean;
 }
@@ -67,7 +68,7 @@ export function useStudyWorkspaceDraft(
   ui: StudyWorkspaceDraftUi,
   options: UseStudyWorkspaceDraftOptions
 ): UseStudyWorkspaceDraftResult {
-  const { initialWriteId, enabled = true, storage, now, makeId } = options;
+  const { baseWriteId, enabled = true, storage, now, makeId } = options;
   const [status, setStatus] = useState<StudyWorkspaceDraftStatus>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,7 +81,8 @@ export function useStudyWorkspaceDraft(
   const previousRef = useRef({ workspace, ui });
   // The starting workspace came from storage, a file or a template.
   const acknowledgedRef = useRef({ workspace, ui });
-  const writeIdRef = useRef(initialWriteId);
+  const writeIdRef = useRef(baseWriteId);
+  const baseRef = useRef(baseWriteId);
   const mountedRef = useRef(true);
   const enabledRef = useRef(enabled);
   const blockedRef = useRef(false);
@@ -165,7 +167,12 @@ export function useStudyWorkspaceDraft(
     latestRef.current = { workspace, ui };
     enabledRef.current = enabled;
     storageRef.current = { storage, now, makeId };
-  }, [workspace, ui, enabled, storage, now, makeId]);
+    if (baseRef.current !== baseWriteId) {
+      baseRef.current = baseWriteId;
+      writeIdRef.current = baseWriteId;
+      blockedRef.current = false;
+    }
+  }, [workspace, ui, enabled, storage, now, makeId, baseWriteId]);
 
   useEffect(() => {
     mountedRef.current = true;

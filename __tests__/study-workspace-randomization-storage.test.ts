@@ -276,11 +276,8 @@ describe("useStudyWorkspaceDraft", () => {
 
   const UI = { step: 1 };
 
-  function setup(
-    initial: StudyWorkspace,
-    initialWriteId: string | null = null
-  ) {
-    const options = { storage, now, makeId, initialWriteId };
+  function setup(initial: StudyWorkspace, baseWriteId: string | null = null) {
+    const options = { storage, now, makeId, baseWriteId };
     return renderHook(
       ({ workspace, ui }) => useStudyWorkspaceDraft(workspace, ui, options),
       {

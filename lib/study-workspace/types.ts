@@ -224,6 +224,21 @@ export type ValidatedStudyExport =
   | { readonly status: "invalid"; readonly issues: readonly string[] };
 
 /** A coded term the design view shows: its NCI code and decode. */
+/** An intervention the selected design uses (#3406). */
+export interface StudyInterventionView {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** The coded role, or null when the study leaves it out. */
+  readonly role: StudyDesignTerm | null;
+  /** The coded type, or null when the study leaves it out. */
+  readonly type: StudyDesignTerm | null;
+  /** Whether the design's `studyInterventionIds` lists it. */
+  readonly listed: boolean;
+  /** The design's elements that give it. */
+  readonly elementIds: readonly string[];
+}
+
 export interface StudyDesignTerm {
   readonly code: string;
   readonly decode: string;

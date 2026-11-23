@@ -33,6 +33,28 @@ export const STUDY_EPOCH_TYPES: readonly StudyDesignTerm[] = [
 ];
 
 /**
+ * Intervention roles: terms of the Study Intervention Role codelist
+ * that the CT subset resolves. Others, such as Rescue Medicine,
+ * join once the subset is regenerated (#4095).
+ */
+export const STUDY_INTERVENTION_ROLES: readonly StudyDesignTerm[] = [
+  { code: "C41161", decode: "Experimental Intervention" },
+  { code: "C68609", decode: "Active Comparator" },
+  { code: "C753", decode: "Placebo" },
+  { code: "C18020", decode: "Diagnostic" },
+];
+
+/**
+ * Intervention types: terms of the Intervention Type codelist
+ * that the CT subset resolves. Drug, biologic and the rest join once the
+ * subset is regenerated (#4095).
+ */
+export const STUDY_INTERVENTION_TYPES: readonly StudyDesignTerm[] = [
+  { code: "C16830", decode: "Medical Device" },
+  { code: "C98769", decode: "Procedure" },
+];
+
+/**
  * The data origin the schema requires on every arm. A new arm gets
  * "Data Generated Within Study", the term both reference studies use; the
  * grid shows it on the arm so the person can see it.

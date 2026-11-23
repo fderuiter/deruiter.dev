@@ -61,7 +61,19 @@ export {
   DATA_GENERATED_WITHIN_STUDY,
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
+  STUDY_INTERVENTION_ROLES,
+  STUDY_INTERVENTION_TYPES,
 } from "./internal/design-terms";
+export {
+  addStudyIntervention,
+  assignStudyIntervention,
+  projectStudyInterventions,
+  removeStudyIntervention,
+  unassignStudyIntervention,
+  updateStudyIntervention,
+  type NewStudyIntervention,
+  type StudyInterventionChanges,
+} from "./internal/interventions";
 export { applyStudyPayloadPatch, createStudyPayloadEdit } from "./internal/ops";
 export {
   addStudyRandomizationPlan,

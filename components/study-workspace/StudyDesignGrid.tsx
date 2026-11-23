@@ -40,6 +40,7 @@ import {
   type QuarantinedStudyWorkspaceDraft,
   type StudyWorkspaceDraftRecord,
 } from "./randomization-draft-storage";
+import { InterventionsPanel } from "./InterventionsPanel";
 import { useStudyWorkspaceDraft } from "./useStudyWorkspaceDraft";
 import { TrialSchemaFigure } from "./TrialSchemaFigure";
 
@@ -278,6 +279,11 @@ export function StudyDesignGrid() {
 
       <AddForms apply={apply} />
       <Findings grid={grid} />
+      <InterventionsPanel
+        workspace={session.workspace}
+        grid={grid}
+        apply={apply}
+      />
       <section aria-labelledby="trial-schema" className="min-w-0">
         <h3 id="trial-schema" className="mb-3 font-semibold">
           Trial schema

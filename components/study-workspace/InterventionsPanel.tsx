@@ -298,7 +298,7 @@ function InterventionForm({
           onChange={setTypeCode}
         />
         <div>
-          <button type="submit" className={BUTTON}>
+          <button type="submit" className={`${BUTTON} min-w-12`}>
             {submit}
           </button>
         </div>

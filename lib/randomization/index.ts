@@ -13,7 +13,8 @@
  * Display masking, the single export disclosure gate and code-only error
  * reports come from #4005. Plan digests that bind worker answers to their
  * request come from #4004, and reproducible Monte Carlo allocation QA
- * comes from #4007.
+ * comes from #4007. The work area's Simple, Standard and Complex UI
+ * presets are a separate entry point, `./presets` (#4006).
  */
 export * from "./types";
 export {

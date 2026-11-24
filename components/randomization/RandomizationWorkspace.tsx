@@ -34,6 +34,7 @@ import {
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { RandomizationRunPanel } from "./RandomizationRunPanel";
+import { VerificationPanel } from "./VerificationPanel";
 import {
   BUTTON,
   CapsStage,
@@ -613,6 +614,17 @@ export function RandomizationWorkspace({
               : { status: "stale", reasons: ["inputs-changed"] };
           }}
         />
+      </section>
+
+      <section
+        aria-labelledby="randomization-verify"
+        hidden={stage !== "review"}
+        className="min-w-0 space-y-2 border-t border-white/[0.08] pt-4"
+      >
+        <h4 id="randomization-verify" className="font-semibold">
+          Verify an artifact
+        </h4>
+        <VerificationPanel />
       </section>
 
       <div className="flex flex-wrap gap-2">

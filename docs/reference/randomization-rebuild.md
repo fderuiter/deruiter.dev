@@ -138,17 +138,17 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-SIMUL-009` | Deviation display | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts`, `__tests__/randomization-simulation-panel.test.tsx` (under 0.1%, under 1%, otherwise; retained warning above 2%) | Pass (`vitest`, `#4007`, 2026-11-22) |
 | `RND-SIMUL-010` | QA interpretation | `#4007` | `Implemented` | `__tests__/randomization-simulation.test.ts`, `__tests__/randomization-simulation-panel.test.tsx` (zero successes and incomplete runs never read as a pass) | Pass (`vitest`, `#4007`, 2026-11-22) |
 | `RND-SIMUL-011` | Bridge to code | `#4007` | `Implemented` | `__tests__/randomization-simulation-panel.test.tsx` (downloads the Monte Carlo request or one repetition's single-cohort request; the code package itself is `#4012`) | Pass (`vitest`, `#4007`, 2026-11-22) |
-| `RND-RESUL-001` | Flat allocation table | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-002` | Grouped block view | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-003` | Sorting | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-004` | Column filters | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-005` | Chart cross-filter | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-006` | Categorical analytics | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-007` | Balance report | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-008` | Minimization marginal report | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-009` | Balance interpretation | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-010` | Audit hash display | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
-| `RND-RESUL-011` | Row action placeholders | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
+| `RND-RESUL-001` | Flat allocation table | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-002` | Grouped block view | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-003` | Sorting | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-004` | Column filters | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-005` | Chart cross-filter | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-006` | Categorical analytics | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-007` | Balance report | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-008` | Minimization marginal report | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-009` | Balance interpretation | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-010` | Audit hash display | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
+| `RND-RESUL-011` | Row action placeholders | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
 | `RND-DISCL-001` | Persona choices | `#4005` | `Deferred` | Pending `#4005` | Not yet executed |
 | `RND-DISCL-002` | Organization segment choices | `#4005` | `Deferred` | Pending `#4005` | Not yet executed |
 | `RND-DISCL-003` | Treatment masking | `#4005` | `Deferred` | Pending `#4005` | Not yet executed |
@@ -189,7 +189,7 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-EXPER-001` | Responsive presentation | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-EXPER-002` | Theme and density | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
 | `RND-EXPER-003` | Keyboard and announcements | `#4006` | `Deferred` | Pending `#4006` | Not yet executed |
-| `RND-EXPER-004` | Rendering scalability | `#4008` | `Deferred` | Pending `#4008` | Not yet executed |
+| `RND-EXPER-004` | Rendering scalability | `#4008` | `Implemented` | `__tests__/randomization-results.test.tsx` | Pass (`vitest`, `#4008`, 2026-11-24) |
 | `RND-PLATF-001` | Local design computation | `#4004` | `Implemented` | `__tests__/randomization-client.test.ts` (generation runs in the browser with no network call) | Pass (`vitest`, `#4004`, 2026-11-22) |
 | `RND-PLATF-002` | Host privacy policy | `#4005` | `Deferred` | Pending `#4005` | Not yet executed |
 | `RND-PLATF-003` | Offline assets | `#4016` | `Deferred` | Pending `#4016` | Not yet executed |

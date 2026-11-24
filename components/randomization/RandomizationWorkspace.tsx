@@ -5,10 +5,12 @@ import {
   MT19937_BLOCK_ALGORITHM_ID,
   MT19937_MINIMIZATION_ALGORITHM_ID,
   enumerateStratumIntersections,
+  computePlanDigest,
   reduceAllocationRatios,
   validateRandomizationPlan,
   type BlockSettings,
   type MinimizationSettings,
+  type RandomizationRequest,
   type ValidationFinding,
 } from "@/lib/randomization";
 import {
@@ -21,6 +23,8 @@ import {
 } from "@/lib/randomization/presets";
 import {
   addStudyRandomizationPlan,
+  bindStudyRandomizationEvidence,
+  checkStudyRandomizationEvidence,
   resolveStudyRandomizationPlan,
   updateStudyRandomizationPlan,
   type StudyEdit,
@@ -29,6 +33,7 @@ import {
 } from "@/lib/study-workspace";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { ModalContainer } from "@/components/ui/ModalContainer";
+import { RandomizationRunPanel } from "./RandomizationRunPanel";
 import {
   BUTTON,
   CapsStage,
@@ -226,11 +231,9 @@ function designArms(workspace: StudyWorkspace) {
 
 const CODES = "ABCDEFGHIJKLMNOP";
 
-/** Exact validator findings for an exploration draft. */
-function explorationFindings(
-  draft: RandomizationDesignDraft
-): readonly ValidationFinding[] {
-  const result = validateRandomizationPlan({
+/** An exploration draft as an engine request with a synthetic envelope. */
+function explorationRequest(draft: RandomizationDesignDraft) {
+  return {
     ...mechanicsOf(draft),
     arms: draft.arms,
     contractVersion: 1,
@@ -244,8 +247,32 @@ function explorationFindings(
       workspaceRevisionId: "synthetic",
       usdmSha256: "0".repeat(64),
     },
-  });
-  return result.findings;
+  };
+}
+
+/** The request Run would freeze, or null while the plan is not ready. */
+function runnableRequest(
+  workspace: StudyWorkspace,
+  plan: StudyRandomizationPlan | null,
+  draft: RandomizationDesignDraft
+): RandomizationRequest | null {
+  if (plan) {
+    const resolved = resolveStudyRandomizationPlan(workspace, plan.id);
+    return resolved.status === "ready" ? resolved.request : null;
+  }
+  const errors = explorationFindings(draft).filter(
+    (finding) => finding.severity === "error"
+  );
+  return errors.length === 0
+    ? (explorationRequest(draft) as unknown as RandomizationRequest)
+    : null;
+}
+
+/** Exact validator findings for an exploration draft. */
+function explorationFindings(
+  draft: RandomizationDesignDraft
+): readonly ValidationFinding[] {
+  return validateRandomizationPlan(explorationRequest(draft)).findings;
 }
 
 interface Exploration {
@@ -304,6 +331,7 @@ export function RandomizationWorkspace({
     ? plan.state === "acknowledged-reference"
     : exploration.acknowledged;
   const gated = mode === "plan" && !acknowledged;
+  const runnable = runnableRequest(workspace, plan, draft);
 
   const change = (next: RandomizationDesignDraft) => {
     if (!plan) {
@@ -545,6 +573,47 @@ export function RandomizationWorkspace({
           />
         )}
       </div>
+
+      <section
+        aria-labelledby="randomization-run"
+        hidden={stage !== "review"}
+        className="min-w-0 space-y-2"
+      >
+        <h4 id="randomization-run" className="font-semibold">
+          Run and results
+        </h4>
+        {!runnable && (
+          <p className="text-sm text-slate-400">
+            Run is available once review reports the plan ready.
+          </p>
+        )}
+        <RandomizationRunPanel
+          key={plan?.id ?? EXPLORATION}
+          request={gated ? null : runnable}
+          revisionId={workspace.revision.id}
+          lifecycle={plan ? "promoted" : "exploration"}
+          acknowledged={acknowledged}
+          metadata={plan ? studyMetadata(workspace) : exploration}
+          bind={() =>
+            plan ? bindStudyRandomizationEvidence(workspace, plan.id) : null
+          }
+          checkCurrency={(frozen, binding) => {
+            if (plan && binding) {
+              const status = checkStudyRandomizationEvidence(
+                workspace,
+                binding
+              );
+              return status.status === "stale"
+                ? { status: "stale", reasons: status.reasons }
+                : status;
+            }
+            return runnable &&
+              computePlanDigest(frozen) === computePlanDigest(runnable)
+              ? { status: "current" }
+              : { status: "stale", reasons: ["inputs-changed"] };
+          }}
+        />
+      </section>
 
       <div className="flex flex-wrap gap-2">
         <button

@@ -1,7 +1,10 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { validateUsdmV4Document } from "@/lib/clinical-standards";
 import {
+  STUDY_EPOCH_TYPES,
   STUDY_INTERVENTION_ROLES,
   STUDY_INTERVENTION_TYPES,
   StudyDesignError,
@@ -50,22 +53,31 @@ describe("study interventions", () => {
     expect(views[0].elementIds).toHaveLength(1);
   });
 
-  it("offers only terms the pinned CT subset resolves", () => {
-    expect(STUDY_INTERVENTION_ROLES.map((term) => term.code)).toEqual([
-      "C41161",
-      "C68609",
-      "C753",
-      "C18020",
-    ]);
-    expect(STUDY_INTERVENTION_TYPES.map((term) => term.code)).toEqual([
-      "C16830",
-      "C98769",
-    ]);
+  it("offers each term of its codelist from the pinned CT subset", () => {
+    const subset = JSON.parse(
+      readFileSync(
+        path.resolve(import.meta.dirname, "fixtures/cdisc-ct/ct-subset.json"),
+        "utf8"
+      )
+    ) as {
+      concepts: Record<string, { memberOf: Record<string, string> }>;
+    };
+    const membersOf = (codelist: string) =>
+      Object.entries(subset.concepts)
+        .filter(([, concept]) => codelist in concept.memberOf)
+        .map(([code]) => code)
+        .sort();
+    const codes = (terms: readonly { code: string }[]) =>
+      terms.map((term) => term.code).sort();
+    // Study Intervention Role, Intervention Type and Epoch (#4095).
+    expect(codes(STUDY_INTERVENTION_ROLES)).toEqual(membersOf("C207417"));
+    expect(codes(STUDY_INTERVENTION_TYPES)).toEqual(membersOf("C99078"));
+    expect(codes(STUDY_EPOCH_TYPES)).toEqual(membersOf("C99079"));
     expect(() =>
       addStudyIntervention(reference, {
-        name: "Drug",
+        name: "Unknown type",
         roleCode: "C41161",
-        typeCode: "C1909",
+        typeCode: "C99999999",
       })
     ).toThrow(StudyDesignError);
     expect(() =>

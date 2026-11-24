@@ -39,6 +39,28 @@ const archive = (id: CtSource["id"]) =>
   )}`;
 
 /**
+ * The export of the release EVS publishes now. EVS rebuilt its download
+ * site in 2026-11, and since then the dated archive path answers with the
+ * site's HTML page (#4095). While the pinned release is still the current
+ * one, this file carries the same bytes, and the SHA-256 check proves it.
+ */
+const current = (id: CtSource["id"]) =>
+  `https://evs.nci.nih.gov/ftp1/CDISC/${id}/${encodeURIComponent(
+    `${id} Terminology.txt`
+  )}`;
+
+/** True when a download is an HTML page rather than a tab-separated export. */
+export function isHtmlPage(bytes: Buffer, contentType: string | null): boolean {
+  if (contentType && /text\/html/i.test(contentType)) return true;
+  const head = bytes
+    .subarray(0, 256)
+    .toString("utf8")
+    .trimStart()
+    .toLowerCase();
+  return head.startsWith("<!doctype html") || head.startsWith("<html");
+}
+
+/**
  * The tab-separated exports of the pinned release, with the SHA-256 they
  * had when fetched. A new release changes the date in `CLINICAL_STANDARDS_PROFILE`
  * and every hash here.
@@ -302,23 +324,43 @@ export function serializeSubset(subset: CtSubset): string {
 }
 
 async function readSource(source: CtSource, from?: string): Promise<string> {
-  let bytes: Buffer;
   if (from) {
-    bytes = fs.readFileSync(
+    const bytes = fs.readFileSync(
       path.join(from, `${source.id} Terminology ${RELEASE}.txt`)
     );
-  } else {
-    const response = await fetch(source.url);
-    if (!response.ok) throw new Error(`${source.url}: HTTP ${response.status}`);
-    bytes = Buffer.from(await response.arrayBuffer());
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    if (sha256 !== source.sha256) {
+      throw new Error(
+        `${source.id} Terminology ${RELEASE} has SHA-256 ${sha256}, not the pinned ${source.sha256}.`
+      );
+    }
+    return bytes.toString("utf8");
   }
-  const sha256 = createHash("sha256").update(bytes).digest("hex");
-  if (sha256 !== source.sha256) {
-    throw new Error(
-      `${source.id} Terminology ${RELEASE} has SHA-256 ${sha256}, not the pinned ${source.sha256}. EVS answers a missing file with an HTML page, so check the release date first.`
-    );
+  // The dated archive first, then the current export. Only bytes with the
+  // pinned SHA-256 are accepted, so the fallback can't pick up a newer
+  // release by accident.
+  const tried: string[] = [];
+  for (const url of [source.url, current(source.id)]) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      tried.push(`${url}: HTTP ${response.status}`);
+      continue;
+    }
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (isHtmlPage(bytes, response.headers.get("content-type"))) {
+      tried.push(`${url}: an HTML page, not the export`);
+      continue;
+    }
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    if (sha256 !== source.sha256) {
+      tried.push(`${url}: SHA-256 ${sha256}, not the pinned ${source.sha256}`);
+      continue;
+    }
+    return bytes.toString("utf8");
   }
-  return bytes.toString("utf8");
+  throw new Error(
+    `Couldn't get ${source.id} Terminology ${RELEASE} with the pinned SHA-256:\n- ${tried.join("\n- ")}\nIf EVS has published a newer release, the pinned one is only in the archive; download it by hand and pass --from <dir>.`
+  );
 }
 
 async function main(argv: readonly string[]): Promise<number> {

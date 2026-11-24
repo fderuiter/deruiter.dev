@@ -52,7 +52,7 @@ const WORK_AREAS: readonly {
     id: "randomization",
     title: "Randomization",
     summary: "Allocation schemes, checked by simulation before use.",
-    status: "Not built yet",
+    status: "Stage editor below",
   },
 ];
 

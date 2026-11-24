@@ -5,6 +5,7 @@
 import {
   act,
   cleanup,
+  createEvent,
   fireEvent,
   render,
   screen,
@@ -338,6 +339,21 @@ describe("the data catalog", () => {
       document.getElementById(catalogAnchor(health.id))!.textContent
     ).toContain("Personal health data");
   });
+
+  it("wraps the filter form in a named search landmark and cancels submit", () => {
+    const { container } = renderCatalog();
+    const landmark = container.querySelector(
+      'search[aria-label="Data catalog"]'
+    );
+    expect(landmark).not.toBeNull();
+    const form = landmark?.querySelector("form");
+    expect(form).not.toBeNull();
+    expect(form?.hasAttribute("role")).toBe(false);
+    expect(form?.hasAttribute("aria-label")).toBe(false);
+    const submitEvent = createEvent.submit(form!);
+    fireEvent(form!, submitEvent);
+    expect(submitEvent.defaultPrevented).toBe(true);
+  });
 });
 
 describe("the data quality section", () => {
@@ -615,6 +631,25 @@ describe("the business glossary", () => {
     ).toEqual(
       term.metrics.map((id) => [metricNames[id], `#${catalogAnchor(id)}`])
     );
+  });
+
+  it("wraps the filter form in a named search landmark and cancels submit", () => {
+    const { container } = render(
+      <main>
+        <BusinessGlossary entries={glossary} metricNames={metricNames} />
+      </main>
+    );
+    const landmark = container.querySelector(
+      'search[aria-label="Business glossary"]'
+    );
+    expect(landmark).not.toBeNull();
+    const form = landmark?.querySelector("form");
+    expect(form).not.toBeNull();
+    expect(form?.hasAttribute("role")).toBe(false);
+    expect(form?.hasAttribute("aria-label")).toBe(false);
+    const submitEvent = createEvent.submit(form!);
+    fireEvent(form!, submitEvent);
+    expect(submitEvent.defaultPrevented).toBe(true);
   });
 });
 

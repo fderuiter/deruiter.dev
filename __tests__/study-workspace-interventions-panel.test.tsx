@@ -11,6 +11,10 @@ import {
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { StudyDesignGrid } from "@/components/study-workspace/StudyDesignGrid";
+import {
+  STUDY_INTERVENTION_ROLES,
+  STUDY_INTERVENTION_TYPES,
+} from "@/lib/study-workspace";
 
 afterEach(cleanup);
 
@@ -46,8 +50,12 @@ describe("interventions panel", () => {
       within(within(form).getByRole("combobox", { name: label }))
         .getAllByRole("option")
         .map((option) => option.getAttribute("value"));
-    expect(options("Role")).toEqual(["C41161", "C68609", "C753", "C18020"]);
-    expect(options("Type")).toEqual(["C16830", "C98769"]);
+    expect(options("Role")).toEqual(
+      STUDY_INTERVENTION_ROLES.map((term) => term.code)
+    );
+    expect(options("Type")).toEqual(
+      STUDY_INTERVENTION_TYPES.map((term) => term.code)
+    );
   });
 
   it("adds an intervention, gives it in an element and undoes the change", async () => {

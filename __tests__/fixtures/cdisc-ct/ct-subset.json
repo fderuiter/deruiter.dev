@@ -312,6 +312,22 @@
         "Fixed Reference": "C201358"
       }
     },
+    "C207417": {
+      "publishingSet": "DDF",
+      "submissionValue": "Study Intervention Role Value Set Terminology",
+      "name": "Study Intervention Role Value Set Terminology",
+      "extensible": false,
+      "terms": {
+        "Active Comparator": "C68609",
+        "Additional Required Treatment": "C207614",
+        "Background Treatment": "C165822",
+        "Challenge Agent": "C158128",
+        "Diagnostic": "C18020",
+        "Experimental Intervention": "C41161",
+        "Placebo": "C753",
+        "Rescue Medicine": "C165835"
+      }
+    },
     "C213939": {
       "publishingSet": "SDTM",
       "submissionValue": "PHQ0101T09OR",
@@ -5026,6 +5042,24 @@
         "C99079": "TREATMENT"
       }
     },
+    "C102255": {
+      "names": [
+        "blinded treatment",
+        "blinded treatment epoch"
+      ],
+      "memberOf": {
+        "C99079": "BLINDED TREATMENT"
+      }
+    },
+    "C102256": {
+      "names": [
+        "open label treatment",
+        "open label treatment epoch"
+      ],
+      "memberOf": {
+        "C99079": "OPEN LABEL TREATMENT"
+      }
+    },
     "C105585": {
       "names": [
         "gluc",
@@ -5109,6 +5143,36 @@
       ],
       "memberOf": {
         "C74456": "CILIARY BODY"
+      }
+    },
+    "C123452": {
+      "names": [
+        "continuation phase",
+        "continuation therapy epoch",
+        "continuation treatment"
+      ],
+      "memberOf": {
+        "C99079": "CONTINUATION TREATMENT"
+      }
+    },
+    "C123453": {
+      "names": [
+        "induction phase",
+        "induction therapy epoch",
+        "induction treatment",
+        "intensive phase"
+      ],
+      "memberOf": {
+        "C99079": "INDUCTION TREATMENT"
+      }
+    },
+    "C125938": {
+      "names": [
+        "baseline",
+        "baseline epoch"
+      ],
+      "memberOf": {
+        "C99079": "BASELINE"
       }
     },
     "C139173": {
@@ -5293,6 +5357,14 @@
         "C66737": "PHASE I/II TRIAL"
       }
     },
+    "C158128": {
+      "names": [
+        "challenge agent"
+      ],
+      "memberOf": {
+        "C207417": "Challenge Agent"
+      }
+    },
     "C16352": {
       "names": [
         "black or african american"
@@ -5323,6 +5395,32 @@
         "C209287": "FEMALE",
         "C66731": "F",
         "C66732": "F"
+      }
+    },
+    "C165822": {
+      "names": [
+        "background treatment"
+      ],
+      "memberOf": {
+        "C207417": "Background Treatment"
+      }
+    },
+    "C165835": {
+      "names": [
+        "rescue medications",
+        "rescue medicine"
+      ],
+      "memberOf": {
+        "C207417": "Rescue Medicine"
+      }
+    },
+    "C165873": {
+      "names": [
+        "observation",
+        "observation study epoch"
+      ],
+      "memberOf": {
+        "C99079": "OBSERVATION"
       }
     },
     "C166074": {
@@ -5494,6 +5592,15 @@
         "C99078": "DRUG"
       }
     },
+    "C199844": {
+      "names": [
+        "pre-screening",
+        "pre-screening epoch"
+      ],
+      "memberOf": {
+        "C99079": "PRE-SCREENING"
+      }
+    },
     "C201355": {
       "names": [
         "start to start"
@@ -5549,6 +5656,15 @@
         "C99079": "SCREENING"
       }
     },
+    "C202577": {
+      "names": [
+        "long-term follow-up",
+        "long-term follow-up epoch"
+      ],
+      "memberOf": {
+        "C99079": "LONG-TERM FOLLOW-UP"
+      }
+    },
     "C202578": {
       "names": [
         "follow-up",
@@ -5567,6 +5683,15 @@
         "C207418": "IMP"
       }
     },
+    "C207614": {
+      "names": [
+        "additional required medicinal product",
+        "additional required treatment"
+      ],
+      "memberOf": {
+        "C207417": "Additional Required Treatment"
+      }
+    },
     "C207615": {
       "names": [
         "abbreviated protocol title",
@@ -5582,6 +5707,24 @@
       ],
       "memberOf": {
         "C207419": "Official Study Title"
+      }
+    },
+    "C209541": {
+      "names": [
+        "intervention",
+        "investigational intervention epoch"
+      ],
+      "memberOf": {
+        "C99079": "INTERVENTION"
+      }
+    },
+    "C210380": {
+      "names": [
+        "product exposure",
+        "product exposure epoch"
+      ],
+      "memberOf": {
+        "C99079": "PRODUCT EXPOSURE"
       }
     },
     "C214831": {

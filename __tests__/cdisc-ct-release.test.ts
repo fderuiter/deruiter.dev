@@ -20,6 +20,7 @@ import {
   SUBSET_FILE,
   buildSubset,
   citedCodes,
+  isHtmlPage,
   parseEvsExport,
   serializeSubset,
   type CtSubset,
@@ -243,5 +244,19 @@ describe("USDM codes against the release (#2992)", () => {
         );
       }
     }
+  });
+});
+
+describe("EVS download guard (#4095)", () => {
+  it("recognizes the EVS download site's HTML page", () => {
+    const page = Buffer.from('\n<!doctype html>\n<html lang="en">');
+    expect(isHtmlPage(page, null)).toBe(true);
+    expect(isHtmlPage(Buffer.from("<HTML>"), null)).toBe(true);
+    expect(
+      isHtmlPage(Buffer.from("Code\tCodelist Code"), "text/html; charset=utf-8")
+    ).toBe(true);
+    expect(isHtmlPage(Buffer.from("Code\tCodelist Code\n"), "text/plain")).toBe(
+      false
+    );
   });
 });

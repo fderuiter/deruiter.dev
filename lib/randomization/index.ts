@@ -15,7 +15,9 @@
  * request come from #4004, and reproducible Monte Carlo allocation QA
  * comes from #4007. Read-only result projections (paged and sorted rows,
  * grouped blocks, categorical counts and the descriptive balance report)
- * come from #4008. The work area's Simple, Standard and Complex UI
+ * come from #4008. Local reverification of an artifact file (shape and
+ * version support, digest integrity, full regeneration with row diffs,
+ * invariants and provenance) comes from #4009. The work area's Simple, Standard and Complex UI
  * presets are a separate entry point, `./presets` (#4006).
  */
 export * from "./types";
@@ -199,3 +201,20 @@ export type {
   BalanceGroup,
   MarginalBalanceGroup,
 } from "./internal/results/projection";
+export {
+  MAX_VERIFICATION_DIFFS,
+  MAX_VERIFICATION_FINDINGS,
+  VERIFICATION_REPORT_VERSION,
+  verifyArtifact,
+} from "./internal/verification/verify-artifact";
+export type {
+  VerificationCheckStatus,
+  VerificationFinding,
+  VerificationFindingCode,
+  VerificationOutcome,
+  VerificationRejectionCode,
+  VerificationReport,
+  VerificationRowDiff,
+  VerificationRowField,
+  VerifyArtifactOptions,
+} from "./internal/verification/verify-artifact";

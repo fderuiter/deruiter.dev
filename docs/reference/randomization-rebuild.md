@@ -176,11 +176,11 @@ No AGPL source code, runtime modules, or test fixtures from
 | `RND-CODE-010` | Mapping and syntax validation | `#4012` | `Deferred` | Pending `#4012` | Not yet executed |
 | `RND-CODE-011` | Runtime parity qualification | `#4014` | `Unsupported` | Pending `#4014` | Not executed (SAS/Stata runtimes explicitly disabled) |
 | `RND-CODE-012` | Single canonical source | `#4012` | `Deferred` | Pending `#4012` | Not yet executed |
-| `RND-VERIF-001` | Local JSON upload | `#4009` | `Deferred` | Pending `#4009` | Not yet executed |
-| `RND-VERIF-002` | Regeneration comparison | `#4009` | `Deferred` | Pending `#4009` | Not yet executed |
-| `RND-VERIF-003` | Hash validation | `#4009` | `Deferred` | Pending `#4009` | Not yet executed |
-| `RND-VERIF-004` | Complete field comparison | `#4009` | `Deferred` | Pending `#4009` | Not yet executed |
-| `RND-VERIF-005` | Bounded safe imports | `#4009` | `Deferred` | Import size/depth limits in `RANDOMIZATION_RESOURCE_LIMITS` (`#3998`); verifier pending `#4009` | Not yet executed |
+| `RND-VERIF-001` | Local JSON upload | `#4009` | `Implemented` | `__tests__/randomization-verification.test.ts`, `__tests__/randomization-verification-panel.test.tsx` | Pass (`vitest`, `#4009`, 2026-11-24) |
+| `RND-VERIF-002` | Regeneration comparison | `#4009` | `Implemented` | `__tests__/randomization-verification.test.ts`, `__tests__/randomization-verification-panel.test.tsx` | Pass (`vitest`, `#4009`, 2026-11-24) |
+| `RND-VERIF-003` | Hash validation | `#4009` | `Implemented` | `__tests__/randomization-verification.test.ts`, `__tests__/randomization-verification-panel.test.tsx` | Pass (`vitest`, `#4009`, 2026-11-24) |
+| `RND-VERIF-004` | Complete field comparison | `#4009` | `Implemented` | `__tests__/randomization-verification.test.ts`, `__tests__/randomization-verification-panel.test.tsx` | Pass (`vitest`, `#4009`, 2026-11-24) |
+| `RND-VERIF-005` | Bounded safe imports | `#4009` | `Implemented` | `__tests__/randomization-verification.test.ts`, `__tests__/randomization-verification-panel.test.tsx` | Pass (`vitest`, `#4009`, 2026-11-24) |
 | `RND-PERSI-001` | Draft autosave | `#4003` | `Deferred` | Pending `#4003` | Not yet executed |
 | `RND-PERSI-002` | Versioned migration | `#4003` | `Deferred` | Pending `#4003` | Not yet executed |
 | `RND-PERSI-003` | Recovery export | `#4003` | `Deferred` | Pending `#4003` | Not yet executed |

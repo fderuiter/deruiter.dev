@@ -9,7 +9,10 @@
  * workspace revision); the client publishes an answer only while that
  * identity is still the active one.
  */
-import { MAX_RESULT_FILTER_LENGTH } from "@/lib/randomization";
+import {
+  MAX_RESULT_FILTER_LENGTH,
+  RANDOMIZATION_RESOURCE_LIMITS,
+} from "@/lib/randomization";
 import type {
   AllocationBlockGroupPage,
   AllocationQuery,
@@ -20,6 +23,7 @@ import type {
   RandomizationSafeErrorCode,
   SimulationReport,
   ValidationFinding,
+  VerificationReport,
 } from "@/lib/randomization";
 
 /** Version of this message protocol. A mismatch is a protocol violation. */
@@ -142,6 +146,17 @@ export type RandomizationCommand =
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      /**
+       * Verifies the text of a local artifact file (#4009). It holds no
+       * operation identity: it never touches a held schedule, and the
+       * client drops answers to a replaced verification.
+       */
+      readonly kind: "verify";
+      readonly requestId: number;
+      readonly text: string;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
       /** Runs a Monte Carlo simulation request (#4007). */
       readonly kind: "simulate";
       readonly requestId: number;
@@ -195,6 +210,18 @@ export type RandomizationResponse =
       readonly requestId: number;
       readonly identity: RandomizationOperationIdentity;
       readonly result: RandomizationViewResult;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      readonly kind: "verified";
+      readonly requestId: number;
+      readonly report: VerificationReport;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      readonly kind: "verify-failed";
+      readonly requestId: number;
+      readonly code: RandomizationOperationErrorCode;
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
@@ -362,6 +389,11 @@ export function parseRandomizationCommand(
       return isOperationIdentity(value.identity) && isViewRequest(value.view)
         ? (value as RandomizationCommand)
         : null;
+    case "verify":
+      return typeof value.text === "string" &&
+        value.text.length <= RANDOMIZATION_RESOURCE_LIMITS.maxImportBytes
+        ? (value as RandomizationCommand)
+        : null;
     case "cancel":
       return isCount(value.operationId)
         ? (value as RandomizationCommand)
@@ -444,6 +476,17 @@ export function parseRandomizationResponse(
               result.page.groups.length <= MAX_RANDOMIZATION_PAGE_ROWS);
       return ok ? (value as RandomizationResponse) : null;
     }
+    case "verified":
+      return isRecord(value.report) &&
+        typeof value.report.outcome === "string" &&
+        isRecord(value.report.regeneration)
+        ? (value as RandomizationResponse)
+        : null;
+    case "verify-failed":
+      return typeof value.code === "string" &&
+        /^[A-Z][A-Z0-9_]{2,63}$/.test(value.code)
+        ? (value as RandomizationResponse)
+        : null;
     case "failed":
       return (value.identity === null || isOperationIdentity(value.identity)) &&
         typeof value.code === "string" &&

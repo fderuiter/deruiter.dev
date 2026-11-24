@@ -30,6 +30,7 @@ import {
   toSafeRandomizationErrorReport,
   validateRandomizationPlan,
   validateSimulationRequest,
+  verifyArtifact,
   type AllocationRow,
   type RandomizationRequest,
   type RandomizationResourceLimits,
@@ -71,6 +72,7 @@ type GenerateCommand = Extract<RandomizationCommand, { kind: "generate" }>;
 type PageCommand = Extract<RandomizationCommand, { kind: "page" }>;
 type SimulateCommand = Extract<RandomizationCommand, { kind: "simulate" }>;
 type ViewCommand = Extract<RandomizationCommand, { kind: "view" }>;
+type VerifyCommand = Extract<RandomizationCommand, { kind: "verify" }>;
 
 /** Progress messages per simulation, at most. */
 const SIMULATION_PROGRESS_MESSAGES = 20;
@@ -490,6 +492,38 @@ export function createRandomizationHost(
     });
   };
 
+  /**
+   * Verifies one artifact file (#4009). It leaves any held schedule alone.
+   * On the main-thread fallback a file above the row budget is refused
+   * with `FALLBACK_BUDGET_EXCEEDED` rather than blocking the page.
+   */
+  const verify = (command: VerifyCommand) => {
+    const { requestId } = command;
+    let code: RandomizationOperationErrorCode | null = null;
+    try {
+      const report = verifyArtifact(command.text, { limits: engineLimits });
+      if (report.rejection === "TOO_MANY_ROWS" && engineLimits !== limits) {
+        code = "FALLBACK_BUDGET_EXCEEDED";
+      } else {
+        send({
+          protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+          kind: "verified",
+          requestId,
+          report,
+        });
+        return;
+      }
+    } catch (error) {
+      code = toSafeRandomizationErrorReport(error).code;
+    }
+    send({
+      protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+      kind: "verify-failed",
+      requestId,
+      code,
+    });
+  };
+
   return {
     receive(data) {
       if (disposed) return;
@@ -518,6 +552,8 @@ export function createRandomizationHost(
         page(command);
       } else if (command.kind === "view") {
         view(command);
+      } else if (command.kind === "verify") {
+        verify(command);
       } else if (active === command.operationId) {
         active = null;
       }

@@ -13,7 +13,9 @@
  * Display masking, the single export disclosure gate and code-only error
  * reports come from #4005. Plan digests that bind worker answers to their
  * request come from #4004, and reproducible Monte Carlo allocation QA
- * comes from #4007. The work area's Simple, Standard and Complex UI
+ * comes from #4007. Read-only result projections (paged and sorted rows,
+ * grouped blocks, categorical counts and the descriptive balance report)
+ * come from #4008. The work area's Simple, Standard and Complex UI
  * presets are a separate entry point, `./presets` (#4006).
  */
 export * from "./types";
@@ -171,3 +173,29 @@ export type {
   SimulationRunner,
   SimulationRunnerResult,
 } from "./internal/simulation/monte-carlo";
+export {
+  MAX_RESULT_FILTER_LENGTH,
+  MAX_RESULT_GROUPS_PER_PAGE,
+  groupAllocationBlocks,
+  queryAllocationRows,
+  summarizeAllocationResults,
+} from "./internal/results/projection";
+export type {
+  AllocationBalanceReport,
+  AllocationBlockGroup,
+  AllocationBlockGroupPage,
+  AllocationCategoryDimension,
+  AllocationCategoryEntry,
+  AllocationCategoryFilter,
+  AllocationCategorySummary,
+  AllocationColumnFilters,
+  AllocationProjectionOptions,
+  AllocationQuery,
+  AllocationQueryPage,
+  AllocationSort,
+  AllocationSortColumn,
+  AllocationSummaryProjection,
+  ArmBalance,
+  BalanceGroup,
+  MarginalBalanceGroup,
+} from "./internal/results/projection";

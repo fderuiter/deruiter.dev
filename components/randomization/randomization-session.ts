@@ -24,6 +24,9 @@ import {
   createSimulationRunner,
   generateBlockSchedule,
   generateMinimizationSchedule,
+  groupAllocationBlocks,
+  queryAllocationRows,
+  summarizeAllocationResults,
   toSafeRandomizationErrorReport,
   validateRandomizationPlan,
   validateSimulationRequest,
@@ -41,6 +44,7 @@ import {
   type RandomizationOperationErrorCode,
   type RandomizationOperationIdentity,
   type RandomizationResponse,
+  type RandomizationViewResult,
 } from "./protocol";
 
 /** Options for a host. */
@@ -66,6 +70,7 @@ interface RandomizationHost {
 type GenerateCommand = Extract<RandomizationCommand, { kind: "generate" }>;
 type PageCommand = Extract<RandomizationCommand, { kind: "page" }>;
 type SimulateCommand = Extract<RandomizationCommand, { kind: "simulate" }>;
+type ViewCommand = Extract<RandomizationCommand, { kind: "view" }>;
 
 /** Progress messages per simulation, at most. */
 const SIMULATION_PROGRESS_MESSAGES = 20;
@@ -83,6 +88,7 @@ class OperationFailure extends Error {
 
 interface HeldResult {
   readonly identity: RandomizationOperationIdentity;
+  readonly request: RandomizationRequest;
   readonly rows: readonly AllocationRow[];
 }
 
@@ -241,7 +247,7 @@ export function createRandomizationHost(
       }).hex;
 
       await checkpoint();
-      held = { identity, rows: generated.rows };
+      held = { identity, request, rows: generated.rows };
       active = null;
       send({
         protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
@@ -416,6 +422,74 @@ export function createRandomizationHost(
     });
   };
 
+  /** Answers a filtered, sorted or aggregated view of the held rows (#4008). */
+  const view = (command: ViewCommand) => {
+    const { identity, requestId } = command;
+    if (!held || !sameOperation(held.identity, identity)) {
+      send({
+        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+        kind: "failed",
+        requestId,
+        identity,
+        code: "RESULT_RELEASED",
+      });
+      return;
+    }
+    const spec = command.view;
+    const options = { maskTreatment: spec.maskTreatment };
+    let result: RandomizationViewResult;
+    try {
+      result =
+        spec.kind === "summary"
+          ? {
+              kind: "summary",
+              summary: summarizeAllocationResults(
+                held.request,
+                held.rows,
+                spec.query,
+                options
+              ),
+            }
+          : spec.kind === "rows"
+            ? {
+                kind: "rows",
+                page: queryAllocationRows(
+                  held.request,
+                  held.rows,
+                  spec.query,
+                  spec,
+                  options
+                ),
+              }
+            : {
+                kind: "blocks",
+                page: groupAllocationBlocks(
+                  held.request,
+                  held.rows,
+                  spec.query,
+                  spec,
+                  options
+                ),
+              };
+    } catch (error) {
+      send({
+        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+        kind: "failed",
+        requestId,
+        identity,
+        code: toSafeRandomizationErrorReport(error).code,
+      });
+      return;
+    }
+    send({
+      protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+      kind: "view",
+      requestId,
+      identity,
+      result,
+    });
+  };
+
   return {
     receive(data) {
       if (disposed) return;
@@ -442,6 +516,8 @@ export function createRandomizationHost(
         void simulate(command);
       } else if (command.kind === "page") {
         page(command);
+      } else if (command.kind === "view") {
+        view(command);
       } else if (active === command.operationId) {
         active = null;
       }

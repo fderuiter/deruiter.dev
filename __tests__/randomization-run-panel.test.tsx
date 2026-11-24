@@ -31,7 +31,7 @@ async function opened() {
 }
 
 const area = () =>
-  within(screen.getByRole("region", { name: "Randomization" }));
+  within(screen.getByRole("region", { name: "Randomization work area" }));
 const runArea = () =>
   within(screen.getByRole("region", { name: "Run and results", hidden: true }));
 const stageButton = (title: string) =>

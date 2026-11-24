@@ -23,6 +23,7 @@ import {
   computePlanDigest,
   type SimulationReport,
   type ValidationFinding,
+  type VerificationReport,
 } from "@/lib/randomization";
 import { clamp } from "@/lib/utils";
 import {
@@ -146,6 +147,14 @@ export interface RandomizationClient {
    * the rows; the caller discards answers to requests it has replaced.
    */
   view(request: RandomizationViewRequest): Promise<RandomizationViewResult>;
+  /**
+   * Verifies the text of a local artifact file (#4009). A newer call
+   * supersedes an older one, which resolves `canceled`; on a worker the
+   * old run is stopped by replacing the worker. It never rejects, and it
+   * leaves any completed schedule alone only when no generation shares
+   * the worker, so give verification its own client.
+   */
+  verify(text: string): Promise<VerificationOutcomeResult>;
   /** Cancels the running generation, if any. */
   cancel(): void;
   /**
@@ -174,6 +183,21 @@ interface ActiveOperation {
   /** The plan, or the whole simulation request. */
   readonly payload: unknown;
   readonly resolve: (outcome: AnyOutcome) => void;
+}
+
+/** How a verification ended. A verification never rejects. */
+type VerificationOutcomeResult =
+  | { readonly status: "complete"; readonly report: VerificationReport }
+  | {
+      readonly status: "failed";
+      readonly code: RandomizationOperationErrorCode;
+    }
+  | { readonly status: "canceled" };
+
+interface PendingVerify {
+  readonly requestId: number;
+  readonly text: string;
+  readonly resolve: (outcome: VerificationOutcomeResult) => void;
 }
 
 interface PendingPage {
@@ -229,6 +253,14 @@ export function createRandomizationClient(
   let nextOperationId = 1;
   let active: ActiveOperation | null = null;
   const pages = new Map<number, PendingPage>();
+  let verifying: PendingVerify | null = null;
+
+  const settleVerify = (outcome: VerificationOutcomeResult) => {
+    const pending = verifying;
+    if (!pending) return;
+    verifying = null;
+    pending.resolve(outcome);
+  };
 
   const setState = (patch: Partial<RandomizationClientState>) => {
     state = Object.freeze({
@@ -298,6 +330,9 @@ export function createRandomizationClient(
     const response = parseRandomizationResponse(data);
     if (!response) {
       const requestId = (data as { requestId?: unknown } | null)?.requestId;
+      if (verifying && requestId === verifying.requestId) {
+        settleVerify({ status: "failed", code: "PROTOCOL_VIOLATION" });
+      }
       if (active && requestId === active.requestId) fail("PROTOCOL_VIOLATION");
       const page =
         typeof requestId === "number" ? pages.get(requestId) : undefined;
@@ -305,6 +340,22 @@ export function createRandomizationClient(
         pages.delete(requestId);
         page.reject(new RandomizationClientError("PROTOCOL_VIOLATION"));
       }
+      return;
+    }
+
+    if (verifying && response.requestId === verifying.requestId) {
+      if (response.kind === "verified") {
+        settleVerify({ status: "complete", report: response.report });
+      } else if (response.kind === "verify-failed") {
+        settleVerify({ status: "failed", code: response.code });
+      } else if (response.kind === "failed") {
+        settleVerify({ status: "failed", code: response.code });
+      } else {
+        settleVerify({ status: "failed", code: "PROTOCOL_VIOLATION" });
+      }
+      return;
+    }
+    if (response.kind === "verified" || response.kind === "verify-failed") {
       return;
     }
 
@@ -410,9 +461,11 @@ export function createRandomizationClient(
         workerUnavailable = true;
         rejectPages("WORKER_FAILED");
         if (active) dispatch(active);
+        if (verifying) resendVerify(verifying);
         return;
       }
       rejectPages("WORKER_FAILED");
+      settleVerify({ status: "failed", code: "WORKER_FAILED" });
       if (active) fail("WORKER_FAILED");
       else if (state.status === "complete") {
         setState({ status: "failed", errorCode: "WORKER_FAILED" });
@@ -438,7 +491,9 @@ export function createRandomizationClient(
             if (!released) loaded.receive(command);
           },
           () => {
-            if (transport === opened && active) fail("WORKER_FAILED");
+            if (transport !== opened) return;
+            if (active) fail("WORKER_FAILED");
+            settleVerify({ status: "failed", code: "WORKER_FAILED" });
           }
         );
       },
@@ -459,6 +514,21 @@ export function createRandomizationClient(
       return host;
     });
     return opened;
+  };
+
+  /** Sends a pending verification again after the worker failed to start. */
+  const resendVerify = (pending: PendingVerify) => {
+    const target = ensureTransport();
+    try {
+      target.send({
+        protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+        kind: "verify",
+        requestId: pending.requestId,
+        text: pending.text,
+      });
+    } catch {
+      settleVerify({ status: "failed", code: "POST_MESSAGE_FAILED" });
+    }
   };
 
   const ensureTransport = (): Transport => {
@@ -622,6 +692,29 @@ export function createRandomizationClient(
       });
     },
 
+    verify(text) {
+      if (verifying) {
+        settleVerify({ status: "canceled" });
+        // A worker can't interrupt a synchronous run; replace it.
+        if (transport?.mode === "worker") releaseTransport();
+      }
+      const target = ensureTransport();
+      const requestId = nextRequestId++;
+      return new Promise<VerificationOutcomeResult>((resolve) => {
+        verifying = { requestId, text, resolve };
+        try {
+          target.send({
+            protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+            kind: "verify",
+            requestId,
+            text,
+          });
+        } catch {
+          settleVerify({ status: "failed", code: "POST_MESSAGE_FAILED" });
+        }
+      });
+    },
+
     view(request) {
       const identity = state.identity;
       if (state.status !== "complete" || !identity || !state.summary) {
@@ -673,6 +766,7 @@ export function createRandomizationClient(
         });
       }
       rejectPages("RESULT_RELEASED");
+      settleVerify({ status: "canceled" });
       releaseTransport();
       if (state !== INITIAL_STATE) {
         state = INITIAL_STATE;

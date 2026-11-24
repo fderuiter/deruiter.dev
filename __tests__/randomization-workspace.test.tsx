@@ -22,7 +22,8 @@ async function opened() {
   return view;
 }
 
-const area = () => screen.getByRole("region", { name: "Randomization" });
+const area = () =>
+  screen.getByRole("region", { name: "Randomization work area" });
 const inArea = () => within(area());
 const stageButton = (title: string) =>
   within(inArea().getByRole("navigation", { name: "Randomization stages" }))

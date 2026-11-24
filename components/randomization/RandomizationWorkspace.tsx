@@ -414,7 +414,7 @@ export function RandomizationWorkspace({
     <section aria-labelledby="randomization" className="min-w-0 space-y-6">
       <div className="space-y-2">
         <h3 id="randomization" className="font-semibold">
-          Randomization
+          Randomization work area
         </h3>
         <p className={`${MONO} text-xs text-slate-400`}>
           Design {workspace.selection.studyDesignId} · version{" "}

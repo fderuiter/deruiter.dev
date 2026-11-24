@@ -9,8 +9,13 @@
  * workspace revision); the client publishes an answer only while that
  * identity is still the active one.
  */
+import { MAX_RESULT_FILTER_LENGTH } from "@/lib/randomization";
 import type {
+  AllocationBlockGroupPage,
+  AllocationQuery,
+  AllocationQueryPage,
   AllocationRow,
+  AllocationSummaryProjection,
   RandomizationRequest,
   RandomizationSafeErrorCode,
   SimulationReport,
@@ -85,6 +90,31 @@ export interface RandomizationRowPage {
   readonly rows: readonly AllocationRow[];
 }
 
+/**
+ * A read-only projection of the completed schedule (#4008). The host
+ * applies the query to the rows it holds and answers with one bounded
+ * page, so filtering and sorting never move the whole schedule.
+ */
+export type RandomizationViewRequest =
+  | {
+      readonly kind: "rows" | "blocks";
+      readonly query: AllocationQuery;
+      readonly offset: number;
+      readonly limit: number;
+      readonly maskTreatment: boolean;
+    }
+  | {
+      readonly kind: "summary";
+      readonly query: AllocationQuery;
+      readonly maskTreatment: boolean;
+    };
+
+/** The answer to a {@link RandomizationViewRequest}. */
+export type RandomizationViewResult =
+  | { readonly kind: "rows"; readonly page: AllocationQueryPage }
+  | { readonly kind: "blocks"; readonly page: AllocationBlockGroupPage }
+  | { readonly kind: "summary"; readonly summary: AllocationSummaryProjection };
+
 /** Commands sent to the worker or fallback host. */
 export type RandomizationCommand =
   | {
@@ -101,6 +131,14 @@ export type RandomizationCommand =
       readonly identity: RandomizationOperationIdentity;
       readonly offset: number;
       readonly limit: number;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      /** Reads a filtered, sorted or aggregated view (#4008). */
+      readonly kind: "view";
+      readonly requestId: number;
+      readonly identity: RandomizationOperationIdentity;
+      readonly view: RandomizationViewRequest;
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
@@ -153,6 +191,13 @@ export type RandomizationResponse =
     }
   | {
       readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
+      readonly kind: "view";
+      readonly requestId: number;
+      readonly identity: RandomizationOperationIdentity;
+      readonly result: RandomizationViewResult;
+    }
+  | {
+      readonly protocolVersion: typeof RANDOMIZATION_PROTOCOL_VERSION;
       readonly kind: "failed";
       readonly requestId: number;
       readonly identity: RandomizationOperationIdentity | null;
@@ -188,6 +233,87 @@ function isOperationIdentity(
     typeof value.planDigest === "string" &&
     /^[0-9a-f]{64}$/.test(value.planDigest) &&
     isCount(value.workspaceRevision)
+  );
+}
+
+const SORT_DIRECTIONS = new Set(["ascending", "descending"]);
+const FIXED_SORT_COLUMNS = new Set([
+  "sequence",
+  "subjectId",
+  "site",
+  "block",
+  "treatment",
+]);
+const FIXED_DIMENSIONS = new Set(["site", "treatment", "stratum"]);
+
+function isShortText(value: unknown, max = MAX_RESULT_FILTER_LENGTH): boolean {
+  return typeof value === "string" && value.length <= max;
+}
+
+function isFactorName(value: string): boolean {
+  return value.startsWith("factor:") && value.length > 7 && value.length <= 72;
+}
+
+/** True for a bounded, well-formed query. */
+function isAllocationQuery(value: unknown): value is AllocationQuery {
+  if (!isRecord(value)) return false;
+  const { sort, filters, category } = value;
+  if (sort !== undefined && sort !== null) {
+    if (
+      !isRecord(sort) ||
+      typeof sort.column !== "string" ||
+      !(FIXED_SORT_COLUMNS.has(sort.column) || isFactorName(sort.column)) ||
+      !SORT_DIRECTIONS.has(sort.direction as string)
+    ) {
+      return false;
+    }
+  }
+  if (filters !== undefined) {
+    if (!isRecord(filters)) return false;
+    for (const key of ["subjectId", "site", "treatment"] as const) {
+      if (filters[key] !== undefined && !isShortText(filters[key]))
+        return false;
+    }
+    if (filters.factors !== undefined) {
+      if (!isRecord(filters.factors)) return false;
+      const entries = Object.entries(filters.factors);
+      if (entries.length > 64) return false;
+      if (!entries.every(([k, v]) => isShortText(k, 64) && isShortText(v))) {
+        return false;
+      }
+    }
+  }
+  if (category !== undefined && category !== null) {
+    if (
+      !isRecord(category) ||
+      typeof category.dimension !== "string" ||
+      !(
+        FIXED_DIMENSIONS.has(category.dimension) ||
+        isFactorName(category.dimension)
+      ) ||
+      !isShortText(category.key, 4096)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isViewRequest(value: unknown): value is RandomizationViewRequest {
+  if (
+    !isRecord(value) ||
+    typeof value.maskTreatment !== "boolean" ||
+    !isAllocationQuery(value.query)
+  ) {
+    return false;
+  }
+  if (value.kind === "summary") return true;
+  return (
+    (value.kind === "rows" || value.kind === "blocks") &&
+    isCount(value.offset) &&
+    isCount(value.limit) &&
+    value.limit > 0 &&
+    value.limit <= MAX_RANDOMIZATION_PAGE_ROWS
   );
 }
 
@@ -230,6 +356,10 @@ export function parseRandomizationCommand(
         isCount(value.limit) &&
         value.limit > 0 &&
         value.limit <= MAX_RANDOMIZATION_PAGE_ROWS
+        ? (value as RandomizationCommand)
+        : null;
+    case "view":
+      return isOperationIdentity(value.identity) && isViewRequest(value.view)
         ? (value as RandomizationCommand)
         : null;
     case "cancel":
@@ -293,6 +423,26 @@ export function parseRandomizationResponse(
         page.rows.length <= MAX_RANDOMIZATION_PAGE_ROWS
         ? (value as RandomizationResponse)
         : null;
+    }
+    case "view": {
+      const result = value.result;
+      if (!isOperationIdentity(value.identity) || !isRecord(result)) {
+        return null;
+      }
+      const ok =
+        result.kind === "summary"
+          ? isRecord(result.summary) &&
+            Array.isArray(result.summary.categories) &&
+            isRecord(result.summary.balance)
+          : (result.kind === "rows" &&
+              isRecord(result.page) &&
+              Array.isArray(result.page.rows) &&
+              result.page.rows.length <= MAX_RANDOMIZATION_PAGE_ROWS) ||
+            (result.kind === "blocks" &&
+              isRecord(result.page) &&
+              Array.isArray(result.page.groups) &&
+              result.page.groups.length <= MAX_RANDOMIZATION_PAGE_ROWS);
+      return ok ? (value as RandomizationResponse) : null;
     }
     case "failed":
       return (value.identity === null || isOperationIdentity(value.identity)) &&

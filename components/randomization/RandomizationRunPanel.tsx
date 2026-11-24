@@ -6,7 +6,6 @@ import {
   computePlanDigest,
   decideRandomizationExport,
   presentAllocationRows,
-  presentTreatmentSummary,
   resolvePresentation,
   type AllocationRow,
   type DisplayProfile,
@@ -21,10 +20,8 @@ import {
   createRandomizationClient,
   type RandomizationClient,
 } from "./randomization-client";
-import type { RandomizationRowPage } from "./protocol";
-import { BUTTON, MONO } from "./RandomizationStageEditors";
-
-const PAGE_SIZE = 25;
+import { ResultsPanel } from "./ResultsPanel";
+import { BUTTON } from "./RandomizationStageEditors";
 
 /** Study metadata written into every export (RND-WORKS-001). */
 interface StudyMetadata {
@@ -94,7 +91,6 @@ export function RandomizationRunPanel({
   const [frozen, setFrozen] = useState<RandomizationRequest | null>(null);
   const [binding, setBinding] =
     useState<StudyRandomizationEvidenceBinding | null>(null);
-  const [page, setPage] = useState<RandomizationRowPage | null>(null);
   const [profile, setProfile] = useState<DisplayProfile>(
     DEFAULT_DISPLAY_PROFILE
   );
@@ -108,13 +104,6 @@ export function RandomizationRunPanel({
     summary && frozen ? checkCurrency(frozen, binding) : null;
   const presentation = resolvePresentation(profile);
 
-  const loadPage = (offset: number) => {
-    void client
-      .page(offset, PAGE_SIZE)
-      .then(setPage)
-      .catch(() => setPage(null));
-  };
-
   const run = () => {
     if (!request) return;
     setBinding(bind());
@@ -123,7 +112,6 @@ export function RandomizationRunPanel({
       JSON.stringify(request)
     ) as RandomizationRequest;
     setFrozen(snapshot);
-    setPage(null);
     announce("Generating the schedule.");
     void client
       .generate({
@@ -135,10 +123,6 @@ export function RandomizationRunPanel({
           announce(
             `Generated ${outcome.summary.rowCount} allocations.${outcome.summary.shortfall > 0 ? ` ${outcome.summary.shortfall} short of the target.` : ""}`
           );
-          void client
-            .page(0, PAGE_SIZE)
-            .then(setPage)
-            .catch(() => setPage(null));
         } else if (outcome.status === "canceled") {
           announce("Generation canceled.");
         } else {
@@ -187,18 +171,6 @@ export function RandomizationRunPanel({
     });
   };
 
-  const armLabels = new Map(
-    (frozen ?? request)?.arms.map((arm) => [arm.id, arm] as const) ?? []
-  );
-  const treatmentSummary = summary
-    ? presentTreatmentSummary(
-        frozen?.arms ?? [],
-        Object.fromEntries(summary.armCounts.map((a) => [a.armId, a.count])),
-        presentation
-      )
-    : [];
-  const shownRows = page ? presentAllocationRows(page.rows, presentation) : [];
-
   return (
     <div className="space-y-4 border-t border-white/[0.08] pt-4">
       <div className="flex flex-wrap gap-2">
@@ -242,86 +214,16 @@ export function RandomizationRunPanel({
       {summary && (
         <div className="space-y-4">
           <DisclosureControls profile={profile} onChange={setProfile} />
-          <dl className={`${MONO} grid gap-1 text-xs text-slate-400`}>
-            <div>
-              <dt className="inline">Reduced ratio: </dt>
-              <dd className="inline">{summary.reducedRatios.join(":")}</dd>
-            </div>
-            <div className="break-all">
-              <dt className="inline">Content digest: </dt>
-              <dd className="inline">{summary.contentDigest}</dd>
-            </div>
-          </dl>
-          <ul className="space-y-1 text-sm">
-            {treatmentSummary.map((entry) => (
-              <li key={entry.label}>
-                {entry.label}: {entry.count}
-              </li>
-            ))}
-          </ul>
-
-          {page && (
-            <div className="max-h-[32rem] overflow-auto rounded border border-white/[0.08]">
-              <table className="w-full min-w-0 text-left text-sm">
-                <caption className="sr-only">
-                  Allocations {page.offset + 1} to{" "}
-                  {page.offset + page.rows.length} of {page.totalRows}
-                </caption>
-                <thead className="bg-[#13151a]">
-                  <tr>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Seq
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Subject
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Site
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Arm
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shownRows.map((row) => (
-                    <tr
-                      key={row.sequence}
-                      className="border-t border-white/[0.08]"
-                    >
-                      <td className={`${MONO} px-3 py-1`}>{row.sequence}</td>
-                      <td className={`${MONO} break-all px-3 py-1`}>
-                        {row.subjectId}
-                      </td>
-                      <td className="px-3 py-1">{row.siteId}</td>
-                      <td className="px-3 py-1">
-                        {armLabels.get(row.armId)?.label ?? row.armCode}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {page && (
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`${BUTTON} min-w-12`}
-                disabled={page.offset === 0}
-                onClick={() => loadPage(Math.max(0, page.offset - PAGE_SIZE))}
-              >
-                Previous rows
-              </button>
-              <button
-                type="button"
-                className={`${BUTTON} min-w-12`}
-                disabled={page.offset + PAGE_SIZE >= page.totalRows}
-                onClick={() => loadPage(page.offset + PAGE_SIZE)}
-              >
-                Next rows
-              </button>
-            </div>
+          {frozen && (
+            <ResultsPanel
+              key={state.identity?.operationId ?? 0}
+              client={client}
+              summary={summary}
+              request={frozen}
+              presentation={presentation}
+              protocolId={metadata.protocolId}
+              stale={currency?.status === "stale"}
+            />
           )}
 
           <div className="space-y-1">
@@ -333,6 +235,10 @@ export function RandomizationRunPanel({
             >
               Download CSV
             </button>
+            <p className="text-sm text-slate-400">
+              The full schedule: all {summary.rowCount} rows in generated order.
+              Filters and sorting above don&apos;t apply to it.
+            </p>
             {!exportDecision.allowed && (
               <p className="text-sm text-slate-400">
                 {exportDecision.code === "EXPLORATION_EXPORT_BLOCKED"

@@ -37,6 +37,8 @@ import {
   type RandomizationOperationIdentity,
   type RandomizationProgressPhase,
   type RandomizationRowPage,
+  type RandomizationViewRequest,
+  type RandomizationViewResult,
 } from "./protocol";
 
 /** Status of the client's current operation. */
@@ -138,6 +140,12 @@ export interface RandomizationClient {
   }): Promise<SimulationOutcome>;
   /** Reads a bounded window of the completed generation. */
   page(offset: number, limit?: number): Promise<RandomizationRowPage>;
+  /**
+   * Reads a filtered, sorted or aggregated view of the completed
+   * generation (#4008). Answers stay bound to the operation that produced
+   * the rows; the caller discards answers to requests it has replaced.
+   */
+  view(request: RandomizationViewRequest): Promise<RandomizationViewResult>;
   /** Cancels the running generation, if any. */
   cancel(): void;
   /**
@@ -170,7 +178,8 @@ interface ActiveOperation {
 
 interface PendingPage {
   readonly identity: RandomizationOperationIdentity;
-  readonly resolve: (page: RandomizationRowPage) => void;
+  readonly expects: "page" | "view";
+  readonly resolve: (value: never) => void;
   readonly reject: (error: RandomizationClientError) => void;
 }
 
@@ -308,8 +317,13 @@ export function createRandomizationClient(
         return;
       }
       pages.delete(response.requestId);
-      if (response.kind === "page") page.resolve(response.page);
-      else if (response.kind === "failed") {
+      if (response.kind === "page" && page.expects === "page") {
+        (page.resolve as (value: RandomizationRowPage) => void)(response.page);
+      } else if (response.kind === "view" && page.expects === "view") {
+        (page.resolve as (value: RandomizationViewResult) => void)(
+          response.result
+        );
+      } else if (response.kind === "failed") {
         page.reject(new RandomizationClientError(response.code));
       } else page.reject(new RandomizationClientError("PROTOCOL_VIOLATION"));
       return;
@@ -591,7 +605,7 @@ export function createRandomizationClient(
       }
       const requestId = nextRequestId++;
       return new Promise<RandomizationRowPage>((resolve, reject) => {
-        pages.set(requestId, { identity, resolve, reject });
+        pages.set(requestId, { identity, expects: "page", resolve, reject });
         try {
           target.send({
             protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
@@ -600,6 +614,35 @@ export function createRandomizationClient(
             identity,
             offset,
             limit: bounded,
+          });
+        } catch {
+          pages.delete(requestId);
+          reject(new RandomizationClientError("POST_MESSAGE_FAILED"));
+        }
+      });
+    },
+
+    view(request) {
+      const identity = state.identity;
+      if (state.status !== "complete" || !identity || !state.summary) {
+        return Promise.reject(
+          new RandomizationClientError("NO_COMPLETED_RESULT")
+        );
+      }
+      const target = transport;
+      if (!target || target.sessionId !== identity.sessionId) {
+        return Promise.reject(new RandomizationClientError("RESULT_RELEASED"));
+      }
+      const requestId = nextRequestId++;
+      return new Promise<RandomizationViewResult>((resolve, reject) => {
+        pages.set(requestId, { identity, expects: "view", resolve, reject });
+        try {
+          target.send({
+            protocolVersion: RANDOMIZATION_PROTOCOL_VERSION,
+            kind: "view",
+            requestId,
+            identity,
+            view: request,
           });
         } catch {
           pages.delete(requestId);

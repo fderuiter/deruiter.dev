@@ -290,12 +290,15 @@ section records the historical outage separately from controls that still
 need verification:
 
 - **Local implementation evidence**: Offline tests check the workflow's job
-  dependencies (`needs:`) and the bash logic of `merge-gate`
-  (`__tests__/ci-execution-policy.test.ts` and
-  `__tests__/ci-gate-ordering.test.ts`). They extract the bash script from
-  `.github/workflows/ci.yml` and run it against simulated events and job
-  results (`pull_request`, `push`, `workflow_dispatch`, `success`, `failure`,
-  `cancelled`, `skipped`).
+  dependencies (`needs:`) and the Merge Gate verdict
+  (`__tests__/ci-execution-policy.test.ts`, `__tests__/ci-run-policy.test.ts`
+  and `__tests__/ci-gate-ordering.test.ts`). Since #3601 the verdict comes
+  from one run-scope table, `MERGE_GATE_JOBS` in `scripts/ci-run-policy.mjs`,
+  which says for each gate job whether it is required, skippable or absent on
+  each event. The tests fail when the `merge-gate` `needs:` list or a job's
+  `if:` drifts from the table, and they run the `--merge-gate` command against
+  simulated events and job results (`pull_request`, `push`,
+  `workflow_dispatch`, `success`, `failure`, `cancelled`, `skipped`).
 - **Server-side protection is verified**: GitHub currently reports this
   repository as public. The `main` ruleset, with Merge Gate as the only
   required check, has governed `main` since 2026-10-20; see

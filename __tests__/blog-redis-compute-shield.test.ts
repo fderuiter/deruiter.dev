@@ -1,7 +1,11 @@
 // @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BlogPostService } from "@/lib/services/blog-service";
+import {
+  FlushBlogReactionsHandler,
+  GetBlogReactionsHandler,
+  SubmitBlogReactionHandler,
+} from "@/lib/services";
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";
 
@@ -140,19 +144,21 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
 
       mockRedisSmembers.mockResolvedValueOnce(["insightful"]);
 
-      const result = await BlogPostService.getReactions(
-        "cdisc-crf-compiler-architecture",
-        "test-conn-hash"
-      );
+      const result = await new GetBlogReactionsHandler().execute({
+        slug: "cdisc-crf-compiler-architecture",
+        connectionHash: "test-conn-hash",
+      });
 
       expect(result.success).toBe(true);
-      expect(result.counts).toEqual({
-        insightful: 8,
-        mind_blowing: 3,
-        actionable: 0,
-        thorough: 1,
-      });
-      expect(result.userReactions).toEqual(["insightful"]);
+      if (result.success) {
+        expect(result.data.counts).toEqual({
+          insightful: 8,
+          mind_blowing: 3,
+          actionable: 0,
+          thorough: 1,
+        });
+        expect(result.data.userReactions).toEqual(["insightful"]);
+      }
 
       expect(prisma.blogPostReaction.groupBy).not.toHaveBeenCalled();
       expect(prisma.blogPostReaction.findMany).not.toHaveBeenCalled();
@@ -164,18 +170,20 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       mockRedisHgetall.mockResolvedValueOnce({});
       mockRedisSmembers.mockResolvedValueOnce([]);
 
-      const result = await BlogPostService.getReactions(
-        "cdisc-crf-compiler-architecture",
-        "conn-123"
-      );
+      const result = await new GetBlogReactionsHandler().execute({
+        slug: "cdisc-crf-compiler-architecture",
+        connectionHash: "conn-123",
+      });
 
       expect(result.success).toBe(true);
-      expect(result.counts).toEqual({
-        insightful: 0,
-        mind_blowing: 0,
-        actionable: 0,
-        thorough: 0,
-      });
+      if (result.success) {
+        expect(result.data.counts).toEqual({
+          insightful: 0,
+          mind_blowing: 0,
+          actionable: 0,
+          thorough: 0,
+        });
+      }
       expect(prisma.blogPostReaction.groupBy).not.toHaveBeenCalled();
       expect(prisma.blogPostReaction.findMany).not.toHaveBeenCalled();
       expect(mockRedisSet).not.toHaveBeenCalled();
@@ -189,18 +197,20 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       mockRedisHgetall.mockResolvedValueOnce({});
       mockRedisSmembers.mockResolvedValueOnce([]);
 
-      const result = await BlogPostService.getReactions(
-        "cdisc-crf-compiler-architecture",
-        "conn-123"
-      );
+      const result = await new GetBlogReactionsHandler().execute({
+        slug: "cdisc-crf-compiler-architecture",
+        connectionHash: "conn-123",
+      });
 
       expect(result.success).toBe(true);
-      expect(result.counts).toEqual({
-        insightful: 0,
-        mind_blowing: 0,
-        actionable: 0,
-        thorough: 0,
-      });
+      if (result.success) {
+        expect(result.data.counts).toEqual({
+          insightful: 0,
+          mind_blowing: 0,
+          actionable: 0,
+          thorough: 0,
+        });
+      }
       expect(prisma.blogPostReaction.groupBy).not.toHaveBeenCalled();
       expect(prisma.blogPostReaction.findMany).not.toHaveBeenCalled();
       expect(mockRedisSet).not.toHaveBeenCalled();
@@ -224,13 +234,11 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       });
       mockRedisHgetall.mockResolvedValueOnce({ insightful: 1 });
 
-      const result = await BlogPostService.submitReaction(
-        {
-          blogPostSlug: "cdisc-crf-compiler-architecture",
-          reactionType: "insightful",
-        },
-        "conn-hash-abc"
-      );
+      const result = await new SubmitBlogReactionHandler().execute({
+        blogPostSlug: "cdisc-crf-compiler-architecture",
+        reactionType: "insightful",
+        connectionHash: "conn-hash-abc",
+      });
 
       expect(result.success).toBe(true);
       expect(mockRedisSadd).toHaveBeenCalledWith(
@@ -275,16 +283,16 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       });
       mockRedisHgetall.mockResolvedValueOnce({});
 
-      const result = await BlogPostService.submitReaction(
-        {
-          blogPostSlug: "cdisc-crf-compiler-architecture",
-          reactionType: "insightful",
-        },
-        "conn-hash-abc"
-      );
+      const result = await new SubmitBlogReactionHandler().execute({
+        blogPostSlug: "cdisc-crf-compiler-architecture",
+        reactionType: "insightful",
+        connectionHash: "conn-hash-abc",
+      });
 
-      expect(result.success).toBe(false);
-      expect((result as any).duplicate).toBe(true);
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "RATE_LIMITED" },
+      });
       expect(mockRedisHincrby).not.toHaveBeenCalled();
       expect(mockRedisRpush).not.toHaveBeenCalled();
       expect(prisma.blogPostReaction.create).not.toHaveBeenCalled();
@@ -301,13 +309,11 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       );
       vi.mocked(prisma.blogPostReaction.findMany).mockResolvedValueOnce([]);
 
-      const result = await BlogPostService.submitReaction(
-        {
-          blogPostSlug: "cdisc-crf-compiler-architecture",
-          reactionType: "insightful",
-        },
-        "hash-nored"
-      );
+      const result = await new SubmitBlogReactionHandler().execute({
+        blogPostSlug: "cdisc-crf-compiler-architecture",
+        reactionType: "insightful",
+        connectionHash: "hash-nored",
+      });
 
       expect(result.success).toBe(true);
       expect(prisma.blogPostReaction.create).toHaveBeenCalled();
@@ -318,7 +324,7 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
     it("skips scheduled drain when Redis is unconfigured", async () => {
       mockRedisConfigured.value = false;
 
-      const result = await BlogPostService.flushBufferedReactionsToDatabase();
+      const result = await new FlushBlogReactionsHandler().execute();
 
       expect(result).toEqual({
         success: true,
@@ -344,7 +350,7 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
         dbError
       );
 
-      const result = await BlogPostService.flushBufferedReactionsToDatabase();
+      const result = await new FlushBlogReactionsHandler().execute();
 
       expect(result).toMatchObject({
         success: false,
@@ -358,7 +364,7 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       const redisError = new Error("Redis connection refused");
       mockRedisLrange.mockRejectedValueOnce(redisError);
 
-      const result = await BlogPostService.flushBufferedReactionsToDatabase();
+      const result = await new FlushBlogReactionsHandler().execute();
 
       expect(result).toMatchObject({
         success: false,
@@ -395,7 +401,9 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
       mockPipelineExec.mockResolvedValueOnce([]); // Ack pipeline
       mockRedisHgetall.mockResolvedValueOnce({}); // Buffer empty
 
-      const result = await BlogPostService.flushBufferedReactionsToDatabase(50);
+      const result = await new FlushBlogReactionsHandler().execute({
+        batchSize: 50,
+      });
 
       expect(result).toEqual({
         success: true,

@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
 import { ProjectImageUploader } from "@/components/admin/ProjectImageUploader";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { ListPublishedCaseStudiesHandler } from "@/lib/services";
 import {
   IconDashboard,
   IconFileText,
@@ -39,7 +39,9 @@ export default async function AdminDashboardPage() {
   }
 
   const { userId, primaryEmail, displayName } = session;
-  const caseStudies = await CaseStudyService.getAllPublishedCaseStudies();
+  const caseStudiesResult =
+    await new ListPublishedCaseStudiesHandler().execute();
+  const caseStudies = caseStudiesResult.success ? caseStudiesResult.data : [];
   const projectOptions = caseStudies.map((cs) => ({
     slug: cs.slug,
     title: cs.title,

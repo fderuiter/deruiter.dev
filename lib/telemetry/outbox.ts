@@ -1,4 +1,3 @@
-import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { apiClient } from "@/lib/api-client";
@@ -186,10 +185,7 @@ export class TelemetryOutbox {
         }
       }
     } catch (err) {
-      logger.warn(
-        "Failed to hydrate telemetry outbox from storage:",
-        sanitizeError(err)
-      );
+      logger.warn("Failed to hydrate telemetry outbox from storage:", err);
     }
   }
 
@@ -206,10 +202,7 @@ export class TelemetryOutbox {
         this.storage.setItem(this.storageKey, JSON.stringify(this.queue));
       }
     } catch (err) {
-      logger.warn(
-        "Failed to persist telemetry outbox to storage:",
-        sanitizeError(err)
-      );
+      logger.warn("Failed to persist telemetry outbox to storage:", err);
     }
   }
 
@@ -288,7 +281,7 @@ export class TelemetryOutbox {
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null;
       this.flush().catch((err) => {
-        logger.warn("Telemetry outbox flush error:", sanitizeError(err));
+        logger.warn("Telemetry outbox flush error:", err);
       });
     }, delay);
   }

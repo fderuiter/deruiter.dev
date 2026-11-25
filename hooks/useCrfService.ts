@@ -13,7 +13,7 @@ import {
   LintFormulaInputSchema,
   LintFormulaResult,
   createFailure,
-} from "@/lib/services";
+} from "@/lib/services/client";
 
 /**
  * Custom React hook providing access to CRF Studio evaluation and linter domain service operations.

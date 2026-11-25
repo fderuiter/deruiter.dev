@@ -69,7 +69,11 @@ vi.mock("@upstash/ratelimit", () => ({
   },
 }));
 
-import { TelemetryService } from "@/lib/services/telemetry-service";
+import {
+  RecordTelemetryEventHandler,
+  RollupAndPruneTelemetryHandler,
+  SyncBufferedEventsHandler,
+} from "@/lib/services";
 
 const PROCESSING_KEY = "telemetry_processing";
 
@@ -104,7 +108,9 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       mockExec.mockResolvedValueOnce([movedByA, null, null]);
       mockCreateMany.mockResolvedValueOnce({ count: 2 });
 
-      const result = await TelemetryService.syncBufferedEvents(3);
+      const result = await new SyncBufferedEventsHandler().execute({
+        batchSize: 3,
+      });
 
       expect(result).toEqual({
         success: true,
@@ -134,7 +140,7 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       mockCreateMany.mockRejectedValueOnce(new Error("Database Write Failed"));
 
       await expect(
-        TelemetryService.syncBufferedEvents(5)
+        new SyncBufferedEventsHandler().execute({ batchSize: 5 })
       ).resolves.toMatchObject({
         success: false,
         error: { code: "PERSISTENCE_FAILED" },
@@ -148,7 +154,9 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       mockLrange.mockResolvedValueOnce([]);
       mockExec.mockResolvedValueOnce([null, null]);
 
-      const result = await TelemetryService.syncBufferedEvents(2);
+      const result = await new SyncBufferedEventsHandler().execute({
+        batchSize: 2,
+      });
 
       expect(result).toEqual({
         success: true,
@@ -162,7 +170,9 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       const redisError = new Error("Redis connection refused");
       mockLrange.mockRejectedValueOnce(redisError);
 
-      const result = await TelemetryService.syncBufferedEvents(5);
+      const result = await new SyncBufferedEventsHandler().execute({
+        batchSize: 5,
+      });
 
       expect(result).toMatchObject({
         success: false,
@@ -184,7 +194,9 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
         .mockRejectedValueOnce(new Error("ack pipeline dropped"));
       mockCreateMany.mockResolvedValueOnce({ count: 1 });
 
-      const result = await TelemetryService.syncBufferedEvents(5);
+      const result = await new SyncBufferedEventsHandler().execute({
+        batchSize: 5,
+      });
 
       expect(result).toMatchObject({
         success: false,
@@ -202,7 +214,7 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       });
 
       await expect(
-        TelemetryService.rollupAndPruneRawEvents(new Date())
+        new RollupAndPruneTelemetryHandler().execute({ before: new Date() })
       ).resolves.toEqual({
         success: true,
         data: { rollupsUpserted: 3, rawEventsDeleted: 40 },
@@ -214,7 +226,7 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       mockTransaction.mockRejectedValueOnce(txError);
 
       await expect(
-        TelemetryService.rollupAndPruneRawEvents(new Date())
+        new RollupAndPruneTelemetryHandler().execute({ before: new Date() })
       ).resolves.toMatchObject({
         success: false,
         error: { code: "RETENTION_FAILED", details: txError },
@@ -226,13 +238,16 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
     it("reports the event as durably buffered when the Redis enqueue succeeds", async () => {
       mockExec.mockResolvedValueOnce([1]);
 
-      const result = await TelemetryService.recordEvent({
+      const result = await new RecordTelemetryEventHandler().execute({
         projectSlug: "/dashboard",
         eventType: "page_view",
       });
 
-      expect(result.buffered).toBe(true);
-      expect(result.event.projectSlug).toBe("/dashboard");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.buffered).toBe(true);
+        expect(result.data.event.projectSlug).toBe("/dashboard");
+      }
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
 
@@ -240,15 +255,18 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       const enqueueError = new Error("Upstash unavailable");
       mockExec.mockRejectedValueOnce(enqueueError);
 
-      const result = await TelemetryService.recordEvent({
+      const result = await new RecordTelemetryEventHandler().execute({
         projectSlug: "/dashboard",
         eventType: "page_view",
       });
 
       // The event is gone: it was never written to Redis and there is no other
       // durable store in front of the sync job. Callers must be able to see it.
-      expect(result.buffered).toBe(false);
-      expect(result.event.projectSlug).toBe("/dashboard");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.buffered).toBe(false);
+        expect(result.data.event.projectSlug).toBe("/dashboard");
+      }
 
       // A dropped event is a reportable production signal, not a debug warning.
       expect(mockCaptureException).toHaveBeenCalledWith(
@@ -261,14 +279,17 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       vi.useFakeTimers();
       try {
         mockExec.mockReturnValueOnce(new Promise(() => {}));
-        const pending = TelemetryService.recordEvent({
+        const pending = new RecordTelemetryEventHandler().execute({
           projectSlug: "/dashboard",
           eventType: "page_view",
         });
         await vi.advanceTimersByTimeAsync(2000);
         const result = await pending;
 
-        expect(result.buffered).toBe(false);
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.buffered).toBe(false);
+        }
         expect(mockCaptureException).not.toHaveBeenCalled();
       } finally {
         vi.useRealTimers();

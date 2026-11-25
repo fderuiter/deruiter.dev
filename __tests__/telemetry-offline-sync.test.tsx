@@ -107,17 +107,29 @@ describe("Telemetry aggregate sync without a database (#903)", () => {
 describe("GET /api/telemetry when the database is unreachable (#903)", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.doMock("@/lib/services/telemetry-service", () => ({
-      TelemetryService: {
-        getAggregateStats: vi
-          .fn()
-          .mockRejectedValue(new Error("connect ECONNREFUSED")),
-      },
-    }));
+    vi.doMock("@/lib/services", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/services")>();
+      return {
+        ...actual,
+        GetTelemetryAggregateStatsHandler: class {
+          async execute() {
+            return {
+              success: false as const,
+              error: {
+                code: "STORAGE_UNAVAILABLE" as const,
+                message: "connect ECONNREFUSED",
+                recoverable: true,
+                details: new Error("connect ECONNREFUSED"),
+              },
+            };
+          }
+        },
+      };
+    });
   });
 
   afterEach(() => {
-    vi.doUnmock("@/lib/services/telemetry-service");
+    vi.doUnmock("@/lib/services");
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });

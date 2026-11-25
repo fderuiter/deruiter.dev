@@ -40,26 +40,41 @@ describe("isBuildPhase", () => {
 
 describe("service fallback logging is gated on runtime, not merely production", () => {
   it("every production log guard in the content services also excludes the build phase", async () => {
-    const { readFileSync } = await import("fs");
+    const { readdirSync, readFileSync, statSync } = await import("fs");
     const { join } = await import("path");
+
+    const collectTsFiles = (dir: string): string[] => {
+      const entries = readdirSync(dir);
+      const out: string[] = [];
+      for (const entry of entries) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          out.push(...collectTsFiles(full));
+        } else if (entry.endsWith(".ts")) {
+          out.push(full);
+        }
+      }
+      return out;
+    };
 
     // Resolved from the workspace root rather than a hardcoded absolute path.
     const root = process.cwd();
-    const services = [
-      "lib/services/blog-service.ts",
-      "lib/services/case-study-service.ts",
-    ];
+    const domainDirs = ["lib/services/blog", "lib/services/case-study"];
 
-    for (const service of services) {
-      const source = readFileSync(join(root, service), "utf-8");
-      const guards = source.match(/env\.VERCEL_ENV === "production"/g) ?? [];
-      const gated =
-        source.match(
-          /env\.VERCEL_ENV === "production" && !isBuildPhase\(\)/g
-        ) ?? [];
+    for (const domainDir of domainDirs) {
+      let domainGuards = 0;
+      for (const file of collectTsFiles(join(root, domainDir))) {
+        const source = readFileSync(file, "utf-8");
+        const guards = source.match(/env\.VERCEL_ENV === "production"/g) ?? [];
+        const gated =
+          source.match(
+            /env\.VERCEL_ENV === "production" && !isBuildPhase\(\)/g
+          ) ?? [];
 
-      expect(guards.length).toBeGreaterThan(0);
-      expect(gated.length).toBe(guards.length);
+        expect(gated.length).toBe(guards.length);
+        domainGuards += guards.length;
+      }
+      expect(domainGuards).toBeGreaterThan(0);
     }
   });
 });

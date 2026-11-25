@@ -17,6 +17,7 @@ vi.mock("@/lib/db", () => ({
     // Leasing is one FOR UPDATE SKIP LOCKED statement (#1116).
     $queryRaw: mockQueryRaw,
     outboundEmailQueue: {
+      findUnique: vi.fn().mockResolvedValue(null),
       create: mockCreate,
       update: mockUpdate,
     },
@@ -35,7 +36,12 @@ vi.mock("resend", () => ({
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import { EmailService } from "@/lib/services/email-service";
+import {
+  EnqueueEmailHandler,
+  ProcessRetryQueueHandler,
+  SendRawEmailHandler,
+  resetResendClient,
+} from "@/lib/services";
 
 const TAGS = [
   { name: "category", value: "contact-inquiry" },
@@ -53,6 +59,7 @@ const BASE_OPTIONS = {
 describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetResendClient();
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.VITEST = "0";
     mockQueryRaw.mockResolvedValue([]);
@@ -65,13 +72,15 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
 
   describe("native JSON tag round trip", () => {
     it("persists structured tags as native JSON, not a stringified scalar", async () => {
-      await EmailService.queueOutboundEmail(BASE_OPTIONS, undefined, "boom");
+      await new EnqueueEmailHandler().execute({
+        options: BASE_OPTIONS,
+        mode: "retry",
+        errorReason: "boom",
+      });
 
       expect(mockCreate).toHaveBeenCalledTimes(1);
       const written = mockCreate.mock.calls[0][0].data;
 
-      // The column is Jsonb. Writing JSON.stringify(...) into it stores a string
-      // scalar, which no longer round trips as an array of tag objects.
       expect(typeof written.tags).not.toBe("string");
       expect(written.tags).toEqual(TAGS);
     });
@@ -94,11 +103,9 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
         },
       ]);
 
-      await EmailService.processRetryQueue();
+      await new ProcessRetryQueueHandler().execute();
 
       expect(mockSend).toHaveBeenCalledTimes(1);
-      // The retry is the send that actually delivers; dropping tags here loses
-      // them for every message that ever needed a retry.
       expect(mockSend.mock.calls[0][0].tags).toEqual(TAGS);
     });
 
@@ -120,7 +127,7 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
         },
       ]);
 
-      await EmailService.processRetryQueue();
+      await new ProcessRetryQueueHandler().execute();
 
       expect(mockSend).toHaveBeenCalledTimes(1);
       expect(mockSend.mock.calls[0][0].tags).toEqual(TAGS);
@@ -144,7 +151,7 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
         },
       ]);
 
-      await EmailService.processRetryQueue();
+      await new ProcessRetryQueueHandler().execute();
 
       expect(mockSend).toHaveBeenCalledTimes(1);
       expect(mockSend.mock.calls[0][0].tags).toBeUndefined();
@@ -152,18 +159,19 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
   });
 
   describe("queue persistence failure", () => {
-    it("reports no queue id when the queue write fails", async () => {
+    it("reports failure when the queue write fails", async () => {
       mockCreate.mockRejectedValueOnce(new Error("connection terminated"));
 
-      const queueId = await EmailService.queueOutboundEmail(
-        BASE_OPTIONS,
-        undefined,
-        "boom"
-      );
+      const result = await new EnqueueEmailHandler().execute({
+        options: BASE_OPTIONS,
+        mode: "retry",
+        errorReason: "boom",
+      });
 
-      // A synthesized `queued_fallback_<timestamp>` id would look to every
-      // caller like a real durable queue entry.
-      expect(queueId).toBeNull();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe("ENQUEUE_FAILED");
+      }
     });
 
     it("does not report a retryable send as queued when nothing was persisted", async () => {
@@ -173,12 +181,13 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
       });
       mockCreate.mockRejectedValueOnce(new Error("connection terminated"));
 
-      const result = await EmailService.sendRawEmail(BASE_OPTIONS);
+      const result = await new SendRawEmailHandler().execute(BASE_OPTIONS);
 
       expect(result.success).toBe(false);
-      expect(result.queued).not.toBe(true);
-      expect(result.queueId).toBeUndefined();
-      expect(result.error).toBeTruthy();
+      if (!result.success) {
+        expect(result.error.code).toBe("STORAGE_UNAVAILABLE");
+        expect(result.error.message).toBeTruthy();
+      }
     });
 
     it("still reports a genuinely persisted retry as queued", async () => {
@@ -188,11 +197,13 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
       });
       mockCreate.mockResolvedValueOnce({ id: "queue-real" });
 
-      const result = await EmailService.sendRawEmail(BASE_OPTIONS);
+      const result = await new SendRawEmailHandler().execute(BASE_OPTIONS);
 
       expect(result.success).toBe(true);
-      expect(result.queued).toBe(true);
-      expect(result.queueId).toBe("queue-real");
+      if (result.success) {
+        expect(result.data.queued).toBe(true);
+        expect(result.data.queueId).toBe("queue-real");
+      }
     });
   });
 });

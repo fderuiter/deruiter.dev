@@ -148,9 +148,9 @@ describe("DX Invariant Doctor Engine", () => {
     it("passes on main at the recorded ceiling", () => {
       const result = checkSetStateInEffectCeiling(process.cwd());
       expect(result.status).toBe("pass");
-      expect(findSetStateInEffectSuppressions(process.cwd()).length).toBeLessThanOrEqual(
-        SET_STATE_IN_EFFECT_CEILING
-      );
+      expect(
+        findSetStateInEffectSuppressions(process.cwd()).length
+      ).toBeLessThanOrEqual(SET_STATE_IN_EFFECT_CEILING);
     });
 
     it("passes at the ceiling and fails one above it", () => {
@@ -997,6 +997,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           `${path.join("lib", "services", "media-storage.ts")}:1`
         ),
       ]);
+    });
+
+    it("rejects throw-free *-service.ts monoliths, unpaired vertical slices, unguarded awaits, and caller sanitizeError in logger calls", () => {
+      const monoDir = path.join(tempDir, "lib", "services");
+      const sliceDir = path.join(monoDir, "demo", "run-op");
+      const routeDir = path.join(tempDir, "app", "api", "demo");
+      fs.mkdirSync(sliceDir, { recursive: true });
+      fs.mkdirSync(routeDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(monoDir, "legacy-service.ts"),
+        'import { createSuccess, type ServiceResult } from "./service-result";\nexport function legacyOp(): ServiceResult<number> { return createSuccess(1); }\n'
+      );
+      fs.writeFileSync(
+        path.join(sliceDir, "handler.ts"),
+        'import { createSuccess, type ServiceResult } from "../../service-result";\nexport class RunOpHandler { async execute(): Promise<ServiceResult<number>> { await Promise.resolve(1); return createSuccess(1); } }\n'
+      );
+      fs.writeFileSync(
+        path.join(routeDir, "route.ts"),
+        'import { logger } from "@/lib/logger";\nimport { sanitizeError } from "@/lib/error-sanitization";\nexport function run(err: unknown) { logger.error("failed", sanitizeError(err)); }\n'
+      );
+
+      const result = checkServiceResultTypes(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("missing spec.ts"),
+          expect.stringContaining(
+            "must implement its *Spec contract interface"
+          ),
+          expect.stringContaining("Unguarded await expression in handler.ts"),
+          expect.stringContaining("Legacy *-service.ts monolith detected"),
+          expect.stringContaining(
+            "Caller-side sanitizeError() passed to logger"
+          ),
+        ])
+      );
     });
 
     it("passes on the repository's own service layer", () => {

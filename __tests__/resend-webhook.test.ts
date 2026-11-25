@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import crypto from "crypto";
 import { POST } from "@/app/api/webhooks/resend/route";
-import { EmailService } from "@/lib/services/email-service";
+import { SendRawEmailHandler, resetResendClient } from "@/lib/services";
 import { NextRequest } from "next/server";
 
 // Mock prisma for suppression list operations
@@ -104,7 +104,7 @@ describe("Resend Webhook Receiver & Suppression Engine (#545)", () => {
     mockSuppressionList.clear();
     upsertFailuresQueued.clear();
     findUniqueShouldFail = false;
-    EmailService.resetClient();
+    resetResendClient();
     vi.clearAllMocks();
   });
 
@@ -256,31 +256,32 @@ describe("Resend Webhook Receiver & Suppression Engine (#545)", () => {
         createdAt: new Date(),
       });
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "blocked@example.com",
         subject: "Test Subject",
         html: "<p>Hello</p>",
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toMatch(/suppress/i);
+      if (!result.success) {
+        expect(result.error.message).toMatch(/suppress/i);
+      }
     });
 
     it("should allow sending to unsuppressed email addresses", async () => {
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "active.user@example.com",
         subject: "Hello Active User",
         html: "<p>Welcome</p>",
       });
 
       expect(result.success).toBe(true);
-      expect(result.error).toBeUndefined();
     });
 
     it("fails closed (never sends) when a suppression-list read fails (#3806)", async () => {
       findUniqueShouldFail = true;
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "unknown.status@example.com",
         subject: "Hello",
         html: "<p>Hi</p>",
@@ -291,8 +292,10 @@ describe("Resend Webhook Receiver & Suppression Engine (#545)", () => {
       // permission, so an outage cannot bypass an unsubscribe, bounce or
       // complaint. Like a failed suppression *write*, it is never swallowed.
       expect(result.success).toBe(false);
-      expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
-      expect(result.retryable).toBe(true);
+      if (!result.success) {
+        expect(result.error.code).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+        expect(result.error.recoverable).toBe(true);
+      }
     });
   });
 

@@ -213,8 +213,9 @@ vi.mock("@/lib/db", () => {
                   d.subscriberId === data.subscriberId
               )
             ) {
-              const err = new Error("Unique constraint failed");
-              (err as unknown as { code: string }).code = "P2002";
+              const err = Object.assign(new Error("Unique constraint failed"), {
+                code: "P2002",
+              });
               throw err;
             }
             const row = {
@@ -243,8 +244,10 @@ vi.mock("@/lib/db", () => {
                   d.subscriberId === item.subscriberId
               );
               if (exists && !skipDuplicates) {
-                const err = new Error("Unique constraint failed");
-                (err as unknown as { code: string }).code = "P2002";
+                const err = Object.assign(
+                  new Error("Unique constraint failed"),
+                  { code: "P2002" }
+                );
                 throw err;
               }
               if (!exists) {
@@ -429,18 +432,28 @@ vi.mock("@/lib/db", () => {
   };
 });
 
-import { EmailService } from "@/lib/services/email-service";
 import { resolveBaseUrl } from "@/lib/domain";
 import {
-  NewsletterService,
+  AuditNullQueueDeliveriesHandler,
+  ConfirmSubscriberHandler,
+  DispatchNewsletterAnnouncementsHandler,
+  EnqueueEmailHandler,
+  GetSuppressedEmailsHandler,
   NEWSLETTER_DISPATCH_CAP,
-} from "@/lib/services/newsletter-service";
+  QueuePostAnnouncementHandler,
+  SendRawEmailHandler,
+  SubscribeNewsletterHandler,
+  UnsubscribeSubscriberHandler,
+  createFailure,
+} from "@/lib/services";
 
 const HOUR = 60 * 60 * 1000;
 
 /** Runs the dispatch phase and unwraps its counts, failing on an error result. */
 async function dispatchCounts(now?: Date) {
-  const result = await NewsletterService.dispatchDue(now);
+  const result = await new DispatchNewsletterAnnouncementsHandler().execute({
+    now,
+  });
   if (!result.success) {
     throw new Error(`Dispatch failed: ${result.error.code}`);
   }
@@ -462,7 +475,7 @@ function confirmed(email: string, confirmedAt: Date): Subscriber {
   return row;
 }
 
-describe("NewsletterService (#841)", () => {
+describe("Newsletter Vertical Slices (#841)", () => {
   let send: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -472,7 +485,7 @@ describe("NewsletterService (#841)", () => {
     db.queue = [];
     db.posts.clear();
     db.suppressed.clear();
-    send = vi.spyOn(EmailService, "sendRawEmail");
+    send = vi.spyOn(SendRawEmailHandler.prototype, "execute");
     vi.spyOn(console, "info").mockImplementation(() => {});
   });
 
@@ -482,9 +495,14 @@ describe("NewsletterService (#841)", () => {
 
   describe("double opt-in signup", () => {
     it("stores a new address as PENDING and emails a confirmation link", async () => {
-      const result = await NewsletterService.subscribe("  Reader@Example.com ");
+      const result = await new SubscribeNewsletterHandler().execute({
+        email: "  Reader@Example.com ",
+      });
 
-      expect(result).toMatchObject({ success: true, confirmationSent: true });
+      expect(result).toMatchObject({
+        success: true,
+        data: { confirmationSent: true },
+      });
       expect(db.subscribers).toHaveLength(1);
       const [row] = db.subscribers;
       expect(row.email).toBe("reader@example.com");
@@ -501,40 +519,55 @@ describe("NewsletterService (#841)", () => {
 
     it("re-sends to a pending address at most once an hour", async () => {
       const t0 = new Date("2026-09-25T00:00:00Z");
-      await NewsletterService.subscribe("reader@example.com", t0);
+      await new SubscribeNewsletterHandler().execute({
+        email: "reader@example.com",
+        now: t0,
+      });
       const firstToken = db.subscribers[0].confirmationToken;
 
-      const again = await NewsletterService.subscribe(
-        "reader@example.com",
-        new Date(t0.getTime() + HOUR / 2)
-      );
-      expect(again).toMatchObject({ success: true, confirmationSent: false });
+      const again = await new SubscribeNewsletterHandler().execute({
+        email: "reader@example.com",
+        now: new Date(t0.getTime() + HOUR / 2),
+      });
+      expect(again).toMatchObject({
+        success: true,
+        data: { confirmationSent: false },
+      });
       expect(send).toHaveBeenCalledOnce();
 
-      await NewsletterService.subscribe(
-        "reader@example.com",
-        new Date(t0.getTime() + HOUR + 1)
-      );
+      await new SubscribeNewsletterHandler().execute({
+        email: "reader@example.com",
+        now: new Date(t0.getTime() + HOUR + 1),
+      });
       expect(send).toHaveBeenCalledTimes(2);
       expect(db.subscribers[0].confirmationToken).not.toBe(firstToken);
     });
 
     it("sends nothing to an address that is already confirmed", async () => {
       confirmed("reader@example.com", new Date());
-      const result = await NewsletterService.subscribe("reader@example.com");
-      expect(result).toMatchObject({ success: true, confirmationSent: false });
+      const result = await new SubscribeNewsletterHandler().execute({
+        email: "reader@example.com",
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: { confirmationSent: false },
+      });
       expect(send).not.toHaveBeenCalled();
     });
 
     it("confirms from the single-use token and then forgets it", async () => {
-      await NewsletterService.subscribe("reader@example.com");
+      await new SubscribeNewsletterHandler().execute({
+        email: "reader@example.com",
+      });
       const token = db.subscribers[0].confirmationToken!;
       send.mockClear();
 
-      expect(await NewsletterService.confirm(token)).toBe("confirmed");
+      expect(await new ConfirmSubscriberHandler().execute({ token })).toEqual({
+        success: true,
+        data: { outcome: "confirmed" },
+      });
       expect(db.subscribers[0].status).toBe("CONFIRMED");
       expect(db.subscribers[0].confirmationToken).toBeNull();
-      // Welcome to the subscriber, carrying one-click unsubscribe headers.
       const welcome = send.mock.calls[0][0] as {
         to: string;
         headers: Record<string, string>;
@@ -544,13 +577,23 @@ describe("NewsletterService (#841)", () => {
         "List-Unsubscribe=One-Click"
       );
 
-      expect(await NewsletterService.confirm(token)).toBe("invalid");
+      expect(
+        await new ConfirmSubscriberHandler().execute({ token })
+      ).toMatchObject({
+        success: false,
+        error: { code: "INVALID_TOKEN" },
+      });
     });
 
     it("rejects an unknown confirmation token", async () => {
-      expect(await NewsletterService.confirm("not-a-real-token-123")).toBe(
-        "invalid"
-      );
+      expect(
+        await new ConfirmSubscriberHandler().execute({
+          token: "not-a-real-token-123",
+        })
+      ).toMatchObject({
+        success: false,
+        error: { code: "INVALID_TOKEN" },
+      });
     });
   });
 
@@ -570,20 +613,35 @@ describe("NewsletterService (#841)", () => {
         queueId: "q_pending",
       });
 
-      expect(await NewsletterService.unsubscribe(sub.unsubscribeToken)).toBe(
-        "unsubscribed"
-      );
+      expect(
+        await new UnsubscribeSubscriberHandler().execute({
+          token: sub.unsubscribeToken,
+        })
+      ).toEqual({
+        success: true,
+        data: { outcome: "unsubscribed" },
+      });
       expect(sub.status).toBe("UNSUBSCRIBED");
       expect(db.queue[0]).toMatchObject({
         status: "FAILED",
         lastError: "Recipient unsubscribed",
       });
-      expect(await NewsletterService.unsubscribe(sub.unsubscribeToken)).toBe(
-        "already_unsubscribed"
-      );
-      expect(await NewsletterService.unsubscribe("unknown-token-12345")).toBe(
-        "invalid"
-      );
+      expect(
+        await new UnsubscribeSubscriberHandler().execute({
+          token: sub.unsubscribeToken,
+        })
+      ).toEqual({
+        success: true,
+        data: { outcome: "already_unsubscribed" },
+      });
+      expect(
+        await new UnsubscribeSubscriberHandler().execute({
+          token: "unknown-token-12345",
+        })
+      ).toMatchObject({
+        success: false,
+        error: { code: "INVALID_TOKEN" },
+      });
     });
   });
 
@@ -602,8 +660,7 @@ describe("NewsletterService (#841)", () => {
       const early = confirmed("early@example.com", new Date(0));
       confirmed("bounced@example.com", new Date(0));
       db.suppressed.add("bounced@example.com");
-      await NewsletterService.queuePostAnnouncement("p1");
-      // Confirmed after the post was queued: not a recipient of this post.
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
       confirmed("late@example.com", new Date(Date.now() + HOUR));
       db.subscribers.push({
         ...early,
@@ -629,8 +686,7 @@ describe("NewsletterService (#841)", () => {
       });
       expect(send).not.toHaveBeenCalled();
 
-      // A replayed run sends nothing twice.
-      await NewsletterService.queuePostAnnouncement("p1");
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
       const again = await dispatchCounts();
       expect(again.queued).toBe(0);
       expect(db.queue).toHaveLength(1);
@@ -642,7 +698,7 @@ describe("NewsletterService (#841)", () => {
       }
       for (const post of ["p1", "p2", "p3"]) {
         publishPost(post);
-        await NewsletterService.queuePostAnnouncement(post);
+        await new QueuePostAnnouncementHandler().execute({ blogPostId: post });
       }
 
       const first = await dispatchCounts();
@@ -664,10 +720,9 @@ describe("NewsletterService (#841)", () => {
         });
       }
       publishPost("p1");
-      await NewsletterService.queuePostAnnouncement("p1");
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
       const counts = await dispatchCounts();
-      // Batch of 15 minus 10 already waiting leaves 5.
       expect(counts.capacity).toBe(5);
       expect(counts.queued).toBe(5);
     });
@@ -700,10 +755,13 @@ describe("NewsletterService (#841)", () => {
     it("returns ENQUEUE_FAILED and releases the claim when the outbound queue write fails (#1532)", async () => {
       publishPost("p1");
       confirmed("reader@example.com", new Date(0));
-      await NewsletterService.queuePostAnnouncement("p1");
-      vi.spyOn(EmailService, "enqueueEmail").mockResolvedValueOnce(null);
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
+      vi.spyOn(EnqueueEmailHandler.prototype, "execute").mockResolvedValueOnce(
+        createFailure("ENQUEUE_FAILED", "db down")
+      );
 
-      const result = await NewsletterService.dispatchDue();
+      const result =
+        await new DispatchNewsletterAnnouncementsHandler().execute();
 
       expect(result).toMatchObject({
         success: false,
@@ -712,7 +770,6 @@ describe("NewsletterService (#841)", () => {
           message: "Could not enqueue a newsletter dispatch email",
         },
       });
-      // The claim is released so the next run retries this recipient.
       expect(db.deliveries).toHaveLength(0);
       expect(db.dispatches[0].completedAt ?? null).toBeNull();
 
@@ -725,7 +782,9 @@ describe("NewsletterService (#841)", () => {
       const dbError = new Error("Neon compute suspended");
       vi.spyOn(prisma.blogPost, "findMany").mockRejectedValueOnce(dbError);
 
-      await expect(NewsletterService.dispatchDue()).resolves.toMatchObject({
+      await expect(
+        new DispatchNewsletterAnnouncementsHandler().execute()
+      ).resolves.toMatchObject({
         success: false,
         error: { code: "DISPATCH_FAILED", details: dbError },
       });
@@ -734,7 +793,7 @@ describe("NewsletterService (#841)", () => {
     it("closes a dispatch whose post was unpublished without sending", async () => {
       confirmed("reader@example.com", new Date(0));
       publishPost("p1", false);
-      await NewsletterService.queuePostAnnouncement("p1");
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
       const counts = await dispatchCounts();
       expect(counts).toMatchObject({ queued: 0, completedDispatches: 1 });
@@ -748,19 +807,22 @@ describe("NewsletterService (#841)", () => {
       confirmed("user3@example.com", new Date(0));
       db.suppressed.add("user2@example.com");
 
-      const getSuppressedSpy = vi.spyOn(EmailService, "getSuppressedEmails");
-      await NewsletterService.queuePostAnnouncement("p1");
+      const getSuppressedSpy = vi.spyOn(
+        GetSuppressedEmailsHandler.prototype,
+        "execute"
+      );
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
       const counts = await dispatchCounts();
 
       expect(getSuppressedSpy).toHaveBeenCalledTimes(1);
-      expect(getSuppressedSpy).toHaveBeenCalledWith(
-        expect.arrayContaining([
+      expect(getSuppressedSpy).toHaveBeenCalledWith({
+        emails: expect.arrayContaining([
           "user1@example.com",
           "user2@example.com",
           "user3@example.com",
-        ])
-      );
+        ]),
+      });
 
       expect(counts).toMatchObject({
         queued: 2,
@@ -786,7 +848,7 @@ describe("NewsletterService (#841)", () => {
       confirmed("all2@example.com", new Date(0));
       db.suppressed.add("all1@example.com");
       db.suppressed.add("all2@example.com");
-      await NewsletterService.queuePostAnnouncement("p1");
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
       const counts = await dispatchCounts();
 
@@ -803,13 +865,20 @@ describe("NewsletterService (#841)", () => {
     it("ends run with typed DISPATCH_FAILED when suppression lookup fails without claiming or queueing (#3806)", async () => {
       publishPost("p1");
       confirmed("reader@example.com", new Date(0));
-      await NewsletterService.queuePostAnnouncement("p1");
+      await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
-      vi.spyOn(EmailService, "getSuppressedEmails").mockRejectedValueOnce(
-        new Error("Suppression DB connection lost")
+      vi.spyOn(
+        GetSuppressedEmailsHandler.prototype,
+        "execute"
+      ).mockResolvedValueOnce(
+        createFailure(
+          "SUPPRESSION_LOOKUP_FAILED",
+          "Suppression DB connection lost"
+        )
       );
 
-      const result = await NewsletterService.dispatchDue();
+      const result =
+        await new DispatchNewsletterAnnouncementsHandler().execute();
 
       expect(result).toMatchObject({
         success: false,
@@ -819,7 +888,6 @@ describe("NewsletterService (#841)", () => {
         },
       });
 
-      // No recipient claimed or queued
       expect(db.deliveries).toHaveLength(0);
       expect(db.queue).toHaveLength(0);
       expect(db.dispatches[0].completedAt ?? null).toBeNull();
@@ -829,14 +897,15 @@ describe("NewsletterService (#841)", () => {
       it("Boundary 1 (before claim): rollback when delivery claim creation fails", async () => {
         publishPost("p1");
         confirmed("reader@example.com", new Date(0));
-        await NewsletterService.queuePostAnnouncement("p1");
+        await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
         const { prisma } = await import("@/lib/db");
         vi.spyOn(prisma.newsletterDelivery, "create").mockRejectedValueOnce(
           new Error("Claim insert failed: connection reset")
         );
 
-        const result = await NewsletterService.dispatchDue();
+        const result =
+          await new DispatchNewsletterAnnouncementsHandler().execute();
 
         expect(result).toMatchObject({
           success: false,
@@ -849,7 +918,6 @@ describe("NewsletterService (#841)", () => {
         expect(db.queue).toHaveLength(0);
         expect(db.dispatches[0].completedAt ?? null).toBeNull();
 
-        // Rerun succeeds cleanly
         const retryCounts = await dispatchCounts();
         expect(retryCounts.queued).toBe(1);
         expect(db.deliveries).toHaveLength(1);
@@ -859,14 +927,15 @@ describe("NewsletterService (#841)", () => {
       it("Boundary 2 (after claim, during enqueue): rollback when enqueue fails", async () => {
         publishPost("p1");
         confirmed("reader@example.com", new Date(0));
-        await NewsletterService.queuePostAnnouncement("p1");
+        await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
         const { prisma } = await import("@/lib/db");
         vi.spyOn(prisma.outboundEmailQueue, "create").mockRejectedValueOnce(
           new Error("Queue disk full")
         );
 
-        const result = await NewsletterService.dispatchDue();
+        const result =
+          await new DispatchNewsletterAnnouncementsHandler().execute();
 
         expect(result).toMatchObject({
           success: false,
@@ -875,12 +944,10 @@ describe("NewsletterService (#841)", () => {
             message: "Could not enqueue a newsletter dispatch email",
           },
         });
-        // Delivery claim is atomically rolled back; no orphan delivery remains
         expect(db.deliveries).toHaveLength(0);
         expect(db.queue).toHaveLength(0);
         expect(db.dispatches[0].completedAt ?? null).toBeNull();
 
-        // Rerun succeeds cleanly
         const retryCounts = await dispatchCounts();
         expect(retryCounts.queued).toBe(1);
         expect(db.deliveries).toHaveLength(1);
@@ -890,14 +957,15 @@ describe("NewsletterService (#841)", () => {
       it("Boundary 3 (after outbound insert, before link): rollback when link update fails", async () => {
         publishPost("p1");
         confirmed("reader@example.com", new Date(0));
-        await NewsletterService.queuePostAnnouncement("p1");
+        await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
         const { prisma } = await import("@/lib/db");
         vi.spyOn(prisma.newsletterDelivery, "update").mockRejectedValueOnce(
           new Error("Lock timeout on delivery link update")
         );
 
-        const result = await NewsletterService.dispatchDue();
+        const result =
+          await new DispatchNewsletterAnnouncementsHandler().execute();
 
         expect(result).toMatchObject({
           success: false,
@@ -906,12 +974,10 @@ describe("NewsletterService (#841)", () => {
             message: "Lock timeout on delivery link update",
           },
         });
-        // Both delivery and queue row are rolled back atomically
         expect(db.deliveries).toHaveLength(0);
         expect(db.queue).toHaveLength(0);
         expect(db.dispatches[0].completedAt ?? null).toBeNull();
 
-        // Rerun succeeds cleanly
         const retryCounts = await dispatchCounts();
         expect(retryCounts.queued).toBe(1);
         expect(db.deliveries).toHaveLength(1);
@@ -923,35 +989,34 @@ describe("NewsletterService (#841)", () => {
         confirmed("dup1@example.com", new Date(0));
         confirmed("suppressed@example.com", new Date(0));
         db.suppressed.add("suppressed@example.com");
-        await NewsletterService.queuePostAnnouncement("p1");
+        await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
         const firstRun = await dispatchCounts();
         expect(firstRun.queued).toBe(1);
         expect(firstRun.skippedSuppressed).toBe(1);
         expect(firstRun.completedDispatches).toBe(1);
 
-        // Replay: dispatchDue on completed dispatch
         const replayedRun = await dispatchCounts();
         expect(replayedRun.queued).toBe(0);
         expect(replayedRun.skippedSuppressed).toBe(0);
         expect(db.queue).toHaveLength(1);
         expect(db.deliveries).toHaveLength(2);
 
-        // Simulated concurrent run hitting unique constraint on claim (Prisma P2002):
-        // Returns DISPATCH_FAILED instead of throwing across service boundary
         confirmed("concurrent@example.com", new Date(0));
         const { prisma } = await import("@/lib/db");
-        const uniqueErr = new Error(
-          "Unique constraint failed on the fields: (`dispatchId`,`subscriberId`)"
+        const uniqueErr = Object.assign(
+          new Error(
+            "Unique constraint failed on the fields: (`dispatchId`,`subscriberId`)"
+          ),
+          { code: "P2002" }
         );
-        (uniqueErr as unknown as { code: string }).code = "P2002";
         vi.spyOn(prisma.newsletterDelivery, "create").mockRejectedValueOnce(
           uniqueErr
         );
 
-        // Reopen dispatch to simulate concurrent run
         db.dispatches[0].completedAt = null;
-        const concurrentResult = await NewsletterService.dispatchDue();
+        const concurrentResult =
+          await new DispatchNewsletterAnnouncementsHandler().execute();
         expect(concurrentResult).toMatchObject({
           success: false,
           error: {
@@ -965,9 +1030,8 @@ describe("NewsletterService (#841)", () => {
       it("cancels queued email when an unsubscribe races the dispatch", async () => {
         publishPost("p1");
         const subscriber = confirmed("racing@example.com", new Date(0));
-        await NewsletterService.queuePostAnnouncement("p1");
+        await new QueuePostAnnouncementHandler().execute({ blogPostId: "p1" });
 
-        // Dispatch runs and enqueues the announcement inside atomic transaction
         const counts = await dispatchCounts();
         expect(counts.queued).toBe(1);
         expect(db.deliveries).toHaveLength(1);
@@ -975,19 +1039,20 @@ describe("NewsletterService (#841)", () => {
         expect(queueId).not.toBeNull();
         expect(db.queue[0].status).toBe("PENDING");
 
-        // Unsubscribe races immediately after dispatch
-        const unsubResult = await NewsletterService.unsubscribe(
-          subscriber.unsubscribeToken
-        );
-        expect(unsubResult).toBe("unsubscribed");
+        const unsubResult = await new UnsubscribeSubscriberHandler().execute({
+          token: subscriber.unsubscribeToken,
+        });
+        expect(unsubResult).toEqual({
+          success: true,
+          data: { outcome: "unsubscribed" },
+        });
 
-        // The queued email has been canceled so it is never sent
         expect(db.queue[0].status).toBe("FAILED");
         expect(db.queue[0].lastError).toBe("Recipient unsubscribed");
       });
     });
 
-    describe("auditNullQueueDeliveries (#3801 Step 3)", () => {
+    describe("AuditNullQueueDeliveriesHandler (#3801 Step 3)", () => {
       it("distinguishes intentional skips from orphaned claims without mutating database", async () => {
         publishPost("p1");
         const dsp = db.dispatches[0] ?? { id: "dsp_1" };
@@ -998,7 +1063,6 @@ describe("NewsletterService (#841)", () => {
 
         db.suppressed.add("suppressed@example.com");
 
-        // 1. Intentional skip: queueId is null, email is in suppressionList
         db.deliveries.push({
           id: "dlv_skip",
           dispatchId: dsp.id,
@@ -1006,7 +1070,6 @@ describe("NewsletterService (#841)", () => {
           queueId: null,
         });
 
-        // 2. Orphaned claim: queueId is null, email is NOT in suppressionList
         db.deliveries.push({
           id: "dlv_orphan",
           dispatchId: dsp.id,
@@ -1014,7 +1077,6 @@ describe("NewsletterService (#841)", () => {
           queueId: null,
         });
 
-        // 3. Normal linked delivery: queueId is present
         db.deliveries.push({
           id: "dlv_linked",
           dispatchId: dsp.id,
@@ -1022,7 +1084,7 @@ describe("NewsletterService (#841)", () => {
           queueId: "q_1",
         });
 
-        const audit = await NewsletterService.auditNullQueueDeliveries();
+        const audit = await new AuditNullQueueDeliveriesHandler().execute();
 
         expect(audit.success).toBe(true);
         if (audit.success) {
@@ -1044,8 +1106,7 @@ describe("NewsletterService (#841)", () => {
           });
         }
 
-        // Paged invocation: supports take/skip bounds
-        const pagedAudit = await NewsletterService.auditNullQueueDeliveries({
+        const pagedAudit = await new AuditNullQueueDeliveriesHandler().execute({
           page: 2,
           pageSize: 1,
         });
@@ -1060,7 +1121,6 @@ describe("NewsletterService (#841)", () => {
           ).toBe(1);
         }
 
-        // Database remains unmutated
         expect(db.deliveries).toHaveLength(3);
         expect(
           db.deliveries.find((d) => d.id === "dlv_orphan")?.queueId

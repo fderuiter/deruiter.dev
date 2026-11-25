@@ -59,11 +59,11 @@ async function loadProductionRuntime() {
   vi.stubEnv("PLAYWRIGHT_TEST", "");
   vi.stubEnv("NEXT_PHASE", "");
   vi.stubEnv("VERCEL_ENV", "production");
+  const services = await import("@/lib/services");
   return {
-    BlogPostService: (await import("@/lib/services/blog-service"))
-      .BlogPostService,
-    CaseStudyService: (await import("@/lib/services/case-study-service"))
-      .CaseStudyService,
+    GetPublishedBlogPostHandler: services.GetPublishedBlogPostHandler,
+    GetBlogReactionsHandler: services.GetBlogReactionsHandler,
+    GetCaseStudyBySlugHandler: services.GetCaseStudyBySlugHandler,
   };
 }
 
@@ -105,16 +105,18 @@ describe("Redis read timeouts on the public read paths", () => {
   });
 
   it("serves a blog post from the database and keeps the timeout out of Sentry", async () => {
-    const { BlogPostService } = await loadProductionRuntime();
+    const { GetPublishedBlogPostHandler } = await loadProductionRuntime();
     m.redis.get.mockReturnValueOnce(never());
     m.prisma.blogPost.findUnique.mockResolvedValueOnce(blogRow);
     m.redis.set.mockResolvedValue("OK");
 
-    const pending = BlogPostService.getBlogPostBySlug(blogRow.slug);
+    const pending = new GetPublishedBlogPostHandler().execute({
+      slug: blogRow.slug,
+    });
     await vi.advanceTimersByTimeAsync(1500);
-    const post = await pending;
+    const result = await pending;
 
-    expect(post?.slug).toBe(blogRow.slug);
+    expect(result.success && result.data?.slug).toBe(blogRow.slug);
     expect(m.prisma.blogPost.findUnique).toHaveBeenCalled();
     expect(m.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("Redis cache read failed"),
@@ -124,12 +126,12 @@ describe("Redis read timeouts on the public read paths", () => {
   });
 
   it("still reports a blog cache read that fails for another reason", async () => {
-    const { BlogPostService } = await loadProductionRuntime();
+    const { GetPublishedBlogPostHandler } = await loadProductionRuntime();
     m.redis.get.mockRejectedValueOnce(new Error("Upstash unreachable"));
     m.prisma.blogPost.findUnique.mockResolvedValueOnce(blogRow);
     m.redis.set.mockResolvedValue("OK");
 
-    await BlogPostService.getBlogPostBySlug(blogRow.slug);
+    await new GetPublishedBlogPostHandler().execute({ slug: blogRow.slug });
 
     expect(m.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("Redis cache read failed"),
@@ -138,34 +140,39 @@ describe("Redis read timeouts on the public read paths", () => {
   });
 
   it("returns default reaction counts and keeps the timeout out of Sentry", async () => {
-    const { BlogPostService } = await loadProductionRuntime();
+    const { GetBlogReactionsHandler } = await loadProductionRuntime();
     m.redis.get.mockResolvedValueOnce(null);
     m.redis.hgetall.mockReturnValueOnce(never());
     m.redis.smembers.mockReturnValueOnce(never());
 
-    const pending = BlogPostService.getReactions(blogRow.slug, "visitor");
+    const pending = new GetBlogReactionsHandler().execute({
+      slug: blogRow.slug,
+      connectionHash: "visitor",
+    });
     await vi.advanceTimersByTimeAsync(1500);
     const result = await pending;
 
     expect(result.success).toBe(true);
     expect(m.logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining("getReactions: Redis path failed"),
+      expect.stringContaining("Redis path failed"),
       timedOut,
       { skipTelemetry: true }
     );
   });
 
   it("serves a case study past a timed-out cache read and keeps it out of Sentry", async () => {
-    const { CaseStudyService } = await loadProductionRuntime();
+    const { GetCaseStudyBySlugHandler } = await loadProductionRuntime();
     const known = FALLBACK_CASE_STUDIES[0];
     m.redis.get.mockReturnValueOnce(never());
     m.prisma.caseStudy.findUnique.mockResolvedValueOnce(null);
 
-    const pending = CaseStudyService.getCaseStudyBySlug(known.slug);
+    const pending = new GetCaseStudyBySlugHandler().execute({
+      slug: known.slug,
+    });
     await vi.advanceTimersByTimeAsync(1500);
-    const study = await pending;
+    const result = await pending;
 
-    expect(study?.slug).toBe(known.slug);
+    expect(result.success && result.data?.slug).toBe(known.slug);
     expect(m.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("Redis cache read failed"),
       timedOut,

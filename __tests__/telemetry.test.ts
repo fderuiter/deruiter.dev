@@ -72,7 +72,7 @@ vi.mock("@upstash/ratelimit", () => {
 import { POST, GET } from "@/app/api/telemetry/route";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { _testCache } from "@/lib/services/telemetry-service";
+import { _testCache } from "@/lib/services";
 
 describe("Telemetry API Route - Route Error Telemetry", () => {
   beforeEach(() => {

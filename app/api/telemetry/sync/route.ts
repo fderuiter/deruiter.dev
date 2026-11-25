@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { validateRouteInitialization } from "@/lib/security";
 import { SyncParamsSchema } from "@/lib/schemas";
-import { MaintenanceService } from "@/lib/services/maintenance-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
+import { RunMaintenancePipelineHandler } from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -28,9 +32,14 @@ export const GET = createApiHandler(
         );
       }
 
-      const summary = await MaintenanceService.run({
+      const pipelineResult = await new RunMaintenancePipelineHandler().execute({
         batchSize: parsedQuery.data.batch,
       });
+      if (!pipelineResult.success) {
+        return serviceFailureResponse(pipelineResult);
+      }
+
+      const summary = pipelineResult.data;
       const telemetry = summary.phases.telemetry;
 
       if (telemetry.status !== "completed") {

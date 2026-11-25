@@ -214,6 +214,7 @@ describe("CI Execution Policy", () => {
         "npm run lint:docs",
         "npm run typecheck",
         "npm run lint",
+        "npm run format:check",
         "npm run verify -- --skip-benchmark-evidence",
       ]) {
         expect(block, command).toContain(command);
@@ -248,11 +249,16 @@ describe("CI Execution Policy", () => {
       ).toBe(true);
     });
 
-    it("keeps lint incremental only through a content-keyed cache", () => {
+    it("keeps lint and format incremental only through a content-keyed cache", () => {
       const block = jobBlock("static-gate");
       expect(block).not.toContain("tsconfig.tsbuildinfo");
+      expect(block).toContain(".eslintcache");
+      expect(block).toContain(".prettiercache");
       expect(block).toContain(
         "npm run lint -- --cache --cache-strategy content --cache-location .eslintcache"
+      );
+      expect(block).toContain(
+        "npm run format:check -- --cache --cache-location .prettiercache"
       );
       expect(block).toMatch(
         /key: static-incremental-\$\{\{ hashFiles\('package-lock\.json'\) \}\}-\$\{\{ github\.sha \}\}/

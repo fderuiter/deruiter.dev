@@ -196,15 +196,16 @@ jobs:
       - name: Lint Documentation
         run: npm run lint:docs
 
-      # ESLint's cache uses the content strategy, so a restored entry only
-      # skips work on files whose bytes are unchanged; it can never hide a new
-      # error. The config here is not type-aware, so a file's lint result
-      # depends on that file alone.
-      - name: Cache ESLint Incremental State
+      # ESLint and Prettier caches only skip work on files whose inputs are
+      # unchanged; they can never hide a new lint or formatting error. The
+      # ESLint config here is not type-aware, so each file's result depends on
+      # that file alone.
+      - name: Cache ESLint & Prettier Incremental State
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .eslintcache
+            .prettiercache
           key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             static-incremental-${{ hashFiles('package-lock.json') }}-
@@ -222,6 +223,7 @@ jobs:
         run: |
           npm run typecheck:budget
           npm run lint -- --cache --cache-strategy content --cache-location .eslintcache
+          npm run format:check -- --cache --cache-location .prettiercache
 
       # The full `npm run verify` runs in heavy-gate-report, after the bench
       # writes its evidence. This early pass runs every other invariant on

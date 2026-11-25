@@ -62,63 +62,67 @@ export function ReportCatalog({
 
   return (
     <section aria-label="Report catalog" className="@container min-w-0">
-      <form
-        role="search"
-        className="flex flex-wrap items-end gap-4 border-b border-white/[0.08] pb-4"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <div className="min-w-0 grow basis-56">
-          <label htmlFor={searchId} className="block text-xs text-slate-400">
-            Search reports
-          </label>
-          <input
-            id={searchId}
-            type="search"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            aria-controls={resultsId}
-            className="mt-1 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-            placeholder="Title, metric, owner"
-          />
-        </div>
-        <fieldset className="min-w-0">
-          <legend className="text-xs text-slate-400">Tier</legend>
-          <div className="mt-1 flex flex-wrap gap-3">
-            {TIERS.map((tier) => (
-              <label
-                key={tier}
-                className="flex min-h-11 items-center gap-2 text-sm text-slate-200"
-              >
-                <input
-                  type="checkbox"
-                  checked={tiers.includes(tier)}
-                  onChange={() => toggleTier(tier)}
-                  className="h-4 w-4 accent-amber-500"
-                />
-                {REPORT_TIERS[tier].label}
-              </label>
-            ))}
+      <search>
+        <form
+          className="flex flex-wrap items-end gap-4 border-b border-white/[0.08] pb-4"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <div className="min-w-0 grow basis-56">
+            <label htmlFor={searchId} className="block text-xs text-slate-400">
+              Search reports
+            </label>
+            <input
+              id={searchId}
+              type="search"
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              aria-controls={resultsId}
+              className="mt-1 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              placeholder="Title, metric, owner"
+            />
           </div>
-        </fieldset>
-        <div className="min-w-0">
-          <label htmlFor={audienceId} className="block text-xs text-slate-400">
-            Audience
-          </label>
-          <select
-            id={audienceId}
-            value={audience}
-            onChange={(event) => setAudience(event.target.value)}
-            className="mt-1 min-h-11 border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-          >
-            <option value="">Every audience</option>
-            {audiences.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
-      </form>
+          <fieldset className="min-w-0">
+            <legend className="text-xs text-slate-400">Tier</legend>
+            <div className="mt-1 flex flex-wrap gap-3">
+              {TIERS.map((tier) => (
+                <label
+                  key={tier}
+                  className="flex min-h-11 items-center gap-2 text-sm text-slate-200"
+                >
+                  <input
+                    type="checkbox"
+                    checked={tiers.includes(tier)}
+                    onChange={() => toggleTier(tier)}
+                    className="h-4 w-4 accent-amber-500"
+                  />
+                  {REPORT_TIERS[tier].label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="min-w-0">
+            <label
+              htmlFor={audienceId}
+              className="block text-xs text-slate-400"
+            >
+              Audience
+            </label>
+            <select
+              id={audienceId}
+              value={audience}
+              onChange={(event) => setAudience(event.target.value)}
+              className="mt-1 min-h-11 border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            >
+              <option value="">Every audience</option>
+              {audiences.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+        </form>
+      </search>
 
       <p className="mt-4 text-xs text-slate-400" aria-live="polite">
         {shown.length === entries.length

@@ -9,9 +9,11 @@ import {
   HUMAN_BRANCH_PREFIXES,
   arcadeDeviceGrep,
   computeRunPolicy,
+  evaluateMergeGate,
   formatOutputs,
   isBotBranch,
   isNonCodePath,
+  MERGE_GATE_JOBS,
   readLiveDraft,
 } from "../scripts/ci-run-policy.mjs";
 import { validateBranchName } from "../lib/dx/git-guard";
@@ -232,13 +234,17 @@ describe("CI run policy (#1773)", () => {
     });
 
     it("names the same promotion label in Merge Gate's failure message", () => {
-      const ci = fs.readFileSync(
-        path.join(process.cwd(), ".github/workflows/ci.yml"),
-        "utf8"
+      // #3601: Merge Gate's message now comes from evaluateMergeGate().
+      const verdict = evaluateMergeGate({
+        eventName: "pull_request",
+        needs: {
+          changes: { result: "success", outputs: { bot_pr: "true" } },
+        },
+      });
+      expect(verdict.lines).toContain(
+        "::error::bot PR: full suite runs when marked ready (a maintainer applies the 'ci:full' label)."
       );
-      expect(ci).toContain(
-        `bot PR: full suite runs when marked ready (a maintainer applies the '${FULL_SUITE_LABEL}' label)`
-      );
+      expect(FULL_SUITE_LABEL).toBe("ci:full");
     });
   });
 
@@ -548,4 +554,175 @@ describe("CI run policy (#1773)", () => {
       ).toBe(true);
     });
   });
+});
+
+/**
+ * #3601: Merge Gate reads the run-scope table instead of restating it in
+ * shell. These cases drive `evaluateMergeGate()` with the `needs` object
+ * GitHub passes it (`toJSON(needs)`), job by job.
+ */
+describe("Merge Gate verdict from the run-scope table (#3601)", () => {
+  const ALWAYS = ["changes", "static-gate", "security-gate"];
+  const UNIT = ["unit-gate", "unit-coverage", "mutation-gate"];
+  const BROWSER = [
+    "build",
+    "heavy-gate",
+    "bench-gate",
+    "heavy-gate-report",
+    "device-gate",
+  ];
+  const ALL = [...ALWAYS, ...UNIT, ...BROWSER];
+
+  const needsFor = (
+    results: Record<string, string>,
+    outputs: Record<string, string> = {}
+  ) =>
+    Object.fromEntries(
+      ALL.map((job) => [
+        job,
+        {
+          result: results[job] ?? "success",
+          outputs: job === "changes" ? outputs : {},
+        },
+      ])
+    );
+  const CODE_PR = {
+    app_changed: "true",
+    draft: "false",
+    bot_pr: "false",
+    promoted: "false",
+  };
+  const DOCS_PR = { ...CODE_PR, app_changed: "false" };
+  const skipped = (jobs: string[]) =>
+    Object.fromEntries(jobs.map((job) => [job, "skipped"]));
+
+  it("covers exactly the eleven gate jobs, once each", () => {
+    const jobs = MERGE_GATE_JOBS.map((row) => row.job);
+    expect(new Set(jobs).size).toBe(jobs.length);
+    expect([...jobs].sort()).toEqual([...ALL].sort());
+  });
+
+  it("passes a ready code PR whose every gate succeeded", () => {
+    const verdict = evaluateMergeGate({
+      eventName: "pull_request",
+      needs: needsFor({}, CODE_PR),
+    });
+    expect(verdict.passed).toBe(true);
+    expect(verdict.lines.some((line) => line.startsWith("::error::"))).toBe(
+      false
+    );
+  });
+
+  it.each(
+    ALL.flatMap((job) =>
+      ["failure", "cancelled", "skipped"].map((r) => [job, r])
+    )
+  )("fails a code PR when %s reports %s", (job, result) => {
+    const verdict = evaluateMergeGate({
+      eventName: "pull_request",
+      needs: needsFor({ [job]: result }, CODE_PR),
+    });
+    expect(verdict.passed).toBe(false);
+    expect(verdict.lines).toContain(
+      `::error::Required job '${job}' did not succeed (result: ${result})`
+    );
+  });
+
+  it("fails closed when a gate is missing from needs", () => {
+    const needs = needsFor({}, CODE_PR);
+    delete (needs as Record<string, unknown>)["device-gate"];
+    const verdict = evaluateMergeGate({ eventName: "pull_request", needs });
+    expect(verdict.passed).toBe(false);
+    expect(verdict.lines).toContain(
+      "::error::Required job 'device-gate' did not succeed (result: missing)"
+    );
+  });
+
+  it("accepts skipped browser gates on a docs-only PR, and nothing else", () => {
+    expect(
+      evaluateMergeGate({
+        eventName: "pull_request",
+        needs: needsFor(skipped(BROWSER), DOCS_PR),
+      }).passed
+    ).toBe(true);
+    expect(
+      evaluateMergeGate({
+        eventName: "pull_request",
+        needs: needsFor({ ...skipped(BROWSER), build: "failure" }, DOCS_PR),
+      }).passed
+    ).toBe(false);
+    expect(
+      evaluateMergeGate({
+        eventName: "pull_request",
+        needs: needsFor(
+          { ...skipped(BROWSER), "unit-gate": "skipped" },
+          DOCS_PR
+        ),
+      }).passed
+    ).toBe(false);
+  });
+
+  it("does not trust a docs-only output from a changes job that failed", () => {
+    expect(
+      evaluateMergeGate({
+        eventName: "pull_request",
+        needs: needsFor({ ...skipped(BROWSER), changes: "failure" }, DOCS_PR),
+      }).passed
+    ).toBe(false);
+  });
+
+  it("fails a draft even when every gate succeeded", () => {
+    const verdict = evaluateMergeGate({
+      eventName: "pull_request",
+      needs: needsFor({}, { ...CODE_PR, draft: "true" }),
+    });
+    expect(verdict.passed).toBe(false);
+    expect(verdict.lines.join("\n")).toContain(
+      "PR is a draft; mark it ready for review to run every gate."
+    );
+  });
+
+  it("fails an unpromoted bot PR even when every gate succeeded, and passes a promoted one", () => {
+    const unpromoted = evaluateMergeGate({
+      eventName: "pull_request",
+      needs: needsFor({}, { ...CODE_PR, bot_pr: "true" }),
+    });
+    expect(unpromoted.passed).toBe(false);
+    expect(unpromoted.lines.join("\n")).toContain(
+      "bot PR: full suite runs when marked ready"
+    );
+    expect(
+      evaluateMergeGate({
+        eventName: "pull_request",
+        needs: needsFor({}, { ...CODE_PR, bot_pr: "true", promoted: "true" }),
+      }).passed
+    ).toBe(true);
+  });
+
+  it("on push requires the static, security and unit gates and ignores the browser gates", () => {
+    expect(
+      evaluateMergeGate({
+        eventName: "push",
+        needs: needsFor({ ...skipped(BROWSER), build: "failure" }),
+      }).passed
+    ).toBe(true);
+    for (const job of [...ALWAYS, ...UNIT]) {
+      expect(
+        evaluateMergeGate({
+          eventName: "push",
+          needs: needsFor({ ...skipped(BROWSER), [job]: "skipped" }),
+        }).passed,
+        job
+      ).toBe(false);
+    }
+  });
+
+  it.each(["workflow_dispatch", "schedule", ""])(
+    "fails closed for event '%s' even when every gate succeeded",
+    (eventName) => {
+      const verdict = evaluateMergeGate({ eventName, needs: needsFor({}) });
+      expect(verdict.passed).toBe(false);
+      expect(verdict.lines.join("\n")).toContain("failing closed");
+    }
+  );
 });

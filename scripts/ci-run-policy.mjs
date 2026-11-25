@@ -13,6 +13,8 @@
  *
  * Merge Gate stays the single required check and reads the same outputs, so
  * a skipped gate is only ever accepted where this policy says it may be.
+ * Merge Gate runs this file too (`--merge-gate`, #3601): its verdict comes
+ * from the run-scope table `MERGE_GATE_JOBS` below.
  *
  * The draft flag comes from the pull request as it is when this job runs,
  * not from the event payload (#3185). See `readLiveDraft()`.
@@ -368,6 +370,211 @@ export async function readLiveDraft({
 }
 
 /**
+ * How Merge Gate treats one gate job's result for an event (#3601).
+ *
+ * - `required`: only `success` passes.
+ * - `skippable-when-docs-only`: `success` passes; `skipped` also passes, but
+ *   only when `changes` itself succeeded and reported a docs-only change.
+ *   Otherwise the job is required.
+ * - `absent`: not required for the event. The result is logged, never judged.
+ */
+export const GATE_SCOPE = Object.freeze({
+  REQUIRED: "required",
+  SKIPPABLE_WHEN_DOCS_ONLY: "skippable-when-docs-only",
+  ABSENT: "absent",
+});
+
+/**
+ * @typedef {object} MergeGateJob
+ * @property {string} job Job id in `.github/workflows/ci.yml`.
+ * @property {"run_unit" | "run_browser" | null} runFlag The `changes`
+ *   output the job's own `if:` reads, or null when it runs on every trigger.
+ * @property {string} pullRequest Its `GATE_SCOPE` on `pull_request`.
+ * @property {string} push Its `GATE_SCOPE` on `push` to `main`.
+ */
+
+const required = GATE_SCOPE.REQUIRED;
+const browserGate = (job) =>
+  Object.freeze({
+    job,
+    runFlag: "run_browser",
+    pullRequest: GATE_SCOPE.SKIPPABLE_WHEN_DOCS_ONLY,
+    push: GATE_SCOPE.ABSENT,
+  });
+
+/**
+ * The run-scope table (#3601): every job Merge Gate waits for, in its
+ * `needs:` order, and when each is required, skippable or absent. Merge
+ * Gate's verdict comes from this table (`evaluateMergeGate()`), and
+ * `__tests__/ci-execution-policy.test.ts` fails when ci.yml's `needs:` list
+ * or a job's `if:` drifts from it.
+ *
+ * The unit gates are required on every pull request even though drafts and
+ * unpromoted bot PRs skip them: those PRs fail Merge Gate on their own.
+ *
+ * @type {ReadonlyArray<Readonly<MergeGateJob>>}
+ */
+export const MERGE_GATE_JOBS = Object.freeze([
+  Object.freeze({
+    job: "changes",
+    runFlag: null,
+    pullRequest: required,
+    push: required,
+  }),
+  Object.freeze({
+    job: "static-gate",
+    runFlag: null,
+    pullRequest: required,
+    push: required,
+  }),
+  Object.freeze({
+    job: "unit-gate",
+    runFlag: "run_unit",
+    pullRequest: required,
+    push: required,
+  }),
+  Object.freeze({
+    job: "unit-coverage",
+    runFlag: "run_unit",
+    pullRequest: required,
+    push: required,
+  }),
+  Object.freeze({
+    job: "mutation-gate",
+    runFlag: "run_unit",
+    pullRequest: required,
+    push: required,
+  }),
+  Object.freeze({
+    job: "security-gate",
+    runFlag: null,
+    pullRequest: required,
+    push: required,
+  }),
+  browserGate("build"),
+  browserGate("heavy-gate"),
+  browserGate("bench-gate"),
+  browserGate("heavy-gate-report"),
+  browserGate("device-gate"),
+]);
+
+/**
+ * The other jobs in ci.yml, with the reason Merge Gate does not wait for
+ * them. A new job has to land in this list or in `MERGE_GATE_JOBS`.
+ */
+export const NON_GATE_JOBS = Object.freeze({
+  "merge-gate": "the required summary itself",
+  "cross-device-matrix": "workflow_dispatch only, on demand",
+  "cache-warm": "main push cache refresh, not a gate (#1769)",
+});
+
+/**
+ * @typedef {object} MergeGateVerdict
+ * @property {boolean} passed
+ * @property {string[]} lines Log lines; failures carry `::error::`.
+ */
+
+/**
+ * Merge Gate's verdict for one run, from the run-scope table.
+ *
+ * Fails closed: an event with no scope, a draft, an unpromoted bot PR, and
+ * a gate missing from `needs` all fail.
+ *
+ * @param {object} input
+ * @param {string} input.eventName `github.event_name`.
+ * @param {Record<string, { result?: string, outputs?: Record<string, string> }>} input.needs
+ *   GitHub's `needs` context, as `toJSON(needs)` renders it.
+ * @returns {MergeGateVerdict}
+ */
+export function evaluateMergeGate({ eventName, needs }) {
+  const lines = [];
+  let passed = true;
+  const fail = (message) => {
+    lines.push(`::error::${message}`);
+    passed = false;
+  };
+
+  const scopeKey =
+    eventName === "pull_request"
+      ? "pullRequest"
+      : eventName === "push"
+        ? "push"
+        : null;
+  if (scopeKey === null) {
+    // CI-03: workflow_dispatch and any unrecognized trigger.
+    fail(
+      `Merge Gate has no defined validation for event '${eventName}'; failing closed so this required check can never be satisfied by an unsupported trigger.`
+    );
+    return { passed, lines };
+  }
+
+  const changes = needs?.changes ?? {};
+  const outputs = changes.outputs ?? {};
+  if (scopeKey === "pullRequest") {
+    // #3185: `changes` read the live draft flag, not the event payload.
+    if (outputs.draft === "true") {
+      fail(
+        "PR is a draft; mark it ready for review to run every gate. This is not a test failure: a draft runs only the static and security gates."
+      );
+    }
+    if (outputs.bot_pr === "true" && outputs.promoted !== "true") {
+      fail(
+        `bot PR: full suite runs when marked ready (a maintainer applies the '${FULL_SUITE_LABEL}' label).`
+      );
+    }
+  }
+  // A failed `changes` job has no trustworthy outputs, so it never excuses
+  // a skip.
+  const docsOnly =
+    changes.result === "success" && outputs.app_changed === "false";
+
+  for (const row of MERGE_GATE_JOBS) {
+    const scope = row[scopeKey];
+    const result = needs?.[row.job]?.result ?? "missing";
+    if (scope === GATE_SCOPE.ABSENT) {
+      lines.push(`${row.job}: ${result} (not required for ${eventName})`);
+    } else if (scope === GATE_SCOPE.SKIPPABLE_WHEN_DOCS_ONLY && docsOnly) {
+      lines.push(`${row.job}: ${result} (docs-only change: skipped accepted)`);
+      if (result !== "success" && result !== "skipped") {
+        fail(`Job '${row.job}' did not succeed (result: ${result})`);
+      }
+    } else {
+      lines.push(`${row.job}: ${result}`);
+      if (result !== "success") {
+        fail(`Required job '${row.job}' did not succeed (result: ${result})`);
+      }
+    }
+  }
+  return { passed, lines };
+}
+
+/**
+ * Merge Gate mode: reads `EVENT_NAME` and `NEEDS_JSON` (`toJSON(needs)`),
+ * prints the verdict and exits 1 unless it passed.
+ */
+function runMergeGate() {
+  let needs = null;
+  try {
+    needs = JSON.parse(process.env.NEEDS_JSON ?? "");
+  } catch {
+    needs = null;
+  }
+  if (needs === null || typeof needs !== "object" || Array.isArray(needs)) {
+    console.log(
+      "::error::Merge Gate could not read the needs context (NEEDS_JSON); failing closed."
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const verdict = evaluateMergeGate({
+    eventName: process.env.EVENT_NAME ?? "",
+    needs,
+  });
+  for (const line of verdict.lines) console.log(line);
+  process.exitCode = verdict.passed ? 0 : 1;
+}
+
+/**
  * Formats a policy as `key=value` lines for `$GITHUB_OUTPUT`.
  *
  * @param {RunPolicy} policy
@@ -489,5 +696,9 @@ async function main() {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  await main();
+  if (process.argv.includes("--merge-gate")) {
+    runMergeGate();
+  } else {
+    await main();
+  }
 }

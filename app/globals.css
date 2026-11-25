@@ -793,3 +793,48 @@ body {
     gap: 4px;
   }
 }
+
+/* Scroll-driven UI effects (#4068): compositor-only animations when
+   supported, with JS scroll listeners kept as fallback. */
+@keyframes reading-progress-scale {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes navbar-backdrop-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .reading-progress-fill {
+    transform: scaleX(0);
+    animation: reading-progress-scale linear both;
+    animation-timeline: scroll(root block);
+  }
+
+  .navbar-scroll-driven::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: rgb(13 14 17 / 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgb(37 40 46 / 0.6);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    animation: navbar-backdrop-reveal linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0px 20px;
+  }
+}

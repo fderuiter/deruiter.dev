@@ -54,7 +54,7 @@ describe("exportProofToMermaid encoding", () => {
   beforeAll(() => {
     mermaid.initialize({
       startOnLoad: false,
-      securityLevel: "antiscript",
+      securityLevel: "strict",
       flowchart: { htmlLabels: false },
     });
   });

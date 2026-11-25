@@ -805,6 +805,10 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     const { default: neuroOg } = await import("@/app/neuro/opengraph-image");
     const { default: laserLoonWorkOg } =
       await import("@/app/work/laser-loon/opengraph-image");
+    const { default: clinicalAiGovernanceOg, size: aiGovOgSize } =
+      await import("@/app/clinical/ai-governance/opengraph-image");
+
+    expect(aiGovOgSize).toEqual({ width: 1200, height: 630 });
 
     const targetedGenerators = [
       { name: "/crf", generator: crfOg, routeKey: "crf" },
@@ -813,6 +817,11 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
         name: "/work/laser-loon",
         generator: laserLoonWorkOg,
         routeKey: "laserLoonCaseStudy",
+      },
+      {
+        name: "/clinical/ai-governance",
+        generator: clinicalAiGovernanceOg,
+        routeKey: "clinicalAiGovernance",
       },
     ];
 

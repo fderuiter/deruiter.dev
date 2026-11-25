@@ -231,6 +231,16 @@ const CLINICAL_EVIDENCE_ITEMS: NavItem[] = [
     tone: "amber",
     badge: "CDISC",
   },
+  {
+    id: "clinical-ai-governance",
+    title: "AI Governance",
+    subtitle:
+      "Failure modes, guidance references and validation checks for AI in clinical data",
+    href: "/clinical/ai-governance",
+    icon: "shield",
+    tone: "amber",
+    badge: "AI",
+  },
 ];
 
 const LABS_ITEMS: NavItem[] = [
@@ -549,6 +559,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
       exact: [
         "/clinical",
         "/clinical/standards",
+        "/clinical/ai-governance",
         "/crf",
         PIPELINE_SIMULATOR_PATH,
         "/study-data",

@@ -1180,6 +1180,30 @@ export const STATIC_NAVS: readonly StaticNavEntry[] = [
     ],
   },
   {
+    id: "nav-clinical-ai-governance",
+    title: "AI Governance",
+    subtitle:
+      "Failure modes, guidance references and validation checks for AI in clinical data.",
+    category: "navigation",
+    url: "/clinical/ai-governance",
+    icon: { name: "IconShieldCheck", className: "h-4 w-4 text-amber-400" },
+    badge: "Governance",
+    status: "Evidence",
+    description:
+      "How AI-assisted clinical data work is governed on synthetic studies: failure modes and mitigations, external guidance drafts, validation evidence and interactive walkthroughs.",
+    techStack: [
+      "FDA AI Draft",
+      "EU Annex 22",
+      "ISPE GAMP AI",
+      "Synthetic Data",
+    ],
+    highlights: [
+      "FDA AI draft guidance, EU GMP Annex 22 and ISPE GAMP AI status",
+      "Failure modes paired with deterministic controls",
+      "Synthetic-only checks, no regulatory advice",
+    ],
+  },
+  {
     id: "nav-platform-governance",
     title: "Data rules and catalog (Data Governance)",
     subtitle: "The data catalog, business glossary, stewardship and policies.",

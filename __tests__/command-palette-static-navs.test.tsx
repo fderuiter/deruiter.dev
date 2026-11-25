@@ -101,6 +101,7 @@ const EXPECTED_ROWS = [
   "nav-platform-explore | Study metrics explorer (Metrics Explorer)",
   "nav-platform-sql | Query workbench (SQL Workbench)",
   "nav-clinical-standards | Standards Conformance",
+  "nav-clinical-ai-governance | AI Governance",
   "nav-platform-governance | Data rules and catalog (Data Governance)",
   "nav-clinical | Clinical Journey",
   "nav-labs | Labs",

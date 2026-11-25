@@ -50,6 +50,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  clinicalAiGovernance: {
+    title: "AI Governance in Clinical Data Work",
+    description:
+      "How AI-assisted clinical data work is governed on synthetic studies: failure modes, standards and guidance, validation evidence and walkthroughs.",
+    path: "/clinical/ai-governance",
+    keywords: [
+      "Clinical AI Governance",
+      "FDA AI Guidance",
+      "EU GMP Annex 22",
+      "ISPE GAMP AI",
+      "Clinical Data Validation",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   labs: {
     title: "Labs: Studios and Simulators",
     description:

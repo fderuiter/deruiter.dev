@@ -33,6 +33,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     name: "CDISC Standards Conformance Matrix",
     category: "tool",
   },
+  {
+    path: "/clinical/ai-governance",
+    name: "Clinical AI Governance",
+    category: "tool",
+  },
   { path: "/labs", name: "Labs Overview", category: "top-level" },
   { path: "/proof", name: "Formal Proof Studio", category: "tool" },
   { path: "/m/proof", name: "Mobile Formal Proof Studio", category: "tool" },

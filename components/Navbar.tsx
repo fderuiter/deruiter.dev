@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
@@ -21,7 +26,18 @@ import { useHotkeys } from "@/hooks/useHotkeys";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { IconSearch } from "@tabler/icons-react";
 
+const noopSubscribe = () => () => {};
+const supportsScrollTimeline = () =>
+  typeof CSS !== "undefined" &&
+  typeof CSS.supports === "function" &&
+  CSS.supports("animation-timeline: scroll()");
+
 export const Navbar: React.FC = () => {
+  const supportsCssScroll = useSyncExternalStore(
+    noopSubscribe,
+    supportsScrollTimeline,
+    () => false
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("hero");
@@ -62,6 +78,8 @@ export const Navbar: React.FC = () => {
 
   // 1. Scroll-driven backdrop color transition
   useEffect(() => {
+    if (supportsCssScroll) return;
+
     const handleScroll = () => {
       if (window.scrollY > 20) {
         setIsScrolled(true);
@@ -72,7 +90,7 @@ export const Navbar: React.FC = () => {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [supportsCssScroll]);
 
   // 2. Scroll Spy: active section observer
   useEffect(() => {
@@ -228,9 +246,11 @@ export const Navbar: React.FC = () => {
         ref={headerObserverRef}
         className={cn(
           "fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full select-none pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
-          isScrolled
-            ? "bg-[#0d0e11]/95 backdrop-blur-xl border-b border-zinc-800/60 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
-            : "bg-transparent py-5"
+          supportsCssScroll
+            ? "navbar-scroll-driven bg-transparent py-5"
+            : isScrolled
+              ? "bg-[#0d0e11]/95 backdrop-blur-xl border-b border-zinc-800/60 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+              : "bg-transparent py-5"
         )}
       >
         <div

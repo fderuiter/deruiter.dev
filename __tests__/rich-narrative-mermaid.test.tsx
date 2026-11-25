@@ -32,6 +32,22 @@ describe("RichNarrative Mermaid diagrams", () => {
     }));
   });
 
+  it("initializes Mermaid with strict securityLevel and htmlLabels disabled", async () => {
+    render(<RichNarrative html={mermaidNarrative} />);
+
+    await waitFor(() => {
+      expect(mockInitialize).toHaveBeenCalled();
+    });
+
+    expect(mockInitialize.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        securityLevel: "strict",
+        htmlLabels: false,
+        flowchart: expect.objectContaining({ htmlLabels: false }),
+      })
+    );
+  });
+
   it("renders Mermaid narrative content as an accessible diagram instead of visible source", async () => {
     render(<RichNarrative html={mermaidNarrative} />);
 

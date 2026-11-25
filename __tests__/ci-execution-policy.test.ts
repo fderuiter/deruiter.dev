@@ -4,6 +4,11 @@ import { fromPartial } from "@total-typescript/shoehorn";
 import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import {
+  GATE_SCOPE,
+  MERGE_GATE_JOBS,
+  NON_GATE_JOBS,
+} from "../scripts/ci-run-policy.mjs";
 
 /**
  * CI-02 (#733 follow-up): before this policy existed, the targeted
@@ -18,11 +23,13 @@ import path from "path";
  *
  * CI-03 (#779 follow-up): `merge-gate` originally excluded itself on
  * `workflow_dispatch`, which is the same skip-is-a-pass hazard one level up.
- * The "merge-gate script" describe block below does not just check
- * substrings: it extracts the job's literal `run: |` script and its `env:`
- * mapping, supplies concrete values the way GitHub does before the runner
- * sees them, and executes the result with bash, asserting on the real exit
- * code for pull_request, push, workflow_dispatch, and unrecognized events.
+ * The "merge-gate verdict" describe block below does not just check
+ * substrings: it reads the evaluate step's `run:` command and `env:`
+ * mapping, supplies the `toJSON(needs)` context the way GitHub does, and
+ * executes `scripts/ci-run-policy.mjs --merge-gate`, asserting on the real
+ * exit code for pull_request, push, workflow_dispatch, and unrecognized
+ * events. #3601 moved the verdict out of inline bash and into the run-scope
+ * table (`MERGE_GATE_JOBS`), which the "#3601" block holds to ci.yml.
  *
  * #1767 split the old fast/heavy gates into parallel jobs, and #1773 added
  * the docs-only, draft and bot-branch policies. The script tests cover each:
@@ -354,6 +361,65 @@ describe("CI Execution Policy", () => {
   const ALWAYS_ON_PR: Gate[] = ["changes", "static-gate", "security-gate"];
   const UNIT_GATES: Gate[] = ["unit-gate", "unit-coverage", "mutation-gate"];
 
+  /**
+   * #3601: `MERGE_GATE_JOBS` in scripts/ci-run-policy.mjs is the one place
+   * that says which job Merge Gate waits for and when each may be skipped.
+   * GitHub cannot compute `needs:` at run time, so these cases fail the
+   * moment ci.yml and the table disagree.
+   */
+  describe("#3601: the run-scope table matches ci.yml", () => {
+    const tableJobs = MERGE_GATE_JOBS.map((row) => row.job);
+
+    it("lists the gates in merge-gate's needs: order, and nothing else", () => {
+      expect(needsList(jobBlock("merge-gate"))).toEqual(tableJobs);
+      // An independent literal, so a job dropped from both sides still fails.
+      expect(tableJobs).toEqual([...GATES]);
+    });
+
+    it("classifies every job in ci.yml as a gate or a named non-gate", () => {
+      const classified = [...tableJobs, ...Object.keys(NON_GATE_JOBS)];
+      expect([...jobNames].sort()).toEqual([...classified].sort());
+      expect(tableJobs.filter((job) => job in NON_GATE_JOBS)).toEqual([]);
+    });
+
+    it.each(MERGE_GATE_JOBS.map((row) => [row.job, row]))(
+      "%s runs under the flag the table names",
+      (job, row) => {
+        const condition = field(jobBlock(job), "if");
+        if (row.runFlag === null) {
+          expect(condition).toBeUndefined();
+        } else {
+          expect(condition).toContain(
+            `needs.changes.outputs.${row.runFlag} == 'true'`
+          );
+          expect(needsList(jobBlock(job))).toContain("changes");
+        }
+      }
+    );
+
+    it("lets a job be skipped only where its own if: can skip it", () => {
+      for (const row of MERGE_GATE_JOBS) {
+        if (row.pullRequest === GATE_SCOPE.SKIPPABLE_WHEN_DOCS_ONLY) {
+          expect(row.runFlag, row.job).toBe("run_browser");
+        }
+        if (row.runFlag === "run_browser") {
+          expect(field(jobBlock(row.job), "if"), row.job).toContain(
+            "github.event_name == 'pull_request'"
+          );
+          expect(row.push, row.job).toBe(GATE_SCOPE.ABSENT);
+        }
+      }
+    });
+
+    it("requires the policy job itself on every supported event", () => {
+      const changes = MERGE_GATE_JOBS.find((row) => row.job === "changes");
+      expect(changes).toMatchObject({
+        pullRequest: GATE_SCOPE.REQUIRED,
+        push: GATE_SCOPE.REQUIRED,
+      });
+    });
+  });
+
   describe("merge-gate aggregates every job required for a passing merge", () => {
     const block = jobBlock("merge-gate");
 
@@ -366,29 +432,24 @@ describe("CI Execution Policy", () => {
       expect(field(block, "if")).toBe("always()");
     });
 
-    it("inspects every required predecessor's actual .result rather than trusting needs: alone", () => {
-      for (const dep of GATES) {
-        expect(block).toContain(`needs.${dep}.result`);
-      }
+    it("hands GitHub's whole needs context to the run policy instead of restating each result (#3601)", () => {
+      expect(block).toContain("NEEDS_JSON: ${{ toJSON(needs) }}");
+      expect(block).toContain(
+        "run: node scripts/ci-run-policy.mjs --merge-gate"
+      );
+      expect(block).not.toContain("check_required");
+      expect(block).not.toMatch(/needs\.[a-z-]+\.result/);
     });
 
-    it("treats any non-success result as fatal, covering failure, cancellation, and skip alike", () => {
-      expect(block).toContain('if [ "${result}" != "success" ]; then');
-      expect(block).toMatch(/exit\s+"?\$\{fail\}"?/);
+    it("checks out only the policy script, so the summary job stays seconds long", () => {
+      expect(block).toMatch(
+        /uses: actions\/checkout@[0-9a-f]{40} # v\d+\.\d+\.\d+\n\s+with:\n\s+sparse-checkout: scripts\/ci-run-policy\.mjs\n\s+sparse-checkout-cone-mode: false/
+      );
+      expect(block).not.toContain("npm ci");
     });
 
-    it("passes values through env, never interpolating ${{ }} into the script", () => {
-      const script = block.slice(block.indexOf("run: |"));
-      expect(script).not.toMatch(/\$\{\{/);
-    });
-
-    it("declares an explicit catch-all default that fails closed for any other event", () => {
-      expect(block).toContain('case "${event}" in');
-      const defaultStart = block.indexOf("\n            *)");
-      expect(defaultStart).toBeGreaterThan(-1);
-      const defaultEnd = block.indexOf(";;", defaultStart);
-      const defaultArm = block.slice(defaultStart, defaultEnd);
-      expect(defaultArm).toContain("fail=1");
+    it("passes values through env, never interpolating ${{ }} into a run: line", () => {
+      expect(block).not.toMatch(/run: .*\$\{\{/);
     });
 
     it("declares a timeout so the summary step itself cannot hang unbounded", () => {
@@ -397,65 +458,34 @@ describe("CI Execution Policy", () => {
     });
   });
 
-  describe("merge-gate script: real execution against controlled event/result inputs", () => {
+  describe("merge-gate verdict: real execution against controlled event/result inputs", () => {
     const block = jobBlock("merge-gate");
 
-    /** Body of the single `run: |` step, de-indented by its 10 spaces. */
-    const extractRunScript = (jobBlockText: string): string => {
-      const marker = "run: |\n";
-      const idx = jobBlockText.indexOf(marker);
-      if (idx === -1) {
-        throw new Error("no `run: |` step found in job block");
-      }
-      const after = jobBlockText.slice(idx + marker.length);
-      const scriptLines: string[] = [];
-      for (const line of after.split("\n")) {
-        if (line.trim() === "") {
-          scriptLines.push("");
-          continue;
-        }
-        const indent = line.match(/^ */)?.[0].length ?? 0;
-        if (indent < 10) break;
-        scriptLines.push(line.slice(10));
-      }
-      return scriptLines.join("\n");
-    };
-
-    /** The step's `env:` mapping: variable name -> GitHub expression. */
+    /** The evaluate step's `env:` mapping: variable name -> GitHub expression. */
     const extractEnv = (jobBlockText: string): Record<string, string> => {
-      const start = jobBlockText.indexOf("        env:\n");
-      const end = jobBlockText.indexOf("        run: |");
+      const step = jobBlockText.slice(
+        jobBlockText.indexOf("- name: Evaluate required job results")
+      );
       const env: Record<string, string> = {};
-      for (const match of jobBlockText
-        .slice(start, end)
-        .matchAll(/^ {10}([A-Z_]+): \$\{\{ (.+?) \}\}$/gm)) {
+      for (const match of step.matchAll(
+        /^ {10}([A-Z_]+): \$\{\{ (.+?) \}\}$/gm
+      )) {
         env[match[1]] = match[2];
       }
       return env;
     };
 
-    const script = extractRunScript(block);
+    /** The evaluate step's single-line `run:` command. */
+    const runCommand = block
+      .slice(block.indexOf("- name: Evaluate required job results"))
+      .match(/^ {8}run: (.+)$/m)?.[1];
     const envMapping = extractEnv(block);
 
-    it("extracted a non-trivial script containing the fail-closed default", () => {
-      expect(script.length).toBeGreaterThan(0);
-      expect(script).toContain('case "${event}" in');
-      expect(script).toContain('exit "${fail}"');
-    });
-
-    it("maps every gate's result and the policy outputs into the script's environment", () => {
-      for (const gate of GATES) {
-        const variable = `RESULT_${gate.toUpperCase().replace(/-/g, "_")}`;
-        expect(envMapping[variable], variable).toBe(`needs.${gate}.result`);
-        expect(script).toContain(`"\${${variable}}"`);
-      }
-      expect(envMapping).toMatchObject({
+    it("runs the run policy's Merge Gate mode with only the event and the needs context", () => {
+      expect(runCommand).toBe("node scripts/ci-run-policy.mjs --merge-gate");
+      expect(envMapping).toEqual({
         EVENT_NAME: "github.event_name",
-        // #3185: the live flag `changes` read, never the stale payload.
-        PR_DRAFT: "needs.changes.outputs.draft",
-        APP_CHANGED: "needs.changes.outputs.app_changed",
-        BOT_PR: "needs.changes.outputs.bot_pr",
-        PROMOTED: "needs.changes.outputs.promoted",
+        NEEDS_JSON: "toJSON(needs)",
       });
     });
 
@@ -474,7 +504,30 @@ describe("CI Execution Policy", () => {
       promoted?: string;
     }
 
-    /** Runs the script with the environment GitHub would give it. */
+    const policyScript = path.join(process.cwd(), "scripts/ci-run-policy.mjs");
+
+    /** Runs the evaluate step's command with the environment GitHub gives it. */
+    const runVerdict = (
+      env: Record<string, string>
+    ): { status: number | null; stdout: string } => {
+      const result = spawnSync(
+        process.execPath,
+        ["--no-warnings", policyScript, "--merge-gate"],
+        {
+          encoding: "utf-8",
+          env: fromPartial<NodeJS.ProcessEnv>({
+            PATH: process.env.PATH ?? "/usr/bin:/bin",
+            ...env,
+          }),
+        }
+      );
+      if (result.error) {
+        throw result.error;
+      }
+      return { status: result.status, stdout: result.stdout };
+    };
+
+    /** Builds `toJSON(needs)` the way GitHub shapes it. */
     const runScript = ({
       event,
       results,
@@ -483,25 +536,27 @@ describe("CI Execution Policy", () => {
       botPr = "false",
       promoted = "false",
     }: Scenario): { status: number | null; stdout: string } => {
-      const env: Record<string, string> = {
-        PATH: process.env.PATH ?? "/usr/bin:/bin",
+      const needs = Object.fromEntries(
+        GATES.map((gate) => [
+          gate,
+          {
+            result: results[gate],
+            outputs:
+              gate === "changes"
+                ? {
+                    draft,
+                    app_changed: appChanged,
+                    bot_pr: botPr,
+                    promoted,
+                  }
+                : {},
+          },
+        ])
+      );
+      return runVerdict({
         EVENT_NAME: event,
-        PR_DRAFT: draft,
-        APP_CHANGED: appChanged,
-        BOT_PR: botPr,
-        PROMOTED: promoted,
-      };
-      for (const gate of GATES) {
-        env[`RESULT_${gate.toUpperCase().replace(/-/g, "_")}`] = results[gate];
-      }
-      const result = spawnSync("bash", ["-c", script], {
-        encoding: "utf-8",
-        env: fromPartial<NodeJS.ProcessEnv>(env),
+        NEEDS_JSON: JSON.stringify(needs),
       });
-      if (result.error) {
-        throw result.error;
-      }
-      return { status: result.status, stdout: result.stdout };
     };
 
     const FAILURE_MODES = ["failure", "cancelled", "skipped"] as const;
@@ -526,16 +581,16 @@ describe("CI Execution Policy", () => {
         }
       );
 
-      it("exits 1 when an unset result variable reaches the script", () => {
-        const env = {
-          PATH: process.env.PATH ?? "/usr/bin:/bin",
-          EVENT_NAME: "pull_request",
-        };
-        const outcome = spawnSync("bash", ["-c", script], {
-          encoding: "utf-8",
-          env: fromPartial<NodeJS.ProcessEnv>(env),
-        });
-        expect(outcome.status).not.toBe(0);
+      it.each([
+        ["no NEEDS_JSON at all", undefined],
+        ["an empty NEEDS_JSON", ""],
+        ["a NEEDS_JSON that is not JSON", "{not json"],
+        ["a NEEDS_JSON that is not an object", "[]"],
+      ])("exits 1 when the step receives %s", (_label, needsJson) => {
+        const env: Record<string, string> = { EVENT_NAME: "pull_request" };
+        if (needsJson !== undefined) env.NEEDS_JSON = needsJson;
+        const outcome = runVerdict(env);
+        expect(outcome.status).toBe(1);
       });
     });
 

@@ -8,11 +8,11 @@ import { POST, DELETE } from "@/app/api/admin/projects/[slug]/image/route";
 import { GET as getMediaAssetRoute } from "@/app/api/media/[key]/route";
 import {
   ProjectImageService,
+  CaseStudyService,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
   blobStoreIdFromToken,
   type MediaOwnership,
-} from "@/lib/services/project-image-service";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { createFailure, createSuccess } from "@/lib/services/service-result";
 import { logger } from "@/lib/logger";
 
@@ -22,13 +22,6 @@ vi.mock("@/lib/auth/admin", () => ({
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn(),
-}));
-
-vi.mock("@/lib/services/case-study-service", () => ({
-  CaseStudyService: {
-    getCaseStudyBySlug: vi.fn(),
-    updateCaseStudyImage: vi.fn(),
-  },
 }));
 
 /**
@@ -103,7 +96,7 @@ describe("API Admin Project Image Upload Route", () => {
     vi.clearAllMocks();
     vi.mocked(auth).mockResolvedValue(fromPartial({ userId: "user_admin123" }));
     vi.mocked(isCurrentUserAdmin).mockResolvedValue(true);
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue({
+    vi.spyOn(CaseStudyService, "getCaseStudyBySlug").mockResolvedValue({
       id: "cs_1",
       slug: "laser-loon",
       title: "Laser Loon",
@@ -118,7 +111,7 @@ describe("API Admin Project Image Upload Route", () => {
       created_at: new Date(),
       updated_at: new Date(),
     });
-    vi.mocked(CaseStudyService.updateCaseStudyImage).mockImplementation(
+    vi.spyOn(CaseStudyService, "updateCaseStudyImage").mockImplementation(
       async (slug, hero_image_url) =>
         createSuccess({
           id: "cs_1",

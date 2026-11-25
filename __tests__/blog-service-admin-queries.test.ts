@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { BlogPostService } from "@/lib/services/blog-service";
+import {
+  BlogPostService,
+  GetAllBlogPostsAdminHandler,
+  GetBlogPostByIdHandler,
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import AdminBlogPage from "@/app/admin/blog/page";
@@ -74,14 +78,19 @@ describe("BlogPostService Admin Query Methods", () => {
       expect(posts).toEqual(mockPosts);
     });
 
-    it("returns empty array on database failure", async () => {
+    it("returns STORAGE_UNAVAILABLE failure envelope on database failure instead of empty array", async () => {
       vi.mocked(prisma.blogPost.findMany).mockRejectedValue(
         new Error("Database connection lost")
       );
 
-      const posts = await BlogPostService.getAllBlogPostsAdmin();
-
-      expect(posts).toEqual([]);
+      const res = await new GetAllBlogPostsAdminHandler().execute();
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.code).toBe("STORAGE_UNAVAILABLE");
+      }
+      await expect(BlogPostService.getAllBlogPostsAdmin()).rejects.toThrow(
+        "Database connection lost"
+      );
     });
   });
 
@@ -105,14 +114,19 @@ describe("BlogPostService Admin Query Methods", () => {
       expect(post).toBeNull();
     });
 
-    it("returns null on database failure", async () => {
+    it("returns STORAGE_UNAVAILABLE failure envelope on database failure instead of null", async () => {
       vi.mocked(prisma.blogPost.findUnique).mockRejectedValue(
         new Error("Database connection lost")
       );
 
-      const post = await BlogPostService.getBlogPostById("post-1");
-
-      expect(post).toBeNull();
+      const res = await new GetBlogPostByIdHandler().execute({ id: "post-1" });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.code).toBe("STORAGE_UNAVAILABLE");
+      }
+      await expect(BlogPostService.getBlogPostById("post-1")).rejects.toThrow(
+        "Database connection lost"
+      );
     });
   });
 

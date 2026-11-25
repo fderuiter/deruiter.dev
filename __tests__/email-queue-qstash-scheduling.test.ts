@@ -20,7 +20,7 @@ vi.mock("@/lib/qstash-retry", () => ({
   scheduleEmailRetry: (...a: unknown[]) => scheduleEmailRetry(...a),
 }));
 
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 
 describe("EmailService QStash scheduling (#715)", () => {
   beforeEach(() => {

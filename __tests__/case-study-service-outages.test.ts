@@ -94,11 +94,14 @@ async function load(mode: EnvMode = "default", allowFallback = false) {
   );
   vi.stubEnv("VERCEL_ENV", mode === "default" ? "development" : "production");
   vi.stubEnv("ALLOW_FALLBACK_PRODUCTION_BUILD", allowFallback ? "1" : "");
-  const service = await import("@/lib/services/case-study-service");
+  const service = await import("@/__tests__/helpers/legacy-domain-facades");
   const integrity = await import("@/lib/build-integrity");
   const redisMod = await import("@/lib/redis");
   return {
     CaseStudyService: service.CaseStudyService,
+    SubmitCaseStudyReactionHandler: service.SubmitCaseStudyReactionHandler,
+    SubmitCaseStudyFeedbackHandler: service.SubmitCaseStudyFeedbackHandler,
+    GetCaseStudyFeedbackHandler: service.GetCaseStudyFeedbackHandler,
     DataSourceUnavailableError: integrity.DataSourceUnavailableError,
     key: redisMod.getScopedRedisKey,
   };
@@ -539,7 +542,7 @@ describe("getPublishedCaseStudies outage matrix", () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "true");
     const { CaseStudyService } =
-      await import("@/lib/services/case-study-service");
+      await import("@/__tests__/helpers/legacy-domain-facades");
 
     const result = await CaseStudyService.getPublishedCaseStudies();
 
@@ -783,29 +786,26 @@ describe("getReactions outage matrix", () => {
   });
 });
 
-describe("Neon-down mock stores keep reads and writes consistent", () => {
-  it("reactions submitted while Neon is down are counted by later reads", async () => {
-    const { CaseStudyService } = await load();
+describe("Neon-down reaction durability without ephemeral memory stores (ADR 0043)", () => {
+  it("returns STORAGE_UNAVAILABLE for reaction writes when Redis is unconfigured and Neon is down, while reads degrade to zero counts", async () => {
+    const { CaseStudyService, SubmitCaseStudyReactionHandler } = await load();
     m.redisConfigured.value = false;
     m.prisma.caseStudyReaction.createMany.mockRejectedValue(neonDown());
     m.prisma.caseStudyReaction.groupBy.mockRejectedValue(neonDown());
     m.prisma.caseStudyReaction.findMany.mockRejectedValue(neonDown());
 
-    await CaseStudyService.submitReaction(
-      { caseStudySlug: "offline-slug", reactionType: "insightful" },
-      "h1"
-    );
-    const second = await CaseStudyService.submitReaction(
-      { caseStudySlug: "offline-slug", reactionType: "insightful" },
-      "h2"
-    );
-    expect(second.counts.insightful).toBe(2);
-    expect(second.userReactions).toEqual(["insightful"]);
+    const writeRes = await new SubmitCaseStudyReactionHandler().execute({
+      caseStudySlug: "offline-slug",
+      reactionType: "insightful",
+      connectionHash: "h1",
+    });
+    expect(writeRes.success).toBe(false);
+    if (!writeRes.success) {
+      expect(writeRes.error.code).toBe("STORAGE_UNAVAILABLE");
+    }
 
-    // Base counts (getBaseReactionCounts) and the direct DB fallback both
-    // read the in-memory store.
     const read = await CaseStudyService.getReactions("offline-slug", "h1");
-    expect(read.counts.insightful).toBe(2);
+    expect(read.counts.insightful).toBe(0);
 
     m.redisConfigured.value = true;
     m.redis.hgetall.mockRejectedValueOnce(redisDown());
@@ -813,22 +813,26 @@ describe("Neon-down mock stores keep reads and writes consistent", () => {
       "offline-slug",
       "h1"
     );
-    expect(readRedisDown.counts.insightful).toBe(2);
+    expect(readRedisDown.counts.insightful).toBe(0);
   });
 
-  it("logs the direct-write fallback on a running production server", async () => {
-    const { CaseStudyService } = await load("production-runtime");
+  it("logs direct-write failure with raw Error and returns STORAGE_UNAVAILABLE on a running production server", async () => {
+    const { SubmitCaseStudyReactionHandler } = await load("production-runtime");
     m.redisConfigured.value = false;
     m.prisma.caseStudyReaction.createMany.mockRejectedValueOnce(neonDown());
 
-    const result = await CaseStudyService.submitReaction(
-      { caseStudySlug: "s", reactionType: "thorough" },
-      "h"
-    );
+    const result = await new SubmitCaseStudyReactionHandler().execute({
+      caseStudySlug: "s",
+      reactionType: "thorough",
+      connectionHash: "h",
+    });
 
-    expect(result.counts.thorough).toBe(1);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("STORAGE_UNAVAILABLE");
+    }
     expect(m.logger.error).toHaveBeenCalledWith(
-      "Database reaction creation failed, using mock fallback:",
+      expect.stringContaining("reaction"),
       expect.any(Error)
     );
   });
@@ -1075,33 +1079,38 @@ describe("feedback with Neon up/down", () => {
     });
   });
 
-  it("Neon down: accepts feedback into memory, rate-limits a repeat and reads it back", async () => {
-    const { CaseStudyService } = await load("production-runtime");
+  it("Neon down: rejects feedback submission with STORAGE_UNAVAILABLE instead of ephemeral memory and degrades feedback reads cleanly (ADR 0043)", async () => {
+    const {
+      CaseStudyService,
+      SubmitCaseStudyFeedbackHandler,
+      GetCaseStudyFeedbackHandler,
+    } = await load("production-runtime");
     m.prisma.caseStudyFeedback.findFirst.mockRejectedValue(neonDown());
     m.prisma.caseStudyFeedback.findMany.mockRejectedValue(neonDown());
 
-    const first = await CaseStudyService.submitFeedback(
-      { caseStudySlug: "mem", takeaways: ["t"], comments: "c" },
-      "me"
-    );
-    const repeat = await CaseStudyService.submitFeedback(
-      { caseStudySlug: "mem", takeaways: ["t"], comments: "c" },
-      "me"
-    );
-    const read = await CaseStudyService.getFeedback("mem", "me");
-    const readOther = await CaseStudyService.getFeedback("empty", "me");
+    const writeRes = await new SubmitCaseStudyFeedbackHandler().execute({
+      caseStudySlug: "mem",
+      takeaways: ["t"],
+      comments: "c",
+      connectionHash: "me",
+    });
+    expect(writeRes.success).toBe(false);
+    if (!writeRes.success) {
+      expect(writeRes.error.code).toBe("STORAGE_UNAVAILABLE");
+    }
 
-    expect(first).toMatchObject({ rateLimited: false, success: true });
-    expect(repeat.rateLimited).toBe(true);
-    expect(read).toMatchObject({ hasSubmitted: true, totalFeedback: 1 });
-    expect(read.feedback[0]).toMatchObject({ id: "mock-0", takeaways: ["t"] });
-    expect(readOther).toMatchObject({ hasSubmitted: false, totalFeedback: 0 });
+    const readRes = await new GetCaseStudyFeedbackHandler().execute({
+      caseStudySlug: "mem",
+      connectionHash: "me",
+    });
+    expect(readRes.success).toBe(false);
+    if (!readRes.success) {
+      expect(readRes.error.code).toBe("STORAGE_UNAVAILABLE");
+    }
+
+    await expect(CaseStudyService.getFeedback("mem", "me")).rejects.toThrow();
     expect(m.logger.error).toHaveBeenCalledWith(
-      "Database feedback creation failed, using fallback:",
-      expect.any(Error)
-    );
-    expect(m.logger.error).toHaveBeenCalledWith(
-      "Failed to query case study feedback:",
+      expect.stringContaining("feedback"),
       expect.any(Error)
     );
   });

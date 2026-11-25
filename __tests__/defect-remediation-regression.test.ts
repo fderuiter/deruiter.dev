@@ -115,8 +115,8 @@ import {
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 import { evaluateCanaryRollout } from "@/scripts/canary-analyzer";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { EmailService } from "@/lib/services/email-service";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 import {
   exportToCDISCODMXML,
@@ -133,7 +133,10 @@ import {
 } from "@/lib/neuro/volume-generator";
 import { createNearFooterSectionStudy } from "./crf/pdf-export-fixtures";
 import { resolveSnippetTerminology } from "@/components/ProjectTeaserGrid";
-import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
+import {
+  TelemetryService,
+  _testCache,
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { NextRequest } from "next/server";
 import { calculateFOV } from "@/lib/dungeon";
 
@@ -1608,7 +1611,7 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
 
       try {
         const { TelemetryService: isolatedTelemetryService } =
-          await import("@/lib/services/telemetry-service");
+          await import("@/__tests__/helpers/legacy-domain-facades");
 
         await expect(
           isolatedTelemetryService.computeAggregateStats()

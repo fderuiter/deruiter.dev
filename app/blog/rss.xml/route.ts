@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { BlogPostService } from "@/lib/services/blog-service";
+import { GetAllPublishedBlogPostsHandler } from "@/lib/services";
 import { resolveBaseUrl } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,8 @@ function cdata(unsafe: string): string {
 
 export async function GET() {
   const baseUrl = resolveBaseUrl();
-  const posts = await BlogPostService.getAllPublishedBlogPosts();
+  const postsResult = await new GetAllPublishedBlogPostsHandler().execute();
+  const posts = postsResult.success ? postsResult.data : [];
   const publishedPosts = posts.filter((p) => p.published);
 
   const lastBuildDate =

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BlogPostReactionSubmissionSchema } from "@/lib/schemas";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
+import {
+  GetBlogReactionsHandler,
+  SubmitBlogReactionHandler,
+  type DuplicateBlogReactionDetails,
+} from "@/lib/services";
+import { getConnectionHashFromRequest } from "@/lib/services/privacy";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { isRedisConfigured, redis, getScopedRedisKey } from "@/lib/redis";
-import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -22,93 +29,94 @@ export const GET = createApiHandler(
     }
 
     const connectionHash = await getConnectionHashFromRequest(req);
-    const result = await BlogPostService.getReactions(slug, connectionHash);
-    return NextResponse.json(result);
+    const result = await new GetBlogReactionsHandler().execute({
+      slug,
+      connectionHash,
+    });
+    if (!result.success) {
+      return serviceFailureResponse(result);
+    }
+    return NextResponse.json({
+      success: true,
+      ...result.data,
+    });
   },
   { auth: "public" }
 );
 
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
-    try {
-      const connectionHash = await getConnectionHashFromRequest(req);
+    const connectionHash = await getConnectionHashFromRequest(req);
 
-      if (isRedisConfigured()) {
-        try {
-          const rateKey = getScopedRedisKey(`blog:ratelimit:${connectionHash}`);
-          const attempts = await redis.incr(rateKey);
-          if (attempts === 1) {
-            await redis.expire(rateKey, 60);
-          }
-          if (attempts > 10) {
-            return NextResponse.json(
-              {
-                error: "Too many submission attempts. Please try again later.",
-              },
-              { status: 429 }
-            );
-          }
-        } catch {
-          const rateLimitCheck =
-            checkSubmissionAttemptRateLimit(connectionHash);
-          if (rateLimitCheck.isRateLimited) {
-            return NextResponse.json(
-              {
-                error: "Too many submission attempts. Please try again later.",
-              },
-              { status: 429 }
-            );
-          }
+    if (isRedisConfigured()) {
+      try {
+        const rateKey = getScopedRedisKey(`blog:ratelimit:${connectionHash}`);
+        const attempts = await redis.incr(rateKey);
+        if (attempts === 1) {
+          await redis.expire(rateKey, 60);
         }
-      } else {
+        if (attempts > 10) {
+          return NextResponse.json(
+            {
+              error: "Too many submission attempts. Please try again later.",
+            },
+            { status: 429 }
+          );
+        }
+      } catch {
         const rateLimitCheck = checkSubmissionAttemptRateLimit(connectionHash);
         if (rateLimitCheck.isRateLimited) {
           return NextResponse.json(
-            { error: "Too many submission attempts. Please try again later." },
+            {
+              error: "Too many submission attempts. Please try again later.",
+            },
             { status: 429 }
           );
         }
       }
-
-      const result = await BlogPostService.submitReaction(data, connectionHash);
-
-      if (result.notFound) {
+    } else {
+      const rateLimitCheck = checkSubmissionAttemptRateLimit(connectionHash);
+      if (rateLimitCheck.isRateLimited) {
         return NextResponse.json(
-          { error: result.message || "Blog post not found or not published" },
-          { status: 404 }
-        );
-      }
-
-      if ((result as { duplicate?: boolean }).duplicate) {
-        return NextResponse.json(
-          {
-            error: "Duplicate reaction within the sliding window",
-            counts: result.counts,
-            userReactions: result.userReactions,
-          },
+          { error: "Too many submission attempts. Please try again later." },
           { status: 429 }
         );
       }
-
-      return NextResponse.json(
-        {
-          success: result.success,
-          reactionType: result.reactionType,
-          counts: result.counts,
-          userReactions: result.userReactions,
-        },
-        { status: 200 }
-      );
-    } catch (err) {
-      logger.error("Failed to process blog post reaction submission:", err);
-      return NextResponse.json(
-        {
-          error:
-            "Internal server error processing blog post reaction submission",
-        },
-        { status: 500 }
-      );
     }
+
+    const result = await new SubmitBlogReactionHandler().execute({
+      ...data,
+      connectionHash,
+    });
+
+    if (!result.success) {
+      if (result.error.code === "RATE_LIMITED") {
+        const details = result.error.details as
+          DuplicateBlogReactionDetails | undefined;
+        return serviceFailureResponse(result, {
+          extraBody: details
+            ? {
+                counts: details.counts,
+                userReactions: details.userReactions,
+              }
+            : undefined,
+        });
+      }
+
+      return serviceFailureResponse(result, {
+        logContext: "Failed to process blog post reaction submission:",
+      });
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        reactionType: result.data.reactionType,
+        counts: result.data.counts,
+        userReactions: result.data.userReactions,
+      },
+      { status: 200 }
+    );
   },
   {
     auth: "public",

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { POST } from "@/app/api/newsletter/route";
 import { NextRequest } from "next/server";
 import { resetSubmissionAttemptRateLimit } from "@/lib/moderation";
-import { NewsletterService } from "@/lib/services/newsletter-service";
+import { NewsletterService } from "@/__tests__/helpers/legacy-domain-facades";
 
 describe("API: /api/newsletter Route Handler", () => {
   beforeEach(() => {

@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { NewsletterService } from "@/lib/services/newsletter-service";
+import { BlogPostService } from "@/__tests__/helpers/legacy-domain-facades";
+import { NewsletterService } from "@/__tests__/helpers/legacy-domain-facades";
 
 vi.mock("@/lib/db", () => ({
   prisma: {

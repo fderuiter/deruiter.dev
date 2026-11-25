@@ -51,7 +51,7 @@ vi.mock("@upstash/ratelimit", () => {
 
 // Import endpoint and _testCache
 import { POST } from "@/app/api/telemetry/route";
-import { _testCache } from "@/lib/services/telemetry-service";
+import { _testCache } from "@/__tests__/helpers/legacy-domain-facades";
 import { NextRequest } from "next/server";
 
 describe("Generational Double-Buffered Cache for Telemetry Rate Limiter", () => {

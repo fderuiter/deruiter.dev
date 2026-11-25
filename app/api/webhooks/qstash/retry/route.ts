@@ -5,10 +5,10 @@ import {
   scheduleEmailRetry,
   verifyQStashSignature,
 } from "@/lib/qstash-retry";
-import { EmailService } from "@/lib/services/email-service";
+import { ProcessRetryQueueHandler } from "@/lib/services";
 import { getEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, serviceFailureResponse } from "@/lib/route-wrapper";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 10;
@@ -18,10 +18,9 @@ export const maxDuration = 10;
  *
  * Verifies the `Upstash-Signature` header against both signing keys, then runs
  * a targeted retry for one OutboundEmailQueue row. If the row is still
- * retrying afterwards, it schedules the next sub-daily attempt. Without QStash
- * configuration nothing calls this route and the daily maintenance retry
- * remains the only retry path. The route is public; the signature check is
- * its authentication.
+ * retrying afterwards (or if transient storage failure prevents queue state
+ * inspection), it schedules the next sub-daily attempt conservatively before
+ * answering so `retries: 0` QStash messages are never dropped.
  */
 export const POST = createApiHandler(
   async (req) => {
@@ -72,28 +71,35 @@ export const POST = createApiHandler(
     const { queueId } = parsed.data;
 
     try {
-      const retry = await EmailService.processRetryQueue({
+      const retry = await new ProcessRetryQueueHandler().execute({
         queueId,
         maxBatchSize: 1,
       });
       if (!retry.success) {
-        // Non-2xx lets QStash redeliver; the row lease makes that safe.
-        logger.error(
-          `QStash email retry failed (${retry.error.code}):`,
-          retry.error.details
-        );
-        return NextResponse.json(
-          { error: "Failed to process email retry" },
-          { status: 500 }
-        );
+        const details = retry.error.details as
+          { attempts?: unknown } | undefined;
+        const fallbackAttempts =
+          typeof details?.attempts === "number" && details.attempts >= 1
+            ? details.attempts
+            : 1;
+        await scheduleEmailRetry(queueId, fallbackAttempts);
+        return serviceFailureResponse(retry, {
+          status: 503,
+          errorMessage: "Failed to process email retry",
+          logContext: `QStash email retry failed (${retry.error.code}):`,
+        });
       }
       const result = retry.data;
 
       let rescheduled = false;
       if (result.processed > 0 && result.succeeded === 0) {
-        const state = await EmailService.getQueueEntryState(queueId);
-        if (state?.status === "RETRYING" || state?.status === "PENDING") {
-          rescheduled = await scheduleEmailRetry(queueId, state.attempts);
+        const state = result.entryState;
+        if (
+          !state ||
+          state.status === "RETRYING" ||
+          state.status === "PENDING"
+        ) {
+          rescheduled = await scheduleEmailRetry(queueId, state?.attempts ?? 1);
         }
       }
 
@@ -109,11 +115,11 @@ export const POST = createApiHandler(
         { status: 200 }
       );
     } catch (err) {
-      // Non-2xx lets QStash redeliver; the row lease makes that safe.
+      await scheduleEmailRetry(queueId, 1);
       logger.error("QStash email retry failed:", err);
       return NextResponse.json(
         { error: "Failed to process email retry" },
-        { status: 500 }
+        { status: 503 }
       );
     }
   },

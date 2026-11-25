@@ -1,4 +1,7 @@
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import {
+  GetAllPublishedCaseStudiesHandler,
+  GetCaseStudyBySlugHandler,
+} from "@/lib/services";
 import { logger } from "@/lib/logger";
 import { plainTextSummary } from "@/lib/html-text";
 import { notFound } from "next/navigation";
@@ -45,15 +48,17 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  const slugs = await CaseStudyService.getAllPublishedSlugs();
-  return slugs.map((slug) => ({ slug }));
+  const studiesResult = await new GetAllPublishedCaseStudiesHandler().execute();
+  const studies = studiesResult.success ? studiesResult.data : [];
+  return studies.map((s) => ({ slug: s.slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const study = await CaseStudyService.getCaseStudyBySlug(slug);
+  const studyResult = await new GetCaseStudyBySlugHandler().execute({ slug });
+  const study = studyResult.success ? studyResult.data : null;
 
   if (!study) {
     return {
@@ -105,10 +110,12 @@ export async function generateMetadata({
 export default async function CaseStudyPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const [allStudies, study] = await Promise.all([
-    CaseStudyService.getAllPublishedCaseStudies(),
-    CaseStudyService.getCaseStudyBySlug(slug),
+  const [allStudiesResult, studyResult] = await Promise.all([
+    new GetAllPublishedCaseStudiesHandler().execute(),
+    new GetCaseStudyBySlugHandler().execute({ slug }),
   ]);
+  const allStudies = allStudiesResult.success ? allStudiesResult.data : [];
+  const study = studyResult.success ? studyResult.data : null;
 
   if (!study) {
     notFound();

@@ -8,7 +8,7 @@ import { CANONICAL_ROUTES } from "@/lib/dx/page-bench";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
 import { compileTerms } from "@/lib/term-compiler";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 import { loadSeedPayloads } from "./helpers/seed-payloads";
 

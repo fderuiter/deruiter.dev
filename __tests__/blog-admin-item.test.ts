@@ -223,7 +223,7 @@ describe("GET and PATCH /api/admin/blog/[id]", () => {
     );
 
     expect(duplicate.status).toBe(409);
-    expect(unavailable.status).toBe(500);
+    expect(unavailable.status).toBe(503);
     expect(redis.del).not.toHaveBeenCalled();
   });
 

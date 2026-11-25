@@ -3,7 +3,11 @@ export * from "./presets";
 export * from "./headings";
 export * from "./related";
 
-import { BlogPostService, toValidBlogPosts } from "@/lib/services/blog-service";
+import {
+  GetAllPublishedBlogPostsHandler,
+  GetBlogPostBySlugHandler,
+  toValidBlogPosts,
+} from "@/lib/services";
 import type { BlogPostData } from "@/lib/fallback-blog-posts";
 import type { BlogPost, BlogPostSummary, ContentPillar } from "./types";
 
@@ -36,12 +40,13 @@ function toBlogPostSummary(parsed: BlogPostData): BlogPostSummary {
 /**
  * Returns every published post, newest first.
  *
- * Backed by `BlogPostService`'s Resilient Hybrid Fallback (Neon, Redis
- * read-through cache, then the static `FALLBACK_BLOG_POSTS` safety net).
+ * Backed by the Two-Tier Cache Shield (Neon, Redis read-through cache,
+ * then the static `FALLBACK_BLOG_POSTS` safety net).
  * Guarantees valid date and pillar contracts and deterministic newest-first ordering.
  */
 export async function getAllPublishedBlogPosts(): Promise<BlogPostSummary[]> {
-  const posts = await BlogPostService.getAllPublishedBlogPosts();
+  const res = await new GetAllPublishedBlogPostsHandler().execute({});
+  const posts = res.success ? res.data : [];
   return toValidBlogPosts(posts)
     .map(toBlogPostSummary)
     .sort((a, b) => {
@@ -63,7 +68,8 @@ export async function getBlogPostBySlug(
   if (!slug || typeof slug !== "string" || !slug.trim()) {
     return null;
   }
-  const post = await BlogPostService.getBlogPostBySlug(slug);
+  const res = await new GetBlogPostBySlugHandler().execute({ slug });
+  const post = res.success ? res.data : null;
   const [parsed] = post ? toValidBlogPosts([post]) : [];
   if (!parsed) {
     return null;

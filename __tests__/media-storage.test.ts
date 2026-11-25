@@ -10,7 +10,7 @@ import {
   getMimeTypeForExtension,
   type MediaStorageProvider,
 } from "@/lib/services/media-storage";
-import { ProjectImageService } from "@/lib/services/project-image-service";
+import { ProjectImageService } from "@/__tests__/helpers/legacy-domain-facades";
 import { createFailure, createSuccess } from "@/lib/services/service-result";
 import * as envModule from "@/lib/env";
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";

@@ -3,10 +3,15 @@ import {
   BlogDraftCreateSchema,
   BlogDraftPaginationSchema,
 } from "@/lib/schemas";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
-import { sanitizeError } from "@/lib/error-sanitization";
-import { logger } from "@/lib/logger";
+import {
+  CreateDraftBlogPostHandler,
+  GetDraftBlogPostsHandler,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -19,19 +24,18 @@ function validationError(error: unknown) {
 
 export const GET = createApiHandler(
   async (_req: NextRequest, { data }) => {
-    try {
-      const { drafts, total } = await BlogPostService.getDraftBlogPosts(data);
-      return NextResponse.json({
-        data: drafts,
-        pagination: { page: data.page, pageSize: data.pageSize, total },
+    const result = await new GetDraftBlogPostsHandler().execute(data);
+    if (!result.success) {
+      return serviceFailureResponse(result, {
+        errorMessage: "Failed to load blog drafts",
+        logContext: "API admin blog draft list failed:",
       });
-    } catch (error) {
-      logger.error("API admin blog draft list failed:", sanitizeError(error));
-      return NextResponse.json(
-        { error: "Failed to load blog drafts" },
-        { status: 500 }
-      );
     }
+    const { drafts, total } = result.data;
+    return NextResponse.json({
+      data: drafts,
+      pagination: { page: data.page, pageSize: data.pageSize, total },
+    });
   },
   {
     schema: BlogDraftPaginationSchema,
@@ -43,42 +47,29 @@ export const GET = createApiHandler(
 
 export const POST = createApiHandler(
   async (_req: NextRequest, { data }) => {
-    try {
-      const created = await BlogPostService.createDraftBlogPost(data);
-      return NextResponse.json(
-        { success: true, data: created },
-        { status: 201 }
-      );
-    } catch (error: unknown) {
-      const details = error as { code?: string; message?: string };
-      if (
-        details.code === "P2002" ||
-        (typeof details.message === "string" &&
-          details.message.includes("Unique constraint failed"))
-      ) {
-        return NextResponse.json(
-          {
-            error: "A blog post with this slug already exists",
-            details: [
-              {
-                path: "slug",
-                message: "A blog post with this slug already exists",
-              },
-            ],
-          },
-          { status: 409 }
-        );
+    const result = await new CreateDraftBlogPostHandler().execute(data);
+    if (!result.success) {
+      if (result.error.code === "CONFLICT") {
+        return serviceFailureResponse(result, {
+          errorMessage: "A blog post with this slug already exists",
+          details: [
+            {
+              path: "slug",
+              message: "A blog post with this slug already exists",
+            },
+          ],
+        });
       }
-
-      logger.error(
-        "API admin blog draft creation failed:",
-        sanitizeError(error)
-      );
-      return NextResponse.json(
-        { error: "Failed to create blog draft" },
-        { status: 500 }
-      );
+      return serviceFailureResponse(result, {
+        errorMessage: "Failed to create blog draft",
+        logContext: "API admin blog draft creation failed:",
+      });
     }
+
+    return NextResponse.json(
+      { success: true, data: result.data },
+      { status: 201 }
+    );
   },
   {
     schema: BlogDraftCreateSchema,

@@ -12,7 +12,7 @@ import {
   parseBlogPostDates,
   toValidBlogPosts,
   compareBlogPostsNewestFirst,
-} from "@/lib/services/blog-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import {
   getAllPublishedBlogPosts,
   getBlogPostBySlug,

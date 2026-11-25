@@ -1,7 +1,7 @@
 // @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BlogPostService } from "@/lib/services/blog-service";
+import { BlogPostService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";
 

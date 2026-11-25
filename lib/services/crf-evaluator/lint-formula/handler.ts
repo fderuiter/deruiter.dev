@@ -1,5 +1,5 @@
 import { LintFormulaSpec, LintFormulaInput, LintFormulaResult } from "./spec";
-import { lintFormula } from "@/lib/crf";
+import { lintFormula } from "@/lib/crf/evaluator";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 export class LintFormulaHandler implements LintFormulaSpec {

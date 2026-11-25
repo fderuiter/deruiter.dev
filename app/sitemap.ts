@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { GetAllPublishedCaseStudiesHandler } from "@/lib/services";
 import { getAllPublishedBlogPosts } from "@/lib/blog";
 import { resolveBaseUrl } from "@/lib/domain";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
@@ -87,7 +87,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // 3. Fetch all published case studies to dynamically attach or update dynamic case study URLs
-  const studies = await CaseStudyService.getAllPublishedCaseStudies();
+  const studiesResult = await new GetAllPublishedCaseStudiesHandler().execute();
+  const studies = studiesResult.success ? studiesResult.data : [];
   for (const study of studies) {
     const url = `${baseUrl}/case-studies/${study.slug}`;
     sitemapMap.set(url, {

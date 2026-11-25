@@ -847,7 +847,7 @@ export function checkTestFixtureHygiene(root: string): DiagnosticCheckResult {
     name: "Test Fixture Hygiene & Shoehorn Guard (ADR 0028)",
     category: "quality",
     status: "fail",
-    message: `Unsafe type assertions (as unknown as Type) detected in ${violations.length} test location(s). Migrate to @total-typescript/shoehorn (fromPartial / fromAny).`,
+    message: `Unsafe type assertions (as unknown as Type) detected in ${violations.length} test location(s). Migrate to @total-typescript/shoehorn (fromPartial / fromAny) per AGENTS.md section 4.`,
     details: violations
       .slice(0, 10)
       .map((v) => `${v.file}:${v.line} -> ${v.match}`),
@@ -3378,20 +3378,75 @@ export function checkServiceResultTypes(
 
   for (const file of serviceFiles) {
     const relative = path.relative(root, file);
+    if (relative.includes(".test.")) continue;
+    const base = path.basename(file);
     const content = fs.readFileSync(file, "utf-8");
     const lines = content.split("\n");
 
-    if (
-      relative.includes("handler.ts") ||
-      relative.includes("spec.ts") ||
-      (file.endsWith("-service.ts") && !relative.endsWith("index.ts"))
-    ) {
-      const usesServiceResult =
-        /ServiceResult\b|ServiceSuccess\b|ServiceFailure\b|createSuccess|createFailure|Result\b|Response\b|Status\b|Input\b|success:\s*boolean/.test(
+    if (base.endsWith("-service.ts")) {
+      violations.push({
+        file: relative,
+        line: 1,
+        issue:
+          "Monolithic *-service.ts module detected. Decompose domain operations into <domain>/<operation>/{spec.ts,handler.ts} vertical slices (ADR-0028).",
+      });
+    }
+
+    if (base === "spec.ts") {
+      const siblingHandler = path.join(path.dirname(file), "handler.ts");
+      if (!fs.existsSync(siblingHandler)) {
+        violations.push({
+          file: relative,
+          line: 1,
+          issue:
+            "Unpaired spec.ts slice detected without sibling handler.ts in the same operation directory.",
+        });
+      }
+      if (!/\binterface\s+[A-Za-z0-9_]+Spec\b/.test(content)) {
+        violations.push({
+          file: relative,
+          line: 1,
+          issue:
+            "Slice spec.ts must declare an exported <Operation>Spec interface.",
+        });
+      }
+      if (!/\bServiceResult\b/.test(content)) {
+        violations.push({
+          file: relative,
+          line: 1,
+          issue:
+            "Service layer spec.ts does not declare typed ServiceResult envelope contract.",
+        });
+      }
+    }
+
+    if (base === "handler.ts") {
+      const siblingSpec = path.join(path.dirname(file), "spec.ts");
+      if (!fs.existsSync(siblingSpec)) {
+        violations.push({
+          file: relative,
+          line: 1,
+          issue:
+            "Unpaired handler.ts slice detected without sibling spec.ts in the same operation directory.",
+        });
+      }
+      if (
+        !/\bclass\s+[A-Za-z0-9_]+Handler\s+implements\s+[A-Za-z0-9_]+Spec\b/.test(
+          content
+        )
+      ) {
+        violations.push({
+          file: relative,
+          line: 1,
+          issue:
+            "Slice handler.ts must declare a Handler class with an explicit `implements <Operation>Spec` clause.",
+        });
+      }
+      const usesStrictServiceResult =
+        /\b(?:ServiceResult|ServiceSuccess|ServiceFailure|createSuccess|createFailure)\b/.test(
           content
         );
-
-      if (!usesServiceResult) {
+      if (!usesStrictServiceResult) {
         violations.push({
           file: relative,
           line: 1,
@@ -3399,12 +3454,18 @@ export function checkServiceResultTypes(
             "Service layer module does not declare typed ServiceResult or result envelope structure",
         });
       }
+      const hasAsyncIo =
+        /\basync\s+execute\b/.test(content) || /\bawait\s+/.test(content);
+      if (hasAsyncIo && !/\btry\s*\{[\s\S]*?\bcatch\b/.test(content)) {
+        violations.push({
+          file: relative,
+          line: 1,
+          issue:
+            "Async handler execute() contains unguarded I/O without a try/catch boundary returning createFailure().",
+        });
+      }
     }
 
-    // Every module under lib/services/ is a service boundary, including the
-    // media storage providers, so the throw scan is not limited to the
-    // envelope-shaped files above.
-    if (relative.includes(".test.")) continue;
     lines.forEach((line, idx) => {
       if (isCommentLine(line) || /createFailure/.test(line)) return;
       const rethrow = SERVICE_RETHROW.test(line);
@@ -3418,6 +3479,45 @@ export function checkServiceResultTypes(
     });
   }
 
+  const loggerScanDirs = ["app", "components", "hooks", "lib"];
+  const loggerSanitizeExcluded = new Set([
+    path.join("lib", "logger.ts"),
+    path.join("lib", "error-sanitization.ts"),
+    path.join("lib", "dx", "doctor.ts"),
+    path.join("lib", "dx", "scaffolder.ts"),
+  ]);
+  for (const dirName of loggerScanDirs) {
+    const absDir = path.join(root, dirName);
+    if (!fs.existsSync(absDir)) continue;
+    const sourceFiles = findFiles(absDir, /\.(?:ts|tsx)$/);
+    for (const srcFile of sourceFiles) {
+      const rel = path.relative(root, srcFile);
+      if (rel.includes(".test.") || loggerSanitizeExcluded.has(rel)) continue;
+      const srcContent = fs.readFileSync(srcFile, "utf-8");
+      const srcLines = srcContent.split("\n");
+      for (let i = 0; i < srcLines.length; i++) {
+        if (isCommentLine(srcLines[i])) continue;
+        if (/\blogger\.(?:debug|info|warn|error)\s*\(/.test(srcLines[i])) {
+          const windowText = srcLines
+            .slice(i, Math.min(srcLines.length, i + 6))
+            .join(" ");
+          if (
+            /\blogger\.(?:debug|info|warn|error)\s*\([^;]*?\bsanitizeError\s*\(/.test(
+              windowText
+            )
+          ) {
+            violations.push({
+              file: rel,
+              line: i + 1,
+              issue:
+                "Caller-side sanitizeError() passed to logger.* strips multi-frame stack traces before Sentry dispatch. Pass the raw error directly to logger.*.",
+            });
+          }
+        }
+      }
+    }
+  }
+
   if (violations.length === 0) {
     return {
       id: "architecture-service-result-types",
@@ -3425,7 +3525,7 @@ export function checkServiceResultTypes(
       category: "architecture",
       status: "pass",
       message:
-        "All service layer handlers return typed ServiceResult envelopes without unhandled exceptions.",
+        "All vertical slice handlers implement *Spec contracts, return typed ServiceResult envelopes, and preserve raw error stacks for Sentry.",
     };
   }
 
@@ -3434,7 +3534,7 @@ export function checkServiceResultTypes(
     name: "Typed Service Contracts & Result Envelopes Guard (ADR-0028)",
     category: "architecture",
     status: "fail",
-    message: `${violations.length} service result return signature violation(s) detected in lib/services/. (ADR-0028: Typed Service Contracts, Dual-Seam Architecture, and Shoehorn Test Fixture Hygiene)`,
+    message: `${violations.length} service result return signature violation(s) detected in lib/services/. (ADR-0028: Typed Service Contracts, Dual-Seam Architecture, and Shoehorn Test Fixture Hygiene; see AGENTS.md section 4)`,
     details: violations.map((v) => `${v.file}:${v.line} -> ${v.issue}`),
     fixable: false,
   };

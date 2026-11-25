@@ -6,7 +6,7 @@ import {
   GET as unsubscribeGet,
   POST as unsubscribePost,
 } from "@/app/api/newsletter/unsubscribe/route";
-import { NewsletterService } from "@/lib/services/newsletter-service";
+import { NewsletterService } from "@/__tests__/helpers/legacy-domain-facades";
 
 const TOKEN = "a-sufficiently-long-token-value";
 const url = (path: string, token = TOKEN) =>

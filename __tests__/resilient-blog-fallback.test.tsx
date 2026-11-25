@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { redis, isRedisConfigured } from "@/lib/redis";
 import { revalidateTag, revalidatePath } from "next/cache";
-import { BlogPostService } from "@/lib/services/blog-service";
+import { BlogPostService } from "@/__tests__/helpers/legacy-domain-facades";
 import BlogIndexPage from "@/app/blog/page";
 import BlogPostPage, {
   generateMetadata,

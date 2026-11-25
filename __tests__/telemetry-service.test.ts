@@ -31,16 +31,16 @@ const transactionClient = {
   telemetryDailyRollup: { groupBy: mockRollupGroupBy },
 };
 
-let computeAggregateStats: typeof import("@/lib/services/telemetry-service").TelemetryService.computeAggregateStats;
-let TelemetryService: typeof import("@/lib/services/telemetry-service").TelemetryService;
-let _testCache: typeof import("@/lib/services/telemetry-service")._testCache;
+let computeAggregateStats: typeof import("@/__tests__/helpers/legacy-domain-facades").TelemetryService.computeAggregateStats;
+let TelemetryService: typeof import("@/__tests__/helpers/legacy-domain-facades").TelemetryService;
+let _testCache: typeof import("@/__tests__/helpers/legacy-domain-facades")._testCache;
 
 describe("TelemetryService.computeAggregateStats", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
 
-    const mod = await import("@/lib/services/telemetry-service");
+    const mod = await import("@/__tests__/helpers/legacy-domain-facades");
     TelemetryService = mod.TelemetryService;
     computeAggregateStats = mod.TelemetryService.computeAggregateStats;
     _testCache = mod._testCache;
@@ -171,7 +171,7 @@ describe("TelemetryService.getAggregateStats reads only Redis (#3201)", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
-    const mod = await import("@/lib/services/telemetry-service");
+    const mod = await import("@/__tests__/helpers/legacy-domain-facades");
     TelemetryService = mod.TelemetryService;
     _testCache = mod._testCache;
     _testCache.reset();
@@ -236,7 +236,7 @@ describe("TelemetryService.refreshAggregateStats (#3201)", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
-    const mod = await import("@/lib/services/telemetry-service");
+    const mod = await import("@/__tests__/helpers/legacy-domain-facades");
     TelemetryService = mod.TelemetryService;
     _testCache = mod._testCache;
     _testCache.reset();

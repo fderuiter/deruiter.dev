@@ -60,10 +60,11 @@ async function loadProductionRuntime() {
   vi.stubEnv("NEXT_PHASE", "");
   vi.stubEnv("VERCEL_ENV", "production");
   return {
-    BlogPostService: (await import("@/lib/services/blog-service"))
+    BlogPostService: (await import("@/__tests__/helpers/legacy-domain-facades"))
       .BlogPostService,
-    CaseStudyService: (await import("@/lib/services/case-study-service"))
-      .CaseStudyService,
+    CaseStudyService: (
+      await import("@/__tests__/helpers/legacy-domain-facades")
+    ).CaseStudyService,
   };
 }
 

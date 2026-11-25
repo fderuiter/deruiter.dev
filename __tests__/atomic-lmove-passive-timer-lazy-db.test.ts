@@ -73,7 +73,10 @@ vi.mock("@upstash/ratelimit", () => {
   };
 });
 
-import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
+import {
+  TelemetryService,
+  _testCache,
+} from "@/__tests__/helpers/legacy-domain-facades";
 
 describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Criteria", () => {
   beforeEach(() => {
@@ -137,14 +140,23 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
 
   // Acceptance Criterion 2: Background interval timer workers are completely removed
   it("has zero active background setInterval timers in the telemetry service codebase", () => {
-    const filePath = path.resolve(
-      process.cwd(),
-      "lib/services/telemetry-service.ts"
-    );
-    const source = fs.readFileSync(filePath, "utf-8");
-
-    expect(source).not.toContain("setInterval");
-    expect(source).not.toContain("clearInterval");
+    const telemetryDir = path.resolve(process.cwd(), "lib/services/telemetry");
+    const collectTs = (dir: string): string[] => {
+      const files: string[] = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) files.push(...collectTs(full));
+        else if (entry.isFile() && entry.name.endsWith(".ts")) files.push(full);
+      }
+      return files;
+    };
+    const sliceFiles = collectTs(telemetryDir);
+    expect(sliceFiles.length).toBeGreaterThan(0);
+    for (const filePath of sliceFiles) {
+      const source = fs.readFileSync(filePath, "utf-8");
+      expect(source).not.toContain("setInterval");
+      expect(source).not.toContain("clearInterval");
+    }
   });
 
   // Acceptance Criterion 3: Rate-limiting memory state rotates passively based on active request timestamps

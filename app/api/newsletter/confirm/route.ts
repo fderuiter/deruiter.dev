@@ -1,6 +1,7 @@
 import { NewsletterTokenQuerySchema } from "@/lib/schemas";
-import { NewsletterService } from "@/lib/services/newsletter-service";
+import { ConfirmSubscriberHandler } from "@/lib/services";
 import { createApiHandler } from "@/lib/route-wrapper";
+import { logger } from "@/lib/logger";
 import { newsletterLinkPage } from "../link-page";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +12,25 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createApiHandler(
   async (_req, { data }) => {
-    const outcome = await NewsletterService.confirm(data.token);
-    if (outcome === "confirmed" || outcome === "already_confirmed") {
+    const result = await new ConfirmSubscriberHandler().execute({
+      token: data.token,
+    });
+    if (result.success) {
       return newsletterLinkPage(
         200,
         "Subscription confirmed",
         "You're on the Systems Dispatch list. Every dispatch has a one-click unsubscribe link."
+      );
+    }
+    if (result.error.code === "STORAGE_UNAVAILABLE") {
+      logger.error(
+        "Newsletter confirmation failed due to storage outage:",
+        result.error.details
+      );
+      return newsletterLinkPage(
+        503,
+        "Service temporarily unavailable",
+        "We could not verify your confirmation link right now because storage is temporarily unavailable. Please try opening this link again in a few minutes."
       );
     }
     return newsletterLinkPage(

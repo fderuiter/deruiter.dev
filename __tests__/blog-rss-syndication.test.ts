@@ -4,7 +4,7 @@ import { GET as getRss } from "@/app/blog/rss.xml/route";
 import {
   BlogPostService,
   type BlogPostData,
-} from "@/lib/services/blog-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { resolveBaseUrl } from "@/lib/domain";
 import { JSDOM } from "jsdom";
 

@@ -3,7 +3,8 @@ import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
-import { BlogPostService } from "@/lib/services/blog-service";
+import { GetAllBlogPostsAdminHandler } from "@/lib/services";
+import { logger } from "@/lib/logger";
 import {
   IconPlus,
   IconEdit,
@@ -39,7 +40,14 @@ export default async function AdminBlogPage() {
     );
   }
 
-  const posts = await BlogPostService.getAllBlogPostsAdmin();
+  const postsResult = await new GetAllBlogPostsAdminHandler().execute();
+  if (!postsResult.success) {
+    logger.error(
+      "Admin blog authoring console read failed:",
+      postsResult.error.details
+    );
+  }
+  const posts = postsResult.success ? postsResult.data : [];
 
   return (
     <PageLayout variant="standard">
@@ -79,11 +87,26 @@ export default async function AdminBlogPage() {
         <div className="rounded-lg border border-white/10 bg-[#0d0e11] overflow-hidden">
           <div className="p-4 border-b border-white/10 bg-[#13151a] flex items-center justify-between">
             <h2 className="text-sm font-mono font-semibold text-zinc-200">
-              Persisted Blog Posts & Drafts ({posts.length})
+              Persisted Blog Posts & Drafts (
+              {postsResult.success ? posts.length : "Unavailable"})
             </h2>
           </div>
 
-          {posts.length === 0 ? (
+          {!postsResult.success ? (
+            <div
+              role="alert"
+              data-status="503"
+              className="p-8 text-center flex flex-col items-center justify-center gap-2 border-t border-amber-500/20 bg-amber-500/5"
+            >
+              <p className="text-sm font-mono font-semibold text-amber-300">
+                503 — Service Temporarily Unavailable
+              </p>
+              <p className="text-xs font-mono text-zinc-400">
+                Database persistence is currently unreachable. Please refresh in
+                a moment instead of assuming no drafts exist.
+              </p>
+            </div>
+          ) : posts.length === 0 ? (
             <div className="p-8 text-center flex flex-col items-center justify-center gap-3">
               <p className="text-sm font-mono text-zinc-400">
                 No blog posts or drafts found in database persistence.

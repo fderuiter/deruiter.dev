@@ -40,26 +40,40 @@ describe("isBuildPhase", () => {
 
 describe("service fallback logging is gated on runtime, not merely production", () => {
   it("every production log guard in the content services also excludes the build phase", async () => {
-    const { readFileSync } = await import("fs");
+    const { readdirSync, readFileSync } = await import("fs");
     const { join } = await import("path");
+
+    function collectTsFiles(dir: string): string[] {
+      const out: string[] = [];
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) out.push(...collectTsFiles(full));
+        else if (entry.isFile() && entry.name.endsWith(".ts")) out.push(full);
+      }
+      return out;
+    }
 
     // Resolved from the workspace root rather than a hardcoded absolute path.
     const root = process.cwd();
-    const services = [
-      "lib/services/blog-service.ts",
-      "lib/services/case-study-service.ts",
-    ];
+    const serviceDomains = ["lib/services/blog", "lib/services/case-study"];
 
-    for (const service of services) {
-      const source = readFileSync(join(root, service), "utf-8");
-      const guards = source.match(/env\.VERCEL_ENV === "production"/g) ?? [];
-      const gated =
-        source.match(
-          /env\.VERCEL_ENV === "production" && !isBuildPhase\(\)/g
-        ) ?? [];
-
-      expect(guards.length).toBeGreaterThan(0);
-      expect(gated.length).toBe(guards.length);
+    for (const domain of serviceDomains) {
+      const files = collectTsFiles(join(root, domain));
+      let totalGuards = 0;
+      let totalGated = 0;
+      for (const file of files) {
+        const source = readFileSync(file, "utf-8");
+        const guards = source.match(/env\.VERCEL_ENV === "production"/g) ?? [];
+        const gated =
+          source.match(
+            /env\.VERCEL_ENV === "production" && !isBuildPhase\(\)/g
+          ) ?? [];
+        expect(gated.length).toBe(guards.length);
+        totalGuards += guards.length;
+        totalGated += gated.length;
+      }
+      expect(totalGuards).toBeGreaterThan(0);
+      expect(totalGated).toBe(totalGuards);
     }
   });
 });

@@ -4,7 +4,7 @@ import {
   MaintenanceService,
   type MaintenanceAdapters,
   type MaintenancePhaseResult,
-} from "@/lib/services/maintenance-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { createSuccess } from "@/lib/services/service-result";
 
 /**

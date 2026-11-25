@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import crypto from "crypto";
 import { POST } from "@/app/api/webhooks/resend/route";
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import { NextRequest } from "next/server";
 
 // Mock prisma for suppression list operations

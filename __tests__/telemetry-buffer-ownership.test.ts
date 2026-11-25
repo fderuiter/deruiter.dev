@@ -69,7 +69,7 @@ vi.mock("@upstash/ratelimit", () => ({
   },
 }));
 
-import { TelemetryService } from "@/lib/services/telemetry-service";
+import { TelemetryService } from "@/__tests__/helpers/legacy-domain-facades";
 
 const PROCESSING_KEY = "telemetry_processing";
 

@@ -14,9 +14,17 @@ import {
 } from "../scripts/generate-llms-txt";
 
 vi.mock("@/lib/prisma", () => ({ default: {}, prisma: {} }));
-vi.mock("@/lib/services/case-study-service", () => ({
-  CaseStudyService: { getAllPublishedCaseStudies: async () => [] },
-}));
+vi.mock("@/lib/services", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/services")>();
+  return {
+    ...actual,
+    GetAllPublishedCaseStudiesHandler: class {
+      async execute() {
+        return actual.createSuccess([]);
+      }
+    },
+  };
+});
 vi.mock("@/lib/blog", () => ({ getAllPublishedBlogPosts: async () => [] }));
 
 // Phase N3 (#1848): the footer, palette, sitemap, llms.txt and breadcrumbs all
@@ -25,7 +33,9 @@ describe("navigation groups for pages (#1848)", () => {
   it("names the group a page belongs to", () => {
     expect(getNavGroupForHref("/arcade/laser-loon")?.id).toBe("arcade");
     expect(getNavGroupForHref("/merch")?.id).toBe("about");
-    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe("clinical");
+    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe(
+      "clinical"
+    );
     expect(getNavGroupForHref("/crf")?.id).toBe("clinical");
     expect(getNavGroupForHref("/proof")?.id).toBe("labs");
     expect(getNavGroupForHref("/stack")?.id).toBe("about");

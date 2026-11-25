@@ -145,7 +145,7 @@ vi.mock("@upstash/ratelimit", () => ({
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import { TelemetryService } from "@/lib/services/telemetry-service";
+import { TelemetryService } from "@/__tests__/helpers/legacy-domain-facades";
 
 const BUFFER = "telemetry_buffer";
 const PROCESSING = "telemetry_processing";

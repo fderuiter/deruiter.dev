@@ -3,7 +3,7 @@ import {
   EvaluateFormulaInput,
   EvaluateFormulaResult,
 } from "./spec";
-import { evaluateFormula } from "@/lib/crf";
+import { evaluateFormula } from "@/lib/crf/evaluator";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 export class EvaluateFormulaHandler implements EvaluateFormulaSpec {

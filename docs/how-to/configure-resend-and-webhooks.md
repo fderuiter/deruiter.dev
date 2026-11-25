@@ -52,7 +52,7 @@ confirmations). It:
 1. Requires all three Svix signature headers (`svix-id`, `svix-timestamp`,
    `svix-signature`). A request missing any of them gets a 400.
 2. Verifies the signature via
-   [`verifySvixSignature`](../../lib/services/email-service.ts) against
+   [`verifySvixSignature`](../../lib/services/email/shared.ts) against
    `RESEND_WEBHOOK_SECRET` before it parses the body. An invalid signature
    gets a 401.
 3. Parses and validates the JSON payload against `ResendWebhookEventSchema`

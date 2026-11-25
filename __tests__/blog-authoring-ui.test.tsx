@@ -2,7 +2,7 @@ import React from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { BlogAuthoringForm } from "@/components/admin/BlogAuthoringForm";
-import { BlogPostService } from "@/lib/services/blog-service";
+import { BlogPostService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 import {
   BlogDraftCreateSchema,

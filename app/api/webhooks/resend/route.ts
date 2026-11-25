@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { ResendWebhookEventSchema } from "@/lib/schemas";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, serviceFailureResponse } from "@/lib/route-wrapper";
 import {
-  EmailService,
-  verifySvixSignature,
-} from "@/lib/services/email-service";
-import { logger } from "@/lib/logger";
+  HandleEmailWebhookEventHandler,
+  VerifySvixSignatureHandler,
+} from "@/lib/services";
 
 export const dynamic = "force-dynamic";
 
@@ -16,82 +15,75 @@ export const dynamic = "force-dynamic";
  */
 export const POST = createApiHandler(
   async (req) => {
-    try {
-      const svixId = req.headers.get("svix-id");
-      const svixTimestamp = req.headers.get("svix-timestamp");
-      const svixSignature = req.headers.get("svix-signature");
+    const svixId = req.headers.get("svix-id");
+    const svixTimestamp = req.headers.get("svix-timestamp");
+    const svixSignature = req.headers.get("svix-signature");
 
-      if (!svixId || !svixTimestamp || !svixSignature) {
-        return NextResponse.json(
-          { error: "Missing required Svix webhook verification headers" },
-          { status: 400 }
-        );
-      }
-
-      const rawBody = await req.text();
-
-      const isValid = verifySvixSignature({
-        payload: rawBody,
-        svixId,
-        svixTimestamp,
-        svixSignature,
-      });
-
-      if (!isValid) {
-        return NextResponse.json(
-          { error: "Invalid Svix webhook signature" },
-          { status: 401 }
-        );
-      }
-
-      let parsedJson: unknown;
-      try {
-        parsedJson = JSON.parse(rawBody);
-      } catch {
-        return NextResponse.json(
-          { error: "Invalid JSON payload" },
-          { status: 400 }
-        );
-      }
-
-      const parseResult = ResendWebhookEventSchema.safeParse(parsedJson);
-      if (!parseResult.success) {
-        return NextResponse.json(
-          {
-            error: "Payload does not match Resend webhook schema",
-            details: parseResult.error.issues,
-          },
-          { status: 422 }
-        );
-      }
-
-      const result = await EmailService.handleWebhookEvent(parseResult.data);
-
-      if (!result.handled) {
-        // Durable processing (e.g. the suppression-list write) failed. Respond
-        // with a retryable status so Resend/Svix redelivers the event instead
-        // of treating a lost write as acknowledged.
-        return NextResponse.json(
-          { error: "Failed to durably process webhook event" },
-          { status: 500 }
-        );
-      }
-
+    if (!svixId || !svixTimestamp || !svixSignature) {
       return NextResponse.json(
-        {
-          received: true,
-          processedEvent: parseResult.data.type,
-          suppressed: result.suppressed || false,
-        },
-        { status: 200 }
-      );
-    } catch (err) {
-      logger.error("Unhandled error processing Resend webhook:", err);
-      return NextResponse.json(
-        { error: "Internal server error processing webhook" },
-        { status: 500 }
+        { error: "Missing required Svix webhook verification headers" },
+        { status: 400 }
       );
     }
+
+    const rawBody = await req.text();
+
+    const verification = new VerifySvixSignatureHandler().execute({
+      payload: rawBody,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+    });
+
+    if (!verification.success) {
+      return serviceFailureResponse(verification, {
+        status: verification.error.code === "MISSING_HEADERS" ? 400 : 401,
+      });
+    }
+
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
+    const parseResult = ResendWebhookEventSchema.safeParse(parsedJson);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          error: "Payload does not match Resend webhook schema",
+          details: parseResult.error.issues,
+        },
+        { status: 422 }
+      );
+    }
+
+    const result = await new HandleEmailWebhookEventHandler().execute({
+      event: parseResult.data,
+    });
+
+    if (!result.success) {
+      // Durable processing (e.g. the suppression-list write) failed. Respond
+      // with a retryable status so Resend/Svix redelivers the event instead
+      // of treating a lost write as acknowledged.
+      return serviceFailureResponse(result, {
+        errorMessage: "Failed to durably process webhook event",
+        logContext: "Failed to durably process Resend webhook event:",
+      });
+    }
+
+    return NextResponse.json(
+      {
+        received: true,
+        processedEvent: parseResult.data.type,
+        suppressed: result.data.suppressed || false,
+      },
+      { status: 200 }
+    );
   },
   { auth: "public" }
 );

@@ -8,8 +8,8 @@ import { fromPartial } from "@total-typescript/shoehorn";
 import { GET as getMedia } from "@/app/api/media/[key]/route";
 import { POST as postResend } from "@/app/api/webhooks/resend/route";
 import { POST as postQStashRetry } from "@/app/api/webhooks/qstash/retry/route";
-import { ProjectImageService } from "@/lib/services/project-image-service";
-import { EmailService } from "@/lib/services/email-service";
+import { ProjectImageService } from "@/__tests__/helpers/legacy-domain-facades";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import { SECURITY_HEADERS } from "@/lib/security-headers";
 import { zodIssueDetails } from "@/lib/route-wrapper";
 
@@ -155,7 +155,8 @@ describe("every API route names its auth", () => {
     ])
   )("%s", (file) => {
     const source = readFileSync(path.resolve(process.cwd(), file), "utf8");
-    const handlers = source.match(/\b(createApiHandler|withApiWrapper)\(/g) ?? [];
+    const handlers =
+      source.match(/\b(createApiHandler|withApiWrapper)\(/g) ?? [];
     const named =
       source.match(/\bauth:\s*"(public|clerk_admin|cron_secret)"/g) ?? [];
     expect(handlers.length).toBeGreaterThan(0);

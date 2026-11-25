@@ -1,8 +1,162 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+
+interface StoredFeedbackRow {
+  id: string;
+  caseStudySlug: string;
+  takeaways: string;
+  comments: string;
+  connectionHash: string;
+  operationKey?: string;
+  createdAt: Date;
+}
+
+interface StoredReactionRow {
+  id: string;
+  caseStudySlug: string;
+  reactionType: string;
+  connectionHash: string;
+}
+
+const { feedbackRows, reactionRows, dbFailureState } = vi.hoisted(() => ({
+  feedbackRows: [] as StoredFeedbackRow[],
+  reactionRows: [] as StoredReactionRow[],
+  dbFailureState: { failFeedback: false, failReactions: false },
+}));
+
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    caseStudyFeedback: {
+      findFirst: vi.fn(
+        async (args: {
+          where: {
+            caseStudySlug?: string;
+            connectionHash: string;
+            operationKey?: string;
+            createdAt?: { gte: Date };
+          };
+        }) => {
+          if (dbFailureState.failFeedback) {
+            throw new Error("Neon connection refused");
+          }
+          const { where } = args;
+          return (
+            feedbackRows.find((row) => {
+              if (row.connectionHash !== where.connectionHash) return false;
+              if (where.operationKey !== undefined) {
+                return row.operationKey === where.operationKey;
+              }
+              if (
+                where.caseStudySlug !== undefined &&
+                row.caseStudySlug !== where.caseStudySlug
+              ) {
+                return false;
+              }
+              if (where.createdAt?.gte && row.createdAt < where.createdAt.gte) {
+                return false;
+              }
+              return true;
+            }) ?? null
+          );
+        }
+      ),
+      create: vi.fn(
+        async (args: {
+          data: {
+            caseStudySlug: string;
+            takeaways: string;
+            comments: string;
+            connectionHash: string;
+            operationKey?: string;
+          };
+        }) => {
+          if (dbFailureState.failFeedback) {
+            throw new Error("Neon connection refused");
+          }
+          const row: StoredFeedbackRow = {
+            id: `fb_${feedbackRows.length + 1}`,
+            caseStudySlug: args.data.caseStudySlug,
+            takeaways: args.data.takeaways,
+            comments: args.data.comments,
+            connectionHash: args.data.connectionHash,
+            operationKey: args.data.operationKey,
+            createdAt: new Date(),
+          };
+          feedbackRows.push(row);
+          return row;
+        }
+      ),
+    },
+    caseStudyReaction: {
+      createMany: vi.fn(
+        async (args: {
+          data: Array<{
+            caseStudySlug: string;
+            reactionType: string;
+            connectionHash: string;
+          }>;
+          skipDuplicates: boolean;
+        }) => {
+          if (dbFailureState.failReactions) {
+            throw new Error("Neon connection refused");
+          }
+          let count = 0;
+          for (const item of args.data) {
+            const exists = reactionRows.some(
+              (r) =>
+                r.caseStudySlug === item.caseStudySlug &&
+                r.reactionType === item.reactionType &&
+                r.connectionHash === item.connectionHash
+            );
+            if (!exists || !args.skipDuplicates) {
+              reactionRows.push({
+                id: `rx_${reactionRows.length + 1}`,
+                ...item,
+              });
+              count++;
+            }
+          }
+          return { count };
+        }
+      ),
+      groupBy: vi.fn(async (args: { where: { caseStudySlug: string } }) => {
+        if (dbFailureState.failReactions) {
+          throw new Error("Neon connection refused");
+        }
+        const map = new Map<string, number>();
+        for (const r of reactionRows) {
+          if (r.caseStudySlug === args.where.caseStudySlug) {
+            map.set(r.reactionType, (map.get(r.reactionType) ?? 0) + 1);
+          }
+        }
+        return Array.from(map.entries()).map(([reactionType, idCount]) => ({
+          reactionType,
+          _count: { id: idCount },
+        }));
+      }),
+      findMany: vi.fn(
+        async (args: {
+          where: { caseStudySlug: string; connectionHash: string };
+        }) => {
+          if (dbFailureState.failReactions) {
+            throw new Error("Neon connection refused");
+          }
+          return reactionRows
+            .filter(
+              (r) =>
+                r.caseStudySlug === args.where.caseStudySlug &&
+                r.connectionHash === args.where.connectionHash
+            )
+            .map((r) => ({ reactionType: r.reactionType }));
+        }
+      ),
+    },
+  },
+}));
+
 import * as feedbackRoute from "@/app/api/case-studies/feedback/route";
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import {
   POST as reactionPOST,
   GET as reactionGET,
@@ -11,6 +165,10 @@ import {
 describe("Case Study Feedback & Reaction API Routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    feedbackRows.length = 0;
+    reactionRows.length = 0;
+    dbFailureState.failFeedback = false;
+    dbFailureState.failReactions = false;
   });
 
   describe("Feedback API (/api/case-studies/feedback)", () => {
@@ -270,6 +428,41 @@ describe("Case Study Feedback & Reaction API Routes", () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.counts.insightful).toBeGreaterThanOrEqual(1);
+    });
+
+    it("returns HTTP 503 on feedback and reaction writes when storage fails (ADR 0043)", async () => {
+      dbFailureState.failFeedback = true;
+      dbFailureState.failReactions = true;
+
+      const fbReq = new NextRequest(
+        "http://localhost/api/case-studies/feedback",
+        {
+          method: "POST",
+          headers: { "x-forwarded-for": "10.9.0.1", "user-agent": "outage" },
+          body: JSON.stringify({
+            caseStudySlug: "imednet-python-sdk",
+            takeaways: ["Architecture & System Design"],
+            comments:
+              "Thoughtful architectural feedback during storage outage.",
+          }),
+        }
+      );
+      const fbRes = await feedbackRoute.POST(fbReq);
+      expect(fbRes.status).toBe(503);
+
+      const rxReq = new NextRequest(
+        "http://localhost/api/case-studies/reactions",
+        {
+          method: "POST",
+          headers: { "x-forwarded-for": "10.9.0.1", "user-agent": "outage" },
+          body: JSON.stringify({
+            caseStudySlug: "imednet-python-sdk",
+            reactionType: "insightful",
+          }),
+        }
+      );
+      const rxRes = await reactionPOST(rxReq);
+      expect(rxRes.status).toBe(503);
     });
   });
 });

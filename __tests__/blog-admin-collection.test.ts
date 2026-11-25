@@ -207,7 +207,7 @@ describe("GET and POST /api/admin/blog", () => {
         { path: "slug", message: "A blog post with this slug already exists" },
       ],
     });
-    expect(unavailable.status).toBe(500);
+    expect(unavailable.status).toBe(503);
     expect(await unavailable.json()).toEqual({
       error: "Failed to create blog draft",
     });

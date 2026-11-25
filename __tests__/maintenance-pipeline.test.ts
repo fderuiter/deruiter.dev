@@ -4,15 +4,15 @@ import { NextRequest } from "next/server";
 import {
   MaintenanceService,
   type MaintenancePhaseResult,
-} from "@/lib/services/maintenance-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { GET, maxDuration } from "@/app/api/cron/maintenance/route";
 import { logger } from "@/lib/logger";
 import { createFailure, createSuccess } from "@/lib/services/service-result";
-import { TelemetryService } from "@/lib/services/telemetry-service";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { NewsletterService } from "@/lib/services/newsletter-service";
-import { EmailService } from "@/lib/services/email-service";
+import { TelemetryService } from "@/__tests__/helpers/legacy-domain-facades";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
+import { BlogPostService } from "@/__tests__/helpers/legacy-domain-facades";
+import { NewsletterService } from "@/__tests__/helpers/legacy-domain-facades";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 
 type PhaseTask = () => Promise<MaintenancePhaseResult>;
 

@@ -1,80 +1,75 @@
 import { NextResponse, NextRequest } from "next/server";
 import { CaseStudySubmissionSchema } from "@/lib/schemas";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
-import { sanitizeError } from "@/lib/error-sanitization";
+import {
+  GetPublishedCaseStudiesHandler,
+  SubmitCaseStudyHandler,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { checkRequestSubmissionRateLimit } from "@/lib/moderation";
-import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
 export const GET = createApiHandler(
   async () => {
-    try {
-      const studies = await CaseStudyService.getPublishedCaseStudies();
-      return NextResponse.json(studies, {
-        headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
-        },
+    const result = await new GetPublishedCaseStudiesHandler().execute();
+    if (!result.success) {
+      return serviceFailureResponse(result, {
+        status: 500,
+        errorMessage: "Failed to load case studies telemetry data",
+        logContext: "API Case Studies search data fetch failed:",
       });
-    } catch (err) {
-      logger.error("API Case Studies search data fetch failed:", err);
-      return NextResponse.json(
-        { error: "Failed to load case studies telemetry data" },
-        { status: 500 }
-      );
     }
+    return NextResponse.json(result.data, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+      },
+    });
   },
   { auth: "public" }
 );
 
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
-    try {
-      const rateLimitCheck = checkRequestSubmissionRateLimit(req);
-      if (rateLimitCheck.isRateLimited) {
-        return NextResponse.json(
-          { error: "Too many submission attempts. Please try again later." },
-          { status: 429 }
-        );
-      }
-
-      const newCaseStudy = await CaseStudyService.submitCaseStudy(data);
+    const rateLimitCheck = checkRequestSubmissionRateLimit(req);
+    if (rateLimitCheck.isRateLimited) {
       return NextResponse.json(
-        {
-          success: true,
-          data: newCaseStudy,
-        },
-        { status: 201 }
-      );
-    } catch (err: unknown) {
-      const errorObj = err as { code?: string; message?: string };
-      if (
-        errorObj?.code === "P2002" ||
-        (typeof errorObj?.message === "string" &&
-          errorObj.message.includes("Unique constraint failed"))
-      ) {
-        return NextResponse.json(
-          {
-            error: "A case study with this slug already exists",
-            details: [
-              {
-                path: "slug",
-                message: "A case study with this slug already exists",
-              },
-            ],
-          },
-          { status: 400 }
-        );
-      }
-
-      const sanitized = sanitizeError(err);
-      logger.error("API Case Study submission failed:", sanitized);
-      return NextResponse.json(
-        { error: "Failed to submit case study" },
-        { status: 500 }
+        { error: "Too many submission attempts. Please try again later." },
+        { status: 429 }
       );
     }
+
+    const result = await new SubmitCaseStudyHandler().execute(data);
+    if (!result.success) {
+      if (result.error.code === "DUPLICATE_SLUG") {
+        return serviceFailureResponse(result, {
+          status: 400,
+          errorMessage: "A case study with this slug already exists",
+          details: [
+            {
+              path: "slug",
+              message: "A case study with this slug already exists",
+            },
+          ],
+        });
+      }
+      return serviceFailureResponse(result, {
+        status: 500,
+        errorMessage: "Failed to submit case study",
+        logContext: "API Case Study submission failed:",
+      });
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: result.data,
+      },
+      { status: 201 }
+    );
   },
   {
     schema: CaseStudySubmissionSchema,

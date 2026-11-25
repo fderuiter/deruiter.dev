@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import path from "node:path";
 import * as Sentry from "@sentry/nextjs";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 
 vi.mock("@sentry/nextjs", () => ({

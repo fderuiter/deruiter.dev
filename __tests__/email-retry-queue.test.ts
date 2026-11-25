@@ -6,7 +6,7 @@ import {
   RawEmailOptions,
   type EmailRetryCounts,
   type EmailRetryResult,
-} from "@/lib/services/email-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 
 // In-memory mock store for OutboundEmailQueue & SuppressionList

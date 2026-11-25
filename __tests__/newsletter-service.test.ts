@@ -429,12 +429,12 @@ vi.mock("@/lib/db", () => {
   };
 });
 
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import { resolveBaseUrl } from "@/lib/domain";
 import {
   NewsletterService,
   NEWSLETTER_DISPATCH_CAP,
-} from "@/lib/services/newsletter-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 
 const HOUR = 60 * 60 * 1000;
 

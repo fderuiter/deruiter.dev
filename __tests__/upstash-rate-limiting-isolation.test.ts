@@ -2,7 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getRedisKeyPrefix, getScopedRedisKey } from "@/lib/redis";
-import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
+import {
+  TelemetryService,
+  _testCache,
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { NextRequest } from "next/server";
 import { runUpstashVerification } from "../scripts/verify-upstash";
 import { POST as contactPost } from "../app/api/contact/route";

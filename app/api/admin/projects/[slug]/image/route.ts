@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import {
-  ProjectImageService,
+  DeleteMediaAssetHandler,
+  extractMediaKeyFromUrl,
+  GetCaseStudyBySlugHandler,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
+  UpdateCaseStudyImageHandler,
+  UploadProjectImageHandler,
   type ProjectImageErrorCode,
-} from "@/lib/services/project-image-service";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+} from "@/lib/services";
 import { applySecurityHeaders } from "@/lib/security-headers";
-import { sanitizeError } from "@/lib/error-sanitization";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 
@@ -102,11 +104,11 @@ export const POST = createApiHandler(
       const mimeType = fileBlob.type || "application/octet-stream";
 
       // 3. Process, Validate & Upload Project Image Asset
-      const result = await ProjectImageService.uploadProjectImage(
+      const result = await new UploadProjectImageHandler().execute({
         slug,
-        buffer,
-        mimeType
-      );
+        fileBuffer: buffer,
+        mimeType,
+      });
 
       if (!result.success) {
         if (CLIENT_ERROR_CODES.has(result.error.code)) {
@@ -119,7 +121,7 @@ export const POST = createApiHandler(
 
         logger.error("Project image upload failed:", {
           code: result.error.code,
-          cause: sanitizeError(result.error.details),
+          cause: result.error.details,
         });
         const res = NextResponse.json(
           { error: "Failed to process and store project image" },
@@ -142,7 +144,7 @@ export const POST = createApiHandler(
       return applySecurityHeaders(res, req);
     } catch (err: unknown) {
       // Only request parsing (multipart form data) can throw here.
-      logger.error("Project image upload failed:", sanitizeError(err));
+      logger.error("Project image upload failed:", err);
       const res = NextResponse.json(
         { error: "Failed to process and store project image" },
         { status: 500 }
@@ -171,8 +173,22 @@ export const DELETE = createApiHandler(
     }
 
     try {
-      const existing = await CaseStudyService.getCaseStudyBySlug(slug);
-      if (!existing) {
+      const existingRes = await new GetCaseStudyBySlugHandler().execute({
+        slug,
+        allowFallbackOnError: false,
+      });
+      if (!existingRes.success) {
+        logger.error(
+          "Failed to clear project image:",
+          existingRes.error.details
+        );
+        const res = NextResponse.json(
+          { error: "Failed to clear project image" },
+          { status: 500 }
+        );
+        return applySecurityHeaders(res, req);
+      }
+      if (!existingRes.data) {
         const res = NextResponse.json(
           { error: `Case study with slug "${slug}" not found` },
           { status: 404 }
@@ -180,11 +196,12 @@ export const DELETE = createApiHandler(
         return applySecurityHeaders(res, req);
       }
 
-      const priorKey = ProjectImageService.extractMediaKeyFromUrl(
-        existing.hero_image_url
-      );
+      const priorKey = extractMediaKeyFromUrl(existingRes.data.hero_image_url);
 
-      const cleared = await CaseStudyService.updateCaseStudyImage(slug, null);
+      const cleared = await new UpdateCaseStudyImageHandler().execute({
+        slug,
+        heroImageUrl: null,
+      });
       if (!cleared.success) {
         if (cleared.error.code === "CASE_STUDY_NOT_FOUND") {
           const res = NextResponse.json(
@@ -193,10 +210,7 @@ export const DELETE = createApiHandler(
           );
           return applySecurityHeaders(res, req);
         }
-        logger.error(
-          "Failed to clear project image:",
-          sanitizeError(cleared.error.details)
-        );
+        logger.error("Failed to clear project image:", cleared.error.details);
         const res = NextResponse.json(
           { error: "Failed to clear project image" },
           { status: 500 }
@@ -205,11 +219,13 @@ export const DELETE = createApiHandler(
       }
 
       if (priorKey) {
-        const cleanup = await ProjectImageService.deleteMediaAsset(priorKey);
+        const cleanup = await new DeleteMediaAssetHandler().execute({
+          key: priorKey,
+        });
         if (!cleanup.success) {
           logger.warn(
             "Project image reference was cleared, but media cleanup failed.",
-            sanitizeError(cleanup.error.details),
+            cleanup.error.details,
             { slug, code: cleanup.error.code }
           );
         }
@@ -221,7 +237,7 @@ export const DELETE = createApiHandler(
       );
       return applySecurityHeaders(res, req);
     } catch (err) {
-      logger.error("Failed to clear project image:", sanitizeError(err));
+      logger.error("Failed to clear project image:", err);
       const res = NextResponse.json(
         { error: "Failed to clear project image" },
         { status: 500 }

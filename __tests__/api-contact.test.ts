@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/contact/route";
 import { NextRequest } from "next/server";
 import { resetSubmissionAttemptRateLimit } from "@/lib/moderation";
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 
 describe("API: /api/contact Route Handler", () => {

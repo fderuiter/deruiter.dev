@@ -1,7 +1,7 @@
 // @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";
 import * as nextCache from "next/cache";

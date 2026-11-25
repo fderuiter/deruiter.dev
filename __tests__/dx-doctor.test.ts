@@ -148,9 +148,9 @@ describe("DX Invariant Doctor Engine", () => {
     it("passes on main at the recorded ceiling", () => {
       const result = checkSetStateInEffectCeiling(process.cwd());
       expect(result.status).toBe("pass");
-      expect(findSetStateInEffectSuppressions(process.cwd()).length).toBeLessThanOrEqual(
-        SET_STATE_IN_EFFECT_CEILING
-      );
+      expect(
+        findSetStateInEffectSuppressions(process.cwd()).length
+      ).toBeLessThanOrEqual(SET_STATE_IN_EFFECT_CEILING);
     });
 
     it("passes at the ceiling and fails one above it", () => {
@@ -907,8 +907,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
 
   describe("checkServiceResultTypes (ADR-0028)", () => {
-    it("fails when a service handler lacks ServiceResult envelope structure", () => {
-      const serviceDir = path.join(tempDir, "lib", "services", "custom");
+    it("fails when a service handler lacks paired spec.ts, implements *Spec, or ServiceResult envelope", () => {
+      const serviceDir = path.join(tempDir, "lib", "services", "custom", "op");
       fs.mkdirSync(serviceDir, { recursive: true });
       fs.writeFileSync(
         path.join(serviceDir, "handler.ts"),
@@ -918,48 +918,90 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("fail");
       expect(result.message).toContain("ADR-0028");
+      expect(result.message).toContain("AGENTS.md");
+      expect(result.details).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Unpaired handler.ts"),
+          expect.stringContaining("implements <Operation>Spec"),
+          expect.stringContaining("ServiceResult"),
+        ])
+      );
     });
 
-    it("passes when a service handler uses ServiceResult envelope pattern", () => {
-      const serviceDir = path.join(tempDir, "lib", "services", "custom");
+    it("passes when a vertical slice pairs spec.ts and handler.ts with implements *Spec and ServiceResult", () => {
+      const serviceDir = path.join(tempDir, "lib", "services", "custom", "op");
       fs.mkdirSync(serviceDir, { recursive: true });
       fs.writeFileSync(
+        path.join(serviceDir, "spec.ts"),
+        'import type { ServiceResult } from "@/lib/services/service-result";\nexport interface CustomOpSpec { execute(): ServiceResult<number>; }\n'
+      );
+      fs.writeFileSync(
         path.join(serviceDir, "handler.ts"),
-        'import { ServiceResult, createSuccess } from "@/lib/services/service-result";\nexport class CustomHandler { execute(): ServiceResult<number> { return createSuccess(1); } }'
+        'import { ServiceResult, createSuccess } from "@/lib/services/service-result";\nimport type { CustomOpSpec } from "./spec";\nexport class CustomOpHandler implements CustomOpSpec { execute(): ServiceResult<number> { return createSuccess(1); } }\n'
       );
 
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("pass");
     });
 
-    it("scans every service module for raw throws, with no pending-migration exemption (#1532)", () => {
+    it("flags unguarded async I/O in handler.ts and caller-side logger sanitizeError()", () => {
+      const sliceDir = path.join(tempDir, "lib", "services", "custom", "op");
+      fs.mkdirSync(sliceDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(sliceDir, "spec.ts"),
+        'import type { ServiceResult } from "@/lib/services/service-result";\nexport interface CustomOpSpec { execute(): Promise<ServiceResult<number>>; }\n'
+      );
+      fs.writeFileSync(
+        path.join(sliceDir, "handler.ts"),
+        'import { ServiceResult, createSuccess } from "@/lib/services/service-result";\nimport type { CustomOpSpec } from "./spec";\nexport class CustomOpHandler implements CustomOpSpec { async execute(): Promise<ServiceResult<number>> { const v = await Promise.resolve(1); return createSuccess(v); } }\n'
+      );
+      const appDir = path.join(tempDir, "app", "api", "probe");
+      fs.mkdirSync(appDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(appDir, "route.ts"),
+        'import { logger } from "@/lib/logger";\nimport { sanitizeError } from "@/lib/error-sanitization";\nexport function run(err: unknown) { logger.error("failed:", sanitizeError(err)); }\n'
+      );
+
+      const result = checkServiceResultTypes(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("unguarded I/O without a try/catch"),
+          expect.stringContaining("Caller-side sanitizeError()"),
+        ])
+      );
+    });
+
+    it("rejects monolithic *-service.ts modules and scans every service module for raw throws (#1532)", () => {
       const serviceDir = path.join(tempDir, "lib", "services");
       fs.mkdirSync(serviceDir, { recursive: true });
       const body =
         'import type { ServiceResult } from "./service-result";\nexport function run(): ServiceResult<number> { throw new Error("boom"); }\n';
       fs.writeFileSync(path.join(serviceDir, "widget-service.ts"), body);
-      // Formerly exempt while it migrated (#1140); the exemption is gone.
       fs.writeFileSync(path.join(serviceDir, "blog-service.ts"), body);
 
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("fail");
-      expect(result.details).toEqual([
-        expect.stringContaining(
-          `${path.join("lib", "services", "blog-service.ts")}:2`
-        ),
-        expect.stringContaining(
-          `${path.join("lib", "services", "widget-service.ts")}:2`
-        ),
-      ]);
+      expect(result.details).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Monolithic *-service.ts module detected"),
+          expect.stringContaining(
+            `${path.join("lib", "services", "blog-service.ts")}:2`
+          ),
+          expect.stringContaining(
+            `${path.join("lib", "services", "widget-service.ts")}:2`
+          ),
+        ])
+      );
     });
 
     it("flags rethrown errors and custom error classes, but not comments (#1532)", () => {
-      const serviceDir = path.join(tempDir, "lib", "services");
+      const serviceDir = path.join(tempDir, "lib", "services", "queue");
       fs.mkdirSync(serviceDir, { recursive: true });
       fs.writeFileSync(
-        path.join(serviceDir, "queue-service.ts"),
+        path.join(serviceDir, "shared.ts"),
         [
-          'import type { ServiceResult } from "./service-result";',
+          'import type { ServiceResult } from "../service-result";',
           "/** Never throws: failures are returned as a result. */",
           "export async function run(): Promise<ServiceResult<number>> {",
           "  try {",
@@ -977,8 +1019,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("fail");
       expect(result.details).toEqual([
-        expect.stringMatching(/queue-service\.ts:7 -> Caught error rethrown/),
-        expect.stringMatching(/queue-service\.ts:10 -> Raw exception thrown/),
+        expect.stringMatching(/shared\.ts:7 -> Caught error rethrown/),
+        expect.stringMatching(/shared\.ts:10 -> Raw exception thrown/),
       ]);
     });
 

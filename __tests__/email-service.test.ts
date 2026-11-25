@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import * as Sentry from "@sentry/nextjs";

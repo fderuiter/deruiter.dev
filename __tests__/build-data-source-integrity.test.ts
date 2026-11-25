@@ -109,21 +109,34 @@ describe("emergency override", () => {
 
 describe("guard coverage", () => {
   it("guards every database fallback in the content services", async () => {
-    const { readFileSync } = await import("fs");
+    const { readdirSync, readFileSync } = await import("fs");
     const { join } = await import("path");
     const root = process.cwd();
 
-    for (const service of [
-      "lib/services/blog-service.ts",
-      "lib/services/case-study-service.ts",
-    ]) {
-      const source = readFileSync(join(root, service), "utf-8");
-      const dbFallbacks =
-        source.match(/(Database query failed|DB query failed)/g) ?? [];
-      const guards = source.match(/failBuildOnDataSourceError\(/g) ?? [];
+    const collectTs = (dir: string): string[] => {
+      const out: string[] = [];
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) out.push(...collectTs(full));
+        else if (entry.isFile() && entry.name.endsWith(".ts")) out.push(full);
+      }
+      return out;
+    };
 
-      expect(dbFallbacks.length).toBeGreaterThan(0);
-      expect(guards.length).toBeGreaterThanOrEqual(dbFallbacks.length);
+    for (const domain of ["lib/services/blog", "lib/services/case-study"]) {
+      let totalDbFallbacks = 0;
+      let totalGuards = 0;
+      for (const file of collectTs(join(root, domain))) {
+        const source = readFileSync(file, "utf-8");
+        const dbFallbacks =
+          source.match(/(Database query failed|DB query failed)/g) ?? [];
+        const guards = source.match(/failBuildOnDataSourceError\(/g) ?? [];
+        expect(guards.length).toBeGreaterThanOrEqual(dbFallbacks.length);
+        totalDbFallbacks += dbFallbacks.length;
+        totalGuards += guards.length;
+      }
+      expect(totalDbFallbacks).toBeGreaterThan(0);
+      expect(totalGuards).toBeGreaterThanOrEqual(totalDbFallbacks);
     }
   });
 
@@ -131,7 +144,10 @@ describe("guard coverage", () => {
     const { readFileSync } = await import("fs");
     const { join } = await import("path");
     const source = readFileSync(
-      join(process.cwd(), "lib/services/case-study-service.ts"),
+      join(
+        process.cwd(),
+        "lib/services/case-study/get-case-study-by-slug/handler.ts"
+      ),
       "utf-8"
     );
     const cacheFallbacks = source.match(/cache read failed/g) ?? [];

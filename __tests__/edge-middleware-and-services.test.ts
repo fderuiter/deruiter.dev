@@ -83,13 +83,13 @@ vi.mock("@upstash/ratelimit", () => {
 });
 
 import { proxy } from "@/proxy";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { TelemetryService } from "@/lib/services/telemetry-service";
+import { CaseStudyService } from "@/__tests__/helpers/legacy-domain-facades";
+import { TelemetryService } from "@/__tests__/helpers/legacy-domain-facades";
 import {
   generateClientConnectionHash,
   getConnectionHashFromRequest,
   extractClientIp,
-} from "@/lib/services/privacy-service";
+} from "@/__tests__/helpers/legacy-domain-facades";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { SECURITY_HEADERS } from "@/lib/security-headers";
 import { prisma } from "@/lib/db";

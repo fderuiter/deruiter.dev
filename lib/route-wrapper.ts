@@ -4,8 +4,137 @@ import { applySecurityHeaders } from "@/lib/security-headers";
 import { logger } from "@/lib/logger";
 import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { validateSyncRequest } from "@/lib/security";
+import type { ServiceFailure } from "@/lib/services/service-result";
 
 export type ApiAuthRequirement = "clerk_admin" | "cron_secret" | "public";
+
+/**
+ * Maps a typed domain `ServiceFailure` error code to its canonical HTTP status.
+ *
+ * - Not-found codes map to `404`.
+ * - Conflict and duplicate-slug codes map to `409`.
+ * - Rate-limit and duplicate-reaction codes map to `429`.
+ * - Storage, persistence, queue, and transport outage codes map to `503` so
+ *   client offline queues and webhook retry schedulers retain items for retry.
+ * - Payload/validation codes map to `400` (and `FILE_TOO_LARGE` to `413`).
+ */
+export function mapServiceErrorCodeToHttpStatus(code: string): number {
+  switch (code) {
+    case "NOT_FOUND":
+    case "CASE_STUDY_NOT_FOUND":
+    case "BLOG_POST_NOT_FOUND":
+    case "ASSET_NOT_FOUND":
+      return 404;
+
+    case "CONFLICT":
+    case "DUPLICATE_SLUG":
+      return 409;
+
+    case "RATE_LIMITED":
+    case "DUPLICATE_REACTION":
+      return 429;
+
+    case "STORAGE_UNAVAILABLE":
+    case "STORAGE_UNCONFIGURED":
+    case "PERSISTENCE_FAILED":
+    case "DATABASE_UNAVAILABLE":
+    case "CASE_STUDY_LOOKUP_FAILED":
+    case "STORAGE_FAILED":
+    case "READ_FAILED":
+    case "DELETE_FAILED":
+    case "QUEUE_UNAVAILABLE":
+    case "QUEUE_LEASE_FAILED":
+    case "QUEUE_UPDATE_FAILED":
+    case "QUEUE_STATE_READ_FAILED":
+    case "TRANSPORT_UNCONFIGURED":
+    case "ENQUEUE_FAILED":
+    case "FLUSH_FAILED":
+    case "ACKNOWLEDGEMENT_FAILED":
+    case "RETENTION_FAILED":
+    case "AGGREGATE_FAILED":
+      return 503;
+
+    case "FILE_TOO_LARGE":
+      return 413;
+
+    case "UNAUTHORIZED":
+    case "INVALID_SIGNATURE":
+      return 401;
+
+    case "FORBIDDEN":
+      return 403;
+
+    case "EMPTY_PAYLOAD":
+    case "UNSUPPORTED_TYPE":
+    case "MALFORMED_HEADER":
+    case "SANITIZED_SVG_EMPTY":
+    case "INVALID_INPUT":
+    case "INVALID_PAYLOAD":
+    case "INVALID_STATE":
+    case "INVALID_FORM":
+    case "INVALID_GAME_STATE":
+    case "EMPTY_FORMULA":
+    case "VALIDATION_ERROR":
+      return 400;
+
+    default:
+      if (code.endsWith("_NOT_FOUND")) return 404;
+      if (code.endsWith("_UNAVAILABLE") || code.endsWith("_FAILED")) return 503;
+      return 500;
+  }
+}
+
+export interface ServiceFailureResponseOptions {
+  /** Explicit status override when a route requires a custom status code. */
+  status?: number;
+  /** Optional log prefix emitted for 5xx infrastructure failures. */
+  logContext?: string;
+  /** Optional public error message override for the JSON response body. */
+  errorMessage?: string;
+  /** Additional top-level JSON fields merged into the response body. */
+  extraBody?: Record<string, unknown>;
+  /** Validation-style issue details to include in the JSON response body. */
+  details?: ApiValidationDetail[];
+  /** Custom response headers merged onto the `NextResponse`. */
+  headers?: HeadersInit;
+}
+
+/**
+ * Translates a domain `ServiceFailure` into a `NextResponse` with centralized
+ * HTTP status mapping and raw boundary logging (preserving full stack frames
+ * for Sentry while `StructuredLogger` scrubs production console output).
+ */
+export function serviceFailureResponse(
+  failure: ServiceFailure<string>,
+  options: ServiceFailureResponseOptions = {}
+): NextResponse {
+  const status =
+    options.status ?? mapServiceErrorCodeToHttpStatus(failure.error.code);
+
+  if (status >= 500) {
+    const label =
+      options.logContext ?? `Service failure (${failure.error.code}):`;
+    if (failure.error.details !== undefined) {
+      logger.error(label, failure.error.details);
+    } else {
+      logger.error(label, {
+        code: failure.error.code,
+        message: failure.error.message,
+      });
+    }
+  }
+
+  const body: Record<string, unknown> = {
+    error: options.errorMessage ?? failure.error.message,
+    ...(options.details ? { details: options.details } : {}),
+    ...(options.extraBody ?? {}),
+  };
+
+  return NextResponse.json(body, {
+    status,
+    headers: options.headers,
+  });
+}
 
 export interface ApiWrapperOptions<TSchema extends ZodSchema = ZodSchema> {
   schema?: TSchema;

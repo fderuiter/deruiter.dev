@@ -35,7 +35,7 @@ vi.mock("resend", () => ({
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import { EmailService } from "@/lib/services/email-service";
+import { EmailService } from "@/__tests__/helpers/legacy-domain-facades";
 
 const TAGS = [
   { name: "category", value: "contact-inquiry" },

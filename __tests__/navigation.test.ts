@@ -71,7 +71,10 @@ describe("navigation structure (#1842, #2952)", () => {
       true
     );
     expect(evidence.label).toBe("Evidence");
-    expect(evidence.items.map((i) => i.href)).toEqual(["/clinical/standards"]);
+    expect(evidence.items.map((i) => i.href)).toEqual([
+      "/clinical/standards",
+      "/clinical/ai-governance",
+    ]);
   });
 
   it("lists Clinical Trial Chaos under Clinical only (#3153)", () => {
@@ -191,6 +194,7 @@ describe("navigation structure (#1842, #2952)", () => {
     expect(current("/arcade/clinical-chaos")).toEqual(["clinical"]);
     expect(current("/merch")).toEqual(["about"]);
     expect(current("/clinical/pipeline-simulator")).toEqual(["clinical"]);
+    expect(current("/clinical/ai-governance")).toEqual(["clinical"]);
     expect(current("/platform/portfolio")).toEqual(["clinical"]);
     expect(current("/clinical")).toEqual(["clinical"]);
     expect(current("/m/crf")).toEqual(["clinical"]);

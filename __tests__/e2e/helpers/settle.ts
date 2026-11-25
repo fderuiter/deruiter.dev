@@ -38,7 +38,9 @@ export async function waitForAnimationFrames(
  *
  * Use it before an axe scan or a layout measurement that would otherwise
  * read a half-faded foreground or a box still sliding into place. Infinite
- * animations (spinners, pulses) are ignored, since they never finish.
+ * animations (spinners, pulses) and scroll/view-driven animations
+ * (`ScrollTimeline` / `ViewTimeline`) are ignored, since they do not finish
+ * over wall-clock time.
  */
 export async function waitForVisualSettle(
   page: Page,
@@ -91,13 +93,24 @@ export async function waitForVisualSettle(
         }
         const animating = document.getAnimations().some((animation) => {
           if (animation.playState !== "running") return false;
+          // Scroll- and view-driven animations (ScrollTimeline / ViewTimeline)
+          // advance with scroll position rather than wall-clock time, so they
+          // stay "running" at rest and report percentage endTime values whose
+          // Number() coercion is NaN.
+          const isTimeDriven =
+            !animation.timeline ||
+            animation.timeline === document.timeline ||
+            (typeof DocumentTimeline !== "undefined" &&
+              animation.timeline instanceof DocumentTimeline);
+          if (!isTimeDriven) return false;
           const target = (animation.effect as KeyframeEffect | null)?.target;
           if (target && !el.contains(target)) return false;
           const timing = animation.effect?.getComputedTiming();
           // WebKit can leave a sub-millisecond transition (seen on `tab-size`
           // under the reduced-motion reset) in "running" indefinitely. It
           // has no frames left to paint, so there is nothing to wait for.
-          if (Number(timing?.endTime ?? 0) < 1) return false;
+          const endTime = Number(timing?.endTime ?? 0);
+          if (!Number.isFinite(endTime) || endTime < 1) return false;
           return timing?.iterations !== Infinity;
         });
         if (state.changed || animating) {
@@ -118,16 +131,26 @@ export async function waitForVisualSettle(
     // Name what kept moving, so a timeout on a browser the author cannot run
     // locally (WebKit in cloud sessions) says where to look.
     const still = await page
-      .evaluate(() => {
+      .evaluate((selector) => {
         const w = window as unknown as { __e2eSettle?: { recent: string[] } };
+        const el = document.querySelector(selector);
         const animations = document
           .getAnimations()
-          .filter(
-            (animation) =>
-              animation.playState === "running" &&
-              Number(animation.effect?.getComputedTiming().endTime ?? 0) >= 1 &&
-              animation.effect?.getComputedTiming().iterations !== Infinity
-          )
+          .filter((animation) => {
+            if (animation.playState !== "running") return false;
+            const isTimeDriven =
+              !animation.timeline ||
+              animation.timeline === document.timeline ||
+              (typeof DocumentTimeline !== "undefined" &&
+                animation.timeline instanceof DocumentTimeline);
+            if (!isTimeDriven) return false;
+            const target = (animation.effect as KeyframeEffect | null)?.target;
+            if (el && target && !el.contains(target)) return false;
+            const timing = animation.effect?.getComputedTiming();
+            const endTime = Number(timing?.endTime ?? 0);
+            if (!Number.isFinite(endTime) || endTime < 1) return false;
+            return timing?.iterations !== Infinity;
+          })
           .map((animation) => {
             const target = (animation.effect as KeyframeEffect | null)
               ?.target as Element | null;
@@ -146,7 +169,7 @@ export async function waitForVisualSettle(
           })
           .slice(0, 8);
         return { mutations: w.__e2eSettle?.recent ?? [], animations };
-      })
+      }, root)
       .catch(() => null);
     if (error instanceof Error && still) {
       error.message += `\nStill changing: ${JSON.stringify(still)}`;

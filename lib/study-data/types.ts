@@ -1547,3 +1547,67 @@ export interface TlfKmFigure {
   /** File name without extension, for example `f-14-2-2`. */
   readonly fileBase: string;
 }
+
+// ---------------------------------------------------------------------------
+// Recorded SDTM mapping suggestions (#3531)
+// ---------------------------------------------------------------------------
+
+/** Components that form a deterministic recorded suggestion key. */
+export interface RecordedSdtmSuggestionKeyParts {
+  /** Study identifier, for example `DEMO-301`. */
+  readonly studyId: string;
+  /** Table-qualified collected column, for example `DM.CONSENTDTC`. */
+  readonly rawColumn: string;
+  /** Suggested SDTM variable name, for example `RFICDTC`. */
+  readonly suggestedVariable: string;
+  /** Semantic version of the recorded suggester fixture. */
+  readonly suggesterVersion: string;
+}
+
+/**
+ * One recorded, synthetic SDTM mapping suggestion for a raw collected column.
+ * Suggestions come from a committed static fixture rather than a runtime model.
+ */
+export interface RecordedSdtmSuggestion {
+  /**
+   * Deterministic suggestion key built from `studyId`, `rawColumn`,
+   * `suggestedVariable` and `suggesterVersion`.
+   */
+  readonly key: string;
+  /** Study identifier, for example `DEMO-301`. */
+  readonly studyId: string;
+  /** Table-qualified raw collected column, for example `DM.CONSENTDTC`. */
+  readonly rawColumn: string;
+  /** Collected dataset abbreviation, for example `DM`. */
+  readonly sourceDataset: string;
+  /** Raw column name within `sourceDataset`, for example `CONSENTDTC`. */
+  readonly sourceColumn: string;
+  /** Target SDTM domain abbreviation, for example `DM` or `SUPPDM`. */
+  readonly domain: string;
+  /** Suggested target SDTM variable name, for example `RFICDTC`. */
+  readonly suggestedVariable: string;
+  /** Suggested Define-XML origin for the target mapping. */
+  readonly suggestedOrigin: VariableOrigin;
+  /** Method label identifying how the recorded suggestion was produced. */
+  readonly method: string;
+  /** Version of the recorded suggester that produced this record. */
+  readonly suggesterVersion: string;
+  /** Short explanation for why the recorded suggester paired these columns. */
+  readonly rationale: string;
+  /** Explicit marker indicating the suggestion fixture is synthetic. */
+  readonly synthetic: true;
+}
+
+/** The recorded, synthetic SDTM mapping suggestions for one study. */
+export interface RecordedSdtmSuggestionSet {
+  /** Study identifier, for example `DEMO-301`. */
+  readonly studyId: string;
+  /** Method label shared by the recorded suggestion set. */
+  readonly method: string;
+  /** Version of the recorded suggester fixture. */
+  readonly suggesterVersion: string;
+  /** Explicit synthetic-data notice shown alongside the suggestions. */
+  readonly syntheticNotice: string;
+  /** One suggestion per raw collected column in the study. */
+  readonly suggestions: readonly RecordedSdtmSuggestion[];
+}

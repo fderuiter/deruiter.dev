@@ -5,6 +5,7 @@
 import React from "react";
 import {
   cleanup,
+  createEvent,
   fireEvent,
   render,
   screen,
@@ -220,5 +221,17 @@ describe("ReportCatalog (#2625)", () => {
     render(<ReportCatalog entries={entries} />);
     expect(screen.getAllByText("Not recorded")).toHaveLength(4);
     expect(screen.getAllByText("2026-09-30")).toHaveLength(4);
+  });
+
+  it("wraps the filter form in a native search landmark and cancels submit", () => {
+    const { container } = render(<ReportCatalog entries={entries} />);
+    const landmark = container.querySelector("search");
+    expect(landmark).not.toBeNull();
+    const form = landmark?.querySelector("form");
+    expect(form).not.toBeNull();
+    expect(form?.hasAttribute("role")).toBe(false);
+    const submitEvent = createEvent.submit(form!);
+    fireEvent(form!, submitEvent);
+    expect(submitEvent.defaultPrevented).toBe(true);
   });
 });

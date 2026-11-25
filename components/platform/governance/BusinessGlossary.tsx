@@ -32,25 +32,25 @@ export function BusinessGlossary({
 
   return (
     <div className="@container min-w-0">
-      <form
-        role="search"
-        aria-label="Business glossary"
-        className="border-b border-white/[0.08] pb-4"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <label htmlFor={searchId} className="block text-xs text-slate-400">
-          Search the glossary
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          aria-controls={resultsId}
-          className="mt-1 min-h-12 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-          placeholder="Term, definition or metric"
-        />
-      </form>
+      <search aria-label="Business glossary">
+        <form
+          className="border-b border-white/[0.08] pb-4"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <label htmlFor={searchId} className="block text-xs text-slate-400">
+            Search the glossary
+          </label>
+          <input
+            id={searchId}
+            type="search"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            aria-controls={resultsId}
+            className="mt-1 min-h-12 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            placeholder="Term, definition or metric"
+          />
+        </form>
+      </search>
       <p className="mt-4 text-xs text-slate-400" aria-live="polite">
         {shown.length === entries.length
           ? `${entries.length} terms`

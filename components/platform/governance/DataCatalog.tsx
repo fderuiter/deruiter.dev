@@ -385,61 +385,63 @@ export function DataCatalog({
 
   return (
     <div className="@container min-w-0">
-      <form
-        role="search"
-        aria-label="Data catalog"
-        className="border-b border-white/[0.08] pb-4"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <label htmlFor={searchId} className="block text-xs text-slate-400">
-          Search the catalog
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          aria-controls={resultsId}
-          className="mt-1 min-h-12 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-          placeholder="Name, owner, steward or term"
-        />
-        <div className="mt-4 grid gap-4 @2xl:grid-cols-2 @5xl:grid-cols-4">
-          {FACETS.filter((f) => offered[f.key].length > 0).map((facet) => (
-            <fieldset key={facet.key} className="min-w-0">
-              <legend className="text-xs text-slate-400">{facet.legend}</legend>
-              {/* The values wrap in rows, so on a phone the filters take
+      <search aria-label="Data catalog">
+        <form
+          className="border-b border-white/[0.08] pb-4"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <label htmlFor={searchId} className="block text-xs text-slate-400">
+            Search the catalog
+          </label>
+          <input
+            id={searchId}
+            type="search"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            aria-controls={resultsId}
+            className="mt-1 min-h-12 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            placeholder="Name, owner, steward or term"
+          />
+          <div className="mt-4 grid gap-4 @2xl:grid-cols-2 @5xl:grid-cols-4">
+            {FACETS.filter((f) => offered[f.key].length > 0).map((facet) => (
+              <fieldset key={facet.key} className="min-w-0">
+                <legend className="text-xs text-slate-400">
+                  {facet.legend}
+                </legend>
+                {/* The values wrap in rows, so on a phone the filters take
                   a few rows instead of a screen of one checkbox per line. */}
-              <div className="mt-1 flex flex-wrap gap-x-5">
-                {offered[facet.key].map((value) => {
-                  const count =
-                    counts[facet.key].find((c) => c.value === value)?.count ??
-                    0;
-                  return (
-                    <label
-                      key={value}
-                      className="flex min-h-12 items-center gap-2 text-sm text-slate-200"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={(selection[facet.key] ?? []).includes(value)}
-                        onChange={() => toggle(facet.key, value)}
-                        aria-controls={resultsId}
-                        className="h-4 w-4 accent-amber-500"
-                      />
-                      <span className="min-w-0">
-                        {facet.label(value)}{" "}
-                        <span className="font-mono text-xs tabular-nums text-slate-400">
-                          ({count})
+                <div className="mt-1 flex flex-wrap gap-x-5">
+                  {offered[facet.key].map((value) => {
+                    const count =
+                      counts[facet.key].find((c) => c.value === value)?.count ??
+                      0;
+                    return (
+                      <label
+                        key={value}
+                        className="flex min-h-12 items-center gap-2 text-sm text-slate-200"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(selection[facet.key] ?? []).includes(value)}
+                          onChange={() => toggle(facet.key, value)}
+                          aria-controls={resultsId}
+                          className="h-4 w-4 accent-amber-500"
+                        />
+                        <span className="min-w-0">
+                          {facet.label(value)}{" "}
+                          <span className="font-mono text-xs tabular-nums text-slate-400">
+                            ({count})
+                          </span>
                         </span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          ))}
-        </div>
-      </form>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+        </form>
+      </search>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="text-xs text-slate-400" aria-live="polite">

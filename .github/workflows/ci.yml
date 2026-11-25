@@ -47,7 +47,9 @@ name: CI Pipeline
 # job's actual result with `if: always()` so a failed, cancelled, or skipped
 # required predecessor can never leave the merge gate green. It accepts a
 # skipped browser gate only when `changes` itself succeeded and reported a
-# docs-only change. See docs/how-to/monitor-github-actions-minutes.md for the
+# docs-only change. #3601: the per-job rules are the run-scope table
+# `MERGE_GATE_JOBS` in scripts/ci-run-policy.mjs. See
+# docs/how-to/monitor-github-actions-minutes.md for the
 # exact check name to require.
 #
 # CI-03: `merge-gate` runs unconditionally and fails closed for any event it
@@ -876,8 +878,10 @@ jobs:
   # accepts is a browser gate on a pull_request that `changes` (which must
   # itself have succeeded) classified as docs-only. A draft PR and a bot PR
   # without the `ci:full` label always fail here. CI-03: any event other than
-  # `pull_request` and `push` hits an explicit default branch that fails.
-  # Values reach the script through env, never interpolated into its text.
+  # `pull_request` and `push` fails closed. #3601: which job is required,
+  # skippable or absent for each event lives in one table,
+  # `MERGE_GATE_JOBS` in scripts/ci-run-policy.mjs; the `needs:` list below
+  # must match it, and __tests__/ci-execution-policy.test.ts fails if not.
   merge-gate:
     name: Merge Gate (Required Checks Summary)
     needs:
@@ -899,110 +903,29 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # #3601: the verdict comes from the run-scope table in
+      # scripts/ci-run-policy.mjs (`MERGE_GATE_JOBS`). Only that one file is
+      # checked out, with no install, so this job stays seconds long. A
+      # failed checkout fails the job, which fails closed.
+      - name: Checkout Run Policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts/ci-run-policy.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
       - name: Evaluate required job results
+        run: node scripts/ci-run-policy.mjs --merge-gate
         env:
           EVENT_NAME: ${{ github.event_name }}
-          # #3185: the live draft flag `changes` read, not the payload's.
-          PR_DRAFT: ${{ needs.changes.outputs.draft }}
-          APP_CHANGED: ${{ needs.changes.outputs.app_changed }}
-          BOT_PR: ${{ needs.changes.outputs.bot_pr }}
-          PROMOTED: ${{ needs.changes.outputs.promoted }}
-          RESULT_CHANGES: ${{ needs.changes.result }}
-          RESULT_STATIC_GATE: ${{ needs.static-gate.result }}
-          RESULT_UNIT_GATE: ${{ needs.unit-gate.result }}
-          RESULT_UNIT_COVERAGE: ${{ needs.unit-coverage.result }}
-          RESULT_MUTATION_GATE: ${{ needs.mutation-gate.result }}
-          RESULT_SECURITY_GATE: ${{ needs.security-gate.result }}
-          RESULT_BUILD: ${{ needs.build.result }}
-          RESULT_HEAVY_GATE: ${{ needs.heavy-gate.result }}
-          RESULT_BENCH_GATE: ${{ needs.bench-gate.result }}
-          RESULT_HEAVY_GATE_REPORT: ${{ needs.heavy-gate-report.result }}
-          RESULT_DEVICE_GATE: ${{ needs.device-gate.result }}
-        run: |
-          set -u
-
-          fail=0
-          check_required() {
-            local job="$1" result="$2"
-            echo "${job}: ${result}"
-            if [ "${result}" != "success" ]; then
-              echo "::error::Required job '${job}' did not succeed (result: ${result})"
-              fail=1
-            fi
-          }
-          # Only for browser gates on a PR that `changes` classified as
-          # docs-only: they are skipped by design, and anything other than a
-          # skip or a pass is still a failure.
-          check_skippable() {
-            local job="$1" result="$2"
-            echo "${job}: ${result} (docs-only change: skipped accepted)"
-            if [ "${result}" != "success" ] && [ "${result}" != "skipped" ]; then
-              echo "::error::Job '${job}' did not succeed (result: ${result})"
-              fail=1
-            fi
-          }
-
-          event="${EVENT_NAME}"
-
-          case "${event}" in
-            pull_request)
-              check_required "changes" "${RESULT_CHANGES}"
-              check_required "static-gate" "${RESULT_STATIC_GATE}"
-              check_required "security-gate" "${RESULT_SECURITY_GATE}"
-              if [ "${PR_DRAFT}" = "true" ]; then
-                echo "::error::PR is a draft; mark it ready for review to run every gate. This is not a test failure: a draft runs only the static and security gates."
-                fail=1
-              fi
-              if [ "${BOT_PR}" = "true" ] && [ "${PROMOTED}" != "true" ]; then
-                echo "::error::bot PR: full suite runs when marked ready (a maintainer applies the 'ci:full' label)."
-                fail=1
-              fi
-              check_required "unit-gate" "${RESULT_UNIT_GATE}"
-              check_required "unit-coverage" "${RESULT_UNIT_COVERAGE}"
-              check_required "mutation-gate" "${RESULT_MUTATION_GATE}"
-              if [ "${RESULT_CHANGES}" = "success" ] && [ "${APP_CHANGED}" = "false" ]; then
-                check_skippable "build" "${RESULT_BUILD}"
-                check_skippable "heavy-gate" "${RESULT_HEAVY_GATE}"
-                check_skippable "bench-gate" "${RESULT_BENCH_GATE}"
-                check_skippable "heavy-gate-report" "${RESULT_HEAVY_GATE_REPORT}"
-                check_skippable "device-gate" "${RESULT_DEVICE_GATE}"
-              else
-                check_required "build" "${RESULT_BUILD}"
-                check_required "heavy-gate" "${RESULT_HEAVY_GATE}"
-                check_required "bench-gate" "${RESULT_BENCH_GATE}"
-                check_required "heavy-gate-report" "${RESULT_HEAVY_GATE_REPORT}"
-                check_required "device-gate" "${RESULT_DEVICE_GATE}"
-              fi
-              ;;
-            push)
-              # Bounded main-push confirmation (#732's direct-push safety
-              # net). The browser gates are pull_request-only: the merged PR
-              # already required them to succeed before this push existed.
-              check_required "changes" "${RESULT_CHANGES}"
-              check_required "static-gate" "${RESULT_STATIC_GATE}"
-              check_required "unit-gate" "${RESULT_UNIT_GATE}"
-              check_required "unit-coverage" "${RESULT_UNIT_COVERAGE}"
-              check_required "mutation-gate" "${RESULT_MUTATION_GATE}"
-              check_required "security-gate" "${RESULT_SECURITY_GATE}"
-              echo "build: ${RESULT_BUILD} (not required outside pull_request)"
-              echo "heavy-gate: ${RESULT_HEAVY_GATE} (not required outside pull_request)"
-              echo "bench-gate: ${RESULT_BENCH_GATE} (not required outside pull_request)"
-              echo "heavy-gate-report: ${RESULT_HEAVY_GATE_REPORT} (not required outside pull_request)"
-              echo "device-gate: ${RESULT_DEVICE_GATE} (not required outside pull_request)"
-              ;;
-            *)
-              # CI-03: every other trigger -- workflow_dispatch (a manual run,
-              # with or without the cross_device_matrix input) and any
-              # future/unrecognized event -- has no defined validation here.
-              # Failing deliberately means a manual or unrecognized trigger
-              # can never produce a "skipped" result, and can never produce an
-              # accidental "success" either, for this shared required context.
-              echo "::error::Merge Gate has no defined validation for event '${event}'; failing closed so this required check can never be satisfied by an unsupported trigger."
-              fail=1
-              ;;
-          esac
-
-          exit "${fail}"
+          # Every result plus the `changes` outputs, including the live
+          # draft flag (#3185). Passed through env, never into the script.
+          NEEDS_JSON: ${{ toJSON(needs) }}
 
   # Full four-device matrix against the complete e2e suite, on demand only.
   # This is the breadth the old job ran on every push; keeping it manual

@@ -15,6 +15,7 @@ import {
   EditCheckRule,
 } from "../types";
 import { StudyProtocolEngine, CDASH_DOMAIN_CATALOG } from "./study-engine";
+import { parsePosixShellArgs } from "./cli-argv";
 
 export interface CliExecutionOptions {
   json?: boolean;
@@ -59,6 +60,32 @@ export const ansi = {
  */
 export function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
+function formatCliError(
+  errorMessage: string,
+  ansiDocument: string,
+  options: CliExecutionOptions = {}
+): CliCommandResult {
+  if (options.json) {
+    return {
+      success: false,
+      document: JSON.stringify(
+        {
+          success: false,
+          error: errorMessage,
+        },
+        null,
+        2
+      ),
+      error: errorMessage,
+    };
+  }
+  return {
+    success: false,
+    document: ansiDocument,
+    error: errorMessage,
+  };
 }
 
 /**
@@ -315,11 +342,11 @@ export function executeRemoveFormCommand(
   );
 
   if (!removedForm) {
-    return {
-      success: false,
-      document: `${ansi.brightRed}Error: Form '${domainOrFormId}' not found in protocol.${ansi.reset}`,
-      error: `Form '${domainOrFormId}' not found.`,
-    };
+    return formatCliError(
+      `Form '${domainOrFormId}' not found.`,
+      `${ansi.brightRed}Error: Form '${domainOrFormId}' not found in protocol.${ansi.reset}`,
+      options
+    );
   }
 
   if (options.json) {
@@ -373,11 +400,12 @@ export function executeAddFieldCommand(
   const res = StudyProtocolEngine.addField(study, domainOrFormId, fieldData);
 
   if (!res.field || !res.form) {
-    return {
-      success: false,
-      document: `${ansi.brightRed}Error: ${res.error || "Failed to add field."}${ansi.reset}`,
-      error: res.error,
-    };
+    const errMsg = res.error || "Failed to add field.";
+    return formatCliError(
+      errMsg,
+      `${ansi.brightRed}Error: ${errMsg}${ansi.reset}`,
+      options
+    );
   }
 
   if (options.json) {
@@ -430,11 +458,12 @@ export function executeRemoveFieldCommand(
   );
 
   if (!res.removedField || !res.form) {
-    return {
-      success: false,
-      document: `${ansi.brightRed}Error: ${res.error || "Failed to remove field."}${ansi.reset}`,
-      error: res.error,
-    };
+    const errMsg = res.error || "Failed to remove field.";
+    return formatCliError(
+      errMsg,
+      `${ansi.brightRed}Error: ${errMsg}${ansi.reset}`,
+      options
+    );
   }
 
   if (options.json) {
@@ -525,19 +554,31 @@ export function executeVisitCommand(
   if (action === "rm") {
     const target = args[0];
     if (!target) {
-      return {
-        success: false,
-        document: `${ansi.brightRed}Usage: crf visit rm <visitNameOrId>${ansi.reset}`,
-        error: "Missing visit argument.",
-      };
+      return formatCliError(
+        "Missing visit argument.",
+        `${ansi.brightRed}Usage: crf visit rm <visitNameOrId>${ansi.reset}`,
+        options
+      );
     }
     const { study: updatedStudy, removedVisit } =
       StudyProtocolEngine.removeVisit(study, target);
     if (!removedVisit) {
+      return formatCliError(
+        "Visit not found.",
+        `${ansi.brightRed}Error: Visit '${target}' not found.${ansi.reset}`,
+        options
+      );
+    }
+    if (options.json) {
       return {
-        success: false,
-        document: `${ansi.brightRed}Error: Visit '${target}' not found.${ansi.reset}`,
-        error: "Visit not found.",
+        success: true,
+        document: JSON.stringify(
+          { removedVisitId: removedVisit.id, name: removedVisit.name },
+          null,
+          2
+        ),
+        data: removedVisit,
+        updatedStudy: options.dryRun ? study : updatedStudy,
       };
     }
     return {
@@ -552,11 +593,11 @@ export function executeVisitCommand(
     const visitNameOrId = args[0];
     const forms = args.slice(1);
     if (!visitNameOrId || forms.length === 0) {
-      return {
-        success: false,
-        document: `${ansi.brightRed}Usage: crf visit assign <visit> <forms...>${ansi.reset}`,
-        error: "Missing arguments.",
-      };
+      return formatCliError(
+        "Missing arguments.",
+        `${ansi.brightRed}Usage: crf visit assign <visit> <forms...>${ansi.reset}`,
+        options
+      );
     }
     const res = StudyProtocolEngine.assignVisitForms(
       study,
@@ -564,10 +605,19 @@ export function executeVisitCommand(
       forms
     );
     if (!res.visit) {
+      const errMsg = res.error || "Failed to assign forms.";
+      return formatCliError(
+        errMsg,
+        `${ansi.brightRed}Error: ${errMsg}${ansi.reset}`,
+        options
+      );
+    }
+    if (options.json) {
       return {
-        success: false,
-        document: `${ansi.brightRed}Error: ${res.error || "Failed to assign forms."}${ansi.reset}`,
-        error: res.error,
+        success: true,
+        document: JSON.stringify(res.visit, null, 2),
+        data: res.visit,
+        updatedStudy: options.dryRun ? study : res.study,
       };
     }
     return {
@@ -582,11 +632,11 @@ export function executeVisitCommand(
     const visitNameOrId = args[0];
     const forms = args.slice(1);
     if (!visitNameOrId || forms.length === 0) {
-      return {
-        success: false,
-        document: `${ansi.brightRed}Usage: crf visit unassign <visit> <forms...>${ansi.reset}`,
-        error: "Missing arguments.",
-      };
+      return formatCliError(
+        "Missing arguments.",
+        `${ansi.brightRed}Usage: crf visit unassign <visit> <forms...>${ansi.reset}`,
+        options
+      );
     }
     const res = StudyProtocolEngine.unassignVisitForms(
       study,
@@ -594,10 +644,19 @@ export function executeVisitCommand(
       forms
     );
     if (!res.visit) {
+      const errMsg = res.error || "Failed to unassign forms.";
+      return formatCliError(
+        errMsg,
+        `${ansi.brightRed}Error: ${errMsg}${ansi.reset}`,
+        options
+      );
+    }
+    if (options.json) {
       return {
-        success: false,
-        document: `${ansi.brightRed}Error: ${res.error || "Failed to unassign forms."}${ansi.reset}`,
-        error: res.error,
+        success: true,
+        document: JSON.stringify(res.visit, null, 2),
+        data: res.visit,
+        updatedStudy: options.dryRun ? study : res.study,
       };
     }
     return {
@@ -608,11 +667,11 @@ export function executeVisitCommand(
     };
   }
 
-  return {
-    success: false,
-    document: `${ansi.brightRed}Unknown visit action '${action}'.${ansi.reset}`,
-    error: `Invalid action '${action}'`,
-  };
+  return formatCliError(
+    `Invalid action '${action}'`,
+    `${ansi.brightRed}Unknown visit action '${action}'.${ansi.reset}`,
+    options
+  );
 }
 
 /**
@@ -694,10 +753,20 @@ export function executeRuleCommand(
     });
 
     if (!res.rule) {
+      const errMsg = res.error || "Failed to add rule.";
+      return formatCliError(
+        errMsg,
+        `${ansi.brightRed}Error: ${errMsg}${ansi.reset}`,
+        options
+      );
+    }
+
+    if (options.json) {
       return {
-        success: false,
-        document: `${ansi.brightRed}Error: ${res.error || "Failed to add rule."}${ansi.reset}`,
-        error: res.error,
+        success: true,
+        document: JSON.stringify(res.rule, null, 2),
+        data: res.rule,
+        updatedStudy: options.dryRun ? study : res.study,
       };
     }
 
@@ -709,11 +778,11 @@ export function executeRuleCommand(
     };
   }
 
-  return {
-    success: false,
-    document: `${ansi.brightRed}Unknown rule action.${ansi.reset}`,
-    error: "Invalid action",
-  };
+  return formatCliError(
+    "Invalid action",
+    `${ansi.brightRed}Unknown rule action.${ansi.reset}`,
+    options
+  );
 }
 
 /**
@@ -782,11 +851,11 @@ export function executeListCommand(
     return executeInfoCommand(study, options);
   }
 
-  return {
-    success: false,
-    document: `${ansi.brightRed}Unknown list category '${category}'. Valid: domains, presets, forms, visits${ansi.reset}`,
-    error: "Invalid category",
-  };
+  return formatCliError(
+    "Invalid category",
+    `${ansi.brightRed}Unknown list category '${category}'. Valid: domains, presets, forms, visits${ansi.reset}`,
+    options
+  );
 }
 
 /**
@@ -804,14 +873,32 @@ export function executePresetCommand(
 
   if (action === "load") {
     if (!presetId) {
-      return {
-        success: false,
-        document: `${ansi.brightRed}Usage: crf preset load <presetId>${ansi.reset}`,
-        error: "Missing presetId",
-      };
+      return formatCliError(
+        "Missing presetId",
+        `${ansi.brightRed}Usage: crf preset load <presetId>${ansi.reset}`,
+        options
+      );
     }
     const { study: loadedStudy, presetInfo } =
       StudyProtocolEngine.loadPreset(presetId);
+    if (options.json) {
+      return {
+        success: true,
+        document: JSON.stringify(
+          {
+            preset: presetInfo,
+            protocolNumber: loadedStudy.protocolNumber,
+            formsCount: loadedStudy.forms.length,
+            visitsCount: loadedStudy.visits.length,
+          },
+          null,
+          2
+        ),
+        data: presetInfo,
+        updatedStudy: options.dryRun ? study : loadedStudy,
+        uiAction: { type: "load_preset", payload: presetId },
+      };
+    }
     return {
       success: true,
       document: `${ansi.bold}${ansi.green}✔ Loaded preset "${presetInfo.name}" (${loadedStudy.protocolNumber}) with ${loadedStudy.forms.length} forms and ${loadedStudy.visits.length} visits.${ansi.reset}`,
@@ -821,11 +908,11 @@ export function executePresetCommand(
     };
   }
 
-  return {
-    success: false,
-    document: `${ansi.brightRed}Unknown preset action.${ansi.reset}`,
-    error: "Invalid action",
-  };
+  return formatCliError(
+    "Invalid action",
+    `${ansi.brightRed}Unknown preset action.${ansi.reset}`,
+    options
+  );
 }
 
 /**
@@ -834,14 +921,31 @@ export function executePresetCommand(
 export function executeExportCommand(
   study: StudyProtocol,
   format: "json" | "yaml" | "odm" | "fhir" | "sas" | "r" | "usdm",
-  _options: CliExecutionOptions = {}
+  options: CliExecutionOptions = {}
 ): CliCommandResult {
   const res = StudyProtocolEngine.exportProtocol(study, format);
   if (!res.success) {
+    const errMsg = res.error || "Unknown error";
+    return formatCliError(
+      errMsg,
+      `${ansi.brightRed}Export failed: ${errMsg}${ansi.reset}`,
+      options
+    );
+  }
+  if (options.json && format !== "json") {
     return {
-      success: false,
-      document: `${ansi.brightRed}Export failed: ${res.error || "Unknown error"}${ansi.reset}`,
-      error: res.error,
+      success: true,
+      document: JSON.stringify(
+        {
+          success: true,
+          format,
+          sizeBytes: res.sizeBytes,
+          output: res.output,
+        },
+        null,
+        2
+      ),
+      data: { format, sizeBytes: res.sizeBytes },
     };
   }
   return {
@@ -905,6 +1009,24 @@ export function executeDiffCommand(
   };
 }
 
+const CLI_VALUED_FLAGS = new Set([
+  "--name",
+  "--var",
+  "--type",
+  "--unit",
+  "--label",
+  "--tier",
+  "--span",
+  "--calc",
+  "--day",
+  "--win",
+  "--expr",
+  "--msg",
+  "--target",
+  "--action",
+  "--format",
+]);
+
 /**
  * Dispatcher executing raw CLI argument string or parsed args
  */
@@ -913,12 +1035,77 @@ export function executeCliString(
   input: string,
   options: CliExecutionOptions = {}
 ): CliCommandResult {
-  const parts = input.trim().split(/\s+/).filter(Boolean);
+  const parsedArgs = parsePosixShellArgs(input.trim());
+  if (!parsedArgs.success) {
+    const fallbackJson =
+      Boolean(options.json) || /(?:^|\s)--json(?:\s|$)/.test(input);
+    return formatCliError(
+      parsedArgs.error,
+      `${ansi.brightRed}Error: ${parsedArgs.error}${ansi.reset}`,
+      { ...options, json: fallbackJson }
+    );
+  }
+
+  const rawParts = parsedArgs.args;
+  let inferredJson = Boolean(options.json);
+  let inferredDryRun = Boolean(options.dryRun);
+  const parts: string[] = [];
+
+  for (let i = 0; i < rawParts.length; i++) {
+    const token = rawParts[i];
+    const prev = i > 0 ? rawParts[i - 1] : "";
+    if (!CLI_VALUED_FLAGS.has(prev) && token === "--json") {
+      inferredJson = true;
+      continue;
+    }
+    if (!CLI_VALUED_FLAGS.has(prev) && token === "--dry-run") {
+      inferredDryRun = true;
+      continue;
+    }
+    parts.push(token);
+  }
+
+  const effectiveOptions: CliExecutionOptions = {
+    ...options,
+    json: inferredJson,
+    dryRun: inferredDryRun,
+  };
+
   if (
     parts.length === 0 ||
     parts[0] === "help" ||
     (parts[0] === "crf" && parts[1] === "help")
   ) {
+    if (effectiveOptions.json) {
+      return {
+        success: true,
+        document: JSON.stringify(
+          {
+            success: true,
+            commands: [
+              "info",
+              "validate",
+              "wizard",
+              "list",
+              "preset",
+              "add form",
+              "add field",
+              "rm form",
+              "rm field",
+              "visit",
+              "rule",
+              "export",
+              "diff",
+              "mode",
+              "open",
+            ],
+          },
+          null,
+          2
+        ),
+      };
+    }
+
     const helpDoc = [
       `${ansi.bold}${ansi.underline}# CRF STUDIO CLI COMMANDS${ansi.reset}`,
       "",
@@ -949,16 +1136,27 @@ export function executeCliString(
 
   // 1. Info
   if (cmd === "info") {
-    return executeInfoCommand(study, options);
+    return executeInfoCommand(study, effectiveOptions);
   }
 
   // 2. Validate / Lint
   if (cmd === "validate" || cmd === "lint") {
-    return executeValidateCommand(study, options);
+    return executeValidateCommand(study, effectiveOptions);
   }
 
   // 3. Wizard
   if (cmd === "wizard") {
+    if (effectiveOptions.json) {
+      return {
+        success: true,
+        document: JSON.stringify(
+          { success: true, action: "launch_wizard" },
+          null,
+          2
+        ),
+        uiAction: { type: "launch_wizard" },
+      };
+    }
     return {
       success: true,
       document: `${ansi.bold}${ansi.brightCyan}★ CRF Studio 5-Stage Interactive Guided Authoring Wizard Launched.${ansi.reset}\n${ansi.dim}Opening interactive study configurator...${ansi.reset}`,
@@ -970,50 +1168,122 @@ export function executeCliString(
   if (cmd === "list") {
     const category = (rest[0] || "domains") as
       "domains" | "presets" | "forms" | "visits";
-    return executeListCommand(study, category, options);
+    return executeListCommand(study, category, effectiveOptions);
   }
 
   // 5. Preset
   if (cmd === "preset") {
     const sub = (rest[0] || "list") as "list" | "load";
     const presetId = rest[1];
-    return executePresetCommand(study, sub, presetId, options);
+    return executePresetCommand(study, sub, presetId, effectiveOptions);
   }
 
   // 6. Add
   if (cmd === "add") {
     const sub = rest[0];
     if (sub === "form") {
-      const domain = rest[1] || "CUSTOM";
+      const domain = rest[1] && !rest[1].startsWith("--") ? rest[1] : "CUSTOM";
       const nameIdx = rest.indexOf("--name");
       const customName =
-        nameIdx !== -1 && rest[nameIdx + 1]
+        nameIdx !== -1 && rest[nameIdx + 1] !== undefined
           ? rest.slice(nameIdx + 1).join(" ")
           : undefined;
-      return executeAddFormCommand(study, domain, customName, options);
+      return executeAddFormCommand(study, domain, customName, effectiveOptions);
     }
     if (sub === "field") {
-      const formDomain = rest[1] || study.forms[0]?.domain || "DM";
-      const varIndex = rest.indexOf("--var");
-      const varName =
-        varIndex !== -1 && rest[varIndex + 1] ? rest[varIndex + 1] : "TESTVAR";
-      const typeIndex = rest.indexOf("--type");
-      const dataType = (
-        typeIndex !== -1 && rest[typeIndex + 1] ? rest[typeIndex + 1] : "text"
-      ) as ClinicalDataType;
-      const req = rest.includes("--required");
-      const unitIdx = rest.indexOf("--unit");
-      const unit =
-        unitIdx !== -1 && rest[unitIdx + 1] ? rest[unitIdx + 1] : undefined;
-      const labelIdx = rest.indexOf("--label");
-      const label =
-        labelIdx !== -1 && rest[labelIdx + 1] ? rest[labelIdx + 1] : undefined;
+      const hasExplicitDomain =
+        rest[1] !== undefined && !rest[1].startsWith("--");
+      const formDomain = hasExplicitDomain
+        ? rest[1]
+        : study.forms[0]?.domain || "DM";
+      const fieldTokens = rest.slice(hasExplicitDomain ? 2 : 1);
+
+      let varName = "TESTVAR";
+      let dataType: ClinicalDataType = "text";
+      let req = false;
+      let unit: string | undefined;
+      let label: string | undefined;
+      let columnSpan: number | undefined;
+      let calculationFormula: string | undefined;
+      let requirementTier: "optional" | "hard_stop" | "auto_query" | undefined;
+      let allowPartial = false;
+      let preventFutureDate = false;
+      let allowNullFlavor = false;
+      let requiresSdv = false;
+      let isBlinded = false;
+
+      for (let i = 0; i < fieldTokens.length; i++) {
+        const flag = fieldTokens[i];
+        if (flag === "--var") {
+          if (i + 1 < fieldTokens.length) {
+            varName = fieldTokens[++i] || "TESTVAR";
+          }
+        } else if (flag === "--type") {
+          if (i + 1 < fieldTokens.length) {
+            dataType = (fieldTokens[++i] || "text") as ClinicalDataType;
+          }
+        } else if (flag === "--unit") {
+          if (i + 1 < fieldTokens.length) {
+            unit = fieldTokens[++i];
+          }
+        } else if (flag === "--label") {
+          if (i + 1 < fieldTokens.length) {
+            label = fieldTokens[++i];
+          }
+        } else if (flag === "--span") {
+          if (i + 1 < fieldTokens.length) {
+            const parsedSpan = Number(fieldTokens[++i]);
+            if (
+              Number.isInteger(parsedSpan) &&
+              parsedSpan >= 1 &&
+              parsedSpan <= 12
+            ) {
+              columnSpan = parsedSpan;
+            }
+          }
+        } else if (flag === "--calc") {
+          if (i + 1 < fieldTokens.length) {
+            calculationFormula = fieldTokens[++i];
+          }
+        } else if (flag === "--tier") {
+          if (i + 1 < fieldTokens.length) {
+            requirementTier = fieldTokens[++i] as
+              "optional" | "hard_stop" | "auto_query";
+          }
+        } else if (flag === "--required") {
+          req = true;
+        } else if (flag === "--allow-partial" || flag === "--partial") {
+          allowPartial = true;
+        } else if (flag === "--prevent-future-date" || flag === "--no-future") {
+          preventFutureDate = true;
+        } else if (flag === "--null-flavor" || flag === "--null-flavors") {
+          allowNullFlavor = true;
+        } else if (flag === "--sdv") {
+          requiresSdv = true;
+        } else if (flag === "--blinded") {
+          isBlinded = true;
+        }
+      }
 
       return executeAddFieldCommand(
         study,
         formDomain,
-        { variableName: varName, dataType, required: req, unit, label },
-        options
+        {
+          variableName: varName,
+          dataType,
+          required: req,
+          unit,
+          label,
+          columnSpan,
+          calculationFormula,
+          requirementTier,
+          allowPartial: allowPartial || undefined,
+          preventFutureDate: preventFutureDate || undefined,
+          allowNullFlavor: allowNullFlavor || undefined,
+          requiresSdv: requiresSdv || undefined,
+          isBlinded: isBlinded || undefined,
+        },
+        effectiveOptions
       );
     }
   }
@@ -1023,37 +1293,44 @@ export function executeCliString(
     const sub = rest[0];
     if (sub === "form") {
       const domain = rest[1];
-      if (!domain)
-        return {
-          success: false,
-          document: `${ansi.brightRed}Usage: crf rm form <domain>${ansi.reset}`,
-          error: "Missing domain",
-        };
-      return executeRemoveFormCommand(study, domain, options);
+      if (!domain) {
+        return formatCliError(
+          "Missing domain",
+          `${ansi.brightRed}Usage: crf rm form <domain>${ansi.reset}`,
+          effectiveOptions
+        );
+      }
+      return executeRemoveFormCommand(study, domain, effectiveOptions);
     }
     if (sub === "field") {
       const formDomain = rest[1];
       const varName = rest[2];
-      if (!formDomain || !varName)
-        return {
-          success: false,
-          document: `${ansi.brightRed}Usage: crf rm field <form> <var>${ansi.reset}`,
-          error: "Missing arguments",
-        };
-      return executeRemoveFieldCommand(study, formDomain, varName, options);
+      if (!formDomain || !varName) {
+        return formatCliError(
+          "Missing arguments",
+          `${ansi.brightRed}Usage: crf rm field <form> <var>${ansi.reset}`,
+          effectiveOptions
+        );
+      }
+      return executeRemoveFieldCommand(
+        study,
+        formDomain,
+        varName,
+        effectiveOptions
+      );
     }
   }
 
   // 8. Visit
   if (cmd === "visit") {
     const sub = rest[0] as "add" | "rm" | "assign" | "unassign";
-    return executeVisitCommand(study, sub, rest.slice(1), options);
+    return executeVisitCommand(study, sub, rest.slice(1), effectiveOptions);
   }
 
   // 9. Rule
   if (cmd === "rule") {
     const sub = (rest[0] || "list") as "add" | "list";
-    return executeRuleCommand(study, sub, rest.slice(1), options);
+    return executeRuleCommand(study, sub, rest.slice(1), effectiveOptions);
   }
 
   // 10. Export
@@ -1061,15 +1338,23 @@ export function executeCliString(
     const formatIdx = rest.indexOf("--format");
     const fmt = (
       formatIdx !== -1 && rest[formatIdx + 1] ? rest[formatIdx + 1] : "json"
-    ) as "json" | "yaml" | "odm" | "fhir" | "sas" | "r";
-    return executeExportCommand(study, fmt, options);
+    ) as "json" | "yaml" | "odm" | "fhir" | "sas" | "r" | "usdm";
+    return executeExportCommand(study, fmt, effectiveOptions);
   }
 
   // 11. Diff (CLI format simulation)
   if (cmd === "diff") {
+    const msg =
+      "To run full AST protocol diff, pass protocol files: 'crf diff <studyA.json> <studyB.json>' or run in Node CLI.";
+    if (effectiveOptions.json) {
+      return {
+        success: true,
+        document: JSON.stringify({ success: true, message: msg }, null, 2),
+      };
+    }
     return {
       success: true,
-      document: `${ansi.dim}To run full AST protocol diff, pass protocol files: 'crf diff <studyA.json> <studyB.json>' or run in Node CLI.${ansi.reset}`,
+      document: `${ansi.dim}${msg}${ansi.reset}`,
     };
   }
 
@@ -1081,38 +1366,60 @@ export function executeCliString(
         targetMode
       )
     ) {
+      if (effectiveOptions.json) {
+        return {
+          success: true,
+          document: JSON.stringify(
+            { success: true, mode: targetMode },
+            null,
+            2
+          ),
+          uiAction: { type: "switch_mode", payload: targetMode },
+        };
+      }
       return {
         success: true,
         document: `${ansi.bold}${ansi.green}✔ Switched workspace to '${targetMode}' mode.${ansi.reset}`,
         uiAction: { type: "switch_mode", payload: targetMode },
       };
     }
-    return {
-      success: false,
-      document: `${ansi.brightRed}Invalid mode '${targetMode}'. Available: designer, matrix, rules, edc, acrf, export${ansi.reset}`,
-      error: "Invalid mode",
-    };
+    return formatCliError(
+      "Invalid mode",
+      `${ansi.brightRed}Invalid mode '${targetMode}'. Available: designer, matrix, rules, edc, acrf, export${ansi.reset}`,
+      effectiveOptions
+    );
   }
 
   if (cmd === "open") {
     const modalTarget = rest[0];
     if (["wizard", "branding", "diagnostics", "export"].includes(modalTarget)) {
+      if (effectiveOptions.json) {
+        return {
+          success: true,
+          document: JSON.stringify(
+            { success: true, target: modalTarget },
+            null,
+            2
+          ),
+          uiAction: { type: "open_modal", payload: modalTarget },
+        };
+      }
       return {
         success: true,
         document: `${ansi.bold}${ansi.green}✔ Opening ${modalTarget} modal...${ansi.reset}`,
         uiAction: { type: "open_modal", payload: modalTarget },
       };
     }
-    return {
-      success: false,
-      document: `${ansi.brightRed}Invalid open target '${modalTarget}'. Available: wizard, branding, diagnostics, export${ansi.reset}`,
-      error: "Invalid target",
-    };
+    return formatCliError(
+      "Invalid target",
+      `${ansi.brightRed}Invalid open target '${modalTarget}'. Available: wizard, branding, diagnostics, export${ansi.reset}`,
+      effectiveOptions
+    );
   }
 
-  return {
-    success: false,
-    document: `${ansi.brightRed}Unknown command '${input}'. Type 'help' for available commands.${ansi.reset}`,
-    error: `Unknown command: ${input}`,
-  };
+  return formatCliError(
+    `Unknown command: ${input}`,
+    `${ansi.brightRed}Unknown command '${input}'. Type 'help' for available commands.${ansi.reset}`,
+    effectiveOptions
+  );
 }

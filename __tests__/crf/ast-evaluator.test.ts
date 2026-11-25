@@ -2,6 +2,8 @@
 import { describe, it, expect } from "vitest";
 import {
   evaluateFormula,
+  parseAndEvaluateFormula,
+  explainCalculationDerivation,
   evaluateCondition,
   evaluateRule,
   isMissingOrNullFlavor,
@@ -127,6 +129,193 @@ describe("CRF Studio - AST Formula & Rule Evaluator", () => {
       ).toBeNull();
       expect(evaluateFormula("invalid token #@$", {}, [])).toBeNull();
       expect(evaluateFormula("", {}, [])).toBeNull();
+      expect(
+        evaluateFormula("WEIGHT == 70", { WEIGHT: 78 }, sampleFields)
+      ).toBeNull();
+      expect(
+        evaluateFormula("WEIGHT 70", { WEIGHT: 78 }, sampleFields)
+      ).toBeNull();
+      expect(
+        evaluateFormula("typoFn(WEIGHT, 100)", { WEIGHT: 78 }, sampleFields)
+      ).toBeNull();
+    });
+  });
+
+  describe("parseAndEvaluateFormula", () => {
+    it("evaluates valid arithmetic, scientific notation, and clinical functions", () => {
+      const bmiRes = parseAndEvaluateFormula(
+        "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+        { WEIGHT: 81, HEIGHT: 180 },
+        sampleFields
+      );
+      expect(bmiRes).toEqual({ success: true, value: 25 });
+
+      const sciRes = parseAndEvaluateFormula("1.5e-3 + 2.5E2", {}, []);
+      expect(sciRes.success).toBe(true);
+      if (sciRes.success) {
+        expect(sciRes.value).toBeCloseTo(250.0015, 4);
+      }
+    });
+
+    it("returns SYNTAX_ERROR for invalid characters, trailing tokens, empty parens, and invalid arity", () => {
+      const invalidChars = parseAndEvaluateFormula(
+        "WEIGHT == 70",
+        { WEIGHT: 78 },
+        sampleFields
+      );
+      expect(invalidChars.success).toBe(false);
+      if (!invalidChars.success) {
+        expect(invalidChars.error.code).toBe("SYNTAX_ERROR");
+      }
+
+      const hashChar = parseAndEvaluateFormula(
+        "HEIGHT # WEIGHT",
+        { HEIGHT: 180, WEIGHT: 75 },
+        sampleFields
+      );
+      expect(hashChar.success).toBe(false);
+      if (!hashChar.success) {
+        expect(hashChar.error.code).toBe("SYNTAX_ERROR");
+      }
+
+      const trailingTokens = parseAndEvaluateFormula(
+        "WEIGHT 70",
+        { WEIGHT: 78 },
+        sampleFields
+      );
+      expect(trailingTokens.success).toBe(false);
+      if (!trailingTokens.success) {
+        expect(trailingTokens.error.code).toBe("SYNTAX_ERROR");
+      }
+
+      const emptyParens = parseAndEvaluateFormula("()", {}, sampleFields);
+      expect(emptyParens.success).toBe(false);
+      if (!emptyParens.success) {
+        expect(emptyParens.error.code).toBe("SYNTAX_ERROR");
+      }
+
+      const badArity = parseAndEvaluateFormula("sqrt(16, 2)", {}, sampleFields);
+      expect(badArity.success).toBe(false);
+      if (!badArity.success) {
+        expect(badArity.error.code).toBe("SYNTAX_ERROR");
+      }
+
+      const badClampArity = parseAndEvaluateFormula(
+        "clamp(50, 0)",
+        {},
+        sampleFields
+      );
+      expect(badClampArity.success).toBe(false);
+      if (!badClampArity.success) {
+        expect(badClampArity.error.code).toBe("SYNTAX_ERROR");
+      }
+
+      const emptyMax = parseAndEvaluateFormula("max()", {}, sampleFields);
+      expect(emptyMax.success).toBe(false);
+      if (!emptyMax.success) {
+        expect(emptyMax.error.code).toBe("SYNTAX_ERROR");
+      }
+    });
+
+    it("returns UNKNOWN_FUNCTION for unsupported functions instead of returning the first argument", () => {
+      const unknownFn = parseAndEvaluateFormula(
+        "typoFn(WEIGHT, 100)",
+        { WEIGHT: 78 },
+        sampleFields
+      );
+      expect(unknownFn).toEqual({
+        success: false,
+        error: {
+          code: "UNKNOWN_FUNCTION",
+          message: 'Unknown mathematical function "typoFn"',
+        },
+      });
+
+      const unknownFnMissingArg = parseAndEvaluateFormula(
+        "typoFn(WEIGHT)",
+        {},
+        sampleFields
+      );
+      expect(unknownFnMissingArg.success).toBe(false);
+      if (!unknownFnMissingArg.success) {
+        expect(unknownFnMissingArg.error.code).toBe("UNKNOWN_FUNCTION");
+      }
+
+      const fieldCalledAsFn = parseAndEvaluateFormula(
+        "WEIGHT(70)",
+        { WEIGHT: 78 },
+        sampleFields
+      );
+      expect(fieldCalledAsFn.success).toBe(false);
+      if (!fieldCalledAsFn.success) {
+        expect(fieldCalledAsFn.error.code).toBe("UNKNOWN_FUNCTION");
+      }
+    });
+
+    it("returns UNRESOLVED_VARIABLE when referencing undeclared identifiers", () => {
+      const unresolved = parseAndEvaluateFormula(
+        "WEIGHT + UNDECLARED_VAR",
+        { WEIGHT: 70 },
+        sampleFields
+      );
+      expect(unresolved.success).toBe(false);
+      if (!unresolved.success) {
+        expect(unresolved.error.code).toBe("UNRESOLVED_VARIABLE");
+        expect(unresolved.error.message).toContain("UNDECLARED_VAR");
+      }
+    });
+
+    it("returns DIVISION_BY_ZERO for static and dynamic zero divisors", () => {
+      const staticDivZero = parseAndEvaluateFormula("10 / 0", {}, []);
+      expect(staticDivZero.success).toBe(false);
+      if (!staticDivZero.success) {
+        expect(staticDivZero.error.code).toBe("DIVISION_BY_ZERO");
+      }
+
+      const staticModZero = parseAndEvaluateFormula("10 % 0", {}, []);
+      expect(staticModZero.success).toBe(false);
+      if (!staticModZero.success) {
+        expect(staticModZero.error.code).toBe("DIVISION_BY_ZERO");
+      }
+
+      const dynamicDivZero = parseAndEvaluateFormula(
+        "WEIGHT / ((HEIGHT / 100) ^ 2)",
+        { WEIGHT: 70, HEIGHT: 0 },
+        sampleFields
+      );
+      expect(dynamicDivZero.success).toBe(false);
+      if (!dynamicDivZero.success) {
+        expect(dynamicDivZero.error.code).toBe("DIVISION_BY_ZERO");
+      }
+    });
+
+    it("returns EVALUATION_ERROR for non-finite math domain outcomes", () => {
+      const negSqrt = parseAndEvaluateFormula("sqrt(-4)", {}, []);
+      expect(negSqrt.success).toBe(false);
+      if (!negSqrt.success) {
+        expect(negSqrt.error.code).toBe("EVALUATION_ERROR");
+      }
+    });
+
+    it("returns success with null value when declared fields are empty or carry CDISC null flavors", () => {
+      expect(parseAndEvaluateFormula("WEIGHT + 10", {}, sampleFields)).toEqual({
+        success: true,
+        value: null,
+      });
+
+      expect(
+        parseAndEvaluateFormula("WEIGHT + 10", { WEIGHT: "" }, sampleFields)
+      ).toEqual({ success: true, value: null });
+
+      for (const nf of ["ND", "NA", "UNK", "ASKU", "NASK", "MSK"]) {
+        expect(
+          parseAndEvaluateFormula(
+            "WEIGHT / ((HEIGHT / 100) ^ 2)",
+            { WEIGHT: nf, HEIGHT: 175 },
+            sampleFields
+          )
+        ).toEqual({ success: true, value: null });
+      }
     });
   });
 
@@ -694,6 +883,67 @@ describe("CRF Studio - AST Formula & Rule Evaluator", () => {
       expect(badAbs.diagnostics.some((d) => d.code === "INVALID_ARITY")).toBe(
         true
       );
+    });
+
+    it("flags adjacent operands without binary operators as UNEXPECTED_TOKEN", () => {
+      for (const expr of [
+        "WEIGHT 70",
+        "70 WEIGHT",
+        "WEIGHT HEIGHT",
+        "(WEIGHT + 1) 70",
+        "round(WEIGHT, 1) 2",
+      ]) {
+        const res = lintFormula(expr, sampleFields);
+        expect(res.isValid).toBe(false);
+        expect(res.diagnostics.some((d) => d.code === "UNEXPECTED_TOKEN")).toBe(
+          true
+        );
+      }
+
+      const fieldCalledAsFn = lintFormula("WEIGHT(70)", sampleFields);
+      expect(fieldCalledAsFn.isValid).toBe(false);
+      expect(
+        fieldCalledAsFn.diagnostics.some((d) => d.code === "UNKNOWN_FUNCTION")
+      ).toBe(true);
+    });
+
+    it("reports syntax_error instead of division_by_zero in explainCalculationDerivation", () => {
+      for (const badExpr of [
+        "WEIGHT == 70",
+        "WEIGHT 70",
+        "WEIGHT +",
+        "typoFn(WEIGHT, 100)",
+      ]) {
+        const trace = explainCalculationDerivation(
+          badExpr,
+          { WEIGHT: 78, HEIGHT: 180 },
+          sampleFields
+        );
+        expect(trace.status).toBe("syntax_error");
+        expect(trace.result).toBeNull();
+      }
+
+      const divZeroTrace = explainCalculationDerivation(
+        "WEIGHT / ((HEIGHT / 100) ^ 2)",
+        { WEIGHT: 78, HEIGHT: 0 },
+        sampleFields
+      );
+      expect(divZeroTrace.status).toBe("division_by_zero");
+
+      const missingTrace = explainCalculationDerivation(
+        "WEIGHT / ((HEIGHT / 100) ^ 2)",
+        { WEIGHT: 78, HEIGHT: "ND" },
+        sampleFields
+      );
+      expect(missingTrace.status).toBe("missing_inputs");
+
+      const okTrace = explainCalculationDerivation(
+        "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+        { WEIGHT: 81, HEIGHT: 180 },
+        sampleFields
+      );
+      expect(okTrace.status).toBe("success");
+      expect(okTrace.result).toBe(25);
     });
 
     it("tokenizes with exact spans and identifies functions vs identifiers", () => {

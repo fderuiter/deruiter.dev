@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { EvaluateFormulaInputSchema } from "@/lib/services";
+import {
+  EvaluateFormulaInputSchema,
+  EvaluateFormulaErrorCode,
+} from "@/lib/services";
 
 describe("EvaluateFormulaInputSchema (Contract Test)", () => {
   it("accepts valid formula and fields", () => {
@@ -17,5 +20,21 @@ describe("EvaluateFormulaInputSchema (Contract Test)", () => {
       formula: "",
     });
     expect(parsed.success).toBe(false);
+  });
+
+  it("validates typed error code union including UNKNOWN_FUNCTION", () => {
+    for (const code of [
+      "EMPTY_FORMULA",
+      "SYNTAX_ERROR",
+      "DIVISION_BY_ZERO",
+      "UNRESOLVED_VARIABLE",
+      "UNKNOWN_FUNCTION",
+      "EVALUATION_ERROR",
+    ]) {
+      expect(EvaluateFormulaErrorCode.safeParse(code).success).toBe(true);
+    }
+    expect(EvaluateFormulaErrorCode.safeParse("BOGUS_CODE").success).toBe(
+      false
+    );
   });
 });

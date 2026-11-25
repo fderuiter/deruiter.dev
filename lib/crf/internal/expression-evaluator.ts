@@ -38,6 +38,46 @@ export interface Token {
   end?: number;
 }
 
+export type FormulaEvaluationErrorCode =
+  | "SYNTAX_ERROR"
+  | "UNKNOWN_FUNCTION"
+  | "UNRESOLVED_VARIABLE"
+  | "DIVISION_BY_ZERO"
+  | "EVALUATION_ERROR";
+
+export interface FormulaEvaluationError {
+  code: FormulaEvaluationErrorCode;
+  message: string;
+}
+
+export type FormulaEvaluationResult =
+  | { success: true; value: number | null }
+  | { success: false; error: FormulaEvaluationError };
+
+class FormulaParseError extends Error {
+  readonly code: FormulaEvaluationErrorCode;
+
+  constructor(code: FormulaEvaluationErrorCode, message: string) {
+    super(message);
+    this.name = "FormulaParseError";
+    this.code = code;
+  }
+}
+
+const SUPPORTED_MATH_FUNCTIONS = new Set([
+  "round",
+  "sqrt",
+  "cbrt",
+  "clamp",
+  "abs",
+  "max",
+  "min",
+  "floor",
+  "ceil",
+  "exp",
+  "log",
+]);
+
 function tokenize(input: string): Token[] {
   const tokens: Token[] = [];
   let i = 0;
@@ -82,15 +122,42 @@ function tokenize(input: string): Token[] {
       continue;
     }
 
-    // Numbers (integers or decimals)
+    // Numbers (integers, decimals, or scientific notation)
     if (
       /[0-9]/.test(ch) ||
       (ch === "." && i + 1 < s.length && /[0-9]/.test(s[i + 1]))
     ) {
       let numStr = "";
-      while (i < s.length && (/[0-9]/.test(s[i]) || s[i] === ".")) {
-        numStr += s[i];
-        i++;
+      let hasDot = false;
+      while (i < s.length) {
+        if (/[0-9]/.test(s[i])) {
+          numStr += s[i];
+          i++;
+        } else if (s[i] === "." && !hasDot) {
+          hasDot = true;
+          numStr += s[i];
+          i++;
+        } else {
+          break;
+        }
+      }
+      if (i < s.length && (s[i] === "e" || s[i] === "E")) {
+        const signOffset = s[i + 1] === "+" || s[i + 1] === "-" ? 1 : 0;
+        if (
+          i + 1 + signOffset < s.length &&
+          /[0-9]/.test(s[i + 1 + signOffset])
+        ) {
+          numStr += s[i];
+          i++;
+          if (signOffset) {
+            numStr += s[i];
+            i++;
+          }
+          while (i < s.length && /[0-9]/.test(s[i])) {
+            numStr += s[i];
+            i++;
+          }
+        }
       }
       tokens.push({ type: "NUMBER", value: numStr });
       continue;
@@ -107,8 +174,10 @@ function tokenize(input: string): Token[] {
       continue;
     }
 
-    // Unexpected character
-    i++;
+    throw new FormulaParseError(
+      "SYNTAX_ERROR",
+      `Unexpected character "${ch}" at position ${i}`
+    );
   }
 
   return tokens;
@@ -118,11 +187,13 @@ export class ExpressionEvaluator {
   private tokens: Token[];
   private pos: number;
   private context: Record<string, number | null>;
+  private allowUnknownVarsDepth: number;
 
   constructor(tokens: Token[], context: Record<string, number | null>) {
     this.tokens = tokens;
     this.pos = 0;
     this.context = context;
+    this.allowUnknownVarsDepth = 0;
   }
 
   private peek(): Token | undefined {
@@ -132,10 +203,14 @@ export class ExpressionEvaluator {
   private consume(expectedType?: TokenType): Token {
     const token = this.tokens[this.pos++];
     if (!token) {
-      throw new Error("Unexpected end of expression");
+      throw new FormulaParseError(
+        "SYNTAX_ERROR",
+        "Unexpected end of expression"
+      );
     }
     if (expectedType && token.type !== expectedType) {
-      throw new Error(
+      throw new FormulaParseError(
+        "SYNTAX_ERROR",
         `Expected token ${expectedType} but got ${token.type} (${token.value})`
       );
     }
@@ -149,15 +224,56 @@ export class ExpressionEvaluator {
   // PowExpr::= Primary ('^' PowExpr)?
   // Primary::= NUMBER | IDENTIFIER | FunctionCall | '(' Expr ')' | '-' Primary
 
-  public parse(): number | null {
-    if (this.tokens.length === 0) return null;
+  public parseResult(): FormulaEvaluationResult {
+    this.pos = 0;
+    if (this.tokens.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: "SYNTAX_ERROR",
+          message: "Formula expression cannot be empty",
+        },
+      };
+    }
     try {
       const res = this.parseAdd();
-      if (res === null || !Number.isFinite(res)) return null;
-      return res;
-    } catch {
-      return null;
+      if (this.pos < this.tokens.length) {
+        const trailing = this.tokens[this.pos];
+        throw new FormulaParseError(
+          "SYNTAX_ERROR",
+          `Unexpected trailing token "${trailing.value}" (${trailing.type})`
+        );
+      }
+      if (res !== null && !Number.isFinite(res)) {
+        return {
+          success: false,
+          error: {
+            code: "EVALUATION_ERROR",
+            message: "Expression evaluated to a non-finite number",
+          },
+        };
+      }
+      return { success: true, value: res };
+    } catch (err) {
+      if (err instanceof FormulaParseError) {
+        return {
+          success: false,
+          error: { code: err.code, message: err.message },
+        };
+      }
+      return {
+        success: false,
+        error: {
+          code: "SYNTAX_ERROR",
+          message: err instanceof Error ? err.message : String(err),
+        },
+      };
     }
+  }
+
+  public parse(): number | null {
+    const result = this.parseResult();
+    return result.success ? result.value : null;
   }
 
   private parseAdd(): number | null {
@@ -198,22 +314,20 @@ export class ExpressionEvaluator {
       ) {
         const op = this.consume().value;
         const right = this.parsePow();
+        if (op === "/" && right === 0) {
+          throw new FormulaParseError("DIVISION_BY_ZERO", "Division by zero");
+        }
+        if (op === "%" && right === 0) {
+          throw new FormulaParseError("DIVISION_BY_ZERO", "Modulo by zero");
+        }
         if (left === null || right === null) {
           left = null;
         } else if (op === "*") {
           left = left * right;
         } else if (op === "/") {
-          if (right === 0) {
-            left = null;
-          } else {
-            left = left / right;
-          }
+          left = left / right;
         } else if (op === "%") {
-          if (right === 0) {
-            left = null;
-          } else {
-            left = left % right;
-          }
+          left = left % right;
         }
       } else {
         break;
@@ -229,6 +343,12 @@ export class ExpressionEvaluator {
     if (next && next.type === "OP" && next.value === "^") {
       this.consume();
       const exponent = this.parsePow();
+      if (base === 0 && exponent !== null && exponent < 0) {
+        throw new FormulaParseError(
+          "DIVISION_BY_ZERO",
+          "Division by zero in negative exponentiation"
+        );
+      }
       if (base === null || exponent === null) return null;
       return Math.pow(base, exponent);
     }
@@ -237,7 +357,12 @@ export class ExpressionEvaluator {
 
   private parsePrimary(): number | null {
     const token = this.peek();
-    if (!token) throw new Error("Unexpected end of expression in primary");
+    if (!token) {
+      throw new FormulaParseError(
+        "SYNTAX_ERROR",
+        "Unexpected end of expression in primary"
+      );
+    }
 
     // Unary minus
     if (token.type === "OP" && token.value === "-") {
@@ -249,11 +374,23 @@ export class ExpressionEvaluator {
     if (token.type === "NUMBER") {
       this.consume();
       const val = parseFloat(token.value);
-      return Number.isFinite(val) ? val : null;
+      if (!Number.isFinite(val)) {
+        throw new FormulaParseError(
+          "SYNTAX_ERROR",
+          `Invalid numeric literal "${token.value}"`
+        );
+      }
+      return val;
     }
 
     if (token.type === "LPAREN") {
       this.consume("LPAREN");
+      if (this.peek()?.type === "RPAREN") {
+        throw new FormulaParseError(
+          "SYNTAX_ERROR",
+          "Empty parentheses '()' are not permitted"
+        );
+      }
       const result = this.parseAdd();
       this.consume("RPAREN");
       return result;
@@ -265,39 +402,93 @@ export class ExpressionEvaluator {
 
       // Function Call (e.g. round(x, 1), sqrt(x), abs(x), max(a,b), min(a,b))
       if (next && next.type === "LPAREN") {
+        const fnName = idToken.value.toLowerCase();
+        const isKnownFn = SUPPORTED_MATH_FUNCTIONS.has(fnName);
+
         this.consume("LPAREN");
         const args: (number | null)[] = [];
-        if (this.peek()?.type !== "RPAREN") {
-          args.push(this.parseAdd());
-          while (this.peek()?.type === "COMMA") {
-            this.consume("COMMA");
+        if (!isKnownFn) {
+          this.allowUnknownVarsDepth++;
+        }
+        try {
+          if (this.peek()?.type !== "RPAREN") {
             args.push(this.parseAdd());
+            while (this.peek()?.type === "COMMA") {
+              this.consume("COMMA");
+              args.push(this.parseAdd());
+            }
+          }
+        } finally {
+          if (!isKnownFn) {
+            this.allowUnknownVarsDepth--;
           }
         }
         this.consume("RPAREN");
+
+        if (!isKnownFn) {
+          throw new FormulaParseError(
+            "UNKNOWN_FUNCTION",
+            `Unknown mathematical function "${idToken.value}"`
+          );
+        }
+
+        if (fnName === "round" && (args.length < 1 || args.length > 2)) {
+          throw new FormulaParseError(
+            "SYNTAX_ERROR",
+            `Function "round" expects 1 or 2 arguments, received ${args.length}`
+          );
+        }
+        if (fnName === "clamp" && args.length !== 3) {
+          throw new FormulaParseError(
+            "SYNTAX_ERROR",
+            `Function "clamp" expects 3 arguments, received ${args.length}`
+          );
+        }
+        if ((fnName === "max" || fnName === "min") && args.length < 1) {
+          throw new FormulaParseError(
+            "SYNTAX_ERROR",
+            `Function "${fnName}" expects at least 1 argument`
+          );
+        }
+        if (
+          (fnName === "sqrt" ||
+            fnName === "cbrt" ||
+            fnName === "abs" ||
+            fnName === "floor" ||
+            fnName === "ceil" ||
+            fnName === "exp" ||
+            fnName === "log") &&
+          args.length !== 1
+        ) {
+          throw new FormulaParseError(
+            "SYNTAX_ERROR",
+            `Function "${fnName}" expects 1 argument, received ${args.length}`
+          );
+        }
 
         if (args.some((a) => a === null)) {
           return null;
         }
         const numArgs = args as number[];
 
-        const fnName = idToken.value.toLowerCase();
         switch (fnName) {
           case "round":
-            if (numArgs.length === 0) return null;
             if (numArgs.length >= 2) {
               const factor = Math.pow(10, numArgs[1]);
               return Math.round(numArgs[0] * factor) / factor;
             }
             return Math.round(numArgs[0]);
           case "sqrt":
-            if (numArgs.length === 0 || numArgs[0] < 0) return null;
+            if (numArgs[0] < 0) {
+              throw new FormulaParseError(
+                "EVALUATION_ERROR",
+                "Square root of negative number is undefined"
+              );
+            }
             return Math.sqrt(numArgs[0]);
           case "cbrt":
-            if (numArgs.length === 0) return null;
             return Math.cbrt(numArgs[0]);
           case "clamp":
-            if (numArgs.length < 3) return null;
             // Formula semantics: NaN propagates, and inverted bounds
             // resolve to the upper argument (clamp(x, 10, 0) === 0).
             if (Number.isNaN(numArgs[0])) return NaN;
@@ -307,28 +498,30 @@ export class ExpressionEvaluator {
               numArgs[2]
             );
           case "abs":
-            if (numArgs.length === 0) return null;
             return Math.abs(numArgs[0]);
           case "max":
-            if (numArgs.length === 0) return null;
             return Math.max(...numArgs);
           case "min":
-            if (numArgs.length === 0) return null;
             return Math.min(...numArgs);
           case "floor":
-            if (numArgs.length === 0) return null;
             return Math.floor(numArgs[0]);
           case "ceil":
-            if (numArgs.length === 0) return null;
             return Math.ceil(numArgs[0]);
           case "exp":
-            if (numArgs.length === 0) return null;
             return Math.exp(numArgs[0]);
           case "log":
-            if (numArgs.length === 0 || numArgs[0] <= 0) return null;
+            if (numArgs[0] <= 0) {
+              throw new FormulaParseError(
+                "EVALUATION_ERROR",
+                "Logarithm of non-positive number is undefined"
+              );
+            }
             return Math.log(numArgs[0]);
           default:
-            return numArgs[0] ?? null;
+            throw new FormulaParseError(
+              "UNKNOWN_FUNCTION",
+              `Unknown mathematical function "${idToken.value}"`
+            );
         }
       }
 
@@ -337,10 +530,106 @@ export class ExpressionEvaluator {
       if (varKey in this.context) {
         return this.context[varKey];
       }
-      return null;
+      if (this.allowUnknownVarsDepth > 0) {
+        return null;
+      }
+      throw new FormulaParseError(
+        "UNRESOLVED_VARIABLE",
+        `Unresolved variable "${idToken.value}"`
+      );
     }
 
-    throw new Error(`Unexpected token ${token.type} (${token.value})`);
+    throw new FormulaParseError(
+      "SYNTAX_ERROR",
+      `Unexpected token ${token.type} (${token.value})`
+    );
+  }
+}
+
+/**
+ * Parses and evaluates a clinical formula, distinguishing missing clinical values
+ * from syntax, unknown-function, unresolved-variable, and division-by-zero errors.
+ *
+ * @param formula - Arithmetic string expression
+ * @param fieldValues - Map of variable names and field IDs to values
+ * @param fieldsList - Array of form fields for identifier resolution
+ * @returns Discriminated union result with evaluated number, null for missing clinical data, or typed failure
+ */
+export function parseAndEvaluateFormula(
+  formula: string,
+  fieldValues: Record<string, string | number | boolean | null | undefined>,
+  fieldsList: CRFField[]
+): FormulaEvaluationResult {
+  if (!formula || typeof formula !== "string" || !formula.trim()) {
+    return {
+      success: false,
+      error: {
+        code: "SYNTAX_ERROR",
+        message: "Formula expression cannot be empty",
+      },
+    };
+  }
+
+  // Build lookup mapping lowercase variable names and field IDs to numeric values or null
+  const context: Record<string, number | null> = {};
+  const lowerFieldValues = new Map<string, unknown>();
+
+  Object.entries(fieldValues || {}).forEach(([k, rawVal]) => {
+    const lowerKey = k.toLowerCase();
+    lowerFieldValues.set(lowerKey, rawVal);
+    if (isMissingOrNullFlavor(rawVal)) {
+      context[lowerKey] = null;
+    } else {
+      const num =
+        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
+      context[lowerKey] = Number.isFinite(num) ? num : null;
+    }
+  });
+
+  (fieldsList || []).forEach((f) => {
+    const idKey = f.id.toLowerCase();
+    const varKey = f.variableName.toLowerCase();
+    const rawVal =
+      fieldValues?.[f.id] ??
+      lowerFieldValues.get(idKey) ??
+      fieldValues?.[f.variableName] ??
+      lowerFieldValues.get(varKey) ??
+      f.nullFlavorValue;
+
+    if (!isMissingOrNullFlavor(rawVal)) {
+      const num =
+        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
+      const safeNum = Number.isFinite(num) ? num : null;
+      context[idKey] = safeNum;
+      context[varKey] = safeNum;
+    } else {
+      if (!(idKey in context) || context[idKey] === null) {
+        context[idKey] = null;
+      }
+      if (!(varKey in context) || context[varKey] === null) {
+        context[varKey] = null;
+      }
+    }
+  });
+
+  try {
+    const tokens = tokenize(formula);
+    const evaluator = new ExpressionEvaluator(tokens, context);
+    return evaluator.parseResult();
+  } catch (err) {
+    if (err instanceof FormulaParseError) {
+      return {
+        success: false,
+        error: { code: err.code, message: err.message },
+      };
+    }
+    return {
+      success: false,
+      error: {
+        code: "SYNTAX_ERROR",
+        message: err instanceof Error ? err.message : String(err),
+      },
+    };
   }
 }
 
@@ -350,58 +639,15 @@ export class ExpressionEvaluator {
  * @param formula - Arithmetic string expression
  * @param fieldValues - Map of variable names and field IDs to values
  * @param fieldsList - Array of form fields for identifier resolution
- * @returns Evaluated numeric result or null when uncalculated / zero denominator
+ * @returns Evaluated numeric result or null when uncalculated / zero denominator / invalid syntax
  */
 export function evaluateFormula(
   formula: string,
   fieldValues: Record<string, string | number | boolean | null | undefined>,
   fieldsList: CRFField[]
 ): number | null {
-  if (!formula || typeof formula !== "string") return null;
-
-  // Build lookup mapping lowercase variable names and field IDs to numeric values or null
-  const context: Record<string, number | null> = {};
-
-  Object.entries(fieldValues).forEach(([k, rawVal]) => {
-    if (isMissingOrNullFlavor(rawVal)) {
-      context[k.toLowerCase()] = null;
-    } else {
-      const num =
-        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
-      context[k.toLowerCase()] = Number.isFinite(num) ? num : null;
-    }
-  });
-
-  fieldsList.forEach((f) => {
-    const rawVal =
-      fieldValues[f.id] ??
-      fieldValues[f.id.toLowerCase()] ??
-      fieldValues[f.variableName] ??
-      fieldValues[f.variableName.toLowerCase()] ??
-      f.nullFlavorValue;
-
-    const idKey = f.id.toLowerCase();
-    const varKey = f.variableName.toLowerCase();
-
-    if (!isMissingOrNullFlavor(rawVal)) {
-      const num =
-        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
-      const safeNum = Number.isFinite(num) ? num : null;
-      context[idKey] = safeNum;
-      context[varKey] = safeNum;
-    } else {
-      context[idKey] = null;
-      context[varKey] = null;
-    }
-  });
-
-  try {
-    const tokens = tokenize(formula);
-    const evaluator = new ExpressionEvaluator(tokens, context);
-    return evaluator.parse();
-  } catch {
-    return null;
-  }
+  const result = parseAndEvaluateFormula(formula, fieldValues, fieldsList);
+  return result.success ? result.value : null;
 }
 
 /**
@@ -1208,7 +1454,7 @@ export function explainCalculationDerivation(
     };
   }
 
-  // Extract variable tokens from formula
+  // Extract variable tokens and validate formula syntax up front
   let tokens: Token[] = [];
   try {
     tokens = tokenize(formula);
@@ -1227,26 +1473,47 @@ export function explainCalculationDerivation(
     };
   }
 
-  // Find all variable names referenced in the formula
+  const syntaxContext: Record<string, number | null> = {};
+  for (const t of tokens) {
+    if (t.type === "IDENTIFIER") {
+      syntaxContext[t.value.toLowerCase()] = null;
+    }
+  }
+  const syntaxCheck = new ExpressionEvaluator(
+    tokens,
+    syntaxContext
+  ).parseResult();
+  if (
+    !syntaxCheck.success &&
+    (syntaxCheck.error.code === "SYNTAX_ERROR" ||
+      syntaxCheck.error.code === "UNKNOWN_FUNCTION")
+  ) {
+    return {
+      targetFieldId: targetId,
+      targetVariableName: targetVar,
+      formula,
+      result: null,
+      status: "syntax_error",
+      dependencies: [],
+      steps: [],
+      diagnostics: [
+        `Syntax error while parsing formula: ${syntaxCheck.error.message}`,
+      ],
+      summary: `Invalid formula syntax: ${syntaxCheck.error.message}`,
+    };
+  }
+
+  // Find all variable names referenced in the formula (excluding function calls)
   const varNames = Array.from(
     new Set(
       tokens
-        .filter((t) => t.type === "IDENTIFIER")
+        .filter(
+          (t, idx) =>
+            t.type === "IDENTIFIER" &&
+            tokens[idx + 1]?.type !== "LPAREN" &&
+            !SUPPORTED_MATH_FUNCTIONS.has(t.value.toLowerCase())
+        )
         .map((t) => t.value)
-        .filter((name) => {
-          const lower = name.toLowerCase();
-          return ![
-            "round",
-            "sqrt",
-            "abs",
-            "max",
-            "min",
-            "ceil",
-            "floor",
-            "log",
-            "exp",
-          ].includes(lower);
-        })
     )
   );
 
@@ -1397,10 +1664,49 @@ export function explainCalculationDerivation(
     );
   }
 
-  // Attempt evaluation
-  const evalResult = evaluateFormula(formula, fieldValues, fieldsList);
+  // Attempt typed evaluation
+  const evalOutcome = parseAndEvaluateFormula(formula, fieldValues, fieldsList);
 
-  if (evalResult === null) {
+  if (!evalOutcome.success || evalOutcome.value === null) {
+    if (
+      !evalOutcome.success &&
+      (evalOutcome.error.code === "SYNTAX_ERROR" ||
+        evalOutcome.error.code === "UNKNOWN_FUNCTION")
+    ) {
+      diagnostics.push(
+        `Syntax error while parsing formula: ${evalOutcome.error.message}`
+      );
+      return {
+        targetFieldId: targetId,
+        targetVariableName: targetVar,
+        formula,
+        result: null,
+        status: "syntax_error",
+        dependencies,
+        steps,
+        diagnostics,
+        summary: `Invalid formula syntax: ${evalOutcome.error.message}`,
+      };
+    }
+
+    if (
+      !evalOutcome.success &&
+      evalOutcome.error.code === "UNRESOLVED_VARIABLE"
+    ) {
+      diagnostics.push(evalOutcome.error.message);
+      return {
+        targetFieldId: targetId,
+        targetVariableName: targetVar,
+        formula,
+        result: null,
+        status: "missing_inputs",
+        dependencies,
+        steps,
+        diagnostics,
+        summary: `Calculation pending: ${evalOutcome.error.message}.`,
+      };
+    }
+
     if (isDivZero) {
       steps.push({
         stepNumber: 2,
@@ -1422,7 +1728,9 @@ export function explainCalculationDerivation(
     }
 
     diagnostics.push(
-      "Evaluation produced null result (possible zero denominator or undefined calculation)."
+      !evalOutcome.success
+        ? evalOutcome.error.message
+        : "Evaluation produced null result (possible zero denominator or undefined calculation)."
     );
     return {
       targetFieldId: targetId,
@@ -1436,6 +1744,8 @@ export function explainCalculationDerivation(
       summary: `Calculation halted: division by zero or undefined operation in formula.`,
     };
   }
+
+  const evalResult = evalOutcome.value;
 
   // Formula evaluation succeeded - generate clinical derivation steps
   const isBmi =

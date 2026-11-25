@@ -116,15 +116,42 @@ export function tokenizeWithSpans(input: string): HighlightToken[] {
       continue;
     }
 
-    // Numbers (integers or decimals)
+    // Numbers (integers, decimals, or scientific notation)
     if (
       /[0-9]/.test(ch) ||
       (ch === "." && i + 1 < input.length && /[0-9]/.test(input[i + 1]))
     ) {
       let numStr = "";
-      while (i < input.length && (/[0-9]/.test(input[i]) || input[i] === ".")) {
-        numStr += input[i];
-        i++;
+      let hasDot = false;
+      while (i < input.length) {
+        if (/[0-9]/.test(input[i])) {
+          numStr += input[i];
+          i++;
+        } else if (input[i] === "." && !hasDot) {
+          hasDot = true;
+          numStr += input[i];
+          i++;
+        } else {
+          break;
+        }
+      }
+      if (i < input.length && (input[i] === "e" || input[i] === "E")) {
+        const signOffset = input[i + 1] === "+" || input[i + 1] === "-" ? 1 : 0;
+        if (
+          i + 1 + signOffset < input.length &&
+          /[0-9]/.test(input[i + 1 + signOffset])
+        ) {
+          numStr += input[i];
+          i++;
+          if (signOffset) {
+            numStr += input[i];
+            i++;
+          }
+          while (i < input.length && /[0-9]/.test(input[i])) {
+            numStr += input[i];
+            i++;
+          }
+        }
       }
       rawTokens.push({ type: "NUMBER", value: numStr, start, end: i });
       continue;
@@ -249,6 +276,27 @@ export function lintFormula(
       });
     }
 
+    const isOperandEnd =
+      token.type === "NUMBER" ||
+      token.type === "RPAREN" ||
+      (token.type === "IDENTIFIER" && nextToken?.type !== "LPAREN");
+    const isNextOperandStart =
+      nextToken !== undefined &&
+      (nextToken.type === "NUMBER" ||
+        nextToken.type === "IDENTIFIER" ||
+        nextToken.type === "FUNCTION" ||
+        nextToken.type === "LPAREN");
+
+    if (isOperandEnd && isNextOperandStart) {
+      diagnostics.push({
+        severity: "error",
+        message: `Unexpected token "${nextToken.value}" after "${token.value}" without an operator between operands`,
+        start: nextToken.start,
+        end: nextToken.end,
+        code: "UNEXPECTED_TOKEN",
+      });
+    }
+
     if (token.type === "LPAREN") {
       if (token.unmatched) {
         unmatchedBracketIndices.push(token.start);
@@ -342,7 +390,7 @@ export function lintFormula(
         if (nextToken && nextToken.type === "LPAREN") {
           diagnostics.push({
             severity: "error",
-            message: `Unknown mathematical function "${token.value}()". Supported functions: round, sqrt, abs, max, min, floor, ceil, exp, log`,
+            message: `Unknown mathematical function "${token.value}()". Supported functions: round, sqrt, cbrt, clamp, abs, max, min, floor, ceil, exp, log`,
             start: token.start,
             end: token.end,
             code: "UNKNOWN_FUNCTION",
@@ -365,7 +413,15 @@ export function lintFormula(
           isNumeric,
         });
 
-        if (!isNumeric) {
+        if (nextToken && nextToken.type === "LPAREN") {
+          diagnostics.push({
+            severity: "error",
+            message: `Variable "${token.value}" cannot be invoked as a function. Supported functions: round, sqrt, cbrt, clamp, abs, max, min, floor, ceil, exp, log`,
+            start: token.start,
+            end: token.end,
+            code: "UNKNOWN_FUNCTION",
+          });
+        } else if (!isNumeric) {
           diagnostics.push({
             severity: "warning",
             message: `Field "${matchedField.label}" (${matchedField.variableName}) has non-numeric type "${matchedField.dataType}". Expected number, integer, or calculated.`,

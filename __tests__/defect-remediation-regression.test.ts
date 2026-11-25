@@ -52,6 +52,9 @@ import {
 } from "@/lib/proof";
 import {
   evaluateFormula,
+  parseAndEvaluateFormula,
+  explainCalculationDerivation,
+  lintFormula,
   evaluateCondition,
   evaluateRule,
   isMissingOrNullFlavor,
@@ -63,7 +66,12 @@ import {
   exportStudyToSas,
   importStudyFromCsvSpec,
   evaluateVisitWindowConflicts,
+  parsePosixShellArgs,
+  generateCliCommandForField,
+  executeCliString,
+  StudyProtocolEngine,
 } from "@/lib/crf";
+import { EvaluateFormulaHandler } from "@/lib/services";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
   getTacticBlock,
@@ -3162,5 +3170,126 @@ describe("Unknown suppression eligibility never sends (#3806)", () => {
     expect(result.success).toBe(false);
     expect(result.queued).toBeUndefined();
     expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+  });
+});
+
+describe("Typed formula evaluation and CLI error contracts", () => {
+  const fields: CRFField[] = [
+    fromPartial<CRFField>({
+      id: "f_weight",
+      variableName: "WEIGHT",
+      label: "Weight",
+      dataType: "number",
+      columnSpan: 6,
+      required: true,
+    }),
+    fromPartial<CRFField>({
+      id: "f_height",
+      variableName: "HEIGHT",
+      label: "Height",
+      dataType: "number",
+      columnSpan: 6,
+      required: true,
+    }),
+  ];
+
+  it("rejects invalid characters, adjacent operands, and unknown functions with typed errors across evaluator, service, linter, and derivation trace", () => {
+    const handler = new EvaluateFormulaHandler();
+
+    const invalidEq = handler.execute({
+      formula: "WEIGHT == 70",
+      fieldValues: { WEIGHT: 78 },
+      fieldsList: fields,
+    });
+    expect(invalidEq.success).toBe(false);
+    if (!invalidEq.success) {
+      expect(invalidEq.error.code).toBe("SYNTAX_ERROR");
+    }
+
+    const trailingToken = parseAndEvaluateFormula(
+      "WEIGHT 70",
+      { WEIGHT: 78 },
+      fields
+    );
+    expect(trailingToken.success).toBe(false);
+    if (!trailingToken.success) {
+      expect(trailingToken.error.code).toBe("SYNTAX_ERROR");
+    }
+
+    const unknownFn = handler.execute({
+      formula: "typoFn(WEIGHT, 100)",
+      fieldValues: { WEIGHT: 78 },
+      fieldsList: fields,
+    });
+    expect(unknownFn.success).toBe(false);
+    if (!unknownFn.success) {
+      expect(unknownFn.error.code).toBe("UNKNOWN_FUNCTION");
+    }
+
+    const missingClinicalInput = handler.execute({
+      formula: "WEIGHT / ((HEIGHT / 100) ^ 2)",
+      fieldValues: { WEIGHT: "ND", HEIGHT: 180 },
+      fieldsList: fields,
+    });
+    expect(missingClinicalInput).toEqual({
+      success: true,
+      data: {
+        value: null,
+        formula: "WEIGHT / ((HEIGHT / 100) ^ 2)",
+        isCalculated: false,
+      },
+    });
+
+    const lintAdj = lintFormula("WEIGHT 70", fields);
+    expect(lintAdj.isValid).toBe(false);
+    expect(lintAdj.diagnostics.some((d) => d.code === "UNEXPECTED_TOKEN")).toBe(
+      true
+    );
+
+    const trace = explainCalculationDerivation(
+      "typoFn(WEIGHT, 100)",
+      { WEIGHT: 78 },
+      fields
+    );
+    expect(trace.status).toBe("syntax_error");
+  });
+
+  it("round-trips POSIX-quoted generateCliCommandForField commands and emits ANSI-free JSON failure envelopes", () => {
+    const baseStudy = StudyProtocolEngine.addForm(
+      StudyProtocolEngine.createInitialStudy({
+        protocolNumber: "REG-001",
+        studyName: "Regression Study",
+      }),
+      "VS"
+    ).study;
+
+    const cmd = generateCliCommandForField("VS", {
+      id: "f_bmider",
+      variableName: "BMIDER",
+      label: "Subject's BMI (kg/m2)",
+      dataType: "calculated",
+      columnSpan: 12,
+      required: true,
+      calculationFormula: "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+    });
+
+    expect(parsePosixShellArgs(cmd).success).toBe(true);
+    const added = executeCliString(baseStudy, cmd);
+    expect(added.success).toBe(true);
+    expect(added.data).toMatchObject({
+      variableName: "BMIDER",
+      label: "Subject's BMI (kg/m2)",
+      columnSpan: 12,
+      calculationFormula: "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+    });
+
+    const unclosed = executeCliString(
+      baseStudy,
+      "crf add field VS --label 'unclosed",
+      { json: true }
+    );
+    expect(unclosed.success).toBe(false);
+    expect(unclosed.document).not.toMatch(/\x1b\[/);
+    expect(JSON.parse(unclosed.document).success).toBe(false);
   });
 });

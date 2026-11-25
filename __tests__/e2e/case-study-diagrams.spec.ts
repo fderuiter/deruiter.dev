@@ -21,7 +21,9 @@ test.describe("Case-study architecture diagrams", () => {
     }).toPass({ timeout: 15000 });
 
     await expect(page.locator("code.language-mermaid")).toHaveCount(0);
-    await expect(diagram.locator("svg")).toContainText("Streaming SAX Lexer");
+    // With htmlLabels: false (#4070), Mermaid wraps node labels into adjacent
+    // SVG <tspan> elements whose textContent joins across line breaks without spaces.
+    await expect(diagram.locator("svg")).toContainText(/Streaming\s*SAX Lexer/);
 
     // Accessibility & container layout checks
     const srDescription = diagram.locator(".sr-only");
@@ -55,7 +57,7 @@ test.describe("Case-study architecture diagrams", () => {
       Math.ceil(geometry?.svgWidth ?? 0)
     );
     expect(geometry?.containerWidth).toBeGreaterThan(0);
-    expect(geometry?.labelText).toContain("Streaming SAX Lexer");
+    expect(geometry?.labelText).toMatch(/Streaming\s*SAX Lexer/);
 
     // Capture visual screenshot for evidence review
     const screenshotPath = isMobile

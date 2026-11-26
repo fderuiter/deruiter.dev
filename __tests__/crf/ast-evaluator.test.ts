@@ -861,6 +861,24 @@ describe("CRF Studio - AST Formula & Rule Evaluator", () => {
       );
     });
 
+    it("counts a grouped expression as one function argument", () => {
+      expect(lintFormula("sqrt((16))", sampleFields).isValid).toBe(true);
+      expect(lintFormula("clamp((5), (0), (10))", sampleFields).isValid).toBe(
+        true
+      );
+    });
+
+    it.each(["sqrt(16,)", "round(,2)", "max(1,,2)"])(
+      "rejects omitted arguments in %s",
+      (formula) => {
+        const result = lintFormula(formula, sampleFields);
+        expect(result.isValid).toBe(false);
+        expect(result.diagnostics).toContainEqual(
+          expect.objectContaining({ code: "UNEXPECTED_TOKEN" })
+        );
+      }
+    );
+
     it("flags adjacent operands without binary operators as UNEXPECTED_TOKEN", () => {
       for (const expr of [
         "WEIGHT 70",

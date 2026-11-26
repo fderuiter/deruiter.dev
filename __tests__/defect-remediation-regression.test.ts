@@ -3254,6 +3254,22 @@ describe("Typed formula evaluation and CLI error contracts", () => {
     expect(trace.status).toBe("syntax_error");
   });
 
+  it("keeps formula linting and evaluation aligned on grouped and omitted arguments", () => {
+    const validFormula = "sqrt((16))";
+    expect(lintFormula(validFormula, fields).isValid).toBe(true);
+    expect(parseAndEvaluateFormula(validFormula, {}, fields)).toEqual({
+      success: true,
+      value: 4,
+    });
+
+    const invalidFormula = "sqrt(16,)";
+    expect(lintFormula(invalidFormula, fields).isValid).toBe(false);
+    expect(parseAndEvaluateFormula(invalidFormula, {}, fields)).toMatchObject({
+      success: false,
+      error: { code: "SYNTAX_ERROR" },
+    });
+  });
+
   it("round-trips POSIX-quoted generateCliCommandForField commands and emits ANSI-free JSON failure envelopes", () => {
     const baseStudy = StudyProtocolEngine.addForm(
       StudyProtocolEngine.createInitialStudy({

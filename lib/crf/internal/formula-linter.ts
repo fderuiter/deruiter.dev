@@ -266,6 +266,22 @@ export function lintFormula(
       });
     }
 
+    const previousToken = tokens[idx - 1];
+    if (
+      token.type === "COMMA" &&
+      (previousToken?.type === "LPAREN" ||
+        previousToken?.type === "COMMA" ||
+        nextToken?.type === "RPAREN")
+    ) {
+      diagnostics.push({
+        severity: "error",
+        message: "Missing function argument next to comma",
+        start: token.start,
+        end: token.end,
+        code: "UNEXPECTED_TOKEN",
+      });
+    }
+
     if (token.type === "LPAREN") {
       if (token.unmatched) {
         unmatchedBracketIndices.push(token.start);
@@ -413,6 +429,7 @@ export function lintFormula(
         for (let j = idx + 1; j < tokens.length; j++) {
           const t = tokens[j];
           if (t.type === "LPAREN") {
+            if (depth === 1) hasContent = true;
             depth++;
           } else if (t.type === "RPAREN") {
             depth--;

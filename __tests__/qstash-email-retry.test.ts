@@ -31,6 +31,7 @@ import { POST } from "@/app/api/webhooks/qstash/retry/route";
 import {
   getQStashRetryDelaySeconds,
   getQStashRetryUrl,
+  MAX_QSTASH_FOLLOW_UPS,
   scheduleEmailRetry,
 } from "@/lib/qstash-retry";
 
@@ -244,7 +245,10 @@ describe("QStash email retry", () => {
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(res.status).toBe(503);
       expect(publishJSON).toHaveBeenCalledWith(
-        expect.objectContaining({ body: { queueId: "q_123" }, delay: 300 })
+        expect.objectContaining({
+          body: { queueId: "q_123", followUps: 1 },
+          delay: 300,
+        })
       );
     });
 
@@ -261,8 +265,25 @@ describe("QStash email retry", () => {
         error: "Failed to process email retry",
       });
       expect(publishJSON).toHaveBeenCalledWith(
-        expect.objectContaining({ body: { queueId: "q_123" }, delay: 300 })
+        expect.objectContaining({
+          body: { queueId: "q_123", followUps: 1 },
+          delay: 300,
+        })
       );
+    });
+
+    it("stops republishing during a sustained outage and leaves the row for maintenance", async () => {
+      processRetryQueue.mockRejectedValue(new Error("db asleep"));
+      const body = JSON.stringify({
+        queueId: "q_123",
+        followUps: MAX_QSTASH_FOLLOW_UPS,
+      });
+
+      const res = await POST(request(body, sign(body, CURRENT)));
+
+      expect(res.status).toBe(503);
+      expect(processRetryQueue).toHaveBeenCalledOnce();
+      expect(publishJSON).not.toHaveBeenCalled();
     });
 
     it("ignores validly signed deliveries on non-production deployments", async () => {

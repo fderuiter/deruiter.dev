@@ -19,8 +19,8 @@ export const maxDuration = 10;
  * Verifies the `Upstash-Signature` header against both signing keys, then runs
  * a targeted retry for one OutboundEmailQueue row. If the row is still
  * retrying afterwards (or if transient storage failure prevents queue state
- * inspection), it schedules the next sub-daily attempt conservatively before
- * answering so `retries: 0` QStash messages are never dropped.
+ * inspection), it can schedule a bounded follow-up before answering. Once the
+ * follow-up limit is reached, daily maintenance retries the durable queue row.
  */
 export const POST = createApiHandler(
   async (req) => {
@@ -68,7 +68,7 @@ export const POST = createApiHandler(
         { status: 422 }
       );
     }
-    const { queueId } = parsed.data;
+    const { queueId, followUps = 0 } = parsed.data;
 
     try {
       const retry = await new ProcessRetryQueueHandler().execute({
@@ -82,7 +82,7 @@ export const POST = createApiHandler(
           typeof details?.attempts === "number" && details.attempts >= 1
             ? details.attempts
             : 1;
-        await scheduleEmailRetry(queueId, fallbackAttempts);
+        await scheduleEmailRetry(queueId, fallbackAttempts, followUps);
         return serviceFailureResponse(retry, {
           status: 503,
           errorMessage: "Failed to process email retry",
@@ -99,7 +99,11 @@ export const POST = createApiHandler(
           state.status === "RETRYING" ||
           state.status === "PENDING"
         ) {
-          rescheduled = await scheduleEmailRetry(queueId, state?.attempts ?? 1);
+          rescheduled = await scheduleEmailRetry(
+            queueId,
+            state?.attempts ?? 1,
+            followUps
+          );
         }
       }
 
@@ -115,7 +119,7 @@ export const POST = createApiHandler(
         { status: 200 }
       );
     } catch (err) {
-      await scheduleEmailRetry(queueId, 1);
+      await scheduleEmailRetry(queueId, 1, followUps);
       logger.error("QStash email retry failed:", err);
       return NextResponse.json(
         { error: "Failed to process email retry" },

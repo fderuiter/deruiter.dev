@@ -3,31 +3,40 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ControlPoint,
+  NeuroEditLayer,
   SlicePlane,
   ToolMode,
   VectorContourPath,
   VoxelCoord,
   VoxelEdit,
 } from "@/lib/neuro/types";
-import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
+import { SyntheticVolume } from "@/lib/neuro/volume-generator";
 import { IconLayersSubtract } from "@tabler/icons-react";
 import { drawSlice } from "./drawSlice";
 import { sliceIndex } from "./slice-geometry";
-import { useSliceInteraction } from "./useSliceInteraction";
+import {
+  type CommittedBrushStroke,
+  useSliceInteraction,
+} from "./useSliceInteraction";
 
 interface MultiPlanarSliceViewerProps {
   volume: SyntheticVolume;
   crosshair: VoxelCoord;
   toolMode: ToolMode;
   brushRadius: number;
+  activeLayer?: NeuroEditLayer;
   showPialContour: boolean;
   showWmContour: boolean;
+  showOverlayMask?: boolean;
+  overlayOpacity?: number;
+  editRevision?: number;
   controlPoints: ControlPoint[];
   vectorContours?: VectorContourPath[];
   roiMask?: Uint8Array;
   onCrosshairChange: (coord: VoxelCoord) => void;
   onAddControlPoint: (point: Omit<ControlPoint, "id" | "timestamp">) => void;
   onApplyVoxelEdits: (edits: VoxelEdit[]) => void;
+  onCommitStroke?: (stroke: CommittedBrushStroke) => void;
   onSelectROISeed?: (coord: VoxelCoord) => void;
 }
 
@@ -126,18 +135,33 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
   crosshair,
   toolMode,
   brushRadius,
+  activeLayer = "brainmask",
   showPialContour,
   showWmContour,
+  showOverlayMask = true,
+  overlayOpacity = 0.55,
+  editRevision = 0,
   controlPoints,
   vectorContours,
   roiMask: _roiMask,
   onCrosshairChange,
   onAddControlPoint,
   onApplyVoxelEdits,
+  onCommitStroke,
   onSelectROISeed,
 }) => {
   const [activePlane, setActivePlane] = useState<SlicePlane>("coronal");
   const [viewLayout, setViewLayout] = useState<"focused" | "multi">("multi");
+
+  const maxIndexForAxis = (axis: "x" | "y" | "z") =>
+    Math.max(
+      0,
+      (axis === "x"
+        ? volume.dimensions.width
+        : axis === "y"
+          ? volume.dimensions.height
+          : volume.dimensions.depth) - 1
+    );
 
   const axialCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const coronalCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -156,10 +180,12 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
     crosshair,
     toolMode,
     brushRadius,
+    activeLayer,
     controlPointCount: controlPoints.length,
     onCrosshairChange,
     onAddControlPoint,
     onApplyVoxelEdits,
+    onCommitStroke,
     onSelectROISeed,
   });
 
@@ -169,6 +195,8 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
       crosshair,
       showPialContour,
       showWmContour,
+      showOverlayMask,
+      overlayOpacity,
       controlPoints,
       vectorContours,
     };
@@ -215,11 +243,20 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
     crosshair,
     showPialContour,
     showWmContour,
+    showOverlayMask,
+    overlayOpacity,
+    editRevision,
     controlPoints,
     vectorContours,
     viewLayout,
     activePlane,
   ]);
+
+  const spacing = volume.spacing;
+  const gridBadge = `${volume.dimensions.width}×${volume.dimensions.height}×${volume.dimensions.depth}`;
+  const spacingBadge = spacing
+    ? `${Number(spacing.x.toFixed(2))}×${Number(spacing.y.toFixed(2))}×${Number(spacing.z.toFixed(2))}mm`
+    : null;
 
   return (
     <div
@@ -236,6 +273,13 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
           </span>
           <span className="text-[11px] font-mono text-zinc-400">
             [SCROLL TO SLICE · CLICK TO EDIT]
+          </span>
+          <span
+            data-testid="slice-grid-badge"
+            className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-md"
+          >
+            {gridBadge}
+            {spacingBadge ? ` · ${spacingBadge}` : ""}
           </span>
         </div>
 
@@ -312,7 +356,7 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
                 <input
                   type="range"
                   min="0"
-                  max={VOLUME_SIZE - 1}
+                  max={maxIndexForAxis(axis)}
                   value={crosshair[axis]}
                   aria-label={`${title} slice`}
                   aria-valuetext={`${title} slice ${label} = ${crosshair[axis]}`}

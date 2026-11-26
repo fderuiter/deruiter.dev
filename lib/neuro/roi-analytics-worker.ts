@@ -42,6 +42,7 @@ export function processROIWorkerRequest(req: ROIWorkerRequest): {
     brainmask,
     wmMask,
     dimensions,
+    spacing,
     scenarioId,
   } = req;
   const transferables: ArrayBuffer[] = [];
@@ -55,7 +56,8 @@ export function processROIWorkerRequest(req: ROIWorkerRequest): {
         brainmask,
         dims,
         seed,
-        intensityTolerance || 15
+        intensityTolerance || 15,
+        spacing
       );
       transferables.push(result.roiMask.buffer as ArrayBuffer);
 
@@ -93,7 +95,7 @@ export function processROIWorkerRequest(req: ROIWorkerRequest): {
     }
 
     if (type === "histogram" && rawT1) {
-      const histogram = compute256BinHistogram(rawT1, brainmask);
+      const histogram = compute256BinHistogram(rawT1, brainmask, spacing);
       transferables.push(histogram.bins.buffer as ArrayBuffer);
 
       const response: ROIWorkerResponse = {

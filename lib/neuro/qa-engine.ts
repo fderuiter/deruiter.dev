@@ -16,6 +16,7 @@ export function evaluateQAMetrics(
   controlPoints: ControlPoint[],
   voxelEdits: VoxelEdit[]
 ): QAMetrics {
+  const { width, height } = volume.dimensions;
   const { min, max } = volume.defectRegion;
   const initialDefects = scenario.initialDefects;
 
@@ -38,7 +39,7 @@ export function evaluateQAMetrics(
         edit.z > max.z
       )
         continue;
-      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      const index = getIndex(edit.x, edit.y, edit.z, width, height);
       if (volume.labels[index] === 5 && volume.initialBrainmask[index] === 1) {
         finalEdits.set(index, edit.newValue);
       }
@@ -48,7 +49,7 @@ export function evaluateQAMetrics(
     for (let z = min.z; z <= max.z; z++) {
       for (let y = min.y; y <= max.y; y++) {
         for (let x = min.x; x <= max.x; x++) {
-          const index = getIndex(x, y, z, volume.dimensions.width);
+          const index = getIndex(x, y, z, width, height);
           if (
             volume.labels[index] !== 5 ||
             volume.initialBrainmask[index] !== 1
@@ -77,7 +78,7 @@ export function evaluateQAMetrics(
         cp.z > max.z
       )
         continue;
-      const index = getIndex(cp.x, cp.y, cp.z, volume.dimensions.width);
+      const index = getIndex(cp.x, cp.y, cp.z, width, height);
       if (volume.labels[index] === 3 && volume.initialWmMask[index] === 0) {
         uniqueControlPoints.add(index);
       }
@@ -99,7 +100,7 @@ export function evaluateQAMetrics(
         edit.z > max.z
       )
         continue;
-      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      const index = getIndex(edit.x, edit.y, edit.z, width, height);
       if (volume.labels[index] === 3 && volume.initialWmMask[index] === 0) {
         finalEdits.set(index, edit.newValue);
       }
@@ -125,7 +126,7 @@ export function evaluateQAMetrics(
         edit.z > max.z
       )
         continue;
-      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      const index = getIndex(edit.x, edit.y, edit.z, width, height);
       if (volume.labels[index] === 2 && volume.initialBrainmask[index] === 0) {
         finalEdits.set(index, edit.newValue);
       }
@@ -149,7 +150,7 @@ export function evaluateQAMetrics(
         edit.z > max.z
       )
         continue;
-      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      const index = getIndex(edit.x, edit.y, edit.z, width, height);
       const initialMask =
         edit.layer === "wm" ? volume.initialWmMask : volume.initialBrainmask;
       if (volume.labels[index] === 3 && initialMask[index] === 1) {

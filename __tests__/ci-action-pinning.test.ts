@@ -190,6 +190,19 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     });
   });
 
+  it.each([
+    "cdisc-library-sync.yml",
+    "overrides-audit.yml",
+    "scheduled-security-audit.yml",
+    "standards-watch.yml",
+  ])(
+    "%s keeps top-level permissions read-only and scopes write grants to the job",
+    (file) => {
+      const doc = parseWorkflow(file);
+      expect(doc.permissions).toEqual({ contents: "read" });
+    }
+  );
+
   it("has dependabot.yml configured for github-actions with weekly schedule", () => {
     expect(fs.existsSync(dependabotPath)).toBe(true);
     const content = fs.readFileSync(dependabotPath, "utf8");

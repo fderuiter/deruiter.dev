@@ -1,12 +1,18 @@
 import { useRef, useState } from "react";
+import { coalesceStrokeVoxelEdits } from "@/lib/neuro/drafts";
 import {
   ControlPoint,
+  NeuroEditLayer,
   SlicePlane,
   ToolMode,
   VoxelCoord,
   VoxelEdit,
 } from "@/lib/neuro/types";
-import { extractSlice, SyntheticVolume } from "@/lib/neuro/volume-generator";
+import {
+  extractSlice,
+  getIndex,
+  SyntheticVolume,
+} from "@/lib/neuro/volume-generator";
 import {
   brushEdits,
   canvasPixel,
@@ -21,15 +27,23 @@ type SliceTarget = Pick<
   "width" | "height" | "getBoundingClientRect"
 >;
 
+export interface CommittedBrushStroke {
+  kind: "paint" | "erase";
+  layer: NeuroEditLayer;
+  voxelEdits: VoxelEdit[];
+}
+
 interface SliceInteractionOptions {
   volume: SyntheticVolume;
   crosshair: VoxelCoord;
   toolMode: ToolMode;
   brushRadius: number;
+  activeLayer?: NeuroEditLayer;
   controlPointCount: number;
   onCrosshairChange: (coord: VoxelCoord) => void;
   onAddControlPoint: (point: Omit<ControlPoint, "id" | "timestamp">) => void;
   onApplyVoxelEdits: (edits: VoxelEdit[]) => void;
+  onCommitStroke?: (stroke: CommittedBrushStroke) => void;
   onSelectROISeed?: (coord: VoxelCoord) => void;
 }
 
@@ -44,14 +58,18 @@ export function useSliceInteraction({
   crosshair,
   toolMode,
   brushRadius,
+  activeLayer = "brainmask",
   controlPointCount,
   onCrosshairChange,
   onAddControlPoint,
   onApplyVoxelEdits,
+  onCommitStroke,
   onSelectROISeed,
 }: SliceInteractionOptions) {
   const [hoverIntensity, setHoverIntensity] = useState<number | null>(null);
   const isPressedRef = useRef(false);
+  const activeStrokeEditsRef = useRef<VoxelEdit[]>([]);
+  const activeStrokeKindRef = useRef<"paint" | "erase" | null>(null);
 
   const voxelAt = (
     plane: SlicePlane,
@@ -62,7 +80,8 @@ export function useSliceInteraction({
     pixelToVoxel(
       plane,
       canvasPixel(target, target.getBoundingClientRect(), clientX, clientY),
-      crosshair
+      crosshair,
+      volume.dimensions
     );
 
   const applyTool = (coord: VoxelCoord) => {
@@ -77,8 +96,36 @@ export function useSliceInteraction({
         label: `CP-${controlPointCount + 1}`,
       });
     } else if (toolMode === "paint" || toolMode === "erase") {
-      const edits = brushEdits(coord, brushRadius, toolMode);
-      if (edits.length > 0) onApplyVoxelEdits(edits);
+      const edits = brushEdits(
+        coord,
+        brushRadius,
+        toolMode,
+        volume.dimensions,
+        activeLayer
+      );
+      if (edits.length > 0) {
+        const { width, height } = volume.dimensions;
+        const targetMask =
+          activeLayer === "brainmask"
+            ? volume.brainmask
+            : activeLayer === "overlay"
+              ? volume.overlayMask
+              : volume.wmMask;
+        if (targetMask) {
+          activeStrokeKindRef.current = toolMode;
+          for (const e of edits) {
+            const idx = getIndex(e.x, e.y, e.z, width, height);
+            const originalValue = targetMask[idx] ?? 0;
+            if (originalValue !== e.newValue) {
+              activeStrokeEditsRef.current.push({
+                ...e,
+                originalValue,
+              });
+            }
+          }
+        }
+        onApplyVoxelEdits(edits);
+      }
     }
   };
 
@@ -89,6 +136,8 @@ export function useSliceInteraction({
     clientY: number
   ) => {
     isPressedRef.current = true;
+    activeStrokeEditsRef.current = [];
+    activeStrokeKindRef.current = null;
     const coord = voxelAt(plane, target, clientX, clientY);
     onCrosshairChange(coord);
     applyTool(coord);
@@ -128,10 +177,26 @@ export function useSliceInteraction({
 
   const release = () => {
     isPressedRef.current = false;
+    const kind = activeStrokeKindRef.current;
+    const rawEdits = activeStrokeEditsRef.current;
+    activeStrokeKindRef.current = null;
+    activeStrokeEditsRef.current = [];
+    if (kind && rawEdits.length > 0 && onCommitStroke) {
+      const coalesced = coalesceStrokeVoxelEdits(rawEdits);
+      if (coalesced.length > 0) {
+        onCommitStroke({
+          kind,
+          layer: activeLayer,
+          voxelEdits: coalesced,
+        });
+      }
+    }
   };
 
   const scroll = (plane: SlicePlane, deltaY: number) => {
-    onCrosshairChange(scrollCrosshair(crosshair, plane, deltaY));
+    onCrosshairChange(
+      scrollCrosshair(crosshair, plane, deltaY, volume.dimensions)
+    );
   };
 
   return { hoverIntensity, press, drag, hover, release, scroll };

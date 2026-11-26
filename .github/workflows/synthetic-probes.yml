@@ -24,7 +24,7 @@ on:
         default: ""
 
 concurrency:
-  group: synthetic-probes-${{ github.event_name }}-${{ github.ref }}
+  group: synthetic-probes-${{ github.event_name }}-${{ github.ref || github.run_id }}
   cancel-in-progress: false
 
 permissions:
@@ -101,16 +101,16 @@ jobs:
           PROBE_TARGET_URL: ${{ steps.target.outputs.url }}
           PROBES_OUTCOME: ${{ steps.probes.outcome }}
         run: |
-          PROBE_RESULT="❌ Probe run did not pass — see the job log for the failing spec"
-          if [ "$PROBES_OUTCOME" = "success" ]; then
-            PROBE_RESULT="✅ All probed journeys healthy"
+          RESULT_SUMMARY="❌ Probe run did not pass — see the job log for the failing spec"
+          if [ "${PROBES_OUTCOME}" = "success" ]; then
+            RESULT_SUMMARY="✅ All probed journeys healthy"
           fi
           {
             echo "# 🛰️ Synthetic Journey Monitoring Report"
             echo ""
             echo "- **Target:** ${PROBE_TARGET_URL}"
             echo "- **Checked:** $(date -u)"
-            echo "- **Result:** ${PROBE_RESULT}"
+            echo "- **Result:** ${RESULT_SUMMARY}"
             echo ""
             echo "Journeys covered by this suite:"
             echo ""

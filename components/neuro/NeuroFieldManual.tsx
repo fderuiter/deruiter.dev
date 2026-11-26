@@ -312,6 +312,12 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 },
                 { key: "3 / B", desc: "Voxel Paint Brush" },
                 { key: "4 / E", desc: "Voxel Erase Brush" },
+                { key: "5 / G", desc: "3D Region-Growing ROI Seed" },
+                { key: "Ctrl/Cmd + Z", desc: "Undo last stroke" },
+                {
+                  key: "Ctrl/Cmd + Shift + Z",
+                  desc: "Redo undone stroke (or Ctrl + Y)",
+                },
                 {
                   key: "Mouse Wheel",
                   desc: "Scroll through anatomical slices",

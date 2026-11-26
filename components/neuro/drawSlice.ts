@@ -1,3 +1,4 @@
+import { clamp } from "@/lib/game-utils";
 import {
   ControlPoint,
   SlicePlane,
@@ -12,11 +13,13 @@ interface SliceOverlays {
   crosshair: VoxelCoord;
   showPialContour: boolean;
   showWmContour: boolean;
+  showOverlayMask?: boolean;
+  overlayOpacity?: number;
   controlPoints: ControlPoint[];
   vectorContours?: VectorContourPath[];
 }
 
-/** Outline the edge pixels of a binary mask as one-pixel squares. */
+/** Outline the edge pixels of a mask as one-pixel squares. */
 function traceMaskEdges(
   ctx: CanvasRenderingContext2D,
   mask: ArrayLike<number>,
@@ -28,7 +31,7 @@ function traceMaskEdges(
     for (let x = 1; x < width - 1; x++) {
       const idx = y * width + x;
       if (
-        mask[idx] === 1 &&
+        mask[idx] > 0 &&
         (mask[idx - 1] === 0 ||
           mask[idx + 1] === 0 ||
           mask[idx - width] === 0 ||
@@ -42,8 +45,8 @@ function traceMaskEdges(
 }
 
 /**
- * Draw one anatomical slice and its overlays: surface contours, vector
- * contours, the defect region, nearby control points and the crosshair.
+ * Draw one anatomical slice and its overlays: surface contours, overlay mask,
+ * vector contours, the defect region, nearby control points and the crosshair.
  */
 export function drawSlice(
   canvas: HTMLCanvasElement | null,
@@ -56,23 +59,57 @@ export function drawSlice(
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const { width, height, pixels, mask, wm } = extractSlice(
-    volume,
-    plane,
-    slice
-  );
+  const {
+    width,
+    height,
+    pixels,
+    mask,
+    wm,
+    overlay,
+    voxelWidthMm,
+    voxelHeightMm,
+  } = extractSlice(volume, plane, slice);
   canvas.width = width;
   canvas.height = height;
+
+  if (canvas.style && voxelWidthMm > 0 && voxelHeightMm > 0) {
+    canvas.style.aspectRatio = `${width * voxelWidthMm} / ${height * voxelHeightMm}`;
+  }
+
+  const showOverlay =
+    Boolean(overlay) &&
+    overlays.showOverlayMask !== false &&
+    (overlays.overlayOpacity ?? 0.55) > 0;
+  const overlayAlpha = showOverlay
+    ? clamp(overlays.overlayOpacity ?? 0.55, 0, 1)
+    : 0;
 
   const imgData = ctx.createImageData(width, height);
   for (let i = 0; i < pixels.length; i++) {
     const p = i * 4;
-    imgData.data[p] = pixels[i];
-    imgData.data[p + 1] = pixels[i];
-    imgData.data[p + 2] = pixels[i];
+    const base = pixels[i];
+    if (showOverlay && overlay && overlay[i] > 0) {
+      imgData.data[p] = Math.round(base * (1 - overlayAlpha));
+      imgData.data[p + 1] = Math.round(
+        base * (1 - overlayAlpha) + 245 * overlayAlpha
+      );
+      imgData.data[p + 2] = Math.round(
+        base * (1 - overlayAlpha) + 212 * overlayAlpha
+      );
+    } else {
+      imgData.data[p] = base;
+      imgData.data[p + 1] = base;
+      imgData.data[p + 2] = base;
+    }
     imgData.data[p + 3] = 255;
   }
   ctx.putImageData(imgData, 0, 0);
+
+  if (showOverlay && overlay) {
+    ctx.strokeStyle = `rgba(0, 245, 212, ${Math.min(0.95, overlayAlpha + 0.25)})`;
+    ctx.lineWidth = 1.0;
+    traceMaskEdges(ctx, overlay, width, height);
+  }
 
   if (overlays.showPialContour) {
     ctx.strokeStyle = "rgba(239, 68, 68, 0.85)"; // Red-500

@@ -14,6 +14,14 @@
 import { logger } from "@/lib/logger";
 import { createCorticalSurfaceMeshBuffers } from "./internal/mesh-geometry";
 import {
+  computePreviewMarchingCubesStride,
+  extractMarchingCubesBuffers,
+  type MarchingCubesOptions,
+  VOLUME_WORLD_EXTENT,
+  voxelToWorld3D,
+  world3DToVoxel,
+} from "./internal/marching-cubes";
+import {
   HemisphereFilter,
   MeshWorkerRequest,
   MeshWorkerResponse,
@@ -27,6 +35,15 @@ export {
   generateSubcorticalBuffers,
   getAnatomicalParcelAtCoordinate,
 } from "./internal/mesh-geometry";
+
+export {
+  computePreviewMarchingCubesStride,
+  extractMarchingCubesBuffers,
+  type MarchingCubesOptions,
+  VOLUME_WORLD_EXTENT,
+  voxelToWorld3D,
+  world3DToVoxel,
+};
 
 // Background Web Worker Management & Async Interface
 
@@ -138,6 +155,81 @@ export async function createCorticalSurfaceMeshBuffersAsync(
       worker.postMessage(request);
     } catch (err) {
       logger.warn("Mesh generator Web Worker postMessage failed:", err);
+      retireMeshWorker(worker);
+    }
+  });
+}
+
+/**
+ * Reconstruct 3D Marching Cubes tissue isosurfaces asynchronously in `mesh-worker.ts`
+ * using zero-copy Transferable ArrayBuffers, falling back to main-thread extraction
+ * when Web Workers are unavailable.
+ */
+export async function extractVolumeIsosurfaceBuffersAsync(
+  options: MarchingCubesOptions & { readonly preview?: boolean }
+): Promise<RawGeometryBuffer[]> {
+  const downsampleStride =
+    options.downsampleStride ??
+    (options.preview
+      ? computePreviewMarchingCubesStride(options.dimensions)
+      : 1);
+  const resolvedOptions: MarchingCubesOptions = {
+    ...options,
+    downsampleStride,
+  };
+
+  const worker = getMeshWorker();
+  if (!worker) {
+    return extractMarchingCubesBuffers(resolvedOptions);
+  }
+
+  return new Promise((resolve) => {
+    const requestId = `mesh_mc_${++requestCounter}`;
+    let settled = false;
+
+    const settle = (response: MeshWorkerResponse | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(
+        response
+          ? response.buffers
+          : extractMarchingCubesBuffers(resolvedOptions)
+      );
+    };
+
+    const timeout = setTimeout(() => {
+      pendingRequests.delete(requestId);
+      settle(null);
+    }, 4000);
+
+    pendingRequests.set(requestId, { settle });
+
+    const volBuffer = options.volumeData.slice().buffer;
+    const maskBuffer = options.maskData
+      ? options.maskData.slice().buffer
+      : undefined;
+    const transfers: ArrayBuffer[] = [volBuffer];
+    if (maskBuffer) transfers.push(maskBuffer);
+
+    const request: MeshWorkerRequest = {
+      id: requestId,
+      mode: options.mode ?? "pial",
+      hemiFilter: options.hemiFilter ?? "both",
+      wireframe: false,
+      extractionMode: "marching_cubes",
+      volumeData: new Uint8Array(volBuffer),
+      maskData: maskBuffer ? new Uint8Array(maskBuffer) : undefined,
+      dimensions: options.dimensions,
+      spacing: options.spacing,
+      isovalue: options.isovalue,
+      downsampleStride,
+    };
+
+    try {
+      worker.postMessage(request, transfers);
+    } catch (err) {
+      logger.warn("Mesh Marching Cubes worker postMessage failed:", err);
       retireMeshWorker(worker);
     }
   });

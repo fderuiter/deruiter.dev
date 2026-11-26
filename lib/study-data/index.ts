@@ -253,3 +253,7 @@ export type {
   RunDiffInput,
   TlfValueChange,
 } from "./diff";
+export {
+  buildRecordedSuggestionKey,
+  loadRecordedSdtmSuggestions,
+} from "./internal/suggestions/recorded-suggestions";

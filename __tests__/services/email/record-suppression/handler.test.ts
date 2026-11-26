@@ -26,6 +26,18 @@ describe("RecordEmailSuppressionHandler (Logic Test)", () => {
     expect(upsert).toHaveBeenCalledTimes(1);
   });
 
+  it("returns INVALID_INPUT when email is empty", async () => {
+    const handler = new RecordEmailSuppressionHandler();
+    const result = await handler.execute({
+      email: "",
+      reason: "BOUNCE",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("INVALID_INPUT");
+    }
+  });
+
   it("returns STORAGE_UNAVAILABLE when upsert throws", async () => {
     const deps = fromPartial<RecordEmailSuppressionDeps>({
       db: {

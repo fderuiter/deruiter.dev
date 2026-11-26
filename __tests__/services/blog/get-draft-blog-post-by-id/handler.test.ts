@@ -23,6 +23,27 @@ describe("GetDraftBlogPostByIdHandler (Logic Test)", () => {
     expect(result).toEqual({ success: true, data: draft });
   });
 
+  it("returns INVALID_INPUT when id is empty", async () => {
+    const handler = new GetDraftBlogPostByIdHandler();
+    const result = await handler.execute({ id: "" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("INVALID_INPUT");
+    }
+  });
+
+  it("returns NOT_FOUND when draft does not exist", async () => {
+    const deps = fromPartial<GetDraftBlogPostByIdDeps>({
+      db: { blogPost: { findFirst: async () => null } },
+    });
+    const handler = new GetDraftBlogPostByIdHandler(deps);
+    const result = await handler.execute({ id: "missing" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("NOT_FOUND");
+    }
+  });
+
   it("returns STORAGE_UNAVAILABLE when Prisma findFirst throws", async () => {
     const deps = fromPartial<GetDraftBlogPostByIdDeps>({
       db: {

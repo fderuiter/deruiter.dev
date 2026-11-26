@@ -7,7 +7,19 @@ import {
 } from "@/lib/services";
 
 describe("GetCaseStudyFeedbackHandler (Logic Test)", () => {
-  it("parses takeaways JSON and marks hasSubmitted when connectionHash matches", async () => {
+  it("returns INVALID_INPUT when caseStudySlug is blank", async () => {
+    const handler = new GetCaseStudyFeedbackHandler();
+    const result = await handler.execute({
+      caseStudySlug: "",
+      connectionHash: "hash-match",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("INVALID_INPUT");
+    }
+  });
+
+  it("parses takeaways JSON, defaults empty takeaways to [], and marks hasSubmitted when connectionHash matches", async () => {
     const deps = fromPartial<GetCaseStudyFeedbackDeps>({
       db: {
         caseStudyFeedback: {
@@ -18,6 +30,13 @@ describe("GetCaseStudyFeedbackHandler (Logic Test)", () => {
               comments: "Solid trade-offs",
               createdAt: new Date("2026-01-01T00:00:00Z"),
               connectionHash: "hash-match",
+            },
+            {
+              id: "fb-2",
+              takeaways: "",
+              comments: "No tags",
+              createdAt: new Date("2026-01-02T00:00:00Z"),
+              connectionHash: "other-hash",
             },
           ],
         },
@@ -33,10 +52,11 @@ describe("GetCaseStudyFeedbackHandler (Logic Test)", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.hasSubmitted).toBe(true);
-      expect(result.data.totalFeedback).toBe(1);
+      expect(result.data.totalFeedback).toBe(2);
       expect(result.data.feedback[0]?.takeaways).toEqual([
         "clean-architecture",
       ]);
+      expect(result.data.feedback[1]?.takeaways).toEqual([]);
     }
   });
 

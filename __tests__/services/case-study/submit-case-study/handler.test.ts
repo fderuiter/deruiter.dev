@@ -9,9 +9,7 @@ import {
 
 describe("SubmitCaseStudyHandler (Logic Test)", () => {
   it("sanitizes HTML fields, persists draft case study, and evicts cache", async () => {
-    const sanitizeHtml = vi.fn(async (html: string) =>
-      html.replace(/<script>.*<\/script>/g, "")
-    );
+    const sanitizeHtml = vi.fn(async (html: string) => `[sanitized]${html}`);
     const evictExecute = vi.fn(async () => ({
       success: true as const,
       data: { evicted: true },
@@ -22,12 +20,13 @@ describe("SubmitCaseStudyHandler (Logic Test)", () => {
       title: "New Study",
       published: false,
     });
+    const createCaseStudy = vi.fn(async () => createdRow);
     const deps = fromPartial<SubmitCaseStudyDeps>({
       sanitizeHtml,
       evictCacheHandler: { execute: evictExecute },
       db: {
         caseStudy: {
-          create: async () => createdRow,
+          create: createCaseStudy,
         },
       },
     });
@@ -37,13 +36,19 @@ describe("SubmitCaseStudyHandler (Logic Test)", () => {
       title: "New Study",
       slug: "new-study",
       primary_language: "TypeScript",
-      editorial_content: "<p>Hello</p><script>x()</script>",
+      editorial_content: "<p>Hello</p>",
       architectural_narrative: "<p>World</p>",
       tags: "ts",
     });
 
     expect(result).toEqual({ success: true, data: createdRow });
     expect(sanitizeHtml).toHaveBeenCalledTimes(2);
+    expect(createCaseStudy).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        editorial_content: "[sanitized]<p>Hello</p>",
+        architectural_narrative: "[sanitized]<p>World</p>",
+      }),
+    });
     expect(evictExecute).toHaveBeenCalledWith({ slug: "new-study" });
   });
 

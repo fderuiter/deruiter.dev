@@ -31,6 +31,15 @@ describe("GetDraftBlogPostsHandler (Logic Test)", () => {
     });
   });
 
+  it("returns INVALID_INPUT when page is out of range", async () => {
+    const handler = new GetDraftBlogPostsHandler();
+    const result = await handler.execute({ page: 0, pageSize: 10 });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("INVALID_INPUT");
+    }
+  });
+
   it("returns STORAGE_UNAVAILABLE when database query fails", async () => {
     const deps = fromPartial<GetDraftBlogPostsDeps>({
       db: {

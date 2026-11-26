@@ -99,7 +99,7 @@ type SaveStudyRepositoryOutcome =
   | {
       readonly status: "conflict";
       readonly expectedRevisionId: string;
-      readonly currentRevisionId: string;
+      readonly currentRevisionId: string | null;
       readonly latestRecord: StudyRepositoryRecord | null;
     };
 
@@ -202,6 +202,8 @@ export interface StudyRepositoryClient {
       readonly note: string;
       readonly force?: boolean;
       readonly skipIfUnchanged?: boolean;
+      /** An editor already bound to a repository record must not recreate it on autosave. */
+      readonly requireExisting?: boolean;
     }
   ): Promise<SaveStudyRepositoryOutcome>;
   deleteStudy(studyId: string): Promise<void>;
@@ -693,6 +695,15 @@ export function createStudyRepositoryClient(
         const currentStore = await ensureStore();
         let existing = await currentStore.get(studyId);
         if (!existing) {
+          if (reconcileOptions.requireExisting && !reconcileOptions.force) {
+            await refreshFromStore(currentStore);
+            return {
+              status: "conflict",
+              expectedRevisionId: reconcileOptions.expectedRevisionId,
+              currentRevisionId: null,
+              latestRecord: null,
+            };
+          }
           const imported = await importUsdmStudy({ document: incomingUsdm });
           if (imported.status !== "ok") {
             throw new Error(

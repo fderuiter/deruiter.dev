@@ -46,7 +46,7 @@ function kindBadgeLabel(kind: StudyRepositorySummary["kind"]): string {
 export interface StudyConflictPromptState {
   readonly studyId: string;
   readonly expectedRevisionId: string;
-  readonly currentRevisionId: string;
+  readonly currentRevisionId: string | null;
   readonly latestRecord: StudyRepositoryRecord | null;
   readonly localWorkspace?: StudyWorkspace;
 }
@@ -96,7 +96,9 @@ export function StudyConflictModal({
               Concurrent revision conflict
             </p>
             <h3 id={titleId} className="text-base font-semibold text-[#f4f4f6]">
-              Newer study revision saved in another tab
+              {conflict.currentRevisionId === null
+                ? "Study removed from the shared repository"
+                : "Newer study revision saved in another tab"}
             </h3>
           </div>
           <p id={descId} className="text-sm leading-relaxed text-slate-300">
@@ -104,12 +106,18 @@ export function StudyConflictModal({
             <span className="font-mono text-[#f4f4f6]">
               {conflict.expectedRevisionId}
             </span>
-            , while the shared browser repository is already at{" "}
-            <span className="font-mono text-amber-300">
-              {conflict.currentRevisionId}
-            </span>
-            . Nothing was overwritten. Load the newer revision first or download
-            this tab&apos;s workspace snapshot before overwriting.
+            {conflict.currentRevisionId === null ? (
+              ". The repository no longer has this study. Recreate it with this tab’s edits or dismiss this prompt."
+            ) : (
+              <>
+                , while the shared browser repository is already at{" "}
+                <span className="font-mono text-amber-300">
+                  {conflict.currentRevisionId}
+                </span>
+                . Load the newer revision or overwrite it with this tab&apos;s
+                edits.
+              </>
+            )}
           </p>
           <div className="flex flex-wrap justify-end gap-2 pt-2">
             {conflict.localWorkspace ? (
@@ -126,14 +134,18 @@ export function StudyConflictModal({
               onClick={onForceKeepLocal}
               className={`${BTN_BASE} min-h-11`}
             >
-              Overwrite with this tab
+              {conflict.currentRevisionId === null
+                ? "Recreate with this tab"
+                : "Overwrite with this tab"}
             </button>
             <button
               type="button"
               onClick={() => onLoadLatest(conflict.latestRecord)}
               className={`${BTN_AMBER} min-h-11`}
             >
-              Load {conflict.currentRevisionId}
+              {conflict.currentRevisionId === null
+                ? "Dismiss"
+                : `Load ${conflict.currentRevisionId}`}
             </button>
           </div>
         </div>

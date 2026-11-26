@@ -475,7 +475,7 @@ export interface StudyRepositorySeed {
 export interface StudyRepositorySaveOptions {
   /**
    * Expected current `workspace.revision.id` in storage. When set and
-   * `force` is not true, a mismatched stored revision rejects with
+   * `force` is not true, a missing or mismatched stored revision rejects with
    * `StudyWorkspaceConflictError`.
    */
   readonly expectedRevisionId?: string;

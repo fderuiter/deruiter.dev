@@ -354,6 +354,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
           note: "Updated forms and schedule in CRF Studio",
           force: options.force,
           skipIfUnchanged: true,
+          requireExisting: currentBinding !== null,
         }
       );
 

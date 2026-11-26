@@ -133,15 +133,15 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         const readReq = store.get(copy.studyId);
         readReq.onsuccess = () => {
           const existing = readReq.result as StudyRepositoryRecord | undefined;
+          const currentRevisionId = existing?.workspace.revision.id ?? null;
           if (
-            existing &&
             !options.force &&
             options.expectedRevisionId !== undefined &&
-            existing.workspace.revision.id !== options.expectedRevisionId
+            currentRevisionId !== options.expectedRevisionId
           ) {
             conflict = new StudyWorkspaceConflictError(
               options.expectedRevisionId,
-              existing.workspace.revision.id
+              currentRevisionId
             );
             tx.abort();
             return;

@@ -260,6 +260,42 @@ afterEach(() => {
 });
 
 describe("shared browser USDM study repository", () => {
+  it.each(["indexeddb", "memory"])(
+    "blocks stale bound saves after deleting a study in %s",
+    async (persistence) => {
+      const client = createStudyRepositoryClient({
+        indexedDB: persistence === "indexeddb" ? new IDBFactory() : null,
+      });
+      try {
+        const record = await client.createBlankStudy();
+        const expectedRevisionId = record.workspace.revision.id;
+        await client.deleteStudy(record.studyId);
+
+        const missingConflict = {
+          status: "conflict",
+          expectedRevisionId,
+          currentRevisionId: null,
+          latestRecord: null,
+        };
+        await expect(
+          client.saveWorkspace(record.studyId, record.workspace, {
+            expectedRevisionId,
+          })
+        ).resolves.toEqual(missingConflict);
+        await expect(
+          client.reconcileAndSaveUsdm(record.studyId, record.workspace.usdm, {
+            expectedRevisionId,
+            note: "Autosave opened study",
+            requireExisting: true,
+          })
+        ).resolves.toEqual(missingConflict);
+        await expect(client.getRecord(record.studyId)).resolves.toBeNull();
+      } finally {
+        client.dispose();
+      }
+    }
+  );
+
   it("persists seeded, imported, and edited studies in IndexedDB across fresh opens", async () => {
     const idb = new IDBFactory();
     const firstClient = createStudyRepositoryClient({ indexedDB: idb });

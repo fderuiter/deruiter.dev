@@ -55,17 +55,17 @@ export function createMemoryStudyRepositoryStore(): StudyRepositoryStore {
       record: StudyRepositoryRecord,
       options: StudyRepositorySaveOptions = {}
     ): Promise<StudyRepositoryRecord> {
-      const existing = studies.get(record.studyId);
+      const currentRevisionId =
+        studies.get(record.studyId)?.workspace.revision.id ?? null;
       if (
-        existing &&
         !options.force &&
         options.expectedRevisionId !== undefined &&
-        existing.workspace.revision.id !== options.expectedRevisionId
+        currentRevisionId !== options.expectedRevisionId
       ) {
         return Promise.reject(
           new StudyWorkspaceConflictError(
             options.expectedRevisionId,
-            existing.workspace.revision.id
+            currentRevisionId
           )
         );
       }

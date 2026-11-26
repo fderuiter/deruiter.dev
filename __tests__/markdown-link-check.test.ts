@@ -292,6 +292,20 @@ describe("markdown link integrity checking (ADR 0023)", () => {
     expect(result).toEqual({ status: "pass", details: [] });
   });
 
+  it("checks links between unmatched backticks in separate paragraphs", () => {
+    const docs = createDocsFixture();
+    fs.writeFileSync(
+      path.join(docs, "examples.md"),
+      "An unmatched ` delimiter.\n\n[Real guide](missing.md)\n\nAnother unmatched ` delimiter.\n",
+      "utf8"
+    );
+
+    expect(checkMarkdownLinkIntegrity(path.dirname(docs), docs)).toEqual({
+      status: "fail",
+      details: ["docs/examples.md: broken link to 'missing.md'"],
+    });
+  });
+
   it("passes across all real repository markdown targets including .agents/skills and .claude/skills", () => {
     const result = checkMarkdownLinkIntegrity(process.cwd());
     expect(result).toEqual({ status: "pass", details: [] });

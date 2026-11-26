@@ -6,7 +6,7 @@ playwright-report
 build
 out
 .agents
-.claude
+.claude/worktrees
 scratch
 tmp
 .scratch

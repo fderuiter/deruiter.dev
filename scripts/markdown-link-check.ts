@@ -170,6 +170,7 @@ function stripCodeBlocksAndSpans(markdown: string): string {
       ) {
         activeFenceChar = openMatch[1][0] as "`" | "~";
         activeFenceLength = openMatch[1].length;
+        keptLines.push("");
         continue;
       }
       keptLines.push(line);
@@ -184,7 +185,12 @@ function stripCodeBlocksAndSpans(markdown: string): string {
     }
   }
 
-  return keptLines.join("\n").replace(/(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g, "");
+  // Code spans can cross soft line breaks, but never a paragraph boundary.
+  return keptLines
+    .join("\n")
+    .split(/(\n[ \t]*\n)/)
+    .map((block) => block.replace(/(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g, ""))
+    .join("");
 }
 
 // Any URL scheme (http:, https:, mailto:, etc.), protocol-relative URLs, and

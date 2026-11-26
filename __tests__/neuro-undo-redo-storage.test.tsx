@@ -355,6 +355,54 @@ describe("Per-Stroke Undo/Redo & IndexedDB Workspace Persistence", () => {
     );
   });
 
+  it("keeps the newer volume when older uploads and overlays finish later", async () => {
+    render(<NeuroReconClient />);
+    const dimensions = { width: 8, height: 8, depth: 8 };
+    const bytes = serializeMaskToNiftiBytes(new Uint8Array(512).fill(1), {
+      dimensions,
+    });
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    const upload = screen.getByTestId("neuro-upload-volume-input");
+    const overlay = screen.getByTestId("neuro-import-overlay-input");
+    const makeSlowFile = (name: string) => {
+      const read = Promise.withResolvers<ArrayBuffer>();
+      const file = new File([buffer], name);
+      vi.spyOn(file, "arrayBuffer").mockReturnValue(read.promise);
+      return { file, read };
+    };
+
+    const older = makeSlowFile("older.nii");
+    fireEvent.change(upload, { target: { files: [older.file] } });
+    await act(async () => {
+      fireEvent.change(upload, {
+        target: { files: [new File([buffer], "current.nii")] },
+      });
+    });
+    expect(screen.getByTestId("brain-3d-stub").textContent).toContain(
+      "current.nii"
+    );
+
+    const delayedOverlay = makeSlowFile("older-overlay.nii");
+    fireEvent.change(overlay, { target: { files: [delayedOverlay.file] } });
+    await act(async () => {
+      fireEvent.change(upload, {
+        target: { files: [new File([buffer], "latest.nii")] },
+      });
+    });
+    await act(async () => {
+      older.read.resolve(buffer);
+      delayedOverlay.read.resolve(buffer);
+    });
+
+    expect(screen.getByTestId("brain-3d-stub").textContent).toContain(
+      "latest.nii"
+    );
+    expect(
+      screen.queryByRole("slider", { name: "Overlay mask opacity" })
+    ).toBeNull();
+  });
+
   it("supports per-stroke Undo (Ctrl+Z / Cmd+Z), Redo (Ctrl+Shift+Z / Ctrl+Y), native upload, overlay validation, and reload persistence in NeuroReconClient", async () => {
     const idb = new IDBFactory();
     const { unmount } = render(

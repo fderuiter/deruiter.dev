@@ -286,6 +286,8 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
   // Each case load takes a number; only the newest one may commit, and none
   // after unmount.
   const scenarioLoadRef = React.useRef(0);
+  const volumeUploadRef = useRef(0);
+  const overlayImportRef = useRef(0);
   const mountedRef = React.useRef(false);
 
   useEffect(() => {
@@ -559,6 +561,7 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
         : null;
       if (load !== scenarioLoadRef.current || !mountedRef.current) return;
       committedScenarioRef.current = scenarioId;
+      overlayImportRef.current += 1;
       setUploadedVolume(null);
       setOverlayLayer(null);
       setActiveEditLayer("brainmask");
@@ -1023,7 +1026,16 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
   // Native NIfTI (.nii / .nii.gz) & FreeSurfer (.mgz) Upload Handler
   const handleUploadVolumeFile = useCallback(
     async (file: File) => {
+      const request = ++volumeUploadRef.current;
+      const scenarioLoad = scenarioLoadRef.current;
       const result = await loadNeuroVolumeFromFile(file);
+      if (
+        !mountedRef.current ||
+        request !== volumeUploadRef.current ||
+        scenarioLoad !== scenarioLoadRef.current
+      ) {
+        return;
+      }
       if (!result.ok) {
         toast.error(result.message);
         setLogs((prev) => [
@@ -1040,6 +1052,7 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
 
       const loadedVol = result.data;
       scenarioLoadRef.current += 1;
+      overlayImportRef.current += 1;
       setUploadedVolume(loadedVol);
       setVolume(loadedVol);
       setOverlayLayer(null);
@@ -1078,11 +1091,20 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
   // External Segmentation Overlay Mask (.nii / .nii.gz) Import Handler
   const handleImportOverlayFile = useCallback(
     async (file: File) => {
+      const request = ++overlayImportRef.current;
+      const scenarioLoad = scenarioLoadRef.current;
       const result = await loadNeuroOverlayMaskFromFile(
         file,
         volume,
         overlayOpacity
       );
+      if (
+        !mountedRef.current ||
+        request !== overlayImportRef.current ||
+        scenarioLoad !== scenarioLoadRef.current
+      ) {
+        return;
+      }
       if (!result.ok) {
         toast.error(result.message);
         setLogs((prev) => [
@@ -1191,6 +1213,8 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
 
   // Purge IndexedDB & In-Memory Local Storage
   const handleClearLocalStorage = useCallback(async () => {
+    volumeUploadRef.current += 1;
+    overlayImportRef.current += 1;
     if (saveTimerRef.current !== null) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;

@@ -56,6 +56,29 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     }
   );
 
+  // Only the two bot-PR workflows push branches via scripts/open-bot-pr.sh;
+  // every other checkout across .github/workflows must disable persisted git
+  // credentials so package scripts and subprocesses never read GITHUB_TOKEN
+  // from .git/config.
+  const GIT_PUSH_WORKFLOWS = new Set([
+    "cdisc-library-sync.yml",
+    "standards-watch.yml",
+  ]);
+
+  it.each(workflowFiles.filter((file) => !GIT_PUSH_WORKFLOWS.has(file)))(
+    "%s sets persist-credentials: false on every actions/checkout step",
+    (file) => {
+      const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+      const checkoutSteps = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter((step) => /uses:\s*actions\/checkout@/.test(step));
+      for (const step of checkoutSteps) {
+        expect(step).toMatch(/persist-credentials:\s*false/);
+      }
+    }
+  );
+
   it("has dependabot.yml configured for github-actions with weekly schedule", () => {
     expect(fs.existsSync(dependabotPath)).toBe(true);
     const content = fs.readFileSync(dependabotPath, "utf8");

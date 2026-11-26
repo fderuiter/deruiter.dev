@@ -47,7 +47,12 @@ export interface UseStudyAutosaveResult {
  * the browser may evict local storage; recovery covers only the last
  * acknowledged checkpoint.
  */
-export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
+export function useStudyAutosave(
+  study: StudyProtocol,
+  options?: { readonly enabled?: boolean }
+): UseStudyAutosaveResult {
+  const enabled = options?.enabled ?? true;
+  const enabledRef = useRef(enabled);
   const [status, setStatus] = useState<StudyAutosaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,6 +74,7 @@ export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
 
   const checkpoint = useCallback(() => {
     clearPendingTimer();
+    if (!enabledRef.current) return;
     const revision = studyRef.current;
     if (revision === acknowledgedRef.current) return;
 
@@ -95,7 +101,8 @@ export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
   // passive effects run.
   useLayoutEffect(() => {
     studyRef.current = study;
-  }, [study]);
+    enabledRef.current = enabled;
+  }, [enabled, study]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -114,6 +121,11 @@ export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
   }, [checkpoint]);
 
   useEffect(() => {
+    if (!enabled) {
+      prevStudyRef.current = study;
+      acknowledgedRef.current = study;
+      return clearPendingTimer;
+    }
     if (prevStudyRef.current === study) {
       return;
     }
@@ -124,7 +136,7 @@ export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
 
     // Only reschedules; never flushes an obsolete revision.
     return clearPendingTimer;
-  }, [study, checkpoint, clearPendingTimer]);
+  }, [enabled, study, checkpoint, clearPendingTimer]);
 
   const downloadDraft = useCallback(() => {
     downloadFile(
@@ -138,7 +150,7 @@ export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
     status,
     savedAt,
     errorMessage,
-    hasUnsavedChanges: study !== acknowledged,
+    hasUnsavedChanges: enabled && study !== acknowledged,
     checkpoint,
     downloadDraft,
   };

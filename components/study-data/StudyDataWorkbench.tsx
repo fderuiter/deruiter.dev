@@ -1,6 +1,13 @@
 "use client";
 
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  type UsdmStudySelection,
+} from "@/lib/clinical-standards";
+import type { StudyRepositoryRecord } from "@/lib/study-workspace";
+import { StudyRepositoryBar } from "@/components/clinical/StudyRepositoryBar";
+import type { StudyRepositoryClient } from "@/components/clinical/study-repository-client";
+import { useStudyRepository } from "@/components/clinical/useStudyRepository";
 import {
   useCallback,
   useEffect,
@@ -108,13 +115,15 @@ interface StudyDataWorkbenchProps {
   readonly definitionCounts: DefinitionCounts;
   readonly limits: { readonly min: number; readonly max: number };
   readonly defaults: { readonly seed: number; readonly nSubjects: number };
+  readonly repository?: StudyRepositoryClient;
 }
 
 type RunStatus = "running" | "ready" | "error" | "restoring" | "waiting";
 
-/** A study handed over from CRF Studio, once checked. */
+/** A study handed over from CRF Studio or loaded from the shared repository, once checked. */
 interface Handoff {
   readonly study: unknown;
+  readonly selection?: UsdmStudySelection;
   readonly prepared: Extract<PreparedStudy, { ok: true }>;
 }
 
@@ -182,10 +191,19 @@ export function StudyDataWorkbench({
   definitionCounts,
   limits,
   defaults,
+  repository: customRepository,
 }: StudyDataWorkbenchProps) {
   const { announce } = useAnnouncer();
+  const { snapshot: repoSnapshot, repository } =
+    useStudyRepository(customRepository);
   const clientRef = useRef<PipelineClient | null>(null);
   const runToken = useRef(0);
+  const repoPrepToken = useRef(0);
+  const loadedRepoRef = useRef<{
+    studyId: string;
+    revisionId: string;
+  } | null>(null);
+  const explicitHandoffRef = useRef(false);
   const lineageHeading = useRef<HTMLHeadingElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const pendingCellFocus = useRef<string | null>(null);
@@ -199,6 +217,10 @@ export function StudyDataWorkbench({
   const [seedText, setSeedText] = useState(String(defaults.seed));
   const [subjectsText, setSubjectsText] = useState(String(defaults.nSubjects));
   const [scenario, setScenario] = useState<ScenarioId | "">("");
+  const [loadedRepoBinding, setLoadedRepoBinding] = useState<{
+    readonly studyId: string;
+    readonly revisionId: string;
+  } | null>(null);
   const [inputError, setInputError] = useState<{
     seed?: string;
     subjects?: string;
@@ -274,7 +296,8 @@ export function StudyDataWorkbench({
       nSubjects: number,
       study: unknown,
       restoring = false,
-      injected?: ScenarioId
+      injected?: ScenarioId,
+      selection?: UsdmStudySelection
     ) => {
       const token = ++runToken.current;
       const pipeline = client();
@@ -284,6 +307,7 @@ export function StudyDataWorkbench({
           seed,
           nSubjects,
           ...(study === undefined ? {} : { study }),
+          ...(selection === undefined ? {} : { selection }),
           ...(injected === undefined ? {} : { scenario: injected }),
         })
         .then((result) => {
@@ -347,12 +371,129 @@ export function StudyDataWorkbench({
     [announce, client]
   );
 
+  const loadRepositoryStudy = useCallback(
+    (record: StudyRepositoryRecord, shouldAnnounce = false) => {
+      const nextBinding = {
+        studyId: record.studyId,
+        revisionId: record.workspace.revision.id,
+      };
+      loadedRepoRef.current = nextBinding;
+      setLoadedRepoBinding(nextBinding);
+
+      const parsedSeed = parseWhole(seedText);
+      const runSeed =
+        parsedSeed !== null && parsedSeed <= MAX_SEED
+          ? parsedSeed
+          : defaults.seed;
+      const parsedSubjects = parseWhole(subjectsText);
+      const runSubjects =
+        parsedSubjects !== null &&
+        parsedSubjects >= limits.min &&
+        parsedSubjects <= limits.max
+          ? parsedSubjects
+          : defaults.nSubjects;
+      const activeScenario = scenario || undefined;
+
+      if (
+        record.studyId === "DEMO-301" &&
+        record.workspace.revision.id === "R1"
+      ) {
+        repoPrepToken.current += 1;
+        client().cancel();
+        setHandoff(null);
+        setHandoffMessage("");
+        setRunError(null);
+        setStatus("running");
+        if (shouldAnnounce) {
+          announce("Switched to the DEMO-301 study.");
+        }
+        startRun(runSeed, runSubjects, undefined, false, activeScenario);
+        return;
+      }
+
+      const prepId = ++repoPrepToken.current;
+      client().cancel();
+      setStatus("running");
+      setRunError(null);
+      setHandoffMessage("");
+      client()
+        .request<"prepare">({
+          type: "prepare",
+          study: record.workspace.usdm,
+          selection: record.workspace.selection,
+        })
+        .then((prepared) => {
+          if (prepId !== repoPrepToken.current) return;
+          if (!prepared.ok) {
+            const detail =
+              prepared.problem === "schema"
+                ? `fails the USDM v${CLINICAL_STANDARDS_PROFILE.USDM} schema (${prepared.total.toLocaleString("en-US")} ${prepared.total === 1 ? "issue" : "issues"}, first: ${prepared.issues[0]})`
+                : `cannot be read as a study: ${prepared.issues[0]}`;
+            setHandoff(null);
+            setHandoffMessage(
+              `Study ${record.protocolCode} (${record.workspace.revision.id}) ${detail}, so the page runs DEMO-301.`
+            );
+            startRun(runSeed, runSubjects, undefined, false, activeScenario);
+            return;
+          }
+          setHandoff({
+            study: record.workspace.usdm,
+            selection: record.workspace.selection,
+            prepared,
+          });
+          if (shouldAnnounce) {
+            announce(
+              `Loaded study ${prepared.report.studyId} (${record.workspace.revision.id}) from the shared study repository.`
+            );
+          }
+          startRun(
+            runSeed,
+            runSubjects,
+            record.workspace.usdm,
+            false,
+            activeScenario,
+            record.workspace.selection
+          );
+        })
+        .catch((error: unknown) => {
+          if (
+            prepId !== repoPrepToken.current ||
+            error instanceof PipelineCancelledError
+          ) {
+            return;
+          }
+          setHandoff(null);
+          setHandoffMessage(
+            `Study ${record.protocolCode} could not be checked (${error instanceof Error ? error.message : String(error)}), so the page runs DEMO-301.`
+          );
+          startRun(runSeed, runSubjects, undefined, false, activeScenario);
+        });
+    },
+    [
+      announce,
+      client,
+      defaults.nSubjects,
+      defaults.seed,
+      limits.max,
+      limits.min,
+      scenario,
+      seedText,
+      startRun,
+      subjectsText,
+    ]
+  );
+
   useEffect(() => {
     const source = new URLSearchParams(window.location.search).get("source");
     if (source !== STUDY_DATA_HANDOFF_SOURCE) {
+      explicitHandoffRef.current = false;
       startRun(defaults.seed, defaults.nSubjects, undefined);
-      return () => clientRef.current?.dispose();
+      return () => {
+        repoPrepToken.current += 1;
+        clientRef.current?.dispose();
+      };
     }
+    explicitHandoffRef.current = true;
     // Taking the study removes it, so keep what was taken across the
     // development double mount.
     const taken = (handoffTaken.current ??= takeStudyHandoff());
@@ -393,9 +534,54 @@ export function StudyDataWorkbench({
     }
     return () => {
       live = false;
+      repoPrepToken.current += 1;
       clientRef.current?.dispose();
     };
   }, [announce, client, defaults.seed, defaults.nSubjects, startRun]);
+
+  useEffect(() => {
+    if (explicitHandoffRef.current) return;
+    let live = true;
+    void repository
+      .initialize()
+      .then(() => repository.whenIdle())
+      .then(() => {
+        if (!live || explicitHandoffRef.current) return;
+        const ready = repository.getSnapshot();
+        const activeRecord = ready.activeRecord;
+        if (!activeRecord) return;
+        const prev = loadedRepoRef.current;
+        if (prev === null) {
+          const initialBinding = {
+            studyId: activeRecord.studyId,
+            revisionId: activeRecord.workspace.revision.id,
+          };
+          loadedRepoRef.current = initialBinding;
+          setLoadedRepoBinding(initialBinding);
+          if (
+            !(
+              activeRecord.studyId === "DEMO-301" &&
+              activeRecord.workspace.revision.id === "R1"
+            )
+          ) {
+            loadRepositoryStudy(activeRecord, false);
+          }
+          return;
+        }
+        if (prev.studyId !== activeRecord.studyId) {
+          loadRepositoryStudy(activeRecord, true);
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [
+    loadRepositoryStudy,
+    repository,
+    repoSnapshot.activeStudyId,
+    repoSnapshot.isHydrated,
+    repoSnapshot.remoteEventSeq,
+  ]);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -422,14 +608,27 @@ export function StudyDataWorkbench({
     announce(
       `Running the pipeline for ${nSubjects.toLocaleString("en-US")} subjects.`
     );
-    startRun(seed, nSubjects, handoff?.study, false, scenario || undefined);
+    startRun(
+      seed,
+      nSubjects,
+      handoff?.study,
+      false,
+      scenario || undefined,
+      handoff?.selection
+    );
   };
 
   const onUseDemo = () => {
     if (status === "running" || status === "restoring") client().cancel();
+    explicitHandoffRef.current = false;
+    loadedRepoRef.current = { studyId: "DEMO-301", revisionId: "R1" };
+    setLoadedRepoBinding({ studyId: "DEMO-301", revisionId: "R1" });
+    if (repoSnapshot.isHydrated) {
+      void repository.selectStudy("DEMO-301");
+    }
     setHandoff(null);
     setHandoffMessage(
-      "Showing DEMO-301. To run the CRF Studio study again, hand it over from CRF Studio."
+      "Showing DEMO-301. Select another study from the repository bar or hand one over from CRF Studio to run it again."
     );
     setSummary(null);
     setTrace(null);
@@ -458,7 +657,8 @@ export function StudyDataWorkbench({
         summary.nSubjects,
         handoff?.study,
         true,
-        summary.injected?.scenario.id
+        summary.injected?.scenario.id,
+        handoff?.selection
       );
     } else {
       setStatus("error");
@@ -651,6 +851,28 @@ export function StudyDataWorkbench({
           to a server. The same seed and subject count always give the same
           datasets, tables and figures.
         </p>
+        {repoSnapshot.isHydrated ? (
+          <StudyRepositoryBar
+            repository={repository}
+            currentStudyId={
+              loadedRepoBinding?.studyId ??
+              handoff?.prepared.report.studyId ??
+              "DEMO-301"
+            }
+            currentRevisionId={loadedRepoBinding?.revisionId}
+            onSelectStudy={(record) => {
+              explicitHandoffRef.current = false;
+              loadRepositoryStudy(record, true);
+            }}
+            onReloadLatest={(record) => {
+              explicitHandoffRef.current = false;
+              loadRepositoryStudy(record, true);
+            }}
+            allowCreateBlank={false}
+            compact
+            className="mt-6"
+          />
+        ) : null}
         {handoffMessage ? (
           <p className="mt-4 max-w-3xl break-words border-l-2 border-amber-500 pl-4 text-xs leading-relaxed text-amber-100">
             {handoffMessage}

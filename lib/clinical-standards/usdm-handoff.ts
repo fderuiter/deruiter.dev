@@ -14,10 +14,27 @@ import { sha256HexOfText } from "./internal/sha256";
 /** Version of the envelope shape. Bump it when the fields change. */
 export const USDM_HANDOFF_ENVELOPE_VERSION = 1;
 
-/** The tools that send or receive a USDM hand-off. */
-export type ClinicalTool = "crf-studio" | "study-data";
+/**
+ * URL prefix for CRF Studio USDM v4 extension attributes, shared so tools can
+ * distinguish CRF-authored extension metadata from external sponsor extensions
+ * without importing CRF Studio internals.
+ */
+export const CRF_STUDIO_USDM_EXTENSION_URL_PREFIX =
+  "https://deruiter.dev/usdm/extensions/crf-studio/";
 
-const CLINICAL_TOOLS: readonly ClinicalTool[] = ["crf-studio", "study-data"];
+/** The tools that send or receive a USDM hand-off. */
+export type ClinicalTool =
+  | "study-studio"
+  | "crf-studio"
+  | "study-data"
+  | "clinical";
+
+const CLINICAL_TOOLS: readonly ClinicalTool[] = [
+  "study-studio",
+  "crf-studio",
+  "study-data",
+  "clinical",
+];
 
 /** What the envelope says about the study it carries. */
 export interface UsdmHandoffStudy {

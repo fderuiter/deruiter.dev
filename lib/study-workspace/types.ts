@@ -421,3 +421,209 @@ export type StudyRandomizationEvidenceStatus =
       readonly status: "stale";
       readonly reasons: readonly StudyRandomizationStaleReason[];
     };
+
+/** Largest `.usdm.json` or `.study.json` file import accepted (25 MiB). */
+export const MAX_STUDY_IMPORT_BYTES = 25 * 1024 * 1024;
+
+/** Where the study repository holds its records in the current browser tab. */
+export type StudyRepositoryPersistence = "indexeddb" | "memory";
+
+/** How a study entered the local repository catalog. */
+export type StudyRepositoryKind =
+  | "reference"
+  | "imported"
+  | "authored"
+  | "migrated";
+
+/** One persisted study workspace record in the shared browser repository. */
+export interface StudyRepositoryRecord {
+  readonly studyId: string;
+  readonly kind: StudyRepositoryKind;
+  readonly title: string;
+  readonly protocolCode: string;
+  readonly workspace: StudyWorkspace;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** Lightweight summary of a repository study for selectors and drawers. */
+export interface StudyRepositorySummary {
+  readonly studyId: string;
+  readonly kind: StudyRepositoryKind;
+  readonly title: string;
+  readonly protocolCode: string;
+  readonly revisionId: string;
+  readonly sha256: string;
+  readonly selection: StudyWorkspaceSelection;
+  readonly activityCount: number;
+  readonly encounterCount: number;
+  readonly armCount: number;
+  readonly epochCount: number;
+  readonly updatedAt: string;
+}
+
+/** Built-in reference study seed specification. */
+export interface StudyRepositorySeed {
+  readonly studyId: string;
+  readonly title?: string;
+  readonly protocolCode?: string;
+  readonly usdm: UsdmV4Document;
+  readonly selection?: StudyWorkspaceSelection;
+}
+
+/** Concurrency options when writing a study record into the repository. */
+export interface StudyRepositorySaveOptions {
+  /**
+   * Expected current `workspace.revision.id` in storage. When set and
+   * `force` is not true, a mismatched stored revision rejects with
+   * `StudyWorkspaceConflictError`.
+   */
+  readonly expectedRevisionId?: string;
+  /** Explicit user-confirmed overwrite after a concurrent edit conflict. */
+  readonly force?: boolean;
+}
+
+/** Stable failure codes raised by {@link StudyRepositoryStore}. */
+export type StudyRepositoryStoreErrorCode =
+  | "STORE_UNAVAILABLE"
+  | "QUOTA_EXCEEDED"
+  | "TRANSACTION_ABORTED";
+
+/** Storage engine contract implemented by IndexedDB and in-memory fallback. */
+export interface StudyRepositoryStore {
+  readonly persistence: StudyRepositoryPersistence;
+  list(): Promise<readonly StudyRepositoryRecord[]>;
+  get(studyId: string): Promise<StudyRepositoryRecord | null>;
+  put(
+    record: StudyRepositoryRecord,
+    options?: StudyRepositorySaveOptions
+  ): Promise<StudyRepositoryRecord>;
+  seedIfMissing(seeds: readonly StudyRepositorySeed[]): Promise<void>;
+  remove(studyId: string): Promise<void>;
+  getActiveStudyId(): Promise<string | null>;
+  setActiveStudyId(studyId: string | null): Promise<void>;
+  getMeta(key: string): Promise<unknown>;
+  setMeta(key: string, value: unknown): Promise<void>;
+  close(): void;
+}
+
+/** Outcome of opening the IndexedDB study repository store. */
+export type OpenStudyRepositoryStoreResult =
+  | { readonly ok: true; readonly store: StudyRepositoryStore }
+  | { readonly ok: false; readonly code: "STORE_UNAVAILABLE" };
+
+/** Cross-tab synchronization messages sent over `BroadcastChannel`. */
+export type StudyRepositorySyncEvent =
+  | {
+      readonly type: "active-study-changed";
+      readonly studyId: string | null;
+      readonly tabId: string;
+      readonly updatedAt: string;
+    }
+  | {
+      readonly type: "study-saved";
+      readonly studyId: string;
+      readonly revisionId: string;
+      readonly sha256: string;
+      readonly tabId: string;
+      readonly updatedAt: string;
+    }
+  | {
+      readonly type: "study-imported";
+      readonly studyId: string;
+      readonly revisionId: string;
+      readonly tabId: string;
+      readonly updatedAt: string;
+    }
+  | {
+      readonly type: "study-deleted";
+      readonly studyId: string;
+      readonly nextActiveStudyId: string | null;
+      readonly tabId: string;
+      readonly updatedAt: string;
+    };
+
+/** Minimal `BroadcastChannel` shape accepted for dependency injection in tests. */
+export interface BroadcastChannelLike {
+  postMessage(message: unknown): void;
+  addEventListener(
+    type: "message",
+    listener: (event: MessageEvent<unknown>) => void
+  ): void;
+  removeEventListener(
+    type: "message",
+    listener: (event: MessageEvent<unknown>) => void
+  ): void;
+  close(): void;
+}
+
+/** Connected cross-tab notification handle. */
+export interface StudyRepositorySyncHandle {
+  readonly tabId: string;
+  publish(
+    event:
+      | Omit<
+          Extract<StudyRepositorySyncEvent, { type: "active-study-changed" }>,
+          "tabId"
+        >
+      | Omit<
+          Extract<StudyRepositorySyncEvent, { type: "study-saved" }>,
+          "tabId"
+        >
+      | Omit<
+          Extract<StudyRepositorySyncEvent, { type: "study-imported" }>,
+          "tabId"
+        >
+      | Omit<
+          Extract<StudyRepositorySyncEvent, { type: "study-deleted" }>,
+          "tabId"
+        >
+  ): void;
+  subscribe(listener: (event: StudyRepositorySyncEvent) => void): () => void;
+  close(): void;
+}
+
+/** Input file descriptor for `.usdm.json` or `.study.json` import. */
+export interface StudyRepositoryFileInput {
+  readonly byteLength: number;
+  readonly readText: () => Promise<string> | string;
+  readonly fileName?: string | null;
+  readonly selection?: StudyWorkspaceSelection;
+}
+
+/** Result of importing a `.usdm.json` or `.study.json` payload. */
+export type ImportStudyRepositoryFileResult =
+  | {
+      readonly status: "ok";
+      readonly format: "usdm" | "workspace";
+      readonly workspace: StudyWorkspace;
+      readonly report?: StudyImportReport;
+    }
+  | {
+      readonly status: "needs-selection";
+      readonly choices: readonly StudyVersionChoice[];
+      readonly document: unknown;
+      readonly fileName: string | null;
+    }
+  | {
+      readonly status: "too-large";
+      readonly maxBytes: number;
+      readonly actualBytes: number;
+    }
+  | {
+      readonly status: "invalid-workspace";
+      readonly problem: StudyWorkspaceFileProblem;
+    }
+  | {
+      readonly status: "rejected";
+      readonly problems: readonly StudyImportProblem[];
+    };
+
+/** Options for reconciling an edited USDM v4 document back into a workspace. */
+export interface ReconcileUsdmStudyOptions {
+  readonly expectedRevisionId: string;
+  readonly note: string;
+  /** When true, returns the existing workspace if the canonical USDM hash did not change. */
+  readonly skipIfUnchanged?: boolean;
+}
+

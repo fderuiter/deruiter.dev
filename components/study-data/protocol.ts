@@ -7,6 +7,7 @@
  * download. The full ARS JSON never crosses to the page; at 5,000 subjects it
  * is about 12 MB (#2729).
  */
+import type { UsdmStudySelection } from "@/lib/clinical-standards";
 import type {
   CellValue,
   ConformanceReport,
@@ -172,8 +173,10 @@ export type StudyDataRequest =
   | {
       readonly id: number;
       readonly type: "prepare";
-      /** A parsed USDM v4 document handed over from CRF Studio. */
+      /** A parsed USDM v4 document handed over from a clinical studio. */
       readonly study: unknown;
+      /** Chosen version and design when the USDM document holds more than one. */
+      readonly selection?: UsdmStudySelection;
     }
   | {
       readonly id: number;
@@ -182,6 +185,8 @@ export type StudyDataRequest =
       readonly nSubjects: number;
       /** A handed-over USDM document to run; DEMO-301 when absent. */
       readonly study?: unknown;
+      /** Chosen version and design when `study` holds more than one. */
+      readonly selection?: UsdmStudySelection;
       /** A messy-data scenario to inject (#2605); none when absent. */
       readonly scenario?: ScenarioId;
     }

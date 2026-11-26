@@ -7,9 +7,12 @@
  * Where Workers are unavailable (jsdom tests, very old browsers) the client
  * loads this same module on demand and runs it on the main thread.
  */
-import { standardCitation } from "@/lib/clinical-standards";
+import {
+  standardCitation,
+  validateUsdmV4Document,
+  type UsdmStudySelection,
+} from "@/lib/clinical-standards";
 import { clamp } from "@/lib/game-utils";
-import { validateUsdmV4Document } from "@/lib/clinical-standards";
 import {
   DEFAULT_SEED,
   DEFAULT_SUBJECT_COUNT,
@@ -191,7 +194,10 @@ async function zipOutputs(
  * Checks a handed-off USDM document against the USDM v4.0.0 schema, then
  * narrows it to what the pipeline can run.
  */
-async function prepare(study: unknown): Promise<PreparedStudy> {
+async function prepare(
+  study: unknown,
+  selection?: UsdmStudySelection
+): Promise<PreparedStudy> {
   const issues = await validateUsdmV4Document(study);
   if (issues.length > 0) {
     return {
@@ -202,7 +208,7 @@ async function prepare(study: unknown): Promise<PreparedStudy> {
     };
   }
   try {
-    const { definition, report } = prepareStudyHandoff(study);
+    const { definition, report } = prepareStudyHandoff(study, selection);
     return {
       ok: true,
       report,
@@ -271,12 +277,13 @@ export function createStudyDataSession() {
     seed: number,
     nSubjects: number,
     study: unknown,
+    selection: UsdmStudySelection | undefined,
     scenario: ScenarioId | undefined
   ): RunSummary =>
     runDefinition(
       study === undefined
         ? DEMO_301_STUDY
-        : prepareStudyHandoff(study).definition,
+        : prepareStudyHandoff(study, selection).definition,
       seed,
       nSubjects,
       scenario,
@@ -462,12 +469,13 @@ export function createStudyDataSession() {
   const handle = async (request: StudyDataRequest): Promise<unknown> => {
     switch (request.type) {
       case "prepare":
-        return prepare(request.study);
+        return prepare(request.study, request.selection);
       case "run":
         return run(
           request.seed,
           request.nSubjects,
           request.study,
+          request.selection,
           request.scenario
         );
       case "rerun":

@@ -56,6 +56,68 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     }
   );
 
+  it.each(workflowFiles)(
+    "%s declares explicit token permissions and concurrency controls",
+    (file) => {
+      const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+      expect(content).toMatch(/^permissions:/m);
+      expect(content).toMatch(/^\s*concurrency:/m);
+    }
+  );
+
+  // Only standards-watch.yml and cdisc-library-sync.yml push branches through
+  // scripts/open-bot-pr.sh (`git push origin "$branch"`); every other workflow
+  // must disable credential persistence in .git/config on checkout.
+  const gitPushWorkflows = new Set([
+    "cdisc-library-sync.yml",
+    "standards-watch.yml",
+  ]);
+
+  it.each(workflowFiles.filter((file) => !gitPushWorkflows.has(file)))(
+    "%s disables credential persistence on every actions/checkout step",
+    (file) => {
+      const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+      const checkouts = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter((step) => /uses:\s*actions\/checkout@/.test(step));
+      for (const step of checkouts) {
+        expect(step).toMatch(/persist-credentials:\s*false/);
+      }
+    }
+  );
+
+  it.each(workflowFiles)(
+    "%s keys every npm setup-node cache explicitly to package-lock.json",
+    (file) => {
+      const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+      const cachedNodeSteps = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter(
+          (step) =>
+            /uses:\s*actions\/setup-node@/.test(step) &&
+            /cache:\s*"npm"/.test(step)
+        );
+      for (const step of cachedNodeSteps) {
+        expect(step).toContain('cache-dependency-path: "package-lock.json"');
+      }
+    }
+  );
+
+  it("never interpolates untrusted dispatch inputs or probe URLs directly inside synthetic-probes.yml shell scripts", () => {
+    const content = fs.readFileSync(
+      path.join(workflowDir, "synthetic-probes.yml"),
+      "utf8"
+    );
+    const steps = content.split(/\n\s+-\s+name:\s+/).slice(1);
+    for (const step of steps) {
+      const runMatch = step.match(/\n\s+run:\s*(?:\|\n([\s\S]*)|([^\n]+))/);
+      const runBody = runMatch?.[1] ?? runMatch?.[2] ?? "";
+      expect(runBody).not.toMatch(/\$\{\{\s*(?:inputs|steps\.target\.outputs)/);
+    }
+  });
+
   it("has dependabot.yml configured for github-actions with weekly schedule", () => {
     expect(fs.existsSync(dependabotPath)).toBe(true);
     const content = fs.readFileSync(dependabotPath, "utf8");

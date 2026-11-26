@@ -30,15 +30,63 @@ export const MAX_PROOF_HASH_LENGTH = 2048;
 
 const NODE_ID_PATTERN = /^[A-Za-z0-9_]{1,32}$/;
 
+const LATEX_SPECIAL_CHARS: Readonly<Record<string, string>> = {
+  "\\": "\\textbackslash{}",
+  "{": "\\{",
+  "}": "\\}",
+  $: "\\$",
+  "&": "\\&",
+  "#": "\\#",
+  "^": "\\textasciicircum{}",
+  _: "\\_",
+  "~": "\\textasciitilde{}",
+  "%": "\\%",
+};
+
+function escapeLatexText(text: string): string {
+  return text
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[\\{}$&#^_~%]/g, (ch) => LATEX_SPECIAL_CHARS[ch] ?? ch);
+}
+
+function formatLatexChild(
+  child: PropAst,
+  parentType: "and" | "or" | "implies" | "iff"
+): string {
+  const needsParens =
+    (parentType === "implies" &&
+      (child.type === "implies" || child.type === "iff")) ||
+    (parentType === "or" &&
+      (child.type === "implies" || child.type === "iff")) ||
+    (parentType === "and" &&
+      (child.type === "or" ||
+        child.type === "implies" ||
+        child.type === "iff"));
+  return needsParens
+    ? `(${formatLatexFormula(child)})`
+    : formatLatexFormula(child);
+}
+
 function formatLatexFormula(ast: PropAst): string {
-  return formatFormula(ast)
-    .replace(/_/g, "\\_")
-    .replace(/→/g, "\\to")
-    .replace(/↔/g, "\\leftrightarrow")
-    .replace(/∧/g, "\\land")
-    .replace(/∨/g, "\\lor")
-    .replace(/¬/g, "\\neg")
-    .replace(/⊥/g, "\\bot");
+  switch (ast.type) {
+    case "bottom":
+      return "\\bot";
+    case "var":
+      return escapeLatexText(ast.name);
+    case "not":
+      if (ast.operand.type === "var" || ast.operand.type === "bottom") {
+        return `\\neg ${formatLatexFormula(ast.operand)}`;
+      }
+      return `\\neg(${formatLatexFormula(ast.operand)})`;
+    case "and":
+      return `${formatLatexChild(ast.left, "and")} \\land ${formatLatexChild(ast.right, "and")}`;
+    case "or":
+      return `${formatLatexChild(ast.left, "or")} \\lor ${formatLatexChild(ast.right, "or")}`;
+    case "implies":
+      return `${formatLatexChild(ast.left, "implies")} \\to ${formatLatexChild(ast.right, "implies")}`;
+    case "iff":
+      return `${formatLatexChild(ast.left, "iff")} \\leftrightarrow ${formatLatexChild(ast.right, "iff")}`;
+  }
 }
 
 /** Parses bounded propositional syntax without discarding invalid characters. */
@@ -151,15 +199,6 @@ export function createCustomTheorem(
             while (variables.includes(name)) name += "_";
             return name;
           });
-          const latexFormula = (ast: PropAst) =>
-            formatFormula(ast)
-              .replace(/_/g, "\\_")
-              .replace(/→/g, "\\to")
-              .replace(/↔/g, "\\leftrightarrow")
-              .replace(/∧/g, "\\land")
-              .replace(/∨/g, "\\lor")
-              .replace(/¬/g, "\\neg")
-              .replace(/⊥/g, "\\bot");
           return {
             id: "custom",
             title: "Custom Proof",
@@ -202,7 +241,7 @@ export function createCustomTheorem(
               "Local custom graph validated; no Lean kernel verification was performed.",
             ],
             leanCode: `import Mathlib\n\ntheorem custom_proof (${variables.map((name) => `«${name}»`).join(" ")} : Prop)\n  (${hypothesisNames[0]} : ${leanFormula(inputs[first])}) (${hypothesisNames[1]} : ${leanFormula(inputs[second])})\n  (${hypothesisNames[2]} : ${leanFormula(inputs[remaining])}) : ${leanFormula(inputs[3])} := by\n  tauto`,
-            latexCode: `\\begin{prooftree}\n\\AxiomC{$${latexFormula(inputs[first])}$}\n\\AxiomC{$${latexFormula(inputs[second])}$}\n\\RightLabel{${rule.symbol}}\n\\BinaryInfC{$${latexFormula(middle)}$}\n\\AxiomC{$${latexFormula(inputs[remaining])}$}\n\\RightLabel{${finalRule.symbol}}\n\\BinaryInfC{$${latexFormula(inputs[3])}$}\n\\end{prooftree}`,
+            latexCode: `\\begin{prooftree}\n\\AxiomC{$${formatLatexFormula(inputs[first])}$}\n\\AxiomC{$${formatLatexFormula(inputs[second])}$}\n\\RightLabel{${rule.symbol}}\n\\BinaryInfC{$${formatLatexFormula(middle)}$}\n\\AxiomC{$${formatLatexFormula(inputs[remaining])}$}\n\\RightLabel{${finalRule.symbol}}\n\\BinaryInfC{$${formatLatexFormula(inputs[3])}$}\n\\end{prooftree}`,
           };
         }
       }

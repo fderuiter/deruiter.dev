@@ -7,6 +7,7 @@ metadata:
   version: "1.0"
 ---
 
+<!-- markdownlint-disable MD033 -->
 <what-to-do>
 
 The user has passed (or will pass) a markdown file of raw material. This is **exploit**: the exploring is done, the pile is fixed. Commit to a path through it and mine the pile to fill each beat.
@@ -68,3 +69,4 @@ The article ends when the journey is complete, not when the pile is empty. Most 
 - If the user says "rewrite that beat" or "go back and try a different beat 3", do it: edit in place, leave the rest alone.
 
 </supporting-info>
+<!-- markdownlint-enable MD033 -->

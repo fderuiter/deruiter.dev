@@ -44,6 +44,7 @@ function findSourceFiles(
           "dist",
           "coverage",
           ".agents",
+          ".claude",
           "scratch",
           "tmp",
         ].includes(entry.name)

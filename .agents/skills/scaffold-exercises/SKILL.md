@@ -84,7 +84,7 @@ git mv exercises/01-retrieval/01.03-embeddings exercises/01-retrieval/01.04-embe
 
 Given a plan like:
 
-```
+```text
 Section 05: Memory Skill Building
 - 05.01 Introduction to Memory
 - 05.02 Short-term Memory (explainer + problem + solution)
@@ -101,7 +101,7 @@ mkdir -p exercises/05-memory-skill-building/05.03-long-term-memory/explainer
 
 Then create readme stubs:
 
-```
+```text
 exercises/05-memory-skill-building/05.01-introduction-to-memory/explainer/readme.md -> "# Introduction to Memory"
 exercises/05-memory-skill-building/05.02-short-term-memory/explainer/readme.md -> "# Short-term Memory"
 exercises/05-memory-skill-building/05.02-short-term-memory/problem/readme.md -> "# Short-term Memory"

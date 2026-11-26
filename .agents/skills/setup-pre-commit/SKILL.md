@@ -26,7 +26,7 @@ Check for `package-lock.json` (npm), `pnpm-lock.yaml` (pnpm), `yarn.lock` (yarn)
 
 Install as devDependencies:
 
-```
+```text
 husky lint-staged prettier
 ```
 
@@ -42,7 +42,7 @@ This creates `.husky/` dir and adds `prepare: "husky"` to package.json.
 
 Write this file (no shebang needed for Husky v9+):
 
-```
+```sh
 npx lint-staged
 npm run typecheck
 npm run test

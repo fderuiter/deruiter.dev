@@ -17,13 +17,91 @@ const SKIP_DIRECTORY_NAMES = new Set([
   ".next",
   "coverage",
   ".git",
-  ".agents",
+  "worktrees",
+  ".scratch",
   "scratch",
   "tmp",
   "test-results",
 ]);
 
 const INLINE_LINK_PATTERN = /\[[^\]]*\]\(([^)]+)\)/g;
+
+function collectMarkdownFiles(
+  targetPath: string,
+  workspaceRoot: string | undefined,
+  ancestors: ReadonlySet<string>
+): string[] {
+  const resolvedPath =
+    workspaceRoot && !path.isAbsolute(targetPath)
+      ? path.resolve(workspaceRoot, targetPath)
+      : path.resolve(targetPath);
+
+  if (!fs.existsSync(resolvedPath)) return [];
+
+  let stat: fs.Stats;
+  try {
+    stat = fs.statSync(resolvedPath);
+  } catch {
+    return [];
+  }
+
+  if (stat.isFile()) {
+    const lowerName = resolvedPath.toLowerCase();
+    return lowerName.endsWith(".md") || lowerName.endsWith(".markdown")
+      ? [resolvedPath]
+      : [];
+  }
+
+  if (stat.isDirectory()) {
+    if (SKIP_DIRECTORY_NAMES.has(path.basename(resolvedPath))) return [];
+
+    let realDir: string;
+    try {
+      realDir = fs.realpathSync(resolvedPath);
+    } catch {
+      return [];
+    }
+    if (ancestors.has(realDir)) return [];
+
+    const nextAncestors = new Set(ancestors);
+    nextAncestors.add(realDir);
+
+    return fs
+      .readdirSync(resolvedPath, { withFileTypes: true })
+      .flatMap((entry) => {
+        const absolutePath = path.join(resolvedPath, entry.name);
+        let isDirectory = entry.isDirectory();
+        let isFile = entry.isFile();
+
+        if (entry.isSymbolicLink()) {
+          try {
+            const targetStat = fs.statSync(absolutePath);
+            isDirectory = targetStat.isDirectory();
+            isFile = targetStat.isFile();
+          } catch {
+            return [];
+          }
+        }
+
+        if (isDirectory) {
+          return SKIP_DIRECTORY_NAMES.has(entry.name)
+            ? []
+            : collectMarkdownFiles(absolutePath, workspaceRoot, nextAncestors);
+        }
+
+        if (isFile) {
+          const lowerName = entry.name.toLowerCase();
+          return lowerName.endsWith(".md") || lowerName.endsWith(".markdown")
+            ? [absolutePath]
+            : [];
+        }
+
+        return [];
+      });
+  }
+
+  return [];
+}
 
 /**
  * Lists markdown files starting from target path(s).
@@ -35,46 +113,12 @@ export function listMarkdownFiles(
 ): string[] {
   if (Array.isArray(targetPath)) {
     const allFiles = targetPath.flatMap((tp) =>
-      listMarkdownFiles(tp, workspaceRoot)
+      collectMarkdownFiles(tp, workspaceRoot, new Set())
     );
     return Array.from(new Set(allFiles));
   }
 
-  const resolvedPath =
-    workspaceRoot && !path.isAbsolute(targetPath)
-      ? path.resolve(workspaceRoot, targetPath)
-      : path.resolve(targetPath);
-
-  if (!fs.existsSync(resolvedPath)) return [];
-
-  const stat = fs.statSync(resolvedPath);
-  if (stat.isFile()) {
-    const lowerName = resolvedPath.toLowerCase();
-    return lowerName.endsWith(".md") || lowerName.endsWith(".markdown")
-      ? [resolvedPath]
-      : [];
-  }
-
-  if (stat.isDirectory()) {
-    if (SKIP_DIRECTORY_NAMES.has(path.basename(resolvedPath))) return [];
-
-    return fs
-      .readdirSync(resolvedPath, { withFileTypes: true })
-      .flatMap((entry) => {
-        const absolutePath = path.join(resolvedPath, entry.name);
-        if (entry.isDirectory()) {
-          return SKIP_DIRECTORY_NAMES.has(entry.name)
-            ? []
-            : listMarkdownFiles(absolutePath, workspaceRoot);
-        }
-        const lowerName = entry.name.toLowerCase();
-        return lowerName.endsWith(".md") || lowerName.endsWith(".markdown")
-          ? [absolutePath]
-          : [];
-      });
-  }
-
-  return [];
+  return collectMarkdownFiles(targetPath, workspaceRoot, new Set());
 }
 
 function getDefaultTargetPaths(workspaceRoot: string): string[] {
@@ -95,18 +139,52 @@ function getDefaultTargetPaths(workspaceRoot: string): string[] {
     }
   }
 
-  // docs/ and adr/ subtrees
-  const docsDir = path.join(workspaceRoot, "docs");
-  if (fs.existsSync(docsDir)) {
-    targets.push(docsDir);
-  }
-
-  const adrDir = path.join(workspaceRoot, "adr");
-  if (fs.existsSync(adrDir)) {
-    targets.push(adrDir);
+  // docs/, adr/, and tracked skill subtrees
+  for (const relativeDir of [
+    "docs",
+    "adr",
+    ".agents/skills",
+    ".claude/skills",
+  ]) {
+    const candidateDir = path.join(workspaceRoot, relativeDir);
+    if (fs.existsSync(candidateDir)) {
+      targets.push(candidateDir);
+    }
   }
 
   return targets;
+}
+
+function stripCodeBlocksAndSpans(markdown: string): string {
+  const lines = markdown.split(/\r?\n/);
+  const keptLines: string[] = [];
+  let activeFenceChar: "`" | "~" | null = null;
+  let activeFenceLength = 0;
+
+  for (const line of lines) {
+    if (activeFenceChar === null) {
+      const openMatch = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+      if (
+        openMatch &&
+        !(openMatch[1][0] === "`" && openMatch[2].includes("`"))
+      ) {
+        activeFenceChar = openMatch[1][0] as "`" | "~";
+        activeFenceLength = openMatch[1].length;
+        continue;
+      }
+      keptLines.push(line);
+    } else {
+      const closePattern = new RegExp(
+        `^ {0,3}${activeFenceChar}{${activeFenceLength},}[ \\t]*$`
+      );
+      if (closePattern.test(line)) {
+        activeFenceChar = null;
+        activeFenceLength = 0;
+      }
+    }
+  }
+
+  return keptLines.join("\n").replace(/(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g, "");
 }
 
 // Any URL scheme (http:, https:, mailto:, etc.), protocol-relative URLs, and
@@ -125,8 +203,9 @@ function stripFragmentAndQuery(url: string): string {
 
 /**
  * Validates that relative inline markdown links inside configured target paths
- * (defaulting to workspace root markdown files, docs/, and adr/) resolve to
- * real files on disk, so a moved or renamed guide doesn't silently orphan a link.
+ * (defaulting to workspace root markdown files, docs/, adr/, .agents/skills/,
+ * and .claude/skills/) resolve to real files on disk, so a moved or renamed
+ * guide doesn't silently orphan a link.
  */
 export function checkMarkdownLinkIntegrity(
   workspaceRoot: string,
@@ -144,7 +223,7 @@ export function checkMarkdownLinkIntegrity(
   const markdownFiles = listMarkdownFiles(targets, workspaceRoot);
 
   for (const filePath of markdownFiles) {
-    const content = fs.readFileSync(filePath, "utf-8");
+    const content = stripCodeBlocksAndSpans(fs.readFileSync(filePath, "utf-8"));
     for (const match of content.matchAll(INLINE_LINK_PATTERN)) {
       const rawUrl = match[1].trim();
       if (!isCheckableLink(rawUrl)) continue;

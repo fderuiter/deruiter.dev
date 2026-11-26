@@ -263,11 +263,16 @@ describe("shared browser USDM study repository", () => {
   it.each(["indexeddb", "memory"])(
     "blocks stale bound saves after deleting a study in %s",
     async (persistence) => {
-      const client = createStudyRepositoryClient({
-        indexedDB: persistence === "indexeddb" ? new IDBFactory() : null,
-      });
+      const indexedDB = new IDBFactory();
+      if (persistence === "memory") {
+        vi.spyOn(indexedDB, "open").mockImplementation(() => {
+          throw new DOMException("Access denied", "SecurityError");
+        });
+      }
+      const client = createStudyRepositoryClient({ indexedDB });
       try {
         const record = await client.createBlankStudy();
+        expect(client.getSnapshot().persistence).toBe(persistence);
         const expectedRevisionId = record.workspace.revision.id;
         await client.deleteStudy(record.studyId);
 

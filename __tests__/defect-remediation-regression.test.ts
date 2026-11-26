@@ -3293,3 +3293,88 @@ describe("Typed formula evaluation and CLI error contracts", () => {
     expect(JSON.parse(unclosed.document).success).toBe(false);
   });
 });
+
+describe("GitHub Actions workflow security and determinism hardening", () => {
+  const workflowDir = path.join(process.cwd(), ".github/workflows");
+  const readWorkflow = (name: string) =>
+    fs.readFileSync(path.join(workflowDir, name), "utf8");
+
+  it("disables credential persistence on every actions/checkout step and pins npm cache-dependency-path in PR and security workflows", () => {
+    for (const file of [
+      "ci.yml",
+      "study-data-core.yml",
+      "synthetic-probes.yml",
+      "scheduled-security-audit.yml",
+    ]) {
+      const content = readWorkflow(file);
+      const checkouts = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter((step) => step.includes("uses: actions/checkout@"));
+      expect(checkouts.length, file).toBeGreaterThan(0);
+      for (const step of checkouts) {
+        const stepTitle = step.split("\n")[0];
+        expect(step, `${file} -> ${stepTitle}`).toContain(
+          "persist-credentials: false"
+        );
+      }
+
+      const cachedSetupNode = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter(
+          (step) =>
+            step.includes("uses: actions/setup-node@") &&
+            step.includes('cache: "npm"')
+        );
+      expect(cachedSetupNode.length, file).toBeGreaterThan(0);
+      for (const step of cachedSetupNode) {
+        const stepTitle = step.split("\n")[0];
+        expect(step, `${file} -> ${stepTitle}`).toContain(
+          'cache-dependency-path: "package-lock.json"'
+        );
+      }
+    }
+  });
+
+  it("isolates PR ESLint incremental caching to restore-only and saves only on uncached main pushes", () => {
+    const ci = readWorkflow("ci.yml");
+    const staticGate = ci.slice(
+      ci.indexOf("  static-gate:"),
+      ci.indexOf("  unit-gate:")
+    );
+    expect(staticGate).not.toMatch(/uses: actions\/cache@/);
+    expect(staticGate).toMatch(
+      /id: eslint-cache\n\s+uses: actions\/cache\/restore@/
+    );
+    expect(staticGate).toMatch(
+      /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.eslint-cache\.outputs\.cache-hit != 'true'\n\s+uses: actions\/cache\/save@/
+    );
+  });
+
+  it("eliminates unsafe run-block expression interpolation in synthetic-probes and scopes concurrency and write permissions", () => {
+    const synthetic = readWorkflow("synthetic-probes.yml");
+    expect(synthetic).toMatch(
+      /^concurrency:\n\s+group: synthetic-probes-\$\{\{ github\.workflow \}\}-/m
+    );
+    expect(synthetic).toContain(
+      "cancel-in-progress: ${{ github.event_name != 'workflow_call' }}"
+    );
+    expect(synthetic).not.toMatch(
+      /\$\{\{\s*steps\.target\.outputs\.url\s*\}\}\s*"/
+    );
+    expect(synthetic).toContain(
+      "PROBE_TARGET_URL: ${{ steps.target.outputs.url }}"
+    );
+    expect(synthetic).toContain("PROBES_OUTCOME: ${{ steps.probes.outcome }}");
+
+    const securityAudit = readWorkflow("scheduled-security-audit.yml");
+    expect(securityAudit).toMatch(
+      /^concurrency:\n\s+group: scheduled-security-audit-/m
+    );
+    expect(securityAudit).toMatch(/^permissions: \{\}$/m);
+    expect(securityAudit).toMatch(
+      /^ {4}permissions:\n {6}contents: read\n {6}issues: write$/m
+    );
+  });
+});

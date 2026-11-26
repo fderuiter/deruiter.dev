@@ -23,6 +23,10 @@ on:
         type: string
         default: ""
 
+concurrency:
+  group: synthetic-probes-${{ github.workflow }}-${{ github.ref }}-${{ inputs.target_url || 'default' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
 permissions:
   contents: read
 
@@ -45,12 +49,15 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -64,6 +71,18 @@ jobs:
           if [ -z "$TARGET" ]; then
             TARGET="${DEFAULT_PROBE_TARGET}"
           fi
+          case "$TARGET" in
+            *[[:space:][:cntrl:]]*)
+              echo "::error::Invalid target_url: whitespace or control characters are not allowed."
+              exit 1
+              ;;
+            http://*|https://*)
+              ;;
+            *)
+              echo "::error::Invalid target_url: must begin with http:// or https://."
+              exit 1
+              ;;
+          esac
           echo "url=${TARGET}" >> "$GITHUB_OUTPUT"
           echo "Probing ${TARGET}"
 
@@ -79,13 +98,20 @@ jobs:
 
       - name: Publish Synthetic Health Summary
         if: always()
+        env:
+          PROBE_TARGET_URL: ${{ steps.target.outputs.url }}
+          PROBES_OUTCOME: ${{ steps.probes.outcome }}
         run: |
+          PROBE_SUMMARY="❌ Probe run did not pass — see the job log for the failing spec"
+          if [ "$PROBES_OUTCOME" = "success" ]; then
+            PROBE_SUMMARY="✅ All probed journeys healthy"
+          fi
           {
             echo "# 🛰️ Synthetic Journey Monitoring Report"
             echo ""
-            echo "- **Target:** ${{ steps.target.outputs.url }}"
+            echo "- **Target:** $PROBE_TARGET_URL"
             echo "- **Checked:** $(date -u)"
-            echo "- **Result:** ${{ steps.probes.outcome == 'success' && '✅ All probed journeys healthy' || '❌ Probe run did not pass — see the job log for the failing spec' }}"
+            echo "- **Result:** $PROBE_SUMMARY"
             echo ""
             echo "Journeys covered by this suite:"
             echo ""

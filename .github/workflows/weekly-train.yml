@@ -80,6 +80,10 @@ jobs:
     name: Select and gate the candidate
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      checks: read
+      issues: write
     outputs:
       candidate: ${{ steps.select.outputs.candidate }}
       live: ${{ steps.select.outputs.live }}
@@ -352,6 +356,8 @@ jobs:
     if: always() && needs.gate.outputs.ship == 'true' && (needs.rc-build.result == 'failure' || needs.rc-browser.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      issues: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -383,6 +389,9 @@ jobs:
     if: always() && (needs.gate.outputs.dry == 'true' || (needs.gate.outputs.ship == 'true' && needs.rc-browser.result == 'success'))
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+      issues: write
     outputs:
       candidate: ${{ needs.gate.outputs.candidate }}
       tag: ${{ steps.version.outputs.tag }}
@@ -558,6 +567,8 @@ jobs:
     if: needs.train.outputs.fired == 'true' && needs.probe.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -576,6 +587,8 @@ jobs:
     if: always() && needs.train.outputs.fired == 'true' && needs.train.outputs.verified == 'true' && needs.probe.result != 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      issues: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}

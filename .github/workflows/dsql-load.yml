@@ -57,7 +57,7 @@ jobs:
 
       - name: Load, check parity and write the manifest
         run: |
-          npx tsx scripts/dsql-load.ts \
+          npx --no-install tsx scripts/dsql-load.ts \
             --target postgres \
             --summary "$GITHUB_STEP_SUMMARY" \
             --out "$RUNNER_TEMP/warehouse-load.json"

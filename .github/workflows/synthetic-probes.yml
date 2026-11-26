@@ -71,6 +71,17 @@ jobs:
           if [ -z "$TARGET" ]; then
             TARGET="${DEFAULT_PROBE_TARGET}"
           fi
+          case "$TARGET" in
+            *$'\n'*|*$'\r'*)
+              echo "::error::Invalid target_url: newline characters are not permitted."
+              exit 1
+              ;;
+            https://*|http://*) ;;
+            *)
+              echo "::error::Invalid target_url '${TARGET}': expected an http:// or https:// origin."
+              exit 1
+              ;;
+          esac
           echo "url=${TARGET}" >> "$GITHUB_OUTPUT"
           echo "Probing ${TARGET}"
 

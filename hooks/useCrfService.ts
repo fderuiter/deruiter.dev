@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import * as crf from "@/lib/crf";
 import {
   EvaluateFormulaHandler,
   EvaluateFormulaInput,
@@ -26,7 +27,10 @@ export function useCrfService() {
     []
   );
   const lintFormulaHandler = useMemo(() => new LintFormulaHandler(), []);
-  const lintFormHandler = useMemo(() => new LintFormHandler(), []);
+  const lintFormHandler = useMemo(
+    () => new LintFormHandler((form) => crf.lintForm(form)),
+    []
+  );
 
   const evaluateFormula = useCallback(
     (input: EvaluateFormulaInput): EvaluateFormulaResult => {

@@ -66,4 +66,22 @@ describe("LintFormHandler (Logic Test)", () => {
       expect(result.error.code).toBe("INVALID_FORM");
     }
   });
+
+  it("returns LINTING_FAILED when an injected evaluator throws", () => {
+    const failingHandler = new LintFormHandler(() => {
+      throw new Error("AST walk failed");
+    });
+    const result = failingHandler.execute({
+      form: fromPartial<CRFForm>({
+        id: "form_err",
+        sections: [],
+      }),
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("LINTING_FAILED");
+      expect(result.error.message).toBe("AST walk failed");
+    }
+  });
 });

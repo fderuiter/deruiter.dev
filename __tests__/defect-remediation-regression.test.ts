@@ -3296,27 +3296,36 @@ describe("Typed formula evaluation and CLI error contracts", () => {
 
 describe("GitHub Actions workflow security and determinism hardening", () => {
   const workflowDir = path.join(process.cwd(), ".github/workflows");
+  const workflowFiles = fs
+    .readdirSync(workflowDir)
+    .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"))
+    .sort();
   const readWorkflow = (name: string) =>
     fs.readFileSync(path.join(workflowDir, name), "utf8");
+  const BOT_PR_PUSH_WORKFLOWS = new Set([
+    "cdisc-library-sync.yml",
+    "standards-watch.yml",
+  ]);
 
-  it("disables credential persistence on every actions/checkout step and pins npm cache-dependency-path in PR and security workflows", () => {
-    for (const file of [
-      "ci.yml",
-      "study-data-core.yml",
-      "synthetic-probes.yml",
-      "scheduled-security-audit.yml",
-    ]) {
+  it("enforces explicit checkout credential policy, concurrency controls, and lockfile-pinned npm caching across all 13 workflows", () => {
+    expect(workflowFiles).toHaveLength(13);
+
+    for (const file of workflowFiles) {
       const content = readWorkflow(file);
+      expect(content, `${file} declares concurrency`).toMatch(
+        /^\s*concurrency:\s*$/m
+      );
+
       const checkouts = content
         .split(/\n\s+-\s+name:\s+/)
         .slice(1)
         .filter((step) => step.includes("uses: actions/checkout@"));
-      expect(checkouts.length, file).toBeGreaterThan(0);
       for (const step of checkouts) {
         const stepTitle = step.split("\n")[0];
-        expect(step, `${file} -> ${stepTitle}`).toContain(
-          "persist-credentials: false"
-        );
+        const expectedPersist = BOT_PR_PUSH_WORKFLOWS.has(file)
+          ? "persist-credentials: true"
+          : "persist-credentials: false";
+        expect(step, `${file} -> ${stepTitle}`).toContain(expectedPersist);
       }
 
       const cachedSetupNode = content
@@ -3327,7 +3336,6 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
             step.includes("uses: actions/setup-node@") &&
             step.includes('cache: "npm"')
         );
-      expect(cachedSetupNode.length, file).toBeGreaterThan(0);
       for (const step of cachedSetupNode) {
         const stepTitle = step.split("\n")[0];
         expect(step, `${file} -> ${stepTitle}`).toContain(
@@ -3337,7 +3345,7 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     }
   });
 
-  it("isolates PR ESLint incremental caching to restore-only and saves only on uncached main pushes", () => {
+  it("isolates PR incremental caching to restore-only and saves only on uncached main pushes", () => {
     const ci = readWorkflow("ci.yml");
     const staticGate = ci.slice(
       ci.indexOf("  static-gate:"),
@@ -3350,9 +3358,21 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     expect(staticGate).toMatch(
       /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.eslint-cache\.outputs\.cache-hit != 'true'\n\s+uses: actions\/cache\/save@/
     );
+
+    const mutationGate = ci.slice(
+      ci.indexOf("  mutation-gate:"),
+      ci.indexOf("  security-gate:")
+    );
+    expect(mutationGate).not.toMatch(/uses: actions\/cache@/);
+    expect(mutationGate).toMatch(
+      /id: stryker-cache\n\s+if: github\.event_name != 'workflow_dispatch'\n\s+uses: actions\/cache\/restore@/
+    );
+    expect(mutationGate).toMatch(
+      /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.stryker-cache\.outputs\.cache-hit != 'true'\n\s+uses: actions\/cache\/save@/
+    );
   });
 
-  it("eliminates unsafe run-block expression interpolation in synthetic-probes and scopes concurrency and write permissions", () => {
+  it("eliminates unsafe run-block expression interpolation and scopes job-level write permissions across workflows", () => {
     const synthetic = readWorkflow("synthetic-probes.yml");
     expect(synthetic).toMatch(
       /^concurrency:\n\s+group: synthetic-probes-\$\{\{ github\.workflow \}\}-/m
@@ -3368,13 +3388,36 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     );
     expect(synthetic).toContain("PROBES_OUTCOME: ${{ steps.probes.outcome }}");
 
-    const securityAudit = readWorkflow("scheduled-security-audit.yml");
-    expect(securityAudit).toMatch(
-      /^concurrency:\n\s+group: scheduled-security-audit-/m
-    );
-    expect(securityAudit).toMatch(/^permissions: \{\}$/m);
-    expect(securityAudit).toMatch(
-      /^ {4}permissions:\n {6}contents: read\n {6}issues: write$/m
-    );
+    for (const file of [
+      "scheduled-security-audit.yml",
+      "overrides-audit.yml",
+      "cdisc-library-sync.yml",
+      "standards-watch.yml",
+      "issue-hygiene.yml",
+    ]) {
+      const wf = readWorkflow(file);
+      expect(wf, file).toMatch(/^permissions: \{\}$/m);
+      expect(wf, file).toMatch(/^ {4}permissions:\n/m);
+    }
+
+    const weeklyTrain = readWorkflow("weekly-train.yml");
+    expect(weeklyTrain).not.toMatch(/run:.*\$\{\{/);
+    expect(weeklyTrain).toContain("MATRIX_SHARD: ${{ matrix.shard }}");
+    const trainJobsBlock = weeklyTrain.slice(weeklyTrain.indexOf("\njobs:"));
+    const trainJobNames = [
+      ...trainJobsBlock.matchAll(/^ {2}([a-z][a-z0-9-]*):$/gm),
+    ].map((m) => m[1]);
+    expect(trainJobNames).toEqual([
+      "gate",
+      "rc-build",
+      "rc-browser",
+      "rc-failed",
+      "train",
+      "probe",
+      "publish",
+      "hold-after-probe",
+    ]);
+    const jobPermBlocks = trainJobsBlock.match(/^ {4}permissions:\n/gm) ?? [];
+    expect(jobPermBlocks).toHaveLength(trainJobNames.length);
   });
 });

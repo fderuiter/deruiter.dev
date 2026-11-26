@@ -409,6 +409,7 @@ jobs:
       # Restore only: pull requests, forks included, read main's report but
       # never write one. Only a push to main saves (below).
       - name: Restore Stryker Incremental Report
+        id: stryker-cache
         if: github.event_name != 'workflow_dispatch'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -432,7 +433,7 @@ jobs:
           STRYKER_FORCE: ${{ needs.changes.outputs.stryker_force }}
 
       - name: Save Stryker Incremental Report (main only)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.stryker-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: reports/stryker-incremental.json

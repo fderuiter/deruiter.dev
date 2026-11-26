@@ -41,7 +41,10 @@ import {
   STUDY_WORKSPACE_DRAFT_QUARANTINE_KEY,
   saveStudyWorkspaceDraft,
 } from "@/components/study-workspace/randomization-draft-storage";
-import { createStudyRepositoryClient } from "@/components/clinical/study-repository-client";
+import {
+  createStudyRepositoryClient,
+  getSharedStudyRepository,
+} from "@/components/clinical/study-repository-client";
 import { cloneDeep } from "@/lib/utils";
 
 class MemoryBroadcastHub {
@@ -728,5 +731,287 @@ describe("shared browser USDM study repository", () => {
     );
     expect(migratedCrfSummary?.kind).toBe("migrated");
     client.dispose();
+  });
+
+  it("enforces deterministic ordering, metadata isolation, and active-study cleanup in the memory store", async () => {
+    const memStore = createMemoryStudyRepositoryStore();
+    expect(memStore.persistence).toBe("memory");
+
+    await memStore.seedIfMissing([
+      {
+        studyId: "tavr-savr",
+        protocolCode: "TAVR-SAVR-001",
+        usdm: TAVR_SAVR_USDM,
+      },
+    ]);
+    // Idempotent second seed call skips existing records.
+    await memStore.seedIfMissing([
+      {
+        studyId: "tavr-savr",
+        protocolCode: "TAVR-SAVR-001",
+        usdm: TAVR_SAVR_USDM,
+      },
+    ]);
+
+    const refRecord = await memStore.get("tavr-savr");
+    expect(refRecord).not.toBeNull();
+    if (!refRecord) return;
+    expect(await memStore.get("missing-study")).toBeNull();
+
+    // Insert records across kinds, timestamps, and studyIds to verify deterministic sort order.
+    await memStore.put(
+      {
+        ...refRecord,
+        studyId: "authored-zeta",
+        kind: "authored",
+        createdAt: "2026-02-01T00:00:00.000Z",
+      },
+      { force: true }
+    );
+    await memStore.put(
+      {
+        ...refRecord,
+        studyId: "authored-alpha",
+        kind: "authored",
+        createdAt: "2026-02-01T00:00:00.000Z",
+      },
+      { force: true }
+    );
+    await memStore.put(
+      {
+        ...refRecord,
+        studyId: "authored-early",
+        kind: "authored",
+        createdAt: "2026-01-15T00:00:00.000Z",
+      },
+      { force: true }
+    );
+    await memStore.put(
+      {
+        ...refRecord,
+        studyId: "imported-one",
+        kind: "imported",
+        createdAt: "2026-03-01T00:00:00.000Z",
+      },
+      { force: true }
+    );
+    await memStore.put(
+      {
+        ...refRecord,
+        studyId: "migrated-one",
+        kind: "migrated",
+        createdAt: "2026-04-01T00:00:00.000Z",
+      },
+      { force: true }
+    );
+
+    const listed = await memStore.list();
+    expect(listed.map((r) => r.studyId)).toEqual([
+      "tavr-savr",
+      "migrated-one",
+      "imported-one",
+      "authored-early",
+      "authored-alpha",
+      "authored-zeta",
+    ]);
+
+    // Active study and arbitrary metadata round-trip with defensive cloning and null cleanup.
+    expect(await memStore.getActiveStudyId()).toBeNull();
+    await memStore.setActiveStudyId("authored-alpha");
+    expect(await memStore.getActiveStudyId()).toBe("authored-alpha");
+
+    // Removing a non-active study preserves activeStudyId; removing active study clears it.
+    await memStore.remove("authored-zeta");
+    expect(await memStore.getActiveStudyId()).toBe("authored-alpha");
+    await memStore.remove("authored-alpha");
+    expect(await memStore.getActiveStudyId()).toBeNull();
+
+    await memStore.setActiveStudyId("imported-one");
+    await memStore.setActiveStudyId(null);
+    expect(await memStore.getActiveStudyId()).toBeNull();
+
+    expect(await memStore.getMeta("customKey")).toBeUndefined();
+    const metaPayload = { nested: ["a"] };
+    await memStore.setMeta("customKey", metaPayload);
+    metaPayload.nested.push("mutated");
+    expect(await memStore.getMeta("customKey")).toEqual({ nested: ["a"] });
+    await memStore.setMeta("customKey", null);
+    expect(await memStore.getMeta("customKey")).toBeUndefined();
+    await memStore.setMeta("customKey2", "val");
+    await memStore.setMeta("customKey2", undefined);
+    expect(await memStore.getMeta("customKey2")).toBeUndefined();
+
+    memStore.close();
+  });
+
+  it("handles blank study creation, study deletion/reset, USDM reconciliation branches, schema-blocked exports, and IDB open failures", async () => {
+    // Verify openStudyRepositoryStore handles onerror and onblocked gracefully.
+    const errorIdb: Pick<IDBFactory, "open"> = {
+      open: () => {
+        const req = {} as IDBOpenDBRequest;
+        queueMicrotask(() => {
+          req.onerror?.(new Event("error"));
+        });
+        return req;
+      },
+    };
+    const blockedReqIdb: Pick<IDBFactory, "open"> = {
+      open: () => {
+        const req = {} as IDBOpenDBRequest;
+        queueMicrotask(() => {
+          req.onblocked?.(new Event("blocked") as IDBVersionChangeEvent);
+        });
+        return req;
+      },
+    };
+    expect(
+      (await openStudyRepositoryStore({ indexedDB: errorIdb as IDBFactory })).ok
+    ).toBe(false);
+    expect(
+      (
+        await openStudyRepositoryStore({
+          indexedDB: blockedReqIdb as IDBFactory,
+        })
+      ).ok
+    ).toBe(false);
+
+    const idb = new IDBFactory();
+    const client = createStudyRepositoryClient({ indexedDB: idb });
+    await client.initialize();
+
+    // Create two blank studies to exercise collision-free slug suffixing.
+    const blank1 = await client.createBlankStudy();
+    const blank2 = await client.createBlankStudy();
+    expect(blank1.studyId).toBe("blank-study");
+    expect(blank2.studyId).toBe("blank-study-2");
+    expect(client.getSnapshot().activeStudyId).toBe("blank-study-2");
+
+    // Deleting active authored study falls back to DEMO-301; deleting inactive authored study keeps activeStudyId.
+    await client.deleteStudy("blank-study-2");
+    expect(client.getSnapshot().activeStudyId).toBe("DEMO-301");
+    await client.deleteStudy("blank-study");
+    expect(client.getSnapshot().activeStudyId).toBe("DEMO-301");
+
+    // Edit reference study DEMO-301 via reconcileAndSaveUsdm, test skipIfUnchanged + conflict + force, then reset via deleteStudy.
+    const demoRecord = await client.getRecord("DEMO-301");
+    expect(demoRecord).not.toBeNull();
+    if (!demoRecord) return;
+
+    const unchangedActive = await client.reconcileAndSaveUsdm(
+      "DEMO-301",
+      demoRecord.workspace.usdm,
+      {
+        expectedRevisionId: "R1",
+        note: "No-op save",
+        skipIfUnchanged: true,
+      }
+    );
+    expect(unchangedActive.status).toBe("unchanged");
+
+    await client.selectStudy("tavr-savr");
+    const unchangedInactive = await client.reconcileAndSaveUsdm(
+      "DEMO-301",
+      demoRecord.workspace.usdm,
+      {
+        expectedRevisionId: "R1",
+        note: "Switch active without USDM diff",
+        skipIfUnchanged: true,
+      }
+    );
+    expect(unchangedInactive.status).toBe("unchanged");
+    expect(client.getSnapshot().activeStudyId).toBe("DEMO-301");
+
+    const modifiedUsdm = cloneDeep(demoRecord.workspace.usdm);
+    if (modifiedUsdm.study.versions?.[0]?.studyDesigns?.[0]?.arms?.[0]) {
+      modifiedUsdm.study.versions[0].studyDesigns[0].arms[0].name =
+        "Reconciled Arm R2";
+    }
+    const savedR2 = await client.reconcileAndSaveUsdm("DEMO-301", modifiedUsdm, {
+      expectedRevisionId: "R1",
+      note: "Rename arm via reconcile",
+    });
+    expect(savedR2.status).toBe("saved");
+
+    const staleReconcile = await client.reconcileAndSaveUsdm(
+      "DEMO-301",
+      demoRecord.workspace.usdm,
+      {
+        expectedRevisionId: "R1",
+        note: "Stale reconcile",
+      }
+    );
+    expect(staleReconcile.status).toBe("conflict");
+
+    const forcedReconcile = await client.reconcileAndSaveUsdm(
+      "DEMO-301",
+      demoRecord.workspace.usdm,
+      {
+        expectedRevisionId: "R1",
+        note: "Forced reconcile",
+        force: true,
+      }
+    );
+    expect(forcedReconcile.status).toBe("saved");
+
+    // Reconciling an uninitialized studyId initializes it automatically.
+    const brandNew = await client.reconcileAndSaveUsdm(
+      "new-reconciled-study",
+      TAVR_SAVR_USDM,
+      {
+        expectedRevisionId: "R1",
+        note: "Initialize on reconcile",
+      }
+    );
+    expect(brandNew.status).toBe("saved");
+
+    // Deleting a reference study resets it cleanly back to R1.
+    await client.selectStudy("DEMO-301");
+    await client.deleteStudy("DEMO-301");
+    const resetDemo = await client.getRecord("DEMO-301");
+    expect(resetDemo?.workspace.revision.id).toBe("R1");
+
+    // Schema-invalid workspace returns status: "invalid" from exportCheckedUsdm.
+    const brokenUsdm = cloneDeep(demoRecord.workspace.usdm);
+    Reflect.deleteProperty(brokenUsdm.study, "name");
+    const invalidWs: StudyWorkspace = {
+      ...demoRecord.workspace,
+      usdm: brokenUsdm,
+    };
+    await client.saveWorkspace("invalid-export-study", invalidWs, { force: true });
+    const invalidExport = await client.exportCheckedUsdm("invalid-export-study");
+    expect(invalidExport?.status).toBe("invalid");
+    expect(await client.exportCheckedUsdm("nonexistent")).toBeNull();
+    expect(await client.exportWorkspaceSnapshot("nonexistent")).toBeNull();
+
+    client.dispose();
+
+    // Verify getSharedStudyRepository singleton resets volatile state when sessionStorage/localStorage is cleared.
+    const prevIdb = Object.getOwnPropertyDescriptor(globalThis, "indexedDB");
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    try {
+      window.localStorage.clear();
+      const shared1 = getSharedStudyRepository();
+      await shared1.initialize();
+      const rec = await shared1.getRecord("tavr-savr");
+      if (rec) {
+        await shared1.saveWorkspace("tavr-savr", rec.workspace, {
+          force: true,
+          draftBackedKey: STUDY_WORKSPACE_DRAFT_KEY,
+        });
+      }
+      window.localStorage.setItem(STUDY_WORKSPACE_DRAFT_KEY, "draft");
+      window.localStorage.removeItem(STUDY_WORKSPACE_DRAFT_KEY);
+      const shared2 = getSharedStudyRepository();
+      expect(shared2).not.toBe(shared1);
+      shared2.dispose();
+    } finally {
+      if (prevIdb) {
+        Object.defineProperty(globalThis, "indexedDB", prevIdb);
+      }
+    }
   });
 });

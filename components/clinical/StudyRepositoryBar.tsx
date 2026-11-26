@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ModalContainer } from "@/components/ui/ModalContainer";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import { downloadFile } from "@/lib/download";
 import { DEMO_STUDY_ID } from "@/lib/clinical-study-context";
 import {
@@ -315,7 +316,7 @@ function SchemaDiagnosticsModal({
         <div className="min-w-0 space-y-4">
           <div className="space-y-1">
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber-300">
-              USDM v4.0.0 schema diagnostics
+              USDM v{CLINICAL_STANDARDS_PROFILE.USDM} schema diagnostics
             </p>
             <h3 id={titleId} className="text-base font-semibold text-[#f4f4f6]">
               Canonical USDM export blocked by {state.issues.length}{" "}

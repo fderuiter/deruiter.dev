@@ -25,7 +25,11 @@ import {
   type OmnibarAction,
   type StudyProtocol,
 } from "@/lib/crf";
-import type { StudyRepositoryRecord } from "@/lib/study-workspace";
+import {
+  reconcileUsdmStudyRevision,
+  type StudyRepositoryRecord,
+  type StudyWorkspace,
+} from "@/lib/study-workspace";
 import {
   StudyConflictModal,
   StudyRepositoryBar,
@@ -355,12 +359,27 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
 
       if (outcome.status === "conflict") {
         if (isMountedRef.current) {
+          let localWorkspace: StudyWorkspace | undefined;
+          if (outcome.latestRecord) {
+            try {
+              localWorkspace = reconcileUsdmStudyRevision(
+                outcome.latestRecord.workspace,
+                exported,
+                {
+                  expectedRevisionId: outcome.latestRecord.workspace.revision.id,
+                  note: "Unsaved local CRF Studio snapshot",
+                }
+              );
+            } catch {
+              localWorkspace = undefined;
+            }
+          }
           setConflictPrompt({
             studyId: targetStudyId,
             expectedRevisionId: outcome.expectedRevisionId,
             currentRevisionId: outcome.currentRevisionId,
             latestRecord: outcome.latestRecord,
-            localWorkspace: outcome.latestRecord?.workspace,
+            localWorkspace,
           });
         }
         return { ok: false as const };

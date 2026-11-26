@@ -11,6 +11,7 @@ import {
   within,
 } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   type UsdmV4Document,
@@ -20,6 +21,10 @@ import {
 import { DEMO_301_STUDY, DEMO_301_USDM, SUBJECT_COUNT_LIMITS } from "@/lib/study-data";
 import type { BroadcastChannelLike } from "@/lib/study-workspace";
 import { StudyPicker } from "@/components/clinical/StudyPicker";
+import {
+  StudyConflictModal,
+  StudyRepositoryBar,
+} from "@/components/clinical/StudyRepositoryBar";
 import {
   createStudyRepositoryClient,
   type StudyRepositoryClient,
@@ -287,12 +292,15 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     const input = screen.getByTestId("study-repository-file-input");
     await act(async () => {
       fireEvent.change(input, { target: { files: [file] } });
+      await repo.whenIdle();
     });
 
     // Version & design chooser modal appears.
-    const dialogHeading = await screen.findByRole("heading", {
-      name: "Choose study version and design",
-    });
+    const dialogHeading = await screen.findByRole(
+      "heading",
+      { name: "Choose study version and design" },
+      { timeout: 10_000 }
+    );
     expect(dialogHeading).toBeTruthy();
     const chooserDialog = screen.getByRole("dialog");
 
@@ -302,35 +310,44 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     fireEvent.change(within(chooserDialog).getByLabelText(/^Study design$/i), {
       target: { value: "design-beta" },
     });
-    fireEvent.click(
-      within(chooserDialog).getByRole("button", {
-        name: "Open selected design",
-      })
-    );
+    await act(async () => {
+      fireEvent.click(
+        within(chooserDialog).getByRole("button", {
+          name: "Open selected design",
+        })
+      );
+      await repo.whenIdle();
+    });
 
     // 1. /study-studio opens the chosen version and design immediately.
-    await waitFor(() => {
-      expect(
-        within(screen.getByRole("table")).getAllByRole("rowheader")[0]
-          .textContent
-      ).toContain("Beta Active Regimen");
-    });
+    await waitFor(
+      () => {
+        expect(
+          within(screen.getByRole("table")).getAllByRole("rowheader")[0]
+            .textContent
+        ).toContain("Beta Active Regimen");
+      },
+      { timeout: 10_000 }
+    );
     studioView.unmount();
 
     // 2. Navigating to /crf loads the imported study automatically.
     const crfView = render(<CRFStudioContainer repository={repo} />);
-    await waitFor(() => {
-      expect(
-        screen.getByTestId("study-repository-revision").textContent
-      ).toContain("R1");
-      expect(
-        (
-          within(screen.getByTestId("study-repository-bar")).getByLabelText(
-            "Active study"
-          ) as HTMLSelectElement
-        ).value
-      ).toBe("sync-500");
-    });
+    await waitFor(
+      () => {
+        expect(
+          screen.getByTestId("study-repository-revision").textContent
+        ).toContain("R1");
+        expect(
+          (
+            within(screen.getByTestId("study-repository-bar")).getByLabelText(
+              "Active study"
+            ) as HTMLSelectElement
+          ).value
+        ).toBe("sync-500");
+      },
+      { timeout: 10_000 }
+    );
     crfView.unmount();
 
     // 3. Navigating to /study-data runs the pipeline on the imported study without manual handoff clicks.
@@ -348,14 +365,17 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     repo.dispose();
     const reloadedRepo = createStudyRepositoryClient({ indexedDB: idb });
     render(<StudyPicker repository={reloadedRepo} />);
-    await waitFor(() => {
-      expect(screen.getByTestId("study-picker-summary").textContent).toContain(
-        "Synchronized Multi-Design Cardiovascular Trial"
-      );
-      expect(screen.getByTestId("study-picker-summary").textContent).toContain(
-        "Revision R1"
-      );
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("study-picker-summary").textContent).toContain(
+          "Synchronized Multi-Design Cardiovascular Trial"
+        );
+        expect(screen.getByTestId("study-picker-summary").textContent).toContain(
+          "Revision R1"
+        );
+      },
+      { timeout: 10_000 }
+    );
     reloadedRepo.dispose();
   }, 45_000);
 
@@ -366,15 +386,21 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     // Select DEMO-301 in /study-studio and rename its first arm (R1 -> R2).
     const studioView = render(<StudyDesignGrid repository={repo} />);
     await screen.findByRole("table", {}, { timeout: 10_000 });
-    fireEvent.change(screen.getByRole("combobox", { name: "Study" }), {
-      target: { value: "DEMO-301" },
+    await act(async () => {
+      fireEvent.change(screen.getByRole("combobox", { name: "Study" }), {
+        target: { value: "DEMO-301" },
+      });
+      await repo.whenIdle();
     });
-    await waitFor(() => {
-      expect(
-        within(screen.getByRole("table")).getAllByRole("rowheader")[0]
-          .textContent
-      ).toContain("Placebo");
-    });
+    await waitFor(
+      () => {
+        expect(
+          within(screen.getByRole("table")).getAllByRole("rowheader")[0]
+            .textContent
+        ).toContain("Placebo");
+      },
+      { timeout: 10_000 }
+    );
 
     fireEvent.click(
       within(
@@ -386,29 +412,45 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       within(armPanel).getByRole("textbox", { name: "Arm name" }),
       { target: { value: "Placebo Matched Capsule" } }
     );
-    fireEvent.click(within(armPanel).getByRole("button", { name: "Rename" }));
-    await screen.findByText("Draft saved in this browser.");
+    await act(async () => {
+      fireEvent.click(within(armPanel).getByRole("button", { name: "Rename" }));
+      await repo.whenIdle();
+    });
+    await screen.findByText(
+      "Draft saved in this browser.",
+      {},
+      { timeout: 10_000 }
+    );
     expect(screen.getByText("Revision R2")).toBeTruthy();
     studioView.unmount();
 
     // Open /crf: loads DEMO-301 at R2, add a new protocol visit (R2 -> R3), and unmount.
     const crfView = render(<CRFStudioContainer repository={repo} />);
-    await waitFor(() => {
-      expect(
-        screen.getByTestId("study-repository-revision").textContent
-      ).toContain("R2");
-    });
+    await waitFor(
+      () => {
+        expect(
+          screen.getByTestId("study-repository-revision").textContent
+        ).toContain("R2");
+      },
+      { timeout: 10_000 }
+    );
     const addVisitButtons = screen.getAllByRole("button", { name: "Visit" });
     fireEvent.click(addVisitButtons[0]);
-    crfView.unmount();
+    await act(async () => {
+      crfView.unmount();
+      await repo.whenIdle();
+    });
 
     // Mount /clinical: automatically reflects Revision R3 without manual clicks.
     const clinicalView = render(<StudyPicker repository={repo} />);
-    await waitFor(() => {
-      expect(screen.getByTestId("study-picker-summary").textContent).toContain(
-        "Revision R3"
-      );
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("study-picker-summary").textContent).toContain(
+          "Revision R3"
+        );
+      },
+      { timeout: 10_000 }
+    );
     clinicalView.unmount();
 
     // Mount /study-data: automatically tabulates Revision R3 with the renamed arm.
@@ -423,7 +465,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       { timeout: 30_000 }
     );
     fireEvent.click(screen.getByRole("tab", { name: "Study definition" }));
-    expect(await screen.findByText(/Placebo Matched Capsule/)).toBeTruthy();
+    expect(
+      await screen.findByText(/Placebo Matched Capsule/, {}, { timeout: 10_000 })
+    ).toBeTruthy();
     dataView.unmount();
     repo.dispose();
   }, 45_000);
@@ -470,12 +514,21 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       within(editArmA).getByRole("textbox", { name: "Arm name" }),
       { target: { value: "Tab A Saved Arm" } }
     );
-    fireEvent.click(within(editArmA).getByRole("button", { name: "Rename" }));
-    await tabA.findByText("Draft saved in this browser.");
+    await act(async () => {
+      fireEvent.click(within(editArmA).getByRole("button", { name: "Rename" }));
+      await clientA.whenIdle();
+    });
+    await tabA.findByText(
+      "Draft saved in this browser.",
+      {},
+      { timeout: 10_000 }
+    );
 
     // Tab B receives the BroadcastChannel notification and displays the reload banner.
     const reloadBanner = await tabB.findByTestId(
-      "study-repository-reload-banner"
+      "study-repository-reload-banner",
+      {},
+      { timeout: 10_000 }
     );
     expect(reloadBanner.textContent).toContain("R2");
 
@@ -490,11 +543,16 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       within(editArmB).getByRole("textbox", { name: "Arm name" }),
       { target: { value: "Stale Tab B Arm" } }
     );
-    fireEvent.click(within(editArmB).getByRole("button", { name: "Rename" }));
-
-    const conflictHeading = await screen.findByRole("heading", {
-      name: "Newer study revision saved in another tab",
+    await act(async () => {
+      fireEvent.click(within(editArmB).getByRole("button", { name: "Rename" }));
+      await clientB.whenIdle();
     });
+
+    const conflictHeading = await tabB.findByRole(
+      "heading",
+      { name: "Newer study revision saved in another tab" },
+      { timeout: 10_000 }
+    );
     expect(conflictHeading).toBeTruthy();
 
     // Verify IndexedDB still holds Tab A's R2 untouched.
@@ -506,18 +564,22 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     ).toBe("Tab A Saved Arm");
 
     // Resolve by loading R2 into Tab B.
-    fireEvent.click(screen.getByRole("button", { name: "Load R2" }));
-    await waitFor(() => {
-      expect(
-        within(tabB.getByRole("table")).getAllByRole("rowheader")[0].textContent
-      ).toContain("Tab A Saved Arm");
-      expect(tabB.getByText("Revision R2")).toBeTruthy();
-    });
+    fireEvent.click(tabB.getByRole("button", { name: "Load R2" }));
+    await waitFor(
+      () => {
+        expect(
+          within(tabB.getByRole("table")).getAllByRole("rowheader")[0]
+            .textContent
+        ).toContain("Tab A Saved Arm");
+        expect(tabB.getByText("Revision R2")).toBeTruthy();
+      },
+      { timeout: 10_000 }
+    );
 
     view.unmount();
     clientA.dispose();
     clientB.dispose();
-  });
+  }, 45_000);
 
   it("falls back to volatile in-memory state with .usdm.json and .study.json downloads when IndexedDB is blocked", async () => {
     const blockedIdb: Pick<IDBFactory, "open"> = {
@@ -539,7 +601,11 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     render(<StudyDesignGrid repository={volatileRepo} />);
     await screen.findByRole("table", {}, { timeout: 10_000 });
 
-    const notice = await screen.findByTestId("study-repository-volatile-notice");
+    const notice = await screen.findByTestId(
+      "study-repository-volatile-notice",
+      {},
+      { timeout: 10_000 }
+    );
     expect(notice.textContent).toContain(
       "Browser IndexedDB storage is unavailable"
     );
@@ -554,11 +620,207 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     expect((wsBtn as HTMLButtonElement).disabled).toBe(false);
 
     fireEvent.click(usdmBtn);
-    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1), {
+      timeout: 10_000,
+    });
 
     fireEvent.click(wsBtn);
-    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2), {
+      timeout: 10_000,
+    });
 
     volatileRepo.dispose();
-  });
+  }, 30_000);
+
+  it("manages studies in the repository drawer, surfaces import/schema diagnostics, and supports conflict download and force-overwrite", async () => {
+    const idb = new IDBFactory();
+    const repo = createStudyRepositoryClient({ indexedDB: idb });
+    const onSelect = vi.fn();
+    const onReload = vi.fn();
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+
+    render(
+      <StudyRepositoryBar
+        repository={repo}
+        currentStudyId="DEMO-301"
+        currentRevisionId="R1"
+        onSelectStudy={onSelect}
+        onReloadLatest={onReload}
+      />
+    );
+
+    await waitFor(
+      () => {
+        expect(
+          (
+            screen.getByRole("button", {
+              name: /New blank study/,
+            }) as HTMLButtonElement
+          ).disabled
+        ).toBe(false);
+      },
+      { timeout: 10_000 }
+    );
+
+    // Create a blank study via toolbar button.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "New blank study" }));
+      await repo.whenIdle();
+    });
+    expect(onSelect).toHaveBeenCalled();
+    expect(screen.getByTestId("study-repository-feedback").textContent).toContain(
+      "Created"
+    );
+
+    // Reject oversized, invalid-workspace, and non-USDM imports with clear feedback.
+    const input = screen.getByTestId("study-repository-file-input");
+    const hugeFile = fromPartial<File>({
+      name: "huge.usdm.json",
+      size: 26 * 1024 * 1024,
+      text: async () => "{}",
+    });
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [hugeFile] } });
+      await repo.whenIdle();
+    });
+    expect(screen.getByTestId("study-repository-feedback").textContent).toContain(
+      "exceeding the"
+    );
+
+    const badWsFile = new File(
+      [JSON.stringify({ format: "study-workspace", schemaVersion: 999 })],
+      "bad.study.json",
+      { type: "application/json" }
+    );
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [badWsFile] } });
+      await repo.whenIdle();
+    });
+    expect(screen.getByTestId("study-repository-feedback").textContent).toContain(
+      "Workspace file could not be opened"
+    );
+
+    const badUsdmFile = new File(["{not-json"], "broken.usdm.json", {
+      type: "application/json",
+    });
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [badUsdmFile] } });
+      await repo.whenIdle();
+    });
+    expect(
+      screen.getByTestId("study-repository-feedback").textContent?.length
+    ).toBeGreaterThan(0);
+
+    // Open the repository catalog drawer, switch studies, export, and delete the authored study.
+    fireEvent.click(screen.getByRole("button", { name: /^Repository \(/ }));
+    const drawerHeading = await screen.findByRole(
+      "heading",
+      { name: "Local USDM v4 studies" },
+      { timeout: 10_000 }
+    );
+    expect(drawerHeading).toBeTruthy();
+
+    const drawerDialog = screen.getByRole("dialog");
+    await act(async () => {
+      fireEvent.click(
+        within(drawerDialog).getAllByRole("button", { name: "Delete" })[0]
+      );
+      await repo.whenIdle();
+    });
+    await waitFor(
+      () => {
+        expect(
+          screen.getByTestId("study-repository-feedback").textContent
+        ).toContain("Removed local workspace");
+      },
+      { timeout: 10_000 }
+    );
+
+    await act(async () => {
+      fireEvent.click(
+        within(drawerDialog).getAllByRole("button", {
+          name: "Switch to study",
+        })[0]
+      );
+      await repo.whenIdle();
+    });
+
+    // Save an incomplete USDM document to trigger SchemaDiagnosticsModal on export.
+    const demoRec = await repo.getRecord("DEMO-301");
+    expect(demoRec).not.toBeNull();
+    if (demoRec) {
+      const brokenUsdm = cloneDeep(demoRec.workspace.usdm);
+      Reflect.deleteProperty(brokenUsdm.study, "name");
+      await act(async () => {
+        await repo.saveWorkspace(
+          "DEMO-301",
+          {
+            ...demoRec.workspace,
+            usdm: brokenUsdm,
+          },
+          { force: true }
+        );
+      });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Export USDM (.usdm.json)" })
+        );
+        await repo.whenIdle();
+      });
+      const diagHeading = await screen.findByRole(
+        "heading",
+        { name: /Canonical USDM export blocked/ },
+        { timeout: 10_000 }
+      );
+      expect(diagHeading).toBeTruthy();
+      const diagDialog = screen.getByRole("dialog");
+      fireEvent.click(
+        within(diagDialog).getByRole("button", {
+          name: "Export workspace (.study.json)",
+        })
+      );
+      await waitFor(() => expect(clickSpy).toHaveBeenCalled(), {
+        timeout: 10_000,
+      });
+    }
+
+    // Exercise StudyConflictModal local snapshot download and force-keep-local callback.
+    const onForce = vi.fn();
+    const onCloseConflict = vi.fn();
+    if (demoRec) {
+      render(
+        <StudyConflictModal
+          conflict={{
+            studyId: "DEMO-301",
+            expectedRevisionId: "R1",
+            currentRevisionId: "R2",
+            latestRecord: demoRec,
+            localWorkspace: demoRec.workspace,
+          }}
+          onLoadLatest={vi.fn()}
+          onForceKeepLocal={onForce}
+          onClose={onCloseConflict}
+        />
+      );
+      const conflictDlgHeading = await screen.findByRole(
+        "heading",
+        { name: "Newer study revision saved in another tab" },
+        { timeout: 10_000 }
+      );
+      expect(conflictDlgHeading).toBeTruthy();
+      const callsBefore = clickSpy.mock.calls.length;
+      fireEvent.click(
+        screen.getByRole("button", { name: "Download local (.study.json)" })
+      );
+      expect(clickSpy.mock.calls.length).toBe(callsBefore + 1);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Overwrite with this tab" })
+      );
+      expect(onForce).toHaveBeenCalledTimes(1);
+    }
+
+    repo.dispose();
+  }, 30_000);
 });

@@ -13,6 +13,9 @@ import { useToast } from "@/hooks/useToast";
 import {
   ControlPoint,
   DatasetSource,
+  NeuroEditLayer,
+  NeuroStrokeHistory,
+  OverlayMaskLayer,
   QAMetrics,
   ScenarioId,
   ScenarioConfig,
@@ -29,10 +32,27 @@ import {
   VectorContourPath,
 } from "@/lib/neuro/types";
 import {
+  clearNeuroLocalStorage,
+  createEmptyStrokeHistory,
+  deriveDraftFromStrokeStack,
+  exportMaskAsNiftiGz,
+  exportRoiMetricsCsv,
+  hydrateVolumeFromStorage,
   isRoiRequestSupersededError,
+  loadNeuroOverlayMaskFromFile,
+  loadNeuroVolumeFromFile,
+  loadNeuroWorkspaceState,
+  pushNeuroStroke,
   requestHistogramAsync,
   requestROISegmentationAsync,
   requestVolumeQAScanAsync,
+  revertVoxelEditsOnVolume,
+  saveNeuroWorkspaceState,
+  serializeVolumeForStorage,
+  stepRedoStrokeHistory,
+  stepUndoStrokeHistory,
+  type NeuroStorageBackend,
+  type NeuroStorageOptions,
 } from "@/lib/neuro";
 import {
   getNeuroScenarios,
@@ -61,8 +81,13 @@ import {
   parseReconAllCommand,
   resolveNeuroHotkey,
 } from "@/lib/neuro";
-import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
+import {
+  DEFAULT_VOXEL_SPACING,
+  getIndex,
+  SyntheticVolume,
+} from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
+import type { CommittedBrushStroke } from "./useSliceInteraction";
 import dynamic from "next/dynamic";
 import { NeuroReconSkeleton } from "./NeuroReconSkeleton";
 
@@ -209,9 +234,20 @@ const NEURO_STUDIO_HOTKEYS: readonly string[] = [
   "Space",
   "m",
   "?",
+  "Ctrl+z",
+  "Meta+z",
+  "Ctrl+Shift+z",
+  "Meta+Shift+z",
+  "Ctrl+y",
 ];
 
-export const NeuroReconClient: React.FC = () => {
+interface NeuroReconClientProps {
+  storageOptions?: NeuroStorageOptions;
+}
+
+export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
+  storageOptions,
+} = {}) => {
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { params, setParam, setParams } = useStudioHashParams();
@@ -250,6 +286,8 @@ export const NeuroReconClient: React.FC = () => {
   // Each case load takes a number; only the newest one may commit, and none
   // after unmount.
   const scenarioLoadRef = React.useRef(0);
+  const volumeUploadRef = useRef(0);
+  const overlayImportRef = useRef(0);
   const mountedRef = React.useRef(false);
 
   useEffect(() => {
@@ -320,6 +358,25 @@ export const NeuroReconClient: React.FC = () => {
   const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("pial");
   const [showPialContour, setShowPialContour] = useState(true);
   const [showWmContour, setShowWmContour] = useState(true);
+  const [uploadedVolume, setUploadedVolume] = useState<SyntheticVolume | null>(
+    null
+  );
+  const [overlayLayer, setOverlayLayer] = useState<OverlayMaskLayer | null>(
+    null
+  );
+  const [showOverlayMask, setShowOverlayMask] = useState(true);
+  const [overlayOpacity, setOverlayOpacity] = useState<number>(0.55);
+  const [activeEditLayer, setActiveEditLayer] =
+    useState<NeuroEditLayer>("brainmask");
+  const [isosurfaceThreshold, setIsosurfaceThreshold] = useState<number>(65);
+  const [editRevision, setEditRevision] = useState<number>(0);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [storageBytes, setStorageBytes] = useState<number>(0);
+  const [storageBackend, setStorageBackend] =
+    useState<NeuroStorageBackend | null>(null);
+  const hasHydratedStorageRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const viewMode = useMemo(() => viewModeFromHash(params.view), [params.view]);
   const activeDataset = useMemo(
     () => datasetFromHash(params.dataset, params.scenario),
@@ -328,6 +385,10 @@ export const NeuroReconClient: React.FC = () => {
 
   const [controlPoints, setControlPoints] = useState<ControlPoint[]>([]);
   const [voxelEdits, setVoxelEdits] = useState<VoxelEdit[]>([]);
+  const [strokeHistory, setStrokeHistory] = useState<NeuroStrokeHistory>(() =>
+    createEmptyStrokeHistory()
+  );
+  const strokeHistoryRef = useRef<NeuroStrokeHistory>(strokeHistory);
   // Session-only per-case drafts so switching cases never discards edits.
   const [drafts, setDrafts] = useState<NeuroDraftMap>({});
   const draftsRef = React.useRef<NeuroDraftMap>({});
@@ -338,9 +399,10 @@ export const NeuroReconClient: React.FC = () => {
   const activeScenarioRef = React.useRef<ScenarioId>(activeScenarioId);
   const [resetUndo, setResetUndo] = useState<NeuroDraft | null>(null);
   useEffect(() => {
-    editsRef.current = { controlPoints, voxelEdits };
+    strokeHistoryRef.current = strokeHistory;
+    editsRef.current = { controlPoints, voxelEdits, strokeHistory };
     activeScenarioRef.current = activeScenarioId;
-  }, [controlPoints, voxelEdits, activeScenarioId]);
+  }, [controlPoints, voxelEdits, strokeHistory, activeScenarioId]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFieldManualOpen, setIsFieldManualOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -400,7 +462,7 @@ export const NeuroReconClient: React.FC = () => {
     const histSeq = ++histogramSeqRef.current;
     const qaSeq = ++qaScanSeqRef.current;
 
-    requestHistogramAsync(volume.rawT1, volume.brainmask)
+    requestHistogramAsync(volume.rawT1, volume.brainmask, volume.spacing)
       .then((hist) => {
         if (isMounted && histSeq === histogramSeqRef.current) {
           setHistogram(hist);
@@ -426,7 +488,7 @@ export const NeuroReconClient: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [volume, activeScenarioId, voxelEdits]);
+  }, [volume, activeScenarioId, voxelEdits, editRevision]);
 
   // Automated 3D Region-Growing ROI Seed Handler
   const handleSelectROISeed = useCallback(
@@ -439,7 +501,8 @@ export const NeuroReconClient: React.FC = () => {
           volume.brainmask,
           volume.dimensions,
           seed,
-          15
+          15,
+          volume.spacing
         );
         if (seedSeq !== roiSeedSeqRef.current) return;
         setRoiStats(res.stats);
@@ -498,12 +561,21 @@ export const NeuroReconClient: React.FC = () => {
         : null;
       if (load !== scenarioLoadRef.current || !mountedRef.current) return;
       committedScenarioRef.current = scenarioId;
+      overlayImportRef.current += 1;
+      setUploadedVolume(null);
+      setOverlayLayer(null);
+      setActiveEditLayer("brainmask");
       setVolume(newVol);
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
       }
       setControlPoints(restored ? restored.controlPoints : []);
       setVoxelEdits(restored ? restored.voxelEdits : []);
+      const restoredHistory =
+        restored?.strokeHistory ?? createEmptyStrokeHistory();
+      strokeHistoryRef.current = restoredHistory;
+      setStrokeHistory(restoredHistory);
+      setEditRevision((r) => r + 1);
       setShowSuccessModal(false);
 
       setLogs((prev) => [
@@ -609,8 +681,187 @@ export const NeuroReconClient: React.FC = () => {
         clearTimeout(reconTimerRef.current);
         reconTimerRef.current = null;
       }
+      if (saveTimerRef.current !== null) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
     };
   }, []);
+
+  // Hydrate persisted workspace from IndexedDB on mount
+  useEffect(() => {
+    if (storageOptions === undefined && typeof indexedDB === "undefined") {
+      hasHydratedStorageRef.current = true;
+      return;
+    }
+    let isMounted = true;
+    loadNeuroWorkspaceState(storageOptions)
+      .then((res) => {
+        if (!isMounted) return;
+        hasHydratedStorageRef.current = true;
+        setStorageBackend(res.backend);
+        setStorageBytes(res.bytes);
+        const ws = res.workspace;
+        if (!ws) return;
+
+        draftsRef.current = ws.drafts;
+        setDrafts(ws.drafts);
+        setIsosurfaceThreshold(ws.isosurfaceThreshold);
+        setActiveEditLayer(ws.activeEditLayer);
+
+        if (ws.overlayLayer) {
+          setOverlayLayer(ws.overlayLayer);
+          setOverlayOpacity(ws.overlayLayer.opacity);
+          setShowOverlayMask(ws.overlayLayer.visible);
+        }
+
+        if (ws.uploadedVolume) {
+          scenarioLoadRef.current += 1;
+          const hydratedVol = hydrateVolumeFromStorage(
+            ws.uploadedVolume,
+            ws.overlayLayer
+          );
+          setUploadedVolume(hydratedVol);
+          setVolume(hydratedVol);
+          setCrosshair({
+            x: Math.floor(hydratedVol.dimensions.width / 2),
+            y: Math.floor(hydratedVol.dimensions.height / 2),
+            z: Math.floor(hydratedVol.dimensions.depth / 2),
+          });
+          setControlPoints(ws.controlPoints);
+          setVoxelEdits(ws.voxelEdits);
+          strokeHistoryRef.current = ws.strokeHistory;
+          setStrokeHistory(ws.strokeHistory);
+          setEditRevision((r) => r + 1);
+        } else if (
+          ws.controlPoints.length > 0 ||
+          ws.voxelEdits.length > 0 ||
+          ws.strokeHistory.undoStack.length > 0
+        ) {
+          setVolume((curr) => {
+            if (ws.overlayLayer) {
+              curr.overlayMask = ws.overlayLayer.data.slice();
+            }
+            applyVoxelEditsToVolume(curr, ws.voxelEdits);
+            return curr;
+          });
+          setControlPoints(ws.controlPoints);
+          setVoxelEdits(ws.voxelEdits);
+          strokeHistoryRef.current = ws.strokeHistory;
+          setStrokeHistory(ws.strokeHistory);
+          setEditRevision((r) => r + 1);
+        }
+      })
+      .catch((err) => {
+        hasHydratedStorageRef.current = true;
+        logger.warn("Failed to hydrate NeuroRecon IndexedDB workspace:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [storageOptions]);
+
+  // Persist workspace snapshot to IndexedDB (capped at 250 MB) with in-memory fallback
+  useEffect(() => {
+    if (!hasHydratedStorageRef.current) return;
+    if (storageOptions === undefined && typeof indexedDB === "undefined") {
+      return;
+    }
+
+    const hasPersistedData =
+      uploadedVolume !== null ||
+      overlayLayer !== null ||
+      controlPoints.length > 0 ||
+      voxelEdits.length > 0 ||
+      strokeHistory.undoStack.length > 0 ||
+      strokeHistory.redoStack.length > 0 ||
+      Object.keys(drafts).length > 0;
+    if (!hasPersistedData) return;
+
+    if (saveTimerRef.current !== null) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    let isMounted = true;
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      const syncedOverlay: OverlayMaskLayer | null = overlayLayer
+        ? {
+            ...overlayLayer,
+            data: volume.overlayMask
+              ? volume.overlayMask.slice()
+              : overlayLayer.data.slice(),
+            opacity: overlayOpacity,
+            visible: showOverlayMask,
+          }
+        : null;
+
+      saveNeuroWorkspaceState(
+        {
+          updatedAt: Date.now(),
+          activeScenarioId,
+          activeDataset,
+          activeEditLayer,
+          isosurfaceThreshold,
+          uploadedVolume: uploadedVolume
+            ? serializeVolumeForStorage(uploadedVolume)
+            : null,
+          overlayLayer: syncedOverlay,
+          controlPoints,
+          voxelEdits,
+          strokeHistory,
+          drafts,
+        },
+        storageOptions
+      )
+        .then((res) => {
+          if (!isMounted) return;
+          if (res.ok) {
+            setStorageBackend(res.backend);
+            setStorageBytes(res.bytes);
+          } else {
+            toast.error(res.message);
+            setLogs((prev) => [
+              ...prev,
+              {
+                id: `log-quota-${Date.now()}`,
+                type: "error",
+                text: res.message,
+                timestamp: new Date().toLocaleTimeString(),
+              },
+            ]);
+          }
+        })
+        .catch((err) => {
+          logger.warn("Failed to persist NeuroRecon workspace:", err);
+        });
+    }, 100);
+
+    return () => {
+      isMounted = false;
+      if (saveTimerRef.current !== null) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+  }, [
+    uploadedVolume,
+    overlayLayer,
+    overlayOpacity,
+    showOverlayMask,
+    controlPoints,
+    voxelEdits,
+    strokeHistory,
+    drafts,
+    activeScenarioId,
+    activeDataset,
+    activeEditLayer,
+    isosurfaceThreshold,
+    editRevision,
+    volume,
+    storageOptions,
+    toast,
+  ]);
 
   // Re-evaluate QA metrics on state changes
   useEffect(() => {
@@ -630,18 +881,28 @@ export const NeuroReconClient: React.FC = () => {
   const handleAddControlPoint = (
     point: Omit<ControlPoint, "id" | "timestamp">
   ) => {
+    const now = Date.now();
     const newCP: ControlPoint = {
       ...point,
-      id: `cp-${Date.now()}`,
-      timestamp: Date.now(),
+      id: `cp-${now}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: now,
     };
+    const nextHistory = pushNeuroStroke(strokeHistoryRef.current, {
+      id: `stroke-${newCP.id}`,
+      kind: "control_point",
+      voxelEdits: [],
+      controlPoint: newCP,
+      timestamp: now,
+    });
+    strokeHistoryRef.current = nextHistory;
+    setStrokeHistory(nextHistory);
     setControlPoints((prev) => [...prev, newCP]);
     playNote(620, 0.08); // Pleasant high tick
 
     setLogs((prev) => [
       ...prev,
       {
-        id: `log-cp-${Date.now()}`,
+        id: `log-cp-${now}`,
         type: "info",
         text: `Added Control Point at (${point.x}, ${point.y}, ${point.z}) with target intensity 110.`,
         timestamp: new Date().toLocaleTimeString(),
@@ -651,11 +912,29 @@ export const NeuroReconClient: React.FC = () => {
 
   // Apply Voxel Edits Handler
   const handleApplyVoxelEdits = (edits: VoxelEdit[]) => {
-    // Mutate live volume buffers for instant rendering
-    const size = VOLUME_SIZE;
+    const { width, height, depth } = volume.dimensions;
     const appliedEdits: VoxelEdit[] = [];
     edits.forEach((e) => {
-      const idx = e.z * size * size + e.y * size + e.x;
+      if (
+        e.x < 0 ||
+        e.x >= width ||
+        e.y < 0 ||
+        e.y >= height ||
+        e.z < 0 ||
+        e.z >= depth
+      ) {
+        return;
+      }
+      const idx = getIndex(e.x, e.y, e.z, width, height);
+      if (e.layer === "overlay") {
+        const ovMask = volume.overlayMask;
+        if (!ovMask) return;
+        const originalValue = ovMask[idx];
+        if (originalValue === e.newValue) return;
+        appliedEdits.push({ ...e, originalValue });
+        ovMask[idx] = e.newValue;
+        return;
+      }
       const mask = e.layer === "brainmask" ? volume.brainmask : volume.wmMask;
       const originalValue = mask[idx];
       if (originalValue === e.newValue) return;
@@ -664,15 +943,312 @@ export const NeuroReconClient: React.FC = () => {
         volume.brainmask[idx] = e.newValue;
       } else if (e.layer === "wm") {
         volume.wmMask[idx] = e.newValue;
-        volume.rawT1[idx] = e.newValue === 1 ? 110 : 70;
+        if (volume.sourceFormat !== "nifti" && volume.sourceFormat !== "mgz") {
+          volume.rawT1[idx] = e.newValue === 1 ? 110 : 70;
+        }
       }
     });
 
     if (appliedEdits.length === 0) return;
     setVoxelEdits((prev) => [...prev, ...appliedEdits]);
+    setEditRevision((r) => r + 1);
 
     playNote(toolMode === "paint" ? 480 : 340, 0.05);
   };
+
+  // Record a completed brush/erase pointer stroke onto the Undo/Redo stack
+  const handleCommitStroke = useCallback((stroke: CommittedBrushStroke) => {
+    const nextHistory = pushNeuroStroke(strokeHistoryRef.current, {
+      id: `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      kind: stroke.kind,
+      layer: stroke.layer,
+      voxelEdits: stroke.voxelEdits,
+      timestamp: Date.now(),
+    });
+    strokeHistoryRef.current = nextHistory;
+    setStrokeHistory(nextHistory);
+  }, []);
+
+  // Per-Stroke Undo Handler (Ctrl+Z / Cmd+Z)
+  const handleUndoStroke = useCallback(() => {
+    const { stroke, history: nextHistory } = stepUndoStrokeHistory(
+      strokeHistoryRef.current
+    );
+    if (!stroke) return;
+    strokeHistoryRef.current = nextHistory;
+    setStrokeHistory(nextHistory);
+    if (stroke.voxelEdits.length > 0) {
+      revertVoxelEditsOnVolume(volume, stroke.voxelEdits);
+    }
+    const derived = deriveDraftFromStrokeStack(nextHistory.undoStack);
+    setControlPoints(derived.controlPoints);
+    setVoxelEdits(derived.voxelEdits);
+    setEditRevision((r) => r + 1);
+    playNote(360, 0.06);
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-undo-${Date.now()}`,
+        type: "info",
+        text: `Undid ${stroke.kind} stroke (${stroke.voxelEdits.length > 0 ? `${stroke.voxelEdits.length} voxel(s)` : stroke.controlPoint?.label || "control point"}).`,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  }, [volume, playNote]);
+
+  // Per-Stroke Redo Handler (Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y)
+  const handleRedoStroke = useCallback(() => {
+    const { stroke, history: nextHistory } = stepRedoStrokeHistory(
+      strokeHistoryRef.current
+    );
+    if (!stroke) return;
+    strokeHistoryRef.current = nextHistory;
+    setStrokeHistory(nextHistory);
+    if (stroke.voxelEdits.length > 0) {
+      applyVoxelEditsToVolume(volume, stroke.voxelEdits);
+    }
+    const derived = deriveDraftFromStrokeStack(nextHistory.undoStack);
+    setControlPoints(derived.controlPoints);
+    setVoxelEdits(derived.voxelEdits);
+    setEditRevision((r) => r + 1);
+    playNote(500, 0.06);
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-redo-${Date.now()}`,
+        type: "info",
+        text: `Redid ${stroke.kind} stroke (${stroke.voxelEdits.length > 0 ? `${stroke.voxelEdits.length} voxel(s)` : stroke.controlPoint?.label || "control point"}).`,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  }, [volume, playNote]);
+
+  // Native NIfTI (.nii / .nii.gz) & FreeSurfer (.mgz) Upload Handler
+  const handleUploadVolumeFile = useCallback(
+    async (file: File) => {
+      const request = ++volumeUploadRef.current;
+      const scenarioLoad = scenarioLoadRef.current;
+      const result = await loadNeuroVolumeFromFile(file);
+      if (
+        !mountedRef.current ||
+        request !== volumeUploadRef.current ||
+        scenarioLoad !== scenarioLoadRef.current
+      ) {
+        return;
+      }
+      if (!result.ok) {
+        toast.error(result.message);
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `log-upload-err-${Date.now()}`,
+            type: "error",
+            text: `Volume import failed (${file.name}): ${result.message}`,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]);
+        return;
+      }
+
+      const loadedVol = result.data;
+      scenarioLoadRef.current += 1;
+      overlayImportRef.current += 1;
+      setUploadedVolume(loadedVol);
+      setVolume(loadedVol);
+      setOverlayLayer(null);
+      setActiveEditLayer("brainmask");
+      setControlPoints([]);
+      setVoxelEdits([]);
+      const emptyHistory = createEmptyStrokeHistory();
+      strokeHistoryRef.current = emptyHistory;
+      setStrokeHistory(emptyHistory);
+      setVectorContours([]);
+      setRoiStats(null);
+      setCrosshair({
+        x: Math.floor(loadedVol.dimensions.width / 2),
+        y: Math.floor(loadedVol.dimensions.height / 2),
+        z: Math.floor(loadedVol.dimensions.depth / 2),
+      });
+      setEditRevision((r) => r + 1);
+      playSuccess();
+
+      const sp = loadedVol.spacing ?? DEFAULT_VOXEL_SPACING;
+      const summary = `Loaded ${file.name} (${loadedVol.dimensions.width}×${loadedVol.dimensions.height}×${loadedVol.dimensions.depth}, ${Number(sp.x.toFixed(2))}×${Number(sp.y.toFixed(2))}×${Number(sp.z.toFixed(2))} mm)`;
+      toast.success(summary);
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `log-upload-${Date.now()}`,
+          type: "success",
+          text: `${summary}. Live 3D marching-cubes surface reconstructed directly from uploaded volume.`,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+    },
+    [toast, playSuccess]
+  );
+
+  // External Segmentation Overlay Mask (.nii / .nii.gz) Import Handler
+  const handleImportOverlayFile = useCallback(
+    async (file: File) => {
+      const request = ++overlayImportRef.current;
+      const scenarioLoad = scenarioLoadRef.current;
+      const result = await loadNeuroOverlayMaskFromFile(
+        file,
+        volume,
+        overlayOpacity
+      );
+      if (
+        !mountedRef.current ||
+        request !== overlayImportRef.current ||
+        scenarioLoad !== scenarioLoadRef.current
+      ) {
+        return;
+      }
+      if (!result.ok) {
+        toast.error(result.message);
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `log-ovl-err-${Date.now()}`,
+            type: "error",
+            text: `Overlay alignment rejected (${file.name}): ${result.message}`,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]);
+        return;
+      }
+
+      const layer = result.data;
+      const nextVol: SyntheticVolume = {
+        ...volume,
+        overlayMask: layer.data.slice(),
+      };
+      setVolume(nextVol);
+      if (uploadedVolume) {
+        setUploadedVolume(nextVol);
+      }
+      setOverlayLayer(layer);
+      setShowOverlayMask(true);
+      setActiveEditLayer("overlay");
+      setEditRevision((r) => r + 1);
+      playSuccess();
+      toast.success(`Imported aligned overlay mask: ${layer.name}`);
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `log-ovl-${Date.now()}`,
+          type: "success",
+          text: `Imported aligned overlay mask '${layer.name}' (${layer.dimensions.width}×${layer.dimensions.height}×${layer.dimensions.depth}).`,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+    },
+    [volume, uploadedVolume, overlayOpacity, toast, playSuccess]
+  );
+
+  // Export Active Mask Layer as Native-Resolution .nii.gz with Source Affine
+  const handleExportMask = useCallback(async () => {
+    const mask =
+      activeEditLayer === "overlay" && volume.overlayMask
+        ? volume.overlayMask
+        : activeEditLayer === "wm"
+          ? volume.wmMask
+          : volume.brainmask;
+    const baseName = (uploadedVolume?.fileName ?? activeScenarioId).replace(
+      /\.(nii(\.gz)?|mgz|mgh)$/i,
+      ""
+    );
+    const outName = `${baseName}-${activeEditLayer}.nii.gz`;
+    await exportMaskAsNiftiGz(
+      mask,
+      {
+        dimensions: volume.dimensions,
+        spacing: volume.spacing,
+        affine: volume.affine,
+        description: `NeuroRecon ${activeEditLayer} mask`,
+      },
+      outName
+    );
+    toast.success(`Exported ${outName}`);
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-exp-nii-${Date.now()}`,
+        type: "success",
+        text: `Exported native-resolution NIfTI mask '${outName}' preserving source affine matrix.`,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  }, [activeEditLayer, volume, uploadedVolume, activeScenarioId, toast]);
+
+  // Export ROI & Histogram Metrics as CSV
+  const handleExportCsv = useCallback(() => {
+    const baseName = (uploadedVolume?.fileName ?? activeScenarioId).replace(
+      /\.(nii(\.gz)?|mgz|mgh)$/i,
+      ""
+    );
+    const outName = `${baseName}-roi-metrics.csv`;
+    exportRoiMetricsCsv(
+      {
+        sourceName: uploadedVolume?.fileName ?? activeScenarioId,
+        dimensions: volume.dimensions,
+        spacing: volume.spacing,
+        roiStats,
+        histogram,
+      },
+      outName
+    );
+    toast.success(`Exported ${outName}`);
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-exp-csv-${Date.now()}`,
+        type: "success",
+        text: `Exported ROI and 256-bin histogram metrics to '${outName}'.`,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  }, [uploadedVolume, activeScenarioId, volume, roiStats, histogram, toast]);
+
+  // Purge IndexedDB & In-Memory Local Storage
+  const handleClearLocalStorage = useCallback(async () => {
+    volumeUploadRef.current += 1;
+    overlayImportRef.current += 1;
+    if (saveTimerRef.current !== null) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    await clearNeuroLocalStorage(storageOptions);
+    draftsRef.current = {};
+    setDrafts({});
+    setUploadedVolume(null);
+    setOverlayLayer(null);
+    setActiveEditLayer("brainmask");
+    setControlPoints([]);
+    setVoxelEdits([]);
+    const emptyHistory = createEmptyStrokeHistory();
+    strokeHistoryRef.current = emptyHistory;
+    setStrokeHistory(emptyHistory);
+    setResetUndo(null);
+    setStorageBytes(0);
+    const freshVol = await computeSyntheticVolume(activeScenarioId);
+    setVolume(freshVol);
+    if (currentScenario) {
+      setCrosshair(currentScenario.targetCoords);
+    }
+    setEditRevision((r) => r + 1);
+    toast.success("Cleared local NeuroRecon storage.");
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-clr-idb-${Date.now()}`,
+        type: "info",
+        text: "Cleared locally cached volumes, overlay masks, control points, and stroke history.",
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  }, [storageOptions, activeScenarioId, currentScenario, toast]);
 
   // Reset Scenario Edits
   const handleReset = async () => {
@@ -682,15 +1258,34 @@ export const NeuroReconClient: React.FC = () => {
       setIsProcessing(false);
     }
 
-    const previous: NeuroDraft = { controlPoints, voxelEdits };
+    const previous: NeuroDraft = {
+      controlPoints,
+      voxelEdits,
+      strokeHistory: strokeHistoryRef.current,
+    };
     setResetUndo(countNeuroDraftEdits(previous) > 0 ? previous : null);
-    const freshVol = await computeSyntheticVolume(activeScenarioId);
-    setVolume(freshVol);
+    if (uploadedVolume) {
+      const resetVol: SyntheticVolume = {
+        ...uploadedVolume,
+        brainmask: uploadedVolume.initialBrainmask.slice(),
+        wmMask: uploadedVolume.initialWmMask.slice(),
+        overlayMask: overlayLayer ? overlayLayer.data.slice() : undefined,
+      };
+      setUploadedVolume(resetVol);
+      setVolume(resetVol);
+    } else {
+      const freshVol = await computeSyntheticVolume(activeScenarioId);
+      setVolume(freshVol);
+      if (currentScenario) {
+        setCrosshair(currentScenario.targetCoords);
+      }
+    }
     setControlPoints([]);
     setVoxelEdits([]);
-    if (currentScenario) {
-      setCrosshair(currentScenario.targetCoords);
-    }
+    const emptyHistory = createEmptyStrokeHistory();
+    strokeHistoryRef.current = emptyHistory;
+    setStrokeHistory(emptyHistory);
+    setEditRevision((r) => r + 1);
     playNote(300, 0.1);
 
     setLogs((prev) => [
@@ -714,11 +1309,28 @@ export const NeuroReconClient: React.FC = () => {
   const handleUndoReset = async () => {
     if (!resetUndo) return;
     const restoredEdits = resetUndo;
-    const freshVol = await computeSyntheticVolume(activeScenarioId);
-    applyVoxelEditsToVolume(freshVol, restoredEdits.voxelEdits);
-    setVolume(freshVol);
+    if (uploadedVolume) {
+      const restoredVol: SyntheticVolume = {
+        ...uploadedVolume,
+        brainmask: uploadedVolume.initialBrainmask.slice(),
+        wmMask: uploadedVolume.initialWmMask.slice(),
+        overlayMask: overlayLayer ? overlayLayer.data.slice() : undefined,
+      };
+      applyVoxelEditsToVolume(restoredVol, restoredEdits.voxelEdits);
+      setUploadedVolume(restoredVol);
+      setVolume(restoredVol);
+    } else {
+      const freshVol = await computeSyntheticVolume(activeScenarioId);
+      applyVoxelEditsToVolume(freshVol, restoredEdits.voxelEdits);
+      setVolume(freshVol);
+    }
     setControlPoints(restoredEdits.controlPoints);
     setVoxelEdits(restoredEdits.voxelEdits);
+    const restoredHistory =
+      restoredEdits.strokeHistory ?? createEmptyStrokeHistory();
+    strokeHistoryRef.current = restoredHistory;
+    setStrokeHistory(restoredHistory);
+    setEditRevision((r) => r + 1);
     setResetUndo(null);
     setLogs((prev) => [
       ...prev,
@@ -1001,6 +1613,12 @@ export const NeuroReconClient: React.FC = () => {
       } else if (action.type === "run") {
         e.preventDefault();
         if (!isProcessing) handleRunRecon();
+      } else if (action.type === "undo") {
+        e.preventDefault();
+        handleUndoStroke();
+      } else if (action.type === "redo") {
+        e.preventDefault();
+        handleRedoStroke();
       } else {
         setIsFieldManualOpen((prev) => !prev);
       }
@@ -1034,12 +1652,37 @@ export const NeuroReconClient: React.FC = () => {
   const activeDatasetConfig = datasetConfigs[activeDataset];
   const provenance = getNeuroProvenance(
     activeDataset,
-    activeDatasetConfig?.name
+    activeDatasetConfig?.name,
+    uploadedVolume
+      ? {
+          fileName: uploadedVolume.fileName ?? "uploaded.nii.gz",
+          dimensions: uploadedVolume.dimensions,
+          spacing: uploadedVolume.spacing ?? DEFAULT_VOXEL_SPACING,
+          format: uploadedVolume.sourceFormat === "mgz" ? "mgz" : "nifti",
+        }
+      : null
   );
 
   return (
     <div
-      className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragOver(true);
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+          void handleUploadVolumeFile(file);
+        }
+      }}
+      className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 transition-colors ${
+        isDragOver
+          ? "ring-2 ring-brand-cyan/60 rounded-3xl bg-brand-cyan/5"
+          : ""
+      }`}
       data-keyboard-boundary="true"
       inert={isDialogOpen}
     >
@@ -1245,9 +1888,10 @@ export const NeuroReconClient: React.FC = () => {
         className="text-[11px] font-mono text-zinc-400"
         data-testid="neuro-draft-note"
       >
-        Edits are kept per case while this page stays open (amber dot marks
-        unsaved edits). Reload clears them, and Share links never include them.
-        Reset clears only the current case.
+        Edits are kept per case and persisted locally in IndexedDB up to 250 MB
+        (amber dot marks unsaved edits). Share links never include them; use
+        Clear Local Storage to purge cached volumes and edits, or Reset to clear
+        only the current case.
       </p>
       {resetUndo && (
         <div
@@ -1282,6 +1926,7 @@ export const NeuroReconClient: React.FC = () => {
         qaAlerts={qaAlerts}
         scanDurationMs={qaScanDurationMs}
         onJumpToCoord={(coord) => setCrosshair(coord)}
+        onExportCsv={handleExportCsv}
       />
 
       {/* Explanatory Lore Banner */}
@@ -1345,13 +1990,32 @@ export const NeuroReconClient: React.FC = () => {
       <NeuroToolbar
         toolMode={toolMode}
         brushRadius={brushRadius}
+        activeLayer={activeEditLayer}
+        hasOverlayMask={Boolean(overlayLayer)}
+        overlayMaskName={overlayLayer?.name}
         showPialContour={showPialContour}
         showWmContour={showWmContour}
+        showOverlayMask={showOverlayMask}
+        overlayOpacity={overlayOpacity}
+        uploadedFileName={uploadedVolume?.fileName}
+        canUndo={strokeHistory.undoStack.length > 0}
+        canRedo={strokeHistory.redoStack.length > 0}
+        storageBytes={storageBytes}
+        storageBackend={storageBackend}
         isProcessing={isProcessing}
         onToolModeChange={setToolMode}
         onBrushRadiusChange={setBrushRadius}
+        onActiveLayerChange={setActiveEditLayer}
         onTogglePialContour={() => setShowPialContour((prev) => !prev)}
         onToggleWmContour={() => setShowWmContour((prev) => !prev)}
+        onToggleOverlayMask={() => setShowOverlayMask((prev) => !prev)}
+        onOverlayOpacityChange={setOverlayOpacity}
+        onUploadVolumeFile={handleUploadVolumeFile}
+        onImportOverlayFile={handleImportOverlayFile}
+        onExportMask={handleExportMask}
+        onUndo={handleUndoStroke}
+        onRedo={handleRedoStroke}
+        onClearLocalStorage={handleClearLocalStorage}
         onRunRecon={handleRunRecon}
         onReset={handleReset}
         onOpenFieldManual={() => setIsFieldManualOpen(true)}
@@ -1395,6 +2059,10 @@ export const NeuroReconClient: React.FC = () => {
               modelUrl={
                 activeDatasetConfig?.modelUrl || "/models/brain-surface.glb"
               }
+              uploadedVolume={uploadedVolume}
+              volumeRevision={editRevision}
+              isosurfaceThreshold={isosurfaceThreshold}
+              onIsosurfaceThresholdChange={setIsosurfaceThreshold}
               onSurfaceChange={setSurfaceMode}
               onCrosshairChange={setCrosshair}
             />
@@ -1413,13 +2081,18 @@ export const NeuroReconClient: React.FC = () => {
               crosshair={crosshair}
               toolMode={toolMode}
               brushRadius={brushRadius}
+              activeLayer={activeEditLayer}
               showPialContour={showPialContour}
               showWmContour={showWmContour}
+              showOverlayMask={showOverlayMask}
+              overlayOpacity={overlayOpacity}
+              editRevision={editRevision}
               controlPoints={controlPoints}
               vectorContours={vectorContours}
               onCrosshairChange={setCrosshair}
               onAddControlPoint={handleAddControlPoint}
               onApplyVoxelEdits={handleApplyVoxelEdits}
+              onCommitStroke={handleCommitStroke}
               onSelectROISeed={handleSelectROISeed}
             />
           </div>

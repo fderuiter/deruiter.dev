@@ -4,11 +4,23 @@
  * tissue compartments (CSF, GM, WM, Ventricles, Subcortical) and defect injections.
  */
 
-import { ScenarioId, VoxelCoord } from "./types";
+import {
+  AffineMatrix4x4,
+  ScenarioId,
+  VolumeDimensions,
+  VolumeSourceFormat,
+  VoxelCoord,
+  VoxelSpacing,
+} from "./types";
 import { clamp } from "../game-utils";
 
 export interface SyntheticVolume {
-  dimensions: { width: number; height: number; depth: number };
+  dimensions: VolumeDimensions;
+  spacing?: VoxelSpacing;
+  affine?: AffineMatrix4x4;
+  sourceFormat?: VolumeSourceFormat;
+  fileName?: string;
+  overlayMask?: Uint8Array;
   rawT1: Uint8Array; // Original anatomical T1 intensities [0-255]
   brainmask: Uint8Array; // Binary/tissue mask [0 or 1]
   wmMask: Uint8Array; // White matter segmentation [0 or 1]
@@ -21,16 +33,53 @@ export interface SyntheticVolume {
 
 export const VOLUME_SIZE = 96;
 
+export const DEFAULT_VOXEL_SPACING: VoxelSpacing = { x: 1, y: 1, z: 1 };
+
 /**
- * Get 1D flat index from 3D coordinates (x, y, z)
+ * Construct a centered voxel-to-RAS 4x4 affine matrix for given dimensions and spacing.
+ */
+export function createDefaultAffine(
+  dimensions: VolumeDimensions = {
+    width: VOLUME_SIZE,
+    height: VOLUME_SIZE,
+    depth: VOLUME_SIZE,
+  },
+  spacing: VoxelSpacing = DEFAULT_VOXEL_SPACING
+): AffineMatrix4x4 {
+  const ox = -(dimensions.width / 2) * spacing.x;
+  const oy = -(dimensions.height / 2) * spacing.y;
+  const oz = -(dimensions.depth / 2) * spacing.z;
+  return [
+    spacing.x,
+    0,
+    0,
+    ox,
+    0,
+    spacing.y,
+    0,
+    oy,
+    0,
+    0,
+    spacing.z,
+    oz,
+    0,
+    0,
+    0,
+    1,
+  ];
+}
+
+/**
+ * Get 1D flat index from 3D coordinates (x, y, z) supporting rectangular matrices.
  */
 export function getIndex(
   x: number,
   y: number,
   z: number,
-  size = VOLUME_SIZE
+  width = VOLUME_SIZE,
+  height = width
 ): number {
-  return z * size * size + y * size + x;
+  return z * width * height + y * width + x;
 }
 
 /**
@@ -254,8 +303,18 @@ export function generateSyntheticVolume(
     }
   }
 
+  const dimensions: VolumeDimensions = {
+    width: size,
+    height: size,
+    depth: size,
+  };
+  const spacing: VoxelSpacing = { ...DEFAULT_VOXEL_SPACING };
+
   return {
-    dimensions: { width: size, height: size, depth: size },
+    dimensions,
+    spacing,
+    affine: createDefaultAffine(dimensions, spacing),
+    sourceFormat: "synthetic",
     rawT1,
     brainmask,
     wmMask,
@@ -268,20 +327,32 @@ export function generateSyntheticVolume(
 }
 
 /**
+ * Extracted 2D slice payload with native dimensions and physical voxel spacing.
+ */
+export interface ExtractedSlice {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+  mask: Uint8Array;
+  wm: Uint8Array;
+  overlay?: Uint8Array;
+  voxelWidthMm: number;
+  voxelHeightMm: number;
+}
+
+/**
  * Extract a 2D slice from the 3D volume along an anatomical plane.
  */
 export function extractSlice(
   volume: SyntheticVolume,
   plane: "axial" | "coronal" | "sagittal",
   sliceIndex: number
-): {
-  width: number;
-  height: number;
-  pixels: Uint8Array;
-  mask: Uint8Array;
-  wm: Uint8Array;
-} {
+): ExtractedSlice {
   const { width, height, depth } = volume.dimensions;
+  const spacing = volume.spacing ?? DEFAULT_VOXEL_SPACING;
+  const hasOverlay = Boolean(
+    volume.overlayMask && volume.overlayMask.length === width * height * depth
+  );
   let sliceW = 0;
   let sliceH = 0;
 
@@ -293,17 +364,30 @@ export function extractSlice(
     const pixels = new Uint8Array(sliceW * sliceH);
     const mask = new Uint8Array(sliceW * sliceH);
     const wm = new Uint8Array(sliceW * sliceH);
+    const overlay = hasOverlay ? new Uint8Array(sliceW * sliceH) : undefined;
 
     for (let y = 0; y < sliceH; y++) {
       for (let x = 0; x < sliceW; x++) {
-        const vIdx = getIndex(x, y, clampedZ, width);
+        const vIdx = getIndex(x, y, clampedZ, width, height);
         const sIdx = y * sliceW + x;
         pixels[sIdx] = volume.rawT1[vIdx];
         mask[sIdx] = volume.brainmask[vIdx];
         wm[sIdx] = volume.wmMask[vIdx];
+        if (overlay && volume.overlayMask) {
+          overlay[sIdx] = volume.overlayMask[vIdx];
+        }
       }
     }
-    return { width: sliceW, height: sliceH, pixels, mask, wm };
+    return {
+      width: sliceW,
+      height: sliceH,
+      pixels,
+      mask,
+      wm,
+      overlay,
+      voxelWidthMm: spacing.x,
+      voxelHeightMm: spacing.y,
+    };
   } else if (plane === "coronal") {
     // Slice along Y axis -> X (width) vs Z (height)
     sliceW = width;
@@ -312,18 +396,31 @@ export function extractSlice(
     const pixels = new Uint8Array(sliceW * sliceH);
     const mask = new Uint8Array(sliceW * sliceH);
     const wm = new Uint8Array(sliceW * sliceH);
+    const overlay = hasOverlay ? new Uint8Array(sliceW * sliceH) : undefined;
 
     for (let z = 0; z < sliceH; z++) {
       for (let x = 0; x < sliceW; x++) {
-        const vIdx = getIndex(x, clampedY, z, width);
+        const vIdx = getIndex(x, clampedY, z, width, height);
         // Invert Z so superior is at top
         const sIdx = (sliceH - 1 - z) * sliceW + x;
         pixels[sIdx] = volume.rawT1[vIdx];
         mask[sIdx] = volume.brainmask[vIdx];
         wm[sIdx] = volume.wmMask[vIdx];
+        if (overlay && volume.overlayMask) {
+          overlay[sIdx] = volume.overlayMask[vIdx];
+        }
       }
     }
-    return { width: sliceW, height: sliceH, pixels, mask, wm };
+    return {
+      width: sliceW,
+      height: sliceH,
+      pixels,
+      mask,
+      wm,
+      overlay,
+      voxelWidthMm: spacing.x,
+      voxelHeightMm: spacing.z,
+    };
   } else {
     // Sagittal: Slice along X axis -> Y (width) vs Z (height)
     sliceW = height;
@@ -332,17 +429,30 @@ export function extractSlice(
     const pixels = new Uint8Array(sliceW * sliceH);
     const mask = new Uint8Array(sliceW * sliceH);
     const wm = new Uint8Array(sliceW * sliceH);
+    const overlay = hasOverlay ? new Uint8Array(sliceW * sliceH) : undefined;
 
     for (let z = 0; z < sliceH; z++) {
       for (let y = 0; y < sliceW; y++) {
-        const vIdx = getIndex(clampedX, y, z, width);
+        const vIdx = getIndex(clampedX, y, z, width, height);
         // Invert Z so superior is at top
         const sIdx = (sliceH - 1 - z) * sliceW + y;
         pixels[sIdx] = volume.rawT1[vIdx];
         mask[sIdx] = volume.brainmask[vIdx];
         wm[sIdx] = volume.wmMask[vIdx];
+        if (overlay && volume.overlayMask) {
+          overlay[sIdx] = volume.overlayMask[vIdx];
+        }
       }
     }
-    return { width: sliceW, height: sliceH, pixels, mask, wm };
+    return {
+      width: sliceW,
+      height: sliceH,
+      pixels,
+      mask,
+      wm,
+      overlay,
+      voxelWidthMm: spacing.y,
+      voxelHeightMm: spacing.z,
+    };
   }
 }

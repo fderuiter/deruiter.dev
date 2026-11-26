@@ -24,8 +24,8 @@ on:
         default: ""
 
 concurrency:
-  group: synthetic-probes-${{ github.ref || github.run_id }}
-  cancel-in-progress: false
+  group: synthetic-probes-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
 
 permissions:
   contents: read
@@ -70,6 +70,17 @@ jobs:
           if [ -z "$TARGET" ]; then
             TARGET="${DEFAULT_PROBE_TARGET}"
           fi
+          case "$TARGET" in
+            *$'\n'*|*$'\r'*)
+              echo "::error::target_url must be a single-line URL."
+              exit 1
+              ;;
+            https://*|http://*) ;;
+            *)
+              echo "::error::target_url must start with https:// or http://."
+              exit 1
+              ;;
+          esac
           echo "url=${TARGET}" >> "$GITHUB_OUTPUT"
           echo "Probing ${TARGET}"
 
@@ -86,19 +97,19 @@ jobs:
       - name: Publish Synthetic Health Summary
         if: always()
         env:
-          PROBE_TARGET_URL: ${{ steps.target.outputs.url }}
+          PROBE_TARGET: ${{ steps.target.outputs.url }}
           PROBES_OUTCOME: ${{ steps.probes.outcome }}
         run: |
-          RESULT_SUMMARY="❌ Probe run did not pass — see the job log for the failing spec"
+          PROBE_RESULT="❌ Probe run did not pass — see the job log for the failing spec"
           if [ "${PROBES_OUTCOME}" = "success" ]; then
-            RESULT_SUMMARY="✅ All probed journeys healthy"
+            PROBE_RESULT="✅ All probed journeys healthy"
           fi
           {
             echo "# 🛰️ Synthetic Journey Monitoring Report"
             echo ""
-            echo "- **Target:** ${PROBE_TARGET_URL}"
+            echo "- **Target:** ${PROBE_TARGET}"
             echo "- **Checked:** $(date -u)"
-            echo "- **Result:** ${RESULT_SUMMARY}"
+            echo "- **Result:** ${PROBE_RESULT}"
             echo ""
             echo "Journeys covered by this suite:"
             echo ""

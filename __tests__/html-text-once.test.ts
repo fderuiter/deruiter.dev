@@ -6,7 +6,11 @@ import {
   htmlToText,
   plainTextSummary,
 } from "@/lib/html-text";
-import { compileTerms, resetPatternCache, validateTermTags } from "@/lib/term-compiler";
+import {
+  compileTerms,
+  resetPatternCache,
+  validateTermTags,
+} from "@/lib/term-compiler";
 import type { TermDefinition } from "@/lib/term-glossary";
 import { extractAndInjectHeadings } from "@/lib/blog/headings";
 import { resolveSnippetTerminology } from "@/components/ui/InlineMarkdown";
@@ -14,10 +18,12 @@ import { resolveSnippetTerminology } from "@/components/ui/InlineMarkdown";
 describe("decodeHtmlEntities", () => {
   it("decodes named and numeric entities once", () => {
     expect(decodeHtmlEntities("&amp;lt;tag&amp;gt;")).toBe("&lt;tag&gt;");
-    expect(decodeHtmlEntities("&lt;b&gt; &quot;q&quot; &#39;s&#x27; &apos;")).toBe(
-      "<b> \"q\" 's' '"
+    expect(
+      decodeHtmlEntities("&lt;b&gt; &quot;q&quot; &#39;s&#x27; &apos;")
+    ).toBe("<b> \"q\" 's' '");
+    expect(decodeHtmlEntities("&bogus; &#x110000; &")).toBe(
+      "&bogus; &#x110000; &"
     );
-    expect(decodeHtmlEntities("&bogus; &#x110000; &")).toBe("&bogus; &#x110000; &");
   });
 });
 
@@ -52,7 +58,9 @@ describe("htmlToText", () => {
 describe("plainTextSummary", () => {
   it("keeps code generics, drops markup and Markdown markers", () => {
     expect(
-      plainTextSummary("A **typed** `Array<T>` and <span data-key=\"x\">term</span> &amp; *more*")
+      plainTextSummary(
+        'A **typed** `Array<T>` and <span data-key="x">term</span> &amp; *more*'
+      )
     ).toBe("A typed Array<T> and term & more");
   });
 
@@ -74,8 +82,11 @@ describe("validateTermTags compares decoded attributes once", () => {
     ];
     resetPatternCache();
     const html = compileTerms("The Widget works.", glossary);
-    expect(html).toContain("data-key=\"entity-term\"");
-    expect(validateTermTags(html, glossary)).toEqual({ valid: true, errors: [] });
+    expect(html).toContain('data-key="entity-term"');
+    expect(validateTermTags(html, glossary)).toEqual({
+      valid: true,
+      errors: [],
+    });
     resetPatternCache();
   });
 });
@@ -86,7 +97,9 @@ describe("resolveSnippetTerminology reads text once", () => {
     '<span data-key="k" data-term="plain &amp;lt;b&amp;gt; words" data-definition="d">Tech &lt;T&gt;</span>';
 
   it("keeps escaped text visible in both modes", () => {
-    expect(resolveSnippetTerminology(`Use ${tag} now.`, false)).toBe("Use Tech <T> now.");
+    expect(resolveSnippetTerminology(`Use ${tag} now.`, false)).toBe(
+      "Use Tech <T> now."
+    );
     expect(resolveSnippetTerminology(`Use ${tag} now.`, true)).toBe(
       "Use plain &lt;b&gt; words now."
     );
@@ -94,7 +107,10 @@ describe("resolveSnippetTerminology reads text once", () => {
 
   it("keeps inline code literal and reads quoted attributes whole", () => {
     expect(
-      resolveSnippetTerminology('See `Array<T>` and <a title="x > y">link</a>.', false)
+      resolveSnippetTerminology(
+        'See `Array<T>` and <a title="x > y">link</a>.',
+        false
+      )
     ).toBe("See `Array<T>` and link.");
   });
 });
@@ -105,7 +121,10 @@ describe("extractAndInjectHeadings reads labels once", () => {
     const { headings, html } = extractAndInjectHeadings(
       '<h2>Using &lt;T&gt; <code>Map&lt;K, V&gt;</code></h2><h3><span title="a > b">Odd</span> label</h3>'
     );
-    expect(headings.map((h) => h.text)).toEqual(["Using <T> Map<K, V>", "Odd label"]);
+    expect(headings.map((h) => h.text)).toEqual([
+      "Using <T> Map<K, V>",
+      "Odd label",
+    ]);
     expect(html).toContain('id="section-');
     expect(html).not.toContain("<T>");
   });

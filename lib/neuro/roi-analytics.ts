@@ -314,7 +314,9 @@ export async function requestMarchingSquaresAsync(
           if (res.contours) {
             resolve(res.contours);
           } else {
-            resolve(computeMarchingSquares(pixelsOrMask, width, height, isovalue));
+            resolve(
+              computeMarchingSquares(pixelsOrMask, width, height, isovalue)
+            );
           }
         } catch (err) {
           reject(err);
@@ -322,7 +324,9 @@ export async function requestMarchingSquaresAsync(
       },
       onWorkerFailure: () => {
         try {
-          resolve(computeMarchingSquares(pixelsOrMask, width, height, isovalue));
+          resolve(
+            computeMarchingSquares(pixelsOrMask, width, height, isovalue)
+          );
         } catch (err) {
           reject(err);
         }

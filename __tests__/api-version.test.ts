@@ -61,12 +61,7 @@ describe("GET /api/version (#2534)", () => {
   it("returns exactly the four public fields and nothing else from the environment", async () => {
     process.env.VERCEL_GIT_COMMIT_SHA = "abc";
     const body = await (await GET(request())).json();
-    expect(Object.keys(body).sort()).toEqual([
-      "builtAt",
-      "env",
-      "ref",
-      "sha",
-    ]);
+    expect(Object.keys(body).sort()).toEqual(["builtAt", "env", "ref", "sha"]);
   });
 
   it("reads the build time through the literal Next inlines", () => {

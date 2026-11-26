@@ -193,7 +193,9 @@ describe("Mobile Responsive Studios Suite (Proof, Neuro, CRF)", () => {
         root.render(<CRFStudioContainer />);
       });
 
-      const mobileNav = container.querySelector('nav[aria-label="Mobile View Navigation"]');
+      const mobileNav = container.querySelector(
+        'nav[aria-label="Mobile View Navigation"]'
+      );
       expect(mobileNav).not.toBeNull();
 
       const formsBtn = mobileNav?.querySelector("button:nth-child(1)");

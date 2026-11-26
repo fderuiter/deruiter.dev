@@ -22,7 +22,9 @@ describe("InteractiveTruthTable Component", () => {
 
     // Contradiction banner should be visible because it auto-initializes to counterexample P=F, Q=T
     expect(
-      screen.getByText(/Formal Contradiction: Premises Hold \(True\) but Conclusion Fails \(False\)!/)
+      screen.getByText(
+        /Formal Contradiction: Premises Hold \(True\) but Conclusion Fails \(False\)!/
+      )
     ).toBeDefined();
   });
 
@@ -39,7 +41,9 @@ describe("InteractiveTruthTable Component", () => {
 
     // Both P and Q are now TRUE, so premises and conclusion are satisfied
     expect(
-      screen.getByText(/Consistent State: Premises & Conclusion are simultaneously satisfied/)
+      screen.getByText(
+        /Consistent State: Premises & Conclusion are simultaneously satisfied/
+      )
     ).toBeDefined();
   });
 
@@ -80,7 +84,9 @@ describe("InteractiveTruthTable Component", () => {
     expect(switchP.getAttribute("aria-checked")).toBe("false");
     expect(switchQ.getAttribute("aria-checked")).toBe("true");
     expect(
-      screen.getByText(/Formal Contradiction: Premises Hold \(True\) but Conclusion Fails \(False\)!/)
+      screen.getByText(
+        /Formal Contradiction: Premises Hold \(True\) but Conclusion Fails \(False\)!/
+      )
     ).toBeDefined();
   });
 
@@ -113,6 +119,8 @@ describe("InteractiveTruthTable Component", () => {
     expect(
       screen.getByText("Fallacy of Circular Reasoning (Petitio Principii)")
     ).toBeDefined();
-    expect(screen.getByText("P ⊢ P (Tautological Self-Reference)")).toBeDefined();
+    expect(
+      screen.getByText("P ⊢ P (Tautological Self-Reference)")
+    ).toBeDefined();
   });
 });

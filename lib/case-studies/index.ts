@@ -24,10 +24,7 @@ export {
   FOUR_GLORY_COMMANDS_OBJ,
   FOUR_GLORY_PLAYBACK_OBJ,
 } from "./studies/4glory";
-export {
-  CRF_XL_COMMANDS_OBJ,
-  CRF_XL_PLAYBACK_OBJ,
-} from "./studies/crf-xl";
+export { CRF_XL_COMMANDS_OBJ, CRF_XL_PLAYBACK_OBJ } from "./studies/crf-xl";
 export {
   PROMPTOPS_COMMANDS_OBJ,
   PROMPTOPS_PLAYBACK_OBJ,

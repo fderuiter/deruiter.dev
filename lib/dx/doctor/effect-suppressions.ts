@@ -33,17 +33,18 @@ function sourceFiles(dir: string): string[] {
  * @returns Each suppression as `file:line`.
  */
 export function findSetStateInEffectSuppressions(root: string): string[] {
-  return SCANNED_DIRS.flatMap((dir) => sourceFiles(path.join(root, dir))).flatMap(
-    (file) =>
-      fs
-        .readFileSync(file, "utf-8")
-        .split("\n")
-        .flatMap((line, index) =>
-          /eslint-disable/.test(line) &&
-          line.includes("react-hooks/set-state-in-effect")
-            ? [`${path.relative(root, file)}:${index + 1}`]
-            : []
-        )
+  return SCANNED_DIRS.flatMap((dir) =>
+    sourceFiles(path.join(root, dir))
+  ).flatMap((file) =>
+    fs
+      .readFileSync(file, "utf-8")
+      .split("\n")
+      .flatMap((line, index) =>
+        /eslint-disable/.test(line) &&
+        line.includes("react-hooks/set-state-in-effect")
+          ? [`${path.relative(root, file)}:${index + 1}`]
+          : []
+      )
   );
 }
 

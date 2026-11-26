@@ -22,7 +22,12 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["playwright", "test", "__tests__/e2e/synthetic-probes.spec.ts", "--debug"],
+      "runtimeArgs": [
+        "playwright",
+        "test",
+        "__tests__/e2e/synthetic-probes.spec.ts",
+        "--debug"
+      ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
     },

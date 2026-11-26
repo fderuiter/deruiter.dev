@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-22",
-    slug: "sonos-network-controller",
-    title: "Sonos Network Controller: Keep the Music Local",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/sonos-network-controller",
-    published: true,
-    simulated_telemetry: false,
-    tags: "python, fastapi, upnp, sonos, htmx, asyncio, reverse-engineering, iot",
-    editorial_content:
-      "A local **Sonos** controller built with **Python**, **FastAPI**, and **HTMX**. It talks to speakers over UPnP/SOAP and exposes a REST API for playback control on your own network.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-22",
+  slug: "sonos-network-controller",
+  title: "Sonos Network Controller: Keep the Music Local",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/sonos-network-controller",
+  published: true,
+  simulated_telemetry: false,
+  tags: "python, fastapi, upnp, sonos, htmx, asyncio, reverse-engineering, iot",
+  editorial_content:
+    "A local **Sonos** controller built with **Python**, **FastAPI**, and **HTMX**. It talks to speakers over UPnP/SOAP and exposes a REST API for playback control on your own network.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Speakers on a local network can be controlled on that network. This project explores that route for Sonos, combining a Python API with a small web interface for discovering speakers and controlling playback.</p>
 <p><strong>The approach:</strong> FastAPI and asyncio handle the API and network requests. UPnP/SOAP talks to the speakers, and HTMX provides the browser controls.</p>
 <p><strong>Reported project measurements:</strong> Sub-25ms command response latency over local WiFi; 100% cloud-free local network execution; lightweight memory footprint under 35MB RAM on Raspberry Pi.</p>
@@ -99,6 +99,6 @@ ACTION_REGISTRY = {
   <li>HTMX polling (<code>hx-trigger="every 2s"</code>) and partial DOM updates replace a client-side SPA's state machines, which keeps memory low on small hosts.</li>
   <li>Speakers are found with UDP SSDP multicast (M-SEARCH). On locked-down networks, an optional Nmap-style fallback scans port 1400 instead.</li>
 </ul>`,
-    created_at: new Date("2026-03-12T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-03-12T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

@@ -365,7 +365,10 @@ describe("CRF Studio - Light Mode & Theming", () => {
     });
 
     it("verifies studio-theme.css contains defensive dark fallback and light-mode cascades for border-zinc-850", () => {
-      const cssPath = path.join(process.cwd(), "components/crf/studio-theme.css");
+      const cssPath = path.join(
+        process.cwd(),
+        "components/crf/studio-theme.css"
+      );
       const cssContent = fs.readFileSync(cssPath, "utf8");
 
       expect(cssContent).toContain(

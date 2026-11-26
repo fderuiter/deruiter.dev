@@ -185,7 +185,10 @@ export function useProofSimulation({
       appendLogs(...logsToAppend);
       // Only the running attempt's own lines may move its progress.
       const active = activeRequestRef.current;
-      if (active === null || batch.some((entry) => entry.requestId !== active)) {
+      if (
+        active === null ||
+        batch.some((entry) => entry.requestId !== active)
+      ) {
         return;
       }
 

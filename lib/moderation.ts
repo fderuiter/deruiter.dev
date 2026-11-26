@@ -1,4 +1,8 @@
-import { extractClientIp, generateClientConnectionHashSync, RequestOrHeaders } from "@/lib/services/privacy-service";
+import {
+  extractClientIp,
+  generateClientConnectionHashSync,
+  RequestOrHeaders,
+} from "@/lib/services/privacy-service";
 
 /**
  * Synchronous Rule-Based Profanity & Rant Barrier
@@ -24,7 +28,10 @@ export function normalizeText(input: string): string {
   let text = input.toLowerCase();
 
   // Strip punctuation embedded between word characters (e.g. f.u.c.k, s!h!i!t, s-h-i-t)
-  text = text.replace(/([a-z0-9])[\.\*\-\_\!\@\#\$\%\^\&\(\)]+(?=[a-z0-9])/gi, "$1");
+  text = text.replace(
+    /([a-z0-9])[\.\*\-\_\!\@\#\$\%\^\&\(\)]+(?=[a-z0-9])/gi,
+    "$1"
+  );
 
   // Replace common leetspeak character substitutions for remaining standalone characters
   text = text

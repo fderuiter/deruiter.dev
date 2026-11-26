@@ -67,9 +67,9 @@ describe("Laser Loon fallback controls (#2142)", () => {
       fireEvent.click(screen.getByRole("button", { name: "Arcade Mode" }));
     });
     expect(
-      screen.getByRole("button", { name: "Arcade Mode" }).getAttribute(
-        "aria-pressed"
-      )
+      screen
+        .getByRole("button", { name: "Arcade Mode" })
+        .getAttribute("aria-pressed")
     ).toBe("true");
     const source = fs.readFileSync(
       path.resolve(process.cwd(), "components/LaserLoon.tsx"),

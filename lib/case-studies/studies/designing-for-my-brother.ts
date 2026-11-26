@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 const DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ: CaseStudyCommands = {
   "typography inspect --target runtime": {
@@ -69,17 +73,17 @@ const DESIGNING_FOR_MY_BROTHER_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-21",
-    slug: "designing-for-my-brother",
-    title: "Designing for My Brother: Accessible Typography & Cognitive UX",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/deruiter.dev",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Accessibility, Next.js, Pretext, Canvas 2D, OpenDyslexic, Typography, WCAG 2.1 AA, ADR 0040",
-    editorial_content:
-      "My brother has dyslexia, so for me accessibility is personal. This case study covers replacing generic system fonts with a typography stack chosen for readability: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click OpenDyslexic mode that persists, with zero-CLS Pretext text reflow.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-21",
+  slug: "designing-for-my-brother",
+  title: "Designing for My Brother: Accessible Typography & Cognitive UX",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/deruiter.dev",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Accessibility, Next.js, Pretext, Canvas 2D, OpenDyslexic, Typography, WCAG 2.1 AA, ADR 0040",
+  editorial_content:
+    "My brother has dyslexia, so for me accessibility is personal. This case study covers replacing generic system fonts with a typography stack chosen for readability: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click OpenDyslexic mode that persists, with zero-CLS Pretext text reflow.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Most web applications choose typography for brand or minimalism, which usually means geometric grotesque sans-serifs. Those crowd letters together and make mirrored characters easy to confuse. For readers with dyslexia, letters like <strong>b</strong>, <strong>d</strong>, <strong>p</strong>, and <strong>q</strong> look like rotations of each other, which leads to fatigue, reversals and stalls while reading.</p>
 <p><strong>The personal context:</strong> My brother was diagnosed with dyslexia early in life. Watching him use the web, with its ultra-thin fonts, cramped line heights and layout shifts, made the friction hard to miss. I wanted this site's typography chosen for legibility first.</p>
 <p><strong>Quantitative performance targets:</strong> Zero Cumulative Layout Shift (CLS = 0.000) across typography switches; sub-5ms Pretext canvas recalculation overhead; strict WCAG 2.1 Level AA contrast conformance (&gt;= 7:1 for body copy); and 100% client-side persistence without layout flash (FOUT).</p>
@@ -218,16 +222,16 @@ function useFontPreference() {
   <li>Placing the dyslexia toggle inside <code>&lt;SkipToContent /&gt;</code> ensures keyboard and screen-reader users can activate accessible typography before navigating page contents.</li>
   <li>Canvas 2D measurement needs its caches cleared synchronously on toggle. Otherwise the canvas cards measure with the old font's metrics and truncate text.</li>
 </ul>`,
-    benchmarks: {
-      reflowLatency: "< 4.2ms",
-      wcagContrast: "14.8:1",
-      cacheHitRatio: "99.2%",
-      cumulativeLayoutShift: "0.000",
-    },
-    interactive_url: "/#hero",
-    interactive_label: "Test Live Typography",
-    commands_json: JSON.stringify(DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ),
-    playback_json: JSON.stringify(DESIGNING_FOR_MY_BROTHER_PLAYBACK_OBJ),
-    created_at: new Date("2026-04-10T00:00:00Z"),
-    updated_at: new Date("2026-09-13T00:00:00Z"),
-  });
+  benchmarks: {
+    reflowLatency: "< 4.2ms",
+    wcagContrast: "14.8:1",
+    cacheHitRatio: "99.2%",
+    cumulativeLayoutShift: "0.000",
+  },
+  interactive_url: "/#hero",
+  interactive_label: "Test Live Typography",
+  commands_json: JSON.stringify(DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ),
+  playback_json: JSON.stringify(DESIGNING_FOR_MY_BROTHER_PLAYBACK_OBJ),
+  created_at: new Date("2026-04-10T00:00:00Z"),
+  updated_at: new Date("2026-09-13T00:00:00Z"),
+});

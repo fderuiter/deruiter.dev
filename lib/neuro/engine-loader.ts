@@ -39,12 +39,21 @@ export function createGeometryFromBuffer(
   THREEModule: typeof import("three")
 ): import("three").BufferGeometry {
   const geometry = new THREEModule.BufferGeometry();
-  geometry.setAttribute("position", new THREEModule.Float32BufferAttribute(buf.positions, 3));
+  geometry.setAttribute(
+    "position",
+    new THREEModule.Float32BufferAttribute(buf.positions, 3)
+  );
   if (buf.normals && buf.normals.length > 0) {
-    geometry.setAttribute("normal", new THREEModule.Float32BufferAttribute(buf.normals, 3));
+    geometry.setAttribute(
+      "normal",
+      new THREEModule.Float32BufferAttribute(buf.normals, 3)
+    );
   }
   if (buf.colors && buf.colors.length > 0) {
-    geometry.setAttribute("color", new THREEModule.Float32BufferAttribute(buf.colors, 3));
+    geometry.setAttribute(
+      "color",
+      new THREEModule.Float32BufferAttribute(buf.colors, 3)
+    );
   }
   geometry.setIndex(new THREEModule.Uint32BufferAttribute(buf.indices, 1));
   if (!buf.normals || buf.normals.length === 0) {
@@ -96,7 +105,8 @@ export function createMeshGroupFromBuffers(
 
   const material = new THREEModule.MeshStandardMaterial({
     vertexColors: true,
-    roughness: options?.mode === "aparc" ? 0.45 : options?.mode === "white" ? 0.3 : 0.35,
+    roughness:
+      options?.mode === "aparc" ? 0.45 : options?.mode === "white" ? 0.3 : 0.35,
     metalness: options?.mode === "aparc" ? 0.05 : 0.12,
     wireframe: options?.wireframe ?? false,
     side: THREEModule.DoubleSide,
@@ -106,7 +116,8 @@ export function createMeshGroupFromBuffers(
     const geometry = createGeometryFromBuffer(buf, THREEModule);
     const mesh = new THREEModule.Mesh(geometry, material);
     if (buf.name) mesh.name = buf.name;
-    else if (buf.hemi) mesh.name = buf.hemi === "left" ? "lh_surface" : "rh_surface";
+    else if (buf.hemi)
+      mesh.name = buf.hemi === "left" ? "lh_surface" : "rh_surface";
     group.add(mesh);
   }
 

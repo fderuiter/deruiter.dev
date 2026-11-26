@@ -54,11 +54,7 @@ function isFiniteNumber(value: unknown): value is number {
  * @param maximum Upper bound (or lower bound if inverted).
  * @returns The clamped value.
  */
-export function clamp(
-  value: number,
-  minimum: number,
-  maximum: number
-): number {
+export function clamp(value: number, minimum: number, maximum: number): number {
   if (Number.isNaN(value)) {
     return Number.isNaN(minimum) ? 0 : minimum;
   }

@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createRoot, Root } from "react-dom/client";
 import { fromPartial } from "@total-typescript/shoehorn";
 import { Brain3DViewer } from "@/components/neuro/Brain3DViewer";
+import * as meshGenerator from "@/lib/neuro/mesh-generator";
+import { createDefaultAffine } from "@/lib/neuro/volume-generator";
 
 import { useWebGLContextLoss } from "@/hooks/useWebGLContextLoss";
 import { A11yProvider } from "@/components/providers/A11yProvider";
@@ -299,6 +301,101 @@ describe("WebGL Context Loss & Restoration Recovery Suite", () => {
 
       expect(container.textContent).toContain("GPU Context Restored");
       expect(container.textContent).toContain("VOXEL: (60, 40, 50)");
+    });
+
+    it("rebuilds marching-cubes geometry from cached worker buffers after WebGL context loss without re-extracting or losing voxel edits", async () => {
+      const dims = { width: 20, height: 18, depth: 16 };
+      const spacing = { x: 1, y: 1, z: 1.2 };
+      const total = dims.width * dims.height * dims.depth;
+      const rawT1 = new Uint8Array(total);
+      const brainmask = new Uint8Array(total);
+      for (let z = 3; z < 13; z++) {
+        for (let y = 3; y < 15; y++) {
+          for (let x = 3; x < 17; x++) {
+            const idx = z * dims.width * dims.height + y * dims.width + x;
+            rawT1[idx] = 175;
+            brainmask[idx] = 1;
+          }
+        }
+      }
+      // Apply a voxel edit carving out part of the mask before mount
+      brainmask[8 * dims.width * dims.height + 9 * dims.width + 10] = 0;
+
+      const uploadedVolume = {
+        dimensions: dims,
+        spacing,
+        affine: createDefaultAffine(dims, spacing),
+        sourceFormat: "nifti" as const,
+        fileName: "edited-scan.nii.gz",
+        rawT1,
+        brainmask,
+        wmMask: brainmask.slice(),
+        initialBrainmask: brainmask.slice(),
+        initialWmMask: brainmask.slice(),
+        labels: new Uint8Array(total),
+        scenarioId: "sandbox" as const,
+        defectRegion: {
+          min: { x: 0, y: 0, z: 0 },
+          max: { x: 0, y: 0, z: 0 },
+        },
+      };
+
+      const extractSpy = vi.spyOn(
+        meshGenerator,
+        "extractVolumeIsosurfaceBuffersAsync"
+      );
+
+      await act(async () => {
+        root = createRoot(container);
+        root.render(
+          <A11yProvider>
+            <Brain3DViewer
+              surfaceMode="pial"
+              crosshair={{ x: 10, y: 9, z: 8 }}
+              uploadedVolume={uploadedVolume}
+              volumeRevision={3}
+              isosurfaceThreshold={70}
+            />
+          </A11yProvider>
+        );
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(extractSpy).toHaveBeenCalledTimes(1);
+      expect(container.textContent).toContain("ISO:");
+      expect(container.textContent).toContain("FULL-RES");
+
+      const canvas = container.querySelector("canvas");
+      expect(canvas).not.toBeNull();
+
+      // Trigger WebGL context loss followed by context restoration
+      await act(async () => {
+        canvas?.dispatchEvent(
+          new Event("webglcontextlost", { cancelable: true })
+        );
+      });
+      expect(container.textContent).toContain(
+        "GPU Context Interrupted: Re-instantiating buffers..."
+      );
+
+      await act(async () => {
+        canvas?.dispatchEvent(
+          new Event("webglcontextrestored", { cancelable: true })
+        );
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(container.textContent).toContain("GPU Context Restored");
+      // Geometry was reconstructed from cached worker buffers without re-running extraction
+      expect(extractSpy).toHaveBeenCalledTimes(1);
+      // Edited brainmask voxel remains untouched
+      expect(
+        uploadedVolume.brainmask[
+          8 * dims.width * dims.height + 9 * dims.width + 10
+        ]
+      ).toBe(0);
     });
   });
 });

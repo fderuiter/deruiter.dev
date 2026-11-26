@@ -1,6 +1,19 @@
 import { clamp } from "@/lib/game-utils";
-import { SlicePlane, ToolMode, VoxelCoord, VoxelEdit } from "@/lib/neuro/types";
+import {
+  NeuroEditLayer,
+  SlicePlane,
+  ToolMode,
+  VolumeDimensions,
+  VoxelCoord,
+  VoxelEdit,
+} from "@/lib/neuro/types";
 import { VOLUME_SIZE } from "@/lib/neuro/volume-generator";
+
+const DEFAULT_DIMENSIONS: VolumeDimensions = {
+  width: VOLUME_SIZE,
+  height: VOLUME_SIZE,
+  depth: VOLUME_SIZE,
+};
 
 /**
  * Geometry shared by the slice viewer's drawing and pointer handling: which
@@ -36,14 +49,23 @@ export function canvasPixel(
 export function pixelToVoxel(
   plane: SlicePlane,
   pixel: { x: number; y: number },
-  crosshair: VoxelCoord
+  crosshair: VoxelCoord,
+  dimensions: VolumeDimensions = DEFAULT_DIMENSIONS
 ): VoxelCoord {
-  const x = clamp(pixel.x, 0, VOLUME_SIZE - 1);
-  const y = clamp(pixel.y, 0, VOLUME_SIZE - 1);
-  if (plane === "axial") return { x, y, z: crosshair.z };
-  const z = clamp(VOLUME_SIZE - 1 - y, 0, VOLUME_SIZE - 1);
-  if (plane === "coronal") return { x, y: crosshair.y, z };
-  return { x: crosshair.x, y: x, z };
+  if (plane === "axial") {
+    const x = clamp(pixel.x, 0, Math.max(0, dimensions.width - 1));
+    const y = clamp(pixel.y, 0, Math.max(0, dimensions.height - 1));
+    return { x, y, z: crosshair.z };
+  }
+  const maxZ = Math.max(0, dimensions.depth - 1);
+  const py = clamp(pixel.y, 0, maxZ);
+  const z = clamp(maxZ - py, 0, maxZ);
+  if (plane === "coronal") {
+    const x = clamp(pixel.x, 0, Math.max(0, dimensions.width - 1));
+    return { x, y: crosshair.y, z };
+  }
+  const y = clamp(pixel.x, 0, Math.max(0, dimensions.height - 1));
+  return { x: crosshair.x, y, z };
 }
 
 /** Where a voxel lands on a plane's canvas, `height` rows tall. */
@@ -61,21 +83,30 @@ export function voxelToPixel(
 export function scrollCrosshair(
   crosshair: VoxelCoord,
   plane: SlicePlane,
-  deltaY: number
+  deltaY: number,
+  dimensions: VolumeDimensions = DEFAULT_DIMENSIONS
 ): VoxelCoord {
   const step = deltaY > 0 ? -1 : 1;
   const axis = plane === "axial" ? "z" : plane === "coronal" ? "y" : "x";
+  const maxIndex =
+    axis === "x"
+      ? dimensions.width - 1
+      : axis === "y"
+        ? dimensions.height - 1
+        : dimensions.depth - 1;
   return {
     ...crosshair,
-    [axis]: clamp(crosshair[axis] + step, 0, VOLUME_SIZE - 1),
+    [axis]: clamp(crosshair[axis] + step, 0, Math.max(0, maxIndex)),
   };
 }
 
-/** The brainmask edits a spherical paint or erase brush makes at a voxel. */
+/** The mask edits a spherical paint or erase brush makes at a voxel. */
 export function brushEdits(
   center: VoxelCoord,
   radius: number,
-  mode: Extract<ToolMode, "paint" | "erase">
+  mode: Extract<ToolMode, "paint" | "erase">,
+  dimensions: VolumeDimensions = DEFAULT_DIMENSIONS,
+  layer: NeuroEditLayer = "brainmask"
 ): VoxelEdit[] {
   const edits: VoxelEdit[] = [];
   const newValue = mode === "paint" ? 1 : 0;
@@ -88,11 +119,11 @@ export function brushEdits(
         const z = center.z + dz;
         if (
           x < 0 ||
-          x >= VOLUME_SIZE ||
+          x >= dimensions.width ||
           y < 0 ||
-          y >= VOLUME_SIZE ||
+          y >= dimensions.height ||
           z < 0 ||
-          z >= VOLUME_SIZE
+          z >= dimensions.depth
         ) {
           continue;
         }
@@ -102,7 +133,7 @@ export function brushEdits(
           z,
           originalValue: 1 - newValue,
           newValue,
-          layer: "brainmask",
+          layer,
         });
       }
     }

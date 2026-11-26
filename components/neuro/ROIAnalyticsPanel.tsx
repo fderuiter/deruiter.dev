@@ -13,6 +13,7 @@ import {
   IconAlertTriangle,
   IconChartBar,
   IconCpu,
+  IconDownload,
   IconMapPin,
   IconTarget,
 } from "@tabler/icons-react";
@@ -23,6 +24,7 @@ interface ROIAnalyticsPanelProps {
   qaAlerts?: QAAnomalyAlert[];
   scanDurationMs?: number;
   onJumpToCoord?: (coord: VoxelCoord) => void;
+  onExportCsv?: () => void;
 }
 
 export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
@@ -31,6 +33,7 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
   qaAlerts = [],
   scanDurationMs,
   onJumpToCoord,
+  onExportCsv,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -90,7 +93,7 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
             Worker-Mesh & ROI Analytics Engine
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="flex items-center gap-1.5 bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan px-2.5 py-1 rounded-lg text-[10px]">
             <IconCpu className="w-3 h-3 motion-safe:animate-pulse" />
             <span>OFFLOADED TO WEB WORKER · ZERO-COPY TRANSFERABLE</span>
@@ -99,6 +102,18 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
             <span className="text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-1 rounded-lg">
               SCAN: {scanDurationMs} ms
             </span>
+          )}
+          {onExportCsv && (
+            <button
+              type="button"
+              onClick={onExportCsv}
+              disabled={!histogram && !roiStats}
+              aria-label="Export ROI and histogram metrics as CSV"
+              className="min-h-[44px] px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 hover:text-emerald-300 font-bold text-[11px] transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <IconDownload className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </button>
           )}
         </div>
       </div>

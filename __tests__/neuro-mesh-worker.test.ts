@@ -321,4 +321,82 @@ describe("NeuroRecon Web Worker (lib/neuro/mesh-worker.ts) Test Suite", () => {
       assertTransferablesMembership(response, transferables);
     }
   });
+
+  it("reconstructs 3D marching-cubes isosurfaces from volumetric data with coarse preview downsampling and transferable buffers", () => {
+    const dims = { width: 24, height: 20, depth: 18 };
+    const total = dims.width * dims.height * dims.depth;
+    const volumeData = new Uint8Array(total);
+    const maskData = new Uint8Array(total);
+    for (let z = 0; z < dims.depth; z++) {
+      for (let y = 0; y < dims.height; y++) {
+        for (let x = 0; x < dims.width; x++) {
+          const dx = (x - 12) / 7;
+          const dy = (y - 10) / 6;
+          const dz = (z - 9) / 5;
+          const r2 = dx * dx + dy * dy + dz * dz;
+          if (r2 <= 1) {
+            const idx = z * dims.width * dims.height + y * dims.width + x;
+            volumeData[idx] = Math.round(180 * (1 - r2 * 0.5));
+            maskData[idx] = 1;
+          }
+        }
+      }
+    }
+
+    const fullRes = processMeshWorkerRequest({
+      id: "mc_full",
+      mode: "pial",
+      hemiFilter: "both",
+      extractionMode: "marching_cubes",
+      volumeData,
+      maskData,
+      dimensions: dims,
+      spacing: { x: 0.8, y: 0.8, z: 1.5 },
+      isovalue: 60,
+      downsampleStride: 1,
+    });
+
+    const previewRes = processMeshWorkerRequest({
+      id: "mc_preview",
+      mode: "pial",
+      hemiFilter: "both",
+      extractionMode: "marching_cubes",
+      volumeData,
+      maskData,
+      dimensions: dims,
+      spacing: { x: 0.8, y: 0.8, z: 1.5 },
+      isovalue: 60,
+      downsampleStride: 2,
+    });
+
+    expect(fullRes.response.buffers).toHaveLength(1);
+    expect(previewRes.response.buffers).toHaveLength(1);
+    expect(fullRes.response.buffers[0].positions.length).toBeGreaterThan(
+      previewRes.response.buffers[0].positions.length
+    );
+    expect(fullRes.response.buffers[0].indices.length).toBeGreaterThan(
+      previewRes.response.buffers[0].indices.length
+    );
+    assertTransferablesMembership(fullRes.response, fullRes.transferables);
+    assertTransferablesMembership(
+      previewRes.response,
+      previewRes.transferables
+    );
+
+    const lhRes = processMeshWorkerRequest({
+      id: "mc_lh",
+      mode: "aparc",
+      hemiFilter: "lh",
+      extractionMode: "marching_cubes",
+      volumeData,
+      maskData,
+      dimensions: dims,
+      isovalue: 60,
+      downsampleStride: 1,
+    });
+    expect(lhRes.response.buffers[0].hemi).toBe("left");
+    expect(lhRes.response.buffers[0].indices.length).toBeLessThan(
+      fullRes.response.buffers[0].indices.length
+    );
+  });
 });

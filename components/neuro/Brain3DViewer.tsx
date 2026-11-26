@@ -6,13 +6,18 @@ import type * as THREE from "three";
 import {
   AnatomicalParcel,
   HemisphereFilter,
+  RawGeometryBuffer,
   SurfaceMode,
   VoxelCoord,
 } from "@/lib/neuro/types";
 import {
   createCorticalSurfaceMeshBuffersAsync,
+  extractVolumeIsosurfaceBuffersAsync,
   getAnatomicalParcelAtCoordinate,
+  voxelToWorld3D,
+  world3DToVoxel,
 } from "@/lib/neuro/mesh-generator";
+import type { SyntheticVolume } from "@/lib/neuro/volume-generator";
 import { loadExternalBrainBuffers } from "@/lib/neuro/asset-loader";
 import {
   createMeshGroupFromBuffers,
@@ -35,8 +40,24 @@ interface Brain3DViewerProps {
   crosshair: VoxelCoord;
   modelUrl?: string;
   wireframe?: boolean;
+  uploadedVolume?: SyntheticVolume | null;
+  volumeRevision?: number;
+  isosurfaceThreshold?: number;
+  onIsosurfaceThresholdChange?: (threshold: number) => void;
   onSurfaceChange?: (mode: SurfaceMode) => void;
   onCrosshairChange?: (coord: VoxelCoord) => void;
+}
+
+function cloneGeometryBuffers(
+  buffers: RawGeometryBuffer[]
+): RawGeometryBuffer[] {
+  return buffers.map((buf) => ({
+    ...buf,
+    positions: buf.positions.slice(),
+    normals: buf.normals ? buf.normals.slice() : undefined,
+    colors: buf.colors ? buf.colors.slice() : undefined,
+    indices: buf.indices.slice(),
+  }));
 }
 
 export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
@@ -44,6 +65,10 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
   crosshair,
   modelUrl,
   wireframe = false,
+  uploadedVolume = null,
+  volumeRevision = 0,
+  isosurfaceThreshold = 65,
+  onIsosurfaceThresholdChange,
   onSurfaceChange,
   onCrosshairChange,
 }) => {
@@ -55,6 +80,16 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
   const crosshairMarkerRef = useRef<THREE.Mesh | null>(null);
   const meshRequestIdRef = useRef(0);
   const threeRef = useRef<typeof THREE | null>(null);
+  const uploadedVolumeRef = useRef<SyntheticVolume | null>(uploadedVolume);
+  const cachedVolumeMeshRef = useRef<{
+    key: string;
+    buffers: RawGeometryBuffer[];
+  } | null>(null);
+  const [isScrubbingThreshold, setIsScrubbingThreshold] = useState(false);
+
+  useEffect(() => {
+    uploadedVolumeRef.current = uploadedVolume;
+  }, [uploadedVolume]);
 
   const [contextKey, setContextKey] = useState(0);
   const [webglError, setWebglError] = useState(false);
@@ -331,7 +366,56 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
         meshGroupRef.current = null;
       }
 
-      if (
+      if (uploadedVolume) {
+        const cacheKey = `${uploadedVolume.fileName ?? "uploaded"}:${uploadedVolume.dimensions.width}x${uploadedVolume.dimensions.height}x${uploadedVolume.dimensions.depth}:${volumeRevision}:${surfaceMode}:${hemiFilter}:${isosurfaceThreshold}:${isScrubbingThreshold ? "preview" : "full"}`;
+        if (
+          cachedVolumeMeshRef.current &&
+          cachedVolumeMeshRef.current.key === cacheKey
+        ) {
+          const restoredGroup = createMeshGroupFromBuffers(
+            cachedVolumeMeshRef.current.buffers,
+            THREE,
+            {
+              wireframe: wireframeActive,
+              mode: surfaceMode,
+            }
+          );
+          scene.add(restoredGroup);
+          meshGroupRef.current = restoredGroup;
+          return;
+        }
+
+        extractVolumeIsosurfaceBuffersAsync({
+          volumeData: uploadedVolume.rawT1,
+          maskData: uploadedVolume.brainmask,
+          dimensions: uploadedVolume.dimensions,
+          spacing: uploadedVolume.spacing,
+          isovalue: isosurfaceThreshold,
+          mode: surfaceMode,
+          hemiFilter,
+          preview: isScrubbingThreshold,
+        }).then((mcBuffers) => {
+          if (
+            !isMounted ||
+            reqId !== meshRequestIdRef.current ||
+            !sceneRef.current
+          )
+            return;
+          cachedVolumeMeshRef.current = {
+            key: cacheKey,
+            buffers: cloneGeometryBuffers(mcBuffers),
+          };
+          if (meshGroupRef.current) {
+            disposeGroup(meshGroupRef.current, sceneRef.current);
+          }
+          const mcGroup = createMeshGroupFromBuffers(mcBuffers, THREE, {
+            wireframe: wireframeActive,
+            mode: surfaceMode,
+          });
+          sceneRef.current.add(mcGroup);
+          meshGroupRef.current = mcGroup;
+        });
+      } else if (
         isNearViewport &&
         modelUrl &&
         surfaceMode === "pial" &&
@@ -422,17 +506,34 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
     hemiFilter,
     contextKey,
     isNearViewport,
+    uploadedVolume,
+    volumeRevision,
+    isosurfaceThreshold,
+    isScrubbingThreshold,
   ]);
 
   // Update Crosshair Marker Position in 3D Space
   useEffect(() => {
     if (!crosshairMarkerRef.current) return;
+    if (uploadedVolume) {
+      const worldPos = voxelToWorld3D(
+        crosshair,
+        uploadedVolume.dimensions,
+        uploadedVolume.spacing
+      );
+      crosshairMarkerRef.current.position.set(
+        worldPos.x,
+        worldPos.y,
+        worldPos.z
+      );
+      return;
+    }
     // Map voxel coords (0..96) to 3D space (-1.5..1.5)
     const normX = ((crosshair.x - 48) / 48) * 1.35;
     const normY = ((crosshair.y - 48) / 48) * 1.85;
     const normZ = ((crosshair.z - 48) / 48) * 1.45;
     crosshairMarkerRef.current.position.set(normX, normY, normZ);
-  }, [crosshair]);
+  }, [crosshair, uploadedVolume]);
 
   // Raycaster for 3D clicks and hover parcel detection
   const performRaycast = (clientX: number, clientY: number) => {
@@ -474,11 +575,22 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
       const isLeft = result.localPoint.x < 0;
       const parcel = getAnatomicalParcelAtCoordinate(result.localPoint, isLeft);
       setHoveredParcel(parcel);
-      setHoveredPos({
-        x: Math.round(48 + (result.localPoint.x / 1.35) * 48),
-        y: Math.round(48 + (result.localPoint.y / 1.85) * 48),
-        z: Math.round(48 + (result.localPoint.z / 1.45) * 48),
-      });
+      const activeUploaded = uploadedVolumeRef.current;
+      if (activeUploaded) {
+        setHoveredPos(
+          world3DToVoxel(
+            result.localPoint,
+            activeUploaded.dimensions,
+            activeUploaded.spacing
+          )
+        );
+      } else {
+        setHoveredPos({
+          x: Math.round(48 + (result.localPoint.x / 1.35) * 48),
+          y: Math.round(48 + (result.localPoint.y / 1.85) * 48),
+          z: Math.round(48 + (result.localPoint.z / 1.45) * 48),
+        });
+      }
       setTooltipPos(result.clientPos);
     } else {
       setHoveredParcel(null);
@@ -547,14 +659,25 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
     if (dragDist < 6 && onCrosshairChange) {
       const result = performRaycast(e.clientX, e.clientY);
       if (result) {
-        const vx = Math.round(48 + (result.localPoint.x / 1.35) * 48);
-        const vy = Math.round(48 + (result.localPoint.y / 1.85) * 48);
-        const vz = Math.round(48 + (result.localPoint.z / 1.45) * 48);
-        onCrosshairChange({
-          x: clamp(vx, 0, 95),
-          y: clamp(vy, 0, 95),
-          z: clamp(vz, 0, 95),
-        });
+        const activeUploaded = uploadedVolumeRef.current;
+        if (activeUploaded) {
+          onCrosshairChange(
+            world3DToVoxel(
+              result.localPoint,
+              activeUploaded.dimensions,
+              activeUploaded.spacing
+            )
+          );
+        } else {
+          const vx = Math.round(48 + (result.localPoint.x / 1.35) * 48);
+          const vy = Math.round(48 + (result.localPoint.y / 1.85) * 48);
+          const vz = Math.round(48 + (result.localPoint.z / 1.45) * 48);
+          onCrosshairChange({
+            x: clamp(vx, 0, 95),
+            y: clamp(vy, 0, 95),
+            z: clamp(vz, 0, 95),
+          });
+        }
       }
     }
   };
@@ -586,14 +709,25 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
       if (dragDist < 8) {
         const result = performRaycast(touch.clientX, touch.clientY);
         if (result) {
-          const vx = Math.round(48 + (result.localPoint.x / 1.35) * 48);
-          const vy = Math.round(48 + (result.localPoint.y / 1.85) * 48);
-          const vz = Math.round(48 + (result.localPoint.z / 1.45) * 48);
-          onCrosshairChange({
-            x: clamp(vx, 0, 95),
-            y: clamp(vy, 0, 95),
-            z: clamp(vz, 0, 95),
-          });
+          const activeUploaded = uploadedVolumeRef.current;
+          if (activeUploaded) {
+            onCrosshairChange(
+              world3DToVoxel(
+                result.localPoint,
+                activeUploaded.dimensions,
+                activeUploaded.spacing
+              )
+            );
+          } else {
+            const vx = Math.round(48 + (result.localPoint.x / 1.35) * 48);
+            const vy = Math.round(48 + (result.localPoint.y / 1.85) * 48);
+            const vz = Math.round(48 + (result.localPoint.z / 1.45) * 48);
+            onCrosshairChange({
+              x: clamp(vx, 0, 95),
+              y: clamp(vy, 0, 95),
+              z: clamp(vz, 0, 95),
+            });
+          }
         }
       }
     }
@@ -694,6 +828,42 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
             <IconRefresh className="w-2.5 h-2.5 text-amber-400" />
             <span>GPU Test</span>
           </TooltipButton>
+          {uploadedVolume && (
+            <>
+              <span className="text-zinc-700 mx-0.5">|</span>
+              <label className="flex items-center gap-1.5 px-1 text-zinc-300">
+                <span className="text-brand-cyan font-bold">ISO:</span>
+                <input
+                  type="range"
+                  min={10}
+                  max={240}
+                  value={isosurfaceThreshold}
+                  aria-label="Isosurface threshold"
+                  onPointerDown={() => setIsScrubbingThreshold(true)}
+                  onPointerUp={() => setIsScrubbingThreshold(false)}
+                  onPointerCancel={() => setIsScrubbingThreshold(false)}
+                  onBlur={() => setIsScrubbingThreshold(false)}
+                  onChange={(e) =>
+                    onIsosurfaceThresholdChange?.(parseInt(e.target.value, 10))
+                  }
+                  className="w-20 accent-brand-cyan h-1 bg-zinc-700 rounded cursor-pointer"
+                />
+                <span className="tabular-nums text-white font-bold">
+                  {isosurfaceThreshold}
+                </span>
+                <span
+                  data-testid="marching-cubes-resolution-badge"
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                    isScrubbingThreshold
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                      : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                  }`}
+                >
+                  {isScrubbingThreshold ? "PREVIEW" : "FULL-RES"}
+                </span>
+              </label>
+            </>
+          )}
         </div>
       </div>
 

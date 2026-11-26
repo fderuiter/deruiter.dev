@@ -12,6 +12,7 @@ import {
   generateHemisphereBuffers,
   generateSubcorticalBuffers,
 } from "./internal/mesh-geometry";
+import { extractMarchingCubesBuffers } from "./internal/marching-cubes";
 import {
   MeshWorkerRequest,
   MeshWorkerResponse,
@@ -39,6 +40,40 @@ export function processMeshWorkerRequest(req: MeshWorkerRequest): {
 
   const buffers: RawGeometryBuffer[] = [];
   const transferables: ArrayBuffer[] = [];
+
+  if (
+    (req.extractionMode === "marching_cubes" || req.volumeData) &&
+    req.volumeData &&
+    req.dimensions
+  ) {
+    const mcBuffers = extractMarchingCubesBuffers({
+      volumeData: req.volumeData,
+      maskData: req.maskData,
+      dimensions: req.dimensions,
+      spacing: req.spacing,
+      isovalue: req.isovalue,
+      mode,
+      hemiFilter,
+      downsampleStride: req.downsampleStride,
+    });
+    for (const buf of mcBuffers) {
+      buffers.push(buf);
+      transferables.push(buf.positions.buffer as ArrayBuffer);
+      if (buf.normals) transferables.push(buf.normals.buffer as ArrayBuffer);
+      if (buf.colors) transferables.push(buf.colors.buffer as ArrayBuffer);
+      transferables.push(buf.indices.buffer as ArrayBuffer);
+    }
+
+    const response: MeshWorkerResponse = {
+      id,
+      mode,
+      hemiFilter,
+      wireframe,
+      buffers,
+      isSubcortical: false,
+    };
+    return { response, transferables };
+  }
 
   if (mode === "aseg") {
     const subBuffers = generateSubcorticalBuffers(hemiFilter);

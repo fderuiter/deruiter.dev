@@ -56,7 +56,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: study-data-core-${{ github.ref }}
+  group: study-data-core-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -76,6 +76,8 @@ jobs:
     name: CDISC CORE scope
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     outputs:
       run: ${{ steps.scope.outputs.run }}
     steps:
@@ -85,6 +87,7 @@ jobs:
           # The pull_request merge commit and both parents, as ci.yml's
           # run policy diffs it (scripts/ci-run-policy.mjs).
           fetch-depth: 2
+          persist-credentials: false
 
       - name: Decide Whether CORE Runs
         id: scope
@@ -120,16 +123,21 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.run != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci

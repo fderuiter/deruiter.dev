@@ -25,10 +25,7 @@ describe("Custom Proof LaTeX encoding boundary", () => {
   });
 
   it("serializes every supported operator to a fixed TeX command", () => {
-    const theorem = createCustomTheorem(
-      ["P_1", "P_1 -> Q_2", "Q_2 -> R"],
-      "R"
-    );
+    const theorem = createCustomTheorem(["P_1", "P_1 -> Q_2", "Q_2 -> R"], "R");
     expect(theorem.latexCode).toContain("P\\_1");
     expect(theorem.latexCode).toContain("P\\_1 \\to Q\\_2");
 
@@ -60,7 +57,10 @@ describe("Custom Proof LaTeX encoding boundary", () => {
     fc.assert(
       fc.property(ident, ident, ident, (a, b, c) => {
         fc.pre(new Set([a, b, c]).size === 3 && ![a, b, c].includes("false"));
-        const theorem = createCustomTheorem([a, `${a} -> ${b}`, `${b} -> ${c}`], c);
+        const theorem = createCustomTheorem(
+          [a, `${a} -> ${b}`, `${b} -> ${c}`],
+          c
+        );
         const commands = theorem.latexCode.match(/\\(?:[A-Za-z]+|_)/g) ?? [];
         for (const command of commands) {
           expect(allowed.has(command)).toBe(true);

@@ -38,32 +38,34 @@ interface PendingRequest {
 /** A fetch stand-in whose responses and abort rejections settle only when the test says so. */
 function installControlledFetch() {
   const requests: PendingRequest[] = [];
-  global.fetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
-    return new Promise((resolve, reject) => {
-      let aborted = false;
-      const request: PendingRequest = {
-        url: String(url),
-        method: options?.method ?? "GET",
-        signal: options?.signal ?? undefined,
-        resolve: (heroImageUrl) =>
-          resolve({
-            ok: true,
-            status: 200,
-            json: async () => ({ hero_image_url: heroImageUrl }),
-          }),
-        releaseAbort: () => {
-          if (!aborted) return;
-          const err = new Error("The user aborted a request.");
-          err.name = "AbortError";
-          reject(err);
-        },
-      };
-      options?.signal?.addEventListener("abort", () => {
-        aborted = true;
+  global.fetch = vi
+    .fn()
+    .mockImplementation((url: string, options?: RequestInit) => {
+      return new Promise((resolve, reject) => {
+        let aborted = false;
+        const request: PendingRequest = {
+          url: String(url),
+          method: options?.method ?? "GET",
+          signal: options?.signal ?? undefined,
+          resolve: (heroImageUrl) =>
+            resolve({
+              ok: true,
+              status: 200,
+              json: async () => ({ hero_image_url: heroImageUrl }),
+            }),
+          releaseAbort: () => {
+            if (!aborted) return;
+            const err = new Error("The user aborted a request.");
+            err.name = "AbortError";
+            reject(err);
+          },
+        };
+        options?.signal?.addEventListener("abort", () => {
+          aborted = true;
+        });
+        requests.push(request);
       });
-      requests.push(request);
     });
-  });
   return requests;
 }
 
@@ -139,7 +141,10 @@ describe("ProjectImageUploader keeps each operation bound to its own request (#3
   it("a cancelled request settling late cannot clear the controller or status of a newer upload", async () => {
     const requests = installControlledFetch();
     render(
-      <ProjectImageUploader initialProjects={projects} defaultSlug="laser-loon" />
+      <ProjectImageUploader
+        initialProjects={projects}
+        defaultSlug="laser-loon"
+      />
     );
 
     chooseFile();
@@ -171,7 +176,10 @@ describe("ProjectImageUploader keeps each operation bound to its own request (#3
   it("disables Clear while an upload is in flight, so the two mutations cannot overlap", async () => {
     const requests = installControlledFetch();
     render(
-      <ProjectImageUploader initialProjects={projects} defaultSlug="laser-loon" />
+      <ProjectImageUploader
+        initialProjects={projects}
+        defaultSlug="laser-loon"
+      />
     );
 
     const clear = screen.getByRole("button", { name: /Clear/i });
@@ -182,7 +190,8 @@ describe("ProjectImageUploader keeps each operation bound to its own request (#3
     await waitFor(() => expect(requests).toHaveLength(1));
 
     expect(
-      (screen.getByRole("button", { name: /Clear/i }) as HTMLButtonElement).disabled
+      (screen.getByRole("button", { name: /Clear/i }) as HTMLButtonElement)
+        .disabled
     ).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: /Clear/i }));
     expect(requests.filter((r) => r.method === "DELETE")).toHaveLength(0);
@@ -191,7 +200,10 @@ describe("ProjectImageUploader keeps each operation bound to its own request (#3
   it("a clear response for the previous project does not reset the newly selected one", async () => {
     const requests = installControlledFetch();
     render(
-      <ProjectImageUploader initialProjects={projects} defaultSlug="laser-loon" />
+      <ProjectImageUploader
+        initialProjects={projects}
+        defaultSlug="laser-loon"
+      />
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Clear/i }));
@@ -214,13 +226,18 @@ describe("ProjectImageUploader keeps each operation bound to its own request (#3
     fireEvent.change(screen.getByLabelText(/Target Project Slug/i), {
       target: { value: "laser-loon" },
     });
-    expect(screen.queryByText("/api/media/project-laser-loon-old.png")).toBeNull();
+    expect(
+      screen.queryByText("/api/media/project-laser-loon-old.png")
+    ).toBeNull();
   });
 
   it("aborts the in-flight upload when the uploader unmounts", async () => {
     const requests = installControlledFetch();
     const { unmount } = render(
-      <ProjectImageUploader initialProjects={projects} defaultSlug="laser-loon" />
+      <ProjectImageUploader
+        initialProjects={projects}
+        defaultSlug="laser-loon"
+      />
     );
 
     chooseFile();

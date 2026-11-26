@@ -411,8 +411,11 @@ describe("provider verification when a probe throws", () => {
       confirm: async () => false,
       input: async () => "",
       secret: async () => "",
-      choose: async <T extends string>(_q: string, _c: readonly T[], fallback: T) =>
-        fallback,
+      choose: async <T extends string>(
+        _q: string,
+        _c: readonly T[],
+        fallback: T
+      ) => fallback,
     });
 
     const checks = await runVerification({
@@ -423,8 +426,17 @@ describe("provider verification when a probe throws", () => {
         CRON_SECRET: "a-real-secret-value-that-is-long-enough-123",
       },
       prompter,
-      run: fromAny<CommandRunner, unknown>(async () => ({ ok: true, code: 0, stdout: "", stderr: "" })),
-      fetch: (async () => ({ ok: true, status: 200, text: async () => "" })) as ProbeFetch,
+      run: fromAny<CommandRunner, unknown>(async () => ({
+        ok: true,
+        code: 0,
+        stdout: "",
+        stderr: "",
+      })),
+      fetch: (async () => ({
+        ok: true,
+        status: 200,
+        text: async () => "",
+      })) as ProbeFetch,
       dryRun: false,
       adapters: [leaky, cron],
       log: () => {},

@@ -155,7 +155,8 @@ describe("every API route names its auth", () => {
     ])
   )("%s", (file) => {
     const source = readFileSync(path.resolve(process.cwd(), file), "utf8");
-    const handlers = source.match(/\b(createApiHandler|withApiWrapper)\(/g) ?? [];
+    const handlers =
+      source.match(/\b(createApiHandler|withApiWrapper)\(/g) ?? [];
     const named =
       source.match(/\bauth:\s*"(public|clerk_admin|cron_secret)"/g) ?? [];
     expect(handlers.length).toBeGreaterThan(0);

@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-11",
-    slug: "ualbf",
-    title: "UALBF: Searching for Quasiperfect Numbers",
-    primary_language: "Rust",
-    github_url: "https://github.com/fderuiter/ualbf",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Rust, Lean 4, Python, C, Formal Verification, Number Theory",
-    editorial_content:
-      "A computational number theory project pairing **Rust** branch-and-bound search with **Lean 4** verification. It explores prime signature lattices in the search for **quasiperfect numbers**, with proof checking alongside the search.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-11",
+  slug: "ualbf",
+  title: "UALBF: Searching for Quasiperfect Numbers",
+  primary_language: "Rust",
+  github_url: "https://github.com/fderuiter/ualbf",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Rust, Lean 4, Python, C, Formal Verification, Number Theory",
+  editorial_content:
+    "A computational number theory project pairing **Rust** branch-and-bound search with **Lean 4** verification. It explores prime signature lattices in the search for **quasiperfect numbers**, with proof checking alongside the search.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Quasiperfect numbers are a short question with a very large search space. UALBF pairs Rust search routines with Lean 4 verification to explore candidate structures and check the reasoning used to rule them out.</p>
 <p><strong>The approach:</strong> Rust branch-and-bound routines narrow the search space. Lean 4 provides a separate place to express and verify the mathematical arguments.</p>
 <p><strong>Reported project measurements:</strong> 100% sound Lean 4 kernel verification with zero unverified mathematical axioms; 100,000+ branch evaluations/second in Rust; memory-safe FFI certificate serialization.</p>
@@ -88,6 +88,6 @@ theorem bipartition_sieve_soundness
   <li>Searching in Rust and proving in Lean explores the space over 1,000x faster than evaluating everything in the theorem prover, and the proofs are still checked.</li>
   <li>A CI gate runs <code>#print axioms</code> over the Lean 4 proofs and fails if an unproven conjecture slips in as an axiom.</li>
 </ul>`,
-    created_at: new Date("2026-03-01T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-03-01T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

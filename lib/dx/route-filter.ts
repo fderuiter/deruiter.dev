@@ -22,7 +22,8 @@
 /** Longest filter the CLI accepts. */
 export const MAX_ROUTE_FILTER_LENGTH = 200;
 
-type FilterToken = { readonly kind: "any" } | { readonly kind: "char"; readonly value: string };
+type FilterToken =
+  { readonly kind: "any" } | { readonly kind: "char"; readonly value: string };
 
 interface FilterAlternative {
   readonly anchoredStart: boolean;
@@ -100,7 +101,10 @@ function matchesAt(
   return true;
 }
 
-function alternativeMatches(alternative: FilterAlternative, text: string): boolean {
+function alternativeMatches(
+  alternative: FilterAlternative,
+  text: string
+): boolean {
   const { tokens, anchoredStart, anchoredEnd } = alternative;
   const last = text.length - tokens.length;
   if (last < 0) return false;

@@ -282,7 +282,9 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle: `${recordedStepsCount} step(s) recorded. Click to save macro.`,
         category: "navigation",
         url: "action:macro:stop-and-save",
-        icon: <IconCircleDot className="w-4 h-4 text-rose-400 motion-safe:animate-pulse" />,
+        icon: (
+          <IconCircleDot className="w-4 h-4 text-rose-400 motion-safe:animate-pulse" />
+        ),
         badge: "Recording",
         status: `${recordedStepsCount} Steps`,
         description:

@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-13",
-    slug: "clintrials",
-    title: "clintrials: Try Trial Designs in Your Browser",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/clintrials",
-    published: true,
-    simulated_telemetry: false,
-    tags: "biostatistics, clinical-trials, pyodide, wasm, simulation-engine, crm-algorithm",
-    editorial_content:
-      "A browser-based workspace for comparing **adaptive clinical trial designs**. **Pyodide** workers run models including CRM, EffTox, group sequential designs, and win ratio analyses.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-13",
+  slug: "clintrials",
+  title: "clintrials: Try Trial Designs in Your Browser",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/clintrials",
+  published: true,
+  simulated_telemetry: false,
+  tags: "biostatistics, clinical-trials, pyodide, wasm, simulation-engine, crm-algorithm",
+  editorial_content:
+    "A browser-based workspace for comparing **adaptive clinical trial designs**. **Pyodide** workers run models including CRM, EffTox, group sequential designs, and win ratio analyses.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Designing a trial means comparing assumptions as well as choosing a formula. clintrials brings several statistical models into a browser workspace so their behavior can be explored without setting up a separate Python environment.</p>
 <p><strong>The approach:</strong> Pyodide runs Python models in WebAssembly workers, keeping numerical work separate from the page's interaction loop.</p>
 <p><strong>Reported project measurements:</strong> Sub-second CRM dose-escalation simulation over 1,000 trial iterations; 100% client-side Pyodide execution with zero server compute costs; deterministic numerical parity verified against native CPython.</p>
@@ -124,6 +124,6 @@ class CRMDoseEscalationEngine:
   <li>The models run client-side in Pyodide WASM instead of behind hosted API microservices (FastAPI/Celery). That removes server hosting, keeps a protocol designer's inputs on their machine, and lets Service Workers run simulations offline.</li>
   <li>MCMC and CRM escalation models give identical outputs on native CPython and in Pyodide WebAssembly, which fixture suites (<code>test_crm_fixtures.py</code>) check.</li>
 </ul>`,
-    created_at: new Date("2026-03-08T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-03-08T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-6",
-    slug: "hono-kiln",
-    title: "Hono-Kiln: A Starting Point for TypeScript Backends",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/hono-kiln",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, Bun, Hono, Drizzle, Monorepo, Inngest, Clean Architecture, Docker",
-    editorial_content:
-      "A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I'd rather not repeat on every project.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-6",
+  slug: "hono-kiln",
+  title: "Hono-Kiln: A Starting Point for TypeScript Backends",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/hono-kiln",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, Bun, Hono, Drizzle, Monorepo, Inngest, Clean Architecture, Docker",
+  editorial_content:
+    "A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I'd rather not repeat on every project.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>New backends tend to start with familiar chores: routes, database access, migrations, and module boundaries. Hono-Kiln packages those patterns into a Bun and Hono scaffold, including support for keeping tenants separate.</p>
 <p><strong>The approach:</strong> Bun and Hono provide the runtime and routing. Generated modules keep application logic, persistence, and tenant handling organized.</p>
 <p><strong>Reported project measurements:</strong> Sub-1ms cold start on edge runtimes; 100% tenant isolation across database repositories; automated OpenAPI spec generation from Drizzle/Zod schemas.</p>
@@ -75,6 +75,6 @@ const processTenantDataSync = inngest.createFunction(
   <li>Bun's native HTTP server with Hono removed the Node.js cold-start penalty and brought p99 response times under 12ms.</li>
   <li>Hono's context storage keeps background tasks and database queries scoped to the tenant that made the request.</li>
 </ul>`,
-    created_at: new Date("2026-02-18T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-02-18T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

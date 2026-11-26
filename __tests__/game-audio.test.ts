@@ -160,7 +160,9 @@ describe("Game Audio & SoundEngine Core Integration (__tests__/game-audio.test.t
       createGain: vi.fn().mockImplementation(createMockGain),
     };
 
-    const MockAudioContextConstructor = vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    const MockAudioContextConstructor = vi.fn().mockImplementation(function (
+      this: Record<string, unknown>
+    ) {
       Object.assign(this, mockAudioContext);
       return mockAudioContext;
     });
@@ -208,7 +210,12 @@ describe("Game Audio & SoundEngine Core Integration (__tests__/game-audio.test.t
 
   describe("1. Architectural Invariants & Import Hygiene", () => {
     it("should export correct frequencies for all standard game sound cues", () => {
-      const expectedKeys: GameSoundName[] = ["action", "warning", "success", "failure"];
+      const expectedKeys: GameSoundName[] = [
+        "action",
+        "warning",
+        "success",
+        "failure",
+      ];
       expectedKeys.forEach((key) => {
         expect(gameSoundFrequencies[key]).toBeGreaterThan(0);
         expect(typeof gameSoundFrequencies[key]).toBe("number");
@@ -227,7 +234,10 @@ describe("Game Audio & SoundEngine Core Integration (__tests__/game-audio.test.t
     });
 
     it("verifies lib/clinical-trial-chaos/sound-effects.ts does NOT import from @/components/providers/AudioProvider", () => {
-      const filePath = path.resolve(process.cwd(), "lib/clinical-trial-chaos/sound-effects.ts");
+      const filePath = path.resolve(
+        process.cwd(),
+        "lib/clinical-trial-chaos/sound-effects.ts"
+      );
       const content = fs.readFileSync(filePath, "utf-8");
       expect(content).not.toContain("@/components/providers/AudioProvider");
       expect(content).not.toContain("AudioProvider");
@@ -244,7 +254,9 @@ describe("Game Audio & SoundEngine Core Integration (__tests__/game-audio.test.t
       retroAudio.playTone(440, 100, "square", 0.1);
       expect(createdOscillators.length).toBe(1);
       expect(createdOscillators[0].type).toBe("square");
-      expect(createdOscillators[0].frequency.setValueAtTime).toHaveBeenCalledWith(440, expect.any(Number));
+      expect(
+        createdOscillators[0].frequency.setValueAtTime
+      ).toHaveBeenCalledWith(440, expect.any(Number));
     });
 
     it("synthesizes step, port scan, and exploit blast SFX", () => {

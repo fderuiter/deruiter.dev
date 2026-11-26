@@ -133,11 +133,10 @@ const EMPTY_ON_SEED = new Set([
 
 describe("DuckDB SQL agrees with the TypeScript evaluator", () => {
   it("counts nothing only for the metrics expected to be empty", () => {
-    const empty = METRIC_REGISTRY.filter(
-      (m) =>
-        evaluateMetric(warehouse, m, { dimensions: base(m) }).rows.every(
-          (row) => row.value === null || row.value === 0
-        )
+    const empty = METRIC_REGISTRY.filter((m) =>
+      evaluateMetric(warehouse, m, { dimensions: base(m) }).rows.every(
+        (row) => row.value === null || row.value === 0
+      )
     ).map((m) => m.id);
     expect(empty).toEqual([...EMPTY_ON_SEED]);
   });

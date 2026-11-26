@@ -7,7 +7,8 @@ import { ProofWorkspaceSkeleton } from "./ProofWorkspaceSkeleton";
 // Root entrypoint satisfies AGENTS.md invariant #2 by rendering <PageLayout /> in client container
 
 const DynamicProofWorkspaceClient = dynamic(
-  () => import("./ProofWorkspaceClient").then((mod) => mod.ProofWorkspaceClient),
+  () =>
+    import("./ProofWorkspaceClient").then((mod) => mod.ProofWorkspaceClient),
   {
     ssr: false,
     loading: () => <ProofWorkspaceSkeleton />,
@@ -17,7 +18,11 @@ const DynamicProofWorkspaceClient = dynamic(
 const emptySubscribe = () => () => {};
 
 export default function ProofWorkspacePage() {
-  const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   if (!isMounted) {
     return <ProofWorkspaceSkeleton />;

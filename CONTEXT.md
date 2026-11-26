@@ -599,4 +599,3 @@ When refactoring authored copy, select replacement punctuation based on the gram
 - **Game View Slot (`defineGameViews`)**: The view router dynamically mounting dedicated layouts (`DesktopView`, `TabletView`, `PhoneView`) above which the game session sits, enabling view switches across viewports without dropping the running simulation.
 - **Optic Arsenal**: Laser Loon's selectable laser weapon types (`ruby-laser`, `cyan-pulse`, `aurora-wave`, `ice-cannon`) mapped to numeric optic actions (`optic-ruby` through `optic-cryo`).
 - **Tremolo Blast**: Laser Loon's emergency defensive pulse attack mapped to `tremolo` (`KeyU` / gamepad Y / touch dock tap).
-

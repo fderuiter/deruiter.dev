@@ -1,13 +1,25 @@
-import type { ScenarioConfig, ScenarioId, DatasetConfig, DatasetSource, QAMetrics, ControlPoint, VoxelEdit } from "./types";
+import type {
+  ScenarioConfig,
+  ScenarioId,
+  DatasetConfig,
+  DatasetSource,
+  QAMetrics,
+  ControlPoint,
+  VoxelEdit,
+} from "./types";
 import { SCENARIOS, DATASET_CONFIGS, SCENARIO_LIST } from "./scenarios";
 import { generateSyntheticVolume, SyntheticVolume } from "./volume-generator";
 import { evaluateQAMetrics } from "./qa-engine";
 
-export async function getNeuroScenarios(): Promise<Record<ScenarioId, ScenarioConfig>> {
+export async function getNeuroScenarios(): Promise<
+  Record<ScenarioId, ScenarioConfig>
+> {
   return SCENARIOS;
 }
 
-export async function getNeuroDatasetConfigs(): Promise<Record<DatasetSource, DatasetConfig>> {
+export async function getNeuroDatasetConfigs(): Promise<
+  Record<DatasetSource, DatasetConfig>
+> {
   return DATASET_CONFIGS;
 }
 
@@ -15,7 +27,9 @@ export async function getNeuroScenarioList(): Promise<ScenarioId[]> {
   return SCENARIO_LIST;
 }
 
-export async function computeSyntheticVolume(scenarioId: ScenarioId): Promise<SyntheticVolume> {
+export async function computeSyntheticVolume(
+  scenarioId: ScenarioId
+): Promise<SyntheticVolume> {
   return generateSyntheticVolume(scenarioId);
 }
 
@@ -32,7 +46,10 @@ export function getNeuroScenariosSync(): Record<ScenarioId, ScenarioConfig> {
   return SCENARIOS;
 }
 
-export function getNeuroDatasetConfigsSync(): Record<DatasetSource, DatasetConfig> {
+export function getNeuroDatasetConfigsSync(): Record<
+  DatasetSource,
+  DatasetConfig
+> {
   return DATASET_CONFIGS;
 }
 
@@ -40,7 +57,9 @@ export function getNeuroScenarioListSync(): ScenarioId[] {
   return SCENARIO_LIST;
 }
 
-export function computeSyntheticVolumeSync(scenarioId: ScenarioId): SyntheticVolume {
+export function computeSyntheticVolumeSync(
+  scenarioId: ScenarioId
+): SyntheticVolume {
   return generateSyntheticVolume(scenarioId);
 }
 

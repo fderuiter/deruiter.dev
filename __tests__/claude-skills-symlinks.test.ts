@@ -23,7 +23,10 @@ describe("claude skills symlinks (#3500)", () => {
       .trim();
 
     for (const skill of LINKED_SKILLS) {
-      const regex = new RegExp(`^120000\\s+[0-9a-f]{40}\\s+0\\s+\\.claude/skills/${skill}$`, "m");
+      const regex = new RegExp(
+        `^120000\\s+[0-9a-f]{40}\\s+0\\s+\\.claude/skills/${skill}$`,
+        "m"
+      );
       expect(output).toMatch(regex);
     }
   });

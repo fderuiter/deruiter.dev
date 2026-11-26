@@ -7,7 +7,7 @@ export class GameEngineException extends Error {
   constructor(message: string = "Simulated gameplay failure") {
     super(message);
     this.name = "GameEngineException";
-    
+
     // Ensure proper prototype chain
     Object.setPrototypeOf(this, GameEngineException.prototype);
 

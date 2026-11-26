@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import { scaffoldThreeViewGame } from "./scaffold-game";
 
-export type ScaffoldType = "arcade" | "game" | "api" | "adr" | "case-study" | "component" | "hook";
+export type ScaffoldType =
+  "arcade" | "game" | "api" | "adr" | "case-study" | "component" | "hook";
 
 export interface ScaffoldOptions {
   type: ScaffoldType;
@@ -42,7 +43,11 @@ function toTitleCase(str: string): string {
  * map, a session, three views over one board, the cabinet client, the route
  * and its social card, tests, and the registry and discovery entries.
  */
-export function scaffoldArcadeGame(root: string, rawName: string, dryRun = false): GeneratedFile[] {
+export function scaffoldArcadeGame(
+  root: string,
+  rawName: string,
+  dryRun = false
+): GeneratedFile[] {
   return scaffoldThreeViewGame(
     root,
     {
@@ -57,7 +62,11 @@ export function scaffoldArcadeGame(root: string, rawName: string, dryRun = false
 /**
  * Scaffold API Route with Zod Validation, OpenAPI Specification & Tests
  */
-export function scaffoldApiRoute(root: string, rawName: string, dryRun = false): GeneratedFile[] {
+export function scaffoldApiRoute(
+  root: string,
+  rawName: string,
+  dryRun = false
+): GeneratedFile[] {
   const kebab = toKebabCase(rawName);
   const pascal = toPascalCase(rawName);
   const title = toTitleCase(rawName);
@@ -154,11 +163,17 @@ describe("GET /api/${kebab}", () => {
 /**
  * Scaffold Architecture Decision Record (ADR)
  */
-export function scaffoldAdr(root: string, rawName: string, dryRun = false): GeneratedFile[] {
+export function scaffoldAdr(
+  root: string,
+  rawName: string,
+  dryRun = false
+): GeneratedFile[] {
   const adrDir = path.join(root, "adr");
   fs.mkdirSync(adrDir, { recursive: true });
 
-  const existingFiles = fs.readdirSync(adrDir).filter((f) => /^\d{4}-.*\.md$/.test(f));
+  const existingFiles = fs
+    .readdirSync(adrDir)
+    .filter((f) => /^\d{4}-.*\.md$/.test(f));
   const maxIndex = existingFiles.reduce((max, f) => {
     const num = parseInt(f.slice(0, 4), 10);
     return isNaN(num) ? max : Math.max(max, num);
@@ -218,14 +233,23 @@ We will implement...
 /**
  * Scaffold Case Study Page
  */
-export function scaffoldCaseStudy(root: string, rawName: string, dryRun = false): GeneratedFile[] {
+export function scaffoldCaseStudy(
+  root: string,
+  rawName: string,
+  dryRun = false
+): GeneratedFile[] {
   const kebab = toKebabCase(rawName);
   const pascal = toPascalCase(rawName);
   const title = toTitleCase(rawName);
 
   const routeFile = path.join(root, "app", "case-studies", kebab, "page.tsx");
   const testFile = path.join(root, "__tests__", `${kebab}-case-study.test.ts`);
-  const paletteFile = path.join(root, "lib", "command-palette", "static-navs.ts");
+  const paletteFile = path.join(
+    root,
+    "lib",
+    "command-palette",
+    "static-navs.ts"
+  );
 
   const routeContent = `import React from "react";
 import { type Metadata } from "next";
@@ -297,10 +321,14 @@ describe("${title} Case Study Page", () => {
     const paletteContent = fs.readFileSync(paletteFile, "utf-8");
     const targetUrl = `/case-studies/${kebab}`;
     if (!paletteContent.includes(`url: "${targetUrl}"`)) {
-      const staticNavsRegex = /(export const STATIC_NAVS:[^=]*=\s*\[)([\s\S]*?)(\n\];)/;
+      const staticNavsRegex =
+        /(export const STATIC_NAVS:[^=]*=\s*\[)([\s\S]*?)(\n\];)/;
       const navItem = `  {\n    id: "case-study-${kebab}",\n    title: "${title} Case Study",\n    subtitle: "Read architectural case study and metrics",\n    category: "case-study",\n    url: "${targetUrl}",\n    icon: { name: "IconFileCode", className: "w-4 h-4 text-brand-cyan" },\n  },`;
-      
-      const updatedContent = paletteContent.replace(staticNavsRegex, `$1$2\n${navItem}$3`);
+
+      const updatedContent = paletteContent.replace(
+        staticNavsRegex,
+        `$1$2\n${navItem}$3`
+      );
       if (!dryRun) {
         fs.writeFileSync(paletteFile, updatedContent, "utf-8");
       }
@@ -319,10 +347,18 @@ describe("${title} Case Study Page", () => {
 /**
  * Scaffold UI Component
  */
-export function scaffoldComponent(root: string, rawName: string, dryRun = false): GeneratedFile[] {
+export function scaffoldComponent(
+  root: string,
+  rawName: string,
+  dryRun = false
+): GeneratedFile[] {
   const pascal = toPascalCase(rawName);
   const compFile = path.join(root, "components", "ui", `${pascal}.tsx`);
-  const testFile = path.join(root, "__tests__", `${toKebabCase(rawName)}.test.tsx`);
+  const testFile = path.join(
+    root,
+    "__tests__",
+    `${toKebabCase(rawName)}.test.tsx`
+  );
 
   const compContent = `"use client";
 
@@ -395,7 +431,11 @@ describe("${pascal} Component", () => {
 /**
  * Scaffold Custom React Hook
  */
-export function scaffoldHook(root: string, rawName: string, dryRun = false): GeneratedFile[] {
+export function scaffoldHook(
+  root: string,
+  rawName: string,
+  dryRun = false
+): GeneratedFile[] {
   const kebab = toKebabCase(rawName).replace(/^use-/, "");
   const pascal = toPascalCase(kebab);
   const hookName = `use${pascal}`;
@@ -482,7 +522,10 @@ export const VALID_SCAFFOLD_TYPES: ScaffoldType[] = [
   "game",
 ];
 
-export function validateScaffoldType(type: string): { valid: boolean; error?: string } {
+export function validateScaffoldType(type: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!type || typeof type !== "string" || !type.trim()) {
     return { valid: false, error: "Scaffold template type is required." };
   }
@@ -496,7 +539,10 @@ export function validateScaffoldType(type: string): { valid: boolean; error?: st
   return { valid: true };
 }
 
-export function validateScaffoldName(name: string): { valid: boolean; error?: string } {
+export function validateScaffoldName(name: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!name || typeof name !== "string" || !name.trim()) {
     return { valid: false, error: "Feature/asset name cannot be empty." };
   }
@@ -504,7 +550,8 @@ export function validateScaffoldName(name: string): { valid: boolean; error?: st
   if (!/^[a-zA-Z0-9\s-_]+$/.test(trimmed)) {
     return {
       valid: false,
-      error: "Invalid name format. Use alphanumeric characters, hyphens, or underscores.",
+      error:
+        "Invalid name format. Use alphanumeric characters, hyphens, or underscores.",
     };
   }
   return { valid: true };

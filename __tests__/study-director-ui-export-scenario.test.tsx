@@ -44,7 +44,9 @@ describe("Study Director Scenario UI & Retrospective Export UI", () => {
   });
 
   it("allows updating setup, site coordinator, and team archetype in ScenarioBuilder and exporting scenario", () => {
-    const downloadSpy = vi.spyOn(downloadModule, "downloadFile").mockReturnValue(true);
+    const downloadSpy = vi
+      .spyOn(downloadModule, "downloadFile")
+      .mockReturnValue(true);
     const onChange = vi.fn();
     render(<ScenarioBuilder scenario={DEFAULT_SCENARIO} onChange={onChange} />);
 
@@ -68,7 +70,9 @@ describe("Study Director Scenario UI & Retrospective Export UI", () => {
   });
 
   it("renders retrospective JSON and CSV export buttons in ReportView and triggers downloadFile", () => {
-    const downloadSpy = vi.spyOn(downloadModule, "downloadFile").mockReturnValue(true);
+    const downloadSpy = vi
+      .spyOn(downloadModule, "downloadFile")
+      .mockReturnValue(true);
     let state = createStudy(
       "test-ui-export",
       STUDY_24_081,
@@ -97,7 +101,9 @@ describe("Study Director Scenario UI & Retrospective Export UI", () => {
     });
     fireEvent.click(decisionsBtn);
     expect(downloadSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Day,Event ID,Option ID,Label,Documented,Attention Spent"),
+      expect.stringContaining(
+        "Day,Event ID,Option ID,Label,Documented,Attention Spent"
+      ),
       "study-24-081-decisions.csv",
       { mimeType: "text/csv" }
     );
@@ -107,7 +113,9 @@ describe("Study Director Scenario UI & Retrospective Export UI", () => {
     });
     fireEvent.click(metersBtn);
     expect(downloadSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Day,Integrity,Compliance,Timeline,Budget,Client,Team"),
+      expect.stringContaining(
+        "Day,Integrity,Compliance,Timeline,Budget,Client,Team"
+      ),
       "study-24-081-meters.csv",
       { mimeType: "text/csv" }
     );
@@ -117,7 +125,9 @@ describe("Study Director Scenario UI & Retrospective Export UI", () => {
     });
     fireEvent.click(findingsBtn);
     expect(downloadSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Event ID,Day,Question,Documented,Answer,Outcome"),
+      expect.stringContaining(
+        "Event ID,Day,Question,Documented,Answer,Outcome"
+      ),
       "study-24-081-findings.csv",
       { mimeType: "text/csv" }
     );

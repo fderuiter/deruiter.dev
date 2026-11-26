@@ -3,8 +3,7 @@ import type { FieldManualData } from "./types";
 export const MEME_VAULT_MANUAL: FieldManualData = {
   id: "meme-vault",
   title: "Meme Vault",
-  subtitle:
-    "8-Pad Retro Sampler, Echo Sequence Game & Easter Egg Trophy Case",
+  subtitle: "8-Pad Retro Sampler, Echo Sequence Game & Easter Egg Trophy Case",
   genre: "Sound Toy & Memory Game",
   badge: "Secret Room",
   route: "/arcade/meme-vault",

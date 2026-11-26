@@ -25,7 +25,9 @@ describe("navigation groups for pages (#1848)", () => {
   it("names the group a page belongs to", () => {
     expect(getNavGroupForHref("/arcade/laser-loon")?.id).toBe("arcade");
     expect(getNavGroupForHref("/merch")?.id).toBe("about");
-    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe("clinical");
+    expect(getNavGroupForHref("/clinical/pipeline-simulator")?.id).toBe(
+      "clinical"
+    );
     expect(getNavGroupForHref("/crf")?.id).toBe("clinical");
     expect(getNavGroupForHref("/proof")?.id).toBe("labs");
     expect(getNavGroupForHref("/stack")?.id).toBe("about");

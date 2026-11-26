@@ -236,10 +236,11 @@ describe("standards watch parsers", () => {
   // nested deletion. A parser reads this as one odd element, and no node
   // poses as a release label.
   it("cannot be tricked by a nested tag fragment", () => {
-    const html = "<sty<style>x</style>le>SDTMIG v999.0</style><p>SDTMIG v3.4</p>";
-    expect(textNodes(html).filter((node) => node.startsWith("SDTMIG v"))).toEqual([
-      "SDTMIG v3.4",
-    ]);
+    const html =
+      "<sty<style>x</style>le>SDTMIG v999.0</style><p>SDTMIG v3.4</p>";
+    expect(
+      textNodes(html).filter((node) => node.startsWith("SDTMIG v"))
+    ).toEqual(["SDTMIG v3.4"]);
     expect(siteVersion(html, ["SDTMIG"])).toBe("3.4");
   });
 

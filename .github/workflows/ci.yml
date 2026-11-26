@@ -202,9 +202,9 @@ jobs:
       # ESLint's cache uses the content strategy, so a restored entry only
       # skips work on files whose bytes are unchanged; it can never hide a new
       # error. The config here is not type-aware, so a file's lint result
-      # depends on that file alone.
-      - name: Cache ESLint Incremental State
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # depends on that file alone. Restore only on PRs and save only from main.
+      - name: Restore ESLint Incremental State
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .eslintcache
@@ -225,6 +225,14 @@ jobs:
         run: |
           npm run typecheck:budget
           npm run lint -- --cache --cache-strategy content --cache-location .eslintcache
+
+      - name: Save ESLint Incremental State (default branch only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .eslintcache
+          key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
 
       # The full `npm run verify` runs in heavy-gate-report, after the bench
       # writes its evidence. This early pass runs every other invariant on

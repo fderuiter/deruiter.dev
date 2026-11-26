@@ -21,6 +21,7 @@ interface SimulationRequest {
   mode: "normal" | "loop";
   theoremId: TheoremId;
   customFormulas?: string[];
+  sandboxSteps?: string[];
 }
 
 interface ProofSimulationOptions {
@@ -185,7 +186,10 @@ export function useProofSimulation({
       appendLogs(...logsToAppend);
       // Only the running attempt's own lines may move its progress.
       const active = activeRequestRef.current;
-      if (active === null || batch.some((entry) => entry.requestId !== active)) {
+      if (
+        active === null ||
+        batch.some((entry) => entry.requestId !== active)
+      ) {
         return;
       }
 
@@ -220,7 +224,7 @@ export function useProofSimulation({
   }, [clearWatchdog, endAttempt]);
 
   const startSimulation = useCallback(
-    ({ mode, theoremId, customFormulas }: SimulationRequest) => {
+    ({ mode, theoremId, customFormulas, sandboxSteps }: SimulationRequest) => {
       requestIdRef.current += 1;
       // A previous attempt's unwritten lines are not this attempt's output.
       pendingLogsRef.current = [];
@@ -228,7 +232,7 @@ export function useProofSimulation({
       setIsSimulating(true);
       setSimulationProgress({
         step: 1,
-        total: 10,
+        total: sandboxSteps?.length ?? 10,
         log: "Booting Proof Simulation Engine...",
       });
       resetWatchdog();
@@ -238,6 +242,7 @@ export function useProofSimulation({
         mode,
         theoremId,
         customFormulas,
+        sandboxSteps,
       });
     },
     [resetWatchdog]

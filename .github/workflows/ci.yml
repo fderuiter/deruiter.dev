@@ -120,6 +120,7 @@ jobs:
           # The pull_request merge commit and both parents, so the policy can
           # diff the PR against its base.
           fetch-depth: 2
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -163,6 +164,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -199,9 +202,9 @@ jobs:
       # ESLint's cache uses the content strategy, so a restored entry only
       # skips work on files whose bytes are unchanged; it can never hide a new
       # error. The config here is not type-aware, so a file's lint result
-      # depends on that file alone.
-      - name: Cache ESLint Incremental State
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # depends on that file alone. Restore only on PRs and save only from main.
+      - name: Restore ESLint Incremental State
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .eslintcache
@@ -222,6 +225,14 @@ jobs:
         run: |
           npm run typecheck:budget
           npm run lint -- --cache --cache-strategy content --cache-location .eslintcache
+
+      - name: Save ESLint Incremental State (default branch only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .eslintcache
+          key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
 
       # The full `npm run verify` runs in heavy-gate-report, after the bench
       # writes its evidence. This early pass runs every other invariant on
@@ -265,6 +276,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -329,6 +342,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -369,6 +384,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -426,6 +443,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -470,6 +488,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -564,6 +584,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -632,6 +654,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -690,6 +714,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -737,6 +763,11 @@ jobs:
 
       - name: Generate Centralized Health Dashboard
         if: always()
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          HEAVY_GATE_RESULT: ${{ needs.heavy-gate.result }}
+          BENCH_GATE_RESULT: ${{ needs.bench-gate.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
         run: |
           # Generate accessibility summary and status files
           node scripts/generate-accessibility-report.js
@@ -746,15 +777,28 @@ jobs:
             ACC_STATUS=$(cat playwright-report/accessibility-status.txt)
           fi
 
+          HEAVY_STATUS="❌ Fail"
+          if [ "${HEAVY_GATE_RESULT}" = "success" ]; then
+            HEAVY_STATUS="✅ Pass"
+          fi
+          BENCH_STATUS="❌ Fail"
+          if [ "${BENCH_GATE_RESULT}" = "success" ]; then
+            BENCH_STATUS="✅ Pass"
+          fi
+          BUILD_STATUS="❌ Fail"
+          if [ "${BUILD_RESULT}" = "success" ]; then
+            BUILD_STATUS="✅ Pass"
+          fi
+
           echo "# 🛡️ Rigor Ecosystem Health Report" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Commit: ${COMMIT_SHA}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Verification Layer | Status | Description |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Visual & Drift Guard** (Playwright, chromium, 3 shards) | ${{ needs.heavy-gate.result == 'success' && '✅ Pass' || '❌ Fail' }} | Sub-pixel pixel matching & layout constant sync |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Visual & Drift Guard** (Playwright, chromium, 3 shards) | ${HEAVY_STATUS} | Sub-pixel pixel matching & layout constant sync |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Accessibility Audits** (Playwright-Axe) | $ACC_STATUS | Automated WCAG compliance scans on interactive states |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Sub-Route Real-Browser Performance Gate** | ${{ needs.bench-gate.result == 'success' && '✅ Pass' || '❌ Fail' }} | Real-browser Core Web Vitals (LCP, CLS, TTFB) SLA assertions across sub-routes |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Bundle Performance Budgets** | ${{ needs.build.result == 'success' && '✅ Pass' || '❌ Fail' }} | Initial bundle & chunk gzip performance limits |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Sub-Route Real-Browser Performance Gate** | ${BENCH_STATUS} | Real-browser Core Web Vitals (LCP, CLS, TTFB) SLA assertions across sub-routes |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Bundle Performance Budgets** | ${BUILD_STATUS} | Initial bundle & chunk gzip performance limits |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "*(chromium only — see device-gate and the manual cross-device-matrix job for other devices)*" >> "$GITHUB_STEP_SUMMARY"
 
@@ -768,11 +812,11 @@ jobs:
             exit 1
           fi
           if [ "${{ needs.heavy-gate.result }}" != "success" ]; then
-            echo "::error::A Playwright shard did not succeed (result: ${{ needs.heavy-gate.result }})."
+            echo "::error::A Playwright shard did not succeed (result: ${HEAVY_GATE_RESULT})."
             exit 1
           fi
           if [ "${{ needs.bench-gate.result }}" != "success" ]; then
-            echo "::error::Bench Gate did not succeed (result: ${{ needs.bench-gate.result }})."
+            echo "::error::Bench Gate did not succeed (result: ${BENCH_GATE_RESULT})."
             exit 1
           fi
 
@@ -826,6 +870,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -948,6 +994,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -989,6 +1037,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

@@ -23,6 +23,10 @@ on:
         type: string
         default: ""
 
+concurrency:
+  group: synthetic-probes-${{ github.ref || github.run_id }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -45,6 +49,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -79,13 +85,20 @@ jobs:
 
       - name: Publish Synthetic Health Summary
         if: always()
+        env:
+          PROBE_TARGET_URL: ${{ steps.target.outputs.url }}
+          PROBES_OUTCOME: ${{ steps.probes.outcome }}
         run: |
+          RESULT_SUMMARY="❌ Probe run did not pass — see the job log for the failing spec"
+          if [ "${PROBES_OUTCOME}" = "success" ]; then
+            RESULT_SUMMARY="✅ All probed journeys healthy"
+          fi
           {
             echo "# 🛰️ Synthetic Journey Monitoring Report"
             echo ""
-            echo "- **Target:** ${{ steps.target.outputs.url }}"
+            echo "- **Target:** ${PROBE_TARGET_URL}"
             echo "- **Checked:** $(date -u)"
-            echo "- **Result:** ${{ steps.probes.outcome == 'success' && '✅ All probed journeys healthy' || '❌ Probe run did not pass — see the job log for the failing spec' }}"
+            echo "- **Result:** ${RESULT_SUMMARY}"
             echo ""
             echo "Journeys covered by this suite:"
             echo ""

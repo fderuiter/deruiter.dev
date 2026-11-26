@@ -49,7 +49,11 @@ export function formatNeuroToolKey(tool: ToolMode): string {
 
 /** Action resolved from a keyboard event. */
 export type NeuroHotkeyAction =
-  { type: "tool"; tool: ToolMode } | { type: "run" } | { type: "manual" };
+  | { type: "tool"; tool: ToolMode }
+  | { type: "run" }
+  | { type: "manual" }
+  | { type: "undo" }
+  | { type: "redo" };
 
 /** Minimal event shape needed to resolve a hotkey. */
 export interface NeuroHotkeyEventLike {
@@ -57,6 +61,7 @@ export interface NeuroHotkeyEventLike {
   ctrlKey?: boolean;
   metaKey?: boolean;
   altKey?: boolean;
+  shiftKey?: boolean;
   target: EventTarget | null;
 }
 
@@ -65,13 +70,12 @@ const ACTIVATING_TAGS = new Set(["BUTTON", "A", "SUMMARY"]);
 
 /**
  * Resolve a keydown event to a studio action, or null when it must be ignored:
- * modifier chords, text entry, and (for Space only) natively activating
- * controls, which would otherwise fire twice.
+ * text entry, dialogs, non-undo/redo modifier chords, and (for Space only)
+ * natively activating controls, which would otherwise fire twice.
  */
 export function resolveNeuroHotkey(
   e: NeuroHotkeyEventLike
 ): NeuroHotkeyAction | null {
-  if (e.ctrlKey || e.metaKey || e.altKey) return null;
   const target = e.target as HTMLElement | null;
   if (!target) return null;
   if (
@@ -82,6 +86,16 @@ export function resolveNeuroHotkey(
     return null;
   }
   const key = e.key.toLowerCase();
+  if (e.altKey) return null;
+  if (e.ctrlKey || e.metaKey) {
+    if (key === "z") {
+      return e.shiftKey ? { type: "redo" } : { type: "undo" };
+    }
+    if (key === "y" && e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      return { type: "redo" };
+    }
+    return null;
+  }
   for (const h of Object.values(NEURO_TOOL_HOTKEYS)) {
     if (key === h.digit || key === h.letter.toLowerCase()) {
       return { type: "tool", tool: h.tool };

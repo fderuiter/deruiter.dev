@@ -20,6 +20,7 @@ import {
   ScenarioId,
   VectorContourPath,
   VoxelCoord,
+  VoxelSpacing,
 } from "./types";
 
 /**
@@ -153,7 +154,8 @@ export async function requestROISegmentationAsync(
   brainmask: Uint8Array,
   dimensions: { width: number; height: number; depth: number },
   seed: VoxelCoord,
-  intensityTolerance = 15
+  intensityTolerance = 15,
+  spacing?: VoxelSpacing
 ): Promise<ROISegmentationResult> {
   const worker = getROIWorker();
   const seq = ++globalSequence;
@@ -165,7 +167,8 @@ export async function requestROISegmentationAsync(
       brainmask,
       dimensions,
       seed,
-      intensityTolerance
+      intensityTolerance,
+      spacing
     );
   }
 
@@ -201,7 +204,8 @@ export async function requestROISegmentationAsync(
                 brainmask,
                 dimensions,
                 seed,
-                intensityTolerance
+                intensityTolerance,
+                spacing
               )
             );
           }
@@ -217,7 +221,8 @@ export async function requestROISegmentationAsync(
               brainmask,
               dimensions,
               seed,
-              intensityTolerance
+              intensityTolerance,
+              spacing
             )
           );
         } catch (err) {
@@ -245,6 +250,7 @@ export async function requestROISegmentationAsync(
       seed,
       intensityTolerance,
       dimensions,
+      spacing,
       rawT1: new Uint8Array(rawT1Buffer),
       brainmask: new Uint8Array(brainmaskBuffer),
     };
@@ -261,7 +267,8 @@ export async function requestROISegmentationAsync(
             brainmask,
             dimensions,
             seed,
-            intensityTolerance
+            intensityTolerance,
+            spacing
           )
         );
       } catch (err) {
@@ -372,14 +379,15 @@ export async function requestMarchingSquaresAsync(
  */
 export async function requestHistogramAsync(
   data: Uint8Array,
-  mask?: Uint8Array
+  mask?: Uint8Array,
+  spacing?: VoxelSpacing
 ): Promise<HistogramStats> {
   const worker = getROIWorker();
   const seq = ++globalSequence;
   latestSequenceByTask.set("histogram", seq);
 
   if (!worker) {
-    return compute256BinHistogram(data, mask);
+    return compute256BinHistogram(data, mask, spacing);
   }
 
   return new Promise((resolve, reject) => {
@@ -408,7 +416,7 @@ export async function requestHistogramAsync(
           if (res.histogram) {
             resolve(res.histogram);
           } else {
-            resolve(compute256BinHistogram(data, mask));
+            resolve(compute256BinHistogram(data, mask, spacing));
           }
         } catch (err) {
           reject(err);
@@ -416,7 +424,7 @@ export async function requestHistogramAsync(
       },
       onWorkerFailure: () => {
         try {
-          resolve(compute256BinHistogram(data, mask));
+          resolve(compute256BinHistogram(data, mask, spacing));
         } catch (err) {
           reject(err);
         }
@@ -439,6 +447,7 @@ export async function requestHistogramAsync(
       id: requestId,
       seq,
       type: "histogram",
+      spacing,
       rawT1: new Uint8Array(dataBuf),
       brainmask: maskBuf ? new Uint8Array(maskBuf) : undefined,
     };
@@ -452,7 +461,7 @@ export async function requestHistogramAsync(
       clearTimeout(timeoutId);
       pendingRequests.delete(requestId);
       try {
-        resolve(compute256BinHistogram(data, mask));
+        resolve(compute256BinHistogram(data, mask, spacing));
       } catch (err) {
         reject(err);
       }
@@ -564,6 +573,7 @@ export async function requestVolumeQAScanAsync(volume: {
 export {
   compute256BinHistogram,
   computeMarchingSquares,
+  getVoxelVolumeMm3,
   runRegionGrowing,
   scanVolumeQAAnomalies,
 } from "./internal/roi-algorithms";

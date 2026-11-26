@@ -810,15 +810,15 @@ jobs:
           fi
 
           HEAVY_STATUS="❌ Fail"
-          if [ "$HEAVY_GATE_RESULT" = "success" ]; then
+          if [ "${HEAVY_GATE_RESULT}" = "success" ]; then
             HEAVY_STATUS="✅ Pass"
           fi
           BENCH_STATUS="❌ Fail"
-          if [ "$BENCH_GATE_RESULT" = "success" ]; then
+          if [ "${BENCH_GATE_RESULT}" = "success" ]; then
             BENCH_STATUS="✅ Pass"
           fi
           BUILD_STATUS="❌ Fail"
-          if [ "$BUILD_RESULT" = "success" ]; then
+          if [ "${BUILD_RESULT}" = "success" ]; then
             BUILD_STATUS="✅ Pass"
           fi
 

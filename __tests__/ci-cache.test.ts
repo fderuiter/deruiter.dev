@@ -154,10 +154,6 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
           section.includes(".prettiercache")
       );
 
-    it("never uses the combined actions/cache@ action anywhere in ci.yml", () => {
-      expect(content).not.toMatch(/uses: actions\/cache@/);
-    });
-
     it("restores lint/prettier caches on PRs and saves only from main pushes", () => {
       expect(staticSections).toHaveLength(2);
       const restores = staticSections.filter((s) =>
@@ -175,5 +171,20 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
         "if: github.event_name == 'push' && github.ref == 'refs/heads/main'"
       );
     });
+  });
+
+  describe("Restore-Only Pull Request Caching", () => {
+    const workflowDir = path.join(process.cwd(), ".github/workflows");
+    const workflowFiles = fs
+      .readdirSync(workflowDir)
+      .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
+
+    it.each(workflowFiles)(
+      "%s never uses combined actions/cache@ (all custom caches split restore from main-only save)",
+      (file) => {
+        const text = fs.readFileSync(path.join(workflowDir, file), "utf8");
+        expect(text).not.toMatch(/uses:\s*actions\/cache@/);
+      }
+    );
   });
 });

@@ -338,6 +338,46 @@ describe("Portable .proof.json workspace serialization, caps, and Lean 4 Web out
     expect(parsed.edges).toEqual(edges);
   });
 
+  it.each([
+    {
+      edges: [{ source: "S1", target: "P1" }],
+      error: /premise.*incoming/i,
+    },
+    {
+      edges: [
+        { source: "S1", target: "S2" },
+        { source: "S2", target: "S3" },
+        { source: "S3", target: "S1" },
+      ],
+      error: /dependency cycle/i,
+    },
+  ])(
+    "rejects invalid dependency edges in files and hashes: $error",
+    ({ edges, error }) => {
+      const nodes = [
+        buildSandboxNode({ id: "P1", label: "P", type: "premise", x: 0, y: 0 }),
+        ...["S1", "S2", "S3"].map((id) =>
+          buildSandboxNode({
+            id,
+            label: "Q",
+            type: "intermediate",
+            x: 120,
+            y: 80,
+          })
+        ),
+      ];
+      const snapshot = JSON.stringify({
+        version: 1,
+        mode: "sandbox",
+        nodes,
+        edges,
+      });
+
+      expect(() => parseProofWorkspaceJson(snapshot)).toThrow(error);
+      expect(decodeSandboxHash(encodeSandboxHash(nodes, edges))).toBeNull();
+    }
+  );
+
   it("enforces the 64 KB size cap, 40-node cap, and parseCustomFormula validation", () => {
     const oversized = " ".repeat(MAX_PROOF_JSON_BYTES + 10);
     expect(() => parseProofWorkspaceJson(oversized)).toThrow(/64 KB/);

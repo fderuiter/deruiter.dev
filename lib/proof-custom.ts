@@ -559,7 +559,47 @@ export function serializeProofWorkspaceJson(
   return exportProofToJson(edges, { ...theorem, nodes: positionedNodes });
 }
 
-/** Parses and validates a `.proof.json` payload against size, node count, and formula syntax caps. */
+function validateImportedGraph(nodes: ProofNode[], edges: Edge[]): void {
+  const outgoing = new Map<string, string[]>();
+  const premiseIds = new Set<string>();
+  const normalizedIds = new Set<string>();
+  for (const node of nodes) {
+    const normalizedId = node.id.toUpperCase();
+    if (normalizedIds.has(normalizedId)) {
+      throw new Error(`Duplicate node id '${node.id}' in workspace.`);
+    }
+    normalizedIds.add(normalizedId);
+    outgoing.set(node.id, []);
+    if (node.type === "premise") premiseIds.add(node.id);
+  }
+
+  for (const edge of edges) {
+    if (premiseIds.has(edge.target)) {
+      throw new Error(
+        `Premise '${edge.target}' cannot receive incoming edges.`
+      );
+    }
+    outgoing.get(edge.source)?.push(edge.target);
+  }
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  function visit(id: string): void {
+    if (visited.has(id)) return;
+    if (visiting.has(id)) {
+      throw new Error(`Workspace contains a dependency cycle at node '${id}'.`);
+    }
+
+    visiting.add(id);
+    for (const target of outgoing.get(id) ?? []) visit(target);
+    visiting.delete(id);
+    visited.add(id);
+  }
+
+  for (const node of nodes) visit(node.id);
+}
+
+/** Parses and validates a `.proof.json` payload, including its dependency graph. */
 export function parseProofWorkspaceJson(
   rawInput: string | Uint8Array
 ): ParsedProofWorkspace {
@@ -725,6 +765,7 @@ export function parseProofWorkspaceJson(
       ? record.title.trim().slice(0, 120)
       : "Sandbox Proof";
 
+  validateImportedGraph(nodes, edges);
   const theorem = createSandboxTheorem(nodes, edges);
   return {
     mode,
@@ -839,11 +880,8 @@ export function decodeSandboxHash(
       });
     }
 
-    return {
-      nodes,
-      edges,
-      theorem: createSandboxTheorem(nodes, edges),
-    };
+    validateImportedGraph(nodes, edges);
+    return { nodes, edges, theorem: createSandboxTheorem(nodes, edges) };
   } catch {
     return null;
   }

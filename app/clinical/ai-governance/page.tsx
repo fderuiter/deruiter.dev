@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import {
-  AI_GOVERNANCE_PAGE_COPY,
-  aiGovernanceIssueUrl,
-} from "@/lib/clinical-ai-governance";
+import { AI_GOVERNANCE_PAGE_COPY } from "@/lib/clinical-ai-governance";
 import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 import { getBreadcrumbSchema } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
+import { AiGovernanceWorkspace } from "./AiGovernanceWorkspace";
+import { loadAiGovernanceEvidence } from "./evidence";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.clinicalAiGovernance
@@ -17,14 +16,18 @@ const LINK =
   "underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400";
 
 /**
- * Route shell for `/clinical/ai-governance` (#3548).
- * Downstream issues (#3549 to #3552) populate Sections 1 to 4.
+ * Interactive AI governance workspace at `/clinical/ai-governance`.
+ *
+ * Precomputes deterministic CRF linter violations, recorded CDISC CORE views,
+ * pinned standard versions and SHA-256 package digests on `DEMO-301` at build
+ * time, then mounts client review and evaluation controls.
  */
-export default function ClinicalAiGovernancePage() {
+export default async function ClinicalAiGovernancePage() {
   const copy = AI_GOVERNANCE_PAGE_COPY;
+  const evidence = await loadAiGovernanceEvidence();
 
   return (
-    <PageLayout className="bg-[#0d0e11] text-[#f4f4f6]">
+    <PageLayout className="overflow-x-hidden bg-[#0d0e11] text-[#f4f4f6]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -50,6 +53,21 @@ export default function ClinicalAiGovernancePage() {
         >
           {copy.banner}
         </p>
+
+        <nav aria-label="On this page" className="mt-8">
+          <ul className="flex min-w-0 flex-wrap gap-x-6 gap-y-2 text-sm">
+            {copy.sections.map((section) => (
+              <li key={section.id} className="min-w-0">
+                <a
+                  href={`#${section.id}`}
+                  className={`${LINK} inline-flex min-h-11 items-center text-amber-300`}
+                >
+                  {section.heading}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </header>
 
       <section aria-labelledby="references-title" className="py-10 sm:py-14">
@@ -67,7 +85,9 @@ export default function ClinicalAiGovernancePage() {
               className="min-w-0 border border-white/[0.08] bg-[#13151a] p-5"
             >
               <h3 className="break-words text-lg font-semibold tracking-[-0.02em]">
-                {ref.title}
+                <a href={ref.href} className={LINK}>
+                  {ref.title}
+                </a>
               </h3>
               <p className="mt-2 break-words font-mono text-xs text-amber-400">
                 {ref.status}
@@ -80,33 +100,7 @@ export default function ClinicalAiGovernancePage() {
         </ul>
       </section>
 
-      {copy.sections.map((section) => (
-        <section
-          key={section.id}
-          aria-labelledby={section.id}
-          className="border-t border-white/[0.08] py-8 sm:py-10"
-        >
-          <h2
-            id={section.id}
-            className="text-2xl font-semibold tracking-[-0.02em] sm:text-3xl"
-          >
-            {section.heading}
-          </h2>
-          <p className="mt-3 max-w-3xl break-words text-slate-300">
-            {section.summary}
-          </p>
-          <p className="mt-4 font-mono text-xs text-slate-400">
-            Planned in{" "}
-            <a
-              href={aiGovernanceIssueUrl(section.plannedIssue)}
-              className={LINK}
-            >
-              issue #{section.plannedIssue}
-            </a>
-            .
-          </p>
-        </section>
-      ))}
+      <AiGovernanceWorkspace evidence={evidence} />
     </PageLayout>
   );
 }

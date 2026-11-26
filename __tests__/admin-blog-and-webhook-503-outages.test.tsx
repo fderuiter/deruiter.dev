@@ -207,7 +207,7 @@ describe("Admin Blog, QStash Retry, and Newsletter Confirm 503 Outage States", (
     );
 
     expect(res.status).toBe(503);
-    expect(mockScheduleEmailRetry).toHaveBeenCalledWith("queue-outage-1", 1);
+    expect(mockScheduleEmailRetry).toHaveBeenCalledWith("queue-outage-1", 1, 0);
   });
 
   it("returns branded HTML 503 page on /api/newsletter/confirm during storage outage", async () => {

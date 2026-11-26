@@ -480,6 +480,23 @@ describe("Per-Stroke Undo/Redo & IndexedDB Workspace Persistence", () => {
       ).toBeDefined();
     });
 
+    // WCAG 2.5.3 Label-in-Name: accessible names begin with each button's visible text
+    expect(
+      screen.getByRole("button", {
+        name: "Export CSV: ROI and histogram metrics",
+      }).textContent
+    ).toContain("Export CSV");
+    expect(
+      screen.getByRole("button", {
+        name: "Export Mask (.nii.gz): overlay layer",
+      }).textContent
+    ).toContain("Export Mask (.nii.gz)");
+    expect(
+      screen.getByRole("button", {
+        name: "Overlay (lesion-overlay.nii): toggle mask visibility",
+      }).textContent
+    ).toContain("Overlay (lesion-overlay.nii)");
+
     // Wait for debounced IndexedDB persistence, then simulate browser reload by remounting!
     await new Promise((r) => setTimeout(r, 180));
     unmount();

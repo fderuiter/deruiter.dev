@@ -108,7 +108,7 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
               type="button"
               onClick={onExportCsv}
               disabled={!histogram && !roiStats}
-              aria-label="Export ROI and histogram metrics as CSV"
+              aria-label="Export CSV: ROI and histogram metrics"
               className="min-h-[44px] px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 hover:text-emerald-300 font-bold text-[11px] transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <IconDownload className="w-3.5 h-3.5" />

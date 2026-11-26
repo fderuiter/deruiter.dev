@@ -290,7 +290,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               <button
                 type="button"
                 onClick={onToggleOverlayMask}
-                aria-label="Toggle imported overlay mask visibility"
+                aria-label={`${overlayMaskName ? `Overlay (${overlayMaskName})` : "Overlay"}: toggle mask visibility`}
                 className={`flex items-center gap-1.5 px-2.5 py-2 min-h-[44px] rounded-lg transition-all ${
                   showOverlayMask
                     ? "bg-brand-cyan/15 border border-brand-cyan/30 text-brand-cyan font-bold"
@@ -435,7 +435,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               <button
                 type="button"
                 onClick={onExportMask}
-                aria-label={`Export ${activeLayer} mask as .nii.gz`}
+                aria-label={`Export Mask (.nii.gz): ${activeLayer} layer`}
                 className="min-h-[44px] px-3 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 transition-all"
               >
                 <IconDownload className="w-3.5 h-3.5" />

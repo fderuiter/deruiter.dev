@@ -55,8 +55,8 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
       const jsonLdCount = await jsonLdScripts.count();
       expect(jsonLdCount).toBeGreaterThanOrEqual(1);
 
-      // Verify Global Footer is mounted and visible
-      const footer = page.locator("footer");
+      // Section footers can coexist with the site-wide contentinfo landmark.
+      const footer = page.getByRole("contentinfo");
       await expect(footer).toBeVisible();
 
       // Check Footer links contain key pillars

@@ -6,6 +6,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
+import { RecordedSuggestionsSection } from "@/components/study-data/RecordedSuggestionsSection";
 import {
   toDefinitionCounts,
   toScheduleDesign,
@@ -124,6 +125,8 @@ export default function StudyDataPage() {
         }}
         defaults={{ seed: DEFAULT_SEED, nSubjects: DEFAULT_SUBJECT_COUNT }}
       />
+
+      <RecordedSuggestionsSection />
 
       <section
         aria-labelledby="versions-title"

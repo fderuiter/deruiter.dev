@@ -612,11 +612,11 @@ export type ResendWebhookResponse = z.infer<typeof ResendWebhookResponseSchema>;
 
 /**
  * Body of the delayed QStash message that asks the app to retry one queued
- * outbound email (#715). Carries only the queue id; the message content stays
- * in the database.
+ * outbound email (#715). The message content stays in the database.
  */
 export const QStashRetryPayloadSchema = z.object({
   queueId: z.string().min(1).max(64),
+  followUps: z.number().int().nonnegative().optional(),
 });
 
 export type QStashRetryPayload = z.infer<typeof QStashRetryPayloadSchema>;

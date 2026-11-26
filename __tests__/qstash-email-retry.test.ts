@@ -19,6 +19,7 @@ import { POST } from "@/app/api/webhooks/qstash/retry/route";
 import {
   getQStashRetryDelaySeconds,
   getQStashRetryUrl,
+  MAX_QSTASH_FOLLOW_UPS,
   scheduleEmailRetry,
 } from "@/lib/qstash-retry";
 
@@ -240,13 +241,14 @@ describe("QStash email retry", () => {
       expect(res.status).toBe(422);
     });
 
-    it("answers 503 so QStash redelivers when processing throws", async () => {
+    it("answers 503 when processing throws and leaves the row for maintenance", async () => {
       processRetryQueue.mockRejectedValue(new Error("db asleep"));
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(res.status).toBe(503);
+      expect(publishJSON).not.toHaveBeenCalled();
     });
 
-    it("answers 503 so QStash redelivers when the retry returns a failure (#1532)", async () => {
+    it("answers 503 when leasing the queue fails (#1532)", async () => {
       processRetryQueue.mockResolvedValue(
         createFailure(
           "QUEUE_LEASE_FAILED",
@@ -271,8 +273,27 @@ describe("QStash email retry", () => {
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(res.status).toBe(503);
       expect(publishJSON).toHaveBeenCalledWith(
-        expect.objectContaining({ body: { queueId: "q_123" }, delay: 300 })
+        expect.objectContaining({
+          body: { queueId: "q_123", followUps: 1 },
+          delay: 300,
+        })
       );
+    });
+
+    it("leaves the durable row for maintenance after the follow-up budget is spent", async () => {
+      processRetryQueue.mockResolvedValue(
+        createFailure("QUEUE_STATE_READ_FAILED", "Queue state unavailable")
+      );
+      const body = JSON.stringify({
+        queueId: "q_123",
+        followUps: MAX_QSTASH_FOLLOW_UPS,
+      });
+
+      const res = await POST(request(body, sign(body, CURRENT)));
+
+      expect(res.status).toBe(503);
+      expect(processRetryQueue).toHaveBeenCalledOnce();
+      expect(publishJSON).not.toHaveBeenCalled();
     });
 
     it("ignores validly signed deliveries on non-production deployments", async () => {

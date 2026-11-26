@@ -273,6 +273,25 @@ describe("CRF Studio - AST Formula & Rule Evaluator", () => {
       }
     });
 
+    it.each(["unmeasured", "70kg", true, Infinity])(
+      "rejects an invalid numeric input instead of returning a missing result: %s",
+      (input) => {
+        const fieldValues = { WEIGHT: input };
+        expect(
+          parseAndEvaluateFormula("WEIGHT + 10", fieldValues, sampleFields)
+        ).toMatchObject({
+          success: false,
+          error: { code: "EVALUATION_ERROR" },
+        });
+        expect(
+          parseAndEvaluateFormula("1 + 1", fieldValues, sampleFields)
+        ).toEqual({
+          success: true,
+          value: 2,
+        });
+      }
+    );
+
     it("returns success with null value when declared fields are empty or carry CDISC null flavors", () => {
       expect(parseAndEvaluateFormula("WEIGHT + 10", {}, sampleFields)).toEqual({
         success: true,

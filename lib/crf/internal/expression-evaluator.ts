@@ -78,7 +78,18 @@ const SUPPORTED_MATH_FUNCTIONS = new Set([
   "log",
 ]);
 
-const NUMBER_LITERAL_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/;
+const NUMBER_LITERAL = String.raw`(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?`;
+const NUMBER_LITERAL_RE = new RegExp(`^${NUMBER_LITERAL}`);
+const NUMERIC_INPUT_RE = new RegExp(`^[+-]?${NUMBER_LITERAL}$`);
+
+function readFormulaInput(rawValue: unknown): number | null {
+  if (isMissingOrNullFlavor(rawValue)) return null;
+  if (typeof rawValue === "number") return rawValue;
+  if (typeof rawValue === "string" && NUMERIC_INPUT_RE.test(rawValue.trim())) {
+    return Number(rawValue);
+  }
+  return NaN;
+}
 
 function tokenize(input: string): Token[] {
   const tokens: Token[] = [];
@@ -495,8 +506,15 @@ export class ExpressionEvaluator {
 
       // Variable reference lookup
       const varKey = idToken.value.toLowerCase();
-      if (varKey in this.context) {
-        return this.context[varKey];
+      if (Object.hasOwn(this.context, varKey)) {
+        const value = this.context[varKey];
+        if (value !== null && !Number.isFinite(value)) {
+          throw new FormulaParseError(
+            "EVALUATION_ERROR",
+            `Variable "${idToken.value}" must have a finite numeric value`
+          );
+        }
+        return value;
       }
       if (this.allowUnknownVarsDepth > 0) {
         return null;
@@ -539,19 +557,13 @@ export function parseAndEvaluateFormula(
   }
 
   // Build lookup mapping lowercase variable names and field IDs to numeric values or null
-  const context: Record<string, number | null> = {};
+  const context: Record<string, number | null> = Object.create(null);
   const lowerFieldValues = new Map<string, unknown>();
 
   Object.entries(fieldValues || {}).forEach(([k, rawVal]) => {
     const lowerKey = k.toLowerCase();
     lowerFieldValues.set(lowerKey, rawVal);
-    if (isMissingOrNullFlavor(rawVal)) {
-      context[lowerKey] = null;
-    } else {
-      const num =
-        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
-      context[lowerKey] = Number.isFinite(num) ? num : null;
-    }
+    context[lowerKey] = readFormulaInput(rawVal);
   });
 
   (fieldsList || []).forEach((f) => {
@@ -564,19 +576,13 @@ export function parseAndEvaluateFormula(
       lowerFieldValues.get(varKey) ??
       f.nullFlavorValue;
 
-    if (!isMissingOrNullFlavor(rawVal)) {
-      const num =
-        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
-      const safeNum = Number.isFinite(num) ? num : null;
-      context[idKey] = safeNum;
-      context[varKey] = safeNum;
+    const value = readFormulaInput(rawVal);
+    if (value !== null) {
+      context[idKey] = value;
+      context[varKey] = value;
     } else {
-      if (!(idKey in context) || context[idKey] === null) {
-        context[idKey] = null;
-      }
-      if (!(varKey in context) || context[varKey] === null) {
-        context[varKey] = null;
-      }
+      context[idKey] ??= null;
+      context[varKey] ??= null;
     }
   });
 
@@ -1548,9 +1554,7 @@ export function explainCalculationDerivation(
       message = `Input value for '${vName}' is missing.`;
       missingInputs.push(vName);
     } else {
-      const num =
-        typeof rawVal === "number" ? rawVal : parseFloat(String(rawVal));
-      if (!Number.isFinite(num)) {
+      if (!Number.isFinite(readFormulaInput(rawVal))) {
         status = "invalid_value";
         message = `Value '${rawVal}' for '${vName}' cannot be converted to a valid number.`;
         missingInputs.push(vName);

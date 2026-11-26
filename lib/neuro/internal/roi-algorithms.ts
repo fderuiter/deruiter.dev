@@ -1,10 +1,8 @@
 /**
  * NeuroRecon Core ROI & Marching Squares Analytics Algorithms
- * Contains pure, high-performance computational routines for:
- * 1. 2D Marching Squares vector contour extraction
- * 2. Automated 3D region-growing segmentation
- * 3. 256-bin signal intensity histogram aggregation
- * 4. Full-volume continuous QA anomaly scanning
+ * Pure computational routines for 2D Marching Squares vector contour extraction,
+ * automated 3D region-growing segmentation, 256-bin signal intensity histogram
+ * aggregation, and full-volume continuous QA anomaly scanning.
  */
 
 import {
@@ -15,8 +13,9 @@ import {
   ROISegmentationResult,
   VectorContourPath,
   VoxelCoord,
+  VoxelSpacing,
 } from "../types";
-import { getIndex } from "../volume-generator";
+import { DEFAULT_VOXEL_SPACING, getIndex } from "../volume-generator";
 import { clamp } from "../../game-utils";
 
 /**
@@ -141,6 +140,18 @@ export function computeMarchingSquares(
 }
 
 /**
+ * Compute physical volume of a single voxel in cubic millimeters.
+ */
+export function getVoxelVolumeMm3(
+  spacing: VoxelSpacing = DEFAULT_VOXEL_SPACING
+): number {
+  const sx = Number.isFinite(spacing.x) && spacing.x > 0 ? spacing.x : 1;
+  const sy = Number.isFinite(spacing.y) && spacing.y > 0 ? spacing.y : 1;
+  const sz = Number.isFinite(spacing.z) && spacing.z > 0 ? spacing.z : 1;
+  return sx * sy * sz;
+}
+
+/**
  * Execute 3D region-growing segmentation starting from a seed voxel.
  */
 export function runRegionGrowing(
@@ -148,17 +159,19 @@ export function runRegionGrowing(
   brainmask: Uint8Array,
   dimensions: { width: number; height: number; depth: number },
   seed: VoxelCoord,
-  intensityTolerance = 15
+  intensityTolerance = 15,
+  spacing: VoxelSpacing = DEFAULT_VOXEL_SPACING
 ): ROISegmentationResult {
   const { width, height, depth } = dimensions;
   const totalVoxels = width * height * depth;
   const roiMask = new Uint8Array(totalVoxels);
+  const voxelVolumeMm3 = getVoxelVolumeMm3(spacing);
 
   const seedX = clamp(Math.round(seed.x), 0, width - 1);
   const seedY = clamp(Math.round(seed.y), 0, height - 1);
   const seedZ = clamp(Math.round(seed.z), 0, depth - 1);
 
-  const seedIndex = getIndex(seedX, seedY, seedZ, width);
+  const seedIndex = getIndex(seedX, seedY, seedZ, width, height);
   const seedIntensity = rawT1[seedIndex];
 
   // If seed is outside brainmask or seed is background air, return empty
@@ -179,7 +192,10 @@ export function runRegionGrowing(
   }
 
   const visited = new Uint8Array(totalVoxels);
-  const queue: number[] = [seedIndex];
+  const queue = new Int32Array(totalVoxels);
+  let head = 0;
+  let tail = 0;
+  queue[tail++] = seedIndex;
   visited[seedIndex] = 1;
   roiMask[seedIndex] = 1;
 
@@ -199,8 +215,8 @@ export function runRegionGrowing(
     [0, 0, 1],
   ];
 
-  while (queue.length > 0) {
-    const currIdx = queue.shift()!;
+  while (head < tail) {
+    const currIdx = queue[head++];
     const cz = Math.floor(currIdx / (width * height));
     const rem = currIdx % (width * height);
     const cy = Math.floor(rem / width);
@@ -226,13 +242,13 @@ export function runRegionGrowing(
         nz >= 0 &&
         nz < depth
       ) {
-        const nIdx = getIndex(nx, ny, nz, width);
+        const nIdx = getIndex(nx, ny, nz, width, height);
         if (visited[nIdx] === 0 && brainmask[nIdx] === 1) {
           const nVal = rawT1[nIdx];
           if (Math.abs(nVal - seedIntensity) <= intensityTolerance) {
             visited[nIdx] = 1;
             roiMask[nIdx] = 1;
-            queue.push(nIdx);
+            queue[tail++] = nIdx;
           }
         }
       }
@@ -248,7 +264,7 @@ export function runRegionGrowing(
   const slice2D = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      slice2D[y * width + x] = roiMask[getIndex(x, y, seedZ, width)];
+      slice2D[y * width + x] = roiMask[getIndex(x, y, seedZ, width, height)];
     }
   }
 
@@ -266,7 +282,7 @@ export function runRegionGrowing(
     stats: {
       seed: { x: seedX, y: seedY, z: seedZ },
       voxelCount,
-      volumeMm3: voxelCount, // 1 mm³ isotropic voxels
+      volumeMm3: Number((voxelCount * voxelVolumeMm3).toFixed(2)),
       meanIntensity: Number(meanIntensity.toFixed(2)),
       stdDevIntensity: Number(stdDevIntensity.toFixed(2)),
       minIntensity,
@@ -281,9 +297,11 @@ export function runRegionGrowing(
  */
 export function compute256BinHistogram(
   data: Uint8Array,
-  mask?: Uint8Array
+  mask?: Uint8Array,
+  spacing: VoxelSpacing = DEFAULT_VOXEL_SPACING
 ): HistogramStats {
   const bins = new Uint32Array(256);
+  const voxelVolumeMm3 = getVoxelVolumeMm3(spacing);
   let totalVoxels = 0;
   let sum = 0;
   let sumSq = 0;
@@ -351,7 +369,7 @@ export function compute256BinHistogram(
     median,
     mode,
     totalVoxels,
-    volumeMm3: totalVoxels,
+    volumeMm3: Number((totalVoxels * voxelVolumeMm3).toFixed(2)),
   };
 }
 
@@ -440,7 +458,7 @@ export function scanVolumeQAAnomalies(volume: {
     let totalMask = 0;
     for (let y = 0; y < height; y += 2) {
       for (let x = 0; x < width; x += 2) {
-        const idx = getIndex(x, y, z, width);
+        const idx = getIndex(x, y, z, width, height);
         if (volume.brainmask[idx] === 1) {
           totalMask++;
           if (volume.rawT1[idx] < 15) {

@@ -19,13 +19,66 @@ export interface ControlPoint {
   timestamp: number;
 }
 
+export type NeuroEditLayer = "brainmask" | "wm" | "overlay";
+
 export interface VoxelEdit {
   x: number;
   y: number;
   z: number;
   originalValue: number;
   newValue: number;
-  layer: "brainmask" | "wm";
+  layer: NeuroEditLayer;
+}
+
+export interface VoxelSpacing {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export type AffineMatrix4x4 = readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+
+export type VolumeSourceFormat = "synthetic" | "nifti" | "mgz";
+
+export interface OverlayMaskLayer {
+  name: string;
+  data: Uint8Array;
+  opacity: number;
+  visible: boolean;
+  dimensions: VolumeDimensions;
+  spacing: VoxelSpacing;
+  affine: AffineMatrix4x4;
+}
+
+export interface NeuroStroke {
+  id: string;
+  kind: "paint" | "erase" | "control_point";
+  layer?: NeuroEditLayer;
+  voxelEdits: VoxelEdit[];
+  controlPoint?: ControlPoint;
+  timestamp: number;
+}
+
+export interface NeuroStrokeHistory {
+  undoStack: NeuroStroke[];
+  redoStack: NeuroStroke[];
 }
 
 export type SlicePlane = "axial" | "coronal" | "sagittal";
@@ -500,6 +553,13 @@ export interface MeshWorkerRequest {
   mode: SurfaceMode;
   hemiFilter: HemisphereFilter;
   wireframe?: boolean;
+  extractionMode?: "procedural" | "marching_cubes";
+  volumeData?: Uint8Array;
+  maskData?: Uint8Array;
+  dimensions?: VolumeDimensions;
+  spacing?: VoxelSpacing;
+  isovalue?: number;
+  downsampleStride?: number;
 }
 
 export interface HemisphereBufferTransfer {
@@ -615,6 +675,7 @@ export interface ROIWorkerRequest {
   wmMask?: Uint8Array;
   roiMask?: Uint8Array;
   dimensions?: { width: number; height: number; depth: number };
+  spacing?: VoxelSpacing;
   scenarioId?: ScenarioId;
 }
 

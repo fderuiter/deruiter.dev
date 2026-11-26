@@ -143,4 +143,19 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
       );
     });
   });
+
+  describe("Restore-Only Pull Request Caching", () => {
+    const workflowDir = path.join(process.cwd(), ".github/workflows");
+    const workflowFiles = fs
+      .readdirSync(workflowDir)
+      .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
+
+    it.each(workflowFiles)(
+      "%s never uses combined actions/cache@ (all custom caches split restore from main-only save)",
+      (file) => {
+        const text = fs.readFileSync(path.join(workflowDir, file), "utf8");
+        expect(text).not.toMatch(/uses:\s*actions\/cache@/);
+      }
+    );
+  });
 });

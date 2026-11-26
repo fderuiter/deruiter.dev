@@ -66,4 +66,20 @@ describe("LintFormHandler (Logic Test)", () => {
       expect(result.error.code).toBe("INVALID_FORM");
     }
   });
+
+  it("returns LINTING_FAILED when injected lintForm dependency throws", () => {
+    const failingHandler = new LintFormHandler({
+      lintForm: () => {
+        throw new Error("AST linter failure");
+      },
+    });
+    const result = failingHandler.execute({
+      form: fromPartial<CRFForm>({ id: "form_err", sections: [] }),
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("LINTING_FAILED");
+    }
+  });
 });

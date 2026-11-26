@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { fromPartial } from "@total-typescript/shoehorn";
 import {
   ExtractClientIpHandler,
+  extractClientIp,
+  extractHeaderValue,
   type ExtractClientIpInput,
 } from "@/lib/services";
 
@@ -18,6 +20,35 @@ describe("ExtractClientIpHandler (Logic Test)", () => {
     if (result.success) {
       expect(result.data.ip).toBe("198.51.100.42");
     }
+  });
+
+  it("supports bare Headers, plain header maps, array headers, x-real-ip, and loopback fallbacks", () => {
+    expect(extractHeaderValue(undefined, "x-forwarded-for")).toBeUndefined();
+    expect(extractHeaderValue(null, "x-forwarded-for")).toBeUndefined();
+    expect(
+      extractHeaderValue(
+        new Headers({ "x-real-ip": "203.0.113.9" }),
+        "x-real-ip"
+      )
+    ).toBe("203.0.113.9");
+    expect(
+      extractHeaderValue(
+        { "x-forwarded-for": ["198.51.100.88", "10.0.0.2"] },
+        "X-Forwarded-For"
+      )
+    ).toBe("198.51.100.88");
+    expect(extractHeaderValue({ "X-Custom": "direct-case" }, "X-Custom")).toBe(
+      "direct-case"
+    );
+
+    expect(extractClientIp()).toBe("127.0.0.1");
+    expect(
+      extractClientIp({
+        "x-forwarded-for": " , ",
+        "x-real-ip": " 203.0.113.77 ",
+      })
+    ).toBe("203.0.113.77");
+    expect(extractClientIp({ "x-real-ip": "   " })).toBe("127.0.0.1");
   });
 
   it("returns INVALID_INPUT failure when extractor throws", () => {

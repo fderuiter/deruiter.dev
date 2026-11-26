@@ -463,7 +463,12 @@ export function AiGovernanceWorkspace({
             </button>
           </div>
 
-          <div className="mt-5 min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11]">
+          <div
+            role="region"
+            aria-label="Safeguard crosswalk table"
+            tabIndex={0}
+            className="mt-5 min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
+          >
             <table className="w-full border-collapse text-left text-sm">
               <caption className="sr-only">
                 Safeguard crosswalk linking external guidance drafts and
@@ -715,7 +720,12 @@ export function AiGovernanceWorkspace({
 
             {/* Recorded CORE findings sample */}
             <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-2">
-              <div className="min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11]">
+              <div
+                role="region"
+                aria-label="Recorded CDISC CORE findings table"
+                tabIndex={0}
+                className="min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
+              >
                 <table className="w-full border-collapse text-left text-xs">
                   <caption className="border-b border-white/[0.08] bg-[#181b21] px-3.5 py-2.5 text-left font-mono text-xs font-semibold text-white">
                     Recorded CDISC CORE findings (top 5 for active run)
@@ -769,7 +779,12 @@ export function AiGovernanceWorkspace({
               </div>
 
               {/* Package SHA-256 artifact digests */}
-              <div className="min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11]">
+              <div
+                role="region"
+                aria-label="Selected eCTD module 5 file digests table"
+                tabIndex={0}
+                className="min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
+              >
                 <table className="w-full border-collapse text-left text-xs">
                   <caption className="border-b border-white/[0.08] bg-[#181b21] px-3.5 py-2.5 text-left font-mono text-xs font-semibold text-white">
                     Selected eCTD module 5 file SHA-256 digests
@@ -1171,7 +1186,7 @@ export function AiGovernanceWorkspace({
                           [criterion.id]: Number(event.target.value),
                         }))
                       }
-                      className="mt-1.5 h-6 w-full accent-amber-400 focus-visible:outline-2 focus-visible:outline-amber-400"
+                      className="mt-1.5 min-h-11 w-full cursor-pointer accent-amber-400 focus-visible:outline-2 focus-visible:outline-amber-400"
                     />
                   </div>
                 );
@@ -1221,7 +1236,12 @@ export function AiGovernanceWorkspace({
           </div>
 
           {/* Sensitivity rankings */}
-          <div className="mt-6 min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11]">
+          <div
+            role="region"
+            aria-label="Fictional vendor weight sensitivity table"
+            tabIndex={0}
+            className="mt-6 min-w-0 overflow-x-auto border border-white/[0.08] bg-[#0d0e11] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
+          >
             <table className="w-full border-collapse text-left text-xs">
               <caption className="border-b border-white/[0.08] bg-[#181b21] px-4 py-2.5 text-left font-mono text-xs font-semibold text-white">
                 Single-weight +-25% sensitivity check (sensitivity)

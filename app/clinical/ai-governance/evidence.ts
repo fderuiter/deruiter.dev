@@ -167,6 +167,40 @@ function requirePipelineRule(
   return match;
 }
 
+function toBinarySeverity(
+  severity: "error" | "warning" | "notice"
+): "error" | "warning" {
+  return severity === "error" ? "error" : "warning";
+}
+
+function toCrfCheck(
+  violation: ComplianceViolation
+): AiFailureModeCard["crfCheck"] {
+  if (!violation.suggestedFix) {
+    throw new Error(
+      `Expected suggestedFix on deterministic CRF violation ${violation.ruleId}.`
+    );
+  }
+  return {
+    ruleId: violation.ruleId,
+    severity: toBinarySeverity(violation.severity),
+    message: violation.message,
+    suggestedFix: violation.suggestedFix,
+  };
+}
+
+function toPipelineCheck(
+  rule: ConformanceRule
+): AiFailureModeCard["pipelineCheck"] {
+  return {
+    ruleId: rule.id,
+    severity: toBinarySeverity(rule.severity),
+    layer: rule.scope.layer,
+    domain: rule.scope.domain,
+    citation: rule.citation,
+  };
+}
+
 function buildFailureModes(): readonly AiFailureModeCard[] {
   const violations = validateStudyCompliance(buildSyntheticAiDraftStudy());
   const sd0001 = requireViolation(violations, "SD0001");
@@ -209,20 +243,8 @@ function buildFailureModes(): readonly AiFailureModeCard[] {
         "A model drafts human-readable variable identifiers such as AE_SEVERITY_GRADE that break SAS XPORT v5 and SDTM variable-length rules.",
       demoExample:
         "Synthetic DEMO-301 AE draft introduces 17-character variable AE_SEVERITY_GRADE.",
-      crfCheck: {
-        ruleId: sd0001.ruleId,
-        severity: sd0001.severity === "error" ? "error" : "warning",
-        message: sd0001.message,
-        suggestedFix:
-          sd0001.suggestedFix ?? "Truncate to 8 uppercase characters",
-      },
-      pipelineCheck: {
-        ruleId: studyDayAeRule.id,
-        severity: studyDayAeRule.severity === "error" ? "error" : "warning",
-        layer: studyDayAeRule.scope.layer,
-        domain: studyDayAeRule.scope.domain,
-        citation: studyDayAeRule.citation,
-      },
+      crfCheck: toCrfCheck(sd0001),
+      pipelineCheck: toPipelineCheck(studyDayAeRule),
       humanReviewGate:
         "Clinical Data Manager reviews target SDTM variable mapping before accepting any rename.",
     },
@@ -234,19 +256,8 @@ function buildFailureModes(): readonly AiFailureModeCard[] {
         "Summarising a protocol section into a form drops mandatory collection fields such as the reported adverse event term (AETERM).",
       demoExample:
         "Synthetic DEMO-301 AE draft omits AETERM while keeping secondary fields.",
-      crfCheck: {
-        ruleId: sd0002.ruleId,
-        severity: sd0002.severity === "error" ? "error" : "warning",
-        message: sd0002.message,
-        suggestedFix: sd0002.suggestedFix ?? "Insert missing core variable",
-      },
-      pipelineCheck: {
-        ruleId: requiredAeRule.id,
-        severity: requiredAeRule.severity === "error" ? "error" : "warning",
-        layer: requiredAeRule.scope.layer,
-        domain: requiredAeRule.scope.domain,
-        citation: requiredAeRule.citation,
-      },
+      crfCheck: toCrfCheck(sd0002),
+      pipelineCheck: toPipelineCheck(requiredAeRule),
       humanReviewGate:
         "Standards Reviewer and CDM verify required domain variables against the study schedule.",
     },
@@ -258,19 +269,8 @@ function buildFailureModes(): readonly AiFailureModeCard[] {
         "Prompted form generation emits ad-hoc radio choices (Yes/No/Maybe) instead of binding NCI controlled terminology codes.",
       demoExample:
         "Choice field AESER on DEMO-301 lacks codelist C66742 binding, risking off-codelist values.",
-      crfCheck: {
-        ruleId: sd0003.ruleId,
-        severity: sd0003.severity === "error" ? "error" : "warning",
-        message: sd0003.message,
-        suggestedFix: sd0003.suggestedFix ?? "Bind NCI codelist",
-      },
-      pipelineCheck: {
-        ruleId: ctAesRule.id,
-        severity: ctAesRule.severity === "error" ? "error" : "warning",
-        layer: ctAesRule.scope.layer,
-        domain: ctAesRule.scope.domain,
-        citation: ctAesRule.citation,
-      },
+      crfCheck: toCrfCheck(sd0003),
+      pipelineCheck: toPipelineCheck(ctAesRule),
       humanReviewGate:
         "Standards Reviewer confirms codelist extensibility and submission values against the pinned CT subset.",
     },
@@ -282,19 +282,8 @@ function buildFailureModes(): readonly AiFailureModeCard[] {
         "Generated defaults or synthetic examples insert US-formatted strings (02/30/2026) or nonexistent calendar days.",
       demoExample:
         "Date field AESTDTC defaults to 02/30/2026 instead of ISO 8601 YYYY-MM-DD.",
-      crfCheck: {
-        ruleId: sd0004.ruleId,
-        severity: sd0004.severity === "error" ? "error" : "warning",
-        message: sd0004.message,
-        suggestedFix: sd0004.suggestedFix ?? "Format as ISO 8601 YYYY-MM-DD",
-      },
-      pipelineCheck: {
-        ruleId: isoDateRule.id,
-        severity: isoDateRule.severity === "error" ? "error" : "warning",
-        layer: isoDateRule.scope.layer,
-        domain: isoDateRule.scope.domain,
-        citation: isoDateRule.citation,
-      },
+      crfCheck: toCrfCheck(sd0004),
+      pipelineCheck: toPipelineCheck(isoDateRule),
       humanReviewGate:
         "Pipeline leaves derived study day missing rather than rolling invalid dates forward; CDM resolves source query.",
     },
@@ -306,19 +295,8 @@ function buildFailureModes(): readonly AiFailureModeCard[] {
         "An assistant creates a Vital Signs form definition without assigning it to any scheduled visit in the study matrix.",
       demoExample:
         "Non-log Vital Signs form on DEMO-301 has zero visit assignments.",
-      crfCheck: {
-        ruleId: sd0005.ruleId,
-        severity: sd0005.severity === "error" ? "error" : "warning",
-        message: sd0005.message,
-        suggestedFix: sd0005.suggestedFix ?? "Assign form to study visit",
-      },
-      pipelineCheck: {
-        ruleId: sdtmLineageRule.id,
-        severity: sdtmLineageRule.severity === "error" ? "error" : "warning",
-        layer: sdtmLineageRule.scope.layer,
-        domain: sdtmLineageRule.scope.domain,
-        citation: sdtmLineageRule.citation,
-      },
+      crfCheck: toCrfCheck(sd0005),
+      pipelineCheck: toPipelineCheck(sdtmLineageRule),
       humanReviewGate:
         "Clinical Operations and CDM review Visit Matrix impact preview before changing schedule bindings.",
     },
@@ -338,13 +316,7 @@ function buildFailureModes(): readonly AiFailureModeCard[] {
         suggestedFix:
           "Generate SDTM and ADaM exclusively through the deterministic pipeline",
       },
-      pipelineCheck: {
-        ruleId: adamLineageRule.id,
-        severity: adamLineageRule.severity === "error" ? "error" : "warning",
-        layer: adamLineageRule.scope.layer,
-        domain: adamLineageRule.scope.domain,
-        citation: adamLineageRule.citation,
-      },
+      pipelineCheck: toPipelineCheck(adamLineageRule),
       humanReviewGate:
         "Biostatistician verifies row-level lineage from analysis tables back to SDTM and collected source records.",
     },
@@ -390,28 +362,64 @@ function buildPinnedStandards(): readonly GovernanceStandardPin[] {
   ];
 }
 
+interface BaselineCounts {
+  readonly errors: number;
+  readonly warnings: number;
+  readonly pkgFindings: number;
+}
+
+type ScenarioTarget =
+  | { readonly kind: "baseline" }
+  | {
+      readonly kind: "injected";
+      readonly scenarioId: ScenarioId;
+      readonly baselineDigests: ReadonlyMap<string, string>;
+      readonly baselineCounts: BaselineCounts;
+    };
+
+function requireScenarioMeta(scenarioId: ScenarioId) {
+  const match = MESSY_DATA_SCENARIOS.find((item) => item.id === scenarioId);
+  if (!match) {
+    throw new Error(`Expected messy-data scenario metadata for ${scenarioId}.`);
+  }
+  return match;
+}
+
+function outcomeCount(
+  outcomes: Readonly<Record<string, number>>,
+  key: string
+): number {
+  return outcomes[key] ?? 0;
+}
+
+function appendPositiveOrNegativeDelta(
+  parts: string[],
+  diff: number,
+  label: string
+): void {
+  if (diff !== 0) {
+    const prefix = diff > 0 ? "+" : "";
+    parts.push(`${prefix}${diff} ${label}`);
+  }
+}
+
 async function buildScenarioEvidence(
   recorded: RecordedFindings,
-  scenarioId: "default" | ScenarioId,
-  baselineDigests: ReadonlyMap<string, string> | null,
-  baselineCounts: {
-    readonly errors: number;
-    readonly warnings: number;
-    readonly pkgFindings: number;
-  } | null
+  target: ScenarioTarget
 ): Promise<{
   readonly evidence: GovernanceScenarioEvidence;
   readonly digestMap: ReadonlyMap<string, string>;
 }> {
-  const isBaseline = scenarioId === "default";
+  const isBaseline = target.kind === "baseline";
+  const scenarioId = isBaseline ? "default" : target.scenarioId;
   const scenarioMeta = isBaseline
     ? null
-    : (MESSY_DATA_SCENARIOS.find((item) => item.id === scenarioId) ?? null);
+    : requireScenarioMeta(target.scenarioId);
 
   const run = runPipeline(DEMO_301_STUDY, {
     seed: DEFAULT_SEED,
     nSubjects: DEFAULT_SUBJECT_COUNT,
-    ...(isBaseline ? {} : { scenarios: [scenarioId] }),
+    ...(isBaseline ? {} : { scenarios: [target.scenarioId] }),
   });
 
   const pkg = await buildStudyDataPackage(run, {
@@ -422,17 +430,15 @@ async function buildScenarioEvidence(
     defaultStudy: true,
     seed: DEFAULT_SEED,
     nSubjects: DEFAULT_SUBJECT_COUNT,
-    ...(isBaseline ? {} : { scenario: scenarioId }),
+    ...(isBaseline ? {} : { scenario: target.scenarioId }),
     defaults: { seed: DEFAULT_SEED, nSubjects: DEFAULT_SUBJECT_COUNT },
   });
-  if (!viewKey) {
+  const recordedView = viewKey ? recorded.views[viewKey] : undefined;
+  if (!viewKey || !recordedView) {
     throw new Error(`Expected recorded CORE view for ${scenarioId}.`);
   }
 
   const coreReport = coreViewReport(recorded, viewKey);
-  const inputSha256 = isBaseline
-    ? recorded.views.default.inputSha256
-    : (recorded.views[scenarioId]?.inputSha256 ?? "");
 
   const digestMap = new Map<string, string>();
   for (const file of pkg.packageManifest.files) {
@@ -443,15 +449,16 @@ async function buildScenarioEvidence(
     WATCHED_PACKAGE_PATHS.flatMap((path) => {
       const entry = pkg.packageManifest.files.find((f) => f.path === path);
       if (!entry) return [];
-      const baseSha = baselineDigests?.get(path);
+      const changedFromBaseline =
+        target.kind === "injected" &&
+        target.baselineDigests.get(path) !== entry.sha256;
       return [
         {
           path: entry.path,
           mediaType: entry.mediaType,
           bytes: entry.bytes,
           sha256: entry.sha256,
-          changedFromBaseline:
-            baseSha !== undefined ? baseSha !== entry.sha256 : false,
+          changedFromBaseline,
         },
       ];
     });
@@ -466,40 +473,50 @@ async function buildScenarioEvidence(
     0
   );
 
-  const localDeltaSummary = isBaseline
-    ? "Clean seeded DEMO-301 baseline: zero local errors across 90 synthetic subjects."
-    : (() => {
-        const errDiff = localErrors - (baselineCounts?.errors ?? 0);
-        const warnDiff = localWarnings - (baselineCounts?.warnings ?? 0);
-        const pkgDiff = packageFindings - (baselineCounts?.pkgFindings ?? 0);
-        const parts: string[] = [];
-        if (errDiff !== 0)
-          parts.push(`${errDiff > 0 ? "+" : ""}${errDiff} local error`);
-        if (warnDiff !== 0)
-          parts.push(`${warnDiff > 0 ? "+" : ""}${warnDiff} local warning`);
-        if (pkgDiff !== 0)
-          parts.push(`${pkgDiff > 0 ? "+" : ""}${pkgDiff} package finding`);
-        if (coreAddedFindings > 0)
-          parts.push(`+${coreAddedFindings} recorded CORE finding`);
-        else parts.push("0 added CORE findings (caught by local gate)");
-        return parts.join(", ");
-      })();
+  let localDeltaSummary: string;
+  if (target.kind === "baseline") {
+    localDeltaSummary =
+      "Clean seeded DEMO-301 baseline: zero local errors across 90 synthetic subjects.";
+  } else {
+    const parts: string[] = [];
+    appendPositiveOrNegativeDelta(
+      parts,
+      localErrors - target.baselineCounts.errors,
+      "local error"
+    );
+    appendPositiveOrNegativeDelta(
+      parts,
+      localWarnings - target.baselineCounts.warnings,
+      "local warning"
+    );
+    appendPositiveOrNegativeDelta(
+      parts,
+      packageFindings - target.baselineCounts.pkgFindings,
+      "package finding"
+    );
+    parts.push(
+      coreAddedFindings > 0
+        ? `+${coreAddedFindings} recorded CORE finding`
+        : "0 added CORE findings (caught by local gate)"
+    );
+    localDeltaSummary = parts.join(", ");
+  }
 
   return {
     digestMap,
     evidence: {
       id: scenarioId,
-      label: isBaseline
-        ? "Baseline clean run (DEMO-301)"
-        : `${scenarioMeta?.title ?? scenarioId} (injected defect)`,
+      label: scenarioMeta
+        ? `${scenarioMeta.title} (injected defect)`
+        : "Baseline clean run (DEMO-301)",
       isBaseline,
-      description: isBaseline
-        ? "Default seeded DEMO-301 run (seed 301, 90 synthetic subjects) with no fault scenarios applied."
-        : (scenarioMeta?.description ?? ""),
-      expectedBehavior: isBaseline
-        ? "Every dataset, Define-XML file and reviewer guide hashes to a reproducible SHA-256 digest."
-        : (scenarioMeta?.expected.derivation ?? ""),
-      inputSha256,
+      description: scenarioMeta
+        ? scenarioMeta.description
+        : "Default seeded DEMO-301 run (seed 301, 90 synthetic subjects) with no fault scenarios applied.",
+      expectedBehavior: scenarioMeta
+        ? scenarioMeta.expected.derivation
+        : "Every dataset, Define-XML file and reviewer guide hashes to a reproducible SHA-256 digest.",
+      inputSha256: recordedView.inputSha256,
       manifestSha256: pkg.manifestSha256,
       totalFiles: pkg.packageManifest.files.length,
       localErrors,
@@ -507,10 +524,10 @@ async function buildScenarioEvidence(
       packageFindings,
       localDeltaSummary,
       coreRuleCount: coreReport.ruleCount,
-      corePassed: coreReport.outcomes.SUCCESS ?? 0,
-      coreIssuesReported: coreReport.outcomes["ISSUE REPORTED"] ?? 0,
-      coreSkipped: coreReport.outcomes.SKIPPED ?? 0,
-      coreExecutionErrors: coreReport.outcomes["EXECUTION ERROR"] ?? 0,
+      corePassed: outcomeCount(coreReport.outcomes, "SUCCESS"),
+      coreIssuesReported: outcomeCount(coreReport.outcomes, "ISSUE REPORTED"),
+      coreSkipped: outcomeCount(coreReport.outcomes, "SKIPPED"),
+      coreExecutionErrors: outcomeCount(coreReport.outcomes, "EXECUTION ERROR"),
       coreAddedFindings,
       topCoreFindings: coreReport.findings.slice(0, 5).map((finding) => ({
         coreId: finding.coreId,
@@ -536,13 +553,10 @@ export function loadAiGovernanceEvidence(): Promise<AiGovernanceWorkspaceEvidenc
       const failureModes = buildFailureModes();
       const pinnedStandards = buildPinnedStandards();
 
-      const baseline = await buildScenarioEvidence(
-        recorded,
-        "default",
-        null,
-        null
-      );
-      const baselineCounts = {
+      const baseline = await buildScenarioEvidence(recorded, {
+        kind: "baseline",
+      });
+      const baselineCounts: BaselineCounts = {
         errors: baseline.evidence.localErrors,
         warnings: baseline.evidence.localWarnings,
         pkgFindings: baseline.evidence.packageFindings,
@@ -550,12 +564,12 @@ export function loadAiGovernanceEvidence(): Promise<AiGovernanceWorkspaceEvidenc
 
       const injected = await Promise.all(
         SELECTED_DEFECT_SCENARIOS.map((scenarioId) =>
-          buildScenarioEvidence(
-            recorded,
+          buildScenarioEvidence(recorded, {
+            kind: "injected",
             scenarioId,
-            baseline.digestMap,
-            baselineCounts
-          )
+            baselineDigests: baseline.digestMap,
+            baselineCounts,
+          })
         )
       );
 

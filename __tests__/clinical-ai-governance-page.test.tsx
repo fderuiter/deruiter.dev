@@ -514,6 +514,28 @@ describe("clinical AI governance workspace (/clinical/ai-governance)", () => {
 
   it("has no WCAG 2.1 AA violations across initial and expanded states", async () => {
     const { container } = render(pageElement);
+
+    // Every horizontal scroll wrapper must be a named keyboard-focusable region (scrollable-region-focusable)
+    const expectedScrollRegions = [
+      "Safeguard crosswalk table",
+      "Recorded CDISC CORE findings table",
+      "Selected eCTD module 5 file digests table",
+      "Fictional vendor weight sensitivity table",
+    ];
+    for (const label of expectedScrollRegions) {
+      const region = screen.getByRole("region", { name: label });
+      expect(region.getAttribute("tabindex")).toBe("0");
+    }
+    expect(container.querySelectorAll(".overflow-x-auto")).toHaveLength(
+      expectedScrollRegions.length
+    );
+
+    // Vendor criterion sliders meet 44px minimum touch-target height on phone viewports
+    for (const criterion of DEFAULT_AI_VENDOR_CRITERIA) {
+      const slider = document.getElementById(`vendor-weight-${criterion.id}`);
+      expect(slider?.className).toContain("min-h-11");
+    }
+
     const initialAudit = await axe.run(container, {
       runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa"] },
     });

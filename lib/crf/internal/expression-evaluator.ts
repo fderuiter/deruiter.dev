@@ -78,13 +78,14 @@ const SUPPORTED_MATH_FUNCTIONS = new Set([
   "log",
 ]);
 
+const NUMBER_LITERAL_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/;
+
 function tokenize(input: string): Token[] {
   const tokens: Token[] = [];
   let i = 0;
-  const s = input.trim();
 
-  while (i < s.length) {
-    const ch = s[i];
+  while (i < input.length) {
+    const ch = input[i];
 
     if (/\s/.test(ch)) {
       i++;
@@ -123,51 +124,18 @@ function tokenize(input: string): Token[] {
     }
 
     // Numbers (integers, decimals, or scientific notation)
-    if (
-      /[0-9]/.test(ch) ||
-      (ch === "." && i + 1 < s.length && /[0-9]/.test(s[i + 1]))
-    ) {
-      let numStr = "";
-      let hasDot = false;
-      while (i < s.length) {
-        if (/[0-9]/.test(s[i])) {
-          numStr += s[i];
-          i++;
-        } else if (s[i] === "." && !hasDot) {
-          hasDot = true;
-          numStr += s[i];
-          i++;
-        } else {
-          break;
-        }
-      }
-      if (i < s.length && (s[i] === "e" || s[i] === "E")) {
-        const signOffset = s[i + 1] === "+" || s[i + 1] === "-" ? 1 : 0;
-        if (
-          i + 1 + signOffset < s.length &&
-          /[0-9]/.test(s[i + 1 + signOffset])
-        ) {
-          numStr += s[i];
-          i++;
-          if (signOffset) {
-            numStr += s[i];
-            i++;
-          }
-          while (i < s.length && /[0-9]/.test(s[i])) {
-            numStr += s[i];
-            i++;
-          }
-        }
-      }
-      tokens.push({ type: "NUMBER", value: numStr });
+    const numMatch = NUMBER_LITERAL_RE.exec(input.slice(i));
+    if (numMatch) {
+      tokens.push({ type: "NUMBER", value: numMatch[0] });
+      i += numMatch[0].length;
       continue;
     }
 
     // Identifiers or function names (e.g. weight, height, round, sqrt, max, min)
     if (/[a-zA-Z_]/.test(ch)) {
       let idStr = "";
-      while (i < s.length && /[a-zA-Z0-9_]/.test(s[i])) {
-        idStr += s[i];
+      while (i < input.length && /[a-zA-Z0-9_]/.test(input[i])) {
+        idStr += input[i];
         i++;
       }
       tokens.push({ type: "IDENTIFIER", value: idStr });

@@ -68,6 +68,8 @@ export const NUMERIC_DATA_TYPES: Set<ClinicalDataType> = new Set([
   "nrs_scale",
 ]);
 
+const NUMBER_LITERAL_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/;
+
 /**
  * Enhanced Tokenizer with character start/end coordinates and bracket matching
  */
@@ -117,43 +119,10 @@ export function tokenizeWithSpans(input: string): HighlightToken[] {
     }
 
     // Numbers (integers, decimals, or scientific notation)
-    if (
-      /[0-9]/.test(ch) ||
-      (ch === "." && i + 1 < input.length && /[0-9]/.test(input[i + 1]))
-    ) {
-      let numStr = "";
-      let hasDot = false;
-      while (i < input.length) {
-        if (/[0-9]/.test(input[i])) {
-          numStr += input[i];
-          i++;
-        } else if (input[i] === "." && !hasDot) {
-          hasDot = true;
-          numStr += input[i];
-          i++;
-        } else {
-          break;
-        }
-      }
-      if (i < input.length && (input[i] === "e" || input[i] === "E")) {
-        const signOffset = input[i + 1] === "+" || input[i + 1] === "-" ? 1 : 0;
-        if (
-          i + 1 + signOffset < input.length &&
-          /[0-9]/.test(input[i + 1 + signOffset])
-        ) {
-          numStr += input[i];
-          i++;
-          if (signOffset) {
-            numStr += input[i];
-            i++;
-          }
-          while (i < input.length && /[0-9]/.test(input[i])) {
-            numStr += input[i];
-            i++;
-          }
-        }
-      }
-      rawTokens.push({ type: "NUMBER", value: numStr, start, end: i });
+    const numMatch = NUMBER_LITERAL_RE.exec(input.slice(i));
+    if (numMatch) {
+      i += numMatch[0].length;
+      rawTokens.push({ type: "NUMBER", value: numMatch[0], start, end: i });
       continue;
     }
 

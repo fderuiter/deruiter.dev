@@ -144,76 +144,52 @@ describe("CRF Studio - AST Formula & Rule Evaluator", () => {
   describe("parseAndEvaluateFormula", () => {
     it("evaluates valid arithmetic, scientific notation, and clinical functions", () => {
       const bmiRes = parseAndEvaluateFormula(
-        "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+        "  round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)  ",
         { WEIGHT: 81, HEIGHT: 180 },
         sampleFields
       );
       expect(bmiRes).toEqual({ success: true, value: 25 });
 
-      const sciRes = parseAndEvaluateFormula("1.5e-3 + 2.5E2", {}, []);
+      const sciRes = parseAndEvaluateFormula("1.5e-3 + 2.5E2 + 1e+1", {}, []);
       expect(sciRes.success).toBe(true);
       if (sciRes.success) {
-        expect(sciRes.value).toBeCloseTo(250.0015, 4);
+        expect(sciRes.value).toBeCloseTo(260.0015, 4);
       }
+
+      const decimalEdges = parseAndEvaluateFormula(".5 + .25 + 3.", {}, []);
+      expect(decimalEdges).toEqual({ success: true, value: 3.75 });
     });
 
     it("returns SYNTAX_ERROR for invalid characters, trailing tokens, empty parens, and invalid arity", () => {
-      const invalidChars = parseAndEvaluateFormula(
+      for (const malformed of [
         "WEIGHT == 70",
-        { WEIGHT: 78 },
-        sampleFields
-      );
-      expect(invalidChars.success).toBe(false);
-      if (!invalidChars.success) {
-        expect(invalidChars.error.code).toBe("SYNTAX_ERROR");
-      }
-
-      const hashChar = parseAndEvaluateFormula(
         "HEIGHT # WEIGHT",
-        { HEIGHT: 180, WEIGHT: 75 },
-        sampleFields
-      );
-      expect(hashChar.success).toBe(false);
-      if (!hashChar.success) {
-        expect(hashChar.error.code).toBe("SYNTAX_ERROR");
-      }
-
-      const trailingTokens = parseAndEvaluateFormula(
+        "$5",
+        ".",
+        "1.2.3",
+        "1e+",
+        "1e-",
         "WEIGHT 70",
-        { WEIGHT: 78 },
-        sampleFields
-      );
-      expect(trailingTokens.success).toBe(false);
-      if (!trailingTokens.success) {
-        expect(trailingTokens.error.code).toBe("SYNTAX_ERROR");
-      }
-
-      const emptyParens = parseAndEvaluateFormula("()", {}, sampleFields);
-      expect(emptyParens.success).toBe(false);
-      if (!emptyParens.success) {
-        expect(emptyParens.error.code).toBe("SYNTAX_ERROR");
-      }
-
-      const badArity = parseAndEvaluateFormula("sqrt(16, 2)", {}, sampleFields);
-      expect(badArity.success).toBe(false);
-      if (!badArity.success) {
-        expect(badArity.error.code).toBe("SYNTAX_ERROR");
-      }
-
-      const badClampArity = parseAndEvaluateFormula(
+        "WEIGHT +",
+        "(WEIGHT + 1",
+        "WEIGHT + 1)",
+        "()",
+        "sqrt(16, 2)",
         "clamp(50, 0)",
-        {},
-        sampleFields
-      );
-      expect(badClampArity.success).toBe(false);
-      if (!badClampArity.success) {
-        expect(badClampArity.error.code).toBe("SYNTAX_ERROR");
-      }
-
-      const emptyMax = parseAndEvaluateFormula("max()", {}, sampleFields);
-      expect(emptyMax.success).toBe(false);
-      if (!emptyMax.success) {
-        expect(emptyMax.error.code).toBe("SYNTAX_ERROR");
+        "max()",
+      ]) {
+        const res = parseAndEvaluateFormula(
+          malformed,
+          { WEIGHT: 78, HEIGHT: 180 },
+          sampleFields
+        );
+        expect(res.success, `expected SYNTAX_ERROR for ${malformed}`).toBe(
+          false
+        );
+        if (!res.success) {
+          expect(res.error.code).toBe("SYNTAX_ERROR");
+          expect(res.error.message.length).toBeGreaterThan(0);
+        }
       }
     });
 

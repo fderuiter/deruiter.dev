@@ -384,6 +384,39 @@ describe("clinical AI governance workspace (/clinical/ai-governance)", () => {
     ).toBe("rejected");
   });
 
+  it("undoes only the accepted change while preserving later rejection decisions", () => {
+    const acceptedId = "prop-det-sd0003";
+    const rejectedId = "prop-hyp-ae-grade";
+    const rebasedId = "prop-fact-usdm-vs";
+    const initial = createInitialReviewSimulatorState();
+    const accepted = acceptGovernanceProposal(
+      inspectProposalDiff(initial, acceptedId),
+      acceptedId
+    );
+    const rejected = rejectGovernanceProposal(accepted, rejectedId);
+    const reconsidered = inspectProposalDiff(
+      rebaseGovernanceProposal(rejected, rebasedId),
+      rebasedId
+    );
+
+    const undone = undoGovernanceProposal(reconsidered);
+
+    expect(undone.studyRevision).toBe(initial.studyRevision);
+    expect(undone.fields).toEqual(initial.fields);
+    expect(undone.proposals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: acceptedId, status: "pending" }),
+        expect.objectContaining({ id: rejectedId, status: "rejected" }),
+        expect.objectContaining({
+          id: rebasedId,
+          baseStudyRevision: initial.studyRevision,
+          diffPreviewed: false,
+        }),
+      ])
+    );
+    expect(undone.reviewLog.map((entry) => entry.action)).toContain("reject");
+  });
+
   it("Section 4B recomputes fictional vendor rankings and +-25% sensitivity via @/lib/clinical-platform", () => {
     expect(scoreVendors(DEFAULT_AI_VENDOR_SCENARIO)).toHaveLength(
       FICTIONAL_AI_VENDORS.length

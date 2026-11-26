@@ -1016,7 +1016,8 @@ export function rejectGovernanceProposal(
 
 /**
  * Reverts the most recently accepted proposal in a single step, restoring the
- * prior study fields and revision counter (ADR 0035, ADR 0067).
+ * prior study fields and revision counter while preserving unrelated review
+ * decisions (ADR 0035, ADR 0067).
  */
 export function undoGovernanceProposal(
   state: ReviewSimulatorState
@@ -1025,12 +1026,32 @@ export function undoGovernanceProposal(
   const { acceptedProposalId, priorRevision, priorFields, priorProposals } =
     state.undoSnapshot;
   const nextStep = state.reviewLog.length + 1;
+  const priorById = new Map(
+    priorProposals.map((proposal) => [proposal.id, proposal])
+  );
 
   return {
     ...state,
     studyRevision: priorRevision,
     fields: priorFields,
-    proposals: priorProposals,
+    proposals: state.proposals.map((proposal) => {
+      const prior = priorById.get(proposal.id);
+      if (!prior) return proposal;
+      if (proposal.id === acceptedProposalId) return prior;
+
+      // A pending proposal rebased after the accept used the reverted fields.
+      if (
+        proposal.status === "pending" &&
+        proposal.baseStudyRevision > priorRevision
+      ) {
+        return {
+          ...proposal,
+          baseStudyRevision: prior.baseStudyRevision,
+          diffPreviewed: false,
+        };
+      }
+      return proposal;
+    }),
     undoSnapshot: null,
     lastBlockedReason: null,
     reviewLog: [

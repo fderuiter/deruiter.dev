@@ -35,6 +35,7 @@ import {
 import {
   clearNeuroLocalStorage,
   createEmptyStrokeHistory,
+  DEFAULT_ROI_INTENSITY_TOLERANCE,
   deriveDraftFromStrokeStack,
   exportMaskAsNiftiGz,
   exportRoiMetricsCsv,
@@ -497,7 +498,7 @@ export const NeuroReconClient: React.FC<NeuroReconClientProps> = ({
           volume.brainmask,
           volume.dimensions,
           seed,
-          15,
+          DEFAULT_ROI_INTENSITY_TOLERANCE,
           volume.spacing
         );
         if (seedSeq !== roiSeedSeqRef.current) return;

@@ -62,7 +62,7 @@ test.describe("NeuroRecon ROI Region Grow tool synchronization", () => {
     await expect(async () => {
       await page
         .getByRole("button", { name: "Open Split 3D/2D Slices" })
-        .click({ force: true });
+        .click();
       await expect(page.getByText("2D Multi-Planar Orthoview")).toBeVisible({
         timeout: 3000,
       });

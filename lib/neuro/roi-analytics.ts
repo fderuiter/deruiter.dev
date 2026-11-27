@@ -6,6 +6,7 @@
 
 import { logger } from "@/lib/logger";
 import {
+  DEFAULT_ROI_INTENSITY_TOLERANCE,
   compute256BinHistogram,
   computeMarchingSquares,
   runRegionGrowing,
@@ -154,7 +155,7 @@ export async function requestROISegmentationAsync(
   brainmask: Uint8Array,
   dimensions: { width: number; height: number; depth: number },
   seed: VoxelCoord,
-  intensityTolerance = 15,
+  intensityTolerance = DEFAULT_ROI_INTENSITY_TOLERANCE,
   spacing?: VoxelSpacing
 ): Promise<ROISegmentationResult> {
   const worker = getROIWorker();
@@ -571,6 +572,7 @@ export async function requestVolumeQAScanAsync(volume: {
 }
 
 export {
+  DEFAULT_ROI_INTENSITY_TOLERANCE,
   compute256BinHistogram,
   computeMarchingSquares,
   getVoxelVolumeMm3,

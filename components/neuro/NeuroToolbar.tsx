@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import { NeuroEditLayer, ToolMode } from "@/lib/neuro/types";
 import {
+  DEFAULT_ROI_INTENSITY_TOLERANCE,
   formatBytes,
   NEURO_RUN_RECON_KEY,
   NEURO_TOOL_HOTKEYS,
@@ -66,7 +67,7 @@ interface NeuroToolbarProps {
 export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
   toolMode,
   brushRadius,
-  roiTolerance = 15,
+  roiTolerance = DEFAULT_ROI_INTENSITY_TOLERANCE,
   activeLayer = "brainmask",
   hasOverlayMask = false,
   overlayMaskName,

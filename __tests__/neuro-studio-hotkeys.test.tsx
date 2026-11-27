@@ -12,6 +12,7 @@ import {
   fireEvent,
 } from "@testing-library/react";
 import { NeuroReconClient } from "@/components/neuro/NeuroReconClient";
+import { DEFAULT_ROI_INTENSITY_TOLERANCE } from "@/lib/neuro";
 
 import { getByTooltip } from "./helpers/tooltip";
 /**
@@ -163,7 +164,7 @@ describe("NeuroRecon studio hotkeys (#1580)", () => {
     expect(screen.queryByLabelText("Brush radius 1")).toBeNull();
     expect(
       screen.getByTestId("neuro-roi-toolbar-prompt").textContent
-    ).toContain("±15 INT");
+    ).toContain(`±${DEFAULT_ROI_INTENSITY_TOLERANCE} INT`);
   });
 
   it.each([

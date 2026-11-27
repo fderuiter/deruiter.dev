@@ -5,6 +5,7 @@
 
 export {
   ExpressionEvaluator,
+  parseAndEvaluateFormula,
   evaluateFormula,
   evaluateCondition,
   evaluateRule,
@@ -25,6 +26,9 @@ export {
   calculateRecistSldChange,
   type Token,
   type TokenType,
+  type FormulaEvaluationErrorCode,
+  type FormulaEvaluationError,
+  type FormulaEvaluationResult,
   type ConditionExplanation,
   type GroupExplanation,
   type RuleExplanation,

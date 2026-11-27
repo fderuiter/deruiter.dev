@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
@@ -30,10 +38,20 @@ import {
   type StudyDesignGrid as Grid,
   type StudyEdit,
   type StudyEditHistory,
+  type StudyRepositoryRecord,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
+import { DEMO_STUDY_ID } from "@/lib/clinical-study-context";
 import { downloadFile } from "@/lib/download";
 import {
+  StudyConflictModal,
+  StudyRepositoryBar,
+  type StudyConflictPromptState,
+} from "@/components/clinical/StudyRepositoryBar";
+import type { StudyRepositoryClient } from "@/components/clinical/study-repository-client";
+import { useStudyRepository } from "@/components/clinical/useStudyRepository";
+import {
+  STUDY_WORKSPACE_DRAFT_KEY,
   discardStudyWorkspaceDraft,
   dismissQuarantinedStudyWorkspaceDraft,
   loadStudyWorkspaceDraft,
@@ -45,22 +63,18 @@ import { useStudyWorkspaceDraft } from "./useStudyWorkspaceDraft";
 import { TrialSchemaFigure } from "./TrialSchemaFigure";
 import { RandomizationWorkspace } from "@/components/randomization/RandomizationWorkspace";
 
-/** The studies the grid can open: two reference studies and a blank one. */
-const SOURCES = [
+/** Built-in sources always offered in the Study selector. */
+const BUILTIN_SOURCES = [
   { id: "tavr-savr", label: "Reference: TAVR versus SAVR" },
   { id: "tavr-device", label: "Reference: single-arm TAVR" },
+  { id: DEMO_STUDY_ID, label: "Reference: DEMO-301" },
   { id: "blank", label: "Blank study" },
 ] as const;
 
-type SourceId = (typeof SOURCES)[number]["id"];
-
-const isSourceId = (value: unknown): value is SourceId =>
-  SOURCES.some((option) => option.id === value);
-
-async function openSource(id: SourceId): Promise<StudyWorkspace> {
+async function openBuiltinFallback(id: string): Promise<StudyWorkspace> {
   if (id === "blank") return (await createBlankStudyWorkspace()).workspace;
   const result = await importUsdmStudy({
-    document: id === "tavr-savr" ? TAVR_SAVR_USDM : TAVR_DEVICE_USDM,
+    document: id === "tavr-device" ? TAVR_DEVICE_USDM : TAVR_SAVR_USDM,
   });
   if (result.status !== "ok") {
     throw new Error(`The reference study did not open: ${result.status}.`);
@@ -80,6 +94,8 @@ type Selection =
     };
 
 interface Session {
+  readonly studyId: string;
+  readonly baseRevisionId: string;
   readonly workspace: StudyWorkspace;
   readonly history: StudyEditHistory;
 }
@@ -87,7 +103,7 @@ interface Session {
 const BUTTON =
   "min-h-12 rounded border border-white/[0.08] bg-[#0d0e11] px-3 py-1.5 text-sm text-[#f4f4f6] hover:border-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]";
 const FIELD =
-  "min-h-12 min-w-0 rounded border border-white/[0.08] bg-[#0d0e11] px-2 py-1.5 text-sm text-[#f4f4f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400";
+  "min-h-12 min-w-0 max-w-full rounded border border-white/[0.08] bg-[#0d0e11] px-2 py-1.5 text-sm text-[#f4f4f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400";
 const MONO = "font-[family-name:var(--font-geist-mono)]";
 
 const sameCell = (a: StudyDesignCellRef, b: StudyDesignCellRef) =>
@@ -98,47 +114,253 @@ const sameCell = (a: StudyDesignCellRef, b: StudyDesignCellRef) =>
  * epochs as columns and the study elements in each cell. Every arm, epoch
  * and cell is a button; the inspector beside the grid holds the edits for
  * what is selected, so the grid works from the keyboard alone. Every edit
- * goes through the study workspace and can be undone.
+ * goes through the shared browser study repository and can be undone.
  */
-export function StudyDesignGrid() {
-  const [source, setSource] = useState<SourceId>("tavr-savr");
+export function StudyDesignGrid({
+  repository: customRepository,
+}: {
+  readonly repository?: StudyRepositoryClient;
+} = {}) {
+  const { snapshot, repository } = useStudyRepository(customRepository);
+  const [source, setSource] = useState<string>("tavr-savr");
   const [session, setSession] = useState<Session | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("");
-  // A stored draft waiting for the person to restore or discard it.
+  // A stored localStorage draft waiting for the person to restore or discard
+  // when IndexedDB is unavailable.
   const [offer, setOffer] = useState<StudyWorkspaceDraftRecord | null>(null);
   const [quarantined, setQuarantined] =
     useState<QuarantinedStudyWorkspaceDraft | null>(null);
   const [baseWriteId, setBaseWriteId] = useState<string | null>(null);
+  const [repoSaveNote, setRepoSaveNote] = useState<string | null>(null);
+  const [conflictPrompt, setConflictPrompt] =
+    useState<StudyConflictPromptState | null>(null);
+  const handledRemoteSeq = useRef(0);
 
-  const open = (id: SourceId) => {
-    setSource(id);
-    void openSource(id).then((workspace) => {
-      setSession({ workspace, history: emptyStudyEditHistory() });
+  const loadRecordIntoSession = useCallback(
+    (record: StudyRepositoryRecord, announceNote?: string) => {
+      setSource(record.studyId);
+      setSession({
+        studyId: record.studyId,
+        baseRevisionId: record.workspace.revision.id,
+        workspace: record.workspace,
+        history: emptyStudyEditHistory(),
+      });
       setSelection(null);
       setError(null);
-      setStatus(`Opened ${workspace.usdm.study.name}.`);
+      setConflictPrompt(null);
+      setRepoSaveNote(null);
+      setStatus(announceNote ?? `Opened ${record.workspace.usdm.study.name}.`);
+    },
+    []
+  );
+
+  const persistWorkspaceRevision = useCallback(
+    (
+      studyId: string,
+      nextWorkspace: StudyWorkspace,
+      expectedRevisionId: string
+    ) => {
+      void repository
+        .saveWorkspace(studyId, nextWorkspace, {
+          expectedRevisionId,
+          draftBackedKey: STUDY_WORKSPACE_DRAFT_KEY,
+        })
+        .then((outcome) => {
+          if (outcome.status === "conflict") {
+            setConflictPrompt({
+              studyId,
+              expectedRevisionId: outcome.expectedRevisionId,
+              currentRevisionId: outcome.currentRevisionId,
+              latestRecord: outcome.latestRecord,
+              localWorkspace: nextWorkspace,
+            });
+            setRepoSaveNote(null);
+            return;
+          }
+          setSession((prev) =>
+            prev && prev.studyId === studyId
+              ? {
+                  ...prev,
+                  baseRevisionId: outcome.record.workspace.revision.id,
+                }
+              : prev
+          );
+          if (repository.getSnapshot().persistence === "indexeddb") {
+            setRepoSaveNote("Draft saved in this browser.");
+          }
+        });
+    },
+    [repository]
+  );
+
+  const open = (id: string) => {
+    setSource(id);
+    setRepoSaveNote(null);
+    if (id === "blank") {
+      if (snapshot.persistence === "indexeddb") {
+        void repository.createBlankStudy().then((created) => {
+          setSource("blank");
+          setSession({
+            studyId: created.studyId,
+            baseRevisionId: created.workspace.revision.id,
+            workspace: created.workspace,
+            history: emptyStudyEditHistory(),
+          });
+          setSelection(null);
+          setError(null);
+          setStatus(`Opened ${created.workspace.usdm.study.name}.`);
+        });
+        return;
+      }
+      void openBuiltinFallback("blank").then((workspace) => {
+        setSession({
+          studyId: "blank-study",
+          baseRevisionId: workspace.revision.id,
+          workspace,
+          history: emptyStudyEditHistory(),
+        });
+        setSelection(null);
+        setError(null);
+        setStatus(`Opened ${workspace.usdm.study.name}.`);
+      });
+      return;
+    }
+
+    void repository.selectStudy(id).then(async (record) => {
+      if (record) {
+        loadRecordIntoSession(record);
+        return;
+      }
+      const fallback = await openBuiltinFallback(id);
+      setSession({
+        studyId: id,
+        baseRevisionId: fallback.revision.id,
+        workspace: fallback,
+        history: emptyStudyEditHistory(),
+      });
+      setSelection(null);
+      setError(null);
+      setStatus(`Opened ${fallback.usdm.study.name}.`);
     });
   };
 
   useEffect(() => {
     let live = true;
-    // Storage is read after mount, so the server render never depends on it.
-    const draft = loadStudyWorkspaceDraft();
-    void openSource("tavr-savr").then((workspace) => {
+    void repository.initialize().then(async (readySnap) => {
       if (!live) return;
-      setSession({ workspace, history: emptyStudyEditHistory() });
-      setStatus(`Opened ${workspace.usdm.study.name}.`);
-      if (draft.status === "recovered") setOffer(draft.record);
-      if (draft.status === "quarantined") setQuarantined(draft.entry);
+
+      // In volatile mode (e.g. environments without IndexedDB), inspect any
+      // localStorage draft or quarantine record.
+      const localDraft =
+        readySnap.persistence === "memory" ? loadStudyWorkspaceDraft() : null;
+
+      if (readySnap.quarantinedWorkspaceDraft) {
+        setQuarantined(readySnap.quarantinedWorkspaceDraft);
+      } else if (localDraft?.status === "quarantined") {
+        setQuarantined(localDraft.entry);
+      } else {
+        // Also surface any still-quarantined legacy draft when IndexedDB is active.
+        const postMigrationDraft = loadStudyWorkspaceDraft();
+        if (postMigrationDraft.status === "quarantined") {
+          setQuarantined(postMigrationDraft.entry);
+        }
+      }
+
+      // If an unacknowledged localStorage draft is waiting in volatile mode,
+      // keep the clean reference open until the user chooses Restore or Discard.
+      if (localDraft?.status === "recovered") {
+        const cleanRef = await openBuiltinFallback("tavr-savr");
+        if (!live) return;
+        setSource("tavr-savr");
+        setSession({
+          studyId: "tavr-savr",
+          baseRevisionId: cleanRef.revision.id,
+          workspace: cleanRef,
+          history: emptyStudyEditHistory(),
+        });
+        setStatus(`Opened ${cleanRef.usdm.study.name}.`);
+        setOffer(localDraft.record);
+        return;
+      }
+
+      const targetId = readySnap.activeStudyId ?? "tavr-savr";
+      const record = await repository.getRecord(targetId);
+      if (!live) return;
+      if (record) {
+        loadRecordIntoSession(record);
+        return;
+      }
+      const fallback = await openBuiltinFallback("tavr-savr");
+      if (!live) return;
+      setSource("tavr-savr");
+      setSession({
+        studyId: "tavr-savr",
+        baseRevisionId: fallback.revision.id,
+        workspace: fallback,
+        history: emptyStudyEditHistory(),
+      });
+      setStatus(`Opened ${fallback.usdm.study.name}.`);
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [loadRecordIntoSession, repository]);
+
+  // Follow active-study switches made in other open tabs when this tab has no
+  // unsaved local conflict.
+  useEffect(() => {
+    if (snapshot.remoteEventSeq === handledRemoteSeq.current) return;
+    handledRemoteSeq.current = snapshot.remoteEventSeq;
+    const remote = snapshot.lastRemoteEvent;
+    if (!remote) return;
+    if (
+      remote.type === "active-study-changed" &&
+      remote.studyId &&
+      session &&
+      remote.studyId !== session.studyId &&
+      session.history.undo.length === 0
+    ) {
+      void repository.getRecord(remote.studyId).then((record) => {
+        if (record) {
+          loadRecordIntoSession(
+            record,
+            `Switched to ${record.workspace.usdm.study.name} from another tab.`
+          );
+        }
+      });
+    }
+  }, [
+    loadRecordIntoSession,
+    repository,
+    session,
+    snapshot.lastRemoteEvent,
+    snapshot.remoteEventSeq,
+  ]);
 
   const ui = useMemo(() => ({ source }), [source]);
+
+  const selectOptions = useMemo(() => {
+    const customOptions = snapshot.studies
+      .filter(
+        (item) =>
+          item.studyId !== "tavr-savr" &&
+          item.studyId !== "tavr-device" &&
+          item.studyId !== DEMO_STUDY_ID
+      )
+      .map((item) => ({
+        id: item.studyId,
+        label: `${item.protocolCode} (${item.revisionId})`,
+      }));
+    return [
+      BUILTIN_SOURCES[0],
+      BUILTIN_SOURCES[1],
+      BUILTIN_SOURCES[2],
+      ...customOptions,
+      BUILTIN_SOURCES[3],
+    ];
+  }, [snapshot.studies]);
 
   if (!session) {
     return (
@@ -151,11 +373,17 @@ export function StudyDesignGrid() {
   const grid = projectStudyDesignGrid(session.workspace);
 
   const restore = (record: StudyWorkspaceDraftRecord) => {
+    const restoredSource =
+      typeof record.ui.source === "string" ? record.ui.source : "tavr-savr";
+    const targetStudyId =
+      restoredSource === "blank" ? "blank-study" : restoredSource;
     setSession({
+      studyId: targetStudyId,
+      baseRevisionId: record.workspace.revision.id,
       workspace: record.workspace,
       history: emptyStudyEditHistory(),
     });
-    if (isSourceId(record.ui.source)) setSource(record.ui.source);
+    setSource(restoredSource);
     setBaseWriteId(record.writeId);
     setSelection(null);
     setOffer(null);
@@ -173,7 +401,18 @@ export function StudyDesignGrid() {
   const apply = (make: (workspace: StudyWorkspace) => StudyEdit) => {
     try {
       const edit = make(session.workspace);
-      setSession(applyStudyEdit(session.workspace, session.history, edit));
+      const updated = applyStudyEdit(session.workspace, session.history, edit);
+      const expectedRevisionId = session.baseRevisionId;
+      setSession({
+        ...session,
+        workspace: updated.workspace,
+        history: updated.history,
+      });
+      persistWorkspaceRevision(
+        session.studyId,
+        updated.workspace,
+        expectedRevisionId
+      );
       setError(null);
       setStatus(`${edit.note}.`);
       return true;
@@ -186,28 +425,64 @@ export function StudyDesignGrid() {
 
   const undo = () => {
     const note = session.history.undo.at(-1)?.note;
-    setSession(undoStudyEdit(session.workspace, session.history));
+    const updated = undoStudyEdit(session.workspace, session.history);
+    const expectedRevisionId = session.baseRevisionId;
+    setSession({
+      ...session,
+      workspace: updated.workspace,
+      history: updated.history,
+    });
+    persistWorkspaceRevision(
+      session.studyId,
+      updated.workspace,
+      expectedRevisionId
+    );
     setSelection(null);
     setStatus(`Undid: ${note}.`);
   };
   const redo = () => {
     const note = session.history.redo.at(-1)?.note;
-    setSession(redoStudyEdit(session.workspace, session.history));
+    const updated = redoStudyEdit(session.workspace, session.history);
+    const expectedRevisionId = session.baseRevisionId;
+    setSession({
+      ...session,
+      workspace: updated.workspace,
+      history: updated.history,
+    });
+    persistWorkspaceRevision(
+      session.studyId,
+      updated.workspace,
+      expectedRevisionId
+    );
     setSelection(null);
     setStatus(`Redid: ${note}.`);
   };
 
   return (
     <div className="@container space-y-6">
+      <StudyRepositoryBar
+        repository={repository}
+        currentStudyId={session.studyId}
+        currentRevisionId={session.workspace.revision.id}
+        showStudySelect={false}
+        onSelectStudy={(record) => loadRecordIntoSession(record)}
+        onReloadLatest={(record) =>
+          loadRecordIntoSession(
+            record,
+            `Reloaded ${record.workspace.usdm.study.name} at ${record.workspace.revision.id}.`
+          )
+        }
+      />
+
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
           Study
           <select
             className={FIELD}
             value={source}
-            onChange={(event) => open(event.target.value as SourceId)}
+            onChange={(event) => open(event.target.value)}
           >
-            {SOURCES.map((option) => (
+            {selectOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
@@ -241,18 +516,63 @@ export function StudyDesignGrid() {
       {quarantined && (
         <QuarantineNotice
           entry={quarantined}
-          onDone={() => setQuarantined(null)}
+          onDone={() => {
+            repository.dismissQuarantinedDraft();
+            setQuarantined(null);
+          }}
         />
       )}
-      <DraftAutosave
-        workspace={session.workspace}
-        ui={ui}
-        baseWriteId={baseWriteId}
-        // Only the person's edits are saved, and never over an offered draft.
-        enabled={
-          !offer &&
-          session.history.undo.length + session.history.redo.length > 0
-        }
+      {snapshot.persistence === "indexeddb" ? (
+        <p className="min-w-0 text-xs text-slate-400">
+          {repoSaveNote ?? "Edits are saved in this browser as you work."}
+        </p>
+      ) : (
+        <DraftAutosave
+          workspace={session.workspace}
+          ui={ui}
+          baseWriteId={baseWriteId}
+          // Only the person's edits are saved, and never over an offered draft.
+          enabled={
+            !offer &&
+            session.history.undo.length + session.history.redo.length > 0
+          }
+        />
+      )}
+
+      <StudyConflictModal
+        conflict={conflictPrompt}
+        onLoadLatest={(latest) => {
+          if (latest) {
+            loadRecordIntoSession(
+              latest,
+              `Loaded ${latest.workspace.revision.id} from shared repository.`
+            );
+          } else {
+            setConflictPrompt(null);
+          }
+        }}
+        onForceKeepLocal={() => {
+          if (!conflictPrompt?.localWorkspace) return;
+          const studyId = conflictPrompt.studyId;
+          const localWs = conflictPrompt.localWorkspace;
+          void repository
+            .saveWorkspace(studyId, localWs, { force: true })
+            .then((outcome) => {
+              if (outcome.status === "saved") {
+                setSession((prev) =>
+                  prev && prev.studyId === studyId
+                    ? {
+                        ...prev,
+                        baseRevisionId: outcome.record.workspace.revision.id,
+                      }
+                    : prev
+                );
+                setConflictPrompt(null);
+                setRepoSaveNote("Draft saved in this browser.");
+              }
+            });
+        }}
+        onClose={() => setConflictPrompt(null)}
       />
 
       <p role="status" aria-live="polite" className="sr-only">

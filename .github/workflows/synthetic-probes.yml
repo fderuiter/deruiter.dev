@@ -74,7 +74,7 @@ jobs:
             TARGET="${DEFAULT_PROBE_TARGET}"
           fi
           case "$TARGET" in
-            *[[:space:]]*|*[[:cntrl:]]*)
+            *[[:space:][:cntrl:]]*)
               echo "::error::target_url must be a single-line URL without whitespace or control characters."
               exit 1
               ;;

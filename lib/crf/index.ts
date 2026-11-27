@@ -4,6 +4,7 @@
 
 export * from "./types";
 export * from "./internal/universal-schema";
+export * from "./internal/cli-argv";
 export * from "./internal/cli-engine";
 export * from "./internal/expression-evaluator";
 export * from "./internal/formula-linter";

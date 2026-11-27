@@ -68,6 +68,8 @@ export const NUMERIC_DATA_TYPES: Set<ClinicalDataType> = new Set([
   "nrs_scale",
 ]);
 
+const NUMBER_LITERAL_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/;
+
 /**
  * Enhanced Tokenizer with character start/end coordinates and bracket matching
  */
@@ -116,17 +118,11 @@ export function tokenizeWithSpans(input: string): HighlightToken[] {
       continue;
     }
 
-    // Numbers (integers or decimals)
-    if (
-      /[0-9]/.test(ch) ||
-      (ch === "." && i + 1 < input.length && /[0-9]/.test(input[i + 1]))
-    ) {
-      let numStr = "";
-      while (i < input.length && (/[0-9]/.test(input[i]) || input[i] === ".")) {
-        numStr += input[i];
-        i++;
-      }
-      rawTokens.push({ type: "NUMBER", value: numStr, start, end: i });
+    // Numbers (integers, decimals, or scientific notation)
+    const numMatch = NUMBER_LITERAL_RE.exec(input.slice(i));
+    if (numMatch) {
+      i += numMatch[0].length;
+      rawTokens.push({ type: "NUMBER", value: numMatch[0], start, end: i });
       continue;
     }
 
@@ -249,6 +245,43 @@ export function lintFormula(
       });
     }
 
+    const isOperandEnd =
+      token.type === "NUMBER" ||
+      token.type === "RPAREN" ||
+      (token.type === "IDENTIFIER" && nextToken?.type !== "LPAREN");
+    const isNextOperandStart =
+      nextToken !== undefined &&
+      (nextToken.type === "NUMBER" ||
+        nextToken.type === "IDENTIFIER" ||
+        nextToken.type === "FUNCTION" ||
+        nextToken.type === "LPAREN");
+
+    if (isOperandEnd && isNextOperandStart) {
+      diagnostics.push({
+        severity: "error",
+        message: `Unexpected token "${nextToken.value}" after "${token.value}" without an operator between operands`,
+        start: nextToken.start,
+        end: nextToken.end,
+        code: "UNEXPECTED_TOKEN",
+      });
+    }
+
+    const previousToken = tokens[idx - 1];
+    if (
+      token.type === "COMMA" &&
+      (previousToken?.type === "LPAREN" ||
+        previousToken?.type === "COMMA" ||
+        nextToken?.type === "RPAREN")
+    ) {
+      diagnostics.push({
+        severity: "error",
+        message: "Missing function argument next to comma",
+        start: token.start,
+        end: token.end,
+        code: "UNEXPECTED_TOKEN",
+      });
+    }
+
     if (token.type === "LPAREN") {
       if (token.unmatched) {
         unmatchedBracketIndices.push(token.start);
@@ -342,7 +375,7 @@ export function lintFormula(
         if (nextToken && nextToken.type === "LPAREN") {
           diagnostics.push({
             severity: "error",
-            message: `Unknown mathematical function "${token.value}()". Supported functions: round, sqrt, abs, max, min, floor, ceil, exp, log`,
+            message: `Unknown mathematical function "${token.value}()". Supported functions: round, sqrt, cbrt, clamp, abs, max, min, floor, ceil, exp, log`,
             start: token.start,
             end: token.end,
             code: "UNKNOWN_FUNCTION",
@@ -365,7 +398,15 @@ export function lintFormula(
           isNumeric,
         });
 
-        if (!isNumeric) {
+        if (nextToken && nextToken.type === "LPAREN") {
+          diagnostics.push({
+            severity: "error",
+            message: `Variable "${token.value}" cannot be invoked as a function. Supported functions: round, sqrt, cbrt, clamp, abs, max, min, floor, ceil, exp, log`,
+            start: token.start,
+            end: token.end,
+            code: "UNKNOWN_FUNCTION",
+          });
+        } else if (!isNumeric) {
           diagnostics.push({
             severity: "warning",
             message: `Field "${matchedField.label}" (${matchedField.variableName}) has non-numeric type "${matchedField.dataType}". Expected number, integer, or calculated.`,
@@ -388,6 +429,7 @@ export function lintFormula(
         for (let j = idx + 1; j < tokens.length; j++) {
           const t = tokens[j];
           if (t.type === "LPAREN") {
+            if (depth === 1) hasContent = true;
             depth++;
           } else if (t.type === "RPAREN") {
             depth--;

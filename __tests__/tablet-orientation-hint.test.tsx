@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -87,7 +89,9 @@ describe("TabletOrientationHint Component Suite", () => {
       root.render(<TabletOrientationHint />);
     });
 
-    const closeBtn = container.querySelector('button[aria-label="Dismiss orientation recommendation"]');
+    const closeBtn = container.querySelector(
+      'button[aria-label="Dismiss orientation recommendation"]'
+    );
     expect(closeBtn).not.toBeNull();
 
     await act(async () => {
@@ -102,7 +106,9 @@ describe("TabletOrientationHint Component Suite", () => {
     Object.defineProperty(window, "matchMedia", {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({
-        matches: query.includes("coarse") || (query.includes("portrait") && isPortrait),
+        matches:
+          query.includes("coarse") ||
+          (query.includes("portrait") && isPortrait),
         media: query,
         onchange: null,
         addListener: vi.fn(),

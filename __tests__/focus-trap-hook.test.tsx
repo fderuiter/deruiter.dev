@@ -3,8 +3,17 @@ import React, { useState } from "react";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
-function ModalDialog({ isOpen, onEscape }: { isOpen: boolean; onEscape?: () => void }) {
-  const trapRef = useFocusTrap<HTMLDivElement>(isOpen, { onEscape, returnFocus: true });
+function ModalDialog({
+  isOpen,
+  onEscape,
+}: {
+  isOpen: boolean;
+  onEscape?: () => void;
+}) {
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen, {
+    onEscape,
+    returnFocus: true,
+  });
 
   if (!isOpen) return null;
 
@@ -104,7 +113,10 @@ describe("useFocusTrap Hook & Accessibility Keyboard Boundary", () => {
 
     // Fire keydown Escape
     act(() => {
-      const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true });
+      const event = new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+      });
       document.dispatchEvent(event);
     });
 
@@ -126,7 +138,11 @@ describe("useFocusTrap Hook & Accessibility Keyboard Boundary", () => {
 
     // Dispatch Tab keydown on document
     act(() => {
-      const tabEvent = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+      const tabEvent = new KeyboardEvent("keydown", {
+        key: "Tab",
+        bubbles: true,
+        cancelable: true,
+      });
       document.dispatchEvent(tabEvent);
     });
 

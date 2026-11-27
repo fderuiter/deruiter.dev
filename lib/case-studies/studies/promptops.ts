@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 export const PROMPTOPS_COMMANDS_OBJ: CaseStudyCommands = {
   "promptops eval --suite clinical-triage --dataset ./evals/golden_v2.json": {
@@ -105,17 +109,17 @@ export const PROMPTOPS_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-20",
-    slug: "promptops",
-    title: "PromptOps: Test Prompts Like Other Code",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/PromptOps",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, LLM, Prompt Engineering, CI/CD, Semantic Versioning, Eval Pipeline, Zod, OpenAI, Anthropic, Multi-Provider",
-    editorial_content:
-      "A **TypeScript** toolkit for versioning prompts, validating output with **Zod**, and running regression evaluations in CI. A prompt change should come with a way to check what changed in the results.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-20",
+  slug: "promptops",
+  title: "PromptOps: Test Prompts Like Other Code",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/PromptOps",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, LLM, Prompt Engineering, CI/CD, Semantic Versioning, Eval Pipeline, Zod, OpenAI, Anthropic, Multi-Provider",
+  editorial_content:
+    "A **TypeScript** toolkit for versioning prompts, validating output with **Zod**, and running regression evaluations in CI. A prompt change should come with a way to check what changed in the results.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Changing a prompt can fix one example and break another. PromptOps versions prompts, validates response shapes, and runs evaluation cases so changes have something more useful than a good first impression to go on.</p>
 <p><strong>The approach:</strong> Versioned prompt definitions run against evaluation cases in CI. Zod checks response structure, while regression results help identify behavior changes.</p>
 <p><strong>Reported project measurements:</strong> 99.4% reduction in downstream JSON parse exceptions; sub-25ms input/output assertion overhead; automated eval test suites evaluating 500+ golden cases across model upgrades.</p>
@@ -224,8 +228,8 @@ async function runEvalSuite(
   <li>Routing between Anthropic and OpenAI keeps requests flowing when one provider's API degrades.</li>
   <li>Versioning prompt templates as SemVer packages ties each behavior change to a version, so a prompt can be rolled back when a provider updates the model underneath it.</li>
 </ul>`,
-    commands_json: JSON.stringify(PROMPTOPS_COMMANDS_OBJ),
-    playback_json: JSON.stringify(PROMPTOPS_PLAYBACK_OBJ),
-    created_at: new Date("2026-03-25T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  commands_json: JSON.stringify(PROMPTOPS_COMMANDS_OBJ),
+  playback_json: JSON.stringify(PROMPTOPS_PLAYBACK_OBJ),
+  created_at: new Date("2026-03-25T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

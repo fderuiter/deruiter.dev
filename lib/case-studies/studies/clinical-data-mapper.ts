@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-1",
-    slug: "clinical-data-mapper",
-    title: "Clinical Data Mapper: From ODM to SDTM",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/clinical-data-mapper",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, CDISC, ODM, SDTM, XML Parser, Clinical Trials, HIPAA",
-    editorial_content:
-      "Clinical data arrives in one format and needs to leave in another. This **TypeScript** tool reads **CDISC ODM** metadata, builds validation schemas, and maps EDC records into **SDTM** domains.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-1",
+  slug: "clinical-data-mapper",
+  title: "Clinical Data Mapper: From ODM to SDTM",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/clinical-data-mapper",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, CDISC, ODM, SDTM, XML Parser, Clinical Trials, HIPAA",
+  editorial_content:
+    "Clinical data arrives in one format and needs to leave in another. This **TypeScript** tool reads **CDISC ODM** metadata, builds validation schemas, and maps EDC records into **SDTM** domains.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Clinical study data often needs to move from an EDC export into a standard analysis format. This project tackles that mapping: read ODM metadata, validate the incoming records, and organize them into SDTM domains. The tricky parts are the study-specific fields and the rules hidden in the details.</p>
 <p><strong>The approach:</strong> A SAX parser reads XML incrementally. ODM metadata defines Zod validation schemas, and a separate mapping layer builds SDTM records.</p>
 <p><strong>Reported project measurements:</strong> Sub-50MB peak memory during 2GB+ XML ingestion; 100% CDISC Controlled Terminology validation parity; 12x throughput acceleration over DOM-based parsers.</p>
@@ -84,6 +84,6 @@ function deriveStudyDay(eventDate: Date, referenceDate: Date): number {
   <li>Parsing 2GB XML files into a DOM crashed Node.js with out-of-memory errors. SAX streaming keeps memory &lt; 50MB whatever the file size.</li>
   <li>SDTM has no Day 0, so the date math steps from Day -1 straight to Day 1 at baseline.</li>
 </ul>`,
-    created_at: new Date("2026-01-15T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-01-15T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

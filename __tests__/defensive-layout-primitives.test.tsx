@@ -133,8 +133,12 @@ describe("Shared Defensive Layout Primitives", () => {
       const dialogEl = container.querySelector('[role="dialog"]');
       expect(dialogEl).not.toBeNull();
       expect(dialogEl?.getAttribute("aria-modal")).toBe("true");
-      expect(dialogEl?.getAttribute("aria-labelledby")).toBe("test-modal-title");
-      expect(dialogEl?.getAttribute("aria-describedby")).toBe("test-modal-desc");
+      expect(dialogEl?.getAttribute("aria-labelledby")).toBe(
+        "test-modal-title"
+      );
+      expect(dialogEl?.getAttribute("aria-describedby")).toBe(
+        "test-modal-desc"
+      );
     });
 
     it("enforces max height and overflow scroll constraints on the content container", () => {
@@ -154,12 +158,18 @@ describe("Shared Defensive Layout Primitives", () => {
     it("triggers onClose when clicking the backdrop overlay", () => {
       const handleClose = vi.fn();
       const { container } = render(
-        <ModalContainer isOpen={true} onClose={handleClose} closeOnBackdropClick={true}>
+        <ModalContainer
+          isOpen={true}
+          onClose={handleClose}
+          closeOnBackdropClick={true}
+        >
           <div>Modal Content</div>
         </ModalContainer>
       );
 
-      const backdrop = container.querySelector('[role="dialog"]') as HTMLElement;
+      const backdrop = container.querySelector(
+        '[role="dialog"]'
+      ) as HTMLElement;
       expect(backdrop).not.toBeNull();
       fireEvent.click(backdrop);
 
@@ -169,7 +179,11 @@ describe("Shared Defensive Layout Primitives", () => {
     it("triggers onClose when pressing the Escape key", () => {
       const handleClose = vi.fn();
       render(
-        <ModalContainer isOpen={true} onClose={handleClose} closeOnEscape={true}>
+        <ModalContainer
+          isOpen={true}
+          onClose={handleClose}
+          closeOnEscape={true}
+        >
           <div>Modal Content</div>
         </ModalContainer>
       );

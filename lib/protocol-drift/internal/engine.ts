@@ -91,11 +91,7 @@ import {
   queryTransition,
 } from "./queries";
 import { hashValue, seededDraw } from "./rng";
-import {
-  scriptedTranspositions,
-  studyPlan,
-  studyVariant,
-} from "./variants";
+import { scriptedTranspositions, studyPlan, studyVariant } from "./variants";
 import { buildScorecard } from "./scorecard";
 
 /** Options for creating an engine. */

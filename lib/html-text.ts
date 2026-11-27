@@ -32,18 +32,21 @@ const NAMED_ENTITIES: Readonly<Record<string, string>> = {
  * @returns The decoded text.
  */
 export function decodeHtmlEntities(text: string): string {
-  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
-    if (entity[0] === "#") {
-      const codePoint =
-        entity[1].toLowerCase() === "x"
-          ? parseInt(entity.slice(2), 16)
-          : parseInt(entity.slice(1), 10);
-      return Number.isFinite(codePoint) && codePoint <= 0x10ffff
-        ? String.fromCodePoint(codePoint)
-        : match;
+  return text.replace(
+    /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
+    (match, entity: string) => {
+      if (entity[0] === "#") {
+        const codePoint =
+          entity[1].toLowerCase() === "x"
+            ? parseInt(entity.slice(2), 16)
+            : parseInt(entity.slice(1), 10);
+        return Number.isFinite(codePoint) && codePoint <= 0x10ffff
+          ? String.fromCodePoint(codePoint)
+          : match;
+      }
+      return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
     }
-    return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
-  });
+  );
 }
 
 /** Whether `<` at `index` opens a tag, comment or declaration. */

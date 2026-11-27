@@ -225,10 +225,16 @@ describe("llms manifests list the canonical routes (#1256)", () => {
 
   it("isAllowedManifestUrl rejects non-https canonical bases", () => {
     expect(
-      isAllowedManifestUrl("http://localhost:3000/clinical", "http://localhost:3000")
+      isAllowedManifestUrl(
+        "http://localhost:3000/clinical",
+        "http://localhost:3000"
+      )
     ).toBe(false);
     expect(
-      isAllowedManifestUrl("https://localhost/clinical", "http://localhost:3000")
+      isAllowedManifestUrl(
+        "https://localhost/clinical",
+        "http://localhost:3000"
+      )
     ).toBe(false);
   });
 });

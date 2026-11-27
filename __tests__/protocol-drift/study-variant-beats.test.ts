@@ -139,9 +139,7 @@ describe("seeded study beats (#2275)", () => {
         ].sort()
       );
       const partial = view.issues.find((i) => i.code === "PARTIAL_DATE");
-      expect(partial?.subjectId).toBe(
-        subjectOf(plan.partialDateSubmissionId)
-      );
+      expect(partial?.subjectId).toBe(subjectOf(plan.partialDateSubmissionId));
       // The transposition carries worksheet evidence and a source correction.
       const oor = view.issues.find((i) => i.code === "OUT_OF_RANGE");
       expect(oor?.evidence).toContain(

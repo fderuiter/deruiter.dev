@@ -3369,7 +3369,7 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     );
     expect(staticGate).not.toMatch(/uses: actions\/cache@/);
     expect(staticGate).toMatch(
-      /id: eslint-cache\n\s+uses: actions\/cache\/restore@/
+      /id: eslint-cache\n\s+if: github\.event_name != 'workflow_dispatch'\n\s+uses: actions\/cache\/restore@/
     );
     expect(staticGate).toMatch(
       /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.eslint-cache\.outputs\.cache-hit != 'true'\n\s+uses: actions\/cache\/save@/
@@ -3391,7 +3391,7 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
   it("eliminates unsafe run-block expression interpolation and scopes job-level write permissions across workflows", () => {
     const synthetic = readWorkflow("synthetic-probes.yml");
     expect(synthetic).toMatch(
-      /^concurrency:\n\s+group: synthetic-probes-\$\{\{ github\.workflow \}\}-/m
+      /^concurrency:\n\s+group: synthetic-probes-\$\{\{ github\.event_name \}\}-\$\{\{ github\.ref \}\}/m
     );
     expect(synthetic).toContain(
       "cancel-in-progress: ${{ github.event_name != 'workflow_call' }}"
@@ -3400,12 +3400,22 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
       /\$\{\{\s*steps\.target\.outputs\.url\s*\}\}\s*"/
     );
     expect(synthetic).toContain(
-      "PROBE_TARGET_URL: ${{ steps.target.outputs.url }}"
+      "PROBE_TARGET: ${{ steps.target.outputs.url }}"
     );
     expect(synthetic).toContain("PROBES_OUTCOME: ${{ steps.probes.outcome }}");
 
+    const scheduledAudit = readWorkflow("scheduled-security-audit.yml");
+    const scheduledHeader = scheduledAudit.slice(
+      0,
+      scheduledAudit.indexOf("\njobs:\n")
+    );
+    expect(scheduledHeader).toMatch(/^permissions:\n {2}contents: read$/m);
+    expect(scheduledHeader).not.toContain("issues: write");
+    expect(scheduledAudit).toMatch(
+      /^ {4}permissions:\n {6}contents: read\n {6}issues: write$/m
+    );
+
     for (const file of [
-      "scheduled-security-audit.yml",
       "overrides-audit.yml",
       "cdisc-library-sync.yml",
       "standards-watch.yml",

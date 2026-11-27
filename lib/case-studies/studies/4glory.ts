@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 export const FOUR_GLORY_COMMANDS_OBJ: CaseStudyCommands = {
   "4glory stream connect --match-id EPL-2026-M42": {
@@ -94,17 +98,17 @@ export const FOUR_GLORY_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-18",
-    slug: "4glory",
-    title: "4Glory: Does Fred Know Ball?",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/4Glory",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, Python, XGBoost, Pandas, Scikit-Learn, Basketball Analytics, Sports Analytics, Machine Learning, Feature Engineering, Monte Carlo, Kaggle",
-    editorial_content:
-      "A **Python** basketball prediction project that compares my basketball judgment with **XGBoost** models across NBA seasons. Includes rolling features, walk-forward validation, and SHAP analysis. Confidence is easy; checking it takes a dataset.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-18",
+  slug: "4glory",
+  title: "4Glory: Does Fred Know Ball?",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/4Glory",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, Python, XGBoost, Pandas, Scikit-Learn, Basketball Analytics, Sports Analytics, Machine Learning, Feature Engineering, Monte Carlo, Kaggle",
+  editorial_content:
+    "A **Python** basketball prediction project that compares my basketball judgment with **XGBoost** models across NBA seasons. Includes rolling features, walk-forward validation, and SHAP analysis. Confidence is easy; checking it takes a dataset.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>I have basketball opinions. This project gives them something to compete against: models trained on NBA data. The interesting part is testing predictions on later games and seeing which features hold up when the answer is not already known.</p>
 <p><strong>The approach:</strong> Rolling features feed XGBoost models, and walk-forward validation tests them on later games. SHAP analysis helps explain what influenced a prediction.</p>
 <p><strong>Reported project measurements:</strong> Out-of-sample prediction accuracy benchmarked across 2,400+ games; 100% leak-free temporal splitting; calibrated Brier score &lt; 0.198 on spread and win probability forecasts.</p>
@@ -219,8 +223,8 @@ def explain_matchup_prediction(model, feature_matrix: pd.DataFrame, matchup_idx:
   <li>Platt scaling on the logits stopped the model being overconfident in matchups with high 3-point shooting variance.</li>
   <li>Moving the exploratory Jupyter notebooks into typed Python modules with tests made retraining and historical backtesting repeatable.</li>
 </ul>`,
-    commands_json: JSON.stringify(FOUR_GLORY_COMMANDS_OBJ),
-    playback_json: JSON.stringify(FOUR_GLORY_PLAYBACK_OBJ),
-    created_at: new Date("2026-03-20T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  commands_json: JSON.stringify(FOUR_GLORY_COMMANDS_OBJ),
+  playback_json: JSON.stringify(FOUR_GLORY_PLAYBACK_OBJ),
+  created_at: new Date("2026-03-20T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

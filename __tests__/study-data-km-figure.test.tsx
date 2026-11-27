@@ -196,7 +196,10 @@ function withUpdatedAdtte(
 }
 
 function logRankResultsOf(
-  analyses: readonly { readonly id: string; readonly results: readonly ArsOperationResult[] }[]
+  analyses: readonly {
+    readonly id: string;
+    readonly results: readonly ArsOperationResult[];
+  }[]
 ): readonly ArsOperationResult[] {
   const analysis = analyses.find((item) => item.id === "An_14_2_2_LOGRANK");
   if (!analysis) {
@@ -209,10 +212,15 @@ describe("KmFigure log-rank p-value formatting and sink escaping (#3829)", () =>
   const baseRun = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
 
   it("formats threshold p-values (<0.0001) as 'p < 0.0001.' across React DOM, SVG, and HTML sinks", () => {
-    const separatedRun = withUpdatedAdtte(baseRun, ({ trt, paramcd, aval, cnsr }) => {
-      if (paramcd !== "TTADISC") return { aval, cnsr };
-      return trt === "Placebo" ? { aval: 5, cnsr: 0 } : { aval: 100, cnsr: 1 };
-    });
+    const separatedRun = withUpdatedAdtte(
+      baseRun,
+      ({ trt, paramcd, aval, cnsr }) => {
+        if (paramcd !== "TTADISC") return { aval, cnsr };
+        return trt === "Placebo"
+          ? { aval: 5, cnsr: 0 }
+          : { aval: 100, cnsr: 1 };
+      }
+    );
     const built = buildTlfOutputs(DEMO_301_STUDY, separatedRun);
     const kmFigure = built.figures[0];
     const logRankResults = logRankResultsOf(built.reportingEvent.analyses);
@@ -299,7 +307,9 @@ describe("KmFigure log-rank p-value formatting and sink escaping (#3829)", () =>
     expect(notEstimableFigure.test.text).toBe(
       "Log-rank test: not estimable (no events, or fewer than two treatment groups with subjects at risk at an event time)."
     );
-    expect(notEstimableFigure.summary).toContain("Log-rank test: not estimable");
+    expect(notEstimableFigure.summary).toContain(
+      "Log-rank test: not estimable"
+    );
   });
 
   it("escapes synthetic markup-looking text in React DOM and SVG/HTML exports", () => {
@@ -342,7 +352,8 @@ describe("KmFigure log-rank p-value formatting and sink escaping (#3829)", () =>
       )?.textContent
     ).toContain(payload);
 
-    const expectedEscaped = "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;";
+    const expectedEscaped =
+      "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;";
     const svg = writeKmFigureSvg(taintedFigure);
     expect(svg).toContain(expectedEscaped);
     expect(svg).not.toContain(payload);

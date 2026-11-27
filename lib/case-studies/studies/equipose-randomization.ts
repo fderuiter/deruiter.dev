@@ -2,18 +2,18 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-14",
-    slug: "equipose-randomization",
-    title: "Equipose: Reproducible Clinical Trial Randomization",
-    primary_language: "Angular / TypeScript",
-    github_url: "https://github.com/fderuiter/equipose-randomization",
-    external_platform_url: "https://equipose.org",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Angular, TypeScript, NgRx SignalStore, Web Workers, Clinical Informatics, Code Generation, Deterministic Algorithms",
-    editorial_content:
-      "A browser-based tool for designing stratified block and **Pocock–Simon minimization** randomization schedules. A seeded **MT19937** generator makes each schedule reproducible from its seed, and the app exports it as **R, Python, SAS, and Stata** scripts for independent review.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-14",
+  slug: "equipose-randomization",
+  title: "Equipose: Reproducible Clinical Trial Randomization",
+  primary_language: "Angular / TypeScript",
+  github_url: "https://github.com/fderuiter/equipose-randomization",
+  external_platform_url: "https://equipose.org",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Angular, TypeScript, NgRx SignalStore, Web Workers, Clinical Informatics, Code Generation, Deterministic Algorithms",
+  editorial_content:
+    "A browser-based tool for designing stratified block and **Pocock–Simon minimization** randomization schedules. A seeded **MT19937** generator makes each schedule reproducible from its seed, and the app exports it as **R, Python, SAS, and Stata** scripts for independent review.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>A trial randomization schedule has to be reproducible: anyone holding the seed and the study configuration should get the same subject-by-arm list, and a statistician should be able to read the allocation logic in a language they already use. Equipose is a free, open-source Angular app for designing stratified block and Pocock–Simon minimization schedules in the browser. It is deployed at <a href="https://equipose.org" target="_blank" rel="noopener noreferrer">equipose.org</a>.</p>
 <p><strong>The approach:</strong> A seeded MT19937 generator drives every random choice, so a schedule can be regenerated from its seed. The same configuration can be exported as an R, Python, SAS, or Stata script, either with the generated list embedded (static) or with the allocation logic re-implemented in the target language (dynamic).</p>
 <p><strong>What the repository shows, and where it stops:</strong></p>
@@ -134,6 +134,6 @@ function runMonteCarlo(id: string, { config, attritionRate, siteWeights }: Monte
   <li><a href="https://github.com/fderuiter/equipose-randomization/blob/main/tests_e2e/zero-trust.spec.ts" target="_blank" rel="noopener noreferrer">zero-trust.spec.ts</a>: the no-outbound-request check.</li>
   <li><a href="https://github.com/fderuiter/equipose-randomization/blob/main/docs/reference/PERFORMANCE_BUDGETS.md" target="_blank" rel="noopener noreferrer">PERFORMANCE_BUDGETS.md</a>: the bundle-size budget.</li>
 </ul>`,
-    created_at: new Date("2026-03-09T00:00:00Z"),
-    updated_at: new Date("2026-10-02T00:00:00Z"),
-  });
+  created_at: new Date("2026-03-09T00:00:00Z"),
+  updated_at: new Date("2026-10-02T00:00:00Z"),
+});

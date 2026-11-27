@@ -11,11 +11,13 @@ const root = process.cwd();
  * left out because it names the phrases in order to ban them.
  */
 const SCANNED = [
+  "app/clinical",
   "app/crf",
   "app/platform",
   "components/platform",
   "app/study-data",
   "components/crf",
+  "lib/clinical-ai-governance.ts",
   "lib/crf",
   "lib/study-data",
   "lib/clinical-platform",

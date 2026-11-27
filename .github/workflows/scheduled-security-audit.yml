@@ -9,9 +9,10 @@ on:
 
 concurrency:
   group: scheduled-security-audit-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   scheduled-security-audit:

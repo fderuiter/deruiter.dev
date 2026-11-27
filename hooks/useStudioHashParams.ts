@@ -145,7 +145,11 @@ export function writeHashParams(
  * Built with useSyncExternalStore for zero tearing and SSR hydration safety.
  */
 export function useStudioHashParams() {
-  const params = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+  const params = useSyncExternalStore(
+    subscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  );
 
   const getParam = useCallback(
     (key: string, defaultValue: string = ""): string => {
@@ -155,14 +159,21 @@ export function useStudioHashParams() {
   );
 
   const setParam = useCallback(
-    (key: string, value: string | null | undefined, options?: SetHashParamsOptions) => {
+    (
+      key: string,
+      value: string | null | undefined,
+      options?: SetHashParamsOptions
+    ) => {
       writeHashParams({ [key]: value }, options);
     },
     []
   );
 
   const setParams = useCallback(
-    (updates: Record<string, string | null | undefined>, options?: SetHashParamsOptions) => {
+    (
+      updates: Record<string, string | null | undefined>,
+      options?: SetHashParamsOptions
+    ) => {
       writeHashParams(updates, options);
     },
     []

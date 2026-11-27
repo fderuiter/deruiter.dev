@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 export const DUCKDEPLOY_COMMANDS_OBJ: CaseStudyCommands = {
   "duckdeploy schema validate --spec ./deployment-schema.json": {
@@ -116,17 +120,17 @@ export const DUCKDEPLOY_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-16",
-    slug: "duckdeploy",
-    title: "DuckDeploy: From Configuration Forms to Deployment Files",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/duckdeploy",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, React, Web Workers, JSON Schema, AST Compiler, Polymorphic UI, Dynamic Forms, Kubernetes, Zero-Latency",
-    editorial_content:
-      "A **TypeScript** tool that turns **JSON Schema** into configuration forms, then compiles their values into Kubernetes, Helm, or Cloud Run manifests. **Web Workers** keep compilation off the UI thread.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-16",
+  slug: "duckdeploy",
+  title: "DuckDeploy: From Configuration Forms to Deployment Files",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/duckdeploy",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, React, Web Workers, JSON Schema, AST Compiler, Polymorphic UI, Dynamic Forms, Kubernetes, Zero-Latency",
+  editorial_content:
+    "A **TypeScript** tool that turns **JSON Schema** into configuration forms, then compiles their values into Kubernetes, Helm, or Cloud Run manifests. **Web Workers** keep compilation off the UI thread.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Deployment configuration repeats the same information in different forms. DuckDeploy starts from JSON Schema, generates an editable form, and compiles the resulting values into deployment manifests.</p>
 <p><strong>The approach:</strong> The UI derives form state from JSON Schema. Web Workers compile that state into the selected deployment format.</p>
 
@@ -259,8 +263,8 @@ addEventListener("message", ({ data }: MessageEvent&lt;{ formState: Record&lt;st
   <li>Compiling manifests in the browser instead of through a REST API removed the server round trip, cut preview updates from 450ms to 2.4ms, and lets manifests be written offline.</li>
   <li>A small purpose-built AST normalizer is 85KB lighter in the client bundle than a general schema engine.</li>
 </ul>`,
-    commands_json: JSON.stringify(DUCKDEPLOY_COMMANDS_OBJ),
-    playback_json: JSON.stringify(DUCKDEPLOY_PLAYBACK_OBJ),
-    created_at: new Date("2026-03-15T00:00:00Z"),
-    updated_at: new Date("2026-08-14T00:00:00Z"),
-  });
+  commands_json: JSON.stringify(DUCKDEPLOY_COMMANDS_OBJ),
+  playback_json: JSON.stringify(DUCKDEPLOY_PLAYBACK_OBJ),
+  created_at: new Date("2026-03-15T00:00:00Z"),
+  updated_at: new Date("2026-08-14T00:00:00Z"),
+});

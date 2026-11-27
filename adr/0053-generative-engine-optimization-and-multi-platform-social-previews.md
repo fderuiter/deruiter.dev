@@ -7,6 +7,7 @@ Accepted on 2026-09-28. Extends [ADR 0017](0017-unified-schema-org-entity-graph-
 ## Context
 
 The portfolio previously optimized for traditional search engine indexation through a unified Schema.org `@graph` ([ADR 0017](0017-unified-schema-org-entity-graph-and-tiered-seo-architecture.md)) and static XML sitemaps. However, two major shifts in discoverability created strategic gaps:
+
 1. **AI / Answer Engine Ingestion**: Emerging AI search systems (ChatGPT Search, Perplexity, Claude, Copilot, Cursor) bypass standard HTML rendering, prioritizing structured markdown summaries, explicit entity authority bindings (`sameAs`), and standardized `/llms.txt` registries. Relying purely on client-hydrated DOM or unparsed HTML results in inaccurate AI citations.
 2. **Social Preview Degradation Across Chat Applications**: When sharing links via messaging platforms (iMessage, WhatsApp, Slack, Discord, LinkedIn), preview generation was inconsistent. WhatsApp dropped link previews exceeding 300 KB, Discord rendered neutral gray cards due to missing root `theme-color` viewport metadata, and Satori OpenGraph cards displayed generic code badges rather than recognizable visual artwork (e.g. Laser Loon vector artwork or CRF Studio form designer mockups).
 3. **Isolated Search Silos**: Interactive tools (`/crf`, `/patrol`, `/arcade/*`) operated in visual isolation from deep-dive architectural case studies and ADRs, limiting cross-site PageRank distribution and missing opportunities to convert top-of-funnel gamers or tool users into engineering consultation clients.

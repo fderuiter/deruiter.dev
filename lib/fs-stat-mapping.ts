@@ -8,7 +8,8 @@ import path from "path";
  */
 export function getRouteSourceFilePath(routePath: string): string {
   const cleanPath = routePath.replace(/^\/+|\/+$/g, "");
-  const relativePath = cleanPath === "" ? "app/page.tsx" : `app/${cleanPath}/page.tsx`;
+  const relativePath =
+    cleanPath === "" ? "app/page.tsx" : `app/${cleanPath}/page.tsx`;
   return path.resolve(process.cwd(), relativePath);
 }
 

@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-8",
-    slug: "inbody-qr-decoder",
-    title: "InBody QR Decoder: What’s in That QR Code?",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/inbody-qr-decoder",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Python, Poetry, Reverse Engineering, Biomedical Data, Monorepo Architecture, Data Parsing, QR Decoder",
-    editorial_content:
-      "A set of **Python** tools for decoding **InBody** body-composition QR codes. The project explores the binary format, maps its fields, and exposes the results through a library and CLI.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-8",
+  slug: "inbody-qr-decoder",
+  title: "InBody QR Decoder: What’s in That QR Code?",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/inbody-qr-decoder",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Python, Poetry, Reverse Engineering, Biomedical Data, Monorepo Architecture, Data Parsing, QR Decoder",
+  editorial_content:
+    "A set of **Python** tools for decoding **InBody** body-composition QR codes. The project explores the binary format, maps its fields, and exposes the results through a library and CLI.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>An InBody result contains a QR code, which raises a reasonable question: what is in it? This project examines the encoded binary data, maps positions to measurements, and turns those findings into Python tools.</p>
 <p><strong>The approach:</strong> The Python packages separate binary decoding, field discovery, API access, and command-line use. Mutation-based experiments help identify what each field represents.</p>
 <p><strong>Reported project measurements:</strong> Sub-millisecond payload decoding; 100% reconstruction fidelity across 30+ body composition biometrics; automated differential mutation testing suite.</p>
@@ -66,6 +66,6 @@ def probe_byte_slice(payload: str, start: int, end: int, delta: int = 1) -> str:
   <li>URL percent-encoding turned literal <code>!</code> delimiters into <code>%21</code>, which shifted the byte slices and produced a $10\\times$ error in Leg Lean Mass until the delimiters were normalized.</li>
   <li>The core decoder uses only the Python standard library, so it can be embedded in constrained IoT and mobile environments.</li>
 </ul>`,
-    created_at: new Date("2026-02-22T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-02-22T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { ProjectImageService } from "@/lib/services/project-image-service";
+import { GetMediaAssetHandler } from "@/lib/services";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
-import { sanitizeError } from "@/lib/error-sanitization";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +15,17 @@ export const GET = createApiHandler(
       );
     }
 
-    const result = await ProjectImageService.getMediaAsset(key);
+    const result = await new GetMediaAssetHandler().execute({ key });
     if (!result.success) {
+      if (result.error.code === "INVALID_MEDIA_KEY") {
+        return NextResponse.json(
+          { error: "Media asset not found" },
+          { status: 404 }
+        );
+      }
       logger.error(
         `Media asset read failed (${result.error.code}):`,
-        sanitizeError(result.error.details ?? result.error.message)
+        result.error.details ?? new Error(result.error.message)
       );
       return NextResponse.json(
         { error: "Media asset could not be read" },

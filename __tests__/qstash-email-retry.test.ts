@@ -13,20 +13,13 @@ vi.mock("@upstash/qstash", async (importOriginal) => {
   return { ...actual, Client: MockClient };
 });
 
-const processRetryQueue = vi.fn();
-const getQueueEntryState = vi.fn();
-vi.mock("@/lib/services/email-service", () => ({
-  EmailService: {
-    processRetryQueue: (...a: unknown[]) => processRetryQueue(...a),
-    getQueueEntryState: (...a: unknown[]) => getQueueEntryState(...a),
-  },
-}));
-
+import { ProcessRetryQueueHandler } from "@/lib/services";
 import { createFailure, createSuccess } from "@/lib/services/service-result";
 import { POST } from "@/app/api/webhooks/qstash/retry/route";
 import {
   getQStashRetryDelaySeconds,
   getQStashRetryUrl,
+  MAX_QSTASH_FOLLOW_UPS,
   scheduleEmailRetry,
 } from "@/lib/qstash-retry";
 
@@ -70,9 +63,9 @@ function request(body: string, signature?: string): NextRequest {
 const BODY = JSON.stringify({ queueId: "q_123" });
 
 describe("QStash email retry", () => {
+  let processRetryQueue: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
-    // jsdom's TextEncoder yields a Uint8Array from another realm, which the
-    // verifier's JWT library rejects. Production runs on Node, not jsdom.
     vi.stubGlobal(
       "TextEncoder",
       class {
@@ -85,13 +78,13 @@ describe("QStash email retry", () => {
     vi.stubEnv("QSTASH_TOKEN", "qtok");
     vi.stubEnv("QSTASH_CURRENT_SIGNING_KEY", CURRENT);
     vi.stubEnv("QSTASH_NEXT_SIGNING_KEY", NEXT);
-    processRetryQueue.mockReset();
-    getQueueEntryState.mockReset();
+    processRetryQueue = vi.spyOn(ProcessRetryQueueHandler.prototype, "execute");
     publishJSON.mockReset();
     publishJSON.mockResolvedValue({ messageId: "m1" });
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
@@ -170,7 +163,13 @@ describe("QStash email retry", () => {
 
     it("accepts the current key and the next key (rotation)", async () => {
       processRetryQueue.mockResolvedValue(
-        createSuccess({ processed: 1, succeeded: 1, failed: 0 })
+        createSuccess({
+          processed: 1,
+          succeeded: 1,
+          failed: 0,
+          deferred: 0,
+          entryState: { status: "DELIVERED", attempts: 1 },
+        })
       );
       for (const key of [CURRENT, NEXT]) {
         const res = await POST(request(BODY, sign(BODY, key)));
@@ -183,7 +182,13 @@ describe("QStash email retry", () => {
   describe("webhook behaviour", () => {
     it("runs a targeted retry for the signed queue id", async () => {
       processRetryQueue.mockResolvedValue(
-        createSuccess({ processed: 1, succeeded: 1, failed: 0 })
+        createSuccess({
+          processed: 1,
+          succeeded: 1,
+          failed: 0,
+          deferred: 0,
+          entryState: { status: "DELIVERED", attempts: 1 },
+        })
       );
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(res.status).toBe(200);
@@ -200,9 +205,14 @@ describe("QStash email retry", () => {
 
     it("schedules the next attempt while the row is still retrying", async () => {
       processRetryQueue.mockResolvedValue(
-        createSuccess({ processed: 1, succeeded: 0, failed: 1 })
+        createSuccess({
+          processed: 1,
+          succeeded: 0,
+          failed: 1,
+          deferred: 0,
+          entryState: { status: "RETRYING", attempts: 2 },
+        })
       );
-      getQueueEntryState.mockResolvedValue({ status: "RETRYING", attempts: 2 });
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(await res.json()).toMatchObject({ rescheduled: true });
       expect(publishJSON).toHaveBeenCalledWith(
@@ -212,9 +222,14 @@ describe("QStash email retry", () => {
 
     it("does not reschedule a terminally failed row", async () => {
       processRetryQueue.mockResolvedValue(
-        createSuccess({ processed: 1, succeeded: 0, failed: 1 })
+        createSuccess({
+          processed: 1,
+          succeeded: 0,
+          failed: 1,
+          deferred: 0,
+          entryState: { status: "FAILED", attempts: 5 },
+        })
       );
-      getQueueEntryState.mockResolvedValue({ status: "FAILED", attempts: 5 });
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(await res.json()).toMatchObject({ rescheduled: false });
       expect(publishJSON).not.toHaveBeenCalled();
@@ -226,13 +241,14 @@ describe("QStash email retry", () => {
       expect(res.status).toBe(422);
     });
 
-    it("answers 500 so QStash redelivers when processing throws", async () => {
+    it("answers 503 when processing throws and leaves the row for maintenance", async () => {
       processRetryQueue.mockRejectedValue(new Error("db asleep"));
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(503);
+      expect(publishJSON).not.toHaveBeenCalled();
     });
 
-    it("answers 500 so QStash redelivers when the retry returns a failure (#1532)", async () => {
+    it("answers 503 when leasing the queue fails (#1532)", async () => {
       processRetryQueue.mockResolvedValue(
         createFailure(
           "QUEUE_LEASE_FAILED",
@@ -240,11 +256,43 @@ describe("QStash email retry", () => {
         )
       );
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(503);
       await expect(res.json()).resolves.toEqual({
         error: "Failed to process email retry",
       });
-      expect(getQueueEntryState).not.toHaveBeenCalled();
+      expect(publishJSON).not.toHaveBeenCalled();
+    });
+
+    it("reschedules a conservative follow-up and answers 503 on QUEUE_STATE_READ_FAILED", async () => {
+      processRetryQueue.mockResolvedValue(
+        createFailure(
+          "QUEUE_STATE_READ_FAILED",
+          "Could not read updated queue entry state"
+        )
+      );
+      const res = await POST(request(BODY, sign(BODY, CURRENT)));
+      expect(res.status).toBe(503);
+      expect(publishJSON).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: { queueId: "q_123", followUps: 1 },
+          delay: 300,
+        })
+      );
+    });
+
+    it("leaves the durable row for maintenance after the follow-up budget is spent", async () => {
+      processRetryQueue.mockResolvedValue(
+        createFailure("QUEUE_STATE_READ_FAILED", "Queue state unavailable")
+      );
+      const body = JSON.stringify({
+        queueId: "q_123",
+        followUps: MAX_QSTASH_FOLLOW_UPS,
+      });
+
+      const res = await POST(request(body, sign(body, CURRENT)));
+
+      expect(res.status).toBe(503);
+      expect(processRetryQueue).toHaveBeenCalledOnce();
       expect(publishJSON).not.toHaveBeenCalled();
     });
 

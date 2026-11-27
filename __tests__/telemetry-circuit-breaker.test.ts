@@ -48,7 +48,7 @@ vi.mock("@upstash/ratelimit", () => {
 });
 
 import { POST } from "@/app/api/telemetry/route";
-import { _testCache } from "@/lib/services/telemetry-service";
+import { _testCache } from "@/lib/services";
 import { NextRequest } from "next/server";
 
 describe("Telemetry Rate Limiting Circuit Breaker Cooldown Suite", () => {

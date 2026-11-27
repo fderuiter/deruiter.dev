@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FeedbackSubmissionSchema } from "@/lib/schemas";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
+import {
+  SendFeedbackNotificationHandler,
+  SubmitCaseStudyFeedbackHandler,
+  getConnectionHashFromRequest,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
-import { EmailService } from "@/lib/services/email-service";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -37,34 +43,48 @@ export const POST = createApiHandler(
         );
       }
 
-      const result = await CaseStudyService.submitFeedback(
-        data,
+      const result = await new SubmitCaseStudyFeedbackHandler().execute({
+        caseStudySlug: data.caseStudySlug,
+        takeaways: data.takeaways,
+        comments: data.comments,
         connectionHash,
-        operationKey
-      );
+        operationKey,
+      });
 
-      if (result.rateLimited) {
-        return NextResponse.json({ error: result.message }, { status: 429 });
+      if (!result.success) {
+        if (result.error.code === "RATE_LIMITED") {
+          return NextResponse.json(
+            { error: result.error.message },
+            { status: 429 }
+          );
+        }
+        return serviceFailureResponse(result, {
+          errorMessage:
+            "Feedback storage is temporarily unavailable. Your feedback remains queued for retry.",
+          logContext: "Case study feedback persistence failed:",
+        });
       }
 
       // Non-blocking notification dispatch, once per stored row
-      if (result.success && !result.replayed) {
-        EmailService.sendFeedbackNotification({
-          caseStudySlug: data.caseStudySlug,
-          takeaways: data.takeaways,
-          comments: data.comments,
-          connectionHash,
-          submittedAt: new Date(),
-        }).catch((err) => {
-          logger.error("Non-blocking feedback email dispatch error:", err);
-        });
+      if (!result.data.replayed) {
+        new SendFeedbackNotificationHandler()
+          .execute({
+            caseStudySlug: data.caseStudySlug,
+            takeaways: data.takeaways,
+            comments: data.comments,
+            connectionHash,
+            submittedAt: new Date(),
+          })
+          .catch((err) => {
+            logger.error("Non-blocking feedback email dispatch error:", err);
+          });
       }
 
       return NextResponse.json(
         {
-          success: result.success,
-          message: result.message,
-          feedback: result.feedback,
+          success: true,
+          message: result.data.message,
+          feedback: result.data.feedback,
         },
         { status: 201 }
       );

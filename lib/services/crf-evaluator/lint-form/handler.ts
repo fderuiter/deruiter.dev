@@ -1,8 +1,17 @@
+import type { CRFForm } from "@/lib/crf/types";
 import { LintFormSpec, LintFormInput, LintFormResult } from "./spec";
-import * as astEvaluator from "@/lib/crf";
+import * as astEvaluator from "@/lib/crf/evaluator";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
+export type LintFormEvaluator = (
+  form: CRFForm
+) => astEvaluator.DiagnosticItem[];
+
 export class LintFormHandler implements LintFormSpec {
+  constructor(
+    private readonly lintFormFn: LintFormEvaluator = astEvaluator.lintForm
+  ) {}
+
   execute(input: LintFormInput): LintFormResult {
     if (!input.form || !Array.isArray(input.form.sections)) {
       return createFailure(
@@ -20,7 +29,7 @@ export class LintFormHandler implements LintFormSpec {
         ...input.form,
         rules: Array.isArray(input.form.rules) ? input.form.rules : [],
       };
-      const diagnostics = astEvaluator.lintForm(normalizedForm);
+      const diagnostics = this.lintFormFn(normalizedForm);
       return createSuccess(diagnostics);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

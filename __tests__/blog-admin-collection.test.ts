@@ -207,9 +207,24 @@ describe("GET and POST /api/admin/blog", () => {
         { path: "slug", message: "A blog post with this slug already exists" },
       ],
     });
-    expect(unavailable.status).toBe(500);
+    expect(unavailable.status).toBe(503);
     expect(await unavailable.json()).toEqual({
       error: "Failed to create blog draft",
+    });
+  });
+
+  it("returns 503 when database storage fails during GET draft list", async () => {
+    vi.mocked(prisma.blogPost.findMany).mockRejectedValueOnce(
+      new Error("database unavailable")
+    );
+
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/admin/blog")
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "Failed to load blog drafts",
     });
   });
 });

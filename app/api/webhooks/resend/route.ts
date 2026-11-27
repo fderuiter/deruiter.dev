@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { ResendWebhookEventSchema } from "@/lib/schemas";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, serviceFailureResponse } from "@/lib/route-wrapper";
 import {
-  EmailService,
+  HandleResendWebhookHandler,
   verifySvixSignature,
-} from "@/lib/services/email-service";
+} from "@/lib/services";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -65,23 +65,25 @@ export const POST = createApiHandler(
         );
       }
 
-      const result = await EmailService.handleWebhookEvent(parseResult.data);
+      const result = await new HandleResendWebhookHandler().execute({
+        event: parseResult.data,
+      });
 
-      if (!result.handled) {
+      if (!result.success) {
         // Durable processing (e.g. the suppression-list write) failed. Respond
         // with a retryable status so Resend/Svix redelivers the event instead
         // of treating a lost write as acknowledged.
-        return NextResponse.json(
-          { error: "Failed to durably process webhook event" },
-          { status: 500 }
-        );
+        return serviceFailureResponse(result, {
+          errorMessage: "Failed to durably process webhook event",
+          logContext: "Resend webhook durable processing failed:",
+        });
       }
 
       return NextResponse.json(
         {
           received: true,
           processedEvent: parseResult.data.type,
-          suppressed: result.suppressed || false,
+          suppressed: result.data.suppressed || false,
         },
         { status: 200 }
       );

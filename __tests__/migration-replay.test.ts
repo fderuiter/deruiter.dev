@@ -143,7 +143,7 @@ describe("Migration Replay: Target Resolution & Ambient Env Isolation", () => {
       targetUrl: "postgresql://postgres:postgres@localhost:5432/portfolio_ci",
       isolatedSchema: "ephemeral_replay_test",
       quiet: true,
-      executor: (cmd, args, opts) => {
+      executor: (_cmd, _args, opts) => {
         if (opts?.env?.DATABASE_URL) {
           capturedUrl = opts.env.DATABASE_URL;
         }
@@ -193,7 +193,7 @@ describe("Migration Replay: Target Resolution & Ambient Env Isolation", () => {
         targetUrl:
           "postgresql://postgres:postgres@localhost:5432/portfolio_ci?schema=replay",
         quiet: true,
-        executor: (cmd, args) => {
+        executor: (_cmd, args) => {
           if (args.includes("deploy")) {
             return {
               status: 1,
@@ -214,7 +214,7 @@ describe("Migration Replay: Target Resolution & Ambient Env Isolation", () => {
         targetUrl:
           "postgresql://postgres:postgres@localhost:5432/portfolio_ci?schema=replay",
         quiet: true,
-        executor: (cmd, args) => {
+        executor: (_cmd, args) => {
           if (args.includes("diff")) {
             return {
               status: 1,
@@ -375,7 +375,7 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
       runMigrationReplay({
         checkDocker: true,
         quiet: true,
-        executor: (cmd, args) => {
+        executor: (_cmd, args) => {
           if (args[0] === "run") {
             return {
               status: 1,
@@ -402,7 +402,7 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
       runMigrationReplay({
         checkDocker: true,
         quiet: true,
-        executor: (cmd, args) => {
+        executor: (_cmd, args) => {
           if (args.includes("pg_isready")) {
             return { status: 1, stdout: "", stderr: "not ready" };
           }
@@ -420,7 +420,7 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
         targetUrl: "postgresql://postgres:postgres@localhost:5432/portfolio_ci",
         quiet: true,
         skipGenerate: false,
-        executor: (cmd, args) => {
+        executor: (_cmd, args) => {
           if (args.includes("generate")) {
             return { status: 1, stdout: "", stderr: "prisma schema not found" };
           }

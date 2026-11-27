@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ContactSubmissionSchema } from "@/lib/schemas";
-import { EmailService } from "@/lib/services/email-service";
-import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
+import {
+  SendContactInquiryHandler,
+  getConnectionHashFromRequest,
+} from "@/lib/services";
 import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { logger } from "@/lib/logger";
@@ -72,10 +74,10 @@ export const POST = createApiHandler(
       }
 
       // 4. Dispatch Inbound Inquiry and Confirmation
-      const result = await EmailService.sendContactInquiry(
-        data,
-        connectionHash
-      );
+      const result = await new SendContactInquiryHandler().execute({
+        submission: data,
+        connectionHash,
+      });
 
       if (!result.success) {
         return NextResponse.json(
@@ -83,7 +85,8 @@ export const POST = createApiHandler(
             // An unknown-eligibility failure (#3806) is internal detail; the
             // visitor gets the plain fallback.
             error:
-              (!result.adminResult.errorCode && result.adminResult.error) ||
+              (result.error.code !== "RECIPIENT_ELIGIBILITY_UNKNOWN" &&
+                result.error.message) ||
               "Unable to deliver message at this time. Please reach out directly via email.",
           },
           { status: 500 }
@@ -94,8 +97,8 @@ export const POST = createApiHandler(
         {
           success: true,
           message: "Your message has been received! I'll be in touch soon.",
-          messageId: result.adminResult.data?.id,
-          simulated: result.adminResult.simulated,
+          messageId: result.data.adminDelivery.id,
+          simulated: result.data.adminDelivery.simulated,
         },
         { status: 201 }
       );

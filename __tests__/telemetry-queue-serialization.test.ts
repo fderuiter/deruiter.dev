@@ -145,7 +145,10 @@ vi.mock("@upstash/ratelimit", () => ({
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import { TelemetryService } from "@/lib/services/telemetry-service";
+import {
+  RecordTelemetryEventHandler,
+  SyncBufferedEventsHandler,
+} from "@/lib/services";
 
 const BUFFER = "telemetry_buffer";
 const PROCESSING = "telemetry_processing";
@@ -173,7 +176,9 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
   it("actually removes the acknowledged events from the processing queue", async () => {
     fake.lpush(BUFFER, event("a"), event("b"));
 
-    const result = await TelemetryService.syncBufferedEvents(10);
+    const result = await new SyncBufferedEventsHandler().execute({
+      batchSize: 10,
+    });
 
     expect(result).toEqual({
       success: true,
@@ -199,7 +204,7 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
       return { count: data.length };
     });
 
-    const workerA = TelemetryService.syncBufferedEvents(2);
+    const workerA = new SyncBufferedEventsHandler().execute({ batchSize: 2 });
     await Promise.resolve();
     fake.lmove(BUFFER, PROCESSING, "right", "left");
     released();
@@ -220,7 +225,7 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
     mockCreateMany.mockRejectedValueOnce(new Error("connection terminated"));
 
     await expect(
-      TelemetryService.syncBufferedEvents(10)
+      new SyncBufferedEventsHandler().execute({ batchSize: 10 })
     ).resolves.toMatchObject({
       success: false,
       error: { code: "PERSISTENCE_FAILED" },
@@ -233,10 +238,12 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
     fake.lpush(BUFFER, event("a"));
     mockCreateMany.mockRejectedValueOnce(new Error("connection terminated"));
     await expect(
-      TelemetryService.syncBufferedEvents(10)
+      new SyncBufferedEventsHandler().execute({ batchSize: 10 })
     ).resolves.toMatchObject({ success: false });
 
-    const recovered = await TelemetryService.syncBufferedEvents(10);
+    const recovered = await new SyncBufferedEventsHandler().execute({
+      batchSize: 10,
+    });
 
     expect(recovered).toEqual({
       success: true,
@@ -246,12 +253,14 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
   });
 
   it("round trips an event recorded through the public API", async () => {
-    await TelemetryService.recordEvent({
+    await new RecordTelemetryEventHandler().execute({
       projectSlug: "/dashboard",
       eventType: "page_view",
     });
 
-    const result = await TelemetryService.syncBufferedEvents(10);
+    const result = await new SyncBufferedEventsHandler().execute({
+      batchSize: 10,
+    });
 
     expect(result.success && result.data.processed).toBe(1);
     expect(fake.lists.get(PROCESSING) ?? []).toEqual([]);

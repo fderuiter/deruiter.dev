@@ -7,13 +7,21 @@ import { auth } from "@clerk/nextjs/server";
 import { POST, DELETE } from "@/app/api/admin/projects/[slug]/image/route";
 import { GET as getMediaAssetRoute } from "@/app/api/media/[key]/route";
 import {
-  ProjectImageService,
+  GetCaseStudyBySlugHandler,
+  GetMediaAssetHandler,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
+  UpdateCaseStudyImageHandler,
   blobStoreIdFromToken,
+  createFailure,
+  createSuccess,
+  extractMediaKeyFromUrl,
+  type CaseStudyData as CaseStudyDTO,
   type MediaOwnership,
-} from "@/lib/services/project-image-service";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { createFailure, createSuccess } from "@/lib/services/service-result";
+} from "@/lib/services";
+import {
+  LocalStorageProvider,
+  setMediaStorageProvider,
+} from "@/lib/services/media-storage";
 import { logger } from "@/lib/logger";
 
 vi.mock("@/lib/auth/admin", () => ({
@@ -22,13 +30,6 @@ vi.mock("@/lib/auth/admin", () => ({
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn(),
-}));
-
-vi.mock("@/lib/services/case-study-service", () => ({
-  CaseStudyService: {
-    getCaseStudyBySlug: vi.fn(),
-    updateCaseStudyImage: vi.fn(),
-  },
 }));
 
 /**
@@ -54,6 +55,25 @@ const VALID_PNG_BUFFER = Buffer.from(
 const VALID_JPEG_BUFFER = Buffer.from([
   0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46,
 ]);
+
+function makeCaseStudyDto(overrides: Partial<CaseStudyDTO> = {}): CaseStudyDTO {
+  return {
+    id: "cs_1",
+    slug: "laser-loon",
+    title: "Laser Loon",
+    primary_language: "TypeScript",
+    github_url: "https://github.com/test/laser-loon",
+    published: true,
+    simulated_telemetry: false,
+    tags: "game, canvas",
+    editorial_content: "Editorial narrative",
+    architectural_narrative: "Architectural breakdown",
+    hero_image_url: "/api/media/project-laser-loon-old.png",
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...overrides,
+  };
+}
 
 function createMultipartRequest(
   url: string,
@@ -99,46 +119,31 @@ function createMultipartRequest(
 }
 
 describe("API Admin Project Image Upload Route", () => {
+  let getBySlugSpy: ReturnType<typeof vi.spyOn>;
+  let updateImageSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    setMediaStorageProvider(null);
     vi.mocked(auth).mockResolvedValue(fromPartial({ userId: "user_admin123" }));
     vi.mocked(isCurrentUserAdmin).mockResolvedValue(true);
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue({
-      id: "cs_1",
-      slug: "laser-loon",
-      title: "Laser Loon",
-      primary_language: "TypeScript",
-      github_url: "https://github.com/test/laser-loon",
-      published: true,
-      simulated_telemetry: false,
-      tags: "game, canvas",
-      editorial_content: "Editorial narrative",
-      architectural_narrative: "Architectural breakdown",
-      hero_image_url: "/api/media/project-laser-loon-old.png",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-    vi.mocked(CaseStudyService.updateCaseStudyImage).mockImplementation(
-      async (slug, hero_image_url) =>
-        createSuccess({
-          id: "cs_1",
-          slug,
-          title: "Laser Loon",
-          primary_language: "TypeScript",
-          github_url: "https://github.com/test/laser-loon",
-          published: true,
-          simulated_telemetry: false,
-          tags: "game, canvas",
-          editorial_content: "Editorial narrative",
-          architectural_narrative: "Architectural breakdown",
-          hero_image_url,
-          created_at: new Date(),
-          updated_at: new Date(),
-        })
-    );
+    getBySlugSpy = vi
+      .spyOn(GetCaseStudyBySlugHandler.prototype, "execute")
+      .mockResolvedValue(createSuccess(makeCaseStudyDto()));
+    updateImageSpy = vi
+      .spyOn(UpdateCaseStudyImageHandler.prototype, "execute")
+      .mockImplementation(async ({ slug, heroImageUrl }) =>
+        createSuccess(
+          makeCaseStudyDto({
+            slug,
+            hero_image_url: heroImageUrl,
+          })
+        )
+      );
   });
 
   afterEach(() => {
+    setMediaStorageProvider(null);
     vi.restoreAllMocks();
   });
 
@@ -207,7 +212,6 @@ describe("API Admin Project Image Upload Route", () => {
 
   it("returns 400 Bad Request when file exceeds 5MB size limit", async () => {
     const oversizedBuffer = Buffer.alloc(MAX_PROJECT_IMAGE_SIZE_BYTES + 100);
-    // Write valid PNG header
     VALID_PNG_BUFFER.copy(oversizedBuffer, 0, 0, 8);
 
     const req = createMultipartRequest(
@@ -273,7 +277,7 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("successfully validates, persists, and links valid PNG image asset", async () => {
-    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+    const deleteSpy = vi.spyOn(LocalStorageProvider.prototype, "delete");
 
     const req = createMultipartRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -356,10 +360,11 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("preserves prior asset when database update fails", async () => {
-    vi.mocked(CaseStudyService.updateCaseStudyImage).mockResolvedValueOnce(
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    updateImageSpy.mockResolvedValueOnce(
       createFailure("PERSISTENCE_FAILED", "Database connection lost")
     );
-    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+    const deleteSpy = vi.spyOn(LocalStorageProvider.prototype, "delete");
 
     const req = createMultipartRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -379,26 +384,24 @@ describe("API Admin Project Image Upload Route", () => {
     const data = await res.json();
     expect(data.error).toBe("Failed to process and store project image");
 
-    // Verify updateCaseStudyImage was called to roll back to prior asset
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledWith(
-      "laser-loon",
-      "/api/media/project-laser-loon-old.png"
-    );
-    // The new asset is cleaned up; the prior asset is left in place.
+    expect(updateImageSpy).toHaveBeenCalledWith({
+      slug: "laser-loon",
+      heroImageUrl: "/api/media/project-laser-loon-old.png",
+    });
     expect(deleteSpy).toHaveBeenCalledTimes(1);
     expect(deleteSpy).not.toHaveBeenCalledWith("project-laser-loon-old.png");
   });
 
   it("returns 400 with the service message when the case study does not exist", async () => {
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(null);
-    vi.mocked(CaseStudyService.updateCaseStudyImage).mockResolvedValueOnce(
+    getBySlugSpy.mockResolvedValue(createSuccess(null));
+    updateImageSpy.mockResolvedValueOnce(
       createFailure(
         "CASE_STUDY_NOT_FOUND",
         'Case study with slug "missing" not found',
         { recoverable: false }
       )
     );
-    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+    const deleteSpy = vi.spyOn(LocalStorageProvider.prototype, "delete");
 
     const req = createMultipartRequest(
       "http://localhost:3000/api/admin/projects/missing/image",
@@ -417,15 +420,24 @@ describe("API Admin Project Image Upload Route", () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.error).toBe('Case study with slug "missing" not found');
-    // The uploaded asset is removed and no prior reference is restored.
     expect(deleteSpy).toHaveBeenCalledTimes(1);
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledTimes(1);
+    expect(updateImageSpy).toHaveBeenCalledTimes(1);
   });
 
   it("returns a generic 500 when media storage rejects the upload", async () => {
-    vi.spyOn(ProjectImageService, "saveMediaAsset").mockResolvedValue(
-      createFailure("UPLOAD_FAILED", "Invalid token: Vercel Blob upload failed")
-    );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    setMediaStorageProvider({
+      upload: vi
+        .fn()
+        .mockResolvedValue(
+          createFailure(
+            "UPLOAD_FAILED",
+            "Invalid token: Vercel Blob upload failed"
+          )
+        ),
+      delete: vi.fn().mockResolvedValue(createSuccess(null)),
+      getUrl: (key) => `/api/media/${key}`,
+    });
     const errorSpy = vi.spyOn(logger, "error");
 
     const req = createMultipartRequest(
@@ -442,23 +454,23 @@ describe("API Admin Project Image Upload Route", () => {
     const res = await POST(req, {
       params: Promise.resolve({ slug: "laser-loon" }),
     });
-    // A provider message containing "Invalid" is an infrastructure failure,
-    // not a validation error, and must not leak to the client.
     expect(res.status).toBe(500);
     const data = await res.json();
     expect(data.error).toBe("Failed to process and store project image");
     expect(errorSpy).toHaveBeenCalledWith(
       "Project image upload failed:",
-      expect.objectContaining({ code: "STORAGE_FAILED" })
+      expect.anything(),
+      { code: "STORAGE_FAILED" }
     );
-    expect(CaseStudyService.updateCaseStudyImage).not.toHaveBeenCalled();
+    expect(updateImageSpy).not.toHaveBeenCalled();
   });
 
   it("returns 500 on DELETE when clearing the image reference fails", async () => {
-    vi.mocked(CaseStudyService.updateCaseStudyImage).mockResolvedValueOnce(
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    updateImageSpy.mockResolvedValueOnce(
       createFailure("PERSISTENCE_FAILED", "Database connection lost")
     );
-    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+    const deleteSpy = vi.spyOn(LocalStorageProvider.prototype, "delete");
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
       { method: "DELETE" }
@@ -471,21 +483,27 @@ describe("API Admin Project Image Upload Route", () => {
     expect(res.status).toBe(500);
     const data = await res.json();
     expect(data.error).toBe("Failed to clear project image");
-    // The prior asset stays in storage because its reference was not cleared.
     expect(deleteSpy).not.toHaveBeenCalled();
   });
 
   it("keeps a successfully replaced image when prior-asset cleanup fails", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const newAssetUrl =
       "https://abc.public.blob.vercel-storage.com/project-laser-loon-new.png";
-    vi.spyOn(ProjectImageService, "saveMediaAsset").mockResolvedValue(
-      createSuccess(newAssetUrl)
-    );
     const deleteSpy = vi
-      .spyOn(ProjectImageService, "deleteMediaAsset")
+      .fn()
       .mockResolvedValue(
         createFailure("DELETE_FAILED", "Vercel Blob delete failed")
       );
+    setMediaStorageProvider({
+      upload: vi
+        .fn()
+        .mockImplementation(async (_buf, key) =>
+          createSuccess({ url: newAssetUrl, key })
+        ),
+      delete: deleteSpy,
+      getUrl: (key) => key,
+    });
     const warningSpy = vi.spyOn(logger, "warn");
 
     const req = createMultipartRequest(
@@ -506,11 +524,11 @@ describe("API Admin Project Image Upload Route", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.data.hero_image_url).toBe(newAssetUrl);
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledTimes(1);
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledWith(
-      "laser-loon",
-      newAssetUrl
-    );
+    expect(updateImageSpy).toHaveBeenCalledTimes(1);
+    expect(updateImageSpy).toHaveBeenCalledWith({
+      slug: "laser-loon",
+      heroImageUrl: newAssetUrl,
+    });
     expect(deleteSpy).toHaveBeenCalledWith("project-laser-loon-old.png");
     expect(warningSpy).toHaveBeenCalledWith(
       "Project image was replaced, but prior asset cleanup failed.",
@@ -520,7 +538,7 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("clears project hero image on DELETE request from authorized admin and deletes prior asset", async () => {
-    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+    const deleteSpy = vi.spyOn(LocalStorageProvider.prototype, "delete");
 
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -537,19 +555,24 @@ describe("API Admin Project Image Upload Route", () => {
     const data = await res.json();
     expect(data.success).toBe(true);
     expect(data.data.hero_image_url).toBeNull();
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledWith(
-      "laser-loon",
-      null
-    );
+    expect(updateImageSpy).toHaveBeenCalledWith({
+      slug: "laser-loon",
+      heroImageUrl: null,
+    });
     expect(deleteSpy).toHaveBeenCalledWith("project-laser-loon-old.png");
   });
 
   it("keeps a cleared project image successful when blob cleanup fails", async () => {
-    vi.spyOn(ProjectImageService, "deleteMediaAsset").mockResolvedValue(
-      createFailure("DELETE_FAILED", "Vercel Blob delete failed", {
-        details: new Error("Blob cleanup unavailable"),
-      })
-    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    setMediaStorageProvider({
+      upload: vi.fn(),
+      delete: vi.fn().mockResolvedValue(
+        createFailure("DELETE_FAILED", "Vercel Blob delete failed", {
+          details: new Error("Blob cleanup unavailable"),
+        })
+      ),
+      getUrl: (key) => key,
+    });
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
       { method: "DELETE" }
@@ -563,16 +586,26 @@ describe("API Admin Project Image Upload Route", () => {
     const data = await res.json();
     expect(data.success).toBe(true);
     expect(data.data.hero_image_url).toBeNull();
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledWith(
-      "laser-loon",
-      null
-    );
+    expect(updateImageSpy).toHaveBeenCalledWith({
+      slug: "laser-loon",
+      heroImageUrl: null,
+    });
   });
 
   it("warns when clearing succeeds but media deletion fails", async () => {
-    vi.spyOn(ProjectImageService, "deleteMediaAsset").mockResolvedValue(
-      createFailure("STORAGE_UNCONFIGURED", "BLOB_READ_WRITE_TOKEN is required")
-    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    setMediaStorageProvider({
+      upload: vi.fn(),
+      delete: vi
+        .fn()
+        .mockResolvedValue(
+          createFailure(
+            "STORAGE_UNCONFIGURED",
+            "BLOB_READ_WRITE_TOKEN is required"
+          )
+        ),
+      getUrl: (key) => key,
+    });
     const warningSpy = vi.spyOn(logger, "warn");
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -592,7 +625,8 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("answers 500 from the media route when the storage read fails", async () => {
-    vi.spyOn(ProjectImageService, "getMediaAsset").mockResolvedValue(
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(GetMediaAssetHandler.prototype, "execute").mockResolvedValue(
       createFailure(
         "STORAGE_UNCONFIGURED",
         "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments"
@@ -616,7 +650,7 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("answers 404 from the media route when the asset is missing", async () => {
-    vi.spyOn(ProjectImageService, "getMediaAsset").mockResolvedValue(
+    vi.spyOn(GetMediaAssetHandler.prototype, "execute").mockResolvedValue(
       createSuccess(null)
     );
 
@@ -629,7 +663,7 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("returns 404 on DELETE request when case study slug does not exist", async () => {
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(null);
+    getBySlugSpy.mockResolvedValue(createSuccess(null));
 
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/non-existent/image",
@@ -645,26 +679,19 @@ describe("API Admin Project Image Upload Route", () => {
 
     const data = await res.json();
     expect(data.error).toMatch(/not found/i);
-    expect(CaseStudyService.updateCaseStudyImage).not.toHaveBeenCalled();
+    expect(updateImageSpy).not.toHaveBeenCalled();
   });
 
   it("does not attempt to delete media asset when hero_image_url is an external third-party URL", async () => {
-    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue({
-      id: "cs_external",
-      slug: "laser-loon",
-      title: "Laser Loon",
-      primary_language: "TypeScript",
-      github_url: "https://github.com/test/laser-loon",
-      published: true,
-      simulated_telemetry: false,
-      tags: "game, canvas",
-      editorial_content: "Editorial narrative",
-      architectural_narrative: "Architectural breakdown",
-      hero_image_url: "https://images.unsplash.com/photo-123456789",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
+    const deleteSpy = vi.spyOn(LocalStorageProvider.prototype, "delete");
+    getBySlugSpy.mockResolvedValue(
+      createSuccess(
+        makeCaseStudyDto({
+          id: "cs_external",
+          hero_image_url: "https://images.unsplash.com/photo-123456789",
+        })
+      )
+    );
 
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -677,30 +704,28 @@ describe("API Admin Project Image Upload Route", () => {
       params: Promise.resolve({ slug: "laser-loon" }),
     });
     expect(res.status).toBe(200);
-    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledWith(
-      "laser-loon",
-      null
-    );
+    expect(updateImageSpy).toHaveBeenCalledWith({
+      slug: "laser-loon",
+      heroImageUrl: null,
+    });
     expect(deleteSpy).not.toHaveBeenCalled();
   });
 
   it("extracts media storage key correctly across various URL patterns", () => {
+    expect(extractMediaKeyFromUrl("/api/media/project-test-123.png")).toBe(
+      "project-test-123.png"
+    );
     expect(
-      ProjectImageService.extractMediaKeyFromUrl(
-        "/api/media/project-test-123.png"
-      )
-    ).toBe("project-test-123.png");
-    expect(
-      ProjectImageService.extractMediaKeyFromUrl(
+      extractMediaKeyFromUrl(
         "https://deruiter.dev/api/media/project-test-456.jpg",
         OWNERSHIP
       )
     ).toBe("project-test-456.jpg");
+    expect(extractMediaKeyFromUrl("custom-blob-key.webp")).toBe(
+      "custom-blob-key.webp"
+    );
     expect(
-      ProjectImageService.extractMediaKeyFromUrl("custom-blob-key.webp")
-    ).toBe("custom-blob-key.webp");
-    expect(
-      ProjectImageService.extractMediaKeyFromUrl(
+      extractMediaKeyFromUrl(
         "https://abc12345.public.blob.vercel-storage.com/project-test-789.png",
         OWNERSHIP
       )
@@ -708,25 +733,17 @@ describe("API Admin Project Image Upload Route", () => {
       "https://abc12345.public.blob.vercel-storage.com/project-test-789.png"
     );
     expect(
-      ProjectImageService.extractMediaKeyFromUrl(
-        "https://images.unsplash.com/photo-987654"
-      )
+      extractMediaKeyFromUrl("https://images.unsplash.com/photo-987654")
     ).toBeNull();
+    expect(extractMediaKeyFromUrl("/images/projects/banner.jpg")).toBeNull();
     expect(
-      ProjectImageService.extractMediaKeyFromUrl("/images/projects/banner.jpg")
+      extractMediaKeyFromUrl("data:image/png;base64,iVBORw0KGgo=")
     ).toBeNull();
-    expect(
-      ProjectImageService.extractMediaKeyFromUrl(
-        "data:image/png;base64,iVBORw0KGgo="
-      )
-    ).toBeNull();
-    expect(ProjectImageService.extractMediaKeyFromUrl(null)).toBeNull();
-    expect(ProjectImageService.extractMediaKeyFromUrl("")).toBeNull();
-    expect(ProjectImageService.extractMediaKeyFromUrl("   ")).toBeNull();
+    expect(extractMediaKeyFromUrl(null)).toBeNull();
+    expect(extractMediaKeyFromUrl("")).toBeNull();
+    expect(extractMediaKeyFromUrl("   ")).toBeNull();
   });
 
-  // CodeQL alert 36: cleanup deletes whatever key comes back, so anything
-  // that only looks like one of our assets must come back as null.
   it.each([
     [
       "a lookalike host with the Blob host as a prefix",
@@ -793,14 +810,12 @@ describe("API Admin Project Image Upload Route", () => {
     ["a parent-directory media key", "/api/media/.."],
     ["an empty media key", "/api/media/"],
   ])("returns no managed key for %s", (_label, url) => {
-    expect(
-      ProjectImageService.extractMediaKeyFromUrl(url, OWNERSHIP)
-    ).toBeNull();
+    expect(extractMediaKeyFromUrl(url, OWNERSHIP)).toBeNull();
   });
 
   it("owns no Blob URL when this deployment has no Blob store", () => {
     expect(
-      ProjectImageService.extractMediaKeyFromUrl(
+      extractMediaKeyFromUrl(
         "https://abc12345.public.blob.vercel-storage.com/a.png",
         { ...OWNERSHIP, blobStoreId: null }
       )
@@ -809,9 +824,7 @@ describe("API Admin Project Image Upload Route", () => {
 
   it("matches the store host case-insensitively", () => {
     const url = "https://ABC12345.public.blob.vercel-storage.com/a.png";
-    expect(ProjectImageService.extractMediaKeyFromUrl(url, OWNERSHIP)).toBe(
-      url
-    );
+    expect(extractMediaKeyFromUrl(url, OWNERSHIP)).toBe(url);
   });
 
   it("reads the store id out of a Blob read-write token", () => {
@@ -826,14 +839,16 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("never deletes a lookalike Blob asset when replacing the image", async () => {
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(
-      fromPartial({
-        slug: "laser-loon",
-        hero_image_url: "https://blob.vercel-storage.com.evil.invalid/a.png",
-      })
+    getBySlugSpy.mockResolvedValue(
+      createSuccess(
+        fromPartial({
+          slug: "laser-loon",
+          hero_image_url: "https://blob.vercel-storage.com.evil.invalid/a.png",
+        })
+      )
     );
     const deleteSpy = vi
-      .spyOn(ProjectImageService, "deleteMediaAsset")
+      .spyOn(LocalStorageProvider.prototype, "delete")
       .mockResolvedValue(createSuccess(null));
     const req = createMultipartRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -855,14 +870,16 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("never deletes a lookalike Blob asset when clearing the image", async () => {
-    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(
-      fromPartial({
-        slug: "laser-loon",
-        hero_image_url: "https://evilblob.vercel-storage.com/a.png",
-      })
+    getBySlugSpy.mockResolvedValue(
+      createSuccess(
+        fromPartial({
+          slug: "laser-loon",
+          hero_image_url: "https://evilblob.vercel-storage.com/a.png",
+        })
+      )
     );
     const deleteSpy = vi
-      .spyOn(ProjectImageService, "deleteMediaAsset")
+      .spyOn(LocalStorageProvider.prototype, "delete")
       .mockResolvedValue(createSuccess(null));
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",

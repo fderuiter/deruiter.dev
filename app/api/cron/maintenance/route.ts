@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { createApiHandler, serviceFailureResponse } from "@/lib/route-wrapper";
 import { SyncParamsSchema } from "@/lib/schemas";
 import { validateRouteInitialization } from "@/lib/security";
-import { MaintenanceService } from "@/lib/services/maintenance-service";
+import { RunMaintenancePipelineHandler } from "@/lib/services";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +25,18 @@ validateRouteInitialization();
 
 export const GET = createApiHandler(
   async (_req, { data }) => {
-    const summary = await MaintenanceService.run({
+    const result = await new RunMaintenancePipelineHandler().execute({
       batchSize: data.batch,
       deadlineMs: maxDuration * 1000 - PLATFORM_HEADROOM_MS,
     });
+
+    if (!result.success) {
+      return serviceFailureResponse(result, {
+        logContext: "[maintenance] Invalid maintenance pipeline input:",
+      });
+    }
+
+    const summary = result.data;
 
     // A partial run leaves work behind (buffered telemetry expires on a
     // rolling TTL), so it must not pass silently: log at error level, which

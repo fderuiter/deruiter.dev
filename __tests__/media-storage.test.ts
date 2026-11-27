@@ -10,7 +10,11 @@ import {
   getMimeTypeForExtension,
   type MediaStorageProvider,
 } from "@/lib/services/media-storage";
-import { ProjectImageService } from "@/lib/services/project-image-service";
+import {
+  GetMediaAssetHandler,
+  deleteMediaAsset,
+  saveMediaAsset,
+} from "@/lib/services";
 import { createFailure, createSuccess } from "@/lib/services/service-result";
 import * as envModule from "@/lib/env";
 
@@ -531,11 +535,7 @@ describe("Media Storage Provider Test Suite", () => {
 
       const fileBuffer = Buffer.from("resilient asset content");
       await expect(
-        ProjectImageService.saveMediaAsset(
-          "resilient-hero.png",
-          fileBuffer,
-          "image/png"
-        )
+        saveMediaAsset("resilient-hero.png", fileBuffer, "image/png")
       ).resolves.toMatchObject({
         success: false,
         error: {
@@ -578,7 +578,7 @@ describe("Media Storage Provider Test Suite", () => {
         .mockResolvedValue(Buffer.from("stale local asset"));
 
       await expect(
-        ProjectImageService.getMediaAsset("project-laser-loon.png")
+        new GetMediaAssetHandler().execute({ key: "project-laser-loon.png" })
       ).resolves.toEqual(createSuccess(null));
 
       expect(localReadSpy).not.toHaveBeenCalled();
@@ -608,7 +608,7 @@ describe("Media Storage Provider Test Suite", () => {
         .mockResolvedValue(Buffer.from("stale local asset"));
 
       await expect(
-        ProjectImageService.getMediaAsset("project-laser-loon.png")
+        new GetMediaAssetHandler().execute({ key: "project-laser-loon.png" })
       ).resolves.toMatchObject({
         success: false,
         error: { code: "READ_FAILED", details: readFailure },
@@ -627,24 +627,18 @@ describe("Media Storage Provider Test Suite", () => {
       });
 
       await expect(
-        ProjectImageService.saveMediaAsset(
-          "a.png",
-          Buffer.from("x"),
-          "image/png"
-        )
+        saveMediaAsset("a.png", Buffer.from("x"), "image/png")
       ).resolves.toMatchObject({
         success: false,
         error: { code: "UPLOAD_FAILED", details: providerError },
       });
       await expect(
-        ProjectImageService.getMediaAsset("a.png")
+        new GetMediaAssetHandler().execute({ key: "a.png" })
       ).resolves.toMatchObject({
         success: false,
         error: { code: "READ_FAILED", details: providerError },
       });
-      await expect(
-        ProjectImageService.deleteMediaAsset("a.png")
-      ).resolves.toMatchObject({
+      await expect(deleteMediaAsset("a.png")).resolves.toMatchObject({
         success: false,
         error: { code: "DELETE_FAILED", details: providerError },
       });
@@ -668,7 +662,7 @@ describe("Media Storage Provider Test Suite", () => {
         .mockResolvedValue(undefined);
 
       await expect(
-        ProjectImageService.deleteMediaAsset(
+        deleteMediaAsset(
           "https://abc.public.blob.vercel-storage.com/project-laser-loon.png"
         )
       ).resolves.toMatchObject({
@@ -688,7 +682,7 @@ describe("Media Storage Provider Test Suite", () => {
       });
 
       await expect(
-        ProjectImageService.deleteMediaAsset("project-laser-loon.png")
+        deleteMediaAsset("project-laser-loon.png")
       ).resolves.toMatchObject({
         success: false,
         error: {

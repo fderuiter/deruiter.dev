@@ -15,6 +15,11 @@ import { checkDeadCode } from "./dead-code";
 import { checkDocumentationIndexParity } from "./doctor/docs";
 import { checkApiRouteWrapper } from "./doctor/api-routes";
 import { checkSetStateInEffectCeiling } from "./doctor/effect-suppressions";
+export {
+  checkServiceResultTypes,
+  findServiceContractViolations,
+} from "./doctor/service-contracts";
+import { checkServiceResultTypes } from "./doctor/service-contracts";
 
 export {
   checkApiRouteWrapper,
@@ -3763,15 +3768,6 @@ export function checkSectionStructures(
   };
 }
 
-/**
- * A statement that throws across a service boundary: a new error object
- * (`throw new Error(...)`, `throw new ValidationError(...)`) or a rethrow of a
- * caught value (`throw err;`). Both escape the ServiceResult envelope (#1532).
- */
-const RAW_SERVICE_THROW =
-  /\bthrow\s+new\s+(?:[A-Za-z_$][\w$]*)?(?:Error|Exception)\b/;
-const SERVICE_RETHROW = /\bthrow\s+[A-Za-z_$][\w$]*\s*(?:;|$)/;
-
 function isCommentLine(line: string): boolean {
   const trimmed = line.trim();
   return (
@@ -3779,91 +3775,6 @@ function isCommentLine(line: string): boolean {
     trimmed.startsWith("*") ||
     trimmed.startsWith("/*")
   );
-}
-
-/**
- * Check Typed Service Contracts & Result Envelopes Guard (ADR-0028)
- */
-export function checkServiceResultTypes(
-  root: string,
-  _fix = false
-): DiagnosticCheckResult {
-  const servicesDir = path.join(root, "lib", "services");
-  if (!fs.existsSync(servicesDir)) {
-    return {
-      id: "architecture-service-result-types",
-      name: "Typed Service Contracts & Result Envelopes Guard (ADR-0028)",
-      category: "architecture",
-      status: "pass",
-      message: "lib/services/ directory not present (skipped).",
-    };
-  }
-
-  const serviceFiles = findFiles(servicesDir, /\.ts$/);
-  const violations: { file: string; line: number; issue: string }[] = [];
-
-  for (const file of serviceFiles) {
-    const relative = path.relative(root, file);
-    const content = fs.readFileSync(file, "utf-8");
-    const lines = content.split("\n");
-
-    if (
-      relative.includes("handler.ts") ||
-      relative.includes("spec.ts") ||
-      (file.endsWith("-service.ts") && !relative.endsWith("index.ts"))
-    ) {
-      const usesServiceResult =
-        /ServiceResult\b|ServiceSuccess\b|ServiceFailure\b|createSuccess|createFailure|Result\b|Response\b|Status\b|Input\b|success:\s*boolean/.test(
-          content
-        );
-
-      if (!usesServiceResult) {
-        violations.push({
-          file: relative,
-          line: 1,
-          issue:
-            "Service layer module does not declare typed ServiceResult or result envelope structure",
-        });
-      }
-    }
-
-    // Every module under lib/services/ is a service boundary, including the
-    // media storage providers, so the throw scan is not limited to the
-    // envelope-shaped files above.
-    if (relative.includes(".test.")) continue;
-    lines.forEach((line, idx) => {
-      if (isCommentLine(line) || /createFailure/.test(line)) return;
-      const rethrow = SERVICE_RETHROW.test(line);
-      if (RAW_SERVICE_THROW.test(line) || rethrow) {
-        violations.push({
-          file: relative,
-          line: idx + 1,
-          issue: `${rethrow ? "Caught error rethrown" : "Raw exception thrown"} across the service boundary (${line.trim()}). Return a ServiceResult createFailure() envelope instead.`,
-        });
-      }
-    });
-  }
-
-  if (violations.length === 0) {
-    return {
-      id: "architecture-service-result-types",
-      name: "Typed Service Contracts & Result Envelopes Guard (ADR-0028)",
-      category: "architecture",
-      status: "pass",
-      message:
-        "All service layer handlers return typed ServiceResult envelopes without unhandled exceptions.",
-    };
-  }
-
-  return {
-    id: "architecture-service-result-types",
-    name: "Typed Service Contracts & Result Envelopes Guard (ADR-0028)",
-    category: "architecture",
-    status: "fail",
-    message: `${violations.length} service result return signature violation(s) detected in lib/services/. (ADR-0028: Typed Service Contracts, Dual-Seam Architecture, and Shoehorn Test Fixture Hygiene)`,
-    details: violations.map((v) => `${v.file}:${v.line} -> ${v.issue}`),
-    fixable: false,
-  };
 }
 
 /**

@@ -29,7 +29,7 @@ class TestArcadeEngine extends ArcadeEngine<
     this.emit("tick", { count: this.state.count });
   }
 
-  public override render(ctx: CanvasRenderingContext2D, alpha: number): void {
+  public override render(_ctx: CanvasRenderingContext2D, alpha: number): void {
     this.renderCalls.push({ alpha });
   }
 

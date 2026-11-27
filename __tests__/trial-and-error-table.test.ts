@@ -444,7 +444,7 @@ describe("play blocker (#1078)", () => {
       DMC_MILESTONE_SCENARIO,
     ];
     /** Every action worth trying from `state`, so each draw is meaningful. */
-    const candidates = (s: Scenario, state: TableState): TableAction[] => [
+    const candidates = (_s: Scenario, state: TableState): TableAction[] => [
       ...state.hand.map((cardId): TableAction => ({
         type: "TOGGLE_SELECT",
         cardId,
@@ -612,7 +612,7 @@ describe("score log (#1082)", () => {
       DOSE_ESCALATION_SCENARIO,
       DMC_MILESTONE_SCENARIO,
     ];
-    const candidates = (s: Scenario, state: TableState): TableAction[] => [
+    const candidates = (_s: Scenario, state: TableState): TableAction[] => [
       ...state.hand.map((cardId): TableAction => ({
         type: "TOGGLE_SELECT",
         cardId,

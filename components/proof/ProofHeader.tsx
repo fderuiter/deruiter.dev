@@ -10,6 +10,7 @@ import {
   IconTable,
   IconAlertTriangle,
   IconTerminal,
+  IconSparkles,
 } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FieldManualButton } from "@/components/FieldManualButton";
@@ -29,6 +30,8 @@ interface ProofHeaderProps {
     view: "canvas" | "ledger" | "systems" | "fallacy" | "terminal"
   ) => void;
   setActiveTab: (tab: "ledger" | "systems" | "fallacy") => void;
+  isSandboxMode?: boolean;
+  onToggleSandboxMode?: () => void;
 }
 
 export const ProofHeader: React.FC<ProofHeaderProps> = ({
@@ -42,6 +45,8 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
   mobileActiveView,
   setMobileActiveView,
   setActiveTab,
+  isSandboxMode = false,
+  onToggleSandboxMode,
 }) => {
   // Below md the 12-card catalog collapses behind a disclosure so the canvas
   // stays in reach (#1236); md and up always show the full grid.
@@ -98,6 +103,24 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
+          {onToggleSandboxMode && (
+            <button
+              type="button"
+              aria-pressed={isSandboxMode}
+              onClick={(event) => {
+                event.currentTarget.focus();
+                onToggleSandboxMode();
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-semibold transition cursor-pointer active:scale-[0.98] ${
+                isSandboxMode
+                  ? "border-emerald-400/70 bg-emerald-500/20 text-emerald-200 shadow-sm shadow-emerald-500/20"
+                  : "border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan/20"
+              }`}
+            >
+              <IconSparkles className="w-4 h-4" />
+              <span>Sandbox Mode</span>
+            </button>
+          )}
           <TooltipButton
             onClick={handleCopyShareLink}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
@@ -154,7 +177,9 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
         >
           <span className="min-w-0 truncate">
             {catalogOpen ? "Hide proofs" : "Browse proofs"} ·{" "}
-            {activeTheorem?.title ?? "Custom"}
+            {isSandboxMode
+              ? "Sandbox Mode"
+              : (activeTheorem?.title ?? "Custom")}
           </span>
           <span aria-hidden="true">{catalogOpen ? "−" : "+"}</span>
         </button>
@@ -165,7 +190,7 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
         >
           {(Object.keys(THEOREMS) as TheoremId[]).map((thKey) => {
             const th = THEOREMS[thKey];
-            const isActive = thKey === activeTheoremId;
+            const isActive = !isSandboxMode && thKey === activeTheoremId;
             const { isE_Proven: isThProven } = evaluateProofStatus(
               isActive ? edges : th.initialEdges,
               thKey

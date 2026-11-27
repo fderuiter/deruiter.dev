@@ -87,10 +87,8 @@ export const PretextBenchmarkLab: React.FC = () => {
           testContainer.appendChild(div);
 
           // Force synchronous layout reflow (layout thrash)
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const _h = div.getBoundingClientRect().height;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const _w = div.offsetHeight;
+          void div.getBoundingClientRect().height;
+          void div.offsetHeight;
           testContainer.removeChild(div);
         }
       }

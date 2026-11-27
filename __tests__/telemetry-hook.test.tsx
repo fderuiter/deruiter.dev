@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -68,7 +68,7 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     document.body.appendChild(container);
 
     // Mock global fetch
-    fetchMock = vi.fn().mockImplementation(async (url: string, init?: any) => {
+    fetchMock = vi.fn().mockImplementation(async (_url: string, init?: any) => {
       if (init?.method === "POST") {
         return {
           ok: true,
@@ -140,7 +140,7 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     const getPromise = new Promise((resolve) => {
       resolveGet = resolve;
     });
-    fetchMock.mockImplementationOnce(async (url: string, init?: any) => {
+    fetchMock.mockImplementationOnce(async () => {
       await getPromise;
       return {
         ok: true,
@@ -151,16 +151,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
       };
     });
 
-    let hookResult: any;
     await act(async () => {
       root = createRoot(container);
-      root.render(
-        <TelemetryTestComponent
-          onHookValue={(val) => {
-            hookResult = val;
-          }}
-        />
-      );
+      root.render(<TelemetryTestComponent onHookValue={() => {}} />);
     });
 
     // Check immediate hydration from localStorage
@@ -181,16 +174,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
   });
 
   it("should trigger optimistic UI updates immediately before server POST completes", async () => {
-    let hookResult: any;
     await act(async () => {
       root = createRoot(container);
-      root.render(
-        <TelemetryTestComponent
-          onHookValue={(val) => {
-            hookResult = val;
-          }}
-        />
-      );
+      root.render(<TelemetryTestComponent onHookValue={() => {}} />);
     });
 
     const viewsEl = container.querySelector('[data-testid="views"]');
@@ -205,7 +191,7 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     const postPromise = new Promise((resolve) => {
       resolvePost = resolve;
     });
-    fetchMock.mockImplementationOnce(async (url: string, init?: any) => {
+    fetchMock.mockImplementationOnce(async (_url: string, init?: any) => {
       if (init?.method === "POST") {
         await postPromise;
         return { ok: true, status: 201, json: async () => ({ success: true }) };
@@ -242,16 +228,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
       throw new Error("AccessDenied");
     });
 
-    let hookResult: any;
     await act(async () => {
       root = createRoot(container);
-      root.render(
-        <TelemetryTestComponent
-          onHookValue={(val) => {
-            hookResult = val;
-          }}
-        />
-      );
+      root.render(<TelemetryTestComponent onHookValue={() => {}} />);
     });
 
     const viewsEl = container.querySelector('[data-testid="views"]');
@@ -421,16 +400,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
       (process.env as any).NODE_ENV = "production";
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-      let hookResult: any;
       await act(async () => {
         root = createRoot(container);
-        root.render(
-          <TelemetryTestComponent
-            onHookValue={(val) => {
-              hookResult = val;
-            }}
-          />
-        );
+        root.render(<TelemetryTestComponent onHookValue={() => {}} />);
       });
 
       // Click record event to trigger local storage write
@@ -649,7 +621,7 @@ describe("useTelemetry Hook Integration & Isolation", () => {
 
     // Setup fetch mock for flushing
     const postCallsWithKeepalive: any[] = [];
-    fetchMock.mockImplementation(async (url: string, init?: any) => {
+    fetchMock.mockImplementation(async (_url: string, init?: any) => {
       if (init?.method === "POST") {
         postCallsWithKeepalive.push(init);
         return { ok: true, status: 201, json: async () => ({ success: true }) };
@@ -718,7 +690,7 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     });
 
     // Mock network fetch to fail with TypeError (Network failure)
-    fetchMock.mockImplementation(async (url: string, init?: any) => {
+    fetchMock.mockImplementation(async (_url: string, init?: any) => {
       if (init?.method === "POST") {
         throw new TypeError("Failed to fetch");
       }
@@ -786,7 +758,7 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     });
 
     // Mock POST to return 429
-    fetchMock.mockImplementation(async (url: string, init?: any) => {
+    fetchMock.mockImplementation(async (_url: string, init?: any) => {
       if (init?.method === "POST") {
         return { ok: false, status: 429, statusText: "Too Many Requests" };
       }

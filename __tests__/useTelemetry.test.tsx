@@ -68,7 +68,7 @@ describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
 
-    fetchMock = vi.fn().mockImplementation(async (url: string, init?: any) => {
+    fetchMock = vi.fn().mockImplementation(async (_url: string, init?: any) => {
       if (init?.method === "POST") {
         return {
           ok: true,

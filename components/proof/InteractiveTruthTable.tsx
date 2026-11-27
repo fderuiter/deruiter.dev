@@ -84,6 +84,7 @@ function AstTraceView({
  */
 export function InteractiveTruthTable({
   diagnosis,
+  onClear,
   onRollback,
 }: InteractiveTruthTableProps) {
   // Extract all distinct variables involved in the fallacy (defaulting to P and Q)
@@ -269,13 +270,15 @@ export function InteractiveTruthTable({
             {diagnosis.fallacyName}
           </span>
           <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-900/80 text-red-200 border border-red-700/80 shrink-0">
-            DEDUCTIVE ERROR
+            {diagnosis.sourceId || diagnosis.targetId
+              ? "DEDUCTIVE ERROR"
+              : "COUNTERMODEL"}
           </span>
         </div>
         <div className="font-mono text-[11px] text-red-400 bg-red-950/80 px-2 py-1 rounded border border-red-900/60 inline-block">
           {diagnosis.formalFormula}
         </div>
-        {onRollback && (
+        {(diagnosis.sourceId || diagnosis.targetId) && onRollback ? (
           <div className="pt-1">
             <button
               type="button"
@@ -287,7 +290,18 @@ export function InteractiveTruthTable({
               <span>Rollback Step</span>
             </button>
           </div>
-        )}
+        ) : onClear ? (
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={onClear}
+              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-mono font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              aria-label="Dismiss Countermodel diagnosis"
+            >
+              <span>Dismiss Countermodel</span>
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Narrative Explanation */}
@@ -505,12 +519,26 @@ export function InteractiveTruthTable({
                     {v}
                   </th>
                 ))}
-                <th scope="col" className="p-1.5 text-center">
-                  Premise 1
-                </th>
-                <th scope="col" className="p-1.5 text-center">
-                  Premise 2
-                </th>
+                {diagnosis.premises && diagnosis.premises.length !== 2 ? (
+                  diagnosis.premises.map((_, pIdx) => (
+                    <th
+                      key={`prem-col-${pIdx}`}
+                      scope="col"
+                      className="p-1.5 text-center"
+                    >
+                      Premise {pIdx + 1}
+                    </th>
+                  ))
+                ) : (
+                  <>
+                    <th scope="col" className="p-1.5 text-center">
+                      Premise 1
+                    </th>
+                    <th scope="col" className="p-1.5 text-center">
+                      Premise 2
+                    </th>
+                  </>
+                )}
                 <th scope="col" className="p-1.5 text-center">
                   Conclusion
                 </th>
@@ -564,24 +592,50 @@ export function InteractiveTruthTable({
                         </td>
                       );
                     })}
-                    <td className="p-1.5 text-center">
-                      <span
-                        className={`px-1 py-0.5 rounded text-[9px] font-bold ${
-                          row.premise1 ? "text-emerald-400" : "text-rose-400"
-                        }`}
-                      >
-                        {row.premise1 ? "T" : "F"}
-                      </span>
-                    </td>
-                    <td className="p-1.5 text-center">
-                      <span
-                        className={`px-1 py-0.5 rounded text-[9px] font-bold ${
-                          row.premise2 ? "text-emerald-400" : "text-rose-400"
-                        }`}
-                      >
-                        {row.premise2 ? "T" : "F"}
-                      </span>
-                    </td>
+                    {diagnosis.premises && diagnosis.premises.length !== 2 ? (
+                      diagnosis.premises.map((_, pIdx) => {
+                        const pVal = row.premiseValues?.[pIdx] ?? false;
+                        return (
+                          <td
+                            key={`prem-cell-${pIdx}`}
+                            className="p-1.5 text-center"
+                          >
+                            <span
+                              className={`px-1 py-0.5 rounded text-[9px] font-bold ${
+                                pVal ? "text-emerald-400" : "text-rose-400"
+                              }`}
+                            >
+                              {pVal ? "T" : "F"}
+                            </span>
+                          </td>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <td className="p-1.5 text-center">
+                          <span
+                            className={`px-1 py-0.5 rounded text-[9px] font-bold ${
+                              row.premise1
+                                ? "text-emerald-400"
+                                : "text-rose-400"
+                            }`}
+                          >
+                            {row.premise1 ? "T" : "F"}
+                          </span>
+                        </td>
+                        <td className="p-1.5 text-center">
+                          <span
+                            className={`px-1 py-0.5 rounded text-[9px] font-bold ${
+                              row.premise2
+                                ? "text-emerald-400"
+                                : "text-rose-400"
+                            }`}
+                          >
+                            {row.premise2 ? "T" : "F"}
+                          </span>
+                        </td>
+                      </>
+                    )}
                     <td className="p-1.5 text-center">
                       <span
                         className={`px-1 py-0.5 rounded text-[9px] font-bold ${

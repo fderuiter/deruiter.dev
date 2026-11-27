@@ -40,6 +40,8 @@ interface ProofCanvasDragOptions {
   onConnect: (sourceId: string, targetId: string, ruleBadge?: string) => void;
   /** A cord was dropped on a target that cannot follow from the source. */
   onReject: (sourceId: string, targetId: string) => void;
+  /** Commits final dragged coordinates into undoable sandbox session state. */
+  onCommitNodeMove?: (nodeId: string, x: number, y: number) => void;
 }
 
 const ZERO: Offset = { x: 0, y: 0 };
@@ -57,6 +59,7 @@ export function useProofCanvasDrag({
   announce,
   onConnect,
   onReject,
+  onCommitNodeMove,
 }: ProofCanvasDragOptions) {
   const [nodeOffsets, setNodeOffsets] = useState<Record<string, Offset>>({});
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -88,6 +91,7 @@ export function useProofCanvasDrag({
 
   const theoremRef = useRef(theorem);
   const nodeOffsetsRef = useRef(nodeOffsets);
+  const latestOffsetsRef = useRef<Record<string, Offset>>({});
   const isSnappingEnabledRef = useRef(isSnappingEnabled);
   const dragConnectionRef = useRef(dragConnection);
 
@@ -123,6 +127,7 @@ export function useProofCanvasDrag({
 
   /** Drops node positions, guides and any half-drawn cord. */
   const resetLayout = useCallback(() => {
+    latestOffsetsRef.current = {};
     setNodeOffsets({});
     setActiveGuides([]);
     setDragConnection(null);
@@ -158,10 +163,15 @@ export function useProofCanvasDrag({
       const dy = clientY - start.startY;
 
       if (!isSnappingEnabledRef.current) {
+        const nextOff = {
+          x: start.initOffsetX + dx,
+          y: start.initOffsetY + dy,
+        };
+        latestOffsetsRef.current[nodeId] = nextOff;
         setActiveGuides([]);
         setNodeOffsets((prev) => ({
           ...prev,
-          [nodeId]: { x: start.initOffsetX + dx, y: start.initOffsetY + dy },
+          [nodeId]: nextOff,
         }));
         return;
       }
@@ -206,9 +216,11 @@ export function useProofCanvasDrag({
         }
       }
 
+      const nextOff = { x: snap.x - sNode.x, y: snap.y - sNode.y };
+      latestOffsetsRef.current[nodeId] = nextOff;
       setNodeOffsets((prev) => ({
         ...prev,
-        [nodeId]: { x: snap.x - sNode.x, y: snap.y - sNode.y },
+        [nodeId]: nextOff,
       }));
     },
     [playHover]
@@ -260,11 +272,29 @@ export function useProofCanvasDrag({
       setDraggingNodeId(null);
       dragStartRef.current = null;
       setActiveGuides([]);
+      if (theoremRef.current.isSandbox && onCommitNodeMove) {
+        const finalOff = latestOffsetsRef.current[nodeId];
+        const sNode = theoremRef.current.nodes.find((n) => n.id === nodeId);
+        if (sNode && finalOff && (finalOff.x !== 0 || finalOff.y !== 0)) {
+          delete latestOffsetsRef.current[nodeId];
+          setNodeOffsets((prev) => {
+            if (!(nodeId in prev)) return prev;
+            const copy = { ...prev };
+            delete copy[nodeId];
+            return copy;
+          });
+          onCommitNodeMove(
+            nodeId,
+            Math.round(sNode.x + finalOff.x),
+            Math.round(sNode.y + finalOff.y)
+          );
+        }
+      }
       try {
         (e.target as Element).releasePointerCapture(e.pointerId);
       } catch {}
     },
-    [draggingNodeId, processNodePointerMove]
+    [draggingNodeId, processNodePointerMove, onCommitNodeMove]
   );
 
   const handleHandlePointerDown = (e: React.PointerEvent, nodeId: string) => {

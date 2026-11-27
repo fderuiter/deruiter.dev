@@ -21,3 +21,4 @@ export * from "./usdm-v4-schema";
 export * from "./usdm-v4-selection";
 export * from "./bom";
 export * from "./usdm-handoff";
+export * from "./visit-window-conflicts";

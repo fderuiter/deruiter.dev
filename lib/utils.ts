@@ -60,7 +60,7 @@ import {
   generateClientConnectionHashSync,
   extractHeaderValue,
   type RequestOrHeaders,
-} from "@/lib/services/privacy-service";
+} from "@/lib/privacy";
 
 export type { RequestOrHeaders };
 

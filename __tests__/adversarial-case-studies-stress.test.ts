@@ -1,6 +1,24 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import {
+  GetCaseStudyBySlugHandler,
+  ListPublishedCaseStudiesHandler,
+} from "@/lib/services";
+
+const CaseStudyService = {
+  async getCaseStudyBySlug(slug: string) {
+    const res = await new GetCaseStudyBySlugHandler().execute({ slug });
+    return res.success ? res.data : null;
+  },
+  async getAllPublishedCaseStudies() {
+    const res = await new ListPublishedCaseStudiesHandler().execute();
+    return res.success ? res.data : [];
+  },
+  async getAllPublishedSlugs() {
+    const studies = await this.getAllPublishedCaseStudies();
+    return studies.map((s) => s.slug);
+  },
+};
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { prisma } from "@/lib/db";
 import {

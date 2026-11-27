@@ -214,7 +214,6 @@ class Engine implements ProtocolDriftEngine {
   private regexBeforeNarrative: boolean | null = null;
   private sleuthResolved = false;
   private lastLockAudit: LockAuditResult | null = null;
-  private lockedAtMinute: number | null = null;
   private rejectedCount = 0;
   /** True once a reference pipeline was loaded this run (#2168). */
   private assisted = false;
@@ -360,7 +359,6 @@ class Engine implements ProtocolDriftEngine {
     sleuthResolved = false;
     assisted = false;
     lastLockAudit: LockAuditResult | null = null;
-    lockedAtMinute: number | null = null;
     rejectedCount = 0;
     log: PDCommand[] = [];
   };
@@ -1906,7 +1904,6 @@ class Engine implements ProtocolDriftEngine {
     const result = this.evaluateLock();
     this.require(result.canLock, "Lock gate has failing checks");
     this.to("LOCKED");
-    this.lockedAtMinute = this.minute;
     this.appendAudit({
       type: "DATABASE_LOCKED",
       subjectId: STUDY_ID,

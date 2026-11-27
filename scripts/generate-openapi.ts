@@ -167,6 +167,16 @@ export const openApiSpec = {
               },
             },
           },
+          503: {
+            description: "Primary persistence is temporarily unavailable",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -232,6 +242,17 @@ export const openApiSpec = {
           },
           500: {
             description: "Internal server error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          503: {
+            description:
+              "Feedback storage is temporarily unavailable; offline queue retains item for retry",
             content: {
               "application/json": {
                 schema: {
@@ -336,6 +357,17 @@ export const openApiSpec = {
           },
           500: {
             description: "Internal server error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          503: {
+            description:
+              "Reaction storage is temporarily unavailable; offline queue retains item for retry",
             content: {
               "application/json": {
                 schema: {
@@ -460,6 +492,17 @@ export const openApiSpec = {
           },
           500: {
             description: "Internal server error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          503: {
+            description:
+              "Reaction storage is temporarily unavailable; offline queue retains item for retry",
             content: {
               "application/json": {
                 schema: {
@@ -775,6 +818,17 @@ export const openApiSpec = {
               },
             },
           },
+          503: {
+            description:
+              "Subscription storage or confirmation delivery temporarily unavailable",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -809,6 +863,11 @@ export const openApiSpec = {
             description: "Unknown or already-used token (HTML page)",
             content: { "text/html": { schema: { type: "string" } } },
           },
+          503: {
+            description:
+              "Confirmation storage temporarily unavailable (branded HTML page; token preserved)",
+            content: { "text/html": { schema: { type: "string" } } },
+          },
         },
       },
     },
@@ -841,6 +900,11 @@ export const openApiSpec = {
           },
           404: {
             description: "Unknown token (HTML page)",
+            content: { "text/html": { schema: { type: "string" } } },
+          },
+          503: {
+            description:
+              "Unsubscribe storage temporarily unavailable (branded HTML page)",
             content: { "text/html": { schema: { type: "string" } } },
           },
         },
@@ -880,6 +944,14 @@ export const openApiSpec = {
           },
           404: {
             description: "Unknown token",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          503: {
+            description: "Unsubscribe storage temporarily unavailable",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -956,6 +1028,17 @@ export const openApiSpec = {
               },
             },
           },
+          503: {
+            description:
+              "Suppression storage temporarily unavailable; Resend/Svix will redeliver",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -1023,7 +1106,8 @@ export const openApiSpec = {
             },
           },
           503: {
-            description: "QStash signing keys are not configured",
+            description:
+              "QStash signing keys are not configured or email retry storage is temporarily unavailable; QStash will redeliver",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -1080,6 +1164,14 @@ export const openApiSpec = {
           },
           500: {
             description: "Unable to load drafts from persistence",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          503: {
+            description: "Database storage is temporarily unavailable",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -1145,6 +1237,14 @@ export const openApiSpec = {
               },
             },
           },
+          503: {
+            description: "Database storage is temporarily unavailable",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
         },
       },
     },
@@ -1197,6 +1297,14 @@ export const openApiSpec = {
           },
           500: {
             description: "Unable to load draft",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          503: {
+            description: "Database storage is temporarily unavailable",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -1279,6 +1387,14 @@ export const openApiSpec = {
               },
             },
           },
+          503: {
+            description: "Database storage is temporarily unavailable",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
         },
       },
       delete: {
@@ -1340,6 +1456,14 @@ export const openApiSpec = {
           },
           500: {
             description: "Unable to delete blog post",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          503: {
+            description: "Database storage is temporarily unavailable",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },

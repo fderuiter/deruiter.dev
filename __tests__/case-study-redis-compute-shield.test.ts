@@ -1,7 +1,53 @@
 // @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import {
+  EvictCaseStudyCacheHandler,
+  FlushCaseStudyReactionsHandler,
+  GetCaseStudyBySlugHandler,
+  GetCaseStudyReactionsHandler,
+  ListPublishedCaseStudiesHandler,
+  SubmitCaseStudyReactionHandler,
+  type SubmitCaseStudyReactionInput,
+} from "@/lib/services";
+
+const CaseStudyService = {
+  async getCaseStudyBySlug(slug: string) {
+    const res = await new GetCaseStudyBySlugHandler().execute({ slug });
+    return res.success ? res.data : null;
+  },
+  async evictCaseStudyCache(slug: string) {
+    const res = await new EvictCaseStudyCacheHandler().execute({ slug });
+    return res.success ? res.data.evicted : false;
+  },
+  async getAllPublishedCaseStudies() {
+    const res = await new ListPublishedCaseStudiesHandler().execute();
+    return res.success ? res.data : [];
+  },
+  async getReactions(slug: string, connectionHash: string) {
+    return new GetCaseStudyReactionsHandler().execute({
+      slug,
+      connectionHash,
+    });
+  },
+  async submitReaction(
+    input: {
+      caseStudySlug: string;
+      reactionType: SubmitCaseStudyReactionInput["reactionType"];
+    },
+    connectionHash: string
+  ) {
+    return new SubmitCaseStudyReactionHandler().execute({
+      ...input,
+      connectionHash,
+    });
+  },
+  async flushBufferedReactionsToDatabase(batchSize?: number) {
+    return new FlushCaseStudyReactionsHandler().execute(
+      batchSize !== undefined ? { batchSize } : undefined
+    );
+  },
+};
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";
 import * as nextCache from "next/cache";
@@ -339,11 +385,13 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
       );
 
       expect(result.success).toBe(true);
-      expect(result.counts.insightful).toBe(8); // 5 base + 3 buffer
-      expect(result.counts.actionable).toBe(3); // 1 base + 2 buffer
-      expect(result.counts.mind_blowing).toBe(2); // 2 base + 0 buffer
-      expect(result.counts.thorough).toBe(0);
-      expect(result.userReactions).toEqual(["insightful"]);
+      if (result.success) {
+        expect(result.data.counts.insightful).toBe(8); // 5 base + 3 buffer
+        expect(result.data.counts.actionable).toBe(3); // 1 base + 2 buffer
+        expect(result.data.counts.mind_blowing).toBe(2); // 2 base + 0 buffer
+        expect(result.data.counts.thorough).toBe(0);
+        expect(result.data.userReactions).toEqual(["insightful"]);
+      }
       expect(prisma.caseStudyReaction.groupBy).not.toHaveBeenCalled();
     });
 
@@ -512,7 +560,7 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
 
       const input = {
         caseStudySlug: "cadence-clinical",
-        reactionType: "insightful",
+        reactionType: "insightful" as const,
       };
       const connectionHash = "hash-concurrent";
       const [firstSubmission, secondSubmission] = await Promise.all([
@@ -532,13 +580,17 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
       });
       expect(firstSubmission).toMatchObject({
         success: true,
-        counts: { insightful: 1 },
-        userReactions: ["insightful"],
+        data: {
+          counts: { insightful: 1 },
+          userReactions: ["insightful"],
+        },
       });
       expect(secondSubmission).toMatchObject({
         success: true,
-        counts: { insightful: 1 },
-        userReactions: ["insightful"],
+        data: {
+          counts: { insightful: 1 },
+          userReactions: ["insightful"],
+        },
       });
       expect(prisma.caseStudyReaction.findFirst).not.toHaveBeenCalled();
       expect(prisma.caseStudyReaction.create).not.toHaveBeenCalled();

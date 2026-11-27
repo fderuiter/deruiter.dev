@@ -8,7 +8,26 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { redis, isRedisConfigured } from "@/lib/redis";
 import { revalidateTag, revalidatePath } from "next/cache";
-import { BlogPostService } from "@/lib/services/blog-service";
+import {
+  EvictBlogCacheHandler,
+  GetPublishedBlogPostHandler,
+  ListPublishedBlogPostsHandler,
+} from "@/lib/services";
+
+const BlogPostService = {
+  async getBlogPostBySlug(slug: string) {
+    const res = await new GetPublishedBlogPostHandler().execute({ slug });
+    return res.success ? res.data : null;
+  },
+  async getAllPublishedBlogPosts() {
+    const res = await new ListPublishedBlogPostsHandler().execute();
+    return res.success ? res.data : [];
+  },
+  async evictBlogPostCache(slug: string) {
+    const res = await new EvictBlogCacheHandler().execute({ slug });
+    return res.success ? res.data.evicted : false;
+  },
+};
 import BlogIndexPage from "@/app/blog/page";
 import BlogPostPage, {
   generateMetadata,

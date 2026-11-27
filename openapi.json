@@ -94,6 +94,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Primary persistence is temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -157,6 +167,16 @@
           },
           "500": {
             "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Feedback storage is temporarily unavailable; offline queue retains item for retry",
             "content": {
               "application/json": {
                 "schema": {
@@ -261,6 +281,16 @@
           },
           "500": {
             "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Reaction storage is temporarily unavailable; offline queue retains item for retry",
             "content": {
               "application/json": {
                 "schema": {
@@ -385,6 +415,16 @@
           },
           "500": {
             "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Reaction storage is temporarily unavailable; offline queue retains item for retry",
             "content": {
               "application/json": {
                 "schema": {
@@ -714,6 +754,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Subscription storage or confirmation delivery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -758,6 +808,16 @@
           },
           "404": {
             "description": "Unknown or already-used token (HTML page)",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Confirmation storage temporarily unavailable (branded HTML page; token preserved)",
             "content": {
               "text/html": {
                 "schema": {
@@ -816,6 +876,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Unsubscribe storage temporarily unavailable (branded HTML page)",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       },
@@ -863,6 +933,16 @@
           },
           "404": {
             "description": "Unknown token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unsubscribe storage temporarily unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -931,6 +1011,16 @@
           },
           "500": {
             "description": "Internal server error processing webhook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Suppression storage temporarily unavailable; Resend/Svix will redeliver",
             "content": {
               "application/json": {
                 "schema": {
@@ -1018,7 +1108,7 @@
             }
           },
           "503": {
-            "description": "QStash signing keys are not configured",
+            "description": "QStash signing keys are not configured or email retry storage is temporarily unavailable; QStash will redeliver",
             "content": {
               "application/json": {
                 "schema": {
@@ -1103,6 +1193,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database storage is temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1167,6 +1267,16 @@
           },
           "500": {
             "description": "Unable to create draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database storage is temporarily unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1242,6 +1352,16 @@
           },
           "500": {
             "description": "Unable to load draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database storage is temporarily unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1342,6 +1462,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database storage is temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1421,6 +1551,16 @@
           },
           "500": {
             "description": "Unable to delete blog post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database storage is temporarily unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -3177,6 +3317,10 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64
+          },
+          "followUps": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [

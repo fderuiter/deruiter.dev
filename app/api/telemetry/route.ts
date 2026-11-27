@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { TelemetryEventSchema } from "@/lib/schemas";
-import { TelemetryService } from "@/lib/services/telemetry-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
+import {
+  CheckTelemetryRateLimitHandler,
+  GetTelemetryAggregateStatsHandler,
+  RecordTelemetryEventHandler,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 import { env, isBuildPhase } from "@/lib/env";
 
@@ -9,23 +17,17 @@ export const dynamic = "force-dynamic";
 
 export const GET = createApiHandler(
   async () => {
-    try {
-      // Redis only: the daily maintenance run writes the aggregate (#3201).
-      const formattedStats = await TelemetryService.getAggregateStats();
-      return NextResponse.json(formattedStats, {
-        status: 200,
-        headers: {
-          "Cache-Control":
-            "public, max-age=10, s-maxage=3600, stale-while-revalidate=600",
-        },
-      });
-    } catch (err) {
+    // Redis only: the daily maintenance run writes the aggregate (#3201).
+    const statsResult = await new GetTelemetryAggregateStatsHandler().execute();
+    if (!statsResult.success) {
+      const cause =
+        statsResult.error.details ?? new Error(statsResult.error.message);
       // Gate on the runtime, not the build (AGENTS.md section 15). Outside a
       // production runtime an unreachable Redis is expected, so it is logged
       // as a warning and flagged for the client, which then stays off
       // console.error.
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        logger.error("Telemetry statistics aggregate query failed:", err);
+        logger.error("Telemetry statistics aggregate query failed:", cause);
         return NextResponse.json(
           { error: "Failed to compile aggregate portfolio telemetry" },
           { status: 500 }
@@ -33,13 +35,21 @@ export const GET = createApiHandler(
       }
       logger.warn(
         "Telemetry statistics are unavailable without a reachable Redis:",
-        err
+        cause
       );
       return NextResponse.json(
         { error: "Failed to compile aggregate portfolio telemetry" },
         { status: 500, headers: { "X-Telemetry-Offline": "expected" } }
       );
     }
+
+    return NextResponse.json(statsResult.data, {
+      status: 200,
+      headers: {
+        "Cache-Control":
+          "public, max-age=10, s-maxage=3600, stale-while-revalidate=600",
+      },
+    });
   },
   { auth: "public" }
 );
@@ -47,7 +57,12 @@ export const GET = createApiHandler(
 export const POST = createApiHandler(
   async (req, { data }) => {
     try {
-      const rateLimitRes = await TelemetryService.isRateLimited(req);
+      const rateLimitResult =
+        await new CheckTelemetryRateLimitHandler().execute({ request: req });
+      const rateLimitRes = rateLimitResult.success
+        ? rateLimitResult.data
+        : { limited: false, headers: undefined };
+
       if (rateLimitRes.limited) {
         return NextResponse.json(
           { error: "Too many requests. Please slow down rate pacing." },
@@ -58,7 +73,17 @@ export const POST = createApiHandler(
         );
       }
 
-      const { event, buffered } = await TelemetryService.recordEvent(data);
+      const recordResult = await new RecordTelemetryEventHandler().execute(
+        data
+      );
+      if (!recordResult.success) {
+        return serviceFailureResponse(recordResult, {
+          errorMessage: "Failed to record telemetry interaction event",
+          logContext: "Failed to commit telemetry event log:",
+        });
+      }
+
+      const { event, buffered } = recordResult.data;
 
       // A failed buffer write drops the event outright, so report it as
       // accepted-but-not-durable (202) rather than created (201). The client

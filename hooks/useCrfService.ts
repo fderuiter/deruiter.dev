@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import * as crf from "@/lib/crf";
 import {
   EvaluateFormulaHandler,
   EvaluateFormulaInput,
@@ -13,7 +14,7 @@ import {
   LintFormulaInputSchema,
   LintFormulaResult,
   createFailure,
-} from "@/lib/services";
+} from "@/lib/services/client";
 
 /**
  * Custom React hook providing access to CRF Studio evaluation and linter domain service operations.
@@ -26,7 +27,10 @@ export function useCrfService() {
     []
   );
   const lintFormulaHandler = useMemo(() => new LintFormulaHandler(), []);
-  const lintFormHandler = useMemo(() => new LintFormHandler(), []);
+  const lintFormHandler = useMemo(
+    () => new LintFormHandler((form) => crf.lintForm(form)),
+    []
+  );
 
   const evaluateFormula = useCallback(
     (input: EvaluateFormulaInput): EvaluateFormulaResult => {

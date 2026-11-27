@@ -9,6 +9,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: (...a: unknown[]) => queryRaw(...a),
     outboundEmailQueue: {
+      findUnique: vi.fn().mockResolvedValue(null),
       create: (...a: unknown[]) => create(...a),
       update: vi.fn(),
     },
@@ -20,7 +21,7 @@ vi.mock("@/lib/qstash-retry", () => ({
   scheduleEmailRetry: (...a: unknown[]) => scheduleEmailRetry(...a),
 }));
 
-import { EmailService } from "@/lib/services/email-service";
+import { EnqueueEmailHandler, ProcessRetryQueueHandler } from "@/lib/services";
 
 describe("EmailService QStash scheduling (#715)", () => {
   beforeEach(() => {
@@ -30,42 +31,51 @@ describe("EmailService QStash scheduling (#715)", () => {
   });
 
   it("schedules a sub-daily retry when a retryable failure is queued", async () => {
-    const id = await EmailService.queueOutboundEmail(
-      { to: "a@example.com", subject: "s", html: "<p>h</p>" },
-      undefined,
-      "ETIMEDOUT"
-    );
-    expect(id).toBe("q1");
+    const res = await new EnqueueEmailHandler().execute({
+      options: { to: "a@example.com", subject: "s", html: "<p>h</p>" },
+      mode: "retry",
+      errorReason: "ETIMEDOUT",
+    });
+    expect(res).toEqual({ success: true, data: { queueId: "q1" } });
     expect(scheduleEmailRetry).toHaveBeenCalledWith("q1", 1);
   });
 
   it("still returns the queue id when scheduling reports failure", async () => {
     scheduleEmailRetry.mockResolvedValue(false);
-    const id = await EmailService.queueOutboundEmail({
-      to: "a@example.com",
-      subject: "s",
-      html: "<p>h</p>",
+    const res = await new EnqueueEmailHandler().execute({
+      options: {
+        to: "a@example.com",
+        subject: "s",
+        html: "<p>h</p>",
+      },
+      mode: "retry",
     });
-    expect(id).toBe("q1");
+    expect(res).toEqual({ success: true, data: { queueId: "q1" } });
   });
 
   it("does not schedule bulk enqueues, protecting the 500/day budget", async () => {
-    await EmailService.enqueueEmail({
-      to: "a@example.com",
-      subject: "s",
-      html: "<p>h</p>",
+    await new EnqueueEmailHandler().execute({
+      options: {
+        to: "a@example.com",
+        subject: "s",
+        html: "<p>h</p>",
+      },
+      mode: "pending",
     });
     expect(scheduleEmailRetry).not.toHaveBeenCalled();
   });
 
   it("does not schedule when nothing was persisted", async () => {
     create.mockRejectedValue(new Error("db down"));
-    const id = await EmailService.queueOutboundEmail({
-      to: "a@example.com",
-      subject: "s",
-      html: "<p>h</p>",
+    const res = await new EnqueueEmailHandler().execute({
+      options: {
+        to: "a@example.com",
+        subject: "s",
+        html: "<p>h</p>",
+      },
+      mode: "retry",
     });
-    expect(id).toBeNull();
+    expect(res.success).toBe(false);
     expect(scheduleEmailRetry).not.toHaveBeenCalled();
   });
 
@@ -74,7 +84,10 @@ describe("EmailService QStash scheduling (#715)", () => {
   const leaseValues = () => queryRaw.mock.calls[0].slice(1) as unknown[];
 
   it("restricts processRetryQueue to the targeted queue id", async () => {
-    await EmailService.processRetryQueue({ queueId: "q1", maxBatchSize: 1 });
+    await new ProcessRetryQueueHandler().execute({
+      queueId: "q1",
+      maxBatchSize: 1,
+    });
     expect(queryRaw).toHaveBeenCalledTimes(1);
     const [, queueId, sameQueueId, limit] = leaseValues();
     expect(queueId).toBe("q1");
@@ -83,7 +96,7 @@ describe("EmailService QStash scheduling (#715)", () => {
   });
 
   it("leaves the batch query untargeted without a queue id", async () => {
-    await EmailService.processRetryQueue();
+    await new ProcessRetryQueueHandler().execute();
     const [, queueId, sameQueueId, limit] = leaseValues();
     expect(queueId).toBeNull();
     expect(sameQueueId).toBeNull();

@@ -19,8 +19,6 @@ import {
   CODE_BLOCK_PRE_CLASS,
   CODE_BLOCK_WRAPPER_CLASS,
 } from "@/components/blog/CodeBlock";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { usePersistentState } from "@/hooks/usePersistentState"; // Imported for static analysis test validation
 import { useTerminology } from "@/components/providers/TerminologyProvider";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";

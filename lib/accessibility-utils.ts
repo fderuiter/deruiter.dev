@@ -44,7 +44,10 @@ export class FocusBridge {
   /**
    * Listens for completion messages from cross-origin iframes.
    */
-  static attachOnboardingListener(iframeWindow: Window, hostElementId: string) {
+  static attachOnboardingListener(
+    _iframeWindow: Window,
+    hostElementId: string
+  ) {
     if (typeof window !== "undefined") {
       window.addEventListener("message", (event) => {
         // Only accept explicitly formatted cross-origin bridge events

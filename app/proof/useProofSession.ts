@@ -2,15 +2,20 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useHistory } from "@/hooks/useHistory";
+import { clamp } from "@/lib/utils";
 import {
   applyRuleToAsts,
   areAstsEqual,
   canConnect,
+  cascadePruneSandboxGraph,
+  computeSandboxProvenNodeIds,
   evaluateProofStatus,
   exportWorkspaceProof,
+  formatFormula,
   getDeductionLedger,
   getFallacyDiagnosis,
   getNextTacticHint,
+  INFERENCE_RULES,
   parseFormula,
   pruneStepOrNode,
   scanApplicableRules,
@@ -18,9 +23,18 @@ import {
   type Edge,
   type FallacyDiagnosis,
   type ProofNode,
+  type PropAst,
   type TheoremDefinition,
   type TheoremId,
 } from "@/lib/proof";
+import {
+  buildSandboxNode,
+  createSandboxTheorem,
+  createStarterSandboxNodes,
+  evaluateSandboxCountermodel,
+  MAX_SANDBOX_NODES,
+  parseCustomFormula,
+} from "@/lib/proof-custom";
 import type { TerminalLog } from "@/components/proof/ProofTerminalConsole";
 import {
   PROOF_HELP_TEXT,
@@ -30,6 +44,12 @@ import {
 } from "./proof-commands";
 
 type ToastType = "success" | "error" | "info";
+
+/** Composite graph snapshot stored in undo/redo history. */
+interface ProofGraphSnapshot {
+  nodes: ProofNode[];
+  edges: Edge[];
+}
 
 /** How the session reports what happened: toasts, screen reader text and sound. */
 interface ProofSessionFeedback {
@@ -48,7 +68,7 @@ interface ProofSessionFeedback {
 export interface ProofSessionOptions {
   theorem: TheoremDefinition;
   feedback: ProofSessionFeedback;
-  /** A rejected step was diagnosed; the page shows the fallacy panel. */
+  /** A rejected step or countermodel was diagnosed; the page shows the fallacy panel. */
   onFallacy: () => void;
   onInspect: (nodeId: string) => void;
   onSwitchTheorem: (theoremId: TheoremId) => void;
@@ -83,13 +103,54 @@ function edgeJoins(edge: Edge, a: string, b: string, caseInsensitive = false) {
   return (s === x && t === y) || (s === y && t === x);
 }
 
+function nextNodeId(
+  prefix: string,
+  existingNodes: readonly ProofNode[]
+): string {
+  const taken = new Set(existingNodes.map((n) => n.id.toUpperCase()));
+  let idx = 1;
+  while (taken.has(`${prefix}${idx}`.toUpperCase())) {
+    idx += 1;
+  }
+  return `${prefix}${idx}`;
+}
+
+function findNonOverlappingSlot(
+  preferredX: number,
+  preferredY: number,
+  existingNodes: readonly ProofNode[]
+): { x: number; y: number } {
+  const clampX = (v: number) => clamp(Math.round(v / 20) * 20, 40, 580);
+  const clampY = (v: number) => clamp(Math.round(v / 20) * 20, 20, 330);
+
+  const yOffsets = [0, 90, -90, 180, -180, 260, -260];
+  const xOffsets = [0, 180, -180];
+
+  for (const dx of xOffsets) {
+    const cx = clampX(preferredX + dx);
+    for (const dy of yOffsets) {
+      const cy = clampY(preferredY + dy);
+      const collides = existingNodes.some(
+        (n) => Math.abs(n.x - cx) < 150 && Math.abs(n.y - cy) < 76
+      );
+      if (!collides) {
+        return { x: cx, y: cy };
+      }
+    }
+  }
+
+  return {
+    x: clampX(preferredX + (existingNodes.length % 3) * 40),
+    y: clampY(preferredY + (existingNodes.length % 4) * 30),
+  };
+}
+
 const MAX_HISTORY = 50;
 
 /**
  * The proof graph, selection, fallacy diagnosis and terminal log for one
- * theorem, with every operation the canvas, ledger and terminal can run on
- * them. The page owns the URL hash, the theorem choice and the worker, and
- * hears about them through the callbacks in `options`.
+ * theorem or sandbox session, with every operation the canvas, ledger and
+ * terminal can run on them.
  */
 export function useProofSession(options: ProofSessionOptions) {
   const {
@@ -104,16 +165,34 @@ export function useProofSession(options: ProofSessionOptions) {
   const { toast, announce, playSuccess, playAutocomplete, playHover } =
     feedback;
 
-  const history = useHistory<Edge[]>(theorem.initialEdges, {
-    capacity: MAX_HISTORY,
-  });
-  const edges = history.state;
+  const history = useHistory<ProofGraphSnapshot>(
+    {
+      nodes: theorem.nodes,
+      edges: theorem.initialEdges,
+    },
+    { capacity: MAX_HISTORY }
+  );
+  const nodes = theorem.isSandbox ? history.state.nodes : theorem.nodes;
+  const edges = history.state.edges;
   const past = history.past;
   const future = history.future;
   const canUndo = history.canUndo;
   const canRedo = history.canRedo;
 
-  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const activeTheorem = useMemo(
+    () => (theorem.isSandbox ? createSandboxTheorem(nodes, edges) : theorem),
+    [theorem, nodes, edges]
+  );
+
+  const [rawSelectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const selectedNodeIds = useMemo(
+    () =>
+      rawSelectedNodeIds.filter((id) =>
+        activeTheorem.nodes.some((n) => n.id === id)
+      ),
+    [rawSelectedNodeIds, activeTheorem.nodes]
+  );
+
   const [currentFallacy, setCurrentFallacy] = useState<FallacyDiagnosis | null>(
     null
   );
@@ -121,20 +200,24 @@ export function useProofSession(options: ProofSessionOptions) {
 
   const ruleMatches = useMemo(
     () =>
-      scanApplicableRules(theorem.nodes, selectedNodeIds, theorem.targetNodeId),
-    [theorem.nodes, selectedNodeIds, theorem.targetNodeId]
+      scanApplicableRules(
+        activeTheorem.nodes,
+        selectedNodeIds,
+        activeTheorem.targetNodeId
+      ),
+    [activeTheorem.nodes, selectedNodeIds, activeTheorem.targetNodeId]
   );
   const { isE_Proven } = useMemo(
-    () => evaluateProofStatus(edges, theorem),
-    [edges, theorem]
+    () => evaluateProofStatus(edges, activeTheorem),
+    [edges, activeTheorem]
   );
   const activeTacticHint = useMemo(
-    () => getNextTacticHint(edges, theorem),
-    [edges, theorem]
+    () => getNextTacticHint(edges, activeTheorem),
+    [edges, activeTheorem]
   );
   const deductionLedger = useMemo(
-    () => getDeductionLedger(edges, theorem),
-    [edges, theorem]
+    () => getDeductionLedger(edges, activeTheorem),
+    [edges, activeTheorem]
   );
 
   const appendLogs = useCallback((...logs: TerminalLog[]) => {
@@ -148,19 +231,37 @@ export function useProofSession(options: ProofSessionOptions) {
     [appendLogs]
   );
 
-  /** Puts the graph back to `initialEdges` and drops the selection, diagnosis, and history stacks. */
+  /** Puts the graph back to `initialEdges` (and optional `initialNodes`) and clears selection, diagnosis, and history stacks. */
   const resetGraph = useCallback(
-    (initialEdges: Edge[]) => {
-      history.reset(initialEdges);
+    (initialEdges: Edge[], initialNodes?: ProofNode[]) => {
+      history.reset({
+        nodes: initialNodes ?? theorem.nodes,
+        edges: initialEdges,
+      });
       setSelectedNodeIds([]);
       setCurrentFallacy(null);
+    },
+    [history, theorem.nodes]
+  );
+
+  const applyGraphMutation = useCallback(
+    (
+      updater:
+        ProofGraphSnapshot | ((prev: ProofGraphSnapshot) => ProofGraphSnapshot)
+    ) => {
+      history.set(updater);
     },
     [history]
   );
 
   const applyEdgeMutation = useCallback(
     (updater: Edge[] | ((prev: Edge[]) => Edge[])) => {
-      history.set(updater);
+      history.set((prev) => {
+        const nextEdges =
+          typeof updater === "function" ? updater(prev.edges) : updater;
+        if (nextEdges === prev.edges) return prev;
+        return { nodes: prev.nodes, edges: nextEdges };
+      });
     },
     [history]
   );
@@ -186,14 +287,19 @@ export function useProofSession(options: ProofSessionOptions) {
   }, [history, playAutocomplete, toast, announce, appendLog]);
 
   const diagnose = (sourceId: string, targetId: string) => {
-    const fallacy = getFallacyDiagnosis(sourceId, targetId, edges, theorem);
+    const fallacy = getFallacyDiagnosis(
+      sourceId,
+      targetId,
+      edges,
+      activeTheorem
+    );
     setCurrentFallacy(fallacy);
     onFallacy();
     return fallacy;
   };
 
   const connectNodes = (sourceId: string, targetId: string) => {
-    const validation = canConnect(sourceId, targetId, edges, theorem);
+    const validation = canConnect(sourceId, targetId, edges, activeTheorem);
     if (!validation.allowed) {
       const fallacy = diagnose(sourceId, targetId);
       toast(`Invalid Connection: ${fallacy.fallacyName}`, "error", {
@@ -211,30 +317,41 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
+    const sNode = activeTheorem.nodes.find(
+      (n) => n.id.toUpperCase() === sourceId.toUpperCase()
+    );
+    const tNode = activeTheorem.nodes.find(
+      (n) => n.id.toUpperCase() === targetId.toUpperCase()
+    );
+    const resolvedSource = sNode?.id ?? sourceId;
+    const resolvedTarget = tNode?.id ?? targetId;
+
     applyEdgeMutation((prev) => [
       ...prev,
-      { source: sourceId, target: targetId },
+      { source: resolvedSource, target: resolvedTarget },
     ]);
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
     play(playSuccess);
-    toast(`✔ Connected Node ${sourceId} → Node ${targetId}!`, "success", {
-      announce: false,
-    });
-    announce(`Successfully connected Node ${sourceId} to Node ${targetId}.`);
+    toast(
+      `✔ Connected Node ${resolvedSource} → Node ${resolvedTarget}!`,
+      "success",
+      { announce: false }
+    );
+    announce(
+      `Successfully connected Node ${resolvedSource} to Node ${resolvedTarget}.`
+    );
 
-    const sNode = theorem.nodes.find((n) => n.id === sourceId);
-    const tNode = theorem.nodes.find((n) => n.id === targetId);
     appendLogs(
       {
         id: makeLogId("cmd"),
         type: "command",
-        text: `connect ${sourceId} ${targetId}`,
+        text: `connect ${resolvedSource} ${resolvedTarget}`,
       },
       {
         id: makeLogId("out"),
         type: "success",
-        text: `✔ Established edge: Node ${sourceId} (${sNode?.label}) → Node ${targetId} (${tNode?.label})`,
+        text: `✔ Established edge: Node ${resolvedSource} (${sNode?.label}) → Node ${resolvedTarget} (${tNode?.label})`,
       }
     );
   };
@@ -310,6 +427,24 @@ export function useProofSession(options: ProofSessionOptions) {
     }
 
     if (selectedNodeIds.length === 1) {
+      if (activeTheorem.isSandbox) {
+        const clickedNode = activeTheorem.nodes.find((n) => n.id === nodeId);
+        const provenIds = computeSandboxProvenNodeIds(edges, activeTheorem);
+        // In Sandbox Mode, clicking a second premise or already-proven step
+        // adds it to the selection so binary rules fire without requiring Shift.
+        if (
+          clickedNode &&
+          (clickedNode.type === "premise" || provenIds.has(clickedNode.id)) &&
+          !canConnect(selectedNodeIds[0], nodeId, edges, activeTheorem).allowed
+        ) {
+          const nextSelection = [selectedNodeIds[0], nodeId];
+          setSelectedNodeIds(nextSelection);
+          const msg = `Selected Nodes ${nextSelection.join(" & ")} for rule application.`;
+          toast(msg, "info", { announce: false });
+          announce(msg);
+          return;
+        }
+      }
       connectNodes(selectedNodeIds[0], nodeId);
       return;
     }
@@ -326,17 +461,70 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    const asts = nodeIds
-      .map((id) => theorem.nodes.find((n) => n.id === id))
-      .filter((n): n is ProofNode => Boolean(n))
+    const matchedNodes = nodeIds
+      .map((id) =>
+        activeTheorem.nodes.find((n) => n.id.toUpperCase() === id.toUpperCase())
+      )
+      .filter((n): n is ProofNode => Boolean(n));
+
+    if (activeTheorem.isSandbox && matchedNodes.length !== nodeIds.length) {
+      toast("One or more selected nodes do not exist on the canvas.", "error");
+      return;
+    }
+
+    if (activeTheorem.isSandbox) {
+      const provenIds = computeSandboxProvenNodeIds(edges, activeTheorem);
+      const unprovenSelected = matchedNodes.find((n) => !provenIds.has(n.id));
+      if (unprovenSelected) {
+        toast(
+          `Node ${unprovenSelected.id} (${unprovenSelected.label}) is not yet proven. Select given premises or proven steps.`,
+          "error"
+        );
+        return;
+      }
+    }
+
+    const canonicalIds =
+      matchedNodes.length > 0 ? matchedNodes.map((n) => n.id) : nodeIds;
+    const asts = matchedNodes
       .map((n) => n.ast || parseFormula(n.label))
       .filter((ast): ast is NonNullable<typeof ast> => Boolean(ast));
 
-    const ruleResult = applyRuleToAsts(ruleId, asts);
+    let ruleResult = applyRuleToAsts(ruleId, asts);
+    // For Conjunction Intro, if a goal node explicitly expects the commuted conjunction, match it
+    if (
+      ruleResult.success &&
+      ruleResult.resultAst &&
+      ruleId.toLowerCase() === "and_intro" &&
+      asts.length === 2
+    ) {
+      const hasDirectGoal = activeTheorem.nodes.some((node) => {
+        if (node.type === "premise") return false;
+        const nAst = node.ast || parseFormula(node.label);
+        return nAst ? areAstsEqual(nAst, ruleResult.resultAst!) : false;
+      });
+      if (!hasDirectGoal) {
+        const commuted = applyRuleToAsts(ruleId, [asts[1], asts[0]]);
+        if (commuted.success && commuted.resultAst) {
+          const matchesCommutedGoal = activeTheorem.nodes.some((node) => {
+            if (node.type === "premise") return false;
+            const nAst = node.ast || parseFormula(node.label);
+            return nAst ? areAstsEqual(nAst, commuted.resultAst!) : false;
+          });
+          if (matchesCommutedGoal) {
+            ruleResult = commuted;
+          }
+        }
+      }
+    }
+
     const resultAst = ruleResult.success ? ruleResult.resultAst : undefined;
 
     if (!resultAst) {
-      const fallacy = diagnose(nodeIds[0], nodeIds[1] || nodeIds[0]);
+      const fallacy = diagnose(
+        canonicalIds[0],
+        canonicalIds[1] || canonicalIds[0]
+      );
       const reason = ruleResult.explanation || fallacy.fallacyName;
       toast(`Rule Application Failed: ${reason}`, "error", { announce: false });
       announce(`Rule failed: ${reason}`);
@@ -348,36 +536,123 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    play(playSuccess);
+    const ruleDef = INFERENCE_RULES.find(
+      (r) => r.id.toLowerCase() === ruleId.toLowerCase()
+    );
+    const ruleSymbol = ruleDef?.symbol ?? ruleId.toUpperCase();
+    const ruleDisplayName = ruleDef?.name ?? ruleId.toUpperCase();
 
-    const autoTarget = theorem.nodes.find((node) => {
-      if (node.type === "premise") return false;
-      const nodeAst = node.ast || parseFormula(node.label);
-      return nodeAst ? areAstsEqual(nodeAst, resultAst) : false;
-    });
+    // Prioritize conclusion nodes first so deriving the goal formula discharges the goal directly
+    const autoTarget =
+      activeTheorem.nodes.find((node) => {
+        if (node.type !== "conclusion") return false;
+        const nodeAst = node.ast || parseFormula(node.label);
+        return nodeAst ? areAstsEqual(nodeAst, resultAst) : false;
+      }) ??
+      activeTheorem.nodes.find((node) => {
+        if (node.type !== "intermediate") return false;
+        const nodeAst = node.ast || parseFormula(node.label);
+        return nodeAst ? areAstsEqual(nodeAst, resultAst) : false;
+      });
 
     if (!autoTarget) {
+      if (!activeTheorem.isSandbox) {
+        play(playSuccess);
+        toast(
+          "The derived formula does not match an available workspace step.",
+          "info"
+        );
+        return;
+      }
+
+      if (activeTheorem.nodes.length >= MAX_SANDBOX_NODES) {
+        toast(
+          `Sandbox canvas is capped at ${MAX_SANDBOX_NODES} nodes. Delete unused nodes before deriving additional steps.`,
+          "error"
+        );
+        return;
+      }
+
+      const newId = nextNodeId("S", activeTheorem.nodes);
+      const maxX = Math.max(...matchedNodes.map((n) => n.x));
+      const avgY =
+        matchedNodes.reduce((sum, n) => sum + n.y, 0) / matchedNodes.length;
+      const pos = findNonOverlappingSlot(maxX + 210, avgY, activeTheorem.nodes);
+      const formattedResult = formatFormula(resultAst);
+      const spawnedNode: ProofNode = {
+        id: newId,
+        label: formattedResult,
+        ast: resultAst,
+        type: "intermediate",
+        ruleUsed: ruleDisplayName,
+        derivedFrom: canonicalIds,
+        description: `Derived via ${ruleDisplayName}: ${formattedResult}`,
+        meaning: `Derived from ${canonicalIds.join(", ")} via ${ruleDisplayName}`,
+        x: pos.x,
+        y: pos.y,
+      };
+      const spawnedEdges: Edge[] = canonicalIds.map((source) => ({
+        source,
+        target: newId,
+        ruleApplied: ruleSymbol,
+      }));
+
+      applyGraphMutation((prev) => ({
+        nodes: [...prev.nodes, spawnedNode],
+        edges: [...prev.edges, ...spawnedEdges],
+      }));
+      play(playSuccess);
+      setSelectedNodeIds([]);
+      setCurrentFallacy(null);
       toast(
-        "The derived formula does not match an available workspace step.",
-        "info"
+        `✔ Spawned Node ${newId} (${formattedResult}) via ${ruleDisplayName}`,
+        "success",
+        { announce: false }
+      );
+      announce(
+        `Spawned intermediate Node ${newId}, ${formattedResult}, via ${ruleDisplayName}.`
+      );
+      appendLogs(
+        {
+          id: makeLogId("cmd"),
+          type: "command",
+          text: `apply ${ruleId} ${canonicalIds.join(" ")}`,
+        },
+        {
+          id: makeLogId("out"),
+          type: "success",
+          text: `✔ Spawned Node ${newId} (${formattedResult}): ${ruleResult.explanation}`,
+        }
       );
       return;
     }
 
-    applyEdgeMutation((prev) => {
-      const newEdges: Edge[] = nodeIds
+    play(playSuccess);
+    applyGraphMutation((prev) => {
+      const newEdges: Edge[] = canonicalIds
         .filter(
           (source) =>
-            !prev.some(
+            !prev.edges.some(
               (edge) => edge.source === source && edge.target === autoTarget.id
             )
         )
         .map((source) => ({
           source,
           target: autoTarget.id,
-          ruleApplied: ruleId.toUpperCase(),
+          ruleApplied: ruleSymbol,
         }));
-      return newEdges.length > 0 ? [...prev, ...newEdges] : prev;
+      if (newEdges.length === 0) return prev;
+      const nextNodes = activeTheorem.isSandbox
+        ? prev.nodes.map((n) =>
+            n.id === autoTarget.id && !n.ruleUsed
+              ? { ...n, ruleUsed: ruleDisplayName }
+              : n
+          )
+        : prev.nodes;
+      return {
+        nodes: nextNodes,
+        edges: [...prev.edges, ...newEdges],
+      };
     });
     setSelectedNodeIds([]);
     setCurrentFallacy(null);
@@ -387,7 +662,7 @@ export function useProofSession(options: ProofSessionOptions) {
       {
         id: makeLogId("cmd"),
         type: "command",
-        text: `apply ${ruleId} ${nodeIds.join(" ")}`,
+        text: `apply ${ruleId} ${canonicalIds.join(" ")}`,
       },
       {
         id: makeLogId("out"),
@@ -399,9 +674,9 @@ export function useProofSession(options: ProofSessionOptions) {
 
   const handleAutoStep = () => {
     const autoStep = solveNextDeductionStep(
-      theorem.nodes,
+      activeTheorem.nodes,
       edges,
-      theorem.targetNodeId
+      activeTheorem.targetNodeId
     );
     const newEdges = autoStep.success ? (autoStep.newEdges ?? []) : [];
 
@@ -420,7 +695,63 @@ export function useProofSession(options: ProofSessionOptions) {
           text: `✔ ${autoStep.explanation}`,
         }
       );
-    } else if (autoStep.message) {
+      return;
+    }
+
+    // In Sandbox Mode, Auto-Step can also spawn the next unseen forward consequence
+    if (
+      activeTheorem.isSandbox &&
+      !isE_Proven &&
+      activeTheorem.nodes.length < MAX_SANDBOX_NODES
+    ) {
+      const provenIds = computeSandboxProvenNodeIds(edges, activeTheorem);
+      const provenNodes = activeTheorem.nodes.filter((n) =>
+        provenIds.has(n.id)
+      );
+      const existingAsts = activeTheorem.nodes
+        .map((n) => n.ast || parseFormula(n.label))
+        .filter((a): a is PropAst => Boolean(a));
+
+      for (const pNode of provenNodes) {
+        const pAst = pNode.ast || parseFormula(pNode.label);
+        if (!pAst) continue;
+        for (const rule of INFERENCE_RULES.filter((r) => r.arity === 1)) {
+          const res = applyRuleToAsts(rule.id, [pAst]);
+          if (
+            res.success &&
+            res.resultAst &&
+            !existingAsts.some((a) => areAstsEqual(a, res.resultAst!))
+          ) {
+            handleApplyRule(rule.id, [pNode.id]);
+            return;
+          }
+        }
+      }
+
+      for (let i = 0; i < provenNodes.length; i++) {
+        for (let j = 0; j < provenNodes.length; j++) {
+          if (i === j) continue;
+          const ast1 = provenNodes[i].ast || parseFormula(provenNodes[i].label);
+          const ast2 = provenNodes[j].ast || parseFormula(provenNodes[j].label);
+          if (!ast1 || !ast2) continue;
+          for (const rule of INFERENCE_RULES.filter(
+            (r) => r.arity === 2 && r.id !== "and_intro"
+          )) {
+            const res = applyRuleToAsts(rule.id, [ast1, ast2]);
+            if (
+              res.success &&
+              res.resultAst &&
+              !existingAsts.some((a) => areAstsEqual(a, res.resultAst!))
+            ) {
+              handleApplyRule(rule.id, [provenNodes[i].id, provenNodes[j].id]);
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    if (autoStep.message) {
       toast(autoStep.message, "info");
     } else {
       toast("Goal already fully discharged (Q.E.D.)!", "success");
@@ -428,7 +759,7 @@ export function useProofSession(options: ProofSessionOptions) {
   };
 
   const handleDeleteStep = (stepOrNode: number | string) => {
-    const result = pruneStepOrNode(stepOrNode, edges, theorem);
+    const result = pruneStepOrNode(stepOrNode, edges, activeTheorem);
     if (!result.success) {
       toast(result.reason, "error", { announce: false });
       announce(result.reason);
@@ -436,9 +767,16 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    applyEdgeMutation((prev) => {
-      const liveResult = pruneStepOrNode(stepOrNode, prev, theorem);
-      return liveResult.success ? liveResult.newEdges : prev;
+    applyGraphMutation((prev) => {
+      const liveTheorem = theorem.isSandbox
+        ? createSandboxTheorem(prev.nodes, prev.edges)
+        : theorem;
+      const liveResult = pruneStepOrNode(stepOrNode, prev.edges, liveTheorem);
+      if (!liveResult.success) return prev;
+      return {
+        nodes: liveResult.newNodes ?? prev.nodes,
+        edges: liveResult.newEdges,
+      };
     });
     setCurrentFallacy(null);
     toast(`✔ ${result.reason}`, "info", { announce: false });
@@ -446,6 +784,368 @@ export function useProofSession(options: ProofSessionOptions) {
     play(playAutocomplete);
     appendLog("prune", "info", `✔ ${result.reason}`);
   };
+
+  /** Adds a new premise or goal node onto the Sandbox canvas. */
+  const handleAddSandboxNode = useCallback(
+    (
+      role: "premise" | "conclusion",
+      formulaInput: string
+    ): { ok: boolean; error?: string; nodeId?: string } => {
+      if (!activeTheorem.isSandbox) {
+        return { ok: false, error: "Switch to Sandbox Mode to add nodes." };
+      }
+      if (activeTheorem.nodes.length >= MAX_SANDBOX_NODES) {
+        const msg = `Sandbox canvas is capped at ${MAX_SANDBOX_NODES} nodes.`;
+        toast(msg, "error");
+        return { ok: false, error: msg };
+      }
+
+      let ast: PropAst;
+      try {
+        ast = parseCustomFormula(formulaInput);
+      } catch (error) {
+        const msg =
+          error instanceof Error ? error.message : "Invalid formula syntax.";
+        return { ok: false, error: msg };
+      }
+
+      const prefix = role === "premise" ? "P" : "G";
+      const id = nextNodeId(prefix, activeTheorem.nodes);
+      const preferredX = role === "premise" ? 80 : 560;
+      const rolePeerCount = activeTheorem.nodes.filter(
+        (n) => n.type === role
+      ).length;
+      const preferredY = 85 + (rolePeerCount % 4) * 90;
+      const pos = findNonOverlappingSlot(
+        preferredX,
+        preferredY,
+        activeTheorem.nodes
+      );
+
+      const newNode = buildSandboxNode({
+        id,
+        label: formatFormula(ast),
+        type: role,
+        x: pos.x,
+        y: pos.y,
+      });
+
+      // If adding a Goal node whose formula is already proven on the canvas, connect it automatically
+      const provenIds = computeSandboxProvenNodeIds(edges, activeTheorem);
+      const matchingProvenSource =
+        role === "conclusion"
+          ? activeTheorem.nodes.find((n) => {
+              if (!provenIds.has(n.id)) return false;
+              const nAst = n.ast || parseFormula(n.label);
+              return nAst ? areAstsEqual(nAst, ast) : false;
+            })
+          : undefined;
+
+      applyGraphMutation((prev) => ({
+        nodes: [...prev.nodes, newNode],
+        edges: matchingProvenSource
+          ? [
+              ...prev.edges,
+              {
+                source: matchingProvenSource.id,
+                target: newNode.id,
+                ruleApplied: "Reit",
+              },
+            ]
+          : prev.edges,
+      }));
+
+      setCurrentFallacy(null);
+      play(playSuccess);
+      const roleTitle = role === "premise" ? "Premise" : "Goal";
+      toast(`Added ${roleTitle} Node ${id} (${newNode.label}).`, "success", {
+        announce: false,
+      });
+      announce(`Added ${roleTitle} Node ${id}, ${newNode.label}.`);
+      appendLog(
+        "sandbox-add",
+        "success",
+        `✔ Added ${roleTitle} Node ${id}: ${newNode.label}`
+      );
+      return { ok: true, nodeId: id };
+    },
+    [
+      activeTheorem,
+      edges,
+      applyGraphMutation,
+      playSuccess,
+      toast,
+      announce,
+      appendLog,
+    ]
+  );
+
+  /** Updates the formula of an existing Sandbox node and prunes invalidated downstream steps. */
+  const handleUpdateSandboxNode = useCallback(
+    (nodeId: string, formulaInput: string): { ok: boolean; error?: string } => {
+      if (!activeTheorem.isSandbox) {
+        return { ok: false, error: "Switch to Sandbox Mode to edit nodes." };
+      }
+      const existing = activeTheorem.nodes.find((n) => n.id === nodeId);
+      if (!existing) {
+        return { ok: false, error: `Node ${nodeId} not found.` };
+      }
+
+      let ast: PropAst;
+      try {
+        ast = parseCustomFormula(formulaInput);
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error ? error.message : "Invalid formula syntax.",
+        };
+      }
+
+      const formatted = formatFormula(ast);
+      if (existing.ast && areAstsEqual(existing.ast, ast)) {
+        return { ok: true };
+      }
+
+      applyGraphMutation((prev) => {
+        const updatedNodes = prev.nodes.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                label: formatted,
+                ast,
+                description: `${n.type === "premise" ? "Sandbox premise" : n.type === "conclusion" ? "Sandbox target goal" : "Derived step"}: ${formatted}`,
+              }
+            : n
+        );
+        // Cascade-remove any intermediate nodes whose derivations no longer hold
+        const validProven = computeSandboxProvenNodeIds(prev.edges, {
+          nodes: updatedNodes,
+        });
+        const removedInterIds = new Set(
+          updatedNodes
+            .filter((n) => n.type === "intermediate" && !validProven.has(n.id))
+            .map((n) => n.id)
+        );
+        const survivingNodes = updatedNodes.filter(
+          (n) => !removedInterIds.has(n.id)
+        );
+        const filteredEdges = prev.edges.filter(
+          (e) =>
+            !removedInterIds.has(e.source) && !removedInterIds.has(e.target)
+        );
+        const finalProven = computeSandboxProvenNodeIds(filteredEdges, {
+          nodes: survivingNodes,
+        });
+        let finalEdges = filteredEdges.filter((e) => {
+          const tgt = survivingNodes.find((n) => n.id === e.target);
+          if (tgt?.type === "conclusion" && !finalProven.has(tgt.id)) {
+            return false;
+          }
+          return true;
+        });
+
+        // If an edited Goal node now matches an already-proven node, auto-link it
+        const editedAfter = survivingNodes.find((n) => n.id === nodeId);
+        if (editedAfter?.type === "conclusion" && !finalProven.has(nodeId)) {
+          const matchingProven = survivingNodes.find(
+            (n) =>
+              n.id !== nodeId &&
+              finalProven.has(n.id) &&
+              n.ast &&
+              areAstsEqual(n.ast, ast)
+          );
+          if (matchingProven) {
+            finalEdges = [
+              ...finalEdges,
+              {
+                source: matchingProven.id,
+                target: nodeId,
+                ruleApplied: "Reit",
+              },
+            ];
+          }
+        }
+
+        return { nodes: survivingNodes, edges: finalEdges };
+      });
+
+      setCurrentFallacy(null);
+      play(playAutocomplete);
+      toast(`Updated Node ${nodeId} to ${formatted}.`, "info", {
+        announce: false,
+      });
+      announce(`Updated Node ${nodeId} formula to ${formatted}.`);
+      appendLog(
+        "sandbox-edit",
+        "info",
+        `✔ Updated Node ${nodeId}: ${formatted}`
+      );
+      return { ok: true };
+    },
+    [
+      activeTheorem,
+      applyGraphMutation,
+      playAutocomplete,
+      toast,
+      announce,
+      appendLog,
+    ]
+  );
+
+  /** Records a completed node drag position in Sandbox history. */
+  const handleMoveSandboxNode = useCallback(
+    (nodeId: string, x: number, y: number) => {
+      if (!activeTheorem.isSandbox) return;
+      const existing = activeTheorem.nodes.find((n) => n.id === nodeId);
+      const rx = Math.round(x);
+      const ry = Math.round(y);
+      if (!existing || (existing.x === rx && existing.y === ry)) return;
+
+      applyGraphMutation((prev) => ({
+        nodes: prev.nodes.map((n) =>
+          n.id === nodeId ? { ...n, x: rx, y: ry } : n
+        ),
+        edges: prev.edges,
+      }));
+    },
+    [activeTheorem, applyGraphMutation]
+  );
+
+  /** Deletes a node on the Sandbox canvas and cascade-prunes dependent derived steps and edges. */
+  const handleDeleteSandboxNode = useCallback(
+    (nodeId: string) => {
+      if (!activeTheorem.isSandbox) return;
+      const pruneRes = cascadePruneSandboxGraph(
+        nodeId,
+        activeTheorem.nodes,
+        edges,
+        { deletePremiseNode: true, deleteGoalNode: true }
+      );
+      if (!pruneRes.success) {
+        toast(pruneRes.reason, "error");
+        return;
+      }
+
+      applyGraphMutation((prev) => {
+        const liveRes = cascadePruneSandboxGraph(
+          nodeId,
+          prev.nodes,
+          prev.edges,
+          {
+            deletePremiseNode: true,
+            deleteGoalNode: true,
+          }
+        );
+        if (!liveRes.success) return prev;
+        return {
+          nodes: liveRes.newNodes ?? prev.nodes,
+          edges: liveRes.newEdges,
+        };
+      });
+
+      setSelectedNodeIds((prev) => prev.filter((id) => id !== nodeId));
+      setCurrentFallacy(null);
+      play(playAutocomplete);
+      toast(`✔ ${pruneRes.reason}`, "info", { announce: false });
+      announce(pruneRes.reason);
+      appendLog("sandbox-del", "info", `✔ ${pruneRes.reason}`);
+    },
+    [
+      activeTheorem,
+      edges,
+      applyGraphMutation,
+      playAutocomplete,
+      toast,
+      announce,
+      appendLog,
+    ]
+  );
+
+  /** Clears all nodes and edges on the Sandbox canvas as an undoable action. */
+  const handleClearSandbox = useCallback(() => {
+    if (!activeTheorem.isSandbox) return;
+    if (activeTheorem.nodes.length === 0 && edges.length === 0) return;
+    applyGraphMutation({ nodes: [], edges: [] });
+    setSelectedNodeIds([]);
+    setCurrentFallacy(null);
+    play(playAutocomplete);
+    toast("Cleared sandbox canvas.", "info", { announce: false });
+    announce("Cleared sandbox canvas.");
+    appendLog(
+      "sandbox-clear",
+      "info",
+      "✔ Cleared all sandbox nodes and edges."
+    );
+  }, [
+    activeTheorem,
+    edges.length,
+    applyGraphMutation,
+    playAutocomplete,
+    toast,
+    announce,
+    appendLog,
+  ]);
+
+  /** Populates an empty Sandbox canvas with a multi-step starter conjecture. */
+  const handleLoadSandboxStarter = useCallback(() => {
+    if (!activeTheorem.isSandbox) return;
+    const starter = createStarterSandboxNodes();
+    applyGraphMutation({ nodes: starter, edges: [] });
+    setSelectedNodeIds([]);
+    setCurrentFallacy(null);
+    play(playSuccess);
+    toast("Loaded starter premises and goal onto sandbox canvas.", "info", {
+      announce: false,
+    });
+    announce("Loaded starter premises and goal onto sandbox canvas.");
+    appendLog(
+      "sandbox-starter",
+      "info",
+      "✔ Loaded starter sandbox conjecture: P, P → Q, Q → R ⊢ R"
+    );
+  }, [
+    activeTheorem,
+    applyGraphMutation,
+    playSuccess,
+    toast,
+    announce,
+    appendLog,
+  ]);
+
+  /** Evaluates active Sandbox premises and goals for a falsifying truth-table valuation. */
+  const handleCheckCountermodel = useCallback(() => {
+    const outcome = evaluateSandboxCountermodel(activeTheorem.nodes);
+    if (outcome.status === "error") {
+      toast(outcome.message, "info");
+      appendLog("cm-err", "error", `[COUNTERMODEL CHECK] ${outcome.message}`);
+      return outcome;
+    }
+    if (outcome.status === "countermodel") {
+      setCurrentFallacy(outcome.diagnosis);
+      onFallacy();
+      toast(`Countermodel found: ${outcome.diagnosis.formalFormula}`, "error", {
+        announce: false,
+      });
+      announce(
+        `Countermodel found: ${outcome.diagnosis.formalFormula}. Opened Fallacy truth table.`
+      );
+      appendLog(
+        "cm-found",
+        "error",
+        `[COUNTERMODEL FOUND] ${outcome.diagnosis.formalFormula}\n${outcome.diagnosis.plainEnglish}`
+      );
+      return outcome;
+    }
+
+    setCurrentFallacy(null);
+    play(playSuccess);
+    const validMsg = `Semantically valid (${outcome.formalFormula}) across all ${outcome.valuationCount} truth-table valuations.`;
+    toast(validMsg, "success", { announce: false });
+    announce(validMsg);
+    appendLog("cm-valid", "success", `✔ ${validMsg}`);
+    return outcome;
+  }, [activeTheorem.nodes, onFallacy, playSuccess, toast, announce, appendLog]);
 
   /**
    * Undoes the step the current diagnosis is about as an undoable mutation,
@@ -460,32 +1160,38 @@ export function useProofSession(options: ProofSessionOptions) {
     const withoutPair = (edgeList: Edge[], a: string, b: string) =>
       edgeList.filter((e) => !edgeJoins(e, a, b, true));
 
-    applyEdgeMutation((prev) => {
-      let updatedEdges = [...prev];
+    applyGraphMutation((prev) => {
+      const liveTheorem = theorem.isSandbox
+        ? createSandboxTheorem(prev.nodes, prev.edges)
+        : theorem;
+      let updatedEdges = [...prev.edges];
+      let updatedNodes = prev.nodes;
 
       if (tId) {
-        const targetNode = theorem.nodes.find(
+        const targetNode = liveTheorem.nodes.find(
           (n) => n.id.toUpperCase() === tId.toUpperCase()
         );
         const isPremise =
           targetNode?.type === "premise" ||
-          ["A", "B", "D"].includes(tId.toUpperCase());
+          (!liveTheorem.isSandbox &&
+            ["A", "B", "D"].includes(tId.toUpperCase()));
 
         if (!isPremise && targetNode) {
-          const pruneRes = pruneStepOrNode(tId, prev, theorem);
+          const pruneRes = pruneStepOrNode(tId, prev.edges, liveTheorem);
           if (pruneRes.success) {
             updatedEdges = pruneRes.newEdges;
+            updatedNodes = pruneRes.newNodes ?? prev.nodes;
           } else if (sId) {
-            updatedEdges = withoutPair(prev, sId, tId);
+            updatedEdges = withoutPair(prev.edges, sId, tId);
           }
         } else if (sId) {
-          updatedEdges = withoutPair(prev, sId, tId);
+          updatedEdges = withoutPair(prev.edges, sId, tId);
         }
       } else if (updatedEdges.length > 0) {
         updatedEdges = updatedEdges.slice(0, -1);
       }
 
-      return updatedEdges;
+      return { nodes: updatedNodes, edges: updatedEdges };
     });
 
     setCurrentFallacy(null);
@@ -516,7 +1222,11 @@ export function useProofSession(options: ProofSessionOptions) {
         announce("Cleared terminal logs.");
         return;
       case "list":
-        appendLog("list", "info", formatNodeList(theorem, edges, isE_Proven));
+        appendLog(
+          "list",
+          "info",
+          formatNodeList(activeTheorem, edges, isE_Proven)
+        );
         announce("Listed active nodes and connections.");
         return;
       case "usage":
@@ -528,7 +1238,7 @@ export function useProofSession(options: ProofSessionOptions) {
       case "disconnect": {
         const { source, target } = command;
         applyEdgeMutation((prev) =>
-          prev.filter((e) => !edgeJoins(e, source, target))
+          prev.filter((e) => !edgeJoins(e, source, target, true))
         );
         appendLog(
           "disc",
@@ -576,7 +1286,9 @@ export function useProofSession(options: ProofSessionOptions) {
         handleAutoStep();
         return;
       case "inspect": {
-        const node = theorem.nodes.find((n) => n.id === command.nodeId);
+        const node = activeTheorem.nodes.find(
+          (n) => n.id.toUpperCase() === (command.nodeId ?? "").toUpperCase()
+        );
         if (!node) {
           appendLog("err", "error", `Node '${command.nodeId}' not found.`);
           return;
@@ -605,7 +1317,7 @@ export function useProofSession(options: ProofSessionOptions) {
         appendLog(
           "ledger",
           "info",
-          formatLedger(theorem.title, deductionLedger)
+          formatLedger(activeTheorem.title, deductionLedger)
         );
         announce("Printed deduction ledger.");
         return;
@@ -614,7 +1326,7 @@ export function useProofSession(options: ProofSessionOptions) {
           appendLog(
             "exp",
             "info",
-            exportWorkspaceProof(command.format, edges, theorem)
+            exportWorkspaceProof(command.format, edges, activeTheorem)
           );
         } else {
           onOpenExport();
@@ -634,7 +1346,9 @@ export function useProofSession(options: ProofSessionOptions) {
   };
 
   return {
+    nodes,
     edges,
+    activeTheorem,
     past,
     future,
     canUndo,
@@ -659,6 +1373,13 @@ export function useProofSession(options: ProofSessionOptions) {
     handleApplyRule,
     handleAutoStep,
     handleDeleteStep,
+    handleAddSandboxNode,
+    handleUpdateSandboxNode,
+    handleMoveSandboxNode,
+    handleDeleteSandboxNode,
+    handleClearSandbox,
+    handleLoadSandboxStarter,
+    handleCheckCountermodel,
     handleRollback,
     runCommand,
   };

@@ -34,7 +34,7 @@ describe("NeuroRecon 3D Asset Loader (loadExternalBrainMesh)", () => {
     const computeNormalsSpy = vi.spyOn(geometry, "computeVertexNormals");
 
     const mockLoad = vi.fn(
-      (url: string, onLoad: (res: THREE.Group) => void) => {
+      (_url: string, onLoad: (res: THREE.Group) => void) => {
         onLoad(mockGroup);
       }
     );
@@ -66,7 +66,7 @@ describe("NeuroRecon 3D Asset Loader (loadExternalBrainMesh)", () => {
     mockScene.add(mesh);
 
     const mockLoad = vi.fn(
-      (url: string, onLoad: (res: { scene: THREE.Group }) => void) => {
+      (_url: string, onLoad: (res: { scene: THREE.Group }) => void) => {
         onLoad({ scene: mockScene });
       }
     );
@@ -88,7 +88,7 @@ describe("NeuroRecon 3D Asset Loader (loadExternalBrainMesh)", () => {
   it("returns cached mesh on subsequent calls with identical arguments without re-fetching", async () => {
     const mockScene = new THREE.Group();
     const mockLoad = vi.fn(
-      (url: string, onLoad: (res: { scene: THREE.Group }) => void) => {
+      (_url: string, onLoad: (res: { scene: THREE.Group }) => void) => {
         onLoad({ scene: mockScene });
       }
     );
@@ -121,9 +121,9 @@ describe("NeuroRecon 3D Asset Loader (loadExternalBrainMesh)", () => {
 
     const mockLoad = vi.fn(
       (
-        url: string,
-        onLoad: any,
-        onProgress: any,
+        _url: string,
+        _onLoad: any,
+        _onProgress: any,
         onError: (err: Error) => void
       ) => {
         onError(new Error("Corrupt GLB file"));
@@ -151,7 +151,7 @@ describe("NeuroRecon 3D Asset Loader (loadExternalBrainMesh)", () => {
   it("handles empty geometries and zero bounding box dimension without division by zero", async () => {
     const emptyGroup = new THREE.Group();
     const mockLoad = vi.fn(
-      (url: string, onLoad: (res: THREE.Group) => void) => {
+      (_url: string, onLoad: (res: THREE.Group) => void) => {
         onLoad(emptyGroup);
       }
     );

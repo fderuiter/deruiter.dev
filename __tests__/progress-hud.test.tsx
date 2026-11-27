@@ -77,7 +77,7 @@ describe("Event-Driven Progress Bus & Floating Visual Progress HUD", () => {
 
       const mockScene = new THREE.Group();
       mockScene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)));
-      const mockLoad = vi.fn((url: string, onLoad: any, onProgress: any) => {
+      const mockLoad = vi.fn((_url: string, onLoad: any, onProgress: any) => {
         // Simulate streaming progress updates
         onProgress({ loaded: 100000, total: 400000 });
         onProgress({ loaded: 300000, total: 400000 });
@@ -112,7 +112,7 @@ describe("Event-Driven Progress Bus & Floating Visual Progress HUD", () => {
       const unsubscribe = progressBus.subscribe((e) => events.push(e));
 
       const mockLoad = vi.fn(
-        (url: string, onLoad: any, onProgress: any, onError: any) => {
+        (_url: string, _onLoad: any, _onProgress: any, onError: any) => {
           onError(new Error("404 Not Found"));
         }
       );

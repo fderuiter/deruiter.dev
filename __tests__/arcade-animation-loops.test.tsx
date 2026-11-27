@@ -97,7 +97,7 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
         labyrinthCampaign.runs += 1;
         const base = rooms[2];
         const openGrid = base.grid.map((row, y) =>
-          row.map((cell, x) =>
+          row.map((_cell, x) =>
             y === 0 || x === 0 || y === base.grid.length - 1 || x === 14
               ? "#"
               : " "

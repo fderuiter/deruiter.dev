@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import { fromAny } from "@total-typescript/shoehorn";
 
 (
@@ -134,40 +135,12 @@ import { LaserLoon } from "@/components/LaserLoon";
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
 import { ClinicalTrialChaos } from "@/components/ClinicalTrialChaos";
 
-class LocalStorageMock {
-  private store: Record<string, string> = {};
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string): void {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-  clear(): void {
-    this.store = {};
-  }
-  get length(): number {
-    return Object.keys(this.store).length;
-  }
-  key(index: number): string | null {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("Canvas Pointer Events Migration & Cancellation Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
-  let mockStorage: LocalStorageMock;
 
   beforeEach(() => {
-    mockStorage = new LocalStorageMock();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
 
     container = document.createElement("div");
     document.body.appendChild(container);

@@ -10,46 +10,16 @@ import {
   loadPersonalLibrary,
 } from "@/lib/crf";
 import type { StudyProtocol } from "@/lib/crf/types";
+import {
+  MockStorage,
+  QuotaExceededStorage,
+  ThrowingStorage,
+} from "../helpers/storage-mock";
 
 // Regression coverage for #657: authors must be able to recover their most
 // recently acknowledged local draft after a refresh, and a corrupt or
 // version-mismatched entry must be preserved for recovery rather than
 // silently overwritten.
-
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length() {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, value);
-  }
-}
-
-class ThrowingReadStorage extends MockStorage {
-  getItem(): string | null {
-    throw new DOMException("The operation is insecure.", "SecurityError");
-  }
-}
-
-class QuotaExceededStorage extends MockStorage {
-  setItem(): void {
-    const err = new DOMException("Quota exceeded", "QuotaExceededError");
-    throw err;
-  }
-}
 
 function buildStudy(overrides: Partial<StudyProtocol> = {}): StudyProtocol {
   return {
@@ -138,7 +108,7 @@ describe("study draft storage (#657)", () => {
   });
 
   it("returns empty instead of throwing when reading storage throws (#1632)", () => {
-    const throwing = new ThrowingReadStorage();
+    const throwing = new ThrowingStorage();
     expect(() => loadStudyDraft(throwing)).not.toThrow();
     expect(loadStudyDraft(throwing)).toEqual({ status: "empty" });
     // The baseline manager and personal library read on the same mount.

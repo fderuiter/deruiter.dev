@@ -5,6 +5,7 @@
 // replays the sequence when it comes back.
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   render,
   screen,
@@ -55,28 +56,6 @@ import { ToastProvider } from "@/hooks/useToast";
 import { MEME_STORAGE_KEYS, SOUNDBOARD_BUTTONS } from "@/lib/meme-data";
 import { safeRemoveItem } from "@/lib/safe-storage";
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
-
 function renderVault() {
   return render(
     <A11yProvider>
@@ -114,7 +93,7 @@ function setHidden(hidden: boolean) {
 
 describe("Meme Vault pads by touch (#2071)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     audio.muted = false;
@@ -129,7 +108,6 @@ describe("Meme Vault pads by touch (#2071)", () => {
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
-    vi.unstubAllGlobals();
   });
 
   it("plays a touch or Pencil tap once, on its click, and resumes audio", () => {
@@ -202,7 +180,7 @@ describe("Meme Vault pads by touch (#2071)", () => {
 
 describe("Echo while the page is hidden (#2071)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     meme.playMemeSound.mockClear();
@@ -215,7 +193,6 @@ describe("Echo while the page is hidden (#2071)", () => {
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
-    vi.unstubAllGlobals();
   });
 
   it("stops the playback while hidden and replays it when visible", () => {

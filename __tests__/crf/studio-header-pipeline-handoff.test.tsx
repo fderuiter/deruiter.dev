@@ -30,43 +30,7 @@ import {
 } from "@/components/study-data/handoff-storage";
 
 import { getByTooltip } from "../helpers/tooltip";
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return [...this.store.keys()][index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
-
-class ThrowingStorage extends MockStorage {
-  override setItem(): void {
-    throw new Error("blocked");
-  }
-}
-
-const original = Object.getOwnPropertyDescriptor(window, "sessionStorage");
-
-function installSessionStorage(storage: Storage) {
-  Object.defineProperty(window, "sessionStorage", {
-    configurable: true,
-    value: storage,
-  });
-}
+import { ThrowingStorage, resetMockStorage } from "../helpers/storage-mock";
 
 const study = getOncologyPresetSync();
 const PIPELINE_TITLE =
@@ -100,13 +64,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  if (original) Object.defineProperty(window, "sessionStorage", original);
 });
 
 describe("CRF Studio header: Run Pipeline (#2927)", () => {
   it("stores the study's USDM export and opens /study-data", async () => {
-    const storage = new MockStorage();
-    installSessionStorage(storage);
+    const storage = resetMockStorage("sessionStorage");
     renderHeader();
     fireEvent.click(getByTooltip(PIPELINE_TITLE));
     await waitFor(() =>
@@ -120,7 +82,7 @@ describe("CRF Studio header: Run Pipeline (#2927)", () => {
   });
 
   it("opens Exports instead when the browser cannot store the study", async () => {
-    installSessionStorage(new ThrowingStorage());
+    resetMockStorage(new ThrowingStorage(), "sessionStorage");
     const onChangeMode = renderHeader();
     fireEvent.click(getByTooltip(PIPELINE_TITLE));
     await waitFor(() => expect(onChangeMode).toHaveBeenCalledWith("export"));

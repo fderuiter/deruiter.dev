@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   MAX_STAKE,
   SPONSOR_ORDER,
@@ -17,29 +18,6 @@ import {
   type Unlocks,
 } from "@/lib/trial-and-error";
 import { CODEX_KEY, updateCodex } from "@/components/trial-and-error/useCodex";
-
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
 
 function entry(
   seed: string,
@@ -210,20 +188,12 @@ describe("New Run options (#950)", () => {
 });
 
 describe("unlock persistence", () => {
-  const original = Object.getOwnPropertyDescriptor(window, "localStorage");
   const useStorage = (value: unknown) =>
-    Object.defineProperty(window, "localStorage", {
-      configurable: true,
-      value,
-    });
+    resetMockStorage({ storage: value as Storage | undefined });
 
   let storage: MockStorage;
   beforeEach(() => {
-    storage = new MockStorage();
-    useStorage(storage);
-  });
-  afterEach(() => {
-    if (original) Object.defineProperty(window, "localStorage", original);
+    storage = resetMockStorage();
   });
 
   it("persists a win's unlocks and reads them back", () => {

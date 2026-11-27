@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   cleanup,
   fireEvent,
@@ -32,43 +33,15 @@ vi.mock("@/components/FieldManualButton", () => ({
   FieldManualButton: () => <button type="button">Manual</button>,
 }));
 
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
-
 const act: Act = { ...ACT_I, crisisDeck: undefined };
 let storage: MockStorage;
-const original = Object.getOwnPropertyDescriptor(window, "localStorage");
 const useStorage = (value: unknown) =>
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value,
-  });
+  resetMockStorage({ storage: value as Storage | undefined });
 
 beforeEach(() => {
   announce.mockClear();
   window.history.replaceState(null, "", "/");
-  storage = new MockStorage();
-  useStorage(storage);
+  storage = resetMockStorage();
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -82,7 +55,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
-  if (original) Object.defineProperty(window, "localStorage", original);
 });
 
 const card = (id: string) =>

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import { safeStorage } from "@/lib/safe-storage";
 
 (
@@ -48,40 +49,13 @@ vi.mock("@/components/providers/SearchProvider", () => ({
   }),
 }));
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
   let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -99,7 +73,6 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       root.unmount();
     });
     container.remove();
-    mockStorage.clear();
   });
 
   const openPreferences = async () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import fs from "fs";
 import path from "path";
 import { renderHook } from "@testing-library/react";
@@ -25,35 +26,6 @@ import {
   useProceduralBGM,
 } from "@/lib/clinical-trial-chaos/sound-effects";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
-
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-
-  get length(): number {
-    return this.store.size;
-  }
-
-  clear(): void {
-    this.store.clear();
-  }
-
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-
-  key(index: number): string | null {
-    const keys = Array.from(this.store.keys());
-    return keys[index] ?? null;
-  }
-
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
 
 interface MockOscillator {
   type: OscillatorType;
@@ -135,18 +107,12 @@ describe("Game Audio & SoundEngine Core Integration (__tests__/game-audio.test.t
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockStorage = new MockStorage();
+    mockStorage = resetMockStorage();
     createdOscillators = [];
     createdGains = [];
 
     mockStorage.setItem("sound_muted", "false");
     mockStorage.setItem("sound_volume", "0.5");
-
-    Object.defineProperty(globalThis, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
 
     mockAudioContext = {
       state: "running",
@@ -205,7 +171,6 @@ describe("Game Audio & SoundEngine Core Integration (__tests__/game-audio.test.t
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    mockStorage.clear();
   });
 
   describe("1. Architectural Invariants & Import Hygiene", () => {

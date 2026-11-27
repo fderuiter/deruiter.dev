@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import { fromPartial } from "@total-typescript/shoehorn";
 
 (
@@ -23,36 +24,11 @@ import {
 import { CRT_THEMES } from "@/lib/dungeon/metaprogression";
 import { CRTCalibrationModal } from "@/components/arcade/CRTCalibrationModal";
 
-class LocalStorageMock {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = String(value);
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-}
-
 describe("CRT Post-Processing Pipeline & Phosphor Mask Engine", () => {
-  let mockStorage: LocalStorageMock;
+  let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new LocalStorageMock();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
 
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
       fillRect: vi.fn(),

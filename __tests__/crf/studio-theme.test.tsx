@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "../helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -11,34 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  get length(): number {
-    return this.store.size;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-}
-
-const mockLocalStorage = new MockStorage();
-Object.defineProperty(globalThis, "localStorage", {
-  value: mockLocalStorage,
-  writable: true,
-  configurable: true,
-});
+let mockLocalStorage = resetMockStorage();
 
 import { VisitMatrixEditor } from "@/components/crf/Modes/VisitMatrixEditor";
 import { RuleGraphStudio } from "@/components/crf/Modes/RuleGraphStudio";
@@ -114,7 +88,7 @@ describe("CRF Studio - Light Mode & Theming", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
-    mockLocalStorage.clear();
+    mockLocalStorage = resetMockStorage();
     window.location.hash = "";
   });
 

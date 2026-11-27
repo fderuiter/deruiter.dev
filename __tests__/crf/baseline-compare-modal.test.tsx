@@ -1,5 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { MockStorage } from "../helpers/storage-mock";
 import {
   render,
   screen,
@@ -22,28 +23,6 @@ import { downloadFile } from "@/lib/download";
 // category with text-equivalent change badges (never color alone), and
 // navigate to a changed field/rule/visit. Also covers the required
 // no-change demonstration.
-
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length() {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, value);
-  }
-}
 
 function buildTestStudy(): StudyProtocol {
   const form: CRFForm = {

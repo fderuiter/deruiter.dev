@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { MockStorage } from "../helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -37,19 +38,6 @@ vi.mock("@/lib/crf/export-pdf", async (importOriginal) => {
     },
   };
 });
-
-class MockStorage implements RawStorage {
-  private readonly items = new Map<string, string>();
-  getItem(key: string) {
-    return this.items.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.items.set(key, value);
-  }
-  removeItem(key: string) {
-    this.items.delete(key);
-  }
-}
 
 function storageWithBaseline(study: StudyProtocol): MockStorage {
   const storage = new MockStorage();

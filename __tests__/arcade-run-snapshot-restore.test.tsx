@@ -1,5 +1,6 @@
 import React, { type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { z } from "zod";
 import {
@@ -30,28 +31,6 @@ const announce = vi.hoisted(() => vi.fn());
 vi.mock("@/hooks/useAnnouncer", () => ({
   useAnnouncer: () => ({ announce }),
 }));
-
-class MockStorage implements Storage {
-  private data = new Map<string, string>();
-  get length() {
-    return this.data.size;
-  }
-  clear() {
-    this.data.clear();
-  }
-  getItem(key: string) {
-    return this.data.get(key) ?? null;
-  }
-  key(index: number) {
-    return [...this.data.keys()][index] ?? null;
-  }
-  removeItem(key: string) {
-    this.data.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.data.set(key, value);
-  }
-}
 
 interface CounterState {
   count: number;
@@ -137,13 +116,12 @@ function hasSave() {
 
 describe("useRunSnapshot restores a saved run all or nothing (#3803)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     announce.mockClear();
   });
 
   afterEach(() => {
     cleanup();
-    vi.unstubAllGlobals();
   });
 
   it("rolls back a session restore that changed state and then threw", () => {

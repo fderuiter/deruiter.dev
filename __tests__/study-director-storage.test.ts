@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   STUDY_24_081,
   STUDY_24_081_SITES,
@@ -23,28 +24,6 @@ import {
 // with the same keys and bytes, and a storage that throws or refuses a write
 // leaves the game on its defaults instead of a value held only in memory.
 
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length() {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, value);
-  }
-}
-
 const SAVE_KEY = "study_director_save_v1";
 
 function study() {
@@ -60,12 +39,10 @@ describe("Study Director storage through lib/safe-storage (#1641)", () => {
   let storage: MockStorage;
 
   beforeEach(() => {
-    storage = new MockStorage();
-    vi.stubGlobal("localStorage", storage);
+    storage = resetMockStorage();
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 

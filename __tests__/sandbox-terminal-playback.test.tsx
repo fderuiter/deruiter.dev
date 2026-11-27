@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 // Configure React 19 act environment
 (
@@ -37,33 +38,10 @@ vi.mock("@/components/providers/A11yProvider", () => ({
   A11yProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
   let scrollIntoViewMock: ReturnType<typeof vi.fn>;
-  let mockStorage: MockStorage;
 
   const mockCommands = {
     "test studies list": {
@@ -83,12 +61,7 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockStorage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     safeStorage.clear();
     writeHashParams({ terminal_cmd: null });
     container = document.createElement("div");

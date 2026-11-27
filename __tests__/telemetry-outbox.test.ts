@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { MockStorage } from "./helpers/storage-mock";
 import { logger } from "@/lib/logger";
 import {
   TelemetryOutbox,
@@ -7,26 +8,6 @@ import {
   type TelemetryStorage,
   type TelemetryTransport,
 } from "@/lib/telemetry/outbox";
-
-class MockStorage implements TelemetryStorage {
-  private store: Map<string, string> = new Map();
-
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store.set(key, value);
-  }
-
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-
-  clear(): void {
-    this.store.clear();
-  }
-}
 
 describe("TelemetryOutbox Contract Test Suite", () => {
   let mockStorage: MockStorage;

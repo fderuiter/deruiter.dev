@@ -6,6 +6,7 @@
 // screen), so a phone that reports a fine pointer still gets them.
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import { render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
@@ -37,28 +38,6 @@ import { MemeVaultClient } from "@/components/arcade/MemeVaultClient";
 import { A11yProvider } from "@/components/providers/A11yProvider";
 import { ToastProvider } from "@/hooks/useToast";
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
-
 function renderVault() {
   return render(
     <A11yProvider>
@@ -74,12 +53,11 @@ const classesOf = (el: Element) =>
 
 describe("Meme Vault phone size rules (#3521)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
   });
 
   afterEach(() => {
     cleanup();
-    vi.unstubAllGlobals();
   });
 
   it("makes every copy button a 44px key with a visible word on a phone", () => {

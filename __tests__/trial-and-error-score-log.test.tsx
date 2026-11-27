@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { CardTable } from "@/components/trial-and-error/CardTable";
 import { ScoreLog } from "@/components/trial-and-error/ScoreLog";
@@ -17,33 +18,12 @@ vi.mock("@/components/FieldManualButton", () => ({
   FieldManualButton: () => <button type="button">Manual</button>,
 }));
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-}
-
-const original = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
 const useStorage = (value: unknown) =>
-  Object.defineProperty(globalThis, "localStorage", {
-    configurable: true,
-    writable: true,
-    value,
-  });
+  resetMockStorage({ storage: value as Storage | undefined });
 
 beforeEach(() => {
   announce.mockClear();
-  useStorage(new MockStorage());
+  resetMockStorage();
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -57,7 +37,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
-  if (original) Object.defineProperty(globalThis, "localStorage", original);
 });
 
 const toggle = () => screen.getByTestId("score-log-toggle");

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { MockStorage } from "../vitest.setup";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   GEAR_ITEM_EFFECTS,
   GEAR_ITEM_TIER,
@@ -316,11 +316,7 @@ describe("Race Mode and the bag (#1995)", () => {
 
 describe("the bag in the save (#1995)", () => {
   beforeEach(() => {
-    Object.defineProperty(window, "localStorage", {
-      value: new MockStorage(),
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     safeClear();
   });
 

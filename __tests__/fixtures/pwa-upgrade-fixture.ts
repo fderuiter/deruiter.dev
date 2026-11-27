@@ -1,63 +1,14 @@
 import type { PrecacheEntry } from "serwist";
-import type { RunSnapshot, RunSnapshotStorage } from "@/lib/arcade";
+import type { RunSnapshot } from "@/lib/arcade";
 import type { StudyProtocol } from "@/lib/crf";
 import {
   STUDY_DRAFT_ENVELOPE_VERSION,
   STUDY_DRAFT_STORAGE_KEY,
 } from "@/lib/crf";
 import { runSnapshotKey } from "@/lib/arcade";
+import { ToggleableMockStorage } from "../helpers/storage-mock";
 
-/**
- * Standard isolated MockStorage honoring Invariant 1.
- * Supports configurable denial for testing quota/permission failures.
- */
-export class MockStorage implements Storage, RunSnapshotStorage {
-  private store = new Map<string, string>();
-  private _denyReads = false;
-  private _denyWrites = false;
-
-  get length(): number {
-    return this.store.size;
-  }
-
-  setDenyReads(deny: boolean): void {
-    this._denyReads = deny;
-  }
-
-  setDenyWrites(deny: boolean): void {
-    this._denyWrites = deny;
-  }
-
-  getItem(key: string): string | null {
-    if (this._denyReads) {
-      throw new DOMException("The operation is insecure.", "SecurityError");
-    }
-    return this.store.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    if (this._denyWrites) {
-      throw new DOMException("Quota exceeded.", "QuotaExceededError");
-    }
-    this.store.set(key, String(value));
-  }
-
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-
-  clear(): void {
-    this.store.clear();
-  }
-
-  key(index: number): string | null {
-    return [...this.store.keys()][index] ?? null;
-  }
-
-  entries(): Record<string, string> {
-    return Object.fromEntries(this.store.entries());
-  }
-}
+export { ToggleableMockStorage, ToggleableMockStorage as MockStorage };
 
 /** Synthetic Response stub for MockCache */
 export class SyntheticResponse {
@@ -467,7 +418,7 @@ export class MockServiceWorkerContainer {
  * Two-generation isolated browser fixture orchestrator (#3811).
  */
 export class TwoGenerationPwaFixture {
-  readonly storage: MockStorage;
+  readonly storage: ToggleableMockStorage;
   readonly caches: MockCacheStorage;
   readonly serviceWorker: MockServiceWorkerContainer;
   readonly auditLog: PwaUpgradeAuditRecord[] = [];
@@ -513,7 +464,7 @@ export class TwoGenerationPwaFixture {
   online = true;
 
   constructor() {
-    this.storage = new MockStorage();
+    this.storage = new ToggleableMockStorage();
     this.caches = new MockCacheStorage();
     this.serviceWorker = new MockServiceWorkerContainer();
     this.workerGen1 = new MockSerwistWorker(this.gen1Config);

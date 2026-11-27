@@ -21,26 +21,7 @@ import {
 } from "@/hooks/useOfflineQueue";
 import { CaseStudyFeedbackSection } from "@/components/CaseStudyFeedbackSection";
 import { logger } from "@/lib/logger";
-
-class MockStorage {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] || null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-}
+import { resetMockStorage } from "./helpers/storage-mock";
 
 function TestDLQComponent() {
   const {
@@ -81,7 +62,6 @@ function TestDLQComponent() {
 }
 
 describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
-  let originalLocalStorage: Storage;
   let fetchMock: ReturnType<typeof vi.fn>;
   let loggerErrorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -96,13 +76,7 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
       timestamp: "",
     }));
 
-    const mockStorage = new MockStorage();
-    originalLocalStorage = globalThis.localStorage;
-    Object.defineProperty(globalThis, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
 
     fetchMock = vi.fn().mockImplementation(async (url: string) => {
       if (url.includes("/api/case-studies/reactions")) {
@@ -151,11 +125,6 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
     await clearDLQ();
     vi.useRealTimers();
     vi.restoreAllMocks();
-    Object.defineProperty(globalThis, "localStorage", {
-      value: originalLocalStorage,
-      writable: true,
-      configurable: true,
-    });
   });
 
   describe("Requirement 1 & Requirement 2: 4xx Errors Moved to DLQ", () => {

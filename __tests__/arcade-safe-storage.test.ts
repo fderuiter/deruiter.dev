@@ -6,6 +6,7 @@
 // localStorage calls produced: plain JSON.stringify output or a bare string,
 // never the safeStorage metadata envelope.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   safeStorage,
   safeGetRawItem,
@@ -39,49 +40,14 @@ import {
   type GameSetupConfig,
 } from "@/components/arcade/PreGameSetupWizard";
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return Object.prototype.hasOwnProperty.call(this.store, key)
-      ? this.store[key]
-      : null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
-const originalDescriptor = Object.getOwnPropertyDescriptor(
-  window,
-  "localStorage"
-);
 let storage: MockStorage;
 
 beforeEach(() => {
-  storage = new MockStorage();
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: storage,
-  });
+  storage = resetMockStorage();
   safeStorage.clearCache();
 });
 
 afterEach(() => {
-  if (originalDescriptor) {
-    Object.defineProperty(window, "localStorage", originalDescriptor);
-  }
   safeStorage.clearCache();
   vi.restoreAllMocks();
 });

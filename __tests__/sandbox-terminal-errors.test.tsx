@@ -4,6 +4,7 @@
  * edge branches of `components/SandboxTerminal.tsx` (#2532).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import React from "react";
 import {
   render,
@@ -68,28 +69,6 @@ vi.mock("@/lib/terminal-script-generator", async (importOriginal) => {
   };
 });
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 const RESPONSE_LAG_MS = 450;
 
 const getInput = () =>
@@ -128,17 +107,7 @@ describe("SandboxTerminal error paths and untaken branches", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
-    const storage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: storage,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(globalThis, "localStorage", {
-      value: storage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     safeStorage.clear();
     writeHashParams({ terminal_cmd: null });
     workspaceCommandRegistry.clearActions();

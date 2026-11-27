@@ -1,6 +1,6 @@
 import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { MockStorage } from "../vitest.setup";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   GROUND_Y,
   PLAYER_HEIGHT,
@@ -304,7 +304,7 @@ describe("the card at the finish pole in a run (#1996)", () => {
 
 describe("Finisher Cards on the Training Plan (#1996)", () => {
   beforeEach(() => {
-    globalThis.localStorage = new MockStorage();
+    resetMockStorage();
     safeClear();
   });
 

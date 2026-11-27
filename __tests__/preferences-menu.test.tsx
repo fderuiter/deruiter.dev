@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -15,28 +16,6 @@ import { PreferencesPanel } from "@/components/nav/PreferencesMenu";
 import { LiveAnnouncer } from "@/lib/a11y/announcer";
 import { PERSONA_ANNOUNCEMENTS, PERSONA_STORAGE_KEY } from "@/lib/persona";
 import { safeGetItem, safeGetRawItem, safeStorage } from "@/lib/safe-storage";
-
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
 
 describe("Preferences panel (#1847)", () => {
   let announcer: LiveAnnouncer;
@@ -54,11 +33,7 @@ describe("Preferences panel (#1847)", () => {
     );
 
   beforeEach(() => {
-    Object.defineProperty(window, "localStorage", {
-      value: new MockStorage(),
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     safeStorage.clear();
     document.documentElement.removeAttribute("data-font-mode");
     announcer = new LiveAnnouncer();

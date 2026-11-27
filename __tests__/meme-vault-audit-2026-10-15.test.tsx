@@ -6,6 +6,7 @@
 // and the room is described as the Echo game it is (#2127).
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   render,
   screen,
@@ -58,28 +59,6 @@ import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
 import { ArcadeHubClient } from "@/components/arcade/ArcadeHubClient";
 import { safeRemoveItem, safeSetRawItem } from "@/lib/safe-storage";
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
-
 function renderVault() {
   return render(
     <A11yProvider>
@@ -121,7 +100,7 @@ function playTo(target: number) {
 
 describe("Meme Vault audit 2026-10-15", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     audio.muted = false;

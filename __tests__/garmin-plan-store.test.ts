@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { MockStorage } from "../vitest.setup";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import * as safeStorage from "@/lib/safe-storage";
 import { safeClear } from "@/lib/safe-storage";
 import {
@@ -22,15 +22,10 @@ import { START_LIVES } from "@/lib/garmin/powerups";
 // The Training Plan save (#1994): the round trip, a corrupt save, malformed
 // fields one by one, a failed write and New plan.
 
-let mockStorage = new MockStorage();
+let mockStorage: MockStorage;
 
 beforeEach(() => {
-  mockStorage = new MockStorage();
-  Object.defineProperty(window, "localStorage", {
-    value: mockStorage,
-    writable: true,
-    configurable: true,
-  });
+  mockStorage = resetMockStorage();
   safeClear();
 });
 

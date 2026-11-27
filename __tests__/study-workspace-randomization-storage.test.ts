@@ -30,40 +30,16 @@ import {
   STUDY_WORKSPACE_AUTOSAVE_MS,
   useStudyWorkspaceDraft,
 } from "@/components/study-workspace/useStudyWorkspaceDraft";
+import {
+  MockStorage,
+  QuotaExceededStorage,
+  ToggleableMockStorage,
+} from "./helpers/storage-mock";
 
 /** Browser drafts of the study workspace and its plans (#4003). */
 
-class MockStorage {
-  store: Record<string, string> = {};
-  getItem(key: string) {
-    return Object.prototype.hasOwnProperty.call(this.store, key)
-      ? this.store[key]
-      : null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-}
-
-class QuotaStorage extends MockStorage {
-  override setItem(): void {
-    const error = new Error("full");
-    error.name = "QuotaExceededError";
-    throw error;
-  }
-}
-
-class DeniedStorage extends MockStorage {
-  override getItem(): string | null {
-    throw new Error("SecurityError");
-  }
-}
-
 let base: StudyWorkspace;
-let storage: MockStorage;
+let storage: Storage;
 let ids: number;
 const now = () => new Date("2026-11-22T12:00:00.000Z");
 const makeId = () => `w${(ids += 1)}`;
@@ -148,7 +124,7 @@ describe("draft storage", () => {
   });
 
   it("quarantines bad JSON with its original bytes, and the next load is empty", () => {
-    storage.store[STUDY_WORKSPACE_DRAFT_KEY] = "{not json";
+    storage.setItem(STUDY_WORKSPACE_DRAFT_KEY, "{not json");
     const loaded = loadStudyWorkspaceDraft(opts());
     expect(loaded).toMatchObject({
       status: "quarantined",
@@ -164,7 +140,7 @@ describe("draft storage", () => {
 
   it("isolates an unsupported record version and a hand-edited workspace", () => {
     const future = JSON.stringify({ recordVersion: 9, workspace: {} });
-    storage.store[STUDY_WORKSPACE_DRAFT_KEY] = future;
+    storage.setItem(STUDY_WORKSPACE_DRAFT_KEY, future);
     expect(loadStudyWorkspaceDraft(opts())).toMatchObject({
       status: "quarantined",
       entry: { problem: "unsupported-record-version", raw: future },
@@ -174,10 +150,10 @@ describe("draft storage", () => {
       { workspace: withPlan(base), expectedWriteId: null },
       opts()
     );
-    const record = JSON.parse(storage.store[STUDY_WORKSPACE_DRAFT_KEY]);
+    const record = JSON.parse(storage.getItem(STUDY_WORKSPACE_DRAFT_KEY)!);
     record.workspace.randomizationPlans[0].arms[0].allocationRatio = 5;
     const edited = JSON.stringify(record);
-    storage.store[STUDY_WORKSPACE_DRAFT_KEY] = edited;
+    storage.setItem(STUDY_WORKSPACE_DRAFT_KEY, edited);
     expect(loadStudyWorkspaceDraft(opts())).toMatchObject({
       status: "quarantined",
       entry: { problem: "revision-hash-mismatch", raw: edited },
@@ -197,7 +173,7 @@ describe("draft storage", () => {
   });
 
   it("migrates a bare workspace file and a version 1 workspace", () => {
-    storage.store[STUDY_WORKSPACE_DRAFT_KEY] = serializeStudyWorkspace(base);
+    storage.setItem(STUDY_WORKSPACE_DRAFT_KEY, serializeStudyWorkspace(base));
     const bare = loadStudyWorkspaceDraft(opts());
     expect(bare).toMatchObject({ status: "recovered", migrated: true });
     if (bare.status === "recovered") {
@@ -208,13 +184,16 @@ describe("draft storage", () => {
     const { analyses: _a, randomizationPlans: _p, ...rest } = base;
     const { payloadSha256: _h, ...revision } = base.revision;
     const v1 = { ...rest, workspaceVersion: 1, revision };
-    storage.store[STUDY_WORKSPACE_DRAFT_KEY] = JSON.stringify({
-      recordVersion: 1,
-      savedAt: "2026-11-01T00:00:00.000Z",
-      writeId: "old",
-      workspace: v1,
-      ui: {},
-    });
+    storage.setItem(
+      STUDY_WORKSPACE_DRAFT_KEY,
+      JSON.stringify({
+        recordVersion: 1,
+        savedAt: "2026-11-01T00:00:00.000Z",
+        writeId: "old",
+        workspace: v1,
+        ui: {},
+      })
+    );
     const migrated = loadStudyWorkspaceDraft(opts());
     expect(migrated).toMatchObject({ status: "recovered", migrated: true });
     if (migrated.status === "recovered") {
@@ -225,7 +204,7 @@ describe("draft storage", () => {
   });
 
   it("moves an unreadable stored draft aside before saving over it", () => {
-    storage.store[STUDY_WORKSPACE_DRAFT_KEY] = "garbage";
+    storage.setItem(STUDY_WORKSPACE_DRAFT_KEY, "garbage");
     const saved = saveStudyWorkspaceDraft(
       { workspace: base, expectedWriteId: null },
       opts()
@@ -238,10 +217,18 @@ describe("draft storage", () => {
     expect(
       saveStudyWorkspaceDraft(
         { workspace: base, expectedWriteId: null },
-        { storage: new QuotaStorage(), now, makeId }
+        { storage: new QuotaExceededStorage(), now, makeId }
       )
     ).toMatchObject({ status: "error", reason: "quota" });
-    const denied = { storage: new DeniedStorage(), now, makeId };
+    const denied = {
+      storage: new ToggleableMockStorage({
+        initialEntries: { [STUDY_WORKSPACE_DRAFT_KEY]: "{bad" },
+        denyReads: true,
+        denyWrites: true,
+      }),
+      now,
+      makeId,
+    };
     expect(loadStudyWorkspaceDraft(denied)).toEqual({ status: "unavailable" });
     expect(
       saveStudyWorkspaceDraft(
@@ -252,12 +239,13 @@ describe("draft storage", () => {
   });
 
   it("leaves the original in place when quarantine cannot be written", () => {
-    const full = new QuotaStorage();
-    full.store[STUDY_WORKSPACE_DRAFT_KEY] = "{bad";
+    const full = new QuotaExceededStorage({
+      [STUDY_WORKSPACE_DRAFT_KEY]: "{bad",
+    });
     expect(
       loadStudyWorkspaceDraft({ storage: full, now, makeId })
     ).toMatchObject({ status: "quarantined", moved: false });
-    expect(full.store[STUDY_WORKSPACE_DRAFT_KEY]).toBe("{bad");
+    expect(full.getItem(STUDY_WORKSPACE_DRAFT_KEY)).toBe("{bad");
   });
 
   it("discards the current draft on dismissal", () => {
@@ -366,7 +354,7 @@ describe("useStudyWorkspaceDraft", () => {
   });
 
   it("reports full storage and keeps the in-memory workspace", () => {
-    storage = new QuotaStorage();
+    storage = new QuotaExceededStorage();
     const { result, rerender } = setup(base);
     const edited = withPlan(base);
     rerender({ workspace: edited, ui: UI });

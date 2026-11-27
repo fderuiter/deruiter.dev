@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   cleanup,
   fireEvent,
@@ -34,30 +35,6 @@ vi.mock("@/lib/clipboard", () => ({
   getActiveHostUrl: () => "https://deruiter.dev",
 }));
 
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
-
-const original = Object.getOwnPropertyDescriptor(window, "localStorage");
 const act1: Act = { ...ACT_I, crisisDeck: undefined };
 let storage: MockStorage;
 
@@ -65,11 +42,7 @@ beforeEach(() => {
   announce.mockClear();
   copyToClipboard.mockReset();
   copyToClipboard.mockResolvedValue(undefined);
-  storage = new MockStorage();
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: storage,
-  });
+  storage = resetMockStorage();
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -84,7 +57,6 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
-  if (original) Object.defineProperty(window, "localStorage", original);
 });
 
 function storeUnlocks(unlocks: Unlocks) {
@@ -334,10 +306,7 @@ describe("the sponsor and stake picker (#950)", () => {
   });
 
   it("offers only the defaults when storage is unavailable", () => {
-    Object.defineProperty(window, "localStorage", {
-      configurable: true,
-      value: undefined,
-    });
+    resetMockStorage({ storage: undefined });
     render(<CardTable act={act1} seed="first" persist />);
     const dialog = openNewRun();
     const enabled = within(dialog)

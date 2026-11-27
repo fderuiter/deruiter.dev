@@ -8,15 +8,11 @@ import {
   saveStudyDraft,
   type StudyReviewActor,
 } from "@/lib/crf";
-import { MockStorage } from "../vitest.setup";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 describe("StudyProtocol review threads", () => {
   beforeEach(() => {
-    Object.defineProperty(globalThis, "localStorage", {
-      value: new MockStorage(),
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
   });
 
   it("attributes ordinary field deletion to the declared reviewer", () => {

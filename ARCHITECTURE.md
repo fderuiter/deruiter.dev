@@ -170,11 +170,7 @@ Our layout hooks strictly enforce a two-phase layout mechanism to eliminate DOM 
 
 ### Rich Text & Monospace Code Chips (Issue #45)
 
-To support dynamic typography in case study descriptions, we pioneeringly integrated the `@chenglou/pretext/rich-inline` sub-package:
-
-1. **Markdown Tokenization:** The `parseMarkdownToRichItems` utility splits descriptions on formatting boundaries, capturing bold (`**`), italic (`*`), and code tags (`` ` ``).
-2. **Inline Code Padding Calculations:** Inline code chunks are designated as atomic nodes (`break: 'never'`) and mapped to a monospace font. We allocate a deterministic `extraWidth: 12` horizontal padding variable to guarantee that the canvas engine precisely measures the width of our visually styled cyan code badges.
-3. **Fragment Materialization:** Once lines are computed, the custom `PretextRichText` component maps each fragment back to its original source element by its `itemIndex` ref, rendering beautifully styled React elements (such as neon-tinted border chips and high-contrast bold texts) with mathematically perfect heights.
+Case study cards render native Markdown in `CaseStudyBentoCard` ([ADR 0052](adr/0052-critical-path-css-partitioning-and-visible-pretext-lcp-candidacy.md)). `parseMarkdownToRichItems` in `lib/pretext-block-parser.ts` and `ExtendedRichInlineItem` (built on `@chenglou/pretext/rich-inline`) remain only for masonry height estimation. `parseMarkdownToRichItems` splits paragraphs on bold (`**`), italic (`*`), and inline code (`` ` ``) spans; inline code segments use a monospace font with `break: "never"` and `resolveCodeChipExtraWidth()` (`12` px fallback) so Canvas width measurements include chip padding and borders. `preparePretextBlocks` passes those items to `prepareRichInline`, and `useMasonryLayout` with `lib/masonry.ts` walks the prepared line ranges to estimate card heights before column scheduling.
 
 ### Tailwind v4 Font Synchronization
 

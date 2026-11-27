@@ -253,7 +253,7 @@ function sanitizeStoredDataset(raw: unknown): WorkbenchUploadedDataset | null {
     (raw.format !== "csv" &&
       raw.format !== "json" &&
       raw.format !== "parquet") ||
-    typeof raw.rowCount !== "number" ||
+    (typeof raw.rowCount !== "number" && raw.rowCount !== null) ||
     !Array.isArray(raw.columns)
   ) {
     return null;
@@ -279,7 +279,7 @@ function sanitizeStoredDataset(raw: unknown): WorkbenchUploadedDataset | null {
     qualifiedName: raw.qualifiedName,
     fileName: raw.fileName,
     format: raw.format,
-    rowCount: raw.rowCount,
+    rowCount: typeof raw.rowCount === "number" ? raw.rowCount : null,
     byteLength: bytes.byteLength,
     uploadedAt:
       typeof raw.uploadedAt === "string"

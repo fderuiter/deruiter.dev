@@ -11,6 +11,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
+import * as fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   DEFAULT_PORTFOLIO_SEED,
@@ -23,13 +24,18 @@ import {
   evaluateMetric,
   exportWarehouse,
   generatePortfolio,
+  mergeWorkbenchHydratedDatasets,
   parseWorkbenchDataset,
+  workbenchDatasetLoad,
+  workbenchDatasetTable,
+  workbenchHydratedDataset,
   workbenchQueries,
   workbenchResultParquet,
   type MetricDimensionId,
   type WarehouseRow,
   type WorkbenchQuery,
   type WorkbenchResult,
+  type WorkbenchUploadedDataset,
 } from "@/lib/clinical-platform";
 
 const warehouse = buildWarehouse(
@@ -289,8 +295,15 @@ describe("engine settings", () => {
   });
 });
 
-describe("Parquet export and Snappy Parquet dataset upload interoperability", () => {
-  it("writes Parquet bytes that native DuckDB read_parquet reads with types and NULLs intact", async () => {
+describe("Parquet export writer and locked engine COPY check", () => {
+  it("blocks COPY (...) TO under locked WORKBENCH_ENGINE_SETTINGS and round-trips workbenchResultParquet through DuckDB read_parquet", async () => {
+    const blockedOut = path.join(dir, "locked-export.parquet");
+    await expect(
+      db.run(
+        `COPY (SELECT 1 AS a) TO '${blockedOut.replaceAll("'", "''")}' (FORMAT parquet)`
+      )
+    ).rejects.toThrow(/disabled by configuration/i);
+
     const scratch = await DuckDBInstance.create(":memory:");
     const conn = await scratch.connect();
     try {
@@ -301,10 +314,11 @@ describe("Parquet export and Snappy Parquet dataset upload interoperability", ()
           { name: "total_visits", type: "Int64", numeric: true },
           { name: "completion_rate", type: "Double", numeric: true },
           { name: "is_active", type: "Boolean", numeric: false },
+          { name: "study_id", type: "Text", numeric: false },
         ],
         rows: [
-          ["DEMO-301", "24", "180", "0.875", "true"],
-          ["DEMO-302", null, "45", null, "false"],
+          ["DEMO-301", "24", "180", "0.875", "true", "dup-a"],
+          ["DEMO-302", null, "45", null, "false", null],
         ],
         rowCount: 2,
         truncated: false,
@@ -314,7 +328,7 @@ describe("Parquet export and Snappy Parquet dataset upload interoperability", ()
       writeFileSync(outPath, workbenchResultParquet(exported));
       const readBack = (
         await conn.runAndReadAll(
-          `SELECT study_id, enrolled, total_visits, completion_rate, is_active FROM read_parquet('${outPath.replaceAll("'", "''")}') ORDER BY study_id`
+          `SELECT study_id, enrolled, total_visits, completion_rate, is_active, study_id_2 FROM read_parquet('${outPath.replaceAll("'", "''")}') ORDER BY study_id`
         )
       ).getRowObjectsJson();
       expect(readBack).toEqual([
@@ -324,6 +338,7 @@ describe("Parquet export and Snappy Parquet dataset upload interoperability", ()
           total_visits: "180",
           completion_rate: 0.875,
           is_active: true,
+          study_id_2: "dup-a",
         },
         {
           study_id: "DEMO-302",
@@ -331,54 +346,355 @@ describe("Parquet export and Snappy Parquet dataset upload interoperability", ()
           total_visits: "45",
           completion_rate: null,
           is_active: false,
+          study_id_2: null,
         },
       ]);
+
+      // Empty wide result also round-trips cleanly through DuckDB read_parquet.
+      const emptyWide: WorkbenchResult = {
+        columns: Array.from({ length: 18 }, (_, i) => ({
+          name: i === 0 ? "" : `col_${i}`,
+          type: i % 2 === 0 ? "Int32" : "Text",
+          numeric: i % 2 === 0,
+        })),
+        rows: [],
+        rowCount: 0,
+        truncated: false,
+        elapsedMs: 1,
+      };
+      const emptyPath = path.join(dir, "workbench-empty.parquet");
+      writeFileSync(emptyPath, workbenchResultParquet(emptyWide));
+      const emptyDescribe = (
+        await conn.runAndReadAll(
+          `DESCRIBE SELECT * FROM read_parquet('${emptyPath.replaceAll("'", "''")}')`
+        )
+      ).getRowObjectsJson();
+      expect(emptyDescribe).toHaveLength(18);
+      expect(emptyDescribe[0].column_name).toBe("column_1");
+
+      // Property-based round-trip of arbitrary rows through DuckDB read_parquet.
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(
+            fc.tuple(
+              fc.option(fc.string({ maxLength: 24 }), { nil: null }),
+              fc.option(fc.integer({ min: -100_000, max: 100_000 }), {
+                nil: null,
+              }),
+              fc.option(fc.boolean(), { nil: null })
+            ),
+            { minLength: 0, maxLength: 20 }
+          ),
+          async (tuples) => {
+            const propRes: WorkbenchResult = {
+              columns: [
+                { name: "label", type: "Text", numeric: false },
+                { name: "n", type: "Int32", numeric: true },
+                { name: "flag", type: "Boolean", numeric: false },
+              ],
+              rows: tuples.map(([s, n, b]) => [
+                s,
+                n === null ? null : String(n),
+                b === null ? null : String(b),
+              ]),
+              rowCount: tuples.length,
+              truncated: false,
+              elapsedMs: 1,
+            };
+            const propPath = path.join(dir, "workbench-prop.parquet");
+            writeFileSync(propPath, workbenchResultParquet(propRes));
+            const actual = (
+              await conn.runAndReadAll(
+                `SELECT label, n, flag FROM read_parquet('${propPath.replaceAll("'", "''")}')`
+              )
+            ).getRowObjectsJson();
+            expect(actual).toEqual(
+              tuples.map(([s, n, b]) => ({ label: s, n, flag: b }))
+            );
+          }
+        ),
+        { numRuns: 25, seed: 4242 }
+      );
     } finally {
       conn.closeSync();
       scratch.closeSync();
     }
   });
+});
 
-  it("decodes Snappy and dictionary-encoded Parquet files written by native DuckDB", async () => {
+describe("end-to-end DuckDB dataset hydration (ZSTD/GZIP Parquet, NDJSON, quoted-newline CSV)", () => {
+  async function hydrateDatasetIntoEngine(
+    conn: DuckDBConnection,
+    scratchDir: string,
+    dataset: WorkbenchUploadedDataset
+  ) {
+    const dsLoad = workbenchDatasetLoad(dataset);
+    const stagedPath = path.join(scratchDir, dsLoad.fileName);
+    writeFileSync(stagedPath, dsLoad.buffer);
+    const createSql = dsLoad.create.replace(
+      `'${dsLoad.fileName.replaceAll("'", "''")}'`,
+      `'${stagedPath.replaceAll("'", "''")}'`
+    );
+    await conn.run(createSql);
+    const describeRows = (await conn.runAndReadAll(dsLoad.describe))
+      .getRows()
+      .map((r) => r.map((cell) => (cell === null ? null : String(cell))));
+    const countVal = Number(
+      (await conn.runAndReadAll(dsLoad.count)).getRows()[0]?.[0] ?? 0
+    );
+    return workbenchHydratedDataset(dsLoad.table, describeRows, countVal);
+  }
+
+  it("loads ZSTD and GZIP Parquet (with nested types), NDJSON and CSV with quoted newlines via DuckDB's readers before settings lock", async () => {
+    const firstStudyId = String(table("gold.dim_study")[0].study_id);
+    const secondStudyId = String(
+      table("gold.dim_study")[1]?.study_id ?? firstStudyId
+    );
+
+    // 1. Build ZSTD-compressed and GZIP-compressed Parquet fixtures in DuckDB.
+    const builder = await DuckDBInstance.create(":memory:");
+    const builderConn = await builder.connect();
+    const zstdFixturePath = path.join(dir, "fixture-zstd.parquet");
+    const gzipFixturePath = path.join(dir, "fixture-gzip.parquet");
+    try {
+      await builderConn.run(`
+        COPY (
+          SELECT
+            '${firstStudyId.replaceAll("'", "''")}' AS study_id,
+            14::INTEGER AS audit_findings,
+            19.75::DECIMAL(10, 2) AS review_hours,
+            DATE '2026-03-15' AS audited_on,
+            true AS passed,
+            ['oncology', 'priority'] AS tags,
+            {'lead': 'Dr. Lin', 'tier': 1} AS reviewer_meta
+          UNION ALL
+          SELECT
+            '${secondStudyId.replaceAll("'", "''")}',
+            NULL,
+            6.50,
+            DATE '2026-04-02',
+            false,
+            ['follow-up'],
+            {'lead': 'Dr. Patel', 'tier': 2}
+        ) TO '${zstdFixturePath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION zstd)
+      `);
+      await builderConn.run(`
+        COPY (
+          SELECT
+            '${firstStudyId.replaceAll("'", "''")}' AS study_id,
+            i::BIGINT AS batch_seq
+          FROM range(12) t(i)
+        ) TO '${gzipFixturePath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION gzip)
+      `);
+    } finally {
+      builderConn.closeSync();
+      builder.closeSync();
+    }
+
+    const zstdParsed = parseWorkbenchDataset({
+      fileName: "zstd_audit.parquet",
+      bytes: new Uint8Array(readFileSync(zstdFixturePath)),
+    });
+    const gzipParsed = parseWorkbenchDataset({
+      fileName: "gzip_batches.parquet",
+      bytes: new Uint8Array(readFileSync(gzipFixturePath)),
+    });
+    const ndjsonParsed = parseWorkbenchDataset({
+      fileName: "site_signals.ndjson",
+      bytes: new TextEncoder().encode(
+        [
+          JSON.stringify({
+            study_id: firstStudyId,
+            signal_code: "KR-01",
+            weight: 1.5,
+            channels: ["edc", "irt"],
+          }),
+          JSON.stringify({
+            study_id: secondStudyId,
+            signal_code: "KR-02",
+            weight: null,
+            channels: ["ctms"],
+          }),
+        ].join("\n") + "\n"
+      ),
+    });
+    const csvQuotedNewlinesParsed = parseWorkbenchDataset({
+      fileName: "monitor_notes.csv",
+      bytes: new TextEncoder().encode(
+        [
+          "study_id,comment,open_items",
+          `"${firstStudyId}","First line of monitor summary\nSecond line, with ""quoted"" detail",3`,
+          `"${secondStudyId}",,0`,
+        ].join("\r\n") + "\r\n"
+      ),
+    });
+
+    expect(
+      zstdParsed.ok &&
+        gzipParsed.ok &&
+        ndjsonParsed.ok &&
+        csvQuotedNewlinesParsed.ok
+    ).toBe(true);
+    if (
+      !zstdParsed.ok ||
+      !gzipParsed.ok ||
+      !ndjsonParsed.ok ||
+      !csvQuotedNewlinesParsed.ok
+    ) {
+      return;
+    }
+
+    // Before hydration, parseWorkbenchDataset keeps only cheap checks (no JS row parsing).
+    expect(zstdParsed.dataset.rowCount).toBeNull();
+    expect(zstdParsed.dataset.columns).toEqual([]);
+
+    // 2. Hydrate gold.* + all four uploads into a fresh DuckDB engine, then lock settings.
+    const engineInst = await DuckDBInstance.create(":memory:");
+    const engineConn = await engineInst.connect();
+    try {
+      await engineConn.run(emitDdl(WAREHOUSE_SCHEMA, "duckdb"));
+      for (const file of exportWarehouse(WAREHOUSE_SCHEMA, warehouse).files) {
+        if (!file.table.startsWith("gold.")) continue;
+        const target = path.join(dir, `e2e-${file.path.replace("/", "-")}`);
+        writeFileSync(target, file.text, "utf8");
+        await engineConn.run(
+          `COPY ${file.table.split(".").map(quote).join(".")} FROM '${target.replaceAll("'", "''")}' (FORMAT csv, HEADER true, ALLOW_QUOTED_NULLS false)`
+        );
+      }
+
+      const rawDatasets = [
+        zstdParsed.dataset,
+        gzipParsed.dataset,
+        ndjsonParsed.dataset,
+        csvQuotedNewlinesParsed.dataset,
+      ];
+      const hydratedMeta = [];
+      for (const ds of rawDatasets) {
+        hydratedMeta.push(await hydrateDatasetIntoEngine(engineConn, dir, ds));
+      }
+      for (const setting of WORKBENCH_ENGINE_SETTINGS) {
+        await engineConn.run(setting);
+      }
+
+      // 3. Verify DESCRIBE and SELECT count(*) populated schema browser metadata.
+      const merged = mergeWorkbenchHydratedDatasets(rawDatasets, hydratedMeta);
+      const [zstdDs, gzipDs, ndjsonDs, csvDs] = merged;
+
+      expect(zstdDs.rowCount).toBe(2);
+      expect(zstdDs.columns.map((c) => [c.name, c.type])).toEqual([
+        ["study_id", "VARCHAR"],
+        ["audit_findings", "INTEGER"],
+        ["review_hours", "DECIMAL(10,2)"],
+        ["audited_on", "DATE"],
+        ["passed", "BOOLEAN"],
+        ["tags", "VARCHAR[]"],
+        ["reviewer_meta", "STRUCT(lead VARCHAR, tier INTEGER)"],
+      ]);
+      const zstdSchemaTable = workbenchDatasetTable(zstdDs);
+      expect(zstdSchemaTable.rowCount).toBe(2);
+      expect(zstdSchemaTable.columns.map((c) => [c.name, c.type])).toEqual([
+        ["study_id", "string"],
+        ["audit_findings", "integer"],
+        ["review_hours", "decimal"],
+        ["audited_on", "date"],
+        ["passed", "boolean"],
+        ["tags", "string"],
+        ["reviewer_meta", "string"],
+      ]);
+
+      expect(gzipDs.rowCount).toBe(12);
+      expect(ndjsonDs.rowCount).toBe(2);
+      expect(ndjsonDs.columns.map((c) => c.name)).toEqual([
+        "study_id",
+        "signal_code",
+        "weight",
+        "channels",
+      ]);
+
+      expect(csvDs.rowCount).toBe(2);
+      expect(csvDs.columns.map((c) => [c.name, c.type])).toEqual([
+        ["study_id", "VARCHAR"],
+        ["comment", "VARCHAR"],
+        ["open_items", "BIGINT"],
+      ]);
+
+      // 4. Query across gold.* and all four uploaded datasets under locked settings.
+      const joined = (
+        await engineConn.runAndReadAll(`
+          SELECT
+            s.study_id,
+            z.audit_findings,
+            z.reviewer_meta.lead AS lead_reviewer,
+            list_extract(z.tags, 1) AS first_tag,
+            n.signal_code,
+            m.comment,
+            m.open_items,
+            (SELECT count(*) FROM uploads.gzip_batches g WHERE g.study_id = s.study_id)::INTEGER AS batch_count
+          FROM gold.dim_study s
+          JOIN uploads.zstd_audit z USING (study_id)
+          JOIN uploads.site_signals n USING (study_id)
+          JOIN uploads.monitor_notes m USING (study_id)
+          ORDER BY s.study_id
+        `)
+      ).getRowObjectsJson();
+
+      const firstRow = joined.find((r) => r.study_id === firstStudyId);
+      expect(firstRow).toEqual({
+        study_id: firstStudyId,
+        audit_findings: 14,
+        lead_reviewer: "Dr. Lin",
+        first_tag: "oncology",
+        signal_code: "KR-01",
+        comment:
+          'First line of monitor summary\nSecond line, with "quoted" detail',
+        open_items: "3",
+        batch_count: 12,
+      });
+
+      const secondRow = joined.find((r) => r.study_id === secondStudyId);
+      expect(secondRow?.comment).toBeNull();
+    } finally {
+      engineConn.closeSync();
+      engineInst.closeSync();
+    }
+  });
+
+  it("surfaces DuckDB's own error message when a file passes cheap checks but cannot be read", async () => {
     const scratch = await DuckDBInstance.create(":memory:");
     const conn = await scratch.connect();
     try {
-      const parquetPath = path.join(dir, "duckdb-snappy.parquet");
-      await conn.run(`
-        COPY (
-          SELECT
-            CASE WHEN i % 2 = 0 THEN 'DEMO-301' ELSE 'DEMO-302' END AS study_id,
-            i::INTEGER AS subject_seq,
-            (i * 1000)::BIGINT AS visit_id,
-            (i * 1.25)::DOUBLE AS score,
-            (i * 2.50)::DECIMAL(10, 2) AS cost_usd,
-            (i % 2 = 0) AS eligible,
-            (DATE '2026-02-01' + i::INTEGER) AS visit_date,
-            (TIMESTAMP '2026-02-01 10:00:00' + INTERVAL (i) HOUR) AS logged_at,
-            CASE WHEN i % 3 = 0 THEN NULL ELSE 'site-note' END AS note
-          FROM range(40) t(i)
-        ) TO '${parquetPath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION snappy)
-      `);
-      const bytes = new Uint8Array(readFileSync(parquetPath));
-      const parsed = parseWorkbenchDataset({
-        fileName: "site_monitoring.parquet",
-        bytes,
+      const corruptParquet = parseWorkbenchDataset({
+        fileName: "corrupt.parquet",
+        bytes: new TextEncoder().encode("PAR1not-valid-thrift-metadataPAR1"),
       });
-      expect(parsed.ok).toBe(true);
-      if (!parsed.ok) return;
-      expect(parsed.dataset.qualifiedName).toBe("uploads.site_monitoring");
-      expect(parsed.dataset.rowCount).toBe(40);
-      expect(parsed.dataset.columns.map((c) => [c.name, c.type])).toEqual([
-        ["study_id", "VARCHAR"],
-        ["subject_seq", "BIGINT"],
-        ["visit_id", "BIGINT"],
-        ["score", "DOUBLE"],
-        ["cost_usd", "DOUBLE"],
-        ["eligible", "BOOLEAN"],
-        ["visit_date", "DATE"],
-        ["logged_at", "TIMESTAMP"],
-        ["note", "VARCHAR"],
-      ]);
+      expect(corruptParquet.ok).toBe(true);
+      if (corruptParquet.ok) {
+        await expect(
+          hydrateDatasetIntoEngine(conn, dir, corruptParquet.dataset)
+        ).rejects.toThrow(/Error/i);
+      }
+
+      const malformedJson = parseWorkbenchDataset({
+        fileName: "broken.ndjson",
+        bytes: new TextEncoder().encode('{"ok":1}\n{bad-json\n'),
+      });
+      expect(malformedJson.ok).toBe(true);
+      if (malformedJson.ok) {
+        await expect(
+          hydrateDatasetIntoEngine(conn, dir, malformedJson.dataset)
+        ).rejects.toThrow(/Malformed JSON/i);
+      }
+
+      const malformedCsv = parseWorkbenchDataset({
+        fileName: "broken.csv",
+        bytes: new TextEncoder().encode('a,b\n"unterminated,1\n'),
+      });
+      expect(malformedCsv.ok).toBe(true);
+      if (malformedCsv.ok) {
+        await expect(
+          hydrateDatasetIntoEngine(conn, dir, malformedCsv.dataset)
+        ).rejects.toThrow(/Error/i);
+      }
     } finally {
       conn.closeSync();
       scratch.closeSync();

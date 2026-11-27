@@ -135,10 +135,12 @@ export {
 } from "./internal/workbench/output";
 export {
   MAX_WORKBENCH_STORAGE_BYTES,
+  mergeWorkbenchHydratedDatasets,
   parseWorkbenchDataset,
   sanitizeDatasetTableName,
   workbenchDatasetLoad,
   workbenchDatasetTable,
+  workbenchHydratedDataset,
 } from "./internal/workbench/datasets";
 export {
   WORKBENCH_BUNDLE_FORMAT,

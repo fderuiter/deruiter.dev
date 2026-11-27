@@ -22,12 +22,14 @@ import {
   encodeWorkbenchPermalink,
   findClinicalClaims,
   generatePortfolio,
+  mergeWorkbenchHydratedDatasets,
   parseWorkbenchBundle,
   parseWorkbenchDataset,
   sanitizeDatasetTableName,
   serializeWorkbenchBundle,
   workbenchDatasetLoad,
   workbenchDatasetTable,
+  workbenchHydratedDataset,
   workbenchQueries,
   workbenchResultCsv,
   workbenchResultJson,
@@ -404,16 +406,8 @@ describe("result exports (CSV, JSON, Parquet)", () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.dataset.format).toBe("parquet");
-    expect(parsed.dataset.rowCount).toBe(2);
-    expect(parsed.dataset.columns.map((c) => c.name)).toEqual([
-      "study_id",
-      "subjects",
-      "visit_seq",
-      "rate",
-      "amount",
-      "active",
-      "study_id_2",
-    ]);
+    expect(parsed.dataset.rowCount).toBeNull();
+    expect(parsed.dataset.columns).toEqual([]);
   });
 
   it("exports wide and empty Parquet results cleanly", () => {
@@ -436,14 +430,13 @@ describe("result exports (CSV, JSON, Parquet)", () => {
     });
     expect(parsedEmpty.ok).toBe(true);
     if (parsedEmpty.ok) {
-      expect(parsedEmpty.dataset.rowCount).toBe(0);
-      expect(parsedEmpty.dataset.columns).toHaveLength(18);
-      expect(parsedEmpty.dataset.columns[0].name).toBe("column_1");
+      expect(parsedEmpty.dataset.format).toBe("parquet");
+      expect(parsedEmpty.dataset.byteLength).toBe(emptyParquet.byteLength);
     }
     expect(JSON.parse(workbenchResultJson(empty))).toEqual([]);
   });
 
-  it("round-trips arbitrary result rows through Parquet and back", () => {
+  it("produces valid PAR1 framing for arbitrary result rows", () => {
     fc.assert(
       fc.property(
         fc.array(
@@ -477,8 +470,7 @@ describe("result exports (CSV, JSON, Parquet)", () => {
             fileName: "prop.parquet",
             bytes,
           });
-          if (!back.ok) return false;
-          return back.dataset.rowCount === tuples.length;
+          return back.ok && back.dataset.format === "parquet";
         }
       ),
       { numRuns: 60, seed: 4242 }
@@ -499,62 +491,32 @@ describe("local dataset ingestion (uploads.*)", () => {
     expect(sanitizeDatasetTableName("   .json")).toBe("dataset");
   });
 
-  it("parses CSV, JSON arrays, wrapped JSON and NDJSON with inferred column types", () => {
+  it("registers original buffers under their real extension and maps DESCRIBE + count(*) into the schema browser", () => {
+    const csvBytes = utf8(
+      'site_id,active,enrolled\r\n"SITE-01",true,14\r\n"SITE-02",false,\r\n'
+    );
     const csv = parseWorkbenchDataset({
       fileName: "Site Roster.csv",
-      bytes: utf8(
-        'site_id,active,enrolled,rate,opened_on,note\r\n"SITE-01",true,14,0.75,2026-03-15,"alpha, ""one"""\r\n"SITE-02",false,,1.25,2026-04-01,\r\n'
-      ),
+      bytes: csvBytes,
     });
     expect(csv.ok).toBe(true);
     if (!csv.ok) return;
     expect(csv.dataset.qualifiedName).toBe("uploads.site_roster");
-    expect(csv.dataset.rowCount).toBe(2);
-    expect(csv.dataset.columns).toEqual([
-      { name: "site_id", type: "VARCHAR", nullable: false },
-      { name: "active", type: "BOOLEAN", nullable: false },
-      { name: "enrolled", type: "BIGINT", nullable: true },
-      { name: "rate", type: "DOUBLE", nullable: false },
-      { name: "opened_on", type: "DATE", nullable: false },
-      { name: "note", type: "VARCHAR", nullable: true },
-    ]);
+    expect(csv.dataset.rowCount).toBeNull();
+    expect(csv.dataset.columns).toEqual([]);
 
-    const load = workbenchDatasetLoad(csv.dataset);
-    expect(load.ddl).toContain('CREATE SCHEMA IF NOT EXISTS "uploads"');
-    expect(load.ddl).toContain('CREATE TABLE "uploads"."site_roster"');
-    expect(load.copy).toContain('COPY "uploads"."site_roster" FROM');
-
-    const schemaEntry = workbenchDatasetTable(csv.dataset);
-    expect(schemaEntry.name).toBe("uploads.site_roster");
-    expect(schemaEntry.owner).toBe("Local browser session");
-
-    const jsonWrapped = parseWorkbenchDataset({
-      fileName: "protocol-events.json",
-      bytes: utf8(
-        JSON.stringify({
-          rows: [
-            {
-              study_id: "DEMO-301",
-              logged_at: "2026-05-01T10:20:30Z",
-              tags: ["a", "b"],
-            },
-            { study_id: "DEMO-302", logged_at: null, count: 5 },
-          ],
-        })
-      ),
-    });
-    expect(jsonWrapped.ok).toBe(true);
-    if (jsonWrapped.ok) {
-      expect(jsonWrapped.dataset.columns.map((c) => c.name)).toEqual([
-        "study_id",
-        "logged_at",
-        "tags",
-        "count",
-      ]);
-      expect(
-        jsonWrapped.dataset.columns.find((c) => c.name === "logged_at")?.type
-      ).toBe("TIMESTAMP");
-    }
+    const csvLoad = workbenchDatasetLoad(csv.dataset);
+    expect(csvLoad.fileName).toBe("uploads-site_roster.csv");
+    expect(csvLoad.buffer).toEqual(csv.dataset.bytes);
+    expect(csvLoad.buffer.buffer).not.toBe(csv.dataset.bytes.buffer);
+    expect(csvLoad.create).toContain('CREATE SCHEMA IF NOT EXISTS "uploads"');
+    expect(csvLoad.create).toContain(
+      `CREATE TABLE "uploads"."site_roster" AS SELECT * FROM read_csv('uploads-site_roster.csv', header = true, delim = ',', quote = '"', escape = '"', allow_quoted_nulls = false, strict_mode = true)`
+    );
+    expect(csvLoad.describe).toBe('DESCRIBE "uploads"."site_roster"');
+    expect(csvLoad.count).toBe(
+      'SELECT count(*) AS n FROM "uploads"."site_roster"'
+    );
 
     const ndjson = parseWorkbenchDataset({
       fileName: "events.ndjson",
@@ -562,13 +524,74 @@ describe("local dataset ingestion (uploads.*)", () => {
     });
     expect(ndjson.ok).toBe(true);
     if (ndjson.ok) {
-      expect(ndjson.dataset.rowCount).toBe(2);
+      const ndjsonLoad = workbenchDatasetLoad(ndjson.dataset);
+      expect(ndjsonLoad.fileName).toBe("uploads-events.ndjson");
+      expect(ndjsonLoad.create).toContain(
+        `read_json('uploads-events.ndjson', format = 'auto', records = 'auto')`
+      );
     }
+
+    const parquetMagicOnly = parseWorkbenchDataset({
+      fileName: "unnamed_upload",
+      bytes: utf8("PAR1____PAR1"),
+    });
+    expect(parquetMagicOnly.ok).toBe(true);
+    if (parquetMagicOnly.ok) {
+      expect(parquetMagicOnly.dataset.format).toBe("parquet");
+      const pqLoad = workbenchDatasetLoad(parquetMagicOnly.dataset);
+      expect(pqLoad.fileName).toBe("uploads-unnamed_upload.parquet");
+      expect(pqLoad.create).toContain(
+        `read_parquet('uploads-unnamed_upload.parquet')`
+      );
+    }
+
+    // Hydrate DESCRIBE + count(*) metadata onto the dataset and build its schema table.
+    const hydrated = workbenchHydratedDataset(
+      "uploads.site_roster",
+      [
+        ["site_id", "VARCHAR", "NO"],
+        ["active", "BOOLEAN", "YES"],
+        ["enrolled", "INTEGER", "YES"],
+        ["rate", "DECIMAL(10,2)", "YES"],
+        ["opened_on", "DATE", "NO"],
+        ["logged_at", "TIMESTAMP WITH TIME ZONE", "YES"],
+        ["cutoff_time", "TIME", "YES"],
+        ["meta", "STRUCT(lead VARCHAR, tier INTEGER)", "YES"],
+      ],
+      2
+    );
+    const [merged] = mergeWorkbenchHydratedDatasets([csv.dataset], [hydrated]);
+    expect(merged.rowCount).toBe(2);
+    expect(merged.columns).toHaveLength(8);
+
+    const schemaEntry = workbenchDatasetTable(merged);
+    expect(schemaEntry.name).toBe("uploads.site_roster");
+    expect(schemaEntry.owner).toBe("Local browser session");
+    expect(schemaEntry.rowCount).toBe(2);
+    expect(
+      schemaEntry.columns.map((c) => [c.name, c.type, c.nullable])
+    ).toEqual([
+      ["site_id", "string", false],
+      ["active", "boolean", true],
+      ["enrolled", "integer", true],
+      ["rate", "decimal", true],
+      ["opened_on", "date", false],
+      ["logged_at", "timestamp", true],
+      ["cutoff_time", "time", true],
+      ["meta", "string", true],
+    ]);
   });
 
-  it("rejects empty, malformed, unsupported or >50 MB uploads", () => {
+  it("keeps cheap checks in parseWorkbenchDataset: empty file, >50 MB cap, extension and PAR1 magic at both ends", () => {
     expect(
       parseWorkbenchDataset({ fileName: "empty.csv", bytes: new Uint8Array(0) })
+    ).toEqual({ ok: false, error: "The uploaded file is empty." });
+
+    expect(
+      parseWorkbenchDataset({
+        fileName: "blank.json",
+        bytes: utf8("\uFEFF   \r\n\t "),
+      })
     ).toEqual({ ok: false, error: "The uploaded file is empty." });
 
     expect(
@@ -578,24 +601,25 @@ describe("local dataset ingestion (uploads.*)", () => {
       }).ok
     ).toBe(false);
 
-    expect(
-      parseWorkbenchDataset({
-        fileName: "broken.csv",
-        bytes: utf8('a,b\n"unterminated,1\n'),
-      }).ok
-    ).toBe(false);
-
-    expect(
-      parseWorkbenchDataset({
-        fileName: "broken.json",
-        bytes: utf8("{not json"),
-      }).ok
-    ).toBe(false);
-
+    // Missing PAR1 trailer or header fails the cheap magic check.
     expect(
       parseWorkbenchDataset({
         fileName: "broken.parquet",
         bytes: utf8("NOT_A_PARQUET_FILE"),
+      }).ok
+    ).toBe(false);
+
+    expect(
+      parseWorkbenchDataset({
+        fileName: "truncated.parquet",
+        bytes: utf8("PAR1____NOPE"),
+      }).ok
+    ).toBe(false);
+
+    expect(
+      parseWorkbenchDataset({
+        fileName: "tiny.parquet",
+        bytes: utf8("PAR1PAR1"),
       }).ok
     ).toBe(false);
 

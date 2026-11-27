@@ -31,6 +31,7 @@ import {
   generatePortfolio,
   parseWorkbenchDataset,
   workbenchDatasetLoad,
+  workbenchHydratedDataset,
   workbenchLoad,
   workbenchQueries,
   workbenchResultCsv,
@@ -227,20 +228,22 @@ describe("reading results", () => {
 });
 
 describe("uploads.* local datasets in DuckDB-WASM", () => {
-  it("hydrates CSV, JSON and Snappy Parquet uploads via registerFileBuffer, joins with gold.* and stays read-only", async () => {
+  it("hydrates CSV with quoted newlines, NDJSON and ZSTD Parquet via DuckDB's own readers, reads DESCRIBE + count(*), joins with gold.* and stays read-only", async () => {
     const tmpDir = mkdtempSync(path.join(os.tmpdir(), "wasm-uploads-"));
     const native = await DuckDBInstance.create(":memory:");
     const nativeConn = await native.connect();
     let parquetBytes: Uint8Array;
+    const firstStudyId = String(warehouse.tables["gold.dim_study"][0].study_id);
     try {
       const parquetPath = path.join(tmpDir, "audit_flags.parquet");
-      const firstStudyId = String(
-        warehouse.tables["gold.dim_study"][0].study_id
-      );
       await nativeConn.run(`
         COPY (
-          SELECT '${firstStudyId.replaceAll("'", "''")}' AS study_id, 'priority-review' AS flag, 3::INTEGER AS tier
-        ) TO '${parquetPath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION snappy)
+          SELECT
+            '${firstStudyId.replaceAll("'", "''")}' AS study_id,
+            'priority-review' AS flag,
+            3::INTEGER AS tier,
+            ['zstd', 'wasm'] AS tags
+        ) TO '${parquetPath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION zstd)
       `);
       parquetBytes = new Uint8Array(readFileSync(parquetPath));
     } finally {
@@ -249,69 +252,144 @@ describe("uploads.* local datasets in DuckDB-WASM", () => {
       rmSync(tmpDir, { recursive: true, force: true });
     }
 
-    const firstStudyId = String(warehouse.tables["gold.dim_study"][0].study_id);
     const csvParsed = parseWorkbenchDataset({
       fileName: "study_notes.csv",
       bytes: new TextEncoder().encode(
-        `study_id,reviewer\n${firstStudyId},Lead Monitor\n`
+        `study_id,reviewer\r\n"${firstStudyId}","Lead Monitor\nRegion West"\r\n`
       ),
     });
-    const jsonParsed = parseWorkbenchDataset({
-      fileName: "study_targets.json",
+    const ndjsonParsed = parseWorkbenchDataset({
+      fileName: "study_targets.ndjson",
       bytes: new TextEncoder().encode(
-        JSON.stringify([{ study_id: firstStudyId, target_sites: 8 }])
+        `${JSON.stringify({ study_id: firstStudyId, target_sites: 8 })}\n`
       ),
     });
     const parquetParsed = parseWorkbenchDataset({
       fileName: "audit_flags.parquet",
       bytes: parquetBytes,
     });
-    expect(csvParsed.ok && jsonParsed.ok && parquetParsed.ok).toBe(true);
-    if (!csvParsed.ok || !jsonParsed.ok || !parquetParsed.ok) return;
+    expect(csvParsed.ok && ndjsonParsed.ok && parquetParsed.ok).toBe(true);
+    if (!csvParsed.ok || !ndjsonParsed.ok || !parquetParsed.ok) return;
 
-    // Reset and re-hydrate the WASM database just as `reloadDatasets` does.
-    conn.close();
-    db.reset();
-    conn = db.connect();
-    conn.query(load.ddl);
-    for (const file of load.files) {
-      db.registerFileText(file.fileName, file.text);
-      conn.query(file.copy);
-      db.dropFile(file.fileName);
+    // Serve the repo's signed same-origin WASM extensions locally without network access.
+    const extDir = path.resolve(
+      process.cwd(),
+      "components/platform/sql/extensions"
+    );
+    const localExtFiles: Record<string, Buffer> = {
+      "/_next/static/media/parquet.duckdb_extension.local.wasm": readFileSync(
+        path.join(extDir, "parquet.duckdb_extension.wasm")
+      ),
+      "/_next/static/media/json.duckdb_extension.local.wasm": readFileSync(
+        path.join(extDir, "json.duckdb_extension.wasm")
+      ),
+    };
+    const prevXhr = (globalThis as Record<string, unknown>).XMLHttpRequest;
+    (globalThis as Record<string, unknown>).XMLHttpRequest = class {
+      private url = "";
+      status = 404;
+      response: ArrayBuffer | null = null;
+      open(_method: string, url: string) {
+        this.url = url;
+      }
+      send() {
+        const buf = localExtFiles[this.url];
+        if (!buf) {
+          this.status = 404;
+          return;
+        }
+        this.status = 200;
+        this.response = new Uint8Array(buf).buffer;
+      }
+    };
+
+    try {
+      // Reset and re-hydrate the WASM database just as `hydrateWarehouse` does.
+      conn.close();
+      db.reset();
+      conn = db.connect();
+      conn.query(load.ddl);
+      for (const file of load.files) {
+        db.registerFileText(file.fileName, file.text);
+        conn.query(file.copy);
+        db.dropFile(file.fileName);
+      }
+      conn.query("SET autoinstall_known_extensions = false");
+      conn.query("SET autoload_known_extensions = false");
+      conn.query(
+        "LOAD '/_next/static/media/parquet.duckdb_extension.local.wasm'"
+      );
+      conn.query("LOAD '/_next/static/media/json.duckdb_extension.local.wasm'");
+
+      const hydratedMeta = [];
+      for (const ds of [
+        csvParsed.dataset,
+        ndjsonParsed.dataset,
+        parquetParsed.dataset,
+      ]) {
+        const dsLoad = workbenchDatasetLoad(ds);
+        db.registerFileBuffer(dsLoad.fileName, dsLoad.buffer);
+        conn.query(dsLoad.create);
+        db.dropFile(dsLoad.fileName);
+        const descRes = collect(dsLoad.describe);
+        const countRes = collect(dsLoad.count);
+        hydratedMeta.push(
+          workbenchHydratedDataset(
+            dsLoad.table,
+            descRes.rows,
+            Number(countRes.rows[0]?.[0] ?? 0)
+          )
+        );
+      }
+      for (const setting of load.settings) conn.query(setting);
+
+      expect(hydratedMeta.map((h) => [h.table, h.rowCount])).toEqual([
+        ["uploads.study_notes", 1],
+        ["uploads.study_targets", 1],
+        ["uploads.audit_flags", 1],
+      ]);
+      expect(hydratedMeta[2].columns.map((c) => [c.name, c.type])).toEqual([
+        ["study_id", "VARCHAR"],
+        ["flag", "VARCHAR"],
+        ["tier", "INTEGER"],
+        ["tags", "VARCHAR[]"],
+      ]);
+
+      const joined = collect(`
+        SELECT
+          s.study_id,
+          n.reviewer,
+          t.target_sites,
+          f.flag,
+          f.tier,
+          f.tags
+        FROM gold.dim_study s
+        JOIN uploads.study_notes n USING (study_id)
+        JOIN uploads.study_targets t USING (study_id)
+        JOIN uploads.audit_flags f USING (study_id)
+      `);
+      expect(joined.rows).toEqual([
+        [
+          firstStudyId,
+          "Lead Monitor\nRegion West",
+          "8",
+          "priority-review",
+          "3",
+          '["zstd","wasm"]',
+        ],
+      ]);
+
+      // External reads and configuration changes remain blocked after reload.
+      expect(() =>
+        collect("SELECT * FROM read_parquet('audit_flags.parquet')")
+      ).toThrow();
+      expect(() => conn.query("SET enable_external_access = true")).toThrow();
+    } finally {
+      if (prevXhr === undefined) {
+        delete (globalThis as Record<string, unknown>).XMLHttpRequest;
+      } else {
+        (globalThis as Record<string, unknown>).XMLHttpRequest = prevXhr;
+      }
     }
-    for (const ds of [
-      csvParsed.dataset,
-      jsonParsed.dataset,
-      parquetParsed.dataset,
-    ]) {
-      const dsLoad = workbenchDatasetLoad(ds);
-      db.registerFileBuffer(dsLoad.fileName, dsLoad.buffer);
-      conn.query(dsLoad.ddl);
-      conn.query(dsLoad.copy);
-      db.dropFile(dsLoad.fileName);
-    }
-    for (const setting of load.settings) conn.query(setting);
-
-    const joined = collect(`
-      SELECT
-        s.study_id,
-        n.reviewer,
-        t.target_sites,
-        f.flag,
-        f.tier
-      FROM gold.dim_study s
-      JOIN uploads.study_notes n USING (study_id)
-      JOIN uploads.study_targets t USING (study_id)
-      JOIN uploads.audit_flags f USING (study_id)
-    `);
-    expect(joined.rows).toEqual([
-      [firstStudyId, "Lead Monitor", "8", "priority-review", "3"],
-    ]);
-
-    // External reads and configuration changes remain blocked after reload.
-    expect(() =>
-      collect("SELECT * FROM read_parquet('audit_flags.parquet')")
-    ).toThrow();
-    expect(() => conn.query("SET enable_external_access = true")).toThrow();
   });
 });

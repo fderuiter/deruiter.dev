@@ -15,10 +15,12 @@ import {
   checkWorkbenchSql,
   decodeWorkbenchPermalink,
   encodeWorkbenchPermalink,
+  mergeWorkbenchHydratedDatasets,
   parseWorkbenchBundle,
   parseWorkbenchDataset,
   serializeWorkbenchBundle,
   workbenchDatasetLoad,
+  workbenchDatasetTable,
   workbenchResultCsv,
   workbenchResultJson,
   workbenchResultParquet,
@@ -275,11 +277,20 @@ function ResultGrid({ result }: { result: WorkbenchResult }) {
 
 function SchemaBrowser({
   tables,
+  uploadedDatasets,
   onQuery,
 }: {
   tables: readonly WorkbenchTable[];
+  uploadedDatasets: readonly WorkbenchUploadedDataset[];
   onQuery: (table: WorkbenchTable) => void;
 }) {
+  const hydratedUploads = uploadedDatasets
+    .filter((dataset) => dataset.rowCount !== null)
+    .map((dataset) => ({
+      fileName: dataset.fileName,
+      table: workbenchDatasetTable(dataset),
+    }));
+
   return (
     <section aria-labelledby="sql-schema" className={section}>
       <h2 id="sql-schema" className="text-xl font-semibold tracking-[-0.02em]">
@@ -375,6 +386,70 @@ function SchemaBrowser({
           </li>
         ))}
       </ul>
+      {hydratedUploads.length > 0 && (
+        <div className="mt-5 border-t border-white/[0.08] pt-4">
+          <h3 className="text-xs font-medium tracking-wide text-slate-300 uppercase">
+            Uploaded in this browser (uploads.*)
+          </h3>
+          <ul className="mt-2 space-y-2">
+            {hydratedUploads.map(({ fileName, table }) => (
+              <li key={table.name}>
+                <details className="group border border-white/[0.08] bg-[#13151a]">
+                  <summary className="flex min-h-12 min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-amber-400">
+                    <span className="min-w-0 break-all font-mono text-slate-100">
+                      {`${table.name} (${fileName})`}
+                    </span>
+                    <span className="font-mono text-xs text-slate-400">
+                      {`upload · ${number.format(table.rowCount)} ${table.rowCount === 1 ? "row" : "rows"}`}
+                    </span>
+                  </summary>
+                  <div className="space-y-3 border-t border-white/[0.06] px-3 py-3 text-sm">
+                    <p className="leading-relaxed text-slate-300">
+                      {table.description}
+                    </p>
+                    <table className="w-full text-left text-xs">
+                      <caption className="sr-only">{`Columns of ${table.name}`}</caption>
+                      <thead>
+                        <tr className="text-slate-400">
+                          <th scope="col" className="py-1 pr-3 font-normal">
+                            Column
+                          </th>
+                          <th scope="col" className="py-1 font-normal">
+                            Type and meaning
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {table.columns.map((column) => (
+                          <tr
+                            key={column.name}
+                            className="border-t border-white/[0.04] align-top"
+                          >
+                            <th
+                              scope="row"
+                              className="break-all py-1.5 pr-3 font-mono font-normal text-slate-100"
+                            >
+                              {column.name}
+                            </th>
+                            <td className="min-w-0 py-1.5 text-slate-300">
+                              <span className="font-mono text-slate-400">
+                                {`${column.type}${column.nullable ? "" : ", not null"} · ${column.classification}`}
+                              </span>
+                              <span className="block break-words leading-relaxed">
+                                {column.description}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
@@ -674,7 +749,8 @@ export function SqlWorkbench({
         data.load(),
         import("./sql-engine"),
       ]);
-      const datasetLoads = datasetsRef.current.map(workbenchDatasetLoad);
+      const currentDatasets = datasetsRef.current;
+      const datasetLoads = currentDatasets.map(workbenchDatasetLoad);
       const started = await module.startSqlEngine(
         load,
         (step) => {
@@ -687,7 +763,27 @@ export function SqlWorkbench({
         return;
       }
       engine.current = started;
-      setEngineState({ status: "ready", version: started.version });
+      if (Array.isArray(started.datasets) && started.datasets.length > 0) {
+        const merged = mergeWorkbenchHydratedDatasets(
+          currentDatasets,
+          started.datasets
+        );
+        datasetsRef.current = merged;
+        setDatasets(merged);
+        for (const ds of merged) {
+          const saved = await storage.putDataset(ds);
+          if (mounted.current && saved.ok) {
+            setStorageInfo({
+              backend: saved.backend,
+              bytesUsed: saved.bytesUsed,
+              maxBytes: saved.maxBytes,
+            });
+          }
+        }
+      }
+      if (mounted.current) {
+        setEngineState({ status: "ready", version: started.version });
+      }
     } catch (error) {
       if (mounted.current) {
         setEngineState({
@@ -1079,32 +1175,93 @@ export function SqlWorkbench({
         setDatasetError(parsed.error);
         return;
       }
+      const previousDatasets = datasetsRef.current;
+      const previousSameTable = previousDatasets.find(
+        (d) => d.tableName === parsed.dataset.tableName
+      );
       const saved = await storage.putDataset(parsed.dataset);
       if (!saved.ok) {
         setDatasetError(saved.message);
         return;
       }
-      const nextDatasets = [
-        ...datasetsRef.current.filter(
+      const candidateDatasets = [
+        ...previousDatasets.filter(
           (d) => d.tableName !== parsed.dataset.tableName
         ),
         parsed.dataset,
       ];
-      datasetsRef.current = nextDatasets;
-      setDatasets(nextDatasets);
-      setStorageInfo({
-        backend: saved.backend,
-        bytesUsed: saved.bytesUsed,
-        maxBytes: saved.maxBytes,
-      });
+      let finalDatasets = candidateDatasets;
+      let finalBackend = saved.backend;
+      let finalBytesUsed = saved.bytesUsed;
+      let finalMaxBytes = saved.maxBytes;
+
       if (
         engine.current &&
         typeof engine.current.reloadDatasets === "function"
       ) {
-        await engine.current.reloadDatasets(
-          nextDatasets.map(workbenchDatasetLoad)
-        );
+        try {
+          const hydratedList = await engine.current.reloadDatasets(
+            candidateDatasets.map(workbenchDatasetLoad)
+          );
+          if (Array.isArray(hydratedList) && hydratedList.length > 0) {
+            finalDatasets = mergeWorkbenchHydratedDatasets(
+              candidateDatasets,
+              hydratedList
+            );
+            const updatedCurrent = finalDatasets.find(
+              (d) => d.id === parsed.dataset.id
+            );
+            if (updatedCurrent) {
+              const persisted = await storage.putDataset(updatedCurrent);
+              if (persisted.ok) {
+                finalBackend = persisted.backend;
+                finalBytesUsed = persisted.bytesUsed;
+                finalMaxBytes = persisted.maxBytes;
+              }
+            }
+          }
+        } catch (error) {
+          const afterRemove = await storage.removeDataset(parsed.dataset.id);
+          let rollbackBackend = afterRemove.backend;
+          let rollbackBytes = afterRemove.bytesUsed;
+          let rollbackMax = afterRemove.maxBytes;
+          if (previousSameTable) {
+            const restored = await storage.putDataset(previousSameTable);
+            if (restored.ok) {
+              rollbackBackend = restored.backend;
+              rollbackBytes = restored.bytesUsed;
+              rollbackMax = restored.maxBytes;
+            }
+          }
+          setStorageInfo({
+            backend: rollbackBackend,
+            bytesUsed: rollbackBytes,
+            maxBytes: rollbackMax,
+          });
+          if (
+            error instanceof Error &&
+            "failure" in error &&
+            error.failure === "stopped"
+          ) {
+            engine.current = null;
+            setEngineState({ status: "idle" });
+          }
+          setDatasetError(
+            error instanceof Error
+              ? error.message
+              : "The dataset could not be loaded."
+          );
+          return;
+        }
       }
+
+      datasetsRef.current = finalDatasets;
+      setDatasets(finalDatasets);
+      setStorageInfo({
+        backend: finalBackend,
+        bytesUsed: finalBytesUsed,
+        maxBytes: finalMaxBytes,
+      });
     } catch (error) {
       setDatasetError(
         error instanceof Error
@@ -1762,16 +1919,25 @@ export function SqlWorkbench({
                       {dataset.qualifiedName}
                     </span>
                     <span className="font-mono text-slate-400">
-                      {`${dataset.format.toUpperCase()} · ${number.format(dataset.rowCount)} rows · ${formatBytes(dataset.byteLength)}`}
+                      {dataset.rowCount === null
+                        ? `${dataset.format.toUpperCase()} · ${formatBytes(dataset.byteLength)}`
+                        : `${dataset.format.toUpperCase()} · ${number.format(dataset.rowCount)} ${dataset.rowCount === 1 ? "row" : "rows"} · ${formatBytes(dataset.byteLength)}`}
                     </span>
                   </div>
-                  <ul className="mt-2 space-y-0.5 font-mono text-[11px] text-slate-300">
-                    {dataset.columns.map((col) => (
-                      <li key={col.name} className="break-all">
-                        {`${col.name} (${col.type})`}
-                      </li>
-                    ))}
-                  </ul>
+                  {dataset.columns.length > 0 ? (
+                    <ul className="mt-2 space-y-0.5 font-mono text-[11px] text-slate-300">
+                      {dataset.columns.map((col) => (
+                        <li key={col.name} className="break-all">
+                          {`${col.name} (${col.type})`}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-[11px] text-slate-400">
+                      Columns and row count load from DuckDB when the engine
+                      starts.
+                    </p>
+                  )}
                   <div className="mt-3 flex min-w-0 flex-wrap gap-2">
                     <button
                       type="button"
@@ -1797,6 +1963,7 @@ export function SqlWorkbench({
 
         <SchemaBrowser
           tables={tables}
+          uploadedDatasets={datasets}
           onQuery={(table) => queryTableByName(table.name)}
         />
       </div>

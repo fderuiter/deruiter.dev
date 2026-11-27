@@ -129,11 +129,10 @@ export type WorkbenchExportFormat = "csv" | "json" | "parquet";
 /** Local file formats the SQL notebook's dataset manager ingests. */
 export type WorkbenchDatasetFormat = "csv" | "json" | "parquet";
 
-/** DuckDB column types inferred or read for an uploaded local dataset. */
-export type WorkbenchDatasetColumnType =
-  "BIGINT" | "DOUBLE" | "BOOLEAN" | "DATE" | "TIMESTAMP" | "VARCHAR";
+/** DuckDB SQL type reported by `DESCRIBE` for an uploaded column (for example `BIGINT`, `VARCHAR` or `STRUCT(...)`). */
+export type WorkbenchDatasetColumnType = string;
 
-/** One column of an uploaded local dataset in `uploads`. */
+/** One column of an uploaded local dataset in `uploads`, populated from `DESCRIBE`. */
 export interface WorkbenchDatasetColumn {
   readonly name: string;
   readonly type: WorkbenchDatasetColumnType;
@@ -151,26 +150,42 @@ export interface WorkbenchUploadedDataset {
   /** Original uploaded file name. */
   readonly fileName: string;
   readonly format: WorkbenchDatasetFormat;
-  readonly rowCount: number;
+  /** Row count from `SELECT count(*)` once hydrated in DuckDB, or `null` before hydration. */
+  readonly rowCount: number | null;
   readonly byteLength: number;
   readonly uploadedAt: string;
+  /** Columns from `DESCRIBE` once hydrated in DuckDB; empty before hydration. */
   readonly columns: readonly WorkbenchDatasetColumn[];
   /** Raw uploaded file bytes kept in IndexedDB under the 50 MB workspace cap. */
   readonly bytes: Uint8Array;
 }
 
-/** Statements and virtual file buffer that load one uploaded dataset into `uploads`. */
+/** Statements and original file buffer that hydrate one uploaded dataset into `uploads` via DuckDB's readers. */
 export interface WorkbenchDatasetLoad {
   /** Qualified table name, for example `uploads.site_roster`. */
   readonly table: string;
-  /** Name registered in DuckDB's virtual file system during hydration. */
+  /** Format of the uploaded file (`csv`, `json` or `parquet`), selecting any required engine extension. */
+  readonly format: WorkbenchDatasetFormat;
+  /** Name registered in DuckDB's virtual file system under its real extension (for example `uploads-site_roster.parquet`). */
   readonly fileName: string;
-  /** Schema and table DDL run before copying rows in. */
-  readonly ddl: string;
-  /** Canonical UTF-8 CSV buffer registered through `registerFileBuffer`. */
+  /** Original uploaded file bytes registered through `registerFileBuffer`. */
   readonly buffer: Uint8Array;
-  /** Statement that copies the registered buffer into `uploads`. */
-  readonly copy: string;
+  /** Statement creating `uploads."<name>"` from `read_parquet`, `read_csv` or `read_json`. */
+  readonly create: string;
+  /** `DESCRIBE` query returning `column_name`, `column_type` and `null` for the created table. */
+  readonly describe: string;
+  /** `SELECT count(*)` query returning the row count of the created table. */
+  readonly count: string;
+}
+
+/** Schema and row count read back from DuckDB after hydrating an `uploads.*` table. */
+export interface WorkbenchHydratedDataset {
+  /** Qualified table name, for example `uploads.site_roster`. */
+  readonly table: string;
+  /** Row count read from `SELECT count(*)`. */
+  readonly rowCount: number;
+  /** Columns in table order read from `DESCRIBE`. */
+  readonly columns: readonly WorkbenchDatasetColumn[];
 }
 
 /** Result of parsing and validating an uploaded local dataset file. */

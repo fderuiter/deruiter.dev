@@ -19,7 +19,9 @@ import {
 } from "@duckdb/duckdb-wasm";
 import {
   checkWorkbenchSql,
+  workbenchHydratedDataset,
   type WorkbenchDatasetLoad,
+  type WorkbenchHydratedDataset,
   type WorkbenchLoad,
   type WorkbenchResult,
 } from "@/lib/clinical-platform";
@@ -70,10 +72,14 @@ export class SqlRunError extends Error {
 export interface SqlEngine {
   /** DuckDB's version, for example `v1.4.3`. */
   readonly version: string;
+  /** Hydrated columns and row counts from `DESCRIBE` and `SELECT count(*)` for loaded `uploads.*` tables. */
+  readonly datasets: readonly WorkbenchHydratedDataset[];
   /** Runs one read-only query. Rejects with a `SqlRunError`. */
   run(sql: string): Promise<WorkbenchResult>;
-  /** Replaces `uploads.*` datasets and re-locks `WORKBENCH_ENGINE_SETTINGS`. */
-  reloadDatasets(datasets: readonly WorkbenchDatasetLoad[]): Promise<void>;
+  /** Replaces `uploads.*` datasets, returns their hydrated schemas, and re-locks `WORKBENCH_ENGINE_SETTINGS`. */
+  reloadDatasets(
+    datasets: readonly WorkbenchDatasetLoad[]
+  ): Promise<readonly WorkbenchHydratedDataset[]>;
   /** Stops the running query, if any. */
   cancel(): void;
   /** Shuts the engine down. */
@@ -87,6 +93,14 @@ const ENGINE_FILES = {
   module: new URL("@duckdb/duckdb-wasm/dist/duckdb-eh.wasm", import.meta.url),
   worker: new URL(
     "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js",
+    import.meta.url
+  ),
+  parquetExtension: new URL(
+    "./extensions/parquet.duckdb_extension.wasm",
+    import.meta.url
+  ),
+  jsonExtension: new URL(
+    "./extensions/json.duckdb_extension.wasm",
     import.meta.url
   ),
 };
@@ -122,6 +136,18 @@ interface RunningQuery {
 
 const delay = (ms: number) =>
   new Promise<"late">((resolve) => setTimeout(() => resolve("late"), ms));
+
+async function collectInternal(
+  connection: AsyncDuckDBConnection,
+  sql: string
+): Promise<WorkbenchResult> {
+  const collector = new ResultCollector(SQL_MAX_ROWS);
+  const reader = await connection.send(sql, true);
+  for await (const batch of reader) {
+    collector.add(batch);
+  }
+  return collector.result(0);
+}
 
 /**
  * Starts the engine and loads the warehouse and any uploaded local datasets
@@ -184,7 +210,10 @@ export async function startSqlEngine(
   const hydrateWarehouse = async (
     currentDatasets: readonly WorkbenchDatasetLoad[],
     reportSteps: boolean
-  ): Promise<AsyncDuckDBConnection> => {
+  ): Promise<{
+    connection: AsyncDuckDBConnection;
+    datasets: readonly WorkbenchHydratedDataset[];
+  }> => {
     if (reportSteps) onStep("load");
     const connection = await db.connect();
     await connection.query(load.ddl);
@@ -193,28 +222,73 @@ export async function startSqlEngine(
       await connection.query(file.copy);
       await db.dropFile(file.fileName);
     }
+    const needsParquet = currentDatasets.some((d) => d.format === "parquet");
+    const needsJson = currentDatasets.some((d) => d.format === "json");
+    if (needsParquet || needsJson) {
+      await connection.query("SET autoinstall_known_extensions = false");
+      await connection.query("SET autoload_known_extensions = false");
+      if (needsParquet) {
+        await connection.query(
+          `LOAD '${ENGINE_FILES.parquetExtension.href.replaceAll("'", "''")}'`
+        );
+      }
+      if (needsJson) {
+        await connection.query(
+          `LOAD '${ENGINE_FILES.jsonExtension.href.replaceAll("'", "''")}'`
+        );
+      }
+    }
+    const hydratedDatasets: WorkbenchHydratedDataset[] = [];
     for (const dataset of currentDatasets) {
-      await db.registerFileBuffer(dataset.fileName, dataset.buffer);
-      await connection.query(dataset.ddl);
-      await connection.query(dataset.copy);
-      await db.dropFile(dataset.fileName);
+      // AsyncDuckDB transfers `buffer.buffer` to its Web Worker via postMessage,
+      // detaching the ArrayBuffer on the main thread; pass a fresh copy so
+      // `dataset.buffer` remains intact for IndexedDB storage and recovery.
+      await db.registerFileBuffer(
+        dataset.fileName,
+        new Uint8Array(dataset.buffer)
+      );
+      try {
+        await connection.query(dataset.create);
+      } finally {
+        await db.dropFile(dataset.fileName).catch(() => {});
+      }
+      const describeResult = await collectInternal(
+        connection,
+        dataset.describe
+      );
+      const countResult = await collectInternal(connection, dataset.count);
+      const parsedCount = Number(countResult.rows[0]?.[0] ?? "0");
+      hydratedDatasets.push(
+        workbenchHydratedDataset(
+          dataset.table,
+          describeResult.rows,
+          Number.isFinite(parsedCount) ? parsedCount : 0
+        )
+      );
     }
     if (reportSteps) onStep("lock");
     for (const setting of load.settings) await connection.query(setting);
-    return connection;
+    return { connection, datasets: hydratedDatasets };
   };
   const steps = async () => {
     await instantiate();
-    const connection = await hydrateWarehouse(datasets, true);
-    return { connection, version: await db.getVersion() };
+    const hydrated = await hydrateWarehouse(datasets, true);
+    return {
+      connection: hydrated.connection,
+      hydratedDatasets: hydrated.datasets,
+      version: await db.getVersion(),
+    };
   };
   let conn: AsyncDuckDBConnection;
+  let activeDatasetLoads: readonly WorkbenchDatasetLoad[] = [...datasets];
+  let currentHydrated: readonly WorkbenchHydratedDataset[];
   let version: string;
   try {
-    ({ connection: conn, version } = await Promise.race([
-      steps(),
-      workerFailed,
-    ]));
+    ({
+      connection: conn,
+      hydratedDatasets: currentHydrated,
+      version,
+    } = await Promise.race([steps(), workerFailed]));
   } catch (error) {
     onWorkerError = () => {};
     worker.terminate();
@@ -273,6 +347,9 @@ export async function startSqlEngine(
 
   return {
     version,
+    get datasets() {
+      return currentHydrated;
+    },
     async run(sql) {
       if (stopped) {
         throw new SqlRunError(
@@ -332,15 +409,33 @@ export async function startSqlEngine(
         const refresh = async () => {
           await conn.close();
           await db.reset();
-          conn = await hydrateWarehouse(nextDatasets, false);
+          const hydrated = await hydrateWarehouse(nextDatasets, false);
+          conn = hydrated.connection;
+          currentHydrated = hydrated.datasets;
+          activeDatasetLoads = [...nextDatasets];
+          return currentHydrated;
         };
-        await Promise.race([refresh(), aborted]);
+        return await Promise.race([refresh(), aborted]);
       } catch (error) {
-        shutDown();
-        throw new SqlRunError(
-          "stopped",
-          `Could not reload local datasets: ${engineMessage(error)}`
-        );
+        if (stopped) {
+          throw new SqlRunError(
+            "stopped",
+            `Could not reload local datasets: ${engineMessage(error)}`
+          );
+        }
+        try {
+          await db.reset();
+          const recovered = await hydrateWarehouse(activeDatasetLoads, false);
+          conn = recovered.connection;
+          currentHydrated = recovered.datasets;
+        } catch {
+          shutDown();
+          throw new SqlRunError(
+            "stopped",
+            `Could not reload local datasets: ${engineMessage(error)}`
+          );
+        }
+        throw new SqlRunError("error", engineMessage(error));
       } finally {
         if (running === reloadTask) running = null;
       }

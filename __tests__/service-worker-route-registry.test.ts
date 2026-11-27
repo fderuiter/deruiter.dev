@@ -129,6 +129,12 @@ describe("service worker route registry", () => {
 
     expect(matching("/_next/static/media/duckdb-eh.562c00b2.wasm")).toBe(1);
     expect(
+      matching("/_next/static/media/parquet.duckdb_extension.562c00b2.wasm")
+    ).toBe(1);
+    expect(
+      matching("/_next/static/media/json.duckdb_extension.1a2b3c4d.wasm")
+    ).toBe(1);
+    expect(
       matching("/_next/static/media/duckdb-browser-eh.worker.1a2b3c4d.js")
     ).toBe(0);
     expect(matching("/_next/static/media/other.wasm")).toBe(0);

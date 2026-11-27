@@ -162,16 +162,22 @@ test("persists multi-tab notebook, execution log and uploads.* datasets across b
   page,
 }) => {
   test.setTimeout(240_000);
+  const refused: string[] = [];
+  page.on("console", (message) => {
+    if (/Content Security Policy/i.test(message.text()))
+      refused.push(message.text());
+  });
+
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/platform/sql", { waitUntil: "load" });
   await expect(page.getByText(/Saved locally in IndexedDB/)).toBeVisible();
 
-  // Upload a local CSV dataset into uploads.* before starting the engine.
+  // Upload a CSV with a quoted newline and an NDJSON dataset before starting the engine.
   await page.getByTestId("upload-dataset-input").setInputFiles({
     name: "study_notes.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
-      "study_id,audit_tag\nDEMO-301,verified-cohort\n",
+      'study_id,audit_tag\nDEMO-301,"verified-cohort\nline-two"\n',
       "utf8"
     ),
   });
@@ -179,35 +185,79 @@ test("persists multi-tab notebook, execution log and uploads.* datasets across b
     page.getByText("uploads.study_notes", { exact: true })
   ).toBeVisible();
 
-  // Open a new tab and write a join between gold.dim_study and uploads.study_notes.
+  await page.getByTestId("upload-dataset-input").setInputFiles({
+    name: "cohort_meta.ndjson",
+    mimeType: "application/x-ndjson",
+    buffer: Buffer.from('{"study_id":"DEMO-301","cohort_size":24}\n', "utf8"),
+  });
+  await expect(
+    page.getByText("uploads.cohort_meta", { exact: true })
+  ).toBeVisible();
+
+  // Open a new tab and write a join across uploads.* and gold.dim_study.
   await page.getByRole("button", { name: "+ New tab" }).click();
   await page.getByLabel("Active tab name").fill("Upload join");
   const editor = page.getByRole("textbox", { name: "SQL (DuckDB)" });
   await editor.fill(
-    "SELECT n.audit_tag FROM uploads.study_notes n LEFT JOIN gold.dim_study s USING (study_id)"
+    "SELECT split_part(n.audit_tag, chr(10), 1) AS tag, m.cohort_size FROM uploads.study_notes n JOIN uploads.cohort_meta m USING (study_id) LEFT JOIN gold.dim_study s USING (study_id)"
   );
   await page.getByRole("button", { name: "Save query" }).click();
   await expect(page.getByText("Saved query library (1)")).toBeVisible();
 
   await startEngine(page);
+  await expect(
+    page
+      .getByRole("region", { name: "Schema" })
+      .getByText("Uploaded in this browser (uploads.*)")
+  ).toBeVisible({ timeout: 30_000 });
+
   await page.getByRole("button", { name: "Run", exact: true }).click();
   const grid = page.getByRole("region", { name: "Query result" });
   await expect(grid.getByRole("cell", { name: "verified-cohort" })).toBeVisible(
     { timeout: 30_000 }
   );
+  await expect(grid.getByRole("cell", { name: "24" })).toBeVisible();
   await expect(page.getByText("Run history (1 entry)")).toBeVisible();
+
+  // Export the query result as Parquet and upload it back through DuckDB's read_parquet.
+  const downloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Download the rows as Parquet" })
+    .click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  expect(stream).toBeTruthy();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) {
+    chunks.push(Buffer.from(chunk));
+  }
+  await page.getByTestId("upload-dataset-input").setInputFiles({
+    name: "exported_join.parquet",
+    mimeType: "application/vnd.apache.parquet",
+    buffer: Buffer.concat(chunks),
+  });
+  await expect(
+    page
+      .getByRole("region", { name: "Schema" })
+      .getByText("uploads.exported_join (exported_join.parquet)")
+  ).toBeVisible({ timeout: 60_000 });
+
   expect(await overflowing(page)).toEqual([]);
   expect(await seriousViolations(page)).toEqual([]);
+  expect(refused).toEqual([]);
 
-  // Reload the page: IndexedDB restores both tabs, the saved query, run history and uploads.study_notes.
+  // Reload the page: IndexedDB restores tabs, the saved query, run history and all uploads.* datasets.
   await page.reload({ waitUntil: "load" });
   await expect(
     page.getByText("uploads.study_notes", { exact: true })
   ).toBeVisible();
+  await expect(
+    page.getByText("uploads.exported_join", { exact: true })
+  ).toBeVisible();
   await expect(page.getByText("Saved query library (1)")).toBeVisible();
   await expect(page.getByText("Run history (1 entry)")).toBeVisible();
   await expect(editor).toHaveValue(
-    "SELECT n.audit_tag FROM uploads.study_notes n LEFT JOIN gold.dim_study s USING (study_id)"
+    "SELECT split_part(n.audit_tag, chr(10), 1) AS tag, m.cohort_size FROM uploads.study_notes n JOIN uploads.cohort_meta m USING (study_id) LEFT JOIN gold.dim_study s USING (study_id)"
   );
 });
 

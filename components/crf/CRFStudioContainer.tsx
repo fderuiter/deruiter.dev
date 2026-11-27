@@ -1,7 +1,14 @@
 "use client";
 
 import "./studio-theme.css";
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -11,10 +18,25 @@ import {
   buildFormCatalog,
   catalogBlockCommand,
   instantiateCatalogForm,
+  exportStudyToUsdmObject,
+  importStudyFromUsdm,
   DEFAULT_TEST_SCOPE,
   type ConditionalFieldValues,
   type OmnibarAction,
+  type StudyProtocol,
 } from "@/lib/crf";
+import {
+  reconcileUsdmStudyRevision,
+  type StudyRepositoryRecord,
+  type StudyWorkspace,
+} from "@/lib/study-workspace";
+import {
+  StudyConflictModal,
+  StudyRepositoryBar,
+  type StudyConflictPromptState,
+} from "@/components/clinical/StudyRepositoryBar";
+import type { StudyRepositoryClient } from "@/components/clinical/study-repository-client";
+import { useStudyRepository } from "@/components/clinical/useStudyRepository";
 import {
   loadInitialStudy,
   loadRecoveredDraftSavedAt,
@@ -188,8 +210,18 @@ const STUDIO_HOTKEYS: readonly string[] = [
   ...Object.keys(MODE_BY_KEY),
 ];
 
-export const CRFStudioContainer: React.FC = () => {
+interface CRFStudioContainerProps {
+  readonly repository?: StudyRepositoryClient;
+}
+
+const REPO_RECONCILE_DEBOUNCE_MS = 250;
+
+export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
+  repository: customRepository,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { snapshot: repoSnapshot, repository } =
+    useStudyRepository(customRepository);
 
   // Polyfill touch drag-and-drop support across CRF Studio
   useTouchDragAndDrop();
@@ -198,13 +230,24 @@ export const CRFStudioContainer: React.FC = () => {
 
   // Study State & History
   const studyHistory = useStudyHistory(loadInitialStudy);
-  const { study, canUndo, canRedo, undo, redo, commit } = studyHistory;
+  const {
+    study,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    commit,
+    reset: resetStudy,
+  } = studyHistory;
 
+  const legacyDraftFallbackEnabled =
+    typeof indexedDB === "undefined" ||
+    (repoSnapshot.isHydrated && repoSnapshot.persistence === "memory");
   const {
     status: draftSaveStatus,
     errorMessage: draftSaveError,
     downloadDraft,
-  } = useStudyAutosave(study);
+  } = useStudyAutosave(study, { enabled: legacyDraftFallbackEnabled });
 
   const navigation = useStudioNavigation(study);
   const {
@@ -227,6 +270,223 @@ export const CRFStudioContainer: React.FC = () => {
   } = navigation;
   const { playSuccess } = useAudio();
   const toast = useToast();
+
+  const [repoBinding, setRepoBinding] = useState<{
+    readonly studyId: string;
+    readonly baseRevisionId: string;
+  } | null>(null);
+  const [conflictPrompt, setConflictPrompt] =
+    useState<StudyConflictPromptState | null>(null);
+  const repoBindingRef = useRef<{
+    studyId: string;
+    baseRevisionId: string;
+  } | null>(null);
+  const lastSyncedStudyRef = useRef<StudyProtocol>(study);
+  const latestStudyRef = useRef<StudyProtocol>(study);
+  const repoHydratedOnceRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const reconcileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useLayoutEffect(() => {
+    latestStudyRef.current = study;
+  }, [study]);
+
+  const openRepositoryRecord = useCallback(
+    (record: StudyRepositoryRecord) => {
+      if (reconcileTimerRef.current !== null) {
+        clearTimeout(reconcileTimerRef.current);
+        reconcileTimerRef.current = null;
+      }
+      try {
+        const imported = importStudyFromUsdm(record.workspace.usdm, {
+          selection: record.workspace.selection,
+        });
+        lastSyncedStudyRef.current = imported;
+        latestStudyRef.current = imported;
+        const binding = {
+          studyId: record.studyId,
+          baseRevisionId: record.workspace.revision.id,
+        };
+        repoBindingRef.current = binding;
+        setRepoBinding(binding);
+        setConflictPrompt(null);
+        resetStudy(imported);
+        setActiveFormId(imported.forms[0]?.id ?? "");
+        setActiveVisitId(imported.visits[0]?.id ?? "");
+        setSelectedFieldId(null);
+      } catch (caught) {
+        toast.error(
+          caught instanceof Error
+            ? `Could not open USDM study in CRF Studio: ${caught.message}`
+            : "Could not open USDM study in CRF Studio."
+        );
+      }
+    },
+    [resetStudy, setActiveFormId, setActiveVisitId, setSelectedFieldId, toast]
+  );
+
+  const flushStudyToRepository = useCallback(
+    async (options: { readonly force?: boolean } = {}) => {
+      if (reconcileTimerRef.current !== null) {
+        clearTimeout(reconcileTimerRef.current);
+        reconcileTimerRef.current = null;
+      }
+      const currentStudy = latestStudyRef.current;
+      const currentBinding = repoBindingRef.current;
+      const exported = exportStudyToUsdmObject(currentStudy);
+
+      if (
+        !options.force &&
+        currentStudy === lastSyncedStudyRef.current &&
+        currentBinding !== null
+      ) {
+        return {
+          ok: true as const,
+          usdm: exported,
+          persistedToIndexedDb:
+            repository.getSnapshot().persistence === "indexeddb",
+        };
+      }
+
+      const targetStudyId =
+        currentBinding?.studyId ??
+        (currentStudy.protocolNumber || currentStudy.id || "crf-study");
+      const expectedRevisionId = currentBinding?.baseRevisionId ?? "R1";
+
+      const outcome = await repository.reconcileAndSaveUsdm(
+        targetStudyId,
+        exported,
+        {
+          expectedRevisionId,
+          note: "Updated forms and schedule in CRF Studio",
+          force: options.force,
+          skipIfUnchanged: true,
+          requireExisting: currentBinding !== null,
+        }
+      );
+
+      if (outcome.status === "conflict") {
+        if (isMountedRef.current) {
+          let localWorkspace: StudyWorkspace | undefined;
+          if (outcome.latestRecord) {
+            try {
+              localWorkspace = reconcileUsdmStudyRevision(
+                outcome.latestRecord.workspace,
+                exported,
+                {
+                  expectedRevisionId:
+                    outcome.latestRecord.workspace.revision.id,
+                  note: "Unsaved local CRF Studio snapshot",
+                }
+              );
+            } catch {
+              localWorkspace = undefined;
+            }
+          }
+          setConflictPrompt({
+            studyId: targetStudyId,
+            expectedRevisionId: outcome.expectedRevisionId,
+            currentRevisionId: outcome.currentRevisionId,
+            latestRecord: outcome.latestRecord,
+            localWorkspace,
+          });
+        }
+        return { ok: false as const };
+      }
+
+      lastSyncedStudyRef.current = currentStudy;
+      const nextBinding = {
+        studyId: outcome.record.studyId,
+        baseRevisionId: outcome.record.workspace.revision.id,
+      };
+      repoBindingRef.current = nextBinding;
+      if (isMountedRef.current) {
+        setRepoBinding(nextBinding);
+        setConflictPrompt(null);
+      }
+      return {
+        ok: true as const,
+        usdm: outcome.record.workspace.usdm,
+        persistedToIndexedDb:
+          repository.getSnapshot().persistence === "indexeddb",
+      };
+    },
+    [repository]
+  );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (reconcileTimerRef.current !== null) {
+        clearTimeout(reconcileTimerRef.current);
+        reconcileTimerRef.current = null;
+      }
+      if (latestStudyRef.current !== lastSyncedStudyRef.current) {
+        void flushStudyToRepository();
+      }
+    };
+  }, [flushStudyToRepository]);
+
+  useEffect(() => {
+    let live = true;
+    void repository
+      .initialize()
+      .then(() => repository.whenIdle())
+      .then(() => {
+        if (!live) return;
+        const ready = repository.getSnapshot();
+        const activeRecord = ready.activeRecord;
+        if (!repoHydratedOnceRef.current) {
+          repoHydratedOnceRef.current = true;
+          if (
+            activeRecord &&
+            latestStudyRef.current === lastSyncedStudyRef.current
+          ) {
+            openRepositoryRecord(activeRecord);
+          }
+          return;
+        }
+        if (
+          activeRecord &&
+          ready.lastRemoteEvent &&
+          (ready.lastRemoteEvent.type === "active-study-changed" ||
+            ready.lastRemoteEvent.type === "study-imported" ||
+            ready.lastRemoteEvent.type === "study-deleted") &&
+          repoBindingRef.current?.studyId !== activeRecord.studyId &&
+          latestStudyRef.current === lastSyncedStudyRef.current
+        ) {
+          openRepositoryRecord(activeRecord);
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [
+    openRepositoryRecord,
+    repository,
+    repoSnapshot.activeStudyId,
+    repoSnapshot.isHydrated,
+    repoSnapshot.remoteEventSeq,
+  ]);
+
+  useEffect(() => {
+    if (study === lastSyncedStudyRef.current) return;
+    if (conflictPrompt !== null) return;
+    if (reconcileTimerRef.current !== null) {
+      clearTimeout(reconcileTimerRef.current);
+    }
+    reconcileTimerRef.current = setTimeout(() => {
+      reconcileTimerRef.current = null;
+      void flushStudyToRepository();
+    }, REPO_RECONCILE_DEBOUNCE_MS);
+    return () => {
+      if (reconcileTimerRef.current !== null) {
+        clearTimeout(reconcileTimerRef.current);
+        reconcileTimerRef.current = null;
+      }
+    };
+  }, [conflictPrompt, flushStudyToRepository, study]);
 
   const [viewport, setViewport] = useState<DeviceViewport>("desktop");
 
@@ -415,6 +675,7 @@ export const CRFStudioContainer: React.FC = () => {
     isOmnibarOpen ||
     isLibraryUpgradesOpen ||
     Boolean(pendingStudyReplacement) ||
+    conflictPrompt !== null ||
     impactPendingDeletion !== null ||
     document.querySelector(
       "dialog[open], [role='dialog'], [aria-modal='true']"
@@ -756,7 +1017,21 @@ export const CRFStudioContainer: React.FC = () => {
         onOpenOmnibar={handleOpenOmnibar}
         onStartSpotlightTour={startSpotlightTour}
         onCopyShareLink={handleCopyShareLink}
+        onCommitToRepository={() => flushStudyToRepository()}
       />
+
+      {repoSnapshot.isHydrated ? (
+        <div className="border-b border-zinc-800 bg-zinc-950/90 px-3 py-1.5 sm:px-4">
+          <StudyRepositoryBar
+            repository={repository}
+            currentStudyId={repoBinding?.studyId}
+            currentRevisionId={repoBinding?.baseRevisionId}
+            onSelectStudy={openRepositoryRecord}
+            onReloadLatest={openRepositoryRecord}
+            compact
+          />
+        </div>
+      ) : null}
 
       {/* Local Draft Save Status */}
       <div
@@ -792,6 +1067,39 @@ export const CRFStudioContainer: React.FC = () => {
 
       {/* Main Workspace Body based on Mode */}
       <div className="flex-1 flex min-h-0 overflow-visible md:overflow-hidden relative">
+        {activeMode === "designer" && !activeForm && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+            <div className="max-w-md space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/70 p-6">
+              <p className="font-mono text-xs uppercase tracking-[0.14em] text-brand-cyan">
+                Empty CRF Form Set
+              </p>
+              <h3 className="text-base font-semibold text-white">
+                {study.title || study.protocolNumber} has no forms yet
+              </h3>
+              <p className="text-xs leading-relaxed text-zinc-300">
+                Add a CDASH domain form from the catalog or start a blank form
+                to author case report fields for this USDM study.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsFormCatalogOpen(true)}
+                  className="min-h-11 rounded-lg bg-brand-cyan px-3.5 py-2 font-mono text-xs font-bold text-black transition-colors hover:bg-brand-cyan/90"
+                >
+                  Add Form from Catalog
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.addForm()}
+                  className="min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3.5 py-2 font-mono text-xs text-zinc-200 transition-colors hover:border-zinc-500"
+                >
+                  New Blank Form
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeMode === "designer" && activeForm && (
           <>
             {/* Desktop / Tablet Left Sidebar: Study Spine, Forms & Global Library */}
@@ -1534,6 +1842,21 @@ export const CRFStudioContainer: React.FC = () => {
         study={study}
         onApplyUpgrade={commit}
         onUndoUpgrade={undo}
+      />
+
+      <StudyConflictModal
+        conflict={conflictPrompt}
+        onLoadLatest={(latest) => {
+          if (latest) {
+            openRepositoryRecord(latest);
+          } else {
+            setConflictPrompt(null);
+          }
+        }}
+        onForceKeepLocal={() => {
+          void flushStudyToRepository({ force: true });
+        }}
+        onClose={() => setConflictPrompt(null)}
       />
     </div>
   );

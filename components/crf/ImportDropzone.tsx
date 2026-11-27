@@ -6,6 +6,7 @@ import {
   IconFileCode,
   IconFileText,
   IconFileSpreadsheet,
+  IconFlame,
   IconCheck,
   IconLoader2,
   IconX,
@@ -151,7 +152,7 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
       <div
         role="button"
         tabIndex={0}
-        aria-label="Upload study protocol dropzone. Drag and drop CDISC ODM XML, USDM JSON, or CSV study specification files here or press Enter to browse."
+        aria-label="Upload study protocol dropzone. Drag and drop CDISC ODM XML, USDM JSON, HL7 FHIR R4 JSON, or CSV study specification files here or press Enter to browse."
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -190,8 +191,8 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
                   : "Drag & drop study file here, or click to browse"}
             </p>
             <p className="text-xs text-zinc-400 font-sans">
-              Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), and
-              Study Specs (.csv) up to 50MB
+              Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), HL7
+              FHIR R4 (.json), and Study Specs (.csv) up to 50MB
             </p>
           </div>
 
@@ -205,6 +206,10 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-[11px] font-mono font-medium text-brand-cyan">
                 <IconFileText className="w-3.5 h-3.5" />
                 USDM JSON (.json)
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[11px] font-mono font-medium text-amber-300">
+                <IconFlame className="w-3.5 h-3.5" />
+                HL7 FHIR R4 (.json)
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono font-medium text-emerald-300">
                 <IconFileSpreadsheet className="w-3.5 h-3.5" />

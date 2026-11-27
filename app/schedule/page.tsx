@@ -618,6 +618,7 @@ export default function SchedulePage() {
 
           <div className="w-full max-w-2xl text-left">
             <ContactForm
+              draftKey="portfolio_contact_form_draft_schedule"
               initialIntent="collaboration"
               initialSubject={computedSubject}
               initialMessage={computedMessage}

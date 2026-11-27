@@ -6,6 +6,7 @@ import {
   IconFileCode,
   IconFileText,
   IconFileSpreadsheet,
+  IconFlame,
   IconCheck,
   IconLoader2,
   IconX,
@@ -153,10 +154,10 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
         tabIndex={0}
         aria-label={
           isReading
-            ? `Upload study protocol dropzone: Reading and parsing study protocol... Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), and Study Specs (.csv) up to 50MB ${progressPercent}% uploaded and parsed`
+            ? `Upload study protocol dropzone: Reading and parsing study protocol... Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), HL7 FHIR R4 JSON (.json), and Study Specs (.csv) up to 50MB ${progressPercent}% uploaded and parsed`
             : activeFile
-              ? `Upload study protocol dropzone: ${activeFile.name} Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), and Study Specs (.csv) up to 50MB`
-              : "Upload study protocol dropzone: Drag & drop study file here, or click to browse Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), and Study Specs (.csv) up to 50MB CDISC ODM-XML (.xml) USDM JSON (.json) CSV Spec (.csv)"
+              ? `Upload study protocol dropzone: ${activeFile.name} Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), HL7 FHIR R4 JSON (.json), and Study Specs (.csv) up to 50MB`
+              : "Upload study protocol dropzone: Drag & drop study file here, or click to browse Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), HL7 FHIR R4 JSON (.json), and Study Specs (.csv) up to 50MB CDISC ODM-XML (.xml) USDM JSON (.json) HL7 FHIR R4 (.json) CSV Spec (.csv)"
         }
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
@@ -196,8 +197,8 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
                   : "Drag & drop study file here, or click to browse "}
             </p>
             <p className="text-xs studio-fg-muted font-sans">
-              Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), and
-              Study Specs (.csv) up to 50MB{" "}
+              Supports CDISC ODM-XML (.xml), USDM / Universal CRF (.json), HL7
+              FHIR R4 JSON (.json), and Study Specs (.csv) up to 50MB{" "}
             </p>
           </div>
 
@@ -211,6 +212,10 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full studio-accent-cyan border text-[11px] font-mono font-medium">
                 <IconFileText className="w-3.5 h-3.5" />
                 USDM JSON (.json){" "}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full studio-accent-amber border text-[11px] font-mono font-medium">
+                <IconFlame className="w-3.5 h-3.5" />
+                HL7 FHIR R4 (.json){" "}
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full studio-accent-emerald border text-[11px] font-mono font-medium">
                 <IconFileSpreadsheet className="w-3.5 h-3.5" />

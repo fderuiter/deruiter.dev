@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { ServiceResult } from "@/lib/services/service-result";
 
 export const GetBlogRssFeedInputSchema = z.object({
-  baseUrl: z.string().url().optional(),
+  baseUrl: z.url().optional(),
 });
 
 export type GetBlogRssFeedInput = z.infer<typeof GetBlogRssFeedInputSchema>;

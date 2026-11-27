@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   IconSend,
   IconCheck,
@@ -34,17 +34,27 @@ const SELECTABLE_INTENTS = CONTACT_INTENTS.filter(
 interface ContactFormDraft {
   name: string;
   email: string;
-  intent: ContactIntent;
-  subject: string;
-  message: string;
+  intent?: ContactIntent;
+  subject?: string;
+  message?: string;
 }
 
 export const CONTACT_FORM_DRAFT_KEY = "portfolio_contact_form_draft";
+
+const EMPTY_DRAFT: ContactFormDraft = {
+  name: "",
+  email: "",
+};
+
+function hasNonBlankDraftValue(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
 
 interface ContactFormProps {
   initialIntent?: ContactIntent;
   initialSubject?: string;
   initialMessage?: string;
+  draftKey?: string;
   className?: string;
   onSuccess?: () => void;
 }
@@ -53,41 +63,80 @@ export function ContactForm({
   initialIntent = "general",
   initialSubject = "",
   initialMessage = "",
+  draftKey = CONTACT_FORM_DRAFT_KEY,
   className = "",
   onSuccess,
 }: ContactFormProps) {
-  const defaultDraft: ContactFormDraft = useMemo(
-    () => ({
-      name: "",
-      email: "",
-      intent: initialIntent,
-      subject: initialSubject,
-      message: initialMessage,
-    }),
-    [initialIntent, initialSubject, initialMessage]
-  );
-
   const [draft, setDraft] = usePersistentState<ContactFormDraft>(
-    CONTACT_FORM_DRAFT_KEY,
-    defaultDraft
+    draftKey,
+    EMPTY_DRAFT
   );
+  const [editedFields, setEditedFields] = useState<{
+    draftKey: string;
+    subject: boolean;
+    message: boolean;
+  }>({
+    draftKey,
+    subject: false,
+    message: false,
+  });
+
+  const isSubjectEdited =
+    editedFields.draftKey === draftKey && editedFields.subject;
+  const isMessageEdited =
+    editedFields.draftKey === draftKey && editedFields.message;
 
   const name = draft?.name ?? "";
   const email = draft?.email ?? "";
-  const intent = draft?.intent ?? initialIntent;
-  const subject = draft?.subject ?? initialSubject;
-  const message = draft?.message ?? initialMessage;
+  const intent = hasNonBlankDraftValue(draft?.intent)
+    ? draft.intent
+    : initialIntent;
+  const subject =
+    isSubjectEdited && draft?.subject !== undefined
+      ? draft.subject
+      : hasNonBlankDraftValue(draft?.subject)
+        ? draft.subject
+        : initialSubject;
+  const message =
+    isMessageEdited && draft?.message !== undefined
+      ? draft.message
+      : hasNonBlankDraftValue(draft?.message)
+        ? draft.message
+        : initialMessage;
 
-  const setName = (val: string) =>
-    setDraft((prev) => ({ ...(prev || defaultDraft), name: val }));
-  const setEmail = (val: string) =>
-    setDraft((prev) => ({ ...(prev || defaultDraft), email: val }));
-  const setIntent = (val: ContactIntent) =>
-    setDraft((prev) => ({ ...(prev || defaultDraft), intent: val }));
-  const setSubject = (val: string) =>
-    setDraft((prev) => ({ ...(prev || defaultDraft), subject: val }));
-  const setMessage = (val: string) =>
-    setDraft((prev) => ({ ...(prev || defaultDraft), message: val }));
+  const updateDraft = (patch: Partial<ContactFormDraft>) =>
+    setDraft((prev) => ({
+      ...(prev && typeof prev === "object" ? prev : EMPTY_DRAFT),
+      ...patch,
+    }));
+
+  const setName = (val: string) => updateDraft({ name: val });
+  const setEmail = (val: string) => updateDraft({ email: val });
+  const setIntent = (val: ContactIntent) => updateDraft({ intent: val });
+  const setSubject = (val: string) => {
+    setEditedFields((prev) =>
+      prev.draftKey === draftKey && prev.subject
+        ? prev
+        : {
+            draftKey,
+            subject: true,
+            message: prev.draftKey === draftKey ? prev.message : false,
+          }
+    );
+    updateDraft({ subject: val });
+  };
+  const setMessage = (val: string) => {
+    setEditedFields((prev) =>
+      prev.draftKey === draftKey && prev.message
+        ? prev
+        : {
+            draftKey,
+            subject: prev.draftKey === draftKey ? prev.subject : false,
+            message: true,
+          }
+    );
+    updateDraft({ message: val });
+  };
 
   const [gotcha, setGotcha] = useState(""); // Honeypot field
 
@@ -178,7 +227,8 @@ export function ContactForm({
     }
 
     setStatus("success");
-    safeRemoveItem(CONTACT_FORM_DRAFT_KEY);
+    safeRemoveItem(draftKey);
+    setEditedFields({ draftKey, subject: false, message: false });
     // The success card replaces the form, so a live region on it would be
     // mounted with its text already present and skipped by most screen
     // readers. Announce through the persistent root regions instead.
@@ -190,7 +240,8 @@ export function ContactForm({
   };
 
   const handleReset = () => {
-    safeRemoveItem(CONTACT_FORM_DRAFT_KEY);
+    safeRemoveItem(draftKey);
+    setEditedFields({ draftKey, subject: false, message: false });
     setGotcha("");
     setStatus("idle");
     setErrorMessage(null);

@@ -386,7 +386,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     } catch (err: unknown) {
       setImportError(
         (err as Error).message ||
-          "Invalid Protocol, USDM JSON, ODM XML, or CSV syntax"
+          "Invalid Protocol, USDM JSON, FHIR JSON, ODM XML, or CSV syntax"
       );
     }
   };
@@ -900,14 +900,15 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             htmlFor="export-raw-study-import-textarea"
             className="text-[11px] font-mono studio-fg-muted block"
           >
-            Or paste raw JSON / XML / CSV text directly:
+            Or paste raw JSON (Universal CRF, USDM, or HL7 FHIR R4) / XML / CSV
+            text directly:
           </label>
           <textarea
             id="export-raw-study-import-textarea"
             rows={3}
             value={importJsonText}
             onChange={(e) => setImportJsonText(e.target.value)}
-            placeholder="Paste exported StudyProtocol JSON here to load..."
+            placeholder="Paste exported StudyProtocol JSON here to load... (or USDM, HL7 FHIR R4 JSON, ODM-XML, CSV)"
             className="w-full p-3 studio-surface-subtle border studio-border-default rounded-xl text-xs font-mono studio-fg-secondary studio-focus-input focus:outline-none"
           />
         </div>

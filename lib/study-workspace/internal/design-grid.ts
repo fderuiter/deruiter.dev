@@ -33,14 +33,22 @@ function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+/** Reads a string field, returning empty string for non-strings. */
+export const textOf = text;
+
 function term(value: unknown): StudyDesignTerm | null {
   if (!isRecord(value)) return null;
   const code = text(value.code);
   return code ? { code, decode: text(value.decode) } : null;
 }
 
+/** Reads a USDM Code object into a `StudyDesignTerm`, or null when absent. */
+export const termOf = term;
+
 /** The selected design and its JSON Pointer in the working document. */
 export interface SelectedDesign {
+  readonly versionPointer: string;
+  readonly version: JsonRecord;
   readonly pointer: string;
   readonly design: JsonRecord;
 }
@@ -64,15 +72,53 @@ export function selectedDesign(workspace: StudyWorkspace): SelectedDesign {
     (design) => isRecord(design) && design.id === studyDesignId
   );
   const design = designList[designIndex];
-  if (versionIndex < 0 || designIndex < 0 || !isRecord(design)) {
+  if (
+    versionIndex < 0 ||
+    designIndex < 0 ||
+    !isRecord(version) ||
+    !isRecord(design)
+  ) {
     throw new StudyDesignError(
       `The workspace has no study design ${studyDesignId} in study version ${studyVersionId}.`
     );
   }
   return {
+    versionPointer: `/study/versions/${versionIndex}`,
+    version,
     pointer: `/study/versions/${versionIndex}/studyDesigns/${designIndex}`,
     design,
   };
+}
+
+/**
+ * Orders records linked through `previousId` and `nextId` when that chain
+ * starts once, visits every item once and agrees with itself; otherwise
+ * preserves array order and reports `broken: true`.
+ */
+export function orderedChain(items: JsonRecord[]): {
+  items: JsonRecord[];
+  broken: boolean;
+} {
+  const linked = items.some(
+    (item) =>
+      typeof item.previousId === "string" || typeof item.nextId === "string"
+  );
+  if (!linked || items.length < 2) return { items, broken: false };
+  const byId = new Map(items.map((item) => [text(item.id), item]));
+  const starts = items.filter((item) => !item.previousId);
+  const chain: JsonRecord[] = [];
+  let current = starts.length === 1 ? starts[0] : undefined;
+  while (current && !chain.includes(current)) {
+    chain.push(current);
+    const next = byId.get(text(current.nextId));
+    if (next && next.previousId !== current.id) break;
+    current = next;
+  }
+  const holds =
+    chain.length === items.length &&
+    !chain.at(-1)?.nextId &&
+    byId.size === items.length;
+  return holds ? { items: chain, broken: false } : { items, broken: true };
 }
 
 /**
@@ -85,27 +131,8 @@ export function orderedEpochs(design: JsonRecord): {
   epochs: JsonRecord[];
   broken: boolean;
 } {
-  const epochs = recordsOf(design.epochs);
-  const linked = epochs.some(
-    (epoch) =>
-      typeof epoch.previousId === "string" || typeof epoch.nextId === "string"
-  );
-  if (!linked || epochs.length < 2) return { epochs, broken: false };
-  const byId = new Map(epochs.map((epoch) => [text(epoch.id), epoch]));
-  const starts = epochs.filter((epoch) => !epoch.previousId);
-  const chain: JsonRecord[] = [];
-  let current = starts.length === 1 ? starts[0] : undefined;
-  while (current && !chain.includes(current)) {
-    chain.push(current);
-    const next = byId.get(text(current.nextId));
-    if (next && next.previousId !== current.id) break;
-    current = next;
-  }
-  const holds =
-    chain.length === epochs.length &&
-    !chain.at(-1)?.nextId &&
-    byId.size === epochs.length;
-  return holds ? { epochs: chain, broken: false } : { epochs, broken: true };
+  const ordered = orderedChain(recordsOf(design.epochs));
+  return { epochs: ordered.items, broken: ordered.broken };
 }
 
 /**

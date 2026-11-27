@@ -223,7 +223,7 @@ export const studyProtocolArbitrary: fc.Arbitrary<StudyProtocol> = fc
   })
   .map((study) => {
     // Enforce unique IDs and variable names
-    const codelistIds = study.codelists.map((c, i) => `CL_${i + 1}`);
+    const codelistIds = study.codelists.map((_c, i) => `CL_${i + 1}`);
     const codelists = study.codelists.map((c, i) => ({
       ...c,
       id: codelistIds[i],

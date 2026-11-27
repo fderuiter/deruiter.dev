@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ReactionSubmissionSchema } from "@/lib/schemas";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
+import {
+  GetCaseStudyReactionsHandler,
+  SubmitCaseStudyReactionHandler,
+  getConnectionHashFromRequest,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +27,17 @@ export const GET = createApiHandler(
     }
 
     const connectionHash = await getConnectionHashFromRequest(req);
-    const result = await CaseStudyService.getReactions(slug, connectionHash);
-    return NextResponse.json(result);
+    const result = await new GetCaseStudyReactionsHandler().execute({
+      slug,
+      connectionHash,
+    });
+    if (!result.success) {
+      return serviceFailureResponse(result);
+    }
+    return NextResponse.json({
+      success: true,
+      ...result.data,
+    });
   },
   { auth: "public" }
 );
@@ -30,17 +46,26 @@ export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
     try {
       const connectionHash = await getConnectionHashFromRequest(req);
-      const result = await CaseStudyService.submitReaction(
-        data,
-        connectionHash
-      );
+      const result = await new SubmitCaseStudyReactionHandler().execute({
+        caseStudySlug: data.caseStudySlug,
+        reactionType: data.reactionType,
+        connectionHash,
+      });
+
+      if (!result.success) {
+        return serviceFailureResponse(result, {
+          errorMessage:
+            "Reaction storage is temporarily unavailable. Your reaction remains queued for retry.",
+          logContext: "Case study reaction persistence failed:",
+        });
+      }
 
       return NextResponse.json(
         {
-          success: result.success,
-          reactionType: result.reactionType,
-          counts: result.counts,
-          userReactions: result.userReactions,
+          success: true,
+          reactionType: result.data.reactionType,
+          counts: result.data.counts,
+          userReactions: result.data.userReactions,
         },
         { status: 200 }
       );

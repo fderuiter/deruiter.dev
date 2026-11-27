@@ -8,12 +8,18 @@ import { StudyProtocol } from "../types";
 import { importStudyFromUsdm } from "./usdm-adapter";
 import { importStudyFromCdiscOdmXml } from "./odm-xml-parser";
 import { importStudyFromCsvSpec, isRedcapCsv } from "./csv-spec-parser";
+import { importStudyFromFhirQuestionnaire } from "./fhir-questionnaire";
 import { isUniversalCrfSchemaUrl } from "./universal-schema";
 
 export interface ParsedStudyFileResult {
   study: StudyProtocol;
   format:
-    "json_usdm" | "json_universal" | "xml_odm" | "csv_spec" | "csv_redcap";
+    | "json_usdm"
+    | "json_universal"
+    | "json_fhir"
+    | "xml_odm"
+    | "csv_spec"
+    | "csv_redcap";
   formatLabel: string;
   fileSize: number;
   fileName: string;
@@ -70,17 +76,49 @@ export function detectAndParseStudyFile(
     trimmed.startsWith("{") ||
     trimmed.startsWith("[")
   ) {
+    let parsedJson: unknown;
     try {
-      const parsedJson = JSON.parse(fileContent);
-      const study = importStudyFromUsdm(parsedJson);
+      parsedJson = JSON.parse(fileContent);
+    } catch (err: unknown) {
+      throw new Error(`JSON Protocol Parsing Error: ${(err as Error).message}`);
+    }
+
+    if (
+      parsedJson &&
+      typeof parsedJson === "object" &&
+      !Array.isArray(parsedJson) &&
+      (parsedJson as Record<string, unknown>).resourceType !== undefined &&
+      (parsedJson as Record<string, unknown>).resourceType !== null
+    ) {
+      try {
+        const study = importStudyFromFhirQuestionnaire(
+          parsedJson as Record<string, unknown>
+        );
+        return {
+          study,
+          format: "json_fhir",
+          formatLabel: "HL7 FHIR R4 Questionnaire",
+          fileSize: fileSize || fileContent.length,
+          fileName,
+        };
+      } catch (err: unknown) {
+        throw new Error(`HL7 FHIR R4 Parsing Error: ${(err as Error).message}`);
+      }
+    }
+
+    try {
+      const recordJson = parsedJson as Record<string, unknown>;
+      const study = importStudyFromUsdm(recordJson);
 
       // Native Universal CRF JSON also carries `$schema`, so recognise it by
       // its own schema identifier before treating `$schema` as a USDM signal.
-      const isNative = isUniversalCrfSchemaUrl(parsedJson?.$schema);
+      const isNative = isUniversalCrfSchemaUrl(
+        recordJson?.$schema as string | undefined
+      );
       const isUsdm =
         !isNative &&
         Boolean(
-          parsedJson.study || parsedJson.studyDesigns || parsedJson.$schema
+          recordJson?.study || recordJson?.studyDesigns || recordJson?.$schema
         );
       const format = isUsdm ? "json_usdm" : "json_universal";
       const formatLabel = isUsdm
@@ -129,6 +167,6 @@ export function detectAndParseStudyFile(
   }
 
   throw new Error(
-    "Unsupported file format. Supported formats: .json (USDM/Universal), .xml (CDISC ODM), or .csv (Study Specification)."
+    "Unsupported file format. Supported formats: .json (USDM/Universal/FHIR), .xml (CDISC ODM), or .csv (Study Specification)."
   );
 }

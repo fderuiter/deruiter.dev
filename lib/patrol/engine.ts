@@ -88,7 +88,7 @@ export function isSceneSafetySecured(state: ShiftState): boolean {
  * Derives progressive patient assessment state from cumulative action and vitals history.
  */
 export function deriveRevealedPatientState(
-  scenario: PatrolScenario | null,
+  _scenario: PatrolScenario | null,
   actionHistory: ScenarioAction[],
   vitalsHistory: VitalsData[] = []
 ): Partial<PatientState> {
@@ -174,7 +174,7 @@ export function deriveRevealedEnvironmentState(
  * Derives list of revealed scene actors and interviewed witnesses.
  */
 export function deriveRevealedActors(
-  scenario: PatrolScenario | null,
+  _scenario: PatrolScenario | null,
   actionHistory: ScenarioAction[]
 ): PatrolActor[] {
   const actorsMap = new Map<string, PatrolActor>();

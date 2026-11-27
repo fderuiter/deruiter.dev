@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 describe("Interactive Console API and Sandbox Event Bridge", () => {
@@ -85,7 +85,7 @@ describe("Interactive Console API and Sandbox Event Bridge", () => {
       }
 
       const terminalApi = {
-        run: (cmdText: string) => {},
+        run: () => {},
       };
       win.terminal = terminalApi;
       win.imednet = terminalApi;

@@ -8,8 +8,24 @@ import React, {
   useCallback,
 } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
-import { THEOREMS, TheoremId } from "@/lib/proof";
-import { createCustomTheorem } from "@/lib/proof-custom";
+import { getActiveHostUrl } from "@/lib/clipboard";
+import {
+  THEOREMS,
+  type Edge,
+  type ProofExportFormat,
+  type ProofNode,
+  type TheoremId,
+} from "@/lib/proof";
+import {
+  buildProofShareHash,
+  createCustomTheorem,
+  createSandboxTheorem,
+  decodeGuidedEdgesHash,
+  decodeSandboxHash,
+  encodeGuidedEdgesHash,
+  encodeSandboxHash,
+  parseProofWorkspaceJson,
+} from "@/lib/proof-custom";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { useHotkeys } from "@/hooks/useHotkeys";
@@ -93,32 +109,79 @@ export function ProofWorkspaceClient() {
   const toast = useToast();
   const { playSuccess, playAutocomplete, playHover } = useAudio();
 
-  // Theorem, tab and inspected node are derived from the hash rather than
-  // parsed from window.location on startup, so the first client render
-  // matches the SSR markup and deep links, in-app changes and Back/Forward
-  // all flow through useStudioHashParams. The custom session stays in state
-  // because it outlives the hash when the user switches to another theorem.
+  const isSandboxMode = params.mode === "sandbox";
+
   const activeTheoremId = useMemo(
     () => theoremFromHash(params.theorem),
     [params.theorem]
   );
   const hashSession = useMemo(
     () =>
-      activeTheoremId === "custom" ? readCustomSession(params.custom) : null,
-    [activeTheoremId, params.custom]
+      !isSandboxMode && activeTheoremId === "custom"
+        ? readCustomSession(params.custom)
+        : null,
+    [isSandboxMode, activeTheoremId, params.custom]
   );
-  // Seeded from the hash snapshot: empty during SSR and hydration (the
-  // adjustment below then adopts a deep link), current on a client mount.
   const [customSession, setCustomSession] = useState<CustomSession | null>(
     hashSession
   );
   const activeSession =
-    activeTheoremId === "custom" ? (hashSession ?? customSession) : null;
-  const activeTheorem = activeSession
+    !isSandboxMode && activeTheoremId === "custom"
+      ? (hashSession ?? customSession)
+      : null;
+
+  const sandboxHashDecoded = useMemo(
+    () => (isSandboxMode ? decodeSandboxHash(params.sandbox) : null),
+    [isSandboxMode, params.sandbox]
+  );
+
+  // Remembers sandbox nodes & edges across temporary switches to Guided Mode
+  const [savedSandbox, setSavedSandbox] = useState<{
+    nodes: ProofNode[];
+    edges: Edge[];
+  }>(() => ({
+    nodes: sandboxHashDecoded?.nodes ?? [],
+    edges: sandboxHashDecoded?.edges ?? [],
+  }));
+
+  const guidedBaseTheorem = activeSession
     ? activeSession.theorem
     : THEOREMS[activeTheoremId];
+
+  const guidedHashEdges = useMemo(
+    () =>
+      !isSandboxMode
+        ? decodeGuidedEdgesHash(params.edges, guidedBaseTheorem)
+        : null,
+    [isSandboxMode, params.edges, guidedBaseTheorem]
+  );
+
+  const seedTheorem = useMemo(() => {
+    if (isSandboxMode) {
+      const initialNodes = sandboxHashDecoded
+        ? sandboxHashDecoded.nodes
+        : savedSandbox.nodes;
+      const initialEdges = sandboxHashDecoded
+        ? sandboxHashDecoded.edges
+        : savedSandbox.edges;
+      return createSandboxTheorem(initialNodes, initialEdges);
+    }
+    if (guidedHashEdges !== null) {
+      return {
+        ...guidedBaseTheorem,
+        initialEdges: guidedHashEdges,
+      };
+    }
+    return guidedBaseTheorem;
+  }, [
+    isSandboxMode,
+    sandboxHashDecoded,
+    savedSandbox,
+    guidedBaseTheorem,
+    guidedHashEdges,
+  ]);
+
   const activeTab = useMemo(() => tabFromHash(params.tab), [params.tab]);
-  const inspectedNodeId = params.inspect || activeTheorem.targetNodeId;
 
   const [mobileActiveView, setMobileActiveView] = useState<
     "canvas" | "ledger" | "systems" | "fallacy" | "terminal"
@@ -127,7 +190,7 @@ export function ProofWorkspaceClient() {
 
   // Custom Studio modal state
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState(
-    activeTheoremId === "custom" && !activeSession
+    !isSandboxMode && activeTheoremId === "custom" && !activeSession
   );
   const [customPremise1, setCustomPremise1] = useState(
     customSession?.formulas[0] ?? "P"
@@ -143,6 +206,9 @@ export function ProofWorkspaceClient() {
   );
   const [customError, setCustomError] = useState<string | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportDefaultFormat, setExportDefaultFormat] =
+    useState<ProofExportFormat>("lean");
+  const [shareLimitNotice, setShareLimitNotice] = useState<string | null>(null);
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
   const [liveAnnouncement, setLiveAnnouncement] = useState("");
 
@@ -159,9 +225,6 @@ export function ProofWorkspaceClient() {
     }, 10);
   }, []);
 
-  // Toasts go through the shared ToastProvider. Most call sites already
-  // speak their own message through announceToScreenReader, so they pass
-  // announce: false and every message is spoken exactly once.
   const showToast = useCallback(
     (
       message: string,
@@ -183,19 +246,17 @@ export function ProofWorkspaceClient() {
     [setParam]
   );
 
-  const setInspectedNodeId = useCallback(
-    (nodeId: string) => {
-      setParam(
-        "inspect",
-        nodeId === activeTheorem.targetNodeId ? null : nodeId,
-        { replace: true }
-      );
+  const openExportModal = useCallback(
+    (format: ProofExportFormat = "lean", notice: string | null = null) => {
+      setExportDefaultFormat(format);
+      setShareLimitNotice(notice);
+      setIsExportModalOpen(true);
     },
-    [activeTheorem.targetNodeId, setParam]
+    []
   );
 
   const session = useProofSession({
-    theorem: activeTheorem,
+    theorem: seedTheorem,
     feedback: {
       toast: showToast,
       announce: announceToScreenReader,
@@ -204,12 +265,19 @@ export function ProofWorkspaceClient() {
       playHover,
     },
     onFallacy: () => setActiveTab("fallacy"),
-    onInspect: setInspectedNodeId,
+    onInspect: (nodeId: string) => {
+      const targetId = seedTheorem.targetNodeId;
+      setParam("inspect", nodeId === targetId ? null : nodeId, {
+        replace: true,
+      });
+    },
     onSwitchTheorem: (theoremId) => handleSwitchTheorem(theoremId),
     onSimulate: (mode) => handleStartSimulation(mode),
-    onOpenExport: () => setIsExportModalOpen(true),
+    onOpenExport: () => openExportModal("lean", null),
   });
   const { appendLog, resetGraph } = session;
+  const activeTheorem = session.activeTheorem;
+  const inspectedNodeId = params.inspect || activeTheorem.targetNodeId;
 
   const simulation = useProofSimulation({
     appendLogs: session.appendLogs,
@@ -225,35 +293,147 @@ export function ProofWorkspaceClient() {
     announce: announceToScreenReader,
     onConnect: session.connectByDrag,
     onReject: session.rejectDrag,
+    onCommitNodeMove: session.handleMoveSandboxNode,
   });
   const { resetLayout } = drag;
 
-  // When the hash moves to another theorem or custom session (a deep link
-  // after hydration, Back/Forward, or an in-app switch), adopt a shared
-  // custom session and reset the per-theorem workspace. This adjusts state
-  // during render, React's documented alternative to a sync effect, so the
-  // new theorem is never painted with the previous theorem's edges.
-  const theoremKey =
-    activeTheoremId === "custom"
-      ? `custom:${activeSession?.serialized ?? ""}`
-      : activeTheoremId;
-  const [appliedTheoremKey, setAppliedTheoremKey] = useState(theoremKey);
-  if (appliedTheoremKey !== theoremKey) {
-    setAppliedTheoremKey(theoremKey);
-    if (hashSession && hashSession.serialized !== customSession?.serialized) {
-      setCustomSession(hashSession);
-      setCustomPremise1(hashSession.formulas[0]);
-      setCustomPremise2(hashSession.formulas[1]);
-      setCustomPremise3(hashSession.formulas[2]);
-      setCustomGoal(hashSession.formulas[3]);
+  const externalStateSig = isSandboxMode
+    ? `sandbox:${params.sandbox ?? ""}`
+    : `guided:${activeTheoremId}:${activeSession?.serialized ?? ""}:${params.edges ?? ""}`;
+
+  const [appliedExternalSig, setAppliedExternalSig] =
+    useState(externalStateSig);
+  if (appliedExternalSig !== externalStateSig) {
+    const prevSig = appliedExternalSig;
+    setAppliedExternalSig(externalStateSig);
+
+    let matchesLiveSession = false;
+    if (isSandboxMode && prevSig.startsWith("sandbox:")) {
+      const liveEncoded =
+        session.nodes.length === 0 && session.edges.length === 0
+          ? ""
+          : encodeSandboxHash(session.nodes, session.edges);
+      if ((params.sandbox ?? "") === liveEncoded) {
+        matchesLiveSession = true;
+      } else if (
+        !params.sandbox &&
+        liveEncoded !== "" &&
+        buildProofShareHash({ mode: "sandbox", sandbox: liveEncoded })
+          .exceedsLimit
+      ) {
+        matchesLiveSession = true;
+      }
+    } else if (
+      !isSandboxMode &&
+      prevSig.startsWith(
+        `guided:${activeTheoremId}:${activeSession?.serialized ?? ""}:`
+      )
+    ) {
+      const liveEdges =
+        encodeGuidedEdgesHash(session.edges, guidedBaseTheorem.initialEdges) ??
+        "";
+      if ((params.edges ?? "") === liveEdges) {
+        matchesLiveSession = true;
+      }
     }
-    resetGraph(activeTheorem.initialEdges);
-    resetLayout();
-    // A custom deep link without valid formulas opens the studio to enter them.
-    if (activeTheoremId === "custom" && !activeSession) {
-      setIsCustomStudioOpen(true);
+
+    if (!matchesLiveSession) {
+      if (
+        !isSandboxMode &&
+        hashSession &&
+        hashSession.serialized !== customSession?.serialized
+      ) {
+        setCustomSession(hashSession);
+        setCustomPremise1(hashSession.formulas[0]);
+        setCustomPremise2(hashSession.formulas[1]);
+        setCustomPremise3(hashSession.formulas[2]);
+        setCustomGoal(hashSession.formulas[3]);
+      }
+      resetGraph(seedTheorem.initialEdges, seedTheorem.nodes);
+      resetLayout();
+      if (!isSandboxMode && activeTheoremId === "custom" && !activeSession) {
+        setIsCustomStudioOpen(true);
+      }
     }
   }
+
+  // Keep compact URL hash state synchronized with live edits whenever the
+  // resulting URL hash stays within the 2048-character ceiling.
+  useEffect(() => {
+    if (isSandboxMode) {
+      const encodedSandbox =
+        session.nodes.length === 0 && session.edges.length === 0
+          ? null
+          : encodeSandboxHash(session.nodes, session.edges);
+      const candidate = buildProofShareHash({
+        mode: "sandbox",
+        sandbox: encodedSandbox,
+        tab: params.tab ?? null,
+        inspect: params.inspect ?? null,
+      });
+      if (candidate.exceedsLimit) {
+        if (params.sandbox) {
+          setParams(
+            {
+              mode: "sandbox",
+              sandbox: null,
+              theorem: null,
+              custom: null,
+              edges: null,
+            },
+            { replace: true }
+          );
+        }
+        return;
+      }
+      if ((params.sandbox ?? "") !== (encodedSandbox ?? "")) {
+        setParams(
+          {
+            mode: "sandbox",
+            sandbox: encodedSandbox,
+            theorem: null,
+            custom: null,
+            edges: null,
+          },
+          { replace: true }
+        );
+      }
+      return;
+    }
+
+    const encodedEdges = encodeGuidedEdgesHash(
+      session.edges,
+      guidedBaseTheorem.initialEdges
+    );
+    const candidate = buildProofShareHash({
+      theorem: activeTheoremId === "modus-ponens" ? null : activeTheoremId,
+      custom:
+        activeTheoremId === "custom"
+          ? (activeSession?.serialized ?? null)
+          : null,
+      edges: encodedEdges,
+      tab: params.tab ?? null,
+      inspect: params.inspect ?? null,
+    });
+    if (candidate.exceedsLimit) return;
+
+    if ((params.edges ?? "") !== (encodedEdges ?? "")) {
+      setParam("edges", encodedEdges, { replace: true });
+    }
+  }, [
+    isSandboxMode,
+    session.nodes,
+    session.edges,
+    guidedBaseTheorem.initialEdges,
+    activeTheoremId,
+    activeSession?.serialized,
+    params.sandbox,
+    params.edges,
+    params.tab,
+    params.inspect,
+    setParam,
+    setParams,
+  ]);
 
   const { copy: copyShareLink } = useClipboard({
     successMessage:
@@ -271,14 +451,217 @@ export function ProofWorkspaceClient() {
   });
 
   const handleCopyShareLink = () => {
-    if (typeof window !== "undefined") {
-      copyShareLink(window.location.href);
+    if (typeof window === "undefined") return;
+
+    const candidateEntries: Record<string, string | null | undefined> =
+      isSandboxMode
+        ? {
+            mode: "sandbox",
+            sandbox:
+              session.nodes.length === 0 && session.edges.length === 0
+                ? null
+                : encodeSandboxHash(session.nodes, session.edges),
+            tab: params.tab ?? null,
+            inspect: params.inspect ?? null,
+          }
+        : {
+            theorem:
+              activeTheoremId === "modus-ponens" ? null : activeTheoremId,
+            custom:
+              activeTheoremId === "custom"
+                ? (activeSession?.serialized ?? null)
+                : null,
+            edges: encodeGuidedEdgesHash(
+              session.edges,
+              guidedBaseTheorem.initialEdges
+            ),
+            tab: params.tab ?? null,
+            inspect: params.inspect ?? null,
+          };
+
+    const candidate = buildProofShareHash(candidateEntries);
+    if (candidate.exceedsLimit) {
+      const limitMsg =
+        "This proof graph exceeds the 2,048-character URL limit. Download a .proof.json workspace file to save or share it.";
+      showToast(limitMsg, "info", { announce: false });
+      announceToScreenReader(limitMsg);
+      openExportModal("proof.json", limitMsg);
+      return;
     }
+
+    if (isSandboxMode) {
+      setAppliedExternalSig(`sandbox:${candidateEntries.sandbox ?? ""}`);
+      setParams(
+        {
+          mode: "sandbox",
+          sandbox: candidateEntries.sandbox ?? null,
+          theorem: null,
+          custom: null,
+          edges: null,
+        },
+        { replace: true }
+      );
+    } else {
+      setAppliedExternalSig(
+        `guided:${activeTheoremId}:${activeSession?.serialized ?? ""}:${candidateEntries.edges ?? ""}`
+      );
+      setParam("edges", candidateEntries.edges ?? null, { replace: true });
+    }
+
+    const shareUrl = `${getActiveHostUrl()}${window.location.pathname}${candidate.hash}`;
+    copyShareLink(shareUrl);
   };
 
+  const handleToggleSandboxMode = useCallback(() => {
+    abortSimulation();
+    resetLayout();
+    if (isSandboxMode) {
+      setSavedSandbox({
+        nodes: session.nodes,
+        edges: session.edges,
+      });
+      const nextTh = activeSession
+        ? activeSession.theorem
+        : THEOREMS[activeTheoremId];
+      setAppliedExternalSig(
+        `guided:${activeTheoremId}:${activeSession?.serialized ?? ""}:`
+      );
+      resetGraph(nextTh.initialEdges, nextTh.nodes);
+      setParams(
+        {
+          mode: null,
+          sandbox: null,
+          theorem: activeTheoremId === "modus-ponens" ? null : activeTheoremId,
+          custom:
+            activeTheoremId === "custom"
+              ? (activeSession?.serialized ?? null)
+              : null,
+          edges: null,
+          inspect: null,
+        },
+        { replace: false }
+      );
+      showToast(`Returned to Guided Mode (${nextTh.title}).`, "info", {
+        announce: false,
+      });
+      announceToScreenReader(`Returned to Guided Mode, ${nextTh.title}.`);
+      return;
+    }
+
+    const restoredNodes = savedSandbox.nodes;
+    const restoredEdges = savedSandbox.edges;
+    const encoded =
+      restoredNodes.length === 0 && restoredEdges.length === 0
+        ? null
+        : encodeSandboxHash(restoredNodes, restoredEdges);
+    const candidate = buildProofShareHash({
+      mode: "sandbox",
+      sandbox: encoded,
+    });
+    const safeSandboxParam = candidate.exceedsLimit ? null : encoded;
+
+    setAppliedExternalSig(`sandbox:${safeSandboxParam ?? ""}`);
+    resetGraph(restoredEdges, restoredNodes);
+    setParams(
+      {
+        mode: "sandbox",
+        sandbox: safeSandboxParam,
+        theorem: null,
+        custom: null,
+        edges: null,
+        inspect: null,
+      },
+      { replace: false }
+    );
+    try {
+      playAutocomplete();
+    } catch {}
+    showToast(
+      "Entered Sandbox Mode. Add premises and goals to derive steps freely.",
+      "info",
+      { announce: false }
+    );
+    announceToScreenReader("Entered Sandbox Mode.");
+  }, [
+    abortSimulation,
+    resetLayout,
+    isSandboxMode,
+    session.nodes,
+    session.edges,
+    savedSandbox,
+    activeSession,
+    activeTheoremId,
+    resetGraph,
+    setParams,
+    setAppliedExternalSig,
+    showToast,
+    announceToScreenReader,
+    playAutocomplete,
+  ]);
+
+  const handleImportWorkspace = useCallback(
+    (rawInput: string | Uint8Array): { ok: boolean; error?: string } => {
+      try {
+        const imported = parseProofWorkspaceJson(rawInput);
+        abortSimulation();
+        resetLayout();
+        setSavedSandbox({
+          nodes: imported.nodes,
+          edges: imported.edges,
+        });
+        const encoded =
+          imported.nodes.length === 0 && imported.edges.length === 0
+            ? null
+            : encodeSandboxHash(imported.nodes, imported.edges);
+        const candidate = buildProofShareHash({
+          mode: "sandbox",
+          sandbox: encoded,
+        });
+        const safeSandboxParam = candidate.exceedsLimit ? null : encoded;
+        setAppliedExternalSig(`sandbox:${safeSandboxParam ?? ""}`);
+        resetGraph(imported.edges, imported.nodes);
+        setParams(
+          {
+            mode: "sandbox",
+            sandbox: safeSandboxParam,
+            theorem: null,
+            custom: null,
+            edges: null,
+          },
+          { replace: false }
+        );
+        setIsExportModalOpen(false);
+        setShareLimitNotice(null);
+        try {
+          playSuccess();
+        } catch {}
+        const msg = `Imported workspace (${imported.nodes.length} nodes, ${imported.edges.length} edges).`;
+        showToast(msg, "success", { announce: false });
+        announceToScreenReader(msg);
+        appendLog("import", "success", `✔ ${msg}`);
+        return { ok: true };
+      } catch (error) {
+        const errMsg =
+          error instanceof Error
+            ? error.message
+            : "Invalid .proof.json workspace file.";
+        return { ok: false, error: errMsg };
+      }
+    },
+    [
+      abortSimulation,
+      resetLayout,
+      resetGraph,
+      setParams,
+      setAppliedExternalSig,
+      playSuccess,
+      showToast,
+      announceToScreenReader,
+      appendLog,
+    ]
+  );
+
   const toggleSnapping = useCallback(() => {
-    // The toast and announcement run beside the state update, never inside
-    // a setState updater (AGENTS.md section 4).
     const next = !isSnappingEnabled;
     setIsSnappingEnabled(next);
     try {
@@ -298,8 +681,6 @@ export function ProofWorkspaceClient() {
     );
   }, [isSnappingEnabled, playAutocomplete, showToast, announceToScreenReader]);
 
-  // G toggles snapping, except while typing or inside a keyboard boundary
-  // such as the terminal.
   useHotkeys(SNAPPING_HOTKEYS, () => toggleSnapping(), {
     preventDefault: true,
   });
@@ -344,9 +725,6 @@ export function ProofWorkspaceClient() {
     }
   }, [session.consoleLogs]);
 
-  // Ctrl+Backslash and Ctrl+Backquote open the console, focus its input,
-  // or close it when the input already has focus. They work from inside
-  // inputs and the terminal's keyboard boundary.
   useHotkeys(
     CONSOLE_HOTKEYS,
     () => {
@@ -367,7 +745,7 @@ export function ProofWorkspaceClient() {
   );
 
   function handleSwitchTheorem(newTheoremId: TheoremId) {
-    if (newTheoremId === activeTheoremId) return;
+    if (!isSandboxMode && newTheoremId === activeTheoremId) return;
     if (newTheoremId === "custom" && !customSession) {
       setIsCustomStudioOpen(true);
       return;
@@ -378,18 +756,30 @@ export function ProofWorkspaceClient() {
         : THEOREMS[newTheoremId];
     if (!nextTh) return;
 
+    if (isSandboxMode) {
+      setSavedSandbox({
+        nodes: session.nodes,
+        edges: session.edges,
+      });
+    }
+
     abortSimulation();
-    resetGraph(nextTh.initialEdges);
+    const nextCustomSerialized =
+      newTheoremId === "custom" ? (customSession?.serialized ?? null) : null;
+    setAppliedExternalSig(
+      `guided:${newTheoremId}:${nextCustomSerialized ?? ""}:`
+    );
+    resetGraph(nextTh.initialEdges, nextTh.nodes);
     resetLayout();
 
     setParams(
       {
+        mode: null,
+        sandbox: null,
         theorem: newTheoremId === "modus-ponens" ? null : newTheoremId,
         inspect: null,
-        custom:
-          newTheoremId === "custom"
-            ? (customSession?.serialized ?? null)
-            : null,
+        edges: null,
+        custom: nextCustomSerialized,
       },
       { replace: false }
     );
@@ -411,6 +801,19 @@ export function ProofWorkspaceClient() {
 
   function handleStartSimulation(mode: "normal" | "loop" = "normal") {
     if (simulation.isSimulating) return;
+    if (isSandboxMode) {
+      simulation.startSimulation({
+        mode,
+        theoremId: "custom",
+        sandboxSteps: activeTheorem.simulationSteps,
+      });
+      appendLog(
+        "sim-start",
+        "info",
+        `Starting Proof Graph Simulation for [${activeTheorem.title}] in mode '${mode}'...`
+      );
+      return;
+    }
     if (activeTheoremId === "custom" && !customSession) {
       appendLog(
         "sim-unavailable",
@@ -433,7 +836,15 @@ export function ProofWorkspaceClient() {
 
   const handleResetLayout = () => {
     resetLayout();
-    resetGraph(activeTheorem.initialEdges);
+    if (isSandboxMode) {
+      session.handleClearSandbox();
+      return;
+    }
+    setAppliedExternalSig(
+      `guided:${activeTheoremId}:${activeSession?.serialized ?? ""}:`
+    );
+    resetGraph(guidedBaseTheorem.initialEdges, guidedBaseTheorem.nodes);
+    setParam("edges", null, { replace: true });
     try {
       playAutocomplete();
     } catch {}
@@ -455,11 +866,19 @@ export function ProofWorkspaceClient() {
       const serialized = JSON.stringify(formulas);
       abortSimulation();
       setCustomSession({ serialized, formulas, theorem });
-      resetGraph([]);
+      setAppliedExternalSig(`guided:custom:${serialized}:`);
+      resetGraph([], theorem.nodes);
       resetLayout();
       setCustomError(null);
       setParams(
-        { theorem: "custom", custom: serialized, inspect: null },
+        {
+          mode: null,
+          sandbox: null,
+          theorem: "custom",
+          custom: serialized,
+          edges: null,
+          inspect: null,
+        },
         { replace: false }
       );
       setIsCustomStudioOpen(false);
@@ -562,10 +981,18 @@ export function ProofWorkspaceClient() {
           edges={session.edges}
           handleCopyShareLink={handleCopyShareLink}
           setIsCustomStudioOpen={setIsCustomStudioOpen}
-          setIsExportModalOpen={setIsExportModalOpen}
+          setIsExportModalOpen={(open) => {
+            if (open) {
+              openExportModal("lean", null);
+            } else {
+              setIsExportModalOpen(false);
+            }
+          }}
           mobileActiveView={mobileActiveView}
           setMobileActiveView={setMobileActiveView}
           setActiveTab={setActiveTab}
+          isSandboxMode={isSandboxMode}
+          onToggleSandboxMode={handleToggleSandboxMode}
         />
 
         {/* Workspace Layout: Canvas on Left/Center, Ledger/Inspector on Right */}
@@ -603,7 +1030,15 @@ export function ProofWorkspaceClient() {
             svgCanvasRef={svgCanvasRef}
             mobileActiveView={mobileActiveView}
             handleRollback={session.handleRollback}
+            onDismissFallacy={() => session.setCurrentFallacy(null)}
             ruleMatches={session.ruleMatches}
+            onAddSandboxNode={session.handleAddSandboxNode}
+            onUpdateSandboxNode={session.handleUpdateSandboxNode}
+            onDeleteSandboxNode={session.handleDeleteSandboxNode}
+            onClearSandbox={session.handleClearSandbox}
+            onLoadSandboxStarter={session.handleLoadSandboxStarter}
+            onCheckCountermodel={session.handleCheckCountermodel}
+            onOpenImportExport={() => openExportModal("proof.json", null)}
           />
 
           <ProofLedger
@@ -637,14 +1072,21 @@ export function ProofWorkspaceClient() {
 
         <ProofExportModal
           isOpen={isExportModalOpen}
-          onClose={() => setIsExportModalOpen(false)}
+          onClose={() => {
+            setIsExportModalOpen(false);
+            setShareLimitNotice(null);
+          }}
           activeTheoremId={activeTheoremId}
           theorem={
-            activeTheoremId !== "custom" || customSession
+            isSandboxMode || activeTheoremId !== "custom" || customSession
               ? activeTheorem
               : undefined
           }
           edges={session.edges}
+          nodeOffsets={drag.nodeOffsets}
+          defaultFormat={exportDefaultFormat}
+          shareLimitNotice={shareLimitNotice}
+          onImportWorkspace={handleImportWorkspace}
         />
 
         <ProofCustomModal

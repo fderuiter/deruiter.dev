@@ -136,6 +136,8 @@ export interface TheoremDefinition {
   simulationSteps: string[];
   leanCode: string;
   latexCode: string;
+  /** True when the workspace is operating as an open freeform sandbox graph. */
+  isSandbox?: boolean;
 }
 
 export type PropAst =
@@ -255,8 +257,29 @@ export const INFERENCE_RULES: RuleDefinition[] = [
     symbol: "∧-Elim",
     template: "P ∧ Q ⊢ P",
     arity: 1,
-    description: "Extracts an individual component from a conjunction.",
+    description: "Extracts the left component from a conjunction.",
     softwareMeaning: "Validating individual shard health invariants.",
+  },
+  {
+    id: "and_elim_r",
+    name: "Conjunction Elimination (Right)",
+    symbol: "∧-Elim₂",
+    template: "P ∧ Q ⊢ Q",
+    arity: 1,
+    description: "Extracts the right component from a conjunction.",
+    softwareMeaning:
+      "Extracting secondary replica acknowledgement from quorum.",
+  },
+  {
+    id: "dne",
+    name: "Double Negation Elimination",
+    symbol: "DNE",
+    template: "¬¬P ⊢ P",
+    arity: 1,
+    description:
+      "Eliminates a double negation to recover the affirmative proposition.",
+    softwareMeaning:
+      "Recovering liveness guarantee after refuting fault persistence.",
   },
   {
     id: "raa",
@@ -2434,16 +2457,270 @@ export function getSuggestion(
 }
 
 /**
- * Evaluates proof logical completion status based on graph edges and ASTs.
+ * Metadata describing the inference step that established a proven sandbox node.
  */
+export interface SandboxDerivationStepInfo {
+  ruleId: string;
+  ruleName: string;
+  ruleSymbol: string;
+  sourceIds: string[];
+}
+
+function resolveNodeAst(node: ProofNode | undefined): PropAst | null {
+  if (!node) return null;
+  return node.ast ?? parseFormula(node.label);
+}
+
+/**
+ * Finds a valid rule derivation for `targetNode` from currently proven incoming source nodes.
+ */
+export function findValidSandboxDerivation(
+  targetNode: ProofNode,
+  edges: Edge[],
+  nodes: ProofNode[],
+  provenIds: ReadonlySet<string>
+): SandboxDerivationStepInfo | null {
+  const targetAst = resolveNodeAst(targetNode);
+  if (!targetAst) return null;
+
+  const incoming = edges.filter(
+    (e) => e.target === targetNode.id && provenIds.has(e.source)
+  );
+  if (incoming.length === 0) return null;
+
+  const provenSources: ProofNode[] = [];
+  const seen = new Set<string>();
+  for (const edge of incoming) {
+    if (seen.has(edge.source)) continue;
+    const src = nodes.find((n) => n.id === edge.source);
+    if (src) {
+      seen.add(src.id);
+      provenSources.push(src);
+    }
+  }
+
+  // Unary inference rules
+  for (const src of provenSources) {
+    const srcAst = resolveNodeAst(src);
+    if (!srcAst) continue;
+    for (const rule of INFERENCE_RULES) {
+      if (rule.arity !== 1) continue;
+      const res = applyRuleToAsts(rule.id, [srcAst]);
+      if (
+        res.success &&
+        res.resultAst &&
+        areAstsEqual(res.resultAst, targetAst)
+      ) {
+        return {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          ruleSymbol: rule.symbol,
+          sourceIds: [src.id],
+        };
+      }
+    }
+  }
+
+  // Binary inference rules
+  for (let i = 0; i < provenSources.length; i++) {
+    for (let j = 0; j < provenSources.length; j++) {
+      if (i === j) continue;
+      const s1 = provenSources[i];
+      const s2 = provenSources[j];
+      const ast1 = resolveNodeAst(s1);
+      const ast2 = resolveNodeAst(s2);
+      if (!ast1 || !ast2) continue;
+      for (const rule of INFERENCE_RULES) {
+        if (rule.arity !== 2) continue;
+        const res = applyRuleToAsts(rule.id, [ast1, ast2]);
+        if (
+          res.success &&
+          res.resultAst &&
+          areAstsEqual(res.resultAst, targetAst)
+        ) {
+          return {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            ruleSymbol: rule.symbol,
+            sourceIds: [s1.id, s2.id],
+          };
+        }
+      }
+    }
+  }
+
+  // Goal reiteration when a proven node already matches a conclusion formula
+  if (targetNode.type === "conclusion") {
+    for (const src of provenSources) {
+      const srcAst = resolveNodeAst(src);
+      if (srcAst && areAstsEqual(srcAst, targetAst)) {
+        return {
+          ruleId: "reit",
+          ruleName: "Reiteration",
+          ruleSymbol: "Reit",
+          sourceIds: [src.id],
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Computes the fixpoint set of proven node IDs and their supporting derivations in Sandbox Mode.
+ */
+export function computeSandboxProvenMap(
+  edges: Edge[],
+  theorem: Pick<TheoremDefinition, "nodes">
+): Map<string, SandboxDerivationStepInfo | null> {
+  const proven = new Map<string, SandboxDerivationStepInfo | null>();
+  for (const node of theorem.nodes) {
+    if (node.type === "premise") {
+      proven.set(node.id, null);
+    }
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const provenIds = new Set(proven.keys());
+    for (const node of theorem.nodes) {
+      if (proven.has(node.id)) continue;
+      const derivation = findValidSandboxDerivation(
+        node,
+        edges,
+        theorem.nodes,
+        provenIds
+      );
+      if (derivation) {
+        proven.set(node.id, derivation);
+        changed = true;
+      }
+    }
+  }
+
+  return proven;
+}
+
+/**
+ * Computes the set of proven node IDs in a sandbox theorem graph.
+ */
+export function computeSandboxProvenNodeIds(
+  edges: Edge[],
+  theorem: Pick<TheoremDefinition, "nodes">
+): Set<string> {
+  return new Set(computeSandboxProvenMap(edges, theorem).keys());
+}
+
+function hasDirectedPath(fromId: string, toId: string, edges: Edge[]): boolean {
+  const visited = new Set<string>();
+  const stack = [fromId];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    if (current === toId) return true;
+    if (visited.has(current)) continue;
+    visited.add(current);
+    for (const edge of edges) {
+      if (edge.source === current && !visited.has(edge.target)) {
+        stack.push(edge.target);
+      }
+    }
+  }
+  return false;
+}
+
+function findMatchingSandboxRuleForEdge(
+  sourceNode: ProofNode,
+  targetNode: ProofNode,
+  edges: Edge[],
+  nodes: ProofNode[]
+):
+  | RuleDefinition
+  | { id: string; name: string; symbol: string; template: string }
+  | null {
+  if (targetNode.type === "premise") return null;
+  const sAst = resolveNodeAst(sourceNode);
+  const tAst = resolveNodeAst(targetNode);
+  if (!sAst || !tAst) return null;
+
+  // Unary match
+  for (const rule of INFERENCE_RULES) {
+    if (rule.arity !== 1) continue;
+    const res = applyRuleToAsts(rule.id, [sAst]);
+    if (res.success && res.resultAst && areAstsEqual(res.resultAst, tAst)) {
+      return rule;
+    }
+  }
+
+  // Reiteration to a goal node
+  if (targetNode.type === "conclusion" && areAstsEqual(sAst, tAst)) {
+    return {
+      id: "reit",
+      name: "Reiteration",
+      symbol: "Reit",
+      template: "P ⊢ P",
+    };
+  }
+
+  // Binary match: prefer existing incoming partner on targetNode if one is already wired
+  const existingPartners = edges
+    .filter((e) => e.target === targetNode.id && e.source !== sourceNode.id)
+    .map((e) => nodes.find((n) => n.id === e.source))
+    .filter((n): n is ProofNode => Boolean(n));
+
+  const candidatePeers =
+    existingPartners.length > 0
+      ? existingPartners
+      : nodes.filter(
+          (n) =>
+            n.id !== sourceNode.id &&
+            n.id !== targetNode.id &&
+            !hasDirectedPath(targetNode.id, n.id, edges)
+        );
+
+  for (const peer of candidatePeers) {
+    const pAst = resolveNodeAst(peer);
+    if (!pAst) continue;
+    for (const rule of INFERENCE_RULES) {
+      if (rule.arity !== 2) continue;
+      const r1 = applyRuleToAsts(rule.id, [sAst, pAst]);
+      if (r1.success && r1.resultAst && areAstsEqual(r1.resultAst, tAst)) {
+        return rule;
+      }
+      const r2 = applyRuleToAsts(rule.id, [pAst, sAst]);
+      if (r2.success && r2.resultAst && areAstsEqual(r2.resultAst, tAst)) {
+        return rule;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function evaluateProofStatus(
   edges: Edge[],
   theoremId: TheoremId | TheoremDefinition = "modus-ponens"
-): { isC_Proven: boolean; isE_Proven: boolean } {
+): { isC_Proven: boolean; isE_Proven: boolean; provenNodeIds?: string[] } {
   const th =
     typeof theoremId === "object"
       ? theoremId
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+
+  if (th.isSandbox) {
+    const provenSet = computeSandboxProvenNodeIds(edges, th);
+    const interNodes = th.nodes.filter((n) => n.type === "intermediate");
+    const goalNodes = th.nodes.filter((n) => n.type === "conclusion");
+    const isC_Proven =
+      interNodes.length > 0 && interNodes.every((n) => provenSet.has(n.id));
+    const isE_Proven =
+      goalNodes.length > 0 && goalNodes.every((n) => provenSet.has(n.id));
+    return {
+      isC_Proven,
+      isE_Proven,
+      provenNodeIds: Array.from(provenSet),
+    };
+  }
 
   const [req1, req2] = th.intermediateRequires;
   const hasReq1ToInter = edges.some(
@@ -2494,6 +2771,53 @@ export function canConnect(
     return { allowed: false, reason: "Cannot connect a node to itself." };
   }
 
+  if (th.isSandbox) {
+    const sourceNode = th.nodes.find((n) => n.id.toUpperCase() === s);
+    const targetNode = th.nodes.find((n) => n.id.toUpperCase() === t);
+    if (!sourceNode || !targetNode) {
+      return {
+        allowed: false,
+        reason: `Node ${sourceId} or Node ${targetId} does not exist on the canvas.`,
+      };
+    }
+    const alreadyWired = edges.some(
+      (e) =>
+        (e.source.toUpperCase() === s && e.target.toUpperCase() === t) ||
+        (e.source.toUpperCase() === t && e.target.toUpperCase() === s)
+    );
+    if (alreadyWired) {
+      return {
+        allowed: false,
+        reason: `Node ${sourceNode.id} and Node ${targetNode.id} are already connected.`,
+      };
+    }
+    if (targetNode.type === "premise") {
+      return {
+        allowed: false,
+        reason: `Node ${targetNode.id} is a given premise and cannot receive incoming inference edges.`,
+      };
+    }
+    if (hasDirectedPath(targetNode.id, sourceNode.id, edges)) {
+      return {
+        allowed: false,
+        reason: `Connecting Node ${sourceNode.id} to Node ${targetNode.id} would introduce a dependency cycle.`,
+      };
+    }
+    const rule = findMatchingSandboxRuleForEdge(
+      sourceNode,
+      targetNode,
+      edges,
+      th.nodes
+    );
+    if (!rule) {
+      return {
+        allowed: false,
+        reason: `No valid inference rule derives Node ${targetNode.id} (${targetNode.label}) from Node ${sourceNode.id} (${sourceNode.label}).`,
+      };
+    }
+    return { allowed: true };
+  }
+
   const alreadyConnected = edges.some(
     (e) =>
       (e.source === s && e.target === t) || (e.source === t && e.target === s)
@@ -2527,34 +2851,86 @@ export function getFallacyDiagnosis(
 ): FallacyDiagnosis {
   const s = sourceId.toUpperCase();
   const t = targetId.toUpperCase();
-  if (typeof _theoremId === "object" && _theoremId.id === "custom") {
-    const source = _theoremId.nodes.find((node) => node.id === s);
-    const target = _theoremId.nodes.find((node) => node.id === t);
-    if (source?.ast && target?.ast) {
-      const premises = [
+  if (typeof _theoremId === "object" && _theoremId.id === "custom" && s !== t) {
+    const source = _theoremId.nodes.find((node) => node.id.toUpperCase() === s);
+    const target = _theoremId.nodes.find((node) => node.id.toUpperCase() === t);
+    const sourceAst = _theoremId.isSandbox
+      ? resolveNodeAst(source)
+      : source?.ast;
+    const targetAst = _theoremId.isSandbox
+      ? resolveNodeAst(target)
+      : target?.ast;
+    if (source && target && sourceAst && targetAst) {
+      const partnerNodes = _theoremId.isSandbox
+        ? _edges
+            .filter(
+              (e) =>
+                e.target.toUpperCase() === t && e.source.toUpperCase() !== s
+            )
+            .map((e) =>
+              _theoremId.nodes.find(
+                (n) => n.id.toUpperCase() === e.source.toUpperCase()
+              )
+            )
+            .filter((n): n is ProofNode => Boolean(n && resolveNodeAst(n)))
+        : [];
+      const premises: FallacyFormulaAst[] = [
         {
           label: source.label,
-          ast: source.ast,
+          ast: sourceAst,
           description: source.description,
         },
+        ...partnerNodes.map((partner) => ({
+          label: partner.label,
+          ast: resolveNodeAst(partner)!,
+          description: partner.description,
+        })),
       ];
-      const conclusion = {
+      const conclusion: FallacyFormulaAst = {
         label: target.label,
-        ast: target.ast,
+        ast: targetAst,
         description: target.description,
       };
-      const table = generateTruthTable(premises, conclusion);
+      const allVars = new Set<string>();
+      premises.forEach((p) =>
+        extractVariables(p.ast).forEach((v) => allVars.add(v))
+      );
+      extractVariables(conclusion.ast).forEach((v) => allVars.add(v));
+      const boundedPremises =
+        allVars.size <= 6
+          ? premises
+          : [
+              {
+                label: source.label,
+                ast: { type: "var", name: "P" } as PropAst,
+                description: source.description,
+              },
+            ];
+      const boundedConclusion =
+        allVars.size <= 6
+          ? conclusion
+          : {
+              label: target.label,
+              ast: { type: "var", name: "Q" } as PropAst,
+              description: target.description,
+            };
+      const table = generateTruthTable(boundedPremises, boundedConclusion);
       return {
-        fallacyName: "Unsupported custom connection",
-        formalFormula: `${source.label} ⊢ ${target.label}`,
-        plainEnglish:
-          "Use the validated intermediate and goal dependencies; a single edge does not establish the required inference.",
+        fallacyName: _theoremId.isSandbox
+          ? "Invalid Sandbox Deduction"
+          : "Unsupported custom connection",
+        formalFormula: _theoremId.isSandbox
+          ? `${premises.map((p) => p.label).join(", ")} ⊬ ${target.label}`
+          : `${source.label} ⊢ ${target.label}`,
+        plainEnglish: _theoremId.isSandbox
+          ? `Selected premise(${premises.map((p) => p.label).join(", ")}) cannot establish ${target.label} via a single sound inference step.`
+          : "Use the validated intermediate and goal dependencies; a single edge does not establish the required inference.",
         softwareAnalogy:
           "A dependent operation needs all of its prerequisites.",
-        premises,
-        conclusion,
-        sourceId: s,
-        targetId: t,
+        premises: boundedPremises,
+        conclusion: boundedConclusion,
+        sourceId: source.id,
+        targetId: target.id,
         ...table,
       };
     }
@@ -2738,6 +3114,46 @@ export function getNextTacticHint(
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const { isE_Proven } = evaluateProofStatus(edges, theoremId);
 
+  if (th.isSandbox) {
+    const premises = th.nodes.filter((n) => n.type === "premise");
+    const goals = th.nodes.filter((n) => n.type === "conclusion");
+    if (isE_Proven) {
+      return {
+        stepNumber: Math.max(1, th.nodes.length),
+        title: "Q.E.D. Sandbox Goal Fully Discharged!",
+        hint: "Every target goal on the sandbox canvas is established from given premises through valid inference steps.",
+        suggestedRule: "Q.E.D.",
+        isCompleted: true,
+      };
+    }
+    if (premises.length === 0) {
+      return {
+        stepNumber: 1,
+        title: "Add Sandbox Premises",
+        hint: "Use Add Premise in the sandbox bar to place initial propositions on the canvas.",
+        isCompleted: false,
+      };
+    }
+    if (goals.length === 0) {
+      return {
+        stepNumber: 1,
+        title: "Explore Forward Tactics or Add a Goal",
+        hint: "Select 1 or 2 cards and click a Rule Palette chip to spawn intermediate derivations, or add a Goal card to track completion.",
+        isCompleted: false,
+      };
+    }
+    return {
+      stepNumber: Math.max(
+        1,
+        th.nodes.filter((n) => n.type === "intermediate").length + 1
+      ),
+      title: `Derive Goal ${goals.map((g) => g.label).join(", ")}`,
+      hint: "Select 1 or 2 proven cards and click an applicable Rule Palette chip to spawn intermediate steps toward the goal, or run Check Countermodel.",
+      suggestedTarget: goals[0]?.id,
+      isCompleted: false,
+    };
+  }
+
   if (isE_Proven) {
     return {
       stepNumber: 3,
@@ -2850,6 +3266,71 @@ export function getDeductionLedger(
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const { isC_Proven, isE_Proven } = evaluateProofStatus(edges, theoremId);
 
+  if (th.isSandbox) {
+    const provenMap = computeSandboxProvenMap(edges, th);
+    const orderedNodes = [
+      ...th.nodes.filter((n) => n.type === "premise"),
+      ...th.nodes.filter((n) => n.type === "intermediate"),
+      ...th.nodes.filter((n) => n.type === "conclusion"),
+    ];
+    const stepByNodeId = new Map<string, number>();
+    orderedNodes.forEach((node, idx) => {
+      stepByNodeId.set(node.id, idx + 1);
+    });
+
+    return orderedNodes.map((node, idx) => {
+      const stepNumber = idx + 1;
+      if (node.type === "premise") {
+        return {
+          stepNumber,
+          formula: node.label,
+          rule: "Premise",
+          premises: "Given",
+          plainEnglish:
+            node.description || "Sandbox premise asserted as given.",
+          isProven: true,
+          isGiven: true,
+          nodeId: node.id,
+          isDeletable: false,
+        };
+      }
+
+      const derivation = provenMap.get(node.id) ?? null;
+      const incoming = edges.filter((e) => e.target === node.id);
+      const sourceIds = derivation
+        ? derivation.sourceIds
+        : incoming.map((e) => e.source);
+      const lineNumbers = sourceIds
+        .map((id) => stepByNodeId.get(id))
+        .filter((num): num is number => typeof num === "number");
+      const premisesLabel =
+        lineNumbers.length > 0
+          ? `Lines [${lineNumbers.join(", ")}]`
+          : "Pending";
+      const isNodeProven = provenMap.has(node.id);
+
+      return {
+        stepNumber,
+        formula: node.label,
+        rule:
+          derivation?.ruleName ||
+          node.ruleUsed ||
+          (node.type === "conclusion" ? "Target Goal" : "Derived Step"),
+        premises: premisesLabel,
+        plainEnglish:
+          node.meaning ||
+          (node.type === "conclusion"
+            ? "Sandbox target goal proposition."
+            : "Dynamically derived intermediate proposition."),
+        isProven: isNodeProven,
+        nodeId: node.id,
+        isDeletable:
+          node.type === "intermediate" ||
+          (node.type === "conclusion" && incoming.length > 0),
+      };
+    });
+  }
+
   const nA = th.nodes.find((n) => n.id === "A");
   const nB = th.nodes.find((n) => n.id === "B");
   const nC = th.nodes.find((n) => n.id === "C");
@@ -2920,11 +3401,148 @@ export function getDeductionLedger(
 export interface PruneResult {
   success: boolean;
   newEdges: Edge[];
+  newNodes?: ProofNode[];
   prunedCount: number;
+  removedNodeIds?: string[];
   prunedNodeId?: string;
   prunedStepNumber?: number;
   targetLabel?: string;
   reason: string;
+}
+
+/**
+ * Cascade-prunes a node or derived step in a sandbox proof graph, removing
+ * dependent downstream intermediate nodes and invalidated edges.
+ */
+export function cascadePruneSandboxGraph(
+  targetNodeId: string,
+  nodes: ProofNode[],
+  edges: Edge[],
+  options: {
+    deleteGoalNode?: boolean;
+    deletePremiseNode?: boolean;
+  } = {}
+): PruneResult {
+  const targetNode = nodes.find(
+    (n) => n.id.toUpperCase() === targetNodeId.toUpperCase()
+  );
+  if (!targetNode) {
+    return {
+      success: false,
+      newEdges: edges,
+      newNodes: nodes,
+      prunedCount: 0,
+      removedNodeIds: [],
+      reason: `Node '${targetNodeId}' not found on the sandbox canvas.`,
+    };
+  }
+
+  if (targetNode.type === "premise" && !options.deletePremiseNode) {
+    return {
+      success: false,
+      newEdges: edges,
+      newNodes: nodes,
+      prunedCount: 0,
+      removedNodeIds: [],
+      prunedNodeId: targetNode.id,
+      targetLabel: targetNode.label,
+      reason: `Node ${targetNode.id} (${targetNode.label}) is a foundational premise. Use the node card Delete action to remove a premise.`,
+    };
+  }
+
+  const removedNodeIds = new Set<string>();
+  const invalidatedGoalIds = new Set<string>();
+
+  if (targetNode.type === "intermediate") {
+    removedNodeIds.add(targetNode.id);
+  } else if (targetNode.type === "premise" && options.deletePremiseNode) {
+    removedNodeIds.add(targetNode.id);
+  } else if (targetNode.type === "conclusion") {
+    if (options.deleteGoalNode) {
+      removedNodeIds.add(targetNode.id);
+    } else {
+      invalidatedGoalIds.add(targetNode.id);
+    }
+  }
+
+  // Propagate downstream across intermediate and goal nodes whose incoming sources were removed
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const edge of edges) {
+      if (
+        removedNodeIds.has(edge.source) ||
+        invalidatedGoalIds.has(edge.source)
+      ) {
+        const downstream = nodes.find((n) => n.id === edge.target);
+        if (!downstream) continue;
+        if (
+          downstream.type === "intermediate" &&
+          !removedNodeIds.has(downstream.id)
+        ) {
+          removedNodeIds.add(downstream.id);
+          changed = true;
+        } else if (
+          downstream.type === "conclusion" &&
+          !removedNodeIds.has(downstream.id) &&
+          !invalidatedGoalIds.has(downstream.id)
+        ) {
+          invalidatedGoalIds.add(downstream.id);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  const candidateNodes = nodes.filter((n) => !removedNodeIds.has(n.id));
+  let candidateEdges = edges.filter(
+    (e) =>
+      !removedNodeIds.has(e.source) &&
+      !removedNodeIds.has(e.target) &&
+      !invalidatedGoalIds.has(e.target)
+  );
+
+  // Also sweep any remaining intermediate nodes or goal edges that are no longer proven
+  const survivingProven = computeSandboxProvenNodeIds(candidateEdges, {
+    nodes: candidateNodes,
+  });
+  for (const node of candidateNodes) {
+    if (node.type === "intermediate" && !survivingProven.has(node.id)) {
+      removedNodeIds.add(node.id);
+    }
+  }
+
+  const newNodes = nodes.filter((n) => !removedNodeIds.has(n.id));
+  candidateEdges = candidateEdges.filter(
+    (e) => !removedNodeIds.has(e.source) && !removedNodeIds.has(e.target)
+  );
+  const finalProven = computeSandboxProvenNodeIds(candidateEdges, {
+    nodes: newNodes,
+  });
+  const newEdges = candidateEdges.filter((e) => {
+    const tNode = newNodes.find((n) => n.id === e.target);
+    if (tNode?.type === "conclusion" && !finalProven.has(tNode.id)) {
+      return false;
+    }
+    return true;
+  });
+
+  const prunedCount = edges.length - newEdges.length;
+  const removedList = Array.from(removedNodeIds);
+
+  return {
+    success: true,
+    newEdges,
+    newNodes,
+    prunedCount,
+    removedNodeIds: removedList,
+    prunedNodeId: targetNode.id,
+    targetLabel: targetNode.label,
+    reason:
+      removedList.length > 0 || prunedCount > 0
+        ? `Removed ${targetNode.id} (${targetNode.label})${removedList.length > 1 ? `, ${removedList.length - 1} dependent derived node(s),` : ""} and ${prunedCount} dependent edge(s).`
+        : `Step ${targetNode.id} (${targetNode.label}) had no active dependencies to prune.`,
+  };
 }
 
 /**
@@ -2940,6 +3558,32 @@ export function pruneStepOrNode(
     typeof theoremId === "object"
       ? theoremId
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+
+  if (th.isSandbox) {
+    const rawStr =
+      typeof stepOrNode === "string" ? stepOrNode.trim() : String(stepOrNode);
+    const parsedNum = parseInt(rawStr, 10);
+    const ledger = getDeductionLedger(edges, th);
+    if (!Number.isNaN(parsedNum) && String(parsedNum) === rawStr) {
+      const step = ledger.find((s) => s.stepNumber === parsedNum);
+      if (!step || !step.nodeId) {
+        return {
+          success: false,
+          newEdges: edges,
+          newNodes: th.nodes,
+          prunedCount: 0,
+          reason: `Step ${parsedNum} is out of bounds (valid steps: 1 to ${ledger.length}).`,
+        };
+      }
+      const res = cascadePruneSandboxGraph(step.nodeId, th.nodes, edges);
+      return { ...res, prunedStepNumber: parsedNum };
+    }
+    const res = cascadePruneSandboxGraph(rawStr, th.nodes, edges);
+    const matchedStep = ledger.find(
+      (s) => s.nodeId?.toUpperCase() === rawStr.toUpperCase()
+    );
+    return { ...res, prunedStepNumber: matchedStep?.stepNumber };
+  }
 
   let targetNodeId: string;
   let targetStepNum: number | undefined;
@@ -3281,8 +3925,13 @@ export function applyRuleToAsts(
     };
   }
 
-  // Conjunction Elimination: P ∧ Q => P (or Q)
-  if (normRule === "and_elim" || normRule === "conjunction-elim") {
+  // Conjunction Elimination (Left): P ∧ Q => P
+  if (
+    normRule === "and_elim" ||
+    normRule === "and_elim_l" ||
+    normRule === "conjunction-elim" ||
+    normRule === "∧-elim"
+  ) {
     if (inputs.length !== 1) {
       return {
         success: false,
@@ -3302,6 +3951,58 @@ export function applyRuleToAsts(
       success: false,
       explanation:
         "Premise does not match Conjunction Elimination form (P ∧ Q).",
+    };
+  }
+
+  // Conjunction Elimination (Right): P ∧ Q => Q
+  if (
+    normRule === "and_elim_r" ||
+    normRule === "conjunction-elim-right" ||
+    normRule === "∧-elim₂"
+  ) {
+    if (inputs.length !== 1) {
+      return {
+        success: false,
+        explanation:
+          "Conjunction Elimination (Right) requires exactly 1 conjunction premise.",
+      };
+    }
+    const [p] = inputs;
+    if (p.type === "and") {
+      return {
+        success: true,
+        resultAst: p.right,
+        explanation: `Extracted ${formatFormula(p.right)} via Conjunction Elimination (Right).`,
+      };
+    }
+    return {
+      success: false,
+      explanation:
+        "Premise does not match Conjunction Elimination form (P ∧ Q).",
+    };
+  }
+
+  // Double Negation Elimination: ¬¬P => P
+  if (normRule === "dne" || normRule === "double-negation-elim") {
+    if (inputs.length !== 1) {
+      return {
+        success: false,
+        explanation:
+          "Double Negation Elimination requires 1 doubly negated premise (¬¬P).",
+      };
+    }
+    const [p] = inputs;
+    if (p.type === "not" && p.operand.type === "not") {
+      return {
+        success: true,
+        resultAst: p.operand.operand,
+        explanation: `Derived ${formatFormula(p.operand.operand)} via Double Negation Elimination.`,
+      };
+    }
+    return {
+      success: false,
+      explanation:
+        "Premise does not match Double Negation Elimination form (¬¬P).",
     };
   }
 
@@ -3596,14 +4297,300 @@ export function solveNextDeductionStep(
   };
 }
 
-export type ProofExportFormat = "lean" | "latex" | "markdown" | "mermaid";
+export type ProofExportFormat =
+  "lean" | "latex" | "markdown" | "mermaid" | "proof.json";
 
 export const PROOF_EXPORT_MIME_TYPES: Record<ProofExportFormat, string> = {
   lean: "text/x-lean;charset=utf-8",
   latex: "application/x-latex;charset=utf-8",
   markdown: "text/markdown;charset=utf-8",
   mermaid: "text/vnd.mermaid;charset=utf-8",
+  "proof.json": "application/json;charset=utf-8",
 };
+
+/**
+ * Portable `.proof.json` workspace snapshot format.
+ */
+export interface ProofWorkspaceSnapshot {
+  format: "deruiter.proof.workspace";
+  version: 1;
+  mode: "sandbox" | "guided";
+  theoremId: TheoremId;
+  title: string;
+  nodes: {
+    id: string;
+    label: string;
+    type: "premise" | "intermediate" | "conclusion";
+    x: number;
+    y: number;
+    ruleUsed?: string;
+  }[];
+  edges: Edge[];
+}
+
+/**
+ * Formats a `PropAst` expression into core Lean 4 proposition syntax.
+ */
+export function formatAstForLean4(ast: PropAst): string {
+  switch (ast.type) {
+    case "bottom":
+      return "False";
+    case "var":
+      return `«${ast.name}»`;
+    case "not": {
+      const inner = formatAstForLean4(ast.operand);
+      return ast.operand.type === "var" ||
+        ast.operand.type === "bottom" ||
+        ast.operand.type === "not"
+        ? `¬${inner}`
+        : `¬(${inner})`;
+    }
+    case "and":
+      return `(${formatAstForLean4(ast.left)} ∧ ${formatAstForLean4(ast.right)})`;
+    case "or":
+      return `(${formatAstForLean4(ast.left)} ∨ ${formatAstForLean4(ast.right)})`;
+    case "implies":
+      return `(${formatAstForLean4(ast.left)} → ${formatAstForLean4(ast.right)})`;
+    case "iff":
+      return `(${formatAstForLean4(ast.left)} ↔ ${formatAstForLean4(ast.right)})`;
+  }
+}
+
+function buildCoreLeanStepTerm(
+  derivation: SandboxDerivationStepInfo,
+  targetAst: PropAst,
+  nodeMap: ReadonlyMap<string, ProofNode>,
+  identById: ReadonlyMap<string, string>,
+  variables: readonly string[]
+): string {
+  const s1Id = derivation.sourceIds[0];
+  const s2Id = derivation.sourceIds[1];
+  const h1 = identById.get(s1Id) ?? "h1";
+  const h2 = s2Id ? (identById.get(s2Id) ?? "h2") : h1;
+  const n1Ast = resolveNodeAst(nodeMap.get(s1Id));
+  const n2Ast = s2Id ? resolveNodeAst(nodeMap.get(s2Id)) : null;
+
+  switch (derivation.ruleId) {
+    case "reit":
+      return h1;
+    case "mp": {
+      if (
+        n2Ast?.type === "implies" &&
+        n1Ast &&
+        areAstsEqual(n1Ast, n2Ast.left)
+      ) {
+        return `(${h2} ${h1})`;
+      }
+      return `(${h1} ${h2})`;
+    }
+    case "mt": {
+      if (n1Ast?.type === "implies") {
+        return `(fun h_ant => ${h2} (${h1} h_ant))`;
+      }
+      return `(fun h_ant => ${h1} (${h2} h_ant))`;
+    }
+    case "hs": {
+      if (
+        n1Ast?.type === "implies" &&
+        n2Ast?.type === "implies" &&
+        areAstsEqual(n1Ast.right, n2Ast.left)
+      ) {
+        return `(fun h_ant => ${h2} (${h1} h_ant))`;
+      }
+      return `(fun h_ant => ${h1} (${h2} h_ant))`;
+    }
+    case "ds": {
+      const orIsFirst = n1Ast?.type === "or";
+      const hOr = orIsFirst ? h1 : h2;
+      const hNot = orIsFirst ? h2 : h1;
+      const orAst = orIsFirst ? n1Ast : n2Ast;
+      const notAst = orIsFirst ? n2Ast : n1Ast;
+      if (
+        orAst?.type === "or" &&
+        notAst?.type === "not" &&
+        areAstsEqual(orAst.left, notAst.operand)
+      ) {
+        return `(match ${hOr} with | Or.inl h_l => False.elim (${hNot} h_l) | Or.inr h_r => h_r)`;
+      }
+      return `(match ${hOr} with | Or.inl h_l => h_l | Or.inr h_r => False.elim (${hNot} h_r))`;
+    }
+    case "and_intro":
+      return `(And.intro ${h1} ${h2})`;
+    case "and_elim":
+      return `${h1}.left`;
+    case "and_elim_r":
+      return `${h1}.right`;
+    case "dne":
+      return `(Classical.byContradiction (fun h_neg => ${h1} h_neg))`;
+    case "raa":
+      return `(fun h_ant => ${h1} h_ant)`;
+    case "demorgan": {
+      if (n1Ast?.type === "not" && n1Ast.operand.type === "and") {
+        const leftLean = formatAstForLean4(n1Ast.operand.left);
+        return `(match Classical.em ${leftLean} with | Or.inl h_l => Or.inr (fun h_r => ${h1} (And.intro h_l h_r)) | Or.inr h_nl => Or.inl h_nl)`;
+      }
+      return `(And.intro (fun h_l => ${h1} (Or.inl h_l)) (fun h_r => ${h1} (Or.inr h_r)))`;
+    }
+    default: {
+      if (variables.length > 0 && variables.length <= 6) {
+        const splits = variables
+          .map((v, i) => `by_cases h_case_${i} : «${v}»`)
+          .join(" <;> ");
+        return `(by ${splits} <;> simp_all)`;
+      }
+      return `(by simp_all /* ${formatAstForLean4(targetAst)} */)`;
+    }
+  }
+}
+
+/**
+ * Generates standalone Lean 4 code compatible with Lean 4 Web (zero external package imports).
+ */
+export function generateSandboxLean4Code(
+  nodes: ProofNode[],
+  edges: Edge[]
+): string {
+  const varSet = new Set<string>();
+  for (const node of nodes) {
+    const ast = resolveNodeAst(node);
+    if (ast) {
+      extractVariables(ast).forEach((v) => varSet.add(v));
+    }
+  }
+  const variables = Array.from(varSet).sort();
+  const premises = nodes.filter((n) => n.type === "premise");
+  const goals = nodes.filter((n) => n.type === "conclusion");
+  const provenMap = computeSandboxProvenMap(edges, { nodes });
+
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const identById = new Map<string, string>();
+  const usedNames = new Set(variables);
+  for (const node of nodes) {
+    const clean = node.id.replace(/[^A-Za-z0-9_]/g, "_");
+    let candidate = node.type === "premise" ? `h_${clean}` : `step_${clean}`;
+    while (usedNames.has(candidate)) {
+      candidate += "_";
+    }
+    usedNames.add(candidate);
+    identById.set(node.id, candidate);
+  }
+
+  const varDecl =
+    variables.length > 0
+      ? ` (${variables.map((v) => `«${v}»`).join(" ")} : Prop)`
+      : "";
+  const premiseDecls = premises
+    .map((p) => {
+      const ast = resolveNodeAst(p);
+      return ast
+        ? `\n  (${identById.get(p.id)} : ${formatAstForLean4(ast)})`
+        : "";
+    })
+    .join("");
+
+  let goalType = "True";
+  if (goals.length === 1) {
+    const gAst = resolveNodeAst(goals[0]);
+    if (gAst) goalType = formatAstForLean4(gAst);
+  } else if (goals.length > 1) {
+    const goalAsts = goals
+      .map((g) => resolveNodeAst(g))
+      .filter((a): a is PropAst => Boolean(a));
+    if (goalAsts.length > 0) {
+      let combined = goalAsts[0];
+      for (let i = 1; i < goalAsts.length; i++) {
+        combined = { type: "and", left: combined, right: goalAsts[i] };
+      }
+      goalType = formatAstForLean4(combined);
+    }
+  }
+
+  // Emit proven non-premise nodes in dependency order
+  const emitted = new Set<string>(premises.map((p) => p.id));
+  const stepLines: string[] = [];
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (const node of nodes) {
+      if (emitted.has(node.id) || !provenMap.has(node.id)) continue;
+      const deriv = provenMap.get(node.id);
+      if (!deriv) continue;
+      if (deriv.sourceIds.every((id) => emitted.has(id))) {
+        const ast = resolveNodeAst(node);
+        if (ast) {
+          const term = buildCoreLeanStepTerm(
+            deriv,
+            ast,
+            nodeMap,
+            identById,
+            variables
+          );
+          stepLines.push(
+            `  have ${identById.get(node.id)} : ${formatAstForLean4(ast)} := ${term}`
+          );
+        }
+        emitted.add(node.id);
+        progress = true;
+      }
+    }
+  }
+
+  const allGoalsProven =
+    goals.length > 0 && goals.every((g) => provenMap.has(g.id));
+  let closingLine = "  exact True.intro";
+  if (goals.length === 1) {
+    closingLine = allGoalsProven
+      ? `  exact ${identById.get(goals[0].id)}`
+      : "  sorry";
+  } else if (goals.length > 1) {
+    if (allGoalsProven) {
+      let expr = identById.get(goals[0].id)!;
+      for (let i = 1; i < goals.length; i++) {
+        expr = `And.intro (${expr}) ${identById.get(goals[i].id)}`;
+      }
+      closingLine = `  exact ${expr}`;
+    } else {
+      closingLine = "  sorry";
+    }
+  }
+
+  const body = [...stepLines, closingLine].join("\n");
+  return `-- Lean 4 Web compatible (core Lean 4, zero external imports)\nopen Classical in\ntheorem sandbox_derivation${varDecl}${premiseDecls} : ${goalType} := by\n${body}`;
+}
+
+/**
+ * Serializes a proof workspace graph into a portable `.proof.json` string.
+ */
+export function exportProofToJson(
+  edges: Edge[],
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
+): string {
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const snapshot: ProofWorkspaceSnapshot = {
+    format: "deruiter.proof.workspace",
+    version: 1,
+    mode: th.isSandbox ? "sandbox" : "guided",
+    theoremId: th.id,
+    title: th.title,
+    nodes: th.nodes.map((node) => ({
+      id: node.id,
+      label: node.label,
+      type: node.type,
+      x: Math.round(node.x),
+      y: Math.round(node.y),
+      ...(node.ruleUsed ? { ruleUsed: node.ruleUsed } : {}),
+    })),
+    edges: edges.map((edge) => ({
+      source: edge.source,
+      target: edge.target,
+      ...(edge.ruleApplied ? { ruleApplied: edge.ruleApplied } : {}),
+    })),
+  };
+  return JSON.stringify(snapshot, null, 2);
+}
 
 /**
  * Maps proof export formats to standard MIME types for browser file saving.
@@ -3613,7 +4600,7 @@ export function getExportMimeType(format: ProofExportFormat): string {
 }
 
 /**
- * Generates standard filenames with extensions (.lean, .tex, .md, .mmd) based on theorem identifiers or titles.
+ * Generates standard filenames with extensions (.lean, .tex, .md, .mmd, .proof.json) based on theorem identifiers or titles.
  */
 export function getExportFilename(
   format: ProofExportFormat,
@@ -3624,6 +4611,7 @@ export function getExportFilename(
     latex: "tex",
     markdown: "md",
     mermaid: "mmd",
+    "proof.json": "proof.json",
   };
 
   const th =
@@ -3631,10 +4619,11 @@ export function getExportFilename(
       ? theoremId
       : THEOREMS[theoremId as TheoremId];
 
-  const rawName =
-    th?.id ||
-    (typeof theoremId === "string" ? theoremId : th?.title) ||
-    "proof";
+  const rawName = th?.isSandbox
+    ? "sandbox"
+    : th?.id ||
+      (typeof theoremId === "string" ? theoremId : th?.title) ||
+      "proof";
 
   const sanitized = rawName
     .toLowerCase()
@@ -3655,12 +4644,16 @@ export function getExportFilename(
  * Exports the active theorem proof into Lean 4 verification syntax.
  */
 export function exportProofToLean4(
-  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens",
+  edges: Edge[] = []
 ): string {
   const th =
     typeof theoremId === "object"
       ? theoremId
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  if (th.isSandbox) {
+    return generateSandboxLean4Code(th.nodes, edges);
+  }
   return th.leanCode;
 }
 
@@ -3690,10 +4683,21 @@ export function exportWorkspaceProof(
     return "CUSTOM WORKSPACE UNAVAILABLE: Entered formulas are not yet loaded into the proof graph, so no faithful export can be generated.";
   }
 
+  if (format === "proof.json") {
+    return exportProofToJson(edges, theoremId);
+  }
+
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const complete = evaluateProofStatus(edges, theoremId).isE_Proven;
   if (format === "lean") {
+    if (th.isSandbox && complete) {
+      return `-- Graph complete in the local simulator; generated script is not checked by the Lean kernel.\n${generateSandboxLean4Code(th.nodes, edges)}`;
+    }
     return complete
-      ? `-- Graph complete in the local simulator; generated script is not checked by the Lean kernel.\n${exportProofToLean4(theoremId)}`
+      ? `-- Graph complete in the local simulator; generated script is not checked by the Lean kernel.\n${exportProofToLean4(theoremId, edges)}`
       : "-- INCOMPLETE: Finish the current graph before exporting a Lean proof template.";
   }
   if (format === "latex") {
@@ -3779,7 +4783,11 @@ export function exportProofToMermaid(
     typeof theoremId === "object"
       ? theoremId
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
-  const { isC_Proven, isE_Proven } = evaluateProofStatus(edges, theoremId);
+  const { isC_Proven, isE_Proven, provenNodeIds } = evaluateProofStatus(
+    edges,
+    theoremId
+  );
+  const sandboxProvenSet = th.isSandbox ? new Set(provenNodeIds ?? []) : null;
 
   const interId = th.intermediateNodeId || "C";
   const targetId = th.targetNodeId || "E";
@@ -3790,8 +4798,12 @@ export function exportProofToMermaid(
   const nodeDefs = nodes
     .map((n) => {
       let isProven = true;
-      if (n.id === interId) isProven = isC_Proven;
-      if (n.id === targetId) isProven = isE_Proven;
+      if (sandboxProvenSet) {
+        isProven = sandboxProvenSet.has(n.id);
+      } else {
+        if (n.id === interId) isProven = isC_Proven;
+        if (n.id === targetId) isProven = isE_Proven;
+      }
       const statusIcon = isProven ? "✔" : "⏳";
       const label = encodeMermaidLabel(
         `${statusIcon} [Node ${n.id}] ${n.label}`
@@ -3806,13 +4818,14 @@ export function exportProofToMermaid(
     .join("\n");
   const title = mermaidCommentText(th.title);
 
-  if (th.id === "custom") {
+  if (th.id === "custom" || th.isSandbox) {
     const provenNodes = nodes
-      .filter(
-        (n) =>
-          n.type === "premise" ||
-          (n.id === interId && isC_Proven) ||
-          (n.id === targetId && isE_Proven)
+      .filter((n) =>
+        sandboxProvenSet
+          ? sandboxProvenSet.has(n.id)
+          : n.type === "premise" ||
+            (n.id === interId && isC_Proven) ||
+            (n.id === targetId && isE_Proven)
       )
       .map((n) => `Node_${n.id}`);
 
@@ -3883,6 +4896,33 @@ export function getCompatibleTargets(
   if (!sNode) return [];
 
   const results: CompatibleTargetInfo[] = [];
+
+  if (th.isSandbox) {
+    for (const tNode of th.nodes) {
+      if (tNode.id.toUpperCase() === sourceId.toUpperCase()) continue;
+      if (tNode.type === "premise") continue;
+      const validation = canConnect(sNode.id, tNode.id, edges, th);
+      if (!validation.allowed) continue;
+      const matchedRule = findMatchingSandboxRuleForEdge(
+        sNode,
+        tNode,
+        edges,
+        th.nodes
+      );
+      if (!matchedRule) continue;
+      results.push({
+        targetId: tNode.id,
+        targetLabel: tNode.label,
+        ruleId: matchedRule.id,
+        ruleName: matchedRule.name,
+        ruleSymbol: matchedRule.symbol,
+        ruleTemplate: matchedRule.template,
+        badgeLabel: `${matchedRule.symbol} Target ⊢ ${tNode.label}`,
+        hint: `Connect [${sNode.id}: ${sNode.label}] to [${tNode.id}: ${tNode.label}] via ${matchedRule.name}`,
+      });
+    }
+    return results;
+  }
 
   for (const tNode of th.nodes) {
     if (tNode.id.toUpperCase() === sourceId.toUpperCase()) continue;

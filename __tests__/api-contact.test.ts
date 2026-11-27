@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/contact/route";
 import { NextRequest } from "next/server";
 import { resetSubmissionAttemptRateLimit } from "@/lib/moderation";
-import { EmailService } from "@/lib/services/email-service";
+import { SendContactInquiryHandler, createSuccess } from "@/lib/services";
 import { prisma } from "@/lib/db";
 
 describe("API: /api/contact Route Handler", () => {
@@ -101,7 +101,7 @@ describe("API: /api/contact Route Handler", () => {
   });
 
   it("should silently absorb honeypot submissions without dispatching email", async () => {
-    const spy = vi.spyOn(EmailService, "sendContactInquiry");
+    const spy = vi.spyOn(SendContactInquiryHandler.prototype, "execute");
 
     const req = createRequest({
       name: "Bot Spammer",
@@ -122,7 +122,7 @@ describe("API: /api/contact Route Handler", () => {
   });
 
   it("should silently absorb submissions that arrive under 2000ms duration threshold", async () => {
-    const spy = vi.spyOn(EmailService, "sendContactInquiry");
+    const spy = vi.spyOn(SendContactInquiryHandler.prototype, "execute");
 
     const req = createRequest({
       name: "Fast Bot",
@@ -143,19 +143,18 @@ describe("API: /api/contact Route Handler", () => {
 
   it("should process valid submission and return 201", async () => {
     const spy = vi
-      .spyOn(EmailService, "sendContactInquiry")
-      .mockResolvedValueOnce({
-        success: true,
-        adminResult: {
-          success: true,
-          data: { id: "msg_contact_success" },
-          simulated: true,
-        },
-        confirmationResult: {
-          success: true,
-          data: { id: "msg_confirm_success" },
-        },
-      });
+      .spyOn(SendContactInquiryHandler.prototype, "execute")
+      .mockResolvedValueOnce(
+        createSuccess({
+          adminDelivery: {
+            id: "msg_contact_success",
+            simulated: true,
+          },
+          confirmationResult: createSuccess({
+            id: "msg_confirm_success",
+          }),
+        })
+      );
 
     const req = createRequest({
       name: "Grace Hopper",

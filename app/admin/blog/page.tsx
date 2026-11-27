@@ -3,7 +3,7 @@ import { IntentLink } from "@/components/ui/IntentLink";
 import { PageLayout } from "@/components/PageLayout";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
-import { BlogPostService } from "@/lib/services/blog-service";
+import { ListAdminBlogPostsHandler } from "@/lib/services";
 import {
   IconPlus,
   IconEdit,
@@ -11,6 +11,7 @@ import {
   IconFileText,
   IconCheck,
   IconClock,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 
 export const metadata: Metadata = {
@@ -39,7 +40,9 @@ export default async function AdminBlogPage() {
     );
   }
 
-  const posts = await BlogPostService.getAllBlogPostsAdmin();
+  const postsResult = await new ListAdminBlogPostsHandler().execute();
+  const posts = postsResult.success ? postsResult.data : [];
+  const storageUnavailable = !postsResult.success;
 
   return (
     <PageLayout variant="standard">
@@ -79,11 +82,27 @@ export default async function AdminBlogPage() {
         <div className="rounded-lg border border-white/10 bg-[#0d0e11] overflow-hidden">
           <div className="p-4 border-b border-white/10 bg-[#13151a] flex items-center justify-between">
             <h2 className="text-sm font-mono font-semibold text-zinc-200">
-              Persisted Blog Posts & Drafts ({posts.length})
+              Persisted Blog Posts & Drafts (
+              {storageUnavailable ? "unavailable" : posts.length})
             </h2>
           </div>
 
-          {posts.length === 0 ? (
+          {storageUnavailable ? (
+            <div
+              role="alert"
+              className="p-8 text-center flex flex-col items-center justify-center gap-3 bg-rose-500/5"
+            >
+              <div className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-rose-400">
+                <IconAlertTriangle className="w-4 h-4" aria-hidden="true" />
+                <span>DATABASE STORAGE TEMPORARILY UNAVAILABLE</span>
+              </div>
+              <p className="text-sm font-mono text-zinc-300 max-w-xl">
+                Persisted blog posts and drafts could not be loaded because
+                database storage is currently unreachable. Existing posts have
+                not been deleted — reload this page once connectivity recovers.
+              </p>
+            </div>
+          ) : posts.length === 0 ? (
             <div className="p-8 text-center flex flex-col items-center justify-center gap-3">
               <p className="text-sm font-mono text-zinc-400">
                 No blog posts or drafts found in database persistence.

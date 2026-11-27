@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { CRFField } from "@/lib/crf/types";
-import type { FormulaLintResult } from "@/lib/crf";
+import type { FormulaLintResult } from "@/lib/crf/evaluator";
 import type { ServiceResult } from "@/lib/services/service-result";
 
 export const LintFormulaInputSchema = z.object({

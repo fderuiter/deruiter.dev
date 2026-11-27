@@ -83,13 +83,16 @@ vi.mock("@upstash/ratelimit", () => {
 });
 
 import { proxy } from "@/proxy";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { TelemetryService } from "@/lib/services/telemetry-service";
+import {
+  CreateCaseStudyDraftHandler,
+  RecordTelemetryEventHandler,
+  SyncBufferedEventsHandler,
+} from "@/lib/services";
 import {
   generateClientConnectionHash,
   getConnectionHashFromRequest,
   extractClientIp,
-} from "@/lib/services/privacy-service";
+} from "@/lib/privacy";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { SECURITY_HEADERS } from "@/lib/security-headers";
 import { prisma } from "@/lib/db";
@@ -190,7 +193,10 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
           }) as ReturnType<typeof prisma.caseStudy.create>
       );
 
-      await CaseStudyService.submitCaseStudy(input);
+      const submitResult = await new CreateCaseStudyDraftHandler().execute(
+        input
+      );
+      expect(submitResult.success).toBe(true);
 
       expect(mockCreate).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -205,10 +211,13 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
     it("buffers telemetry events to Redis list with 48h expiration", async () => {
       mockExec.mockResolvedValueOnce([1]);
 
-      const { event, buffered } = await TelemetryService.recordEvent({
+      const recordResult = await new RecordTelemetryEventHandler().execute({
         projectSlug: "/dashboard",
         eventType: "page_view",
       });
+      expect(recordResult.success).toBe(true);
+      if (!recordResult.success) return;
+      const { event, buffered } = recordResult.data;
 
       expect(buffered).toBe(true);
       expect(event.projectSlug).toBe("/dashboard");
@@ -242,7 +251,9 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
       const mockCreateMany = vi.mocked(prisma.telemetryEvent.createMany);
       mockCreateMany.mockResolvedValueOnce({ count: 2 });
 
-      const result = await TelemetryService.syncBufferedEvents(10);
+      const result = await new SyncBufferedEventsHandler().execute({
+        batchSize: 10,
+      });
 
       expect(result).toEqual({
         success: true,

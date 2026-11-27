@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   detectAndParseStudyFile,
+  exportFormToFhirQuestionnaire,
   exportStudyToCdiscOdmXml,
+  exportStudyToFhirQuestionnaire,
   exportStudyToUsdm,
 } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
@@ -77,5 +79,65 @@ describe("CRF Studio - File Ingestion & Format Signature Detection", () => {
         50
       )
     ).toThrow("Unsupported file format");
+  });
+
+  it("detects and parses single HL7 FHIR R4 Questionnaire JSON files", () => {
+    const dmForm = ONCOLOGY_RECIST_PRESET.forms.find((f) => f.domain === "DM")!;
+    const fhirJson = JSON.stringify(
+      exportFormToFhirQuestionnaire(dmForm, ONCOLOGY_RECIST_PRESET)
+    );
+    const result = detectAndParseStudyFile(
+      fhirJson,
+      "fhir-questionnaire-dm.json",
+      fhirJson.length
+    );
+
+    expect(result.format).toBe("json_fhir");
+    expect(result.formatLabel).toBe("HL7 FHIR R4 Questionnaire");
+    expect(result.study.protocolNumber).toBe(
+      ONCOLOGY_RECIST_PRESET.protocolNumber
+    );
+    expect(result.study.forms).toHaveLength(1);
+    expect(result.study.forms[0].domain).toBe("DM");
+  });
+
+  it("detects and parses HL7 FHIR R4 Bundle collection files", () => {
+    const bundleJson = JSON.stringify(
+      exportStudyToFhirQuestionnaire(ONCOLOGY_RECIST_PRESET)
+    );
+    const result = detectAndParseStudyFile(
+      bundleJson,
+      "fhir-bundle.json",
+      bundleJson.length
+    );
+
+    expect(result.format).toBe("json_fhir");
+    expect(result.formatLabel).toBe("HL7 FHIR R4 Questionnaire");
+    expect(result.study.forms).toHaveLength(
+      ONCOLOGY_RECIST_PRESET.forms.length
+    );
+    expect(result.study.visits[0].assignedFormIds).toHaveLength(
+      ONCOLOGY_RECIST_PRESET.forms.length
+    );
+  });
+
+  it("rejects unsupported FHIR resourceType payloads and empty FHIR Bundles with a clear FHIR parsing error", () => {
+    expect(() =>
+      detectAndParseStudyFile(
+        JSON.stringify({ resourceType: "Patient", id: "pat-001" }),
+        "patient.json"
+      )
+    ).toThrow(/HL7 FHIR R4 Parsing Error.*Patient/);
+
+    expect(() =>
+      detectAndParseStudyFile(
+        JSON.stringify({
+          resourceType: "Bundle",
+          type: "collection",
+          entry: [],
+        }),
+        "empty-bundle.json"
+      )
+    ).toThrow(/HL7 FHIR R4 Parsing Error.*no Questionnaire resources/i);
   });
 });

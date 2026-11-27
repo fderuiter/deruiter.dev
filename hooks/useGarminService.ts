@@ -13,7 +13,7 @@ import {
   SyncFlashStorageInputSchema,
   SyncFlashStorageResult,
   createFailure,
-} from "@/lib/services";
+} from "@/lib/services/client";
 
 /**
  * Custom React hook providing access to Garmin Watch Simulator domain service operations.

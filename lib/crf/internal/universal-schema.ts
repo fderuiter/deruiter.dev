@@ -461,7 +461,7 @@ const StudyReviewTargetSchema = z.object({
 
 const StudyReviewEventBaseSchema = z.object({
   id: z.string().min(1),
-  at: z.string().datetime(),
+  at: z.iso.datetime(),
   author: StudyReviewActorSchema,
 });
 

@@ -81,7 +81,9 @@ describe("WebGL & Canvas 2D Context Loss Manager", () => {
     expect(manager.getStatus()).toBe("lost");
 
     // 2. Restored
-    canvas.dispatchEvent(new Event("webglcontextrestored", { cancelable: true }));
+    canvas.dispatchEvent(
+      new Event("webglcontextrestored", { cancelable: true })
+    );
     expect(onRestored).toHaveBeenCalledTimes(1);
     expect(manager.getRecoveryCount()).toBe(1);
     expect(manager.getStatus()).toBe("restored");

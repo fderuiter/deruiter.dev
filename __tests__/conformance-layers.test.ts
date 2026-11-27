@@ -79,9 +79,7 @@ describe("conformanceLayers (#2992 step 6)", async () => {
   });
 
   it("counts every recorded CORE rule exactly once", () => {
-    expect(total("core-sdtmig")).toBe(
-      Object.keys(recorded.rules.sdtm).length
-    );
+    expect(total("core-sdtmig")).toBe(Object.keys(recorded.rules.sdtm).length);
     expect(total("core-usdm")).toBe(Object.keys(recorded.rules.usdm).length);
     expect(total("core-fda")).toBeGreaterThan(0);
     expect(total("core-fda")).toBeLessThan(total("core-sdtmig"));

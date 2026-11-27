@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-15",
-    slug: "lambda-wave",
-    title: "Lambda-Wave: Tracking Respiratory Motion With Radar",
-    primary_language: "Haskell / C++",
-    github_url: "https://github.com/fderuiter/lambda-wave",
-    published: true,
-    simulated_telemetry: false,
-    tags: "haskell, embedded-systems, dsp, fmcw-radar, sgrt, medical-device, iec-62304, real-time",
-    editorial_content:
-      "An **FMCW radar** project exploring respiratory motion tracking for Surface Guided Radiation Therapy. **Haskell** handles signal processing; **C++** ring buffers move samples between stages.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-15",
+  slug: "lambda-wave",
+  title: "Lambda-Wave: Tracking Respiratory Motion With Radar",
+  primary_language: "Haskell / C++",
+  github_url: "https://github.com/fderuiter/lambda-wave",
+  published: true,
+  simulated_telemetry: false,
+  tags: "haskell, embedded-systems, dsp, fmcw-radar, sgrt, medical-device, iec-62304, real-time",
+  editorial_content:
+    "An **FMCW radar** project exploring respiratory motion tracking for Surface Guided Radiation Therapy. **Haskell** handles signal processing; **C++** ring buffers move samples between stages.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Lambda-Wave explores a radar signal-processing pipeline for tracking respiratory motion in the context of Surface Guided Radiation Therapy. The design separates numerical processing from sample transport and makes timing and failure handling explicit.</p>
 <p><strong>The approach:</strong> Haskell implements the signal-processing stages, and C++ ring buffers carry samples across the FFI boundary. The design also considers watchdogs and timing limits.</p>
 <p><strong>Reported project measurements:</strong> Sub-10ms hard safety watchdog window; sub-millimeter motion tracking precision; zero-copy shared memory FFI bridge executing at 60fps.</p>
@@ -141,6 +141,6 @@ flowchart LR
   <li>Hard real-time DSP in Haskell means keeping heap allocation out of the main loop: ForeignPtr buffers are reused, and the build uses <code>-threaded -rtsopts -with-rtsopts=-A32m</code>.</li>
   <li>UART frames land in a custom lock-free C++ ring buffer, so garbage collector pauses never touch the ingestion path.</li>
 </ul>`,
-    created_at: new Date("2026-03-10T00:00:00Z"),
-    updated_at: new Date("2026-08-14T00:00:00Z"),
-  });
+  created_at: new Date("2026-03-10T00:00:00Z"),
+  updated_at: new Date("2026-08-14T00:00:00Z"),
+});

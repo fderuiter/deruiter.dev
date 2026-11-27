@@ -235,3 +235,86 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     );
   });
 });
+
+describe("GitHub Actions Least-Privilege & Expression Hardening", () => {
+  const workflowDir = path.join(process.cwd(), ".github/workflows");
+  const readWorkflow = (file: string) =>
+    fs.readFileSync(path.join(workflowDir, file), "utf8");
+
+  it.each([
+    "ci.yml",
+    "study-data-core.yml",
+    "synthetic-probes.yml",
+    "scheduled-security-audit.yml",
+  ])(
+    "%s sets persist-credentials: false on every actions/checkout step",
+    (file) => {
+      const content = readWorkflow(file);
+      const steps = content.split(/\n\s+-\s+name:\s+/).slice(1);
+      const checkouts = steps.filter((step) =>
+        step.includes("uses: actions/checkout@")
+      );
+      expect(checkouts.length).toBeGreaterThan(0);
+      for (const step of checkouts) {
+        expect(step).toContain("persist-credentials: false");
+      }
+    }
+  );
+
+  it("synthetic-probes.yml configures concurrency, validates target_url, and avoids ${{ }} inside run blocks", () => {
+    const content = readWorkflow("synthetic-probes.yml");
+    expect(content).toContain(
+      "group: synthetic-probes-${{ github.event_name }}-${{ github.ref }}"
+    );
+    expect(content).toContain(
+      "cancel-in-progress: ${{ github.event_name != 'workflow_call' }}"
+    );
+    expect(content).toContain("PROBE_TARGET: ${{ steps.target.outputs.url }}");
+
+    const lines = content.split("\n");
+    let inRun = false;
+    let runIndent = 0;
+    const interpolatedLines: string[] = [];
+    lines.forEach((line, index) => {
+      const runMatch = line.match(/^(\s*(?:-\s+)?)run:\s*(.*)$/);
+      if (runMatch) {
+        const rest = runMatch[2];
+        if (rest === "|" || rest === ">" || rest === "|-" || rest === ">-") {
+          inRun = true;
+          runIndent = line.indexOf("run:");
+        } else {
+          inRun = false;
+          if (rest.includes("${{")) {
+            interpolatedLines.push(`${index + 1}: ${line.trim()}`);
+          }
+        }
+        return;
+      }
+      if (inRun) {
+        if (line.trim() === "") return;
+        const indent = line.match(/^(\s*)/)?.[1].length ?? 0;
+        if (indent <= runIndent) {
+          inRun = false;
+        } else if (line.includes("${{")) {
+          interpolatedLines.push(`${index + 1}: ${line.trim()}`);
+        }
+      }
+    });
+    expect(interpolatedLines).toEqual([]);
+  });
+
+  it("scheduled-security-audit.yml configures concurrency and scopes issues: write to the job", () => {
+    const content = readWorkflow("scheduled-security-audit.yml");
+    expect(content).toContain(
+      "group: scheduled-security-audit-${{ github.ref }}"
+    );
+    expect(content).toContain("cancel-in-progress: true");
+    const header = content.slice(0, content.indexOf("\njobs:\n"));
+    expect(header).toMatch(/^permissions:\n {2}contents: read$/m);
+    expect(header).not.toContain("issues: write");
+    const job = content.slice(content.indexOf("\njobs:\n"));
+    expect(job).toMatch(
+      /^ {4}permissions:\n {6}contents: read\n {6}issues: write$/m
+    );
+  });
+});

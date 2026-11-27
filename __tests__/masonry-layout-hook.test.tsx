@@ -51,9 +51,18 @@ describe("useMasonryLayout Hook - Dynamic Resizing Observer", () => {
   let root: Root;
 
   const MOCK_ITEMS = [
-    { id: "1", editorial_content: "This is a short sample content for masonry study 1." },
-    { id: "2", editorial_content: "This is some editorial detail for dynamic layout 2." },
-    { id: "3", editorial_content: "And a third item for bento spacing calculations." },
+    {
+      id: "1",
+      editorial_content: "This is a short sample content for masonry study 1.",
+    },
+    {
+      id: "2",
+      editorial_content: "This is some editorial detail for dynamic layout 2.",
+    },
+    {
+      id: "3",
+      editorial_content: "And a third item for bento spacing calculations.",
+    },
   ];
 
   beforeEach(() => {
@@ -76,8 +85,11 @@ describe("useMasonryLayout Hook - Dynamic Resizing Observer", () => {
   }: {
     onLayoutChange: (val: any) => void;
   }) => {
-    const { containerRef, layoutState } = useMasonryLayout(MOCK_ITEMS, MOCK_ITEMS);
-    
+    const { containerRef, layoutState } = useMasonryLayout(
+      MOCK_ITEMS,
+      MOCK_ITEMS
+    );
+
     React.useEffect(() => {
       onLayoutChange(layoutState);
     }, [layoutState, onLayoutChange]);
@@ -131,7 +143,10 @@ describe("useMasonryLayout Hook - Dynamic Resizing Observer", () => {
     expect(latestLayout.colCount).toBe(3);
     expect(latestLayout.columns).toHaveLength(3);
     // Since columns distribute greedily, check that all columns have items
-    const totalDistributed = latestLayout.columns.reduce((sum: number, col: any[]) => sum + col.length, 0);
+    const totalDistributed = latestLayout.columns.reduce(
+      (sum: number, col: any[]) => sum + col.length,
+      0
+    );
     expect(totalDistributed).toBe(3);
   });
 });

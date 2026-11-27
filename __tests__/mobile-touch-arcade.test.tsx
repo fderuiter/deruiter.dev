@@ -11,7 +11,10 @@ import { ClinicalTrialChaos } from "@/components/ClinicalTrialChaos";
 
 // Mock AudioProvider
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -76,7 +79,9 @@ describe("Arcade Mobile Touch Controls & Gamepad Suite", () => {
         );
       });
 
-      const dpadContainer = container.querySelector('[aria-label="Virtual Game Controller"]');
+      const dpadContainer = container.querySelector(
+        '[aria-label="Virtual Game Controller"]'
+      );
       expect(dpadContainer).not.toBeNull();
       expect((dpadContainer as HTMLElement).style.touchAction).toBe("none");
 

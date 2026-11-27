@@ -1,6 +1,6 @@
 /**
  * WebGL and Canvas 2D Context Loss Lifecycle Manager
- * 
+ *
  * Provides isolated event handling for webglcontextlost, webglcontextrestored,
  * contextlost, and contextrestored events to protect rendering pipelines from GPU
  * interruptions, laptop power-saving switches, and mobile tab suspension.
@@ -27,7 +27,9 @@ export interface ContextLossManager {
 /**
  * Creates and binds an isolated context loss manager to a canvas element.
  */
-export function createContextLossManager(options: ContextManagerOptions): ContextLossManager {
+export function createContextLossManager(
+  options: ContextManagerOptions
+): ContextLossManager {
   const {
     canvas,
     onContextLost,
@@ -106,7 +108,8 @@ export function createContextLossManager(options: ContextManagerOptions): Contex
 
   return {
     getStatus: () => currentStatus,
-    isContextLost: () => currentStatus === "lost" || currentStatus === "restoring",
+    isContextLost: () =>
+      currentStatus === "lost" || currentStatus === "restoring",
     getRecoveryCount: () => recoveryCount,
     simulateLoss,
     dispose,
@@ -123,7 +126,10 @@ export function simulateContextLoss(
 ): boolean {
   if (!canvas) return false;
 
-  let loseExtension: { loseContext: () => void; restoreContext: () => void } | null = null;
+  let loseExtension: {
+    loseContext: () => void;
+    restoreContext: () => void;
+  } | null = null;
 
   try {
     const gl =
@@ -155,7 +161,10 @@ export function simulateContextLoss(
   canvas.dispatchEvent(lostEvt);
 
   setTimeout(() => {
-    const restoredEvt = new Event(restoredEventName, { bubbles: true, cancelable: true });
+    const restoredEvt = new Event(restoredEventName, {
+      bubbles: true,
+      cancelable: true,
+    });
     canvas.dispatchEvent(restoredEvt);
   }, restoreDelayMs);
 

@@ -2,11 +2,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Configure React 19 act environment
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { SearchProvider, useSearch } from "@/components/providers/SearchProvider";
+import {
+  SearchProvider,
+  useSearch,
+} from "@/components/providers/SearchProvider";
 import { AudioProvider } from "@/components/providers/AudioProvider";
 const MockRetroLabyrinth = () => <div>SYSTEM_LABYRINTH.EXE</div>;
 
@@ -54,20 +59,30 @@ describe("UnifiedErrorLayout JSDOM state and interactivity", () => {
     });
 
     // Mock global fetch to return clean responses and prevent error logs
-    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
-      if (url.includes("/api/case-studies")) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/api/case-studies")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                {
+                  id: "1",
+                  slug: "clinical-mapper",
+                  title: "Clinical Mapper",
+                  primary_language: "Python",
+                  tags: "Clinical",
+                },
+              ]),
+          });
+        }
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve([
-            { id: "1", slug: "clinical-mapper", title: "Clinical Mapper", primary_language: "Python", tags: "Clinical" }
-          ])
+          json: () => Promise.resolve({}),
         });
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({})
-      });
-    }));
+      })
+    );
   });
 
   afterEach(() => {
@@ -121,9 +136,13 @@ describe("UnifiedErrorLayout JSDOM state and interactivity", () => {
 
     // Check preview graphic prompt is rendered initially
     expect(container.textContent).toContain("INSERT COIN");
-    expect(container.textContent).toContain("HOVER OR CLICK TO LAUNCH MINI-GAME");
+    expect(container.textContent).toContain(
+      "HOVER OR CLICK TO LAUNCH MINI-GAME"
+    );
 
-    const preview = container.querySelector('[data-testid="insert-coin-preview"]') as HTMLDivElement;
+    const preview = container.querySelector(
+      '[data-testid="insert-coin-preview"]'
+    ) as HTMLDivElement;
     expect(preview).not.toBeNull();
 
     // Trigger hover interaction to dynamically activate the game
@@ -199,4 +218,3 @@ describe("UnifiedErrorLayout JSDOM state and interactivity", () => {
     );
   });
 });
-

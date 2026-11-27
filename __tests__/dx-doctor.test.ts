@@ -148,9 +148,9 @@ describe("DX Invariant Doctor Engine", () => {
     it("passes on main at the recorded ceiling", () => {
       const result = checkSetStateInEffectCeiling(process.cwd());
       expect(result.status).toBe("pass");
-      expect(findSetStateInEffectSuppressions(process.cwd()).length).toBeLessThanOrEqual(
-        SET_STATE_IN_EFFECT_CEILING
-      );
+      expect(
+        findSetStateInEffectSuppressions(process.cwd()).length
+      ).toBeLessThanOrEqual(SET_STATE_IN_EFFECT_CEILING);
     });
 
     it("passes at the ceiling and fails one above it", () => {

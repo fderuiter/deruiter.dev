@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { useTelemetry } from "@/hooks/useTelemetry";

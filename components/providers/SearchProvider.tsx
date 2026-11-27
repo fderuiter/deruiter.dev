@@ -35,9 +35,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <SearchContext.Provider value={value}>
-      {children}
-    </SearchContext.Provider>
+    <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
   );
 }
 

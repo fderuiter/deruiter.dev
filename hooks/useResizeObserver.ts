@@ -1,7 +1,8 @@
 import { useRef, useLayoutEffect, useEffect } from "react";
 import { env } from "@/lib/env";
 
-const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function useResizeObserver<T extends HTMLElement | SVGSVGElement>(
   callback: (entry: ResizeObserverEntry) => void,
@@ -11,7 +12,8 @@ export function useResizeObserver<T extends HTMLElement | SVGSVGElement>(
   const callbackRef = useRef(callback);
   const isMountedRef = useRef(true);
 
-  const trackVertical = typeof options === "boolean" ? options : (options?.trackVertical ?? false);
+  const trackVertical =
+    typeof options === "boolean" ? options : (options?.trackVertical ?? false);
 
   // Keep callback reference updated without triggering observer recreation
   useIsomorphicLayoutEffect(() => {
@@ -36,7 +38,10 @@ export function useResizeObserver<T extends HTMLElement | SVGSVGElement>(
 
       // Unless opt-in vertical resize mode is enabled, ignore height changes caused by vertical page scrolling
       if (trackVertical) {
-        if (currentWidth === lastWidthRef.current && currentHeight === lastHeightRef.current) {
+        if (
+          currentWidth === lastWidthRef.current &&
+          currentHeight === lastHeightRef.current
+        ) {
           return;
         }
       } else {
@@ -64,7 +69,8 @@ export function useResizeObserver<T extends HTMLElement | SVGSVGElement>(
           const finalHeight = Math.floor(finalEntry.contentRect.height);
 
           const isChanged = trackVertical
-            ? finalWidth !== lastWidthRef.current || finalHeight !== lastHeightRef.current
+            ? finalWidth !== lastWidthRef.current ||
+              finalHeight !== lastHeightRef.current
             : finalWidth !== lastWidthRef.current;
 
           if (isChanged) {

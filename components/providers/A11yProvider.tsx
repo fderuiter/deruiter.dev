@@ -1,6 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useSyncExternalStore, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  useMemo,
+} from "react";
 import { useConsoleArt } from "@/hooks/useConsoleArt";
 import {
   liveAnnouncer,
@@ -12,7 +17,12 @@ import {
 } from "@/lib/a11y/announcer";
 
 export type { Priority, AnnounceItem, AnnouncerState };
-export { sanitizePII, initialAnnouncerState, liveAnnouncer, LiveAnnouncer } from "@/lib/a11y/announcer";
+export {
+  sanitizePII,
+  initialAnnouncerState,
+  liveAnnouncer,
+  LiveAnnouncer,
+} from "@/lib/a11y/announcer";
 
 export interface AnnouncerContextType {
   announce: (message: string, priority?: Priority) => void;
@@ -49,7 +59,10 @@ export interface A11yProviderProps {
 /**
  * Lightweight screen reader live region DOM renderer and context provider.
  */
-export function A11yProvider({ children, announcer = liveAnnouncer }: A11yProviderProps) {
+export function A11yProvider({
+  children,
+  announcer = liveAnnouncer,
+}: A11yProviderProps) {
   useConsoleArt();
   const state = useSyncExternalStore(
     (cb) => announcer.subscribe(cb),

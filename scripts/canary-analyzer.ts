@@ -63,8 +63,13 @@ export interface CanaryEvaluationResult {
   timestamp: string;
 }
 
-function getWindowDuration(duration?: number, defaultDuration: number = 15): number {
-  return typeof duration === "number" && duration > 0 ? duration : defaultDuration;
+function getWindowDuration(
+  duration?: number,
+  defaultDuration: number = 15
+): number {
+  return typeof duration === "number" && duration > 0
+    ? duration
+    : defaultDuration;
 }
 
 /**
@@ -81,12 +86,24 @@ export function evaluateCanaryRollout(
   };
 
   const reasons: string[] = [];
-  const canaryErrorRate = canary.totalRequests > 0 ? canary.serverErrors5xx / canary.totalRequests : 0;
-  const baselineErrorRate = baseline && baseline.totalRequests > 0 ? baseline.serverErrors5xx / baseline.totalRequests : 0;
+  const canaryErrorRate =
+    canary.totalRequests > 0
+      ? canary.serverErrors5xx / canary.totalRequests
+      : 0;
+  const baselineErrorRate =
+    baseline && baseline.totalRequests > 0
+      ? baseline.serverErrors5xx / baseline.totalRequests
+      : 0;
 
-  const canaryDuration = getWindowDuration(canary.windowDurationMinutes, DEFAULT_CANARY_WINDOW_MINUTES);
+  const canaryDuration = getWindowDuration(
+    canary.windowDurationMinutes,
+    DEFAULT_CANARY_WINDOW_MINUTES
+  );
   const baselineDuration = baseline
-    ? getWindowDuration(baseline.windowDurationMinutes, DEFAULT_BASELINE_WINDOW_MINUTES)
+    ? getWindowDuration(
+        baseline.windowDurationMinutes,
+        DEFAULT_BASELINE_WINDOW_MINUTES
+      )
     : DEFAULT_BASELINE_WINDOW_MINUTES;
 
   const canaryExceptionRate = canary.sentryExceptionCount / canaryDuration;
@@ -94,15 +111,23 @@ export function evaluateCanaryRollout(
     ? baseline.sentryExceptionCount / baselineDuration
     : 0;
 
-  const latencyDeltaMs = baseline ? canary.p95LatencyMs - baseline.p95LatencyMs : 0;
-  const latencyDeltaPct = baseline && baseline.p95LatencyMs > 0
-    ? ((canary.p95LatencyMs - baseline.p95LatencyMs) / baseline.p95LatencyMs) * 100
+  const latencyDeltaMs = baseline
+    ? canary.p95LatencyMs - baseline.p95LatencyMs
     : 0;
+  const latencyDeltaPct =
+    baseline && baseline.p95LatencyMs > 0
+      ? ((canary.p95LatencyMs - baseline.p95LatencyMs) /
+          baseline.p95LatencyMs) *
+        100
+      : 0;
 
   const errorRateDelta = canaryErrorRate - baselineErrorRate;
-  const exceptionRatio = baseline && baselineExceptionRate > 0
-    ? canaryExceptionRate / baselineExceptionRate
-    : canaryExceptionRate > 0 ? Infinity : 1.0;
+  const exceptionRatio =
+    baseline && baselineExceptionRate > 0
+      ? canaryExceptionRate / baselineExceptionRate
+      : canaryExceptionRate > 0
+        ? Infinity
+        : 1.0;
 
   let decision: CanaryDecision = "HEALTHY";
 
@@ -115,7 +140,10 @@ export function evaluateCanaryRollout(
   }
 
   // 2. Critical Sentry Exception Spike Check
-  if (canary.sentryExceptionCount > 0 && exceptionRatio > thresholds.maxExceptionSpikeRatio) {
+  if (
+    canary.sentryExceptionCount > 0 &&
+    exceptionRatio > thresholds.maxExceptionSpikeRatio
+  ) {
     decision = "ROLLBACK_REQUIRED";
     reasons.push(
       `CRITICAL: Sentry exception count spiked by ${exceptionRatio === Infinity ? "infinity (new errors)" : `${exceptionRatio.toFixed(1)}x`} vs baseline (threshold: ${thresholds.maxExceptionSpikeRatio}x).`
@@ -140,7 +168,9 @@ export function evaluateCanaryRollout(
   }
 
   if (reasons.length === 0) {
-    reasons.push("All canary telemetry signals within normal bounds and error budgets.");
+    reasons.push(
+      "All canary telemetry signals within normal bounds and error budgets."
+    );
   }
 
   return {
@@ -206,11 +236,16 @@ export async function executeAutomatedRollback(
     });
     return {
       success: res.ok,
-      message: res.ok ? "Rollback webhook dispatched successfully." : `Webhook failed with status ${res.status}`,
+      message: res.ok
+        ? "Rollback webhook dispatched successfully."
+        : `Webhook failed with status ${res.status}`,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `Failed to trigger rollback webhook: ${errorMsg}` };
+    return {
+      success: false,
+      message: `Failed to trigger rollback webhook: ${errorMsg}`,
+    };
   }
 }
 
@@ -241,6 +276,8 @@ if (require.main === module) {
   console.log(`\nMetrics Summary:`);
   console.log(`  Canary Error Rate: ${evaluation.canaryMetrics.errorRatePct}`);
   console.log(`  p95 Latency: ${evaluation.canaryMetrics.p95LatencyMs}ms`);
-  console.log(`  Sentry Exceptions: ${evaluation.canaryMetrics.sentryExceptionCount} (${evaluation.canaryMetrics.exceptionRatePerMinute.toFixed(2)}/min)`);
+  console.log(
+    `  Sentry Exceptions: ${evaluation.canaryMetrics.sentryExceptionCount} (${evaluation.canaryMetrics.exceptionRatePerMinute.toFixed(2)}/min)`
+  );
   console.log("");
 }

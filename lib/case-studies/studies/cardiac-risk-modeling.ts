@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 export const CARDIAC_RISK_COMMANDS_OBJ: CaseStudyCommands = {
   "cardiac-ml validate --dataset nhanes-cohort-2026.parquet --adversarial": {
@@ -79,20 +83,20 @@ export const CARDIAC_RISK_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-17",
-    slug: "cardiac-risk-modeling",
-    title: "Cardiac Risk Modeling: Predictions You Can Inspect",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/cardiac-risk-modeling",
-    external_platform_type: "kaggle",
-    external_platform_url:
-      "https://www.kaggle.com/code/fredderuiter/fred-predicting-heart-disease",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Python, Scikit-Learn, XGBoost, LightGBM, CatBoost, Tabular ML, Clinical Informatics, Cross-Validation, Adversarial Validation, SHAP, Kaggle, Healthcare Analytics, Machine Learning, Clinical ML",
-    editorial_content:
-      "A **Python** cardiac risk modeling project using **XGBoost**, **LightGBM**, calibration, and **SHAP** explanations. The writeup examines data leakage, distribution shift, and how to evaluate the predictions.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-17",
+  slug: "cardiac-risk-modeling",
+  title: "Cardiac Risk Modeling: Predictions You Can Inspect",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/cardiac-risk-modeling",
+  external_platform_type: "kaggle",
+  external_platform_url:
+    "https://www.kaggle.com/code/fredderuiter/fred-predicting-heart-disease",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Python, Scikit-Learn, XGBoost, LightGBM, CatBoost, Tabular ML, Clinical Informatics, Cross-Validation, Adversarial Validation, SHAP, Kaggle, Healthcare Analytics, Machine Learning, Clinical ML",
+  editorial_content:
+    "A **Python** cardiac risk modeling project using **XGBoost**, **LightGBM**, calibration, and **SHAP** explanations. The writeup examines data leakage, distribution shift, and how to evaluate the predictions.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>A risk model needs more scrutiny than a good leaderboard score. This project looks at cardiovascular data through preprocessing, cross-validation, calibration, and feature explanations, with particular attention to leakage and changes in the data distribution.</p>
 <p><strong>The approach:</strong> Scikit-Learn preprocessing feeds XGBoost and LightGBM models. Cross-validation, probability calibration, and SHAP analysis provide different views of model behavior.</p>
 <p><strong>Reported project measurements:</strong> Out-of-fold AUROC of 0.894 with Brier calibration score < 0.088; 100% leak-free temporal & group stratified validation; sub-5ms single-patient risk scoring inference.</p>
@@ -210,8 +214,8 @@ def compute_patient_shap_waterfall(model, background_data: pd.DataFrame, patient
   <li>TreeSHAP lets a clinician check that a prediction comes from physiologically plausible signals such as ST depression and angina, and not from how the dataset was collected.</li>
   <li>Adversarial validation compares the training distribution with sites outside the cohort, which catches covariate shift before it lowers accuracy at another hospital.</li>
 </ul>`,
-    commands_json: JSON.stringify(CARDIAC_RISK_COMMANDS_OBJ),
-    playback_json: JSON.stringify(CARDIAC_RISK_PLAYBACK_OBJ),
-    created_at: new Date("2026-03-18T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  commands_json: JSON.stringify(CARDIAC_RISK_COMMANDS_OBJ),
+  playback_json: JSON.stringify(CARDIAC_RISK_PLAYBACK_OBJ),
+  created_at: new Date("2026-03-18T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

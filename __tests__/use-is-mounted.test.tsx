@@ -37,14 +37,20 @@ describe("useIsMounted hook", () => {
   it("prevents hydration mismatches during hydrateRoot and transitions from false to true", async () => {
     function HydrationProbe() {
       const isMounted = useIsMounted();
-      return <div data-testid="probe">{isMounted ? "client-mounted" : "server-rendered"}</div>;
+      return (
+        <div data-testid="probe">
+          {isMounted ? "client-mounted" : "server-rendered"}
+        </div>
+      );
     }
 
     const container = document.createElement("div");
     container.innerHTML = renderToString(<HydrationProbe />);
     expect(container.textContent).toBe("server-rendered");
 
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
 
     await act(async () => {
       hydrateRoot(container, <HydrationProbe />);

@@ -27,7 +27,9 @@ describe("BlogPosting wordCount (#3839)", () => {
   it("counts visible words and treats tags as word breaks", () => {
     expect(count("<p>One two</p><p>three</p>")).toBe(3);
     expect(count("plain text with four")).toBe(4);
-    expect(count("<h2>Title</h2>\n<p>Body <em>with</em> emphasis.</p>")).toBe(4);
+    expect(count("<h2>Title</h2>\n<p>Body <em>with</em> emphasis.</p>")).toBe(
+      4
+    );
   });
 
   it("skips script and style contents", () => {

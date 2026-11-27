@@ -91,10 +91,7 @@ export function ReviewThreadsTab({
           audit history and do not represent a shared account.
         </p>
         <div className="mt-3 grid grid-cols-1 gap-2">
-          <label
-            className="text-[10px] text-zinc-400"
-            htmlFor={authorNameId}
-          >
+          <label className="text-[10px] text-zinc-400" htmlFor={authorNameId}>
             Reviewer name
             <input
               id={authorNameId}
@@ -107,10 +104,7 @@ export function ReviewThreadsTab({
               placeholder="Enter your name"
             />
           </label>
-          <label
-            className="text-[10px] text-zinc-400"
-            htmlFor={authorRoleId}
-          >
+          <label className="text-[10px] text-zinc-400" htmlFor={authorRoleId}>
             Reviewer role
             <select
               id={authorRoleId}

@@ -11,11 +11,15 @@ describe("BentoGrid Performance Optimizations", () => {
 
   beforeEach(() => {
     rafCallbacks = [];
-    requestAnimationFrameSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
-      rafCallbacks.push(cb);
-      return rafCallbacks.length;
-    });
-    cancelAnimationFrameSpy = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    requestAnimationFrameSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((cb) => {
+        rafCallbacks.push(cb);
+        return rafCallbacks.length;
+      });
+    cancelAnimationFrameSpy = vi
+      .spyOn(window, "cancelAnimationFrame")
+      .mockImplementation(() => {});
 
     Object.defineProperty(window, "matchMedia", {
       writable: true,
@@ -50,7 +54,8 @@ describe("BentoGrid Performance Optimizations", () => {
       toJSON: () => {},
     });
 
-    const originalGetBoundingClientRect = HTMLDivElement.prototype.getBoundingClientRect;
+    const originalGetBoundingClientRect =
+      HTMLDivElement.prototype.getBoundingClientRect;
     HTMLDivElement.prototype.getBoundingClientRect = getBoundingClientRectMock;
 
     try {
@@ -62,7 +67,8 @@ describe("BentoGrid Performance Optimizations", () => {
         </BentoGrid>
       );
 
-      const cardElement = container.firstElementChild?.firstElementChild as HTMLElement;
+      const cardElement = container.firstElementChild
+        ?.firstElementChild as HTMLElement;
       expect(cardElement).toBeDefined();
 
       // Trigger pointerenter - should call getBoundingClientRect
@@ -71,9 +77,21 @@ describe("BentoGrid Performance Optimizations", () => {
       expect(callsAfterEnter).toBeGreaterThanOrEqual(1);
 
       // Trigger multiple pointermove events
-      fireEvent.pointerMove(cardElement, { clientX: 50, clientY: 50, pointerType: "mouse" });
-      fireEvent.pointerMove(cardElement, { clientX: 60, clientY: 60, pointerType: "mouse" });
-      fireEvent.pointerMove(cardElement, { clientX: 70, clientY: 70, pointerType: "mouse" });
+      fireEvent.pointerMove(cardElement, {
+        clientX: 50,
+        clientY: 50,
+        pointerType: "mouse",
+      });
+      fireEvent.pointerMove(cardElement, {
+        clientX: 60,
+        clientY: 60,
+        pointerType: "mouse",
+      });
+      fireEvent.pointerMove(cardElement, {
+        clientX: 70,
+        clientY: 70,
+        pointerType: "mouse",
+      });
 
       // getBoundingClientRect should NOT have been called during pointermove
       expect(getBoundingClientRectMock.mock.calls.length).toBe(callsAfterEnter);
@@ -83,14 +101,27 @@ describe("BentoGrid Performance Optimizations", () => {
       expect(getBoundingClientRectMock.mock.calls.length).toBe(callsAfterEnter);
 
       // Next pointermove lazily remeasures once
-      fireEvent.pointerMove(cardElement, { clientX: 80, clientY: 80, pointerType: "mouse" });
-      expect(getBoundingClientRectMock.mock.calls.length).toBe(callsAfterEnter + 1);
+      fireEvent.pointerMove(cardElement, {
+        clientX: 80,
+        clientY: 80,
+        pointerType: "mouse",
+      });
+      expect(getBoundingClientRectMock.mock.calls.length).toBe(
+        callsAfterEnter + 1
+      );
 
       // Subsequent pointermove does not measure again
-      fireEvent.pointerMove(cardElement, { clientX: 90, clientY: 90, pointerType: "mouse" });
-      expect(getBoundingClientRectMock.mock.calls.length).toBe(callsAfterEnter + 1);
+      fireEvent.pointerMove(cardElement, {
+        clientX: 90,
+        clientY: 90,
+        pointerType: "mouse",
+      });
+      expect(getBoundingClientRectMock.mock.calls.length).toBe(
+        callsAfterEnter + 1
+      );
     } finally {
-      HTMLDivElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+      HTMLDivElement.prototype.getBoundingClientRect =
+        originalGetBoundingClientRect;
     }
   });
 
@@ -107,7 +138,8 @@ describe("BentoGrid Performance Optimizations", () => {
       toJSON: () => {},
     });
 
-    const originalGetBoundingClientRect = HTMLDivElement.prototype.getBoundingClientRect;
+    const originalGetBoundingClientRect =
+      HTMLDivElement.prototype.getBoundingClientRect;
     HTMLDivElement.prototype.getBoundingClientRect = getBoundingClientRectMock;
 
     try {
@@ -119,18 +151,25 @@ describe("BentoGrid Performance Optimizations", () => {
         </BentoGrid>
       );
 
-      const cardElement = container.firstElementChild?.firstElementChild as HTMLElement;
+      const cardElement = container.firstElementChild
+        ?.firstElementChild as HTMLElement;
 
       fireEvent.pointerEnter(cardElement);
 
       const initialMx = cardElement.style.getPropertyValue("--m-x").trim();
 
       // Trigger pointermove - should schedule requestAnimationFrame
-      fireEvent.pointerMove(cardElement, { clientX: 50, clientY: 50, pointerType: "mouse" });
+      fireEvent.pointerMove(cardElement, {
+        clientX: 50,
+        clientY: 50,
+        pointerType: "mouse",
+      });
       expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(1);
 
       // CSS variable should not be updated yet (still initial value)
-      expect(cardElement.style.getPropertyValue("--m-x").trim()).toBe(initialMx);
+      expect(cardElement.style.getPropertyValue("--m-x").trim()).toBe(
+        initialMx
+      );
 
       // Execute queued rAF callback
       const callback = rafCallbacks.shift();
@@ -139,9 +178,12 @@ describe("BentoGrid Performance Optimizations", () => {
       }
 
       // CSS variable should now be updated to new calculated glare position
-      expect(cardElement.style.getPropertyValue("--m-x").trim()).not.toBe(initialMx);
+      expect(cardElement.style.getPropertyValue("--m-x").trim()).not.toBe(
+        initialMx
+      );
     } finally {
-      HTMLDivElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+      HTMLDivElement.prototype.getBoundingClientRect =
+        originalGetBoundingClientRect;
     }
   });
 
@@ -158,7 +200,8 @@ describe("BentoGrid Performance Optimizations", () => {
       toJSON: () => {},
     });
 
-    const originalGetBoundingClientRect = HTMLDivElement.prototype.getBoundingClientRect;
+    const originalGetBoundingClientRect =
+      HTMLDivElement.prototype.getBoundingClientRect;
     HTMLDivElement.prototype.getBoundingClientRect = getBoundingClientRectMock;
 
     try {
@@ -170,10 +213,15 @@ describe("BentoGrid Performance Optimizations", () => {
         </BentoGrid>
       );
 
-      const cardElement = container.firstElementChild?.firstElementChild as HTMLElement;
+      const cardElement = container.firstElementChild
+        ?.firstElementChild as HTMLElement;
 
       fireEvent.pointerEnter(cardElement);
-      fireEvent.pointerMove(cardElement, { clientX: 50, clientY: 50, pointerType: "mouse" });
+      fireEvent.pointerMove(cardElement, {
+        clientX: 50,
+        clientY: 50,
+        pointerType: "mouse",
+      });
 
       expect(requestAnimationFrameSpy).toHaveBeenCalled();
 
@@ -181,7 +229,8 @@ describe("BentoGrid Performance Optimizations", () => {
 
       expect(cancelAnimationFrameSpy).toHaveBeenCalled();
     } finally {
-      HTMLDivElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+      HTMLDivElement.prototype.getBoundingClientRect =
+        originalGetBoundingClientRect;
     }
   });
 });

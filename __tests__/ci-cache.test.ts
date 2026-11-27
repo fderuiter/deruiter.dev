@@ -144,6 +144,35 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
     });
   });
 
+  describe("Static Incremental Lint & Format Caching Config", () => {
+    const staticSections = content
+      .split("- name:")
+      .filter(
+        (section) =>
+          section.includes("path: |") &&
+          section.includes(".eslintcache") &&
+          section.includes(".prettiercache")
+      );
+
+    it("restores lint/prettier caches on PRs and saves only from main pushes", () => {
+      expect(staticSections).toHaveLength(2);
+      const restores = staticSections.filter((s) =>
+        /uses: actions\/cache\/restore@[0-9a-f]{40}/.test(s)
+      );
+      const saves = staticSections.filter((s) =>
+        /uses: actions\/cache\/save@[0-9a-f]{40}/.test(s)
+      );
+      expect(restores).toHaveLength(1);
+      expect(saves).toHaveLength(1);
+      expect(restores[0]).toContain(
+        "if: github.event_name != 'workflow_dispatch'"
+      );
+      expect(saves[0]).toContain(
+        "if: github.event_name == 'push' && github.ref == 'refs/heads/main'"
+      );
+    });
+  });
+
   describe("Restore-Only Pull Request Caching", () => {
     const workflowDir = path.join(process.cwd(), ".github/workflows");
     const workflowFiles = fs

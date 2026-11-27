@@ -1,7 +1,10 @@
 import type { PrecacheEntry } from "serwist";
 import type { RunSnapshot, RunSnapshotStorage } from "@/lib/arcade";
 import type { StudyProtocol } from "@/lib/crf";
-import { STUDY_DRAFT_ENVELOPE_VERSION, STUDY_DRAFT_STORAGE_KEY } from "@/lib/crf";
+import {
+  STUDY_DRAFT_ENVELOPE_VERSION,
+  STUDY_DRAFT_STORAGE_KEY,
+} from "@/lib/crf";
 import { runSnapshotKey } from "@/lib/arcade";
 
 /**
@@ -64,10 +67,18 @@ export class SyntheticResponse {
   private readonly _body: string;
   readonly headers: Map<string, string>;
 
-  constructor(body: string, init?: { status?: number; statusText?: string; headers?: Record<string, string> }) {
+  constructor(
+    body: string,
+    init?: {
+      status?: number;
+      statusText?: string;
+      headers?: Record<string, string>;
+    }
+  ) {
     this._body = body;
     this.status = init?.status ?? 200;
-    this.statusText = init?.statusText ?? (this.status === 200 ? "OK" : "Error");
+    this.statusText =
+      init?.statusText ?? (this.status === 200 ? "OK" : "Error");
     this.ok = this.status >= 200 && this.status < 300;
     this.headers = new Map(Object.entries(init?.headers ?? {}));
   }
@@ -110,13 +121,18 @@ export class MockCache {
     }
   }
 
-  async match(request: string | { url: string }): Promise<SyntheticResponse | undefined> {
+  async match(
+    request: string | { url: string }
+  ): Promise<SyntheticResponse | undefined> {
     const key = this.normalizeKey(request);
     const item = this.items.get(key);
     return item ? item.clone() : undefined;
   }
 
-  async put(request: string | { url: string }, response: SyntheticResponse): Promise<void> {
+  async put(
+    request: string | { url: string },
+    response: SyntheticResponse
+  ): Promise<void> {
     const key = this.normalizeKey(request);
     this.items.set(key, response.clone());
   }
@@ -166,7 +182,10 @@ export class MockCacheStorage {
     return [...this.caches.keys()];
   }
 
-  async match(request: string | { url: string }, options?: { cacheName?: string }): Promise<SyntheticResponse | undefined> {
+  async match(
+    request: string | { url: string },
+    options?: { cacheName?: string }
+  ): Promise<SyntheticResponse | undefined> {
     if (options?.cacheName) {
       const cache = this.caches.get(options.cacheName);
       return cache ? cache.match(request) : undefined;
@@ -197,7 +216,9 @@ export interface BuildGenerationConfig {
 /**
  * Derives a build fingerprint from manifest entries matching app/sw.ts djb2 implementation.
  */
-export function deriveBuildRevision(manifest: (PrecacheEntry | string)[]): string {
+export function deriveBuildRevision(
+  manifest: (PrecacheEntry | string)[]
+): string {
   const serialized = JSON.stringify(manifest);
   let hash = 5381;
   for (let i = 0; i < serialized.length; i++) {
@@ -216,10 +237,22 @@ export interface PwaUpgradeAuditRecord {
   controllerGeneration: BuildGenerationId | null;
   online: boolean;
   documentRoute: string;
-  servedDocumentGeneration: BuildGenerationId | "offline-fallback" | "unavailable";
+  servedDocumentGeneration:
+    BuildGenerationId | "offline-fallback" | "unavailable";
   servedScripts: string[];
-  arcadeSaveIdentity: { slug: string; schema: number; score?: number; wave?: number; discarded?: boolean } | null;
-  clinicalDraftIdentity: { studyId: string; envelopeVersion: number; formsCount?: number; savedAt?: string } | null;
+  arcadeSaveIdentity: {
+    slug: string;
+    schema: number;
+    score?: number;
+    wave?: number;
+    discarded?: boolean;
+  } | null;
+  clinicalDraftIdentity: {
+    studyId: string;
+    envelopeVersion: number;
+    formsCount?: number;
+    savedAt?: string;
+  } | null;
   recoveryNotice: string | null;
 }
 
@@ -253,15 +286,25 @@ export class MockSerwistWorker {
     const scriptCache = await caches.open("offline-shell-scripts");
     await scriptCache.put(
       this.config.shellScriptChunk,
-      new SyntheticResponse(`/* generation ${this.generation} shell script */`, {
-        headers: { "content-type": "application/javascript" },
-      })
+      new SyntheticResponse(
+        `/* generation ${this.generation} shell script */`,
+        {
+          headers: { "content-type": "application/javascript" },
+        }
+      )
     );
 
     // Precache shell routes and static assets with revision: buildRevision
-    const precache = await caches.open(`serwist-precache-${this.buildRevision}`);
+    const precache = await caches.open(
+      `serwist-precache-${this.buildRevision}`
+    );
     for (const [route, html] of Object.entries(this.config.htmlRoutes)) {
-      await precache.put(route, new SyntheticResponse(html, { headers: { "content-type": "text/html" } }));
+      await precache.put(
+        route,
+        new SyntheticResponse(html, {
+          headers: { "content-type": "text/html" },
+        })
+      );
     }
     // Precache stylesheets and fonts matching OFFLINE_SHELL_ASSET in app/sw.ts
     await precache.put(
@@ -286,12 +329,18 @@ export class MockSerwistWorker {
     this.state = "installed";
   }
 
-  async activate(caches: MockCacheStorage, container: MockServiceWorkerContainer): Promise<void> {
+  async activate(
+    caches: MockCacheStorage,
+    container: MockServiceWorkerContainer
+  ): Promise<void> {
     this.state = "activating";
     // Serwist precache eviction: older revisions are deleted
     const allCaches = await caches.keys();
     for (const name of allCaches) {
-      if (name.startsWith("serwist-precache-") && name !== `serwist-precache-${this.buildRevision}`) {
+      if (
+        name.startsWith("serwist-precache-") &&
+        name !== `serwist-precache-${this.buildRevision}`
+      ) {
         await caches.delete(name);
       }
     }
@@ -319,16 +368,22 @@ export class MockSerwistWorker {
     }
 
     // Requirement 2: Apply Cache-First runtime strategy for 3D model files
-    if (pathname.startsWith("/models/") || /\.(?:glb|gltf|obj)$/i.test(pathname)) {
+    if (
+      pathname.startsWith("/models/") ||
+      /\.(?:glb|gltf|obj)$/i.test(pathname)
+    ) {
       const modelCache = await caches.open("3d-models-cache");
       const matched = await modelCache.match(pathname);
       if (matched) return matched;
       if (!online) {
         throw new TypeError(`Failed to fetch 3D model offline: ${pathname}`);
       }
-      const response = new SyntheticResponse(`/* 3d model buffer for ${pathname} */`, {
-        headers: { "content-type": "model/gltf-binary" },
-      });
+      const response = new SyntheticResponse(
+        `/* 3d model buffer for ${pathname} */`,
+        {
+          headers: { "content-type": "model/gltf-binary" },
+        }
+      );
       await modelCache.put(pathname, response);
       return response;
     }
@@ -344,7 +399,9 @@ export class MockSerwistWorker {
     if (destination === "document") {
       if (!online) {
         // Try precached shell for this specific route
-        const precache = await caches.open(`serwist-precache-${this.buildRevision}`);
+        const precache = await caches.open(
+          `serwist-precache-${this.buildRevision}`
+        );
         const exactMatch = await precache.match(pathname);
         if (exactMatch) return exactMatch;
 
@@ -357,12 +414,16 @@ export class MockSerwistWorker {
       // Online: return route HTML from server / current generation
       const html = this.config.htmlRoutes[pathname];
       if (html) {
-        return new SyntheticResponse(html, { headers: { "content-type": "text/html" } });
+        return new SyntheticResponse(html, {
+          headers: { "content-type": "text/html" },
+        });
       }
     }
 
     // Check precache for static styles / fonts
-    const precache = await caches.open(`serwist-precache-${this.buildRevision}`);
+    const precache = await caches.open(
+      `serwist-precache-${this.buildRevision}`
+    );
     const precachedAsset = await precache.match(pathname);
     if (precachedAsset) return precachedAsset;
 
@@ -390,7 +451,10 @@ export class MockServiceWorkerContainer {
 
   removeEventListener(type: string, listener: () => void): void {
     const list = this.listeners.get(type) ?? [];
-    this.listeners.set(type, list.filter((l) => l !== listener));
+    this.listeners.set(
+      type,
+      list.filter((l) => l !== listener)
+    );
   }
 
   dispatchControllerChange(): void {
@@ -416,10 +480,13 @@ export class TwoGenerationPwaFixture {
     fontAsset: "/_next/static/media/font-gen1.woff2",
     sharedAsset: "/_next/static/media/inter-latin.woff2",
     htmlRoutes: {
-      "/": "<html><head><script src=\"/_next/static/chunks/app-shell-gen1.js\"></script></head><body><h1>Landing Gen1</h1></body></html>",
-      "/stack": "<html><head><script src=\"/_next/static/chunks/app-shell-gen1.js\"></script></head><body><h1>Stack Gen1</h1></body></html>",
-      "/arcade": "<html><head><script src=\"/_next/static/chunks/app-shell-gen1.js\"></script></head><body><h1>Arcade Gen1</h1></body></html>",
-      "/offline": "<html><head><script src=\"/_next/static/chunks/app-shell-gen1.js\"></script></head><body><h1>Offline Shell Gen1</h1></body></html>",
+      "/": '<html><head><script src="/_next/static/chunks/app-shell-gen1.js"></script></head><body><h1>Landing Gen1</h1></body></html>',
+      "/stack":
+        '<html><head><script src="/_next/static/chunks/app-shell-gen1.js"></script></head><body><h1>Stack Gen1</h1></body></html>',
+      "/arcade":
+        '<html><head><script src="/_next/static/chunks/app-shell-gen1.js"></script></head><body><h1>Arcade Gen1</h1></body></html>',
+      "/offline":
+        '<html><head><script src="/_next/static/chunks/app-shell-gen1.js"></script></head><body><h1>Offline Shell Gen1</h1></body></html>',
     },
   };
 
@@ -431,10 +498,13 @@ export class TwoGenerationPwaFixture {
     fontAsset: "/_next/static/media/font-gen2.woff2",
     sharedAsset: "/_next/static/media/inter-latin.woff2",
     htmlRoutes: {
-      "/": "<html><head><script src=\"/_next/static/chunks/app-shell-gen2.js\"></script></head><body><h1>Landing Gen2</h1></body></html>",
-      "/stack": "<html><head><script src=\"/_next/static/chunks/app-shell-gen2.js\"></script></head><body><h1>Stack Gen2</h1></body></html>",
-      "/arcade": "<html><head><script src=\"/_next/static/chunks/app-shell-gen2.js\"></script></head><body><h1>Arcade Gen2</h1></body></html>",
-      "/offline": "<html><head><script src=\"/_next/static/chunks/app-shell-gen2.js\"></script></head><body><h1>Offline Shell Gen2</h1></body></html>",
+      "/": '<html><head><script src="/_next/static/chunks/app-shell-gen2.js"></script></head><body><h1>Landing Gen2</h1></body></html>',
+      "/stack":
+        '<html><head><script src="/_next/static/chunks/app-shell-gen2.js"></script></head><body><h1>Stack Gen2</h1></body></html>',
+      "/arcade":
+        '<html><head><script src="/_next/static/chunks/app-shell-gen2.js"></script></head><body><h1>Arcade Gen2</h1></body></html>',
+      "/offline":
+        '<html><head><script src="/_next/static/chunks/app-shell-gen2.js"></script></head><body><h1>Offline Shell Gen2</h1></body></html>',
     },
   };
 
@@ -453,37 +523,58 @@ export class TwoGenerationPwaFixture {
   async setupInitialGeneration(): Promise<void> {
     await this.workerGen1.install(this.caches);
     await this.workerGen1.activate(this.caches, this.serviceWorker);
-    this.recordAudit("setup_initial_generation", "/", "gen-1", "navigator.serviceWorker.register(/sw.js)");
+    this.recordAudit(
+      "setup_initial_generation",
+      "/",
+      "gen-1",
+      "navigator.serviceWorker.register(/sw.js)"
+    );
   }
 
   seedArcadeRun<T>(slug: string, snapshot: RunSnapshot<T>): void {
     this.storage.setItem(runSnapshotKey(slug), JSON.stringify(snapshot));
     const stateObj = snapshot.state as Record<string, unknown> | undefined;
-    this.recordAudit("seed_arcade_run", "/arcade", "gen-1", "storage.setItem(arcade_run)", {
-      arcadeSaveIdentity: {
-        slug,
-        schema: snapshot.schema,
-        score: typeof stateObj?.score === "number" ? stateObj.score : undefined,
-        wave: typeof stateObj?.wave === "number" ? stateObj.wave : undefined,
-      },
-    });
+    this.recordAudit(
+      "seed_arcade_run",
+      "/arcade",
+      "gen-1",
+      "storage.setItem(arcade_run)",
+      {
+        arcadeSaveIdentity: {
+          slug,
+          schema: snapshot.schema,
+          score:
+            typeof stateObj?.score === "number" ? stateObj.score : undefined,
+          wave: typeof stateObj?.wave === "number" ? stateObj.wave : undefined,
+        },
+      }
+    );
   }
 
-  seedClinicalStudyDraft(study: StudyProtocol, savedAt = new Date().toISOString()): void {
+  seedClinicalStudyDraft(
+    study: StudyProtocol,
+    savedAt = new Date().toISOString()
+  ): void {
     const envelope = {
       envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
       savedAt,
       study,
     };
     this.storage.setItem(STUDY_DRAFT_STORAGE_KEY, JSON.stringify(envelope));
-    this.recordAudit("seed_clinical_draft", "/crf", "gen-1", "storage.setItem(study_draft)", {
-      clinicalDraftIdentity: {
-        studyId: study.id,
-        envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
-        formsCount: study.forms.length,
-        savedAt,
-      },
-    });
+    this.recordAudit(
+      "seed_clinical_draft",
+      "/crf",
+      "gen-1",
+      "storage.setItem(study_draft)",
+      {
+        clinicalDraftIdentity: {
+          studyId: study.id,
+          envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
+          formsCount: study.forms.length,
+          savedAt,
+        },
+      }
+    );
   }
 
   suspendActiveSession(onSuspendCb?: () => void): void {
@@ -518,7 +609,12 @@ export class TwoGenerationPwaFixture {
     // Gen 2 installs in background, updates offline-shell-scripts, skips waiting and claims clients
     await this.workerGen2.install(this.caches);
     await this.workerGen2.activate(this.caches, this.serviceWorker);
-    this.recordAudit("activate_next_generation", "/arcade", "gen-2", "serviceWorker.skipWaiting / clientsClaim");
+    this.recordAudit(
+      "activate_next_generation",
+      "/arcade",
+      "gen-2",
+      "serviceWorker.skipWaiting / clientsClaim"
+    );
   }
 
   setOnline(online: boolean): void {
@@ -527,7 +623,9 @@ export class TwoGenerationPwaFixture {
       online ? "network_online" : "network_offline",
       "/arcade",
       this.serviceWorker.controller?.generation ?? "gen-1",
-      online ? "window.dispatchEvent('online')" : "window.dispatchEvent('offline')"
+      online
+        ? "window.dispatchEvent('online')"
+        : "window.dispatchEvent('offline')"
     );
   }
 
@@ -546,7 +644,12 @@ export class TwoGenerationPwaFixture {
       online: this.online,
       documentRoute: route,
       servedDocumentGeneration: servedGen,
-      servedScripts: servedGen === "gen-1" ? [this.gen1Config.shellScriptChunk] : servedGen === "gen-2" ? [this.gen2Config.shellScriptChunk] : [],
+      servedScripts:
+        servedGen === "gen-1"
+          ? [this.gen1Config.shellScriptChunk]
+          : servedGen === "gen-2"
+            ? [this.gen2Config.shellScriptChunk]
+            : [],
       arcadeSaveIdentity: extra?.arcadeSaveIdentity ?? null,
       clinicalDraftIdentity: extra?.clinicalDraftIdentity ?? null,
       recoveryNotice: extra?.recoveryNotice ?? null,

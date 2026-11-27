@@ -2117,8 +2117,7 @@ export function useClinicalChaosSession(options: ClinicalChaosSessionOptions) {
         manualOpen: isManualOpenRef.current || stressSheetOpenRef.current,
         dialogOpen:
           !!validatingObsRef.current || !!signatureModalRef.current?.isOpen,
-        calibrating:
-          calibrationActiveRef.current || tutorialActiveRef.current,
+        calibrating: calibrationActiveRef.current || tutorialActiveRef.current,
       });
       const halted = clockRate === 0;
       const deltaSeconds = getShiftTickSeconds(

@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 export const IMEDNET_COMMANDS_OBJ: CaseStudyCommands = {
   "imednet studies list": {
@@ -105,17 +109,17 @@ export const IMEDNET_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-3",
-    slug: "imednet-python-sdk",
-    title: "iMednet Python SDK: Clinical Data Without the Manual Exports",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/imednet-python-sdk",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Python, SDK, iMednet, API Client, Clinical Trials, HIPAA, Clinical Data",
-    editorial_content:
-      "A typed **Python SDK** for working with the **iMednet EDC** API. It gives data engineers and biostatisticians a way to retrieve study metadata and records without repeating the same export routine.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-3",
+  slug: "imednet-python-sdk",
+  title: "iMednet Python SDK: Clinical Data Without the Manual Exports",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/imednet-python-sdk",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Python, SDK, iMednet, API Client, Clinical Trials, HIPAA, Clinical Data",
+  editorial_content:
+    "A typed **Python SDK** for working with the **iMednet EDC** API. It gives data engineers and biostatisticians a way to retrieve study metadata and records without repeating the same export routine.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Getting data out of an EDC should not mean writing the same authentication, pagination, and response-parsing code every time. This SDK puts those routines behind a typed Python interface for iMednet, so analysis code can concentrate on the study data.</p>
 <p><strong>The approach:</strong> Pydantic models validate responses, async generators handle pagination, and the transport layer manages authentication and token refresh.</p>
 <p><strong>Reported project measurements:</strong> Sub-15ms extraction and validation per subject record; 100% HIPAA-safe transport without disk caching of unencrypted PHI; integrated CLI sandbox for rapid developer onboarding.</p>
@@ -186,8 +190,8 @@ class IMednetClient:
   <li>Sanitized log handlers and memory-only record deserialization keep PHI off disk.</li>
   <li>Pydantic v2's Rust core cut schema serialization overhead by 5x during bulk extraction.</li>
 </ul>`,
-    commands_json: JSON.stringify(IMEDNET_COMMANDS_OBJ),
-    playback_json: JSON.stringify(IMEDNET_PLAYBACK_OBJ),
-    created_at: new Date("2026-02-01T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  commands_json: JSON.stringify(IMEDNET_COMMANDS_OBJ),
+  playback_json: JSON.stringify(IMEDNET_PLAYBACK_OBJ),
+  created_at: new Date("2026-02-01T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

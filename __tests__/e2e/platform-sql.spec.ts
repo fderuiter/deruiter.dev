@@ -158,6 +158,59 @@ test("starts the engine and runs a saved query", async ({ page }) => {
   expect(refused).toEqual([]);
 });
 
+test("persists multi-tab notebook, execution log and uploads.* datasets across browser reload", async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/platform/sql", { waitUntil: "load" });
+  await expect(page.getByText(/Saved locally in IndexedDB/)).toBeVisible();
+
+  // Upload a local CSV dataset into uploads.* before starting the engine.
+  await page.getByTestId("upload-dataset-input").setInputFiles({
+    name: "study_notes.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      "study_id,audit_tag\nDEMO-301,verified-cohort\n",
+      "utf8"
+    ),
+  });
+  await expect(
+    page.getByText("uploads.study_notes", { exact: true })
+  ).toBeVisible();
+
+  // Open a new tab and write a join between gold.dim_study and uploads.study_notes.
+  await page.getByRole("button", { name: "+ New tab" }).click();
+  await page.getByLabel("Active tab name").fill("Upload join");
+  const editor = page.getByRole("textbox", { name: "SQL (DuckDB)" });
+  await editor.fill(
+    "SELECT n.audit_tag FROM uploads.study_notes n LEFT JOIN gold.dim_study s USING (study_id)"
+  );
+  await page.getByRole("button", { name: "Save query" }).click();
+  await expect(page.getByText("Saved query library (1)")).toBeVisible();
+
+  await startEngine(page);
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  const grid = page.getByRole("region", { name: "Query result" });
+  await expect(grid.getByRole("cell", { name: "verified-cohort" })).toBeVisible(
+    { timeout: 30_000 }
+  );
+  await expect(page.getByText("Run history (1 entry)")).toBeVisible();
+  expect(await overflowing(page)).toEqual([]);
+  expect(await seriousViolations(page)).toEqual([]);
+
+  // Reload the page: IndexedDB restores both tabs, the saved query, run history and uploads.study_notes.
+  await page.reload({ waitUntil: "load" });
+  await expect(
+    page.getByText("uploads.study_notes", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("Saved query library (1)")).toBeVisible();
+  await expect(page.getByText("Run history (1 entry)")).toBeVisible();
+  await expect(editor).toHaveValue(
+    "SELECT n.audit_tag FROM uploads.study_notes n LEFT JOIN gold.dim_study s USING (study_id)"
+  );
+});
+
 test.describe("without a service worker", () => {
   // The rewrite below is a page route, and a fetch the service worker makes
   // never reaches it. The worker used to spend the whole test precaching

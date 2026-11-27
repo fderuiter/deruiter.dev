@@ -128,7 +128,29 @@ export {
   checkWorkbenchSql,
 } from "./internal/workbench/guard";
 export { workbenchLoad } from "./internal/workbench/load";
-export { workbenchResultCsv } from "./internal/workbench/output";
+export {
+  workbenchResultCsv,
+  workbenchResultJson,
+  workbenchResultParquet,
+} from "./internal/workbench/output";
+export {
+  MAX_WORKBENCH_STORAGE_BYTES,
+  parseWorkbenchDataset,
+  sanitizeDatasetTableName,
+  workbenchDatasetLoad,
+  workbenchDatasetTable,
+} from "./internal/workbench/datasets";
+export {
+  WORKBENCH_BUNDLE_FORMAT,
+  WORKBENCH_BUNDLE_MAX_BYTES,
+  WORKBENCH_BUNDLE_MAX_TABS,
+  WORKBENCH_BUNDLE_VERSION,
+  WORKBENCH_HASH_MAX_LENGTH,
+  decodeWorkbenchPermalink,
+  encodeWorkbenchPermalink,
+  parseWorkbenchBundle,
+  serializeWorkbenchBundle,
+} from "./internal/workbench/notebook";
 export {
   dataContracts,
   dataProducts,

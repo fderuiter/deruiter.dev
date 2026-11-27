@@ -7,7 +7,7 @@
  * the workbench runs as WebAssembly; it is a dev dependency used only by
  * tests, imported statically so a binding that cannot load fails the file.
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
@@ -23,10 +23,13 @@ import {
   evaluateMetric,
   exportWarehouse,
   generatePortfolio,
+  parseWorkbenchDataset,
   workbenchQueries,
+  workbenchResultParquet,
   type MetricDimensionId,
   type WarehouseRow,
   type WorkbenchQuery,
+  type WorkbenchResult,
 } from "@/lib/clinical-platform";
 
 const warehouse = buildWarehouse(
@@ -283,5 +286,102 @@ describe("engine settings", () => {
     const text = sql();
     expect(checkWorkbenchSql(text)).not.toEqual([]);
     await expect(db.run(text)).rejects.toThrow();
+  });
+});
+
+describe("Parquet export and Snappy Parquet dataset upload interoperability", () => {
+  it("writes Parquet bytes that native DuckDB read_parquet reads with types and NULLs intact", async () => {
+    const scratch = await DuckDBInstance.create(":memory:");
+    const conn = await scratch.connect();
+    try {
+      const exported: WorkbenchResult = {
+        columns: [
+          { name: "study_id", type: "Text", numeric: false },
+          { name: "enrolled", type: "Int32", numeric: true },
+          { name: "total_visits", type: "Int64", numeric: true },
+          { name: "completion_rate", type: "Double", numeric: true },
+          { name: "is_active", type: "Boolean", numeric: false },
+        ],
+        rows: [
+          ["DEMO-301", "24", "180", "0.875", "true"],
+          ["DEMO-302", null, "45", null, "false"],
+        ],
+        rowCount: 2,
+        truncated: false,
+        elapsedMs: 3.1,
+      };
+      const outPath = path.join(dir, "workbench-export.parquet");
+      writeFileSync(outPath, workbenchResultParquet(exported));
+      const readBack = (
+        await conn.runAndReadAll(
+          `SELECT study_id, enrolled, total_visits, completion_rate, is_active FROM read_parquet('${outPath.replaceAll("'", "''")}') ORDER BY study_id`
+        )
+      ).getRowObjectsJson();
+      expect(readBack).toEqual([
+        {
+          study_id: "DEMO-301",
+          enrolled: 24,
+          total_visits: "180",
+          completion_rate: 0.875,
+          is_active: true,
+        },
+        {
+          study_id: "DEMO-302",
+          enrolled: null,
+          total_visits: "45",
+          completion_rate: null,
+          is_active: false,
+        },
+      ]);
+    } finally {
+      conn.closeSync();
+      scratch.closeSync();
+    }
+  });
+
+  it("decodes Snappy and dictionary-encoded Parquet files written by native DuckDB", async () => {
+    const scratch = await DuckDBInstance.create(":memory:");
+    const conn = await scratch.connect();
+    try {
+      const parquetPath = path.join(dir, "duckdb-snappy.parquet");
+      await conn.run(`
+        COPY (
+          SELECT
+            CASE WHEN i % 2 = 0 THEN 'DEMO-301' ELSE 'DEMO-302' END AS study_id,
+            i::INTEGER AS subject_seq,
+            (i * 1000)::BIGINT AS visit_id,
+            (i * 1.25)::DOUBLE AS score,
+            (i * 2.50)::DECIMAL(10, 2) AS cost_usd,
+            (i % 2 = 0) AS eligible,
+            (DATE '2026-02-01' + i::INTEGER) AS visit_date,
+            (TIMESTAMP '2026-02-01 10:00:00' + INTERVAL (i) HOUR) AS logged_at,
+            CASE WHEN i % 3 = 0 THEN NULL ELSE 'site-note' END AS note
+          FROM range(40) t(i)
+        ) TO '${parquetPath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION snappy)
+      `);
+      const bytes = new Uint8Array(readFileSync(parquetPath));
+      const parsed = parseWorkbenchDataset({
+        fileName: "site_monitoring.parquet",
+        bytes,
+      });
+      expect(parsed.ok).toBe(true);
+      if (!parsed.ok) return;
+      expect(parsed.dataset.qualifiedName).toBe("uploads.site_monitoring");
+      expect(parsed.dataset.rowCount).toBe(40);
+      expect(parsed.dataset.columns.map((c) => [c.name, c.type])).toEqual([
+        ["study_id", "VARCHAR"],
+        ["subject_seq", "BIGINT"],
+        ["visit_id", "BIGINT"],
+        ["score", "DOUBLE"],
+        ["cost_usd", "DOUBLE"],
+        ["eligible", "BOOLEAN"],
+        ["visit_date", "DATE"],
+        ["logged_at", "TIMESTAMP"],
+        ["note", "VARCHAR"],
+      ]);
+    } finally {
+      conn.closeSync();
+      scratch.closeSync();
+    }
   });
 });

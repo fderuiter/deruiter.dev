@@ -8,7 +8,7 @@
  * fails here fails for a visitor. The native engine, loaded from the same
  * files, is the reference: each query must return its columns and rows.
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -29,6 +29,8 @@ import {
   DEFAULT_PORTFOLIO_SEED,
   buildWarehouse,
   generatePortfolio,
+  parseWorkbenchDataset,
+  workbenchDatasetLoad,
   workbenchLoad,
   workbenchQueries,
   workbenchResultCsv,
@@ -221,5 +223,95 @@ describe("reading results", () => {
     const [field] = conn.query("SELECT 1 AS one").schema.fields;
     expect(cellText(field.type, null)).toBeNull();
     expect(cellText(field.type, undefined)).toBeNull();
+  });
+});
+
+describe("uploads.* local datasets in DuckDB-WASM", () => {
+  it("hydrates CSV, JSON and Snappy Parquet uploads via registerFileBuffer, joins with gold.* and stays read-only", async () => {
+    const tmpDir = mkdtempSync(path.join(os.tmpdir(), "wasm-uploads-"));
+    const native = await DuckDBInstance.create(":memory:");
+    const nativeConn = await native.connect();
+    let parquetBytes: Uint8Array;
+    try {
+      const parquetPath = path.join(tmpDir, "audit_flags.parquet");
+      const firstStudyId = String(
+        warehouse.tables["gold.dim_study"][0].study_id
+      );
+      await nativeConn.run(`
+        COPY (
+          SELECT '${firstStudyId.replaceAll("'", "''")}' AS study_id, 'priority-review' AS flag, 3::INTEGER AS tier
+        ) TO '${parquetPath.replaceAll("'", "''")}' (FORMAT parquet, COMPRESSION snappy)
+      `);
+      parquetBytes = new Uint8Array(readFileSync(parquetPath));
+    } finally {
+      nativeConn.closeSync();
+      native.closeSync();
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+
+    const firstStudyId = String(warehouse.tables["gold.dim_study"][0].study_id);
+    const csvParsed = parseWorkbenchDataset({
+      fileName: "study_notes.csv",
+      bytes: new TextEncoder().encode(
+        `study_id,reviewer\n${firstStudyId},Lead Monitor\n`
+      ),
+    });
+    const jsonParsed = parseWorkbenchDataset({
+      fileName: "study_targets.json",
+      bytes: new TextEncoder().encode(
+        JSON.stringify([{ study_id: firstStudyId, target_sites: 8 }])
+      ),
+    });
+    const parquetParsed = parseWorkbenchDataset({
+      fileName: "audit_flags.parquet",
+      bytes: parquetBytes,
+    });
+    expect(csvParsed.ok && jsonParsed.ok && parquetParsed.ok).toBe(true);
+    if (!csvParsed.ok || !jsonParsed.ok || !parquetParsed.ok) return;
+
+    // Reset and re-hydrate the WASM database just as `reloadDatasets` does.
+    conn.close();
+    db.reset();
+    conn = db.connect();
+    conn.query(load.ddl);
+    for (const file of load.files) {
+      db.registerFileText(file.fileName, file.text);
+      conn.query(file.copy);
+      db.dropFile(file.fileName);
+    }
+    for (const ds of [
+      csvParsed.dataset,
+      jsonParsed.dataset,
+      parquetParsed.dataset,
+    ]) {
+      const dsLoad = workbenchDatasetLoad(ds);
+      db.registerFileBuffer(dsLoad.fileName, dsLoad.buffer);
+      conn.query(dsLoad.ddl);
+      conn.query(dsLoad.copy);
+      db.dropFile(dsLoad.fileName);
+    }
+    for (const setting of load.settings) conn.query(setting);
+
+    const joined = collect(`
+      SELECT
+        s.study_id,
+        n.reviewer,
+        t.target_sites,
+        f.flag,
+        f.tier
+      FROM gold.dim_study s
+      JOIN uploads.study_notes n USING (study_id)
+      JOIN uploads.study_targets t USING (study_id)
+      JOIN uploads.audit_flags f USING (study_id)
+    `);
+    expect(joined.rows).toEqual([
+      [firstStudyId, "Lead Monitor", "8", "priority-review", "3"],
+    ]);
+
+    // External reads and configuration changes remain blocked after reload.
+    expect(() =>
+      collect("SELECT * FROM read_parquet('audit_flags.parquet')")
+    ).toThrow();
+    expect(() => conn.query("SET enable_external_access = true")).toThrow();
   });
 });

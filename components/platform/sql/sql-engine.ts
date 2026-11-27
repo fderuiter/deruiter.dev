@@ -19,6 +19,7 @@ import {
 } from "@duckdb/duckdb-wasm";
 import {
   checkWorkbenchSql,
+  type WorkbenchDatasetLoad,
   type WorkbenchLoad,
   type WorkbenchResult,
 } from "@/lib/clinical-platform";
@@ -71,6 +72,8 @@ export interface SqlEngine {
   readonly version: string;
   /** Runs one read-only query. Rejects with a `SqlRunError`. */
   run(sql: string): Promise<WorkbenchResult>;
+  /** Replaces `uploads.*` datasets and re-locks `WORKBENCH_ENGINE_SETTINGS`. */
+  reloadDatasets(datasets: readonly WorkbenchDatasetLoad[]): Promise<void>;
   /** Stops the running query, if any. */
   cancel(): void;
   /** Shuts the engine down. */
@@ -121,17 +124,20 @@ const delay = (ms: number) =>
   new Promise<"late">((resolve) => setTimeout(() => resolve("late"), ms));
 
 /**
- * Starts the engine and loads the warehouse into it.
+ * Starts the engine and loads the warehouse and any uploaded local datasets
+ * into it, locking configuration last.
  *
  * @param load - The gold tables and statements, from the data worker.
  * @param onStep - Called as each step begins.
+ * @param datasets - Optional local datasets hydrated into `uploads.*`.
  * @returns The engine, once every table is loaded and the settings locked.
  * @throws Error when the browser cannot run the engine, a step fails or the
  *   engine's worker throws.
  */
 export async function startSqlEngine(
   load: WorkbenchLoad,
-  onStep: (step: SqlEngineStep) => void = () => {}
+  onStep: (step: SqlEngineStep) => void = () => {},
+  datasets: readonly WorkbenchDatasetLoad[] = []
 ): Promise<SqlEngine> {
   const features = await getPlatformFeatures();
   if (!features.wasmExceptions) {
@@ -175,9 +181,11 @@ export async function startSqlEngine(
         }
       );
     });
-  const steps = async () => {
-    await instantiate();
-    onStep("load");
+  const hydrateWarehouse = async (
+    currentDatasets: readonly WorkbenchDatasetLoad[],
+    reportSteps: boolean
+  ): Promise<AsyncDuckDBConnection> => {
+    if (reportSteps) onStep("load");
     const connection = await db.connect();
     await connection.query(load.ddl);
     for (const file of load.files) {
@@ -185,8 +193,19 @@ export async function startSqlEngine(
       await connection.query(file.copy);
       await db.dropFile(file.fileName);
     }
-    onStep("lock");
+    for (const dataset of currentDatasets) {
+      await db.registerFileBuffer(dataset.fileName, dataset.buffer);
+      await connection.query(dataset.ddl);
+      await connection.query(dataset.copy);
+      await db.dropFile(dataset.fileName);
+    }
+    if (reportSteps) onStep("lock");
     for (const setting of load.settings) await connection.query(setting);
+    return connection;
+  };
+  const steps = async () => {
+    await instantiate();
+    const connection = await hydrateWarehouse(datasets, true);
     return { connection, version: await db.getVersion() };
   };
   let conn: AsyncDuckDBConnection;
@@ -288,6 +307,42 @@ export async function startSqlEngine(
       } finally {
         clearTimeout(timer);
         if (running === query) running = null;
+      }
+    },
+    async reloadDatasets(nextDatasets) {
+      if (stopped) {
+        throw new SqlRunError(
+          "stopped",
+          "The engine was shut down. Start it again to run queries."
+        );
+      }
+      if (running) {
+        throw new SqlRunError(
+          "refused",
+          "A query is already running. Wait for it or stop it."
+        );
+      }
+      let abort = () => {};
+      const aborted = new Promise<never>((_, reject) => {
+        abort = () => reject(new Error("engine shut down"));
+      });
+      const reloadTask: RunningQuery = { cancel: null, abort };
+      running = reloadTask;
+      try {
+        const refresh = async () => {
+          await conn.close();
+          await db.reset();
+          conn = await hydrateWarehouse(nextDatasets, false);
+        };
+        await Promise.race([refresh(), aborted]);
+      } catch (error) {
+        shutDown();
+        throw new SqlRunError(
+          "stopped",
+          `Could not reload local datasets: ${engineMessage(error)}`
+        );
+      } finally {
+        if (running === reloadTask) running = null;
       }
     },
     cancel() {

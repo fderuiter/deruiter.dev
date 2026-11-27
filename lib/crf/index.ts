@@ -26,18 +26,12 @@ export * from "./internal/personal-library";
 export * from "./internal/form-templates";
 export * from "./internal/form-catalog";
 export * from "./internal/export-acrf";
-export * from "./internal/export-r";
 export {
-  exportStudyToSas,
-  exportFormToSas,
-  generateSasProcFormat,
-  generateSasDataStepForForm,
-  getFieldSasAttributes,
-  getExpandedSasAttributes,
-  sanitizeSasName,
-  getSasFormatName,
-  escapeSasString,
-} from "./internal/export-sas";
+  getFieldOptions,
+  parseMultiSelectValue,
+} from "./internal/export-common";
+export * from "./internal/export-r";
+export * from "./internal/export-sas";
 export * from "./internal/fhir-questionnaire";
 export * from "./internal/odm-xml-serializer";
 export * from "./internal/odm-xml-parser";

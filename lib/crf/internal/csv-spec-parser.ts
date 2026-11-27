@@ -17,6 +17,9 @@ import {
   isRedcapCsv,
   detectCsvDialect,
   importStudyFromRedcapCsv,
+  parseCsvRows,
+  parseRedcapCsvRows,
+  stripBom,
   stripHtmlAndEntities,
   REQUIRED_REDCAP_HEADERS,
 } from "./redcap-dictionary";
@@ -29,58 +32,6 @@ export {
   stripHtmlAndEntities,
   REQUIRED_REDCAP_HEADERS,
 };
-
-function stripBom(text: string): string {
-  if (text && text.charCodeAt(0) === 0xfeff) {
-    return text.slice(1);
-  }
-  return text;
-}
-
-function parseCsvRows(text: string): string[][] {
-  const lines: string[][] = [];
-  let currentRow: string[] = [];
-  let currentCell = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-
-    if (char === '"') {
-      if (insideQuotes && nextChar === '"') {
-        currentCell += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if (char === "," && !insideQuotes) {
-      currentRow.push(currentCell.trim());
-      currentCell = "";
-    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
-      if (char === "\r" && nextChar === "\n") {
-        i++;
-      }
-      currentRow.push(currentCell.trim());
-      if (currentRow.some((c) => c.length > 0)) {
-        lines.push(currentRow);
-      }
-      currentRow = [];
-      currentCell = "";
-    } else {
-      currentCell += char;
-    }
-  }
-
-  if (currentCell.length > 0 || currentRow.length > 0) {
-    currentRow.push(currentCell.trim());
-    if (currentRow.some((c) => c.length > 0)) {
-      lines.push(currentRow);
-    }
-  }
-
-  return lines;
-}
 
 function normalizeDataType(rawType: string): ClinicalDataType {
   const t = (rawType || "").toLowerCase();
@@ -270,7 +221,7 @@ export function importStudyFromCsvSpec(csvContent: string): StudyProtocol {
   }
 
   if (isRedcapHeader(rows[0])) {
-    return importStudyFromRedcapCsv(clean);
+    return parseRedcapCsvRows(rows);
   }
 
   return parseCdiscCsvRows(rows);

@@ -20,6 +20,12 @@ import {
 import { CRFForm, StudyProtocol, CRFField, ExportDocxOptions } from "../types";
 import { getStudyBranding } from "./branding-defaults";
 import { consultationUrl, sdtmTargetFor } from "./export-annotations";
+import {
+  DEFAULT_DOCUMENT_SELECT_OPTIONS,
+  prepareExportContext,
+  type PreparedExportContext,
+  resolveDocumentFieldOptions,
+} from "./export-common";
 
 /**
  * Sanitizes hex color strings for docx (removes leading #).
@@ -91,16 +97,12 @@ function base64ToUint8Array(base64String: string): Uint8Array | null {
  */
 function renderFieldResponseMock(
   field: CRFField,
-  study: StudyProtocol
+  context: PreparedExportContext
 ): Paragraph[] {
-  const codelist = study.codelists.find((cl) => cl.id === field.codelistId);
+  const resolvedOptions = resolveDocumentFieldOptions(context, field);
 
   if (field.dataType === "radio" || field.dataType === "single_select") {
-    const opts = field.customOptions ||
-      codelist?.options || [
-        { code: "1", label: "Option 1", order: 1 },
-        { code: "2", label: "Option 2", order: 2 },
-      ];
+    const opts = resolvedOptions || DEFAULT_DOCUMENT_SELECT_OPTIONS;
 
     const runs: TextRun[] = [];
     opts.forEach((o, i) => {
@@ -122,7 +124,7 @@ function renderFieldResponseMock(
   }
 
   if (field.dataType === "multi_select" || field.dataType === "checkbox") {
-    const opts = field.customOptions || codelist?.options;
+    const opts = resolvedOptions;
     if (opts && opts.length > 0) {
       const runs: TextRun[] = [];
       opts.forEach((o, i) => {
@@ -221,7 +223,7 @@ function renderFieldResponseMock(
  */
 function createSectionTable(
   fields: CRFField[],
-  study: StudyProtocol,
+  context: PreparedExportContext,
   isAnnotated: boolean,
   _primaryColor: string,
   accentColor: string,
@@ -385,7 +387,7 @@ function createSectionTable(
       })
     );
 
-    const responseParagraphs = renderFieldResponseMock(field, study);
+    const responseParagraphs = renderFieldResponseMock(field, context);
 
     if (isAnnotated) {
       const annotRuns: TextRun[] = [
@@ -849,41 +851,8 @@ export async function generateStudyDocx(
   study: StudyProtocol,
   options: ExportDocxOptions
 ): Promise<Blob> {
-  let formsToInclude: CRFForm[];
-  if (options.scope === "all") {
-    formsToInclude = study.forms;
-  } else {
-    const selectedFormIds = options.selectedFormIds;
-    if (!selectedFormIds?.length) {
-      const selectionError =
-        options.scope === "single"
-          ? "Cannot export with scope 'single': selectedFormIds must contain a first entry."
-          : "Cannot export with scope 'selected': selectedFormIds must contain at least one entry.";
-      throw new RangeError(selectionError);
-    }
-
-    if (options.scope === "single") {
-      const form = study.forms.find(
-        (candidate) => candidate.id === selectedFormIds[0]
-      );
-      if (!form) {
-        throw new RangeError(
-          "Cannot export with scope 'single': the first selectedFormIds entry must match a study form."
-        );
-      }
-      formsToInclude = [form];
-    } else {
-      const requestedFormIds = new Set(selectedFormIds);
-      formsToInclude = study.forms.filter((form) =>
-        requestedFormIds.has(form.id)
-      );
-      if (formsToInclude.length === 0) {
-        throw new RangeError(
-          "Cannot export with scope 'selected': selectedFormIds must match at least one study form."
-        );
-      }
-    }
-  }
+  const context = prepareExportContext(study, options);
+  const formsToInclude = context.forms;
 
   const branding = options.branding || getStudyBranding(study);
   const isAnnotated = options.mode === "annotated";
@@ -1166,7 +1135,7 @@ export async function generateStudyDocx(
         }),
         createSectionTable(
           section.fields,
-          study,
+          context,
           isAnnotated,
           primaryColor,
           accentColor,

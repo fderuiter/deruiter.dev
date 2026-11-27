@@ -68,6 +68,60 @@ export const STUDY_INTERVENTION_TYPES: readonly StudyDesignTerm[] = [
   { code: "C18020", decode: "Diagnostic Test" },
 ];
 
+/** Encounter types: the USDM Encounter Type codelist (C188728). */
+export const STUDY_ENCOUNTER_TYPES: readonly StudyDesignTerm[] = [
+  { code: "C25716", decode: "Visit" },
+];
+
+/** Objective levels: the USDM Objective Level codelist (C188725). */
+export const STUDY_OBJECTIVE_LEVELS: readonly StudyDesignTerm[] = [
+  { code: "C85826", decode: "Primary Objective" },
+  { code: "C85827", decode: "Secondary Objective" },
+  { code: "C163559", decode: "Exploratory Objective" },
+];
+
+/** Endpoint levels: the USDM Endpoint Level codelist (C188726). */
+export const STUDY_ENDPOINT_LEVELS: readonly StudyDesignTerm[] = [
+  { code: "C94496", decode: "Primary Endpoint" },
+  { code: "C139173", decode: "Secondary Endpoint" },
+  { code: "C170559", decode: "Exploratory Endpoint" },
+];
+
+/** Eligibility criterion categories: the SDTM IECAT codelist (C66797). */
+export const STUDY_CRITERION_CATEGORIES: readonly StudyDesignTerm[] = [
+  { code: "C25532", decode: "Inclusion Criteria" },
+  { code: "C25370", decode: "Exclusion Criteria" },
+];
+
+/** ICH E9(R1) strategies for addressing intercurrent events in an estimand. */
+export const STUDY_INTERCURRENT_EVENT_STRATEGIES: readonly string[] = [
+  "Treatment policy",
+  "Composite variable",
+  "While on treatment",
+  "Hypothetical",
+  "Principal stratum",
+];
+
+/** Timing type terms from the USDM Timing Type codelist (C201264). */
+export const TIMING_FIXED_REFERENCE_TERM: StudyDesignTerm = {
+  code: "C201358",
+  decode: "Fixed Reference",
+};
+export const TIMING_BEFORE_TERM: StudyDesignTerm = {
+  code: "C201357",
+  decode: "Before",
+};
+export const TIMING_AFTER_TERM: StudyDesignTerm = {
+  code: "C201356",
+  decode: "After",
+};
+
+/** Timing anchor relationship term from Timing Relative To From (C201265). */
+export const TIMING_START_TO_START_TERM: StudyDesignTerm = {
+  code: "C201355",
+  decode: "Start to Start",
+};
+
 /**
  * The data origin the schema requires on every arm. A new arm gets
  * "Data Generated Within Study", the term both reference studies use; the

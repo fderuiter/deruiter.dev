@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import {
   STUDY_ARM_TYPES,
@@ -109,22 +110,36 @@ const MONO = "font-[family-name:var(--font-geist-mono)]";
 const sameCell = (a: StudyDesignCellRef, b: StudyDesignCellRef) =>
   a.armId === b.armId && a.epochId === b.epochId;
 
+/** Applies a reversible `StudyEdit` to the active workspace session. */
+export type StudyApplyFn = (
+  make: (workspace: StudyWorkspace) => StudyEdit
+) => boolean;
+
+/** Context passed from `StudyStudioShell` to active Studio view panels. */
+interface StudyStudioShellContext {
+  readonly studyId: string;
+  readonly workspace: StudyWorkspace;
+  readonly apply: StudyApplyFn;
+  readonly resetKey: number;
+  readonly clearError: () => void;
+}
+
 /**
- * The design view of Clinical Study Studio (#3401, ADR 0074): arms as rows,
- * epochs as columns and the study elements in each cell. Every arm, epoch
- * and cell is a button; the inspector beside the grid holds the edits for
- * what is selected, so the grid works from the keyboard alone. Every edit
- * goes through the shared browser study repository and can be undone.
+ * Shared study workspace session shell: manages the browser repository, study
+ * selector, Undo/Redo history, Revision indicator, draft recovery, and
+ * cross-tab conflict modal for all views in Clinical Study Studio.
  */
-export function StudyDesignGrid({
+export function StudyStudioShell({
   repository: customRepository,
+  children,
 }: {
   readonly repository?: StudyRepositoryClient;
-} = {}) {
+  readonly children: (ctx: StudyStudioShellContext) => ReactNode;
+}) {
   const { snapshot, repository } = useStudyRepository(customRepository);
   const [source, setSource] = useState<string>("tavr-savr");
   const [session, setSession] = useState<Session | null>(null);
-  const [selection, setSelection] = useState<Selection | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   // A stored localStorage draft waiting for the person to restore or discard
@@ -147,7 +162,7 @@ export function StudyDesignGrid({
         workspace: record.workspace,
         history: emptyStudyEditHistory(),
       });
-      setSelection(null);
+      setResetKey((n) => n + 1);
       setError(null);
       setConflictPrompt(null);
       setRepoSaveNote(null);
@@ -208,7 +223,7 @@ export function StudyDesignGrid({
             workspace: created.workspace,
             history: emptyStudyEditHistory(),
           });
-          setSelection(null);
+          setResetKey((n) => n + 1);
           setError(null);
           setStatus(`Opened ${created.workspace.usdm.study.name}.`);
         });
@@ -221,7 +236,7 @@ export function StudyDesignGrid({
           workspace,
           history: emptyStudyEditHistory(),
         });
-        setSelection(null);
+        setResetKey((n) => n + 1);
         setError(null);
         setStatus(`Opened ${workspace.usdm.study.name}.`);
       });
@@ -240,7 +255,7 @@ export function StudyDesignGrid({
         workspace: fallback,
         history: emptyStudyEditHistory(),
       });
-      setSelection(null);
+      setResetKey((n) => n + 1);
       setError(null);
       setStatus(`Opened ${fallback.usdm.study.name}.`);
     });
@@ -370,8 +385,6 @@ export function StudyDesignGrid({
     );
   }
 
-  const grid = projectStudyDesignGrid(session.workspace);
-
   const restore = (record: StudyWorkspaceDraftRecord) => {
     const restoredSource =
       typeof record.ui.source === "string" ? record.ui.source : "tavr-savr";
@@ -385,7 +398,7 @@ export function StudyDesignGrid({
     });
     setSource(restoredSource);
     setBaseWriteId(record.writeId);
-    setSelection(null);
+    setResetKey((n) => n + 1);
     setOffer(null);
     setStatus(
       `Restored the draft of ${record.workspace.usdm.study.name} at ${record.workspace.revision.id}.`
@@ -437,7 +450,8 @@ export function StudyDesignGrid({
       updated.workspace,
       expectedRevisionId
     );
-    setSelection(null);
+    setResetKey((n) => n + 1);
+    setError(null);
     setStatus(`Undid: ${note}.`);
   };
   const redo = () => {
@@ -454,7 +468,8 @@ export function StudyDesignGrid({
       updated.workspace,
       expectedRevisionId
     );
-    setSelection(null);
+    setResetKey((n) => n + 1);
+    setError(null);
     setStatus(`Redid: ${note}.`);
   };
 
@@ -587,6 +602,33 @@ export function StudyDesignGrid({
         </p>
       )}
 
+      {children({
+        studyId: session.studyId,
+        workspace: session.workspace,
+        apply,
+        resetKey,
+        clearError: () => setError(null),
+      })}
+    </div>
+  );
+}
+
+/**
+ * The Design view panel: arms-by-epochs grid, keyboard inspector, arm/epoch
+ * creation forms, findings, interventions, and trial schema figure.
+ */
+export function StudyDesignPanel({
+  workspace,
+  apply,
+}: {
+  readonly workspace: StudyWorkspace;
+  readonly apply: StudyApplyFn;
+}) {
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const grid = projectStudyDesignGrid(workspace);
+
+  return (
+    <div className="space-y-6">
       <div className="grid gap-6 @3xl:grid-cols-[minmax(0,1fr)_20rem]">
         <GridTable grid={grid} selection={selection} onSelect={setSelection} />
         <Inspector
@@ -600,19 +642,42 @@ export function StudyDesignGrid({
 
       <AddForms apply={apply} />
       <Findings grid={grid} />
-      <InterventionsPanel
-        workspace={session.workspace}
-        grid={grid}
-        apply={apply}
-      />
+      <InterventionsPanel workspace={workspace} grid={grid} apply={apply} />
       <section aria-labelledby="trial-schema" className="min-w-0">
         <h3 id="trial-schema" className="mb-3 font-semibold">
           Trial schema
         </h3>
         <TrialSchemaFigure grid={grid} />
       </section>
-      <RandomizationWorkspace workspace={session.workspace} apply={apply} />
     </div>
+  );
+}
+
+/**
+ * The design view of Clinical Study Studio (#3401, ADR 0074): arms as rows,
+ * epochs as columns and the study elements in each cell. Every arm, epoch
+ * and cell is a button; the inspector beside the grid holds the edits for
+ * what is selected, so the grid works from the keyboard alone. Every edit
+ * goes through the shared browser study repository and can be undone.
+ */
+export function StudyDesignGrid({
+  repository,
+}: {
+  readonly repository?: StudyRepositoryClient;
+} = {}) {
+  return (
+    <StudyStudioShell repository={repository}>
+      {({ studyId, workspace, apply, resetKey }) => (
+        <>
+          <StudyDesignPanel
+            key={`${studyId}:${resetKey}`}
+            workspace={workspace}
+            apply={apply}
+          />
+          <RandomizationWorkspace workspace={workspace} apply={apply} />
+        </>
+      )}
+    </StudyStudioShell>
   );
 }
 

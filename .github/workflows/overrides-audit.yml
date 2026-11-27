@@ -16,7 +16,8 @@ concurrency:
   group: overrides-audit
   cancel-in-progress: false
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   audit:

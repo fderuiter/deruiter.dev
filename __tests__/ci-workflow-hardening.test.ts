@@ -79,15 +79,9 @@ describe("GitHub Actions Workflow Security & Determinism Hardening", () => {
     }
   );
 
-  // Only workflows that push bot PR branches via scripts/open-bot-pr.sh keep
-  // actions/checkout's persisted git credentials. Every other checkout must
-  // opt out so GITHUB_TOKEN is never left in .git/config during npm/test runs.
-  const BOT_PUSH_WORKFLOWS = new Set([
-    "cdisc-library-sync.yml",
-    "standards-watch.yml",
-  ]);
-
-  it.each(workflowFiles.filter((file) => !BOT_PUSH_WORKFLOWS.has(file)))(
+  // Every workflow checkout disables persisted git credentials; bot-PR workflows
+  // authenticate git explicitly via `gh auth setup-git` right before pushing.
+  it.each(workflowFiles)(
     "%s disables persisted git credentials on every actions/checkout step",
     (file) => {
       const content = readWorkflow(file);
@@ -147,9 +141,7 @@ describe("GitHub Actions Workflow Security & Determinism Hardening", () => {
     ]) {
       const content = readWorkflow(file);
       const header = content.slice(0, content.indexOf("\njobs:\n"));
-      expect(header, file).toMatch(
-        /^permissions:(?:\s*\{\}|\n\s{2}contents:\s*read)$/m
-      );
+      expect(header, file).toMatch(/^permissions:\n\s{2}contents:\s*read$/m);
       expect(header, file).not.toContain("issues: write");
       expect(content, file).toMatch(
         /^\s{4}permissions:\n\s{6}contents:\s*read\n\s{6}issues:\s*write$/m

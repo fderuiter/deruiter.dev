@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import React from "react";
 import { render } from "@testing-library/react";
-import { BentoGrid, Card, CardTitle, CardDescription } from "@/components/BentoGrid";
+import {
+  BentoGrid,
+  Card,
+  CardTitle,
+  CardDescription,
+} from "@/components/BentoGrid";
 import { PretextCard } from "@/components/PretextCard";
 import { PageLayout } from "@/components/PageLayout";
 
@@ -20,10 +25,14 @@ describe("Defensive CSS & Dynamic Content Stress Invariants", () => {
     global.ResizeObserver = originalResizeObserver;
   });
 
-  const GERMAN_ELONGATED_TITLE = "Klinische-Studien-Datenverarbeitungsstandardisierungsrichtlinie";
-  const GERMAN_ELONGATED_DESC = "Vollständige Validierung und Konformitätsüberprüfung aller klinischen Studiendaten gemäß internationalen regulatorischen Anforderungen und Richtlinien für elektronische Einreichungen.";
-  const UNBROKEN_100_CHAR_URL = "https://subdomain.clinical-trials-registry-archive.fda.gov/studies/phase3/protocol-oncology-recist-v11-biomarker-investigation-data";
-  const EXTREME_LONG_IDENTIFIER = "Wolfeschlegelsteinhausenbergerdorff_CDISC_SDTM_DM_DOMAIN_VARIABLE_0123456789";
+  const GERMAN_ELONGATED_TITLE =
+    "Klinische-Studien-Datenverarbeitungsstandardisierungsrichtlinie";
+  const GERMAN_ELONGATED_DESC =
+    "Vollständige Validierung und Konformitätsüberprüfung aller klinischen Studiendaten gemäß internationalen regulatorischen Anforderungen und Richtlinien für elektronische Einreichungen.";
+  const UNBROKEN_100_CHAR_URL =
+    "https://subdomain.clinical-trials-registry-archive.fda.gov/studies/phase3/protocol-oncology-recist-v11-biomarker-investigation-data";
+  const EXTREME_LONG_IDENTIFIER =
+    "Wolfeschlegelsteinhausenbergerdorff_CDISC_SDTM_DM_DOMAIN_VARIABLE_0123456789";
 
   it("handles elongated translated content without breaking BentoGrid layout", () => {
     const { container } = render(
@@ -67,12 +76,11 @@ describe("Defensive CSS & Dynamic Content Stress Invariants", () => {
 
   it("renders PageLayout with 200% simulated font scaling without layout crashes", () => {
     const { container } = render(
-      <PageLayout
-        variant="standard"
-        style={{ fontSize: "200%" }}
-      >
+      <PageLayout variant="standard" style={{ fontSize: "200%" }}>
         <div className="min-w-0 flex flex-col gap-4">
-          <h1 className="fluid-heading-hero text-balance">{GERMAN_ELONGATED_TITLE}</h1>
+          <h1 className="fluid-heading-hero text-balance">
+            {GERMAN_ELONGATED_TITLE}
+          </h1>
           <p className="fluid-body break-words">{GERMAN_ELONGATED_DESC}</p>
         </div>
       </PageLayout>
@@ -128,4 +136,3 @@ describe("Defensive CSS & Dynamic Content Stress Invariants", () => {
     expect(el.className).toContain("overflow-x-hidden");
   });
 });
-

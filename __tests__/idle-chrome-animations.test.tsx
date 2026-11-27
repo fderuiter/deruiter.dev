@@ -103,7 +103,9 @@ describe("site chrome is calm at rest (#1596)", () => {
 
     const nav = container.querySelector("nav, header");
     const footer = container.querySelector("footer");
-    expect(nav?.querySelector(".motion-safe\\:animate-ping-settle")).not.toBeNull();
+    expect(
+      nav?.querySelector(".motion-safe\\:animate-ping-settle")
+    ).not.toBeNull();
     // Brand dot and the footnotes ticker dot.
     expect(
       footer?.querySelectorAll(".motion-safe\\:animate-ping-settle").length
@@ -117,7 +119,9 @@ describe("site chrome is calm at rest (#1596)", () => {
   it("the footer status ticker dot settles instead of pinging forever", () => {
     const { container } = render(<FooterStatusTicker />);
     expect(infiniteLoopElements(container)).toEqual([]);
-    expect(container.querySelector(".motion-safe\\:animate-ping-settle")).not.toBeNull();
+    expect(
+      container.querySelector(".motion-safe\\:animate-ping-settle")
+    ).not.toBeNull();
   });
 
   it("the unseen Field Manual badge pings a bounded number of times", () => {

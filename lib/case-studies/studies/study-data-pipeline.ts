@@ -2,19 +2,19 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-23",
-    slug: "study-data-pipeline",
-    title: "Study Data Pipeline: USDM to SDTM, ADaM and TLFs",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/deruiter.dev",
-    interactive_url: "/study-data",
-    interactive_label: "Run the pipeline",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, CDISC, USDM, SDTM, ADaM, Define-XML, Dataset-JSON, ARS, Web Workers, Golden Tests, Traceability",
-    editorial_content:
-      "One fictional study, DEMO-301, defined once in **USDM** and carried in the browser through synthetic collection, **SDTM**, conformance checks, **ADaM**, **Define-XML**, and the tables and figures a clinical study report needs. Every result traces back to the records behind it, and the same seed gives the same bytes. All data are synthetic.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-23",
+  slug: "study-data-pipeline",
+  title: "Study Data Pipeline: USDM to SDTM, ADaM and TLFs",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/deruiter.dev",
+  interactive_url: "/study-data",
+  interactive_label: "Run the pipeline",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, CDISC, USDM, SDTM, ADaM, Define-XML, Dataset-JSON, ARS, Web Workers, Golden Tests, Traceability",
+  editorial_content:
+    "One fictional study, DEMO-301, defined once in **USDM** and carried in the browser through synthetic collection, **SDTM**, conformance checks, **ADaM**, **Define-XML**, and the tables and figures a clinical study report needs. Every result traces back to the records behind it, and the same seed gives the same bytes. All data are synthetic.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Clinical data standards are usually shown one at a time: a CRF here, an SDTM mapping there, a table shell somewhere else. The hard part of the work sits between them. A variable defined in the protocol has to arrive in the analysis with its meaning, its codelist and its derivation intact, and a reviewer has to be able to follow it back.</p>
 <p>This project takes one study the whole way, end to end, in the visitor's browser. The study, DEMO-301, is fictional and every subject is synthetic. It is a demonstration of the practices, not a production submission workflow, and the page says so wherever data appear. <a href="/study-data">Run the pipeline</a> to see every stage, change the seed or the number of subjects, and download the package.</p>
 
@@ -56,6 +56,6 @@ flowchart LR
   <li><strong>Columns with metadata attached:</strong> one column-oriented dataset shape for every layer made Define-XML and the datasets a single source, at the cost of more careful typing than row records need.</li>
   <li><strong>Planted problems are part of the test:</strong> because the generator plants specific issues at known rates, any other conformance finding is a defect, and the reviewer guides say which is which.</li>
 </ul>`,
-    created_at: new Date("2026-10-24T00:00:00Z"),
-    updated_at: new Date("2026-10-24T00:00:00Z"),
-  });
+  created_at: new Date("2026-10-24T00:00:00Z"),
+  updated_at: new Date("2026-10-24T00:00:00Z"),
+});

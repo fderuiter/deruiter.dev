@@ -11,16 +11,25 @@
  *
  * Usage: node scripts/generate-accessibility-report.js
  */
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const DEFAULT_RESULTS_DIR = path.join(__dirname, '../playwright-report/accessibility-results');
-const DEFAULT_SUMMARY_PATH = path.join(__dirname, '../playwright-report/accessibility-summary.md');
-const DEFAULT_STATUS_PATH = path.join(__dirname, '../playwright-report/accessibility-status.txt');
+const DEFAULT_RESULTS_DIR = path.join(
+  __dirname,
+  "../playwright-report/accessibility-results"
+);
+const DEFAULT_SUMMARY_PATH = path.join(
+  __dirname,
+  "../playwright-report/accessibility-summary.md"
+);
+const DEFAULT_STATUS_PATH = path.join(
+  __dirname,
+  "../playwright-report/accessibility-status.txt"
+);
 
 /** Collapses every line break to one space so a value stays on its line. */
 function oneLine(value) {
-  return String(value ?? '').replace(/\r\n|\r|\n/g, ' ');
+  return String(value ?? "").replace(/\r\n|\r|\n/g, " ");
 }
 
 /**
@@ -29,7 +38,10 @@ function oneLine(value) {
  * Also safe inside a table cell, because pipes are escaped too.
  */
 function markdownText(value) {
-  return oneLine(value).replace(/[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/g, '\\$&');
+  return oneLine(value).replace(
+    /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/g,
+    "\\$&"
+  );
 }
 
 /**
@@ -40,9 +52,12 @@ function markdownText(value) {
  */
 function markdownCodeSpan(value) {
   const text = oneLine(value);
-  const longestRun = Math.max(0, ...(text.match(/`+/g) || []).map((run) => run.length));
-  const fence = '`'.repeat(longestRun + 1);
-  const pad = /^[` ]|[` ]$/.test(text) ? ' ' : '';
+  const longestRun = Math.max(
+    0,
+    ...(text.match(/`+/g) || []).map((run) => run.length)
+  );
+  const fence = "`".repeat(longestRun + 1);
+  const pad = /^[` ]|[` ]$/.test(text) ? " " : "";
   return `${fence}${pad}${text}${pad}${fence}`;
 }
 
@@ -56,7 +71,8 @@ function markdownLink(label, url) {
   let href;
   try {
     const parsed = new URL(String(url));
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return markdownText(label);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:")
+      return markdownText(label);
     href = parsed.href;
   } catch {
     return markdownText(label);
@@ -70,10 +86,13 @@ function collectResults(resultsDir) {
   let files = [];
   try {
     if (fs.existsSync(resultsDir)) {
-      files = fs.readdirSync(resultsDir).filter((f) => f.endsWith('.json')).sort();
+      files = fs
+        .readdirSync(resultsDir)
+        .filter((f) => f.endsWith(".json"))
+        .sort();
     }
   } catch (e) {
-    console.error('Error reading accessibility results:', e);
+    console.error("Error reading accessibility results:", e);
   }
 
   let totalChecked = 0;
@@ -83,7 +102,7 @@ function collectResults(resultsDir) {
 
   files.forEach((file) => {
     try {
-      const content = fs.readFileSync(path.join(resultsDir, file), 'utf8');
+      const content = fs.readFileSync(path.join(resultsDir, file), "utf8");
       const data = JSON.parse(content);
       totalChecked++;
       const vCount = data.violationsCount || 0;
@@ -94,7 +113,7 @@ function collectResults(resultsDir) {
         state: data.state,
         url: data.url,
         violationsCount: vCount,
-        status: vCount === 0 ? '✅ Pass' : '❌ Fail',
+        status: vCount === 0 ? "✅ Pass" : "❌ Fail",
       });
 
       if (vCount > 0) {
@@ -134,14 +153,16 @@ function buildReport({ totalChecked, totalViolations, results, violations }) {
 
   markdown += `### 🚨 Detected Violations Details\n\n`;
   violations.forEach((v, idx) => {
-    const impact = String(v.impact || 'unknown').toUpperCase();
+    const impact = String(v.impact || "unknown").toUpperCase();
     markdown += `#### ${idx + 1}\\. \\[${markdownText(impact)}\\] ${markdownText(v.id)} (${markdownText(v.project)} - ${markdownText(v.state)})\n`;
     markdown += `- **Description**: ${markdownText(v.description)}\n`;
-    markdown += `- **Help**: ${markdownText(v.help)} (${markdownLink('Rule Reference', v.helpUrl)})\n`;
+    markdown += `- **Help**: ${markdownText(v.help)} (${markdownLink("Rule Reference", v.helpUrl)})\n`;
     markdown += `- **Affected Elements**:\n`;
     (v.nodes || []).forEach((node, nIdx) => {
-      const target = Array.isArray(node.target) ? node.target.join(' > ') : String(node.target ?? '');
-      const html = node.html ? String(node.html).trim() : '';
+      const target = Array.isArray(node.target)
+        ? node.target.join(" > ")
+        : String(node.target ?? "");
+      const html = node.html ? String(node.html).trim() : "";
       markdown += `  - **Element ${nIdx + 1}**:\n`;
       markdown += `    - CSS Selector: ${markdownCodeSpan(target)}\n`;
       markdown += `    - HTML Snippet: ${markdownCodeSpan(html)}\n`;
@@ -160,10 +181,14 @@ function main({
   fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
   const collected = collectResults(resultsDir);
   const overallStatus =
-    collected.totalChecked > 0 && collected.totalViolations === 0 ? '✅ Pass' : '❌ Fail';
+    collected.totalChecked > 0 && collected.totalViolations === 0
+      ? "✅ Pass"
+      : "❌ Fail";
   fs.writeFileSync(statusPath, overallStatus);
   fs.writeFileSync(summaryPath, buildReport(collected));
-  console.log(`Successfully generated accessibility summary report at ${summaryPath}`);
+  console.log(
+    `Successfully generated accessibility summary report at ${summaryPath}`
+  );
   console.log(`Accessibility status: ${overallStatus}`);
   return overallStatus;
 }

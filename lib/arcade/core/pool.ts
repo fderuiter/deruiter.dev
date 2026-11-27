@@ -27,7 +27,10 @@ export class ObjectPool<T> {
     this.factory = config.factory;
     this.resetFn = config.reset;
     const initialCapacity = Math.max(1, config.initialCapacity);
-    this.maxCapacity = Math.max(initialCapacity, config.maxCapacity ?? initialCapacity);
+    this.maxCapacity = Math.max(
+      initialCapacity,
+      config.maxCapacity ?? initialCapacity
+    );
     this.overflowPolicy = config.overflowPolicy ?? "fifo";
 
     // Pre-allocate items

@@ -14,6 +14,7 @@ node_modules
 
 # Agent worktrees are full second checkouts of this repository, each with its
 # own node_modules and .next. See issue #849 for the matching ESLint problem.
+.agents
 .claude
 
 # Test and coverage output.

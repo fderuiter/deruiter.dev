@@ -13,8 +13,13 @@ import { TelemetryTracker } from "@/components/TelemetryTracker";
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
 
-function TelemetryIdleTestComponent({ slug = "test-route" }: { slug?: string }) {
-  const { telemetry, syncFailed, recordEvent, pendingDeferredLength } = useTelemetry();
+function TelemetryIdleTestComponent({
+  slug = "test-route",
+}: {
+  slug?: string;
+}) {
+  const { telemetry, syncFailed, recordEvent, pendingDeferredLength } =
+    useTelemetry();
   return (
     <div>
       <span data-testid="views">{telemetry[slug]?.views ?? 0}</span>
@@ -47,20 +52,28 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
 
-    fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
-      if (init?.method === "POST") {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ success: true }),
-        } as Response;
-      }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ [url.toString() === "/api/telemetry" ? "test-route" : "test-route"]: { views: 10, clicks: 5 } }),
-      } as Response;
-    });
+    fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(
+        async (url: string | URL | Request, init?: RequestInit) => {
+          if (init?.method === "POST") {
+            return {
+              ok: true,
+              status: 200,
+              json: async () => ({ success: true }),
+            } as Response;
+          }
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              [url.toString() === "/api/telemetry"
+                ? "test-route"
+                : "test-route"]: { views: 10, clicks: 5 },
+            }),
+          } as Response;
+        }
+      );
   });
 
   afterEach(() => {
@@ -88,7 +101,9 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
 
       // Before idle callback fires: Pending deferred queue should hold the deferred page_view event
       const pendingQueue = getPendingDeferredQueue();
-      expect(pendingQueue.some((task) => task.eventType === "page_view")).toBe(true);
+      expect(pendingQueue.some((task) => task.eventType === "page_view")).toBe(
+        true
+      );
 
       // Advance timers past idle callback fallback timeout (2000ms)
       await act(async () => {
@@ -97,15 +112,19 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
 
       // Verify fetch calls were initiated during the idle frame
       const getCalls = fetchSpy.mock.calls.filter(
-        ([url, init]: [unknown, RequestInit | undefined]) => String(url) === "/api/telemetry" && (!init || init.method === "GET")
+        ([url, init]: [unknown, RequestInit | undefined]) =>
+          String(url) === "/api/telemetry" && (!init || init.method === "GET")
       );
       const postCalls = fetchSpy.mock.calls.filter(
-        ([url, init]: [unknown, RequestInit | undefined]) => String(url) === "/api/telemetry" && init?.method === "POST"
+        ([url, init]: [unknown, RequestInit | undefined]) =>
+          String(url) === "/api/telemetry" && init?.method === "POST"
       );
 
       expect(getCalls.length).toBe(1);
       expect(postCalls.length).toBe(1);
-      expect(JSON.parse((postCalls[0][1] as RequestInit).body as string)).toEqual({
+      expect(
+        JSON.parse((postCalls[0][1] as RequestInit).body as string)
+      ).toEqual({
         projectSlug: "test-route",
         eventType: "page_view",
       });
@@ -121,7 +140,9 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
       clearPendingDeferredQueue();
       fetchSpy.mockClear();
 
-      const deferredClickBtn = container!.querySelector('[data-testid="record-deferred-click"]') as HTMLButtonElement;
+      const deferredClickBtn = container!.querySelector(
+        '[data-testid="record-deferred-click"]'
+      ) as HTMLButtonElement;
       await act(async () => {
         deferredClickBtn.click();
       });
@@ -136,10 +157,13 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
 
       expect(getPendingDeferredQueueLength()).toBe(0);
       const postCalls = fetchSpy.mock.calls.filter(
-        ([url, init]: [unknown, RequestInit | undefined]) => String(url) === "/api/telemetry" && init?.method === "POST"
+        ([url, init]: [unknown, RequestInit | undefined]) =>
+          String(url) === "/api/telemetry" && init?.method === "POST"
       );
       expect(postCalls.length).toBe(1);
-      expect(JSON.parse((postCalls[0][1] as RequestInit).body as string)).toEqual({
+      expect(
+        JSON.parse((postCalls[0][1] as RequestInit).body as string)
+      ).toEqual({
         projectSlug: "test-route",
         eventType: "project_click",
       });
@@ -165,22 +189,26 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
 
   describe("Requirement 3: Status Code Inspection & Optimistic Rollbacks", () => {
     it("inspects HTTP response status code and triggers optimistic rollback on 500 server error", async () => {
-      fetchSpy.mockImplementation(async (_url: string | URL | Request, init?: RequestInit) => {
-        if (init?.method === "POST") {
+      fetchSpy.mockImplementation(
+        async (_url: string | URL | Request, init?: RequestInit) => {
+          if (init?.method === "POST") {
+            return {
+              ok: false,
+              status: 500,
+              statusText: "Internal Server Error",
+            } as Response;
+          }
           return {
-            ok: false,
-            status: 500,
-            statusText: "Internal Server Error",
+            ok: true,
+            status: 200,
+            json: async () => ({ "test-route": { views: 10, clicks: 5 } }),
           } as Response;
         }
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ "test-route": { views: 10, clicks: 5 } }),
-        } as Response;
-      });
+      );
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       await act(async () => {
         root = createRoot(container!);
@@ -191,7 +219,9 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
       const clicksEl = container!.querySelector('[data-testid="clicks"]');
       const initialClicks = clicksEl?.textContent;
 
-      const clickBtn = container!.querySelector('[data-testid="record-click"]') as HTMLButtonElement;
+      const clickBtn = container!.querySelector(
+        '[data-testid="record-click"]'
+      ) as HTMLButtonElement;
       await act(async () => {
         clickBtn.click();
       });
@@ -203,22 +233,26 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
     });
 
     it("enqueues for retry on HTTP 429 Rate Limit and rolls back optimistic state to pre-update snapshot", async () => {
-      fetchSpy.mockImplementation(async (_url: string | URL | Request, init?: RequestInit) => {
-        if (init?.method === "POST") {
+      fetchSpy.mockImplementation(
+        async (_url: string | URL | Request, init?: RequestInit) => {
+          if (init?.method === "POST") {
+            return {
+              ok: false,
+              status: 429,
+              statusText: "Too Many Requests",
+            } as Response;
+          }
           return {
-            ok: false,
-            status: 429,
-            statusText: "Too Many Requests",
+            ok: true,
+            status: 200,
+            json: async () => ({ "test-route": { views: 10, clicks: 5 } }),
           } as Response;
         }
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ "test-route": { views: 10, clicks: 5 } }),
-        } as Response;
-      });
+      );
 
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const consoleWarnSpy = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => {});
 
       await act(async () => {
         root = createRoot(container!);
@@ -229,12 +263,16 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
       const clicksEl = container!.querySelector('[data-testid="clicks"]');
       const initialClicks = clicksEl?.textContent;
 
-      const clickBtn = container!.querySelector('[data-testid="record-click"]') as HTMLButtonElement;
+      const clickBtn = container!.querySelector(
+        '[data-testid="record-click"]'
+      ) as HTMLButtonElement;
       await act(async () => {
         clickBtn.click();
       });
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith("Telemetry record rate limited by API.");
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Telemetry record rate limited by API."
+      );
       expect(clicksEl?.textContent).toBe(initialClicks);
       consoleWarnSpy.mockRestore();
     });
@@ -259,7 +297,8 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
 
       // Unsent deferred payloads should be flushed immediately with keepalive: true
       const postCalls = fetchSpy.mock.calls.filter(
-        ([url, init]: [unknown, RequestInit | undefined]) => String(url) === "/api/telemetry" && init?.method === "POST"
+        ([url, init]: [unknown, RequestInit | undefined]) =>
+          String(url) === "/api/telemetry" && init?.method === "POST"
       );
 
       expect(postCalls.length).toBeGreaterThan(0);
@@ -287,7 +326,8 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
       });
 
       const postCalls = fetchSpy.mock.calls.filter(
-        ([url, init]: [unknown, RequestInit | undefined]) => String(url) === "/api/telemetry" && init?.method === "POST"
+        ([url, init]: [unknown, RequestInit | undefined]) =>
+          String(url) === "/api/telemetry" && init?.method === "POST"
       );
 
       expect(postCalls.length).toBeGreaterThan(0);
@@ -296,4 +336,3 @@ describe("Idle-Scheduled Non-Blocking Telemetry Dispatch Suite", () => {
     });
   });
 });
-

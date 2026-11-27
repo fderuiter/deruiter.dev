@@ -18,7 +18,7 @@ export interface BlogPostData {
   updated_at: Date;
 }
 
-// Edit post prose with the humanizer skill in .claude/skills/humanizer/
+// Edit post prose with the humanizer skill in .agents/skills/humanizer/
 // before it ships; the wording guards in __tests__/ still apply (#3041).
 const rawFallbackBlogPosts: BlogPostData[] = [
   {

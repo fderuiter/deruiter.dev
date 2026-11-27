@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-9",
-    slug: "polyglot-tsp",
-    title: "Polyglot-TSP: One Problem, 50+ Languages",
-    primary_language: "Rust",
-    github_url: "https://github.com/fderuiter/polyglot-tsp",
-    published: true,
-    simulated_telemetry: false,
-    tags: "algorithms, benchmarking, compiler-toolchains, polyglot-architecture, combinatorial-optimization, Rust, Haskell, Verilog, Python, C++, Zig, Go, Ada, VHDL",
-    editorial_content:
-      "The **Traveling Salesman Problem**, implemented across **50+ programming languages**. An excuse to compare memory models, type systems, and runtime costs while asking the same very expensive routing question.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-9",
+  slug: "polyglot-tsp",
+  title: "Polyglot-TSP: One Problem, 50+ Languages",
+  primary_language: "Rust",
+  github_url: "https://github.com/fderuiter/polyglot-tsp",
+  published: true,
+  simulated_telemetry: false,
+  tags: "algorithms, benchmarking, compiler-toolchains, polyglot-architecture, combinatorial-optimization, Rust, Haskell, Verilog, Python, C++, Zig, Go, Ada, VHDL",
+  editorial_content:
+    "The **Traveling Salesman Problem**, implemented across **50+ programming languages**. An excuse to compare memory models, type systems, and runtime costs while asking the same very expensive routing question.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Polyglot-TSP solves the Traveling Salesman Problem by brute force in more than 50 languages, to compare implementation choices, runtime behavior, and the cost of factorial growth.</p>
 <p><strong>The approach:</strong> Each implementation solves the same routing problem. Comparing the code and benchmark results exposes differences in allocation, representation, and execution.</p>
 <p><strong>Reported project measurements:</strong> 100% baseline output verification across 50+ language implementations; sub-microsecond execution on native Rust/C++ implementations; automated multi-target CI matrix.</p>
@@ -86,6 +86,6 @@ solveTSP matrix =
   <li>Tests assert on each process's stdout instead of calling through C-ABI FFI bindings, so esoteric and simulated runtimes (INTERCAL, Verilog HDL) need no linking.</li>
   <li>Every language runs the same brute-force permutation search ($O(N!)$) with no heuristics, so the timings compare runtimes and nothing else.</li>
 </ul>`,
-    created_at: new Date("2026-02-25T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-02-25T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

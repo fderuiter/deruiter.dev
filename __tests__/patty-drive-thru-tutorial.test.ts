@@ -65,9 +65,7 @@ describe("the practice shift (#3451)", () => {
       shift = stepShift(shift, 0.25).state;
     }
     expect(shift.orders).toHaveLength(1);
-    expect(shift.orders[0].items.map((item) => item.itemId)).toEqual([
-      "fries",
-    ]);
+    expect(shift.orders[0].items.map((item) => item.itemId)).toEqual(["fries"]);
     expect(getKdsTickets(shift)).toHaveLength(1);
   });
 

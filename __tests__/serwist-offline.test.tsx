@@ -17,7 +17,10 @@ import {
   type RunSnapshot,
   type RunSnapshotFormat,
 } from "@/lib/arcade";
-import { DISCARDED_RUN_NOTICE, SAVED_RUN_NOTE } from "@/components/arcade/pause";
+import {
+  DISCARDED_RUN_NOTICE,
+  SAVED_RUN_NOTE,
+} from "@/components/arcade/pause";
 import {
   saveStudyDraft,
   loadStudyDraft,
@@ -70,7 +73,11 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       Object.defineProperty(navigator, "onLine", originalOnLineDescriptor);
     }
     if (originalLocalStorageDescriptor) {
-      Object.defineProperty(window, "localStorage", originalLocalStorageDescriptor);
+      Object.defineProperty(
+        window,
+        "localStorage",
+        originalLocalStorageDescriptor
+      );
     }
     vi.restoreAllMocks();
   });
@@ -341,10 +348,14 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(rev2).not.toBe(rev1);
 
       // Verify Gen 1 precache is evicted and Gen 2 precache is active
-      const activePrecache = await fixture.caches.open(`serwist-precache-${rev2}`);
+      const activePrecache = await fixture.caches.open(
+        `serwist-precache-${rev2}`
+      );
       const arcadePrecacheMatch = await activePrecache.match("/arcade");
       expect(arcadePrecacheMatch).toBeDefined();
-      const oldPrecacheExists = await fixture.caches.has(`serwist-precache-${rev1}`);
+      const oldPrecacheExists = await fixture.caches.has(
+        `serwist-precache-${rev1}`
+      );
       expect(oldPrecacheExists).toBe(false);
 
       // Transition: browser goes offline
@@ -368,10 +379,16 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         fixture.caches
       );
       expect(shellScript.status).toBe(200);
-      expect(await shellScript.text()).toContain("generation gen-2 shell script");
+      expect(await shellScript.text()).toContain(
+        "generation gen-2 shell script"
+      );
 
       // Verify Arcade run restoration from storage
-      const restoredRun = readRunSnapshot(fixture.storage, "laser-loon", arcadeFormat);
+      const restoredRun = readRunSnapshot(
+        fixture.storage,
+        "laser-loon",
+        arcadeFormat
+      );
       expect(restoredRun.status).toBe("ok");
       if (restoredRun.status === "ok") {
         expect(restoredRun.snapshot.schema).toBe(1);
@@ -386,15 +403,21 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         });
       }
 
-      fixture.recordAudit("restore_arcade_run", "/arcade", "gen-2", "readRunSnapshot()", {
-        arcadeSaveIdentity: {
-          slug: "laser-loon",
-          schema: 1,
-          score: 4200,
-          wave: 5,
-        },
-        recoveryNotice: SAVED_RUN_NOTE,
-      });
+      fixture.recordAudit(
+        "restore_arcade_run",
+        "/arcade",
+        "gen-2",
+        "readRunSnapshot()",
+        {
+          arcadeSaveIdentity: {
+            slug: "laser-loon",
+            schema: 1,
+            score: 4200,
+            wave: 5,
+          },
+          recoveryNotice: SAVED_RUN_NOTE,
+        }
+      );
 
       // Reload /crf offline: non-precached route falls back to /offline
       fixture.reloadBrowserPage("/crf");
@@ -407,9 +430,15 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(crfDoc.status).toBe(200);
       expect(await crfDoc.text()).toContain("Offline Shell Gen2");
 
-      fixture.recordAudit("render_offline_fallback", "/crf", "offline-fallback", "handleFetch(/crf)", {
-        recoveryNotice: "This page isn’t available offline",
-      });
+      fixture.recordAudit(
+        "render_offline_fallback",
+        "/crf",
+        "offline-fallback",
+        "handleFetch(/crf)",
+        {
+          recoveryNotice: "This page isn’t available offline",
+        }
+      );
 
       // Recovery retry & reconnect: network returns online
       fixture.setOnline(true);
@@ -439,21 +468,29 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       expect(initialStudy.id).toBe("SYNTHETIC-STUDY-PWA-R10");
       expect(loadRecoveredDraftSavedAt()).toBe(savedAtTimestamp);
 
-      fixture.recordAudit("restore_clinical_draft", "/crf", "gen-2", "loadStudyDraft()", {
-        clinicalDraftIdentity: {
-          studyId: "SYNTHETIC-STUDY-PWA-R10",
-          envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
-          formsCount: 1,
-          savedAt: savedAtTimestamp,
-        },
-        recoveryNotice: "Recovered local draft · ",
-      });
+      fixture.recordAudit(
+        "restore_clinical_draft",
+        "/crf",
+        "gen-2",
+        "loadStudyDraft()",
+        {
+          clinicalDraftIdentity: {
+            studyId: "SYNTHETIC-STUDY-PWA-R10",
+            envelopeVersion: STUDY_DRAFT_ENVELOPE_VERSION,
+            formsCount: 1,
+            savedAt: savedAtTimestamp,
+          },
+          recoveryNotice: "Recovered local draft · ",
+        }
+      );
 
       // Verify no mixed-build blank journey was accepted
       expect(fixture.auditLog.length).toBeGreaterThanOrEqual(8);
       const finalAudit = fixture.auditLog[fixture.auditLog.length - 1];
       expect(finalAudit.controllerGeneration).toBe("gen-2");
-      expect(finalAudit.clinicalDraftIdentity?.studyId).toBe("SYNTHETIC-STUDY-PWA-R10");
+      expect(finalAudit.clinicalDraftIdentity?.studyId).toBe(
+        "SYNTHETIC-STUDY-PWA-R10"
+      );
     });
 
     it("preserves compatible assets while rejecting unavailable old chunks on offline dynamic fetch", async () => {
@@ -482,7 +519,9 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         fixture.caches
       );
       expect(sharedAssetRes.status).toBe(200);
-      expect(await sharedAssetRes.text()).toContain("shared font asset inter-latin");
+      expect(await sharedAssetRes.text()).toContain(
+        "shared font asset inter-latin"
+      );
 
       // 2. Verify runtime-cached 3D model survived precache eviction and is served offline
       const offlineModelRes = await fixture.workerGen2.handleFetch(
@@ -515,12 +554,23 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       ).rejects.toThrow(/Network unreachable offline/);
 
       // 5. Verify the fetch rejections do not corrupt or erase stored active workspace state
-      const runAfterFailedFetch = readRunSnapshot(fixture.storage, "laser-loon", arcadeFormat);
+      const runAfterFailedFetch = readRunSnapshot(
+        fixture.storage,
+        "laser-loon",
+        arcadeFormat
+      );
       expect(runAfterFailedFetch.status).toBe("ok");
 
-      fixture.recordAudit("compatible_assets_verified", "/arcade", "gen-2", "handleFetch(sharedAssets)", {
-        recoveryNotice: "Compatible assets served; obsolete chunks safely rejected without state corruption",
-      });
+      fixture.recordAudit(
+        "compatible_assets_verified",
+        "/arcade",
+        "gen-2",
+        "handleFetch(sharedAssets)",
+        {
+          recoveryNotice:
+            "Compatible assets served; obsolete chunks safely rejected without state corruption",
+        }
+      );
     });
 
     it("safely handles breaking schema evolution for both Arcade runs and Clinical Studio drafts", () => {
@@ -543,7 +593,9 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
 
       // Storage entry cleared so invalid state does not persist
       expect(storage.getItem(runSnapshotKey("laser-loon"))).toBeNull();
-      expect(DISCARDED_RUN_NOTICE).toBe("Your saved run could not be read, so it was cleared.");
+      expect(DISCARDED_RUN_NOTICE).toBe(
+        "Your saved run could not be read, so it was cleared."
+      );
 
       // --- Part B: Clinical Studio Envelope Version Mismatch & Corrupt Draft ---
       const obsoleteEnvelope = {
@@ -551,7 +603,10 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         savedAt: "2026-11-12T10:00:00.000Z",
         study: syntheticStudyDraft,
       };
-      storage.setItem(STUDY_DRAFT_STORAGE_KEY, JSON.stringify(obsoleteEnvelope));
+      storage.setItem(
+        STUDY_DRAFT_STORAGE_KEY,
+        JSON.stringify(obsoleteEnvelope)
+      );
 
       // loadStudyDraft preserves corrupt draft to backup key for operator recovery
       const draftResult = loadStudyDraft(storage);
@@ -574,8 +629,12 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       deniedStorage.setDenyReads(true);
 
       // Arcade handles storage denial safely
-      expect(writeRunSnapshot(deniedStorage, "laser-loon", seededRun)).toBe(false);
-      expect(readRunSnapshot(deniedStorage, "laser-loon", arcadeFormat)).toEqual({ status: "empty" });
+      expect(writeRunSnapshot(deniedStorage, "laser-loon", seededRun)).toBe(
+        false
+      );
+      expect(
+        readRunSnapshot(deniedStorage, "laser-loon", arcadeFormat)
+      ).toEqual({ status: "empty" });
 
       // CRF Studio handles storage denial safely
       const saveResult = saveStudyDraft(syntheticStudyDraft, deniedStorage);
@@ -600,7 +659,10 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
       const fixture = new TwoGenerationPwaFixture();
       await fixture.setupInitialGeneration();
       fixture.seedArcadeRun("laser-loon", seededRun);
-      fixture.seedClinicalStudyDraft(syntheticStudyDraft, "2026-11-12T10:00:00.000Z");
+      fixture.seedClinicalStudyDraft(
+        syntheticStudyDraft,
+        "2026-11-12T10:00:00.000Z"
+      );
       fixture.suspendActiveSession();
       await fixture.activateNextGeneration();
       fixture.setOnline(false);
@@ -608,14 +670,22 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
 
       // Known device limitations documentation check
       const recordedLimitations = {
-        safariScriptStorageEviction: "WebKit clears script storage after 7 days without user interaction (ITP)",
-        iosBackgroundTabSuspension: "iOS suspends background tabs, pausing workers and network connections",
-        firefoxPrivateBrowsingStorage: "Firefox private browsing caps indexedDB and localStorage ephemerally",
-        webGlContextLoss: "Backgrounding under mobile memory pressure drops WebGL context",
+        safariScriptStorageEviction:
+          "WebKit clears script storage after 7 days without user interaction (ITP)",
+        iosBackgroundTabSuspension:
+          "iOS suspends background tabs, pausing workers and network connections",
+        firefoxPrivateBrowsingStorage:
+          "Firefox private browsing caps indexedDB and localStorage ephemerally",
+        webGlContextLoss:
+          "Backgrounding under mobile memory pressure drops WebGL context",
       };
 
-      expect(recordedLimitations.safariScriptStorageEviction).toContain("7 days");
-      expect(recordedLimitations.iosBackgroundTabSuspension).toContain("suspends background tabs");
+      expect(recordedLimitations.safariScriptStorageEviction).toContain(
+        "7 days"
+      );
+      expect(recordedLimitations.iosBackgroundTabSuspension).toContain(
+        "suspends background tabs"
+      );
 
       // Verify audit transitions and explicit browser commands were recorded
       expect(fixture.auditLog.map((entry) => entry.phase)).toEqual([
@@ -628,10 +698,18 @@ describe("Serwist PWA Engine & Offline App Shell Integration", () => {
         "reload_browser_page",
       ]);
 
-      const browserCommands = fixture.auditLog.map((entry) => entry.browserCommand);
-      expect(browserCommands).toContain("navigator.serviceWorker.register(/sw.js)");
-      expect(browserCommands).toContain("document.visibilitychange:hidden / window.pagehide");
-      expect(browserCommands).toContain("serviceWorker.skipWaiting / clientsClaim");
+      const browserCommands = fixture.auditLog.map(
+        (entry) => entry.browserCommand
+      );
+      expect(browserCommands).toContain(
+        "navigator.serviceWorker.register(/sw.js)"
+      );
+      expect(browserCommands).toContain(
+        "document.visibilitychange:hidden / window.pagehide"
+      );
+      expect(browserCommands).toContain(
+        "serviceWorker.skipWaiting / clientsClaim"
+      );
       expect(browserCommands).toContain("window.dispatchEvent('offline')");
       expect(browserCommands).toContain("window.location.reload()");
     });

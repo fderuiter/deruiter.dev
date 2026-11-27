@@ -269,8 +269,10 @@ const eslintConfig = defineConfig([
     "public/*.js",
     // Agent worktrees are full second checkouts of this repository living inside
     // it. Without this, ESLint lints every file twice -- and the copies sit at
-    // .claude/worktrees/<name>/..., which no rule-scoped ignore pattern such as
-    // "__tests__/**" matches, so test files get linted under production rules.
+    // .claude/worktrees/<name>/... or .agents/worktrees/<name>/..., which no
+    // rule-scoped ignore pattern such as "__tests__/**" matches, so test files
+    // get linted under production rules.
+    ".agents/**",
     ".claude/**",
   ]),
 ]);

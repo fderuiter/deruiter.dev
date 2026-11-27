@@ -5,7 +5,7 @@ description: Build, run, and drive the fderuiter/deruiter.dev Next.js web app. U
 
 This is a Next.js 16 (App Router, Turbopack) web app. For agent/automated
 use, start the dev server and drive a headless Chromium page against it
-via the REPL at `.claude/skills/run-portfolio/driver.mjs` (a hand-rolled
+via the REPL at `.agents/skills/run-portfolio/driver.mjs` (a hand-rolled
 stand-in for `chromium-cli`, which isn't installed in this environment).
 
 All paths below are relative to the repo root.
@@ -59,7 +59,7 @@ command at a time and read the output back:
 
 ```bash
 tmux new-session -d -s app -x 200 -y 50
-tmux send-keys -t app 'cd $(pwd) && node .claude/skills/run-portfolio/driver.mjs' Enter
+tmux send-keys -t app 'cd $(pwd) && node .agents/skills/run-portfolio/driver.mjs' Enter
 timeout 15 bash -c 'until tmux capture-pane -t app -p | grep -q "driver>"; do sleep 0.3; done'
 
 tmux send-keys -t app 'launch' Enter
@@ -77,7 +77,7 @@ and let the driver exit when stdin closes. This is simpler than tmux
 when you don't need to react to output between steps:
 
 ```bash
-node .claude/skills/run-portfolio/driver.mjs <<'EOF'
+node .agents/skills/run-portfolio/driver.mjs <<'EOF'
 launch 375x812 touch
 nav /arcade/laser-loon
 wait-for text=Try it anyway
@@ -139,7 +139,7 @@ focus before sending keys. Verified on Retro Labyrinth (the player moves
 down and `npm i` fires: ammo 12 to 11, RAM 24 to 20 in the HUD):
 
 ```bash
-node .claude/skills/run-portfolio/driver.mjs <<'EOF'
+node .agents/skills/run-portfolio/driver.mjs <<'EOF'
 launch
 nav /arcade/retro-labyrinth
 click-text Launch Cabinet

@@ -24,8 +24,9 @@
 # reports under /.vitest (#1571)
 /.vitest
 /blob-report
-# ESLint cache (CI restores it in the static gate, #1768)
+# ESLint and Prettier caches (CI restores them in the static gate, #1768)
 .eslintcache
+.prettiercache
 
 # next.js
 /.next/
@@ -80,6 +81,8 @@ app/theme.css
 /.scratch
 /scratch/
 /.jules/
+/.claude/worktrees/
+/.agents/worktrees/
 /tmp/
 
 # clerk configuration (can include secrets)

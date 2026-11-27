@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -42,7 +44,10 @@ class LocalStorageMock {
 }
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -92,7 +97,11 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       roundRect: vi.fn(),
       quadraticCurveTo: vi.fn(),
       bezierCurveTo: vi.fn(),
-      measureText: vi.fn(() => ({ width: 50, actualBoundingBoxAscent: 10, actualBoundingBoxDescent: 2 })),
+      measureText: vi.fn(() => ({
+        width: 50,
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 2,
+      })),
       rect: vi.fn(),
       clip: vi.fn(),
       fill: vi.fn(),
@@ -121,7 +130,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
     }));
 
     // Mock Fullscreen API methods
-    HTMLElement.prototype.requestFullscreen = vi.fn().mockResolvedValue(undefined);
+    HTMLElement.prototype.requestFullscreen = vi
+      .fn()
+      .mockResolvedValue(undefined);
     document.exitFullscreen = vi.fn().mockResolvedValue(undefined);
 
     container = document.createElement("div");
@@ -144,7 +155,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       root.render(<LaserLoon />);
     });
 
-    const fullscreenBtn = container.querySelector('button[aria-label*="Fullscreen"]');
+    const fullscreenBtn = container.querySelector(
+      'button[aria-label*="Fullscreen"]'
+    );
     expect(fullscreenBtn).not.toBeNull();
 
     await act(async () => {
@@ -157,7 +170,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       root.render(<WorkingWithDuck />);
     });
 
-    const fullscreenBtn = container.querySelector('button[aria-label*="Fullscreen"]');
+    const fullscreenBtn = container.querySelector(
+      'button[aria-label*="Fullscreen"]'
+    );
     expect(fullscreenBtn).not.toBeNull();
 
     await act(async () => {
@@ -170,7 +185,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       root.render(<RetroLabyrinth />);
     });
 
-    const fullscreenBtn = container.querySelector('button[aria-label*="Fullscreen"]');
+    const fullscreenBtn = container.querySelector(
+      'button[aria-label*="Fullscreen"]'
+    );
     expect(fullscreenBtn).not.toBeNull();
 
     await act(async () => {
@@ -183,7 +200,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       root.render(<ClinicalTrialChaos />);
     });
 
-    const fullscreenBtn = container.querySelector('button[aria-label*="Fullscreen"]');
+    const fullscreenBtn = container.querySelector(
+      'button[aria-label*="Fullscreen"]'
+    );
     expect(fullscreenBtn).not.toBeNull();
 
     await act(async () => {
@@ -196,7 +215,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       root.render(<GarminWatchSimulator />);
     });
 
-    const fullscreenBtn = container.querySelector('button[aria-label*="Fullscreen"]');
+    const fullscreenBtn = container.querySelector(
+      'button[aria-label*="Fullscreen"]'
+    );
     expect(fullscreenBtn).not.toBeNull();
 
     await act(async () => {
@@ -209,7 +230,9 @@ describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
       root.render(<QuasiPerfectPuzzler />);
     });
 
-    const fullscreenBtn = container.querySelector('button[aria-label*="Fullscreen"]');
+    const fullscreenBtn = container.querySelector(
+      'button[aria-label*="Fullscreen"]'
+    );
     expect(fullscreenBtn).not.toBeNull();
 
     await act(async () => {

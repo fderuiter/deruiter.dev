@@ -45,7 +45,9 @@ export function buildRecordedSuggestionKey(
   ].join(KEY_SEPARATOR);
 }
 
-function normalizeFixture(fixture: RecordedFixtureFile): RecordedSdtmSuggestionSet {
+function normalizeFixture(
+  fixture: RecordedFixtureFile
+): RecordedSdtmSuggestionSet {
   const suggestions: readonly RecordedSdtmSuggestion[] = Object.freeze(
     fixture.suggestions.map((row) => {
       const expectedRawColumn = `${row.sourceDataset}.${row.sourceColumn}`;

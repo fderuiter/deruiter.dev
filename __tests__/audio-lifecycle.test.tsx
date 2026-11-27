@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -76,7 +78,9 @@ describe("Audio Provider Lifecycle and Guardrails Suite", () => {
       destination: {},
     };
 
-    const mockAudioContextClass = vi.fn().mockImplementation(function (this: any) {
+    const mockAudioContextClass = vi.fn().mockImplementation(function (
+      this: any
+    ) {
       return mockAudioContextInstance;
     });
     vi.stubGlobal("AudioContext", mockAudioContextClass);

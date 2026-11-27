@@ -214,6 +214,7 @@ describe("CI Execution Policy", () => {
         "npm run lint:docs",
         "npm run typecheck",
         "npm run lint",
+        "npm run format:check",
         "npm run verify -- --skip-benchmark-evidence",
       ]) {
         expect(block, command).toContain(command);
@@ -248,11 +249,16 @@ describe("CI Execution Policy", () => {
       ).toBe(true);
     });
 
-    it("keeps lint incremental only through a content-keyed cache", () => {
+    it("keeps lint and format incremental only through a content-keyed cache", () => {
       const block = jobBlock("static-gate");
       expect(block).not.toContain("tsconfig.tsbuildinfo");
+      expect(block).toContain(".eslintcache");
+      expect(block).toContain(".prettiercache");
       expect(block).toContain(
         "npm run lint -- --cache --cache-strategy content --cache-location .eslintcache"
+      );
+      expect(block).toContain(
+        "npm run format:check -- --cache --cache-location .prettiercache"
       );
       expect(block).toMatch(
         /key: static-incremental-\$\{\{ hashFiles\('package-lock\.json'\) \}\}-\$\{\{ github\.sha \}\}/
@@ -901,6 +907,77 @@ describe("CI Execution Policy", () => {
         expect(timeout).toBeDefined();
         expect(Number(timeout)).toBeGreaterThan(0);
         expect(field(jobBlock(name), "runs-on")).toBe("ubuntu-latest");
+      }
+    );
+  });
+
+  describe("workflow hardening: least-privilege credentials, concurrency, and safe expressions", () => {
+    const workflowsDir = path.join(process.cwd(), ".github/workflows");
+    const workflowFiles = fs
+      .readdirSync(workflowsDir)
+      .filter((file) => file.endsWith(".yml"))
+      .sort();
+
+    it.each(jobNames)(
+      "%s declares explicit job-level contents: read permission",
+      (name) => {
+        expect(jobBlock(name)).toMatch(
+          /^ {4}permissions:\n(?: {6}[a-z-]+: [a-z]+\n)* {6}contents: read$/m
+        );
+      }
+    );
+
+    it.each([
+      "ci.yml",
+      "study-data-core.yml",
+      "synthetic-probes.yml",
+      "scheduled-security-audit.yml",
+    ])(
+      "%s sets persist-credentials: false on every actions/checkout step",
+      (file) => {
+        const text = fs.readFileSync(path.join(workflowsDir, file), "utf8");
+        const stepBlocks = text
+          .split(/\n {6}- /)
+          .slice(1)
+          .filter((step) => step.includes("uses: actions/checkout@"));
+        expect(stepBlocks.length).toBeGreaterThan(0);
+        for (const step of stepBlocks) {
+          expect(step).toContain("persist-credentials: false");
+        }
+      }
+    );
+
+    it("configures concurrency controls across every workflow file", () => {
+      expect(workflowFiles.length).toBeGreaterThanOrEqual(13);
+      for (const file of workflowFiles) {
+        const text = fs.readFileSync(path.join(workflowsDir, file), "utf8");
+        expect(text, file).toMatch(/^(?: {4})?concurrency:\n {2,6}group: /m);
+      }
+    });
+
+    it.each(["synthetic-probes.yml", "scheduled-security-audit.yml"])(
+      "%s never interpolates ${{ }} into run: blocks",
+      (file) => {
+        const text = fs.readFileSync(path.join(workflowsDir, file), "utf8");
+        const stepBlocks = text.split(/\n {6}- /).slice(1);
+        for (const step of stepBlocks) {
+          const singleLineRun = step.match(/(?:^|\n) {0,8}run: (?!\|)(.+)/);
+          if (singleLineRun) {
+            expect(
+              singleLineRun[1],
+              `${file}: ${step.split("\n")[0]}`
+            ).not.toContain("${{");
+          }
+          const blockRun = step.match(
+            /(?:^|\n) {0,8}run: \|\n((?: {10,}.*\n|\n)*)/
+          );
+          if (blockRun) {
+            expect(
+              blockRun[1],
+              `${file}: ${step.split("\n")[0]}`
+            ).not.toContain("${{");
+          }
+        }
       }
     );
   });

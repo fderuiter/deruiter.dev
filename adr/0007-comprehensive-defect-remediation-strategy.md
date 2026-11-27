@@ -11,6 +11,7 @@ Accepted
 Complex interactive engines across the portfolio—including formal logic proof solvers (`lib/proof-utils.ts`), 21 CFR Part 11 CRF clinical calculations (`lib/crf/ast-evaluator.ts`), Garmin watch telemetry simulations (`lib/garmin-engine.ts`), and 60FPS deterministic game loops (`lib/working-with-duck-engine.ts`)—contain intricate state machines and mathematical evaluation graphs.
 
 Without a systematic, multi-layered defect eradication strategy:
+
 1. Corner cases such as division-by-zero, cyclic graph references, deep AST recursion overflows, and floating-point drift can lead to latent runtime crashes or corrupted outputs.
 2. Defect fixes may treat surface symptoms rather than eliminating root architectural flaws, risking regression drift when adjacent code paths mutate.
 3. Legacy modules may accumulate technical debt when bug fixes lack automated reproduction regression tests and invariant verification gates in CI.

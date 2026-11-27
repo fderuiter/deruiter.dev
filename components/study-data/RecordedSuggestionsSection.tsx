@@ -51,19 +51,16 @@ export function RecordedSuggestionsSection() {
     >
       <p className={EYEBROW}>Recorded suggester / 04</p>
       <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
-        <h2
-          id="recorded-suggestions-title"
-          className={`min-w-0 ${HEADING}`}
-        >
+        <h2 id="recorded-suggestions-title" className={`min-w-0 ${HEADING}`}>
           Recorded SDTM mapping suggestions
         </h2>
         <SyntheticBadge />
       </div>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
         One committed suggestion per raw collected column in{" "}
-        <span className="font-mono text-slate-100">{selectedStudy}</span>,
-        keyed deterministically by study, raw column, suggested variable and
-        suggester version. No runtime model or network request runs here.
+        <span className="font-mono text-slate-100">{selectedStudy}</span>, keyed
+        deterministically by study, raw column, suggested variable and suggester
+        version. No runtime model or network request runs here.
       </p>
 
       {suggestionSet ? (
@@ -109,13 +106,22 @@ export function RecordedSuggestionsSection() {
               </thead>
               <tbody className="divide-y divide-white/[0.04] text-slate-100">
                 {suggestionSet.suggestions.map((item) => (
-                  <tr key={item.key} className="align-top hover:bg-white/[0.02]">
-                    <th scope="row" className="min-w-0 px-3 py-2.5 text-left font-normal">
+                  <tr
+                    key={item.key}
+                    className="align-top hover:bg-white/[0.02]"
+                  >
+                    <th
+                      scope="row"
+                      className="min-w-0 px-3 py-2.5 text-left font-normal"
+                    >
                       <span className="block font-mono text-xs font-semibold text-white">
                         {item.rawColumn}
                       </span>
                       <span className="mt-1 block break-words font-mono text-[11px] text-slate-400">
-                        {formatSuggesterMeta(item.method, item.suggesterVersion)}
+                        {formatSuggesterMeta(
+                          item.method,
+                          item.suggesterVersion
+                        )}
                       </span>
                     </th>
                     <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-emerald-300">

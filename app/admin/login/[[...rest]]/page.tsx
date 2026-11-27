@@ -13,7 +13,10 @@ export const metadata: Metadata = {
 
 export default function AdminLoginPage() {
   return (
-    <PageLayout variant="standard" className="items-center justify-center min-h-[85vh]">
+    <PageLayout
+      variant="standard"
+      className="items-center justify-center min-h-[85vh]"
+    >
       <AdminLoginGateway />
     </PageLayout>
   );

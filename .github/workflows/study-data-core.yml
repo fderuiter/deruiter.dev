@@ -76,6 +76,8 @@ jobs:
     name: CDISC CORE scope
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     outputs:
       run: ${{ steps.scope.outputs.run }}
     steps:
@@ -121,6 +123,8 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.run != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code

@@ -7,7 +7,7 @@ import {
   calculateRelatedReading,
   CONTENT_PILLAR_CATALOG,
 } from "@/lib/blog";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { ListPublishedCaseStudiesHandler } from "@/lib/services";
 import { RichNarrative } from "@/components/RichNarrative";
 import { BlogPostReactions } from "@/components/blog/BlogPostReactions";
 import { TableOfContents } from "@/components/blog/TableOfContents";
@@ -84,11 +84,14 @@ export async function generateMetadata({
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const [allPosts, post, allCaseStudies] = await Promise.all([
+  const [allPosts, post, caseStudiesResult] = await Promise.all([
     getAllPublishedBlogPosts(),
     getBlogPostBySlug(slug),
-    CaseStudyService.getAllPublishedCaseStudies(),
+    new ListPublishedCaseStudiesHandler().execute(),
   ]);
+  const allCaseStudies = caseStudiesResult.success
+    ? caseStudiesResult.data
+    : [];
 
   if (!post) {
     notFound();

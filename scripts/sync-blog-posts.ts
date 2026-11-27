@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { prisma } from "../lib/db";
 import { sanitizeContentHtml } from "../lib/content-sanitizer";
-import { BlogPostService } from "../lib/services/blog-service";
+import { EvictBlogCacheHandler } from "../lib/services";
 import {
   FALLBACK_BLOG_POSTS,
   type BlogPostData,
@@ -74,7 +74,7 @@ export async function syncBlogPosts(
   const db = options.prismaClient ?? prisma;
   const evictCache =
     options.evictCache ??
-    ((slug: string) => BlogPostService.evictBlogPostCache(slug));
+    ((slug: string) => new EvictBlogCacheHandler().execute({ slug }));
 
   const report: SyncReport = {
     mode: isCommit ? "commit" : "dry-run",

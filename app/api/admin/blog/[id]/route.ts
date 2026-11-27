@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BlogDraftIdParamsSchema, BlogDraftUpdateSchema } from "@/lib/schemas";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
-import { sanitizeError } from "@/lib/error-sanitization";
-import { logger } from "@/lib/logger";
+import {
+  DeleteBlogPostHandler,
+  GetDraftBlogPostHandler,
+  UpdateDraftBlogPostHandler,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +17,6 @@ function validationError(error: unknown) {
   return {
     error: "Invalid blog draft request",
     details: zodIssueDetails(error, "payload"),
-  };
-}
-
-function duplicateSlugResponse() {
-  return {
-    error: "A blog post with this slug already exists",
-    details: [
-      {
-        path: "slug",
-        message: "A blog post with this slug already exists",
-      },
-    ],
   };
 }
 
@@ -41,22 +35,23 @@ export const GET = createApiHandler(
       return NextResponse.json(parsed.error, { status: 400 });
     }
 
-    try {
-      const draft = await BlogPostService.getDraftBlogPostById(parsed.id);
-      if (!draft) {
+    const result = await new GetDraftBlogPostHandler().execute({
+      id: parsed.id,
+    });
+    if (!result.success) {
+      if (result.error.code === "BLOG_POST_NOT_FOUND") {
         return NextResponse.json(
           { error: "Blog draft not found" },
           { status: 404 }
         );
       }
-      return NextResponse.json({ data: draft });
-    } catch (error) {
-      logger.error("API admin blog draft read failed:", sanitizeError(error));
-      return NextResponse.json(
-        { error: "Failed to load blog draft" },
-        { status: 500 }
-      );
+      return serviceFailureResponse(result, {
+        errorMessage: "Failed to load blog draft",
+        logContext: "API admin blog draft read failed:",
+      });
     }
+
+    return NextResponse.json({ data: result.data });
   },
   { auth: "clerk_admin" }
 );
@@ -68,34 +63,35 @@ export const PATCH = createApiHandler(
       return NextResponse.json(parsed.error, { status: 400 });
     }
 
-    try {
-      const updated = await BlogPostService.updateDraftBlogPost(
-        parsed.id,
-        data
-      );
-      if (!updated) {
+    const result = await new UpdateDraftBlogPostHandler().execute({
+      id: parsed.id,
+      updates: data,
+    });
+    if (!result.success) {
+      if (result.error.code === "BLOG_POST_NOT_FOUND") {
         return NextResponse.json(
           { error: "Blog draft not found" },
           { status: 404 }
         );
       }
-      return NextResponse.json({ success: true, data: updated });
-    } catch (error: unknown) {
-      const details = error as { code?: string; message?: string };
-      if (
-        details.code === "P2002" ||
-        (typeof details.message === "string" &&
-          details.message.includes("Unique constraint failed"))
-      ) {
-        return NextResponse.json(duplicateSlugResponse(), { status: 409 });
+      if (result.error.code === "DUPLICATE_BLOG_SLUG") {
+        return serviceFailureResponse(result, {
+          errorMessage: "A blog post with this slug already exists",
+          details: [
+            {
+              path: "slug",
+              message: "A blog post with this slug already exists",
+            },
+          ],
+        });
       }
-
-      logger.error("API admin blog draft edit failed:", sanitizeError(error));
-      return NextResponse.json(
-        { error: "Failed to update blog draft" },
-        { status: 500 }
-      );
+      return serviceFailureResponse(result, {
+        errorMessage: "Failed to update blog draft",
+        logContext: "API admin blog draft edit failed:",
+      });
     }
+
+    return NextResponse.json({ success: true, data: result.data });
   },
   {
     schema: BlogDraftUpdateSchema,
@@ -113,22 +109,23 @@ export const DELETE = createApiHandler(
       return NextResponse.json(parsed.error, { status: 400 });
     }
 
-    try {
-      const deleted = await BlogPostService.deleteBlogPost(parsed.id);
-      if (!deleted) {
+    const result = await new DeleteBlogPostHandler().execute({
+      id: parsed.id,
+    });
+    if (!result.success) {
+      if (result.error.code === "BLOG_POST_NOT_FOUND") {
         return NextResponse.json(
           { error: "Blog draft not found" },
           { status: 404 }
         );
       }
-      return NextResponse.json({ success: true, data: { id: parsed.id } });
-    } catch (error) {
-      logger.error("API admin blog deletion failed:", sanitizeError(error));
-      return NextResponse.json(
-        { error: "Failed to delete blog post" },
-        { status: 500 }
-      );
+      return serviceFailureResponse(result, {
+        errorMessage: "Failed to delete blog post",
+        logContext: "API admin blog deletion failed:",
+      });
     }
+
+    return NextResponse.json({ success: true, data: { id: parsed.id } });
   },
   { auth: "clerk_admin" }
 );

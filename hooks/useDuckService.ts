@@ -9,7 +9,7 @@ import {
   InteractHazardInputSchema,
   InteractHazardResult,
   createFailure,
-} from "@/lib/services";
+} from "@/lib/services/client";
 
 /**
  * Custom React hook providing access to Working With Duck domain service operations.

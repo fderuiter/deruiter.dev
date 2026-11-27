@@ -1,11 +1,13 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  MaintenanceService,
+  RunMaintenancePipelineHandler,
+  createSuccess,
   type MaintenanceAdapters,
   type MaintenancePhaseResult,
-} from "@/lib/services/maintenance-service";
-import { createSuccess } from "@/lib/services/service-result";
+  type MaintenanceSummary,
+  type RunMaintenancePipelineInput,
+} from "@/lib/services";
 
 /**
  * A bounded phase stops waiting at its deadline, but Promise.race does not
@@ -41,6 +43,16 @@ function quickAdapters(
   };
 }
 
+async function runPipeline(
+  input: RunMaintenancePipelineInput
+): Promise<MaintenanceSummary> {
+  const res = await new RunMaintenancePipelineHandler().execute(input);
+  if (!res.success) {
+    throw new Error(`Unexpected pipeline failure: ${res.error.code}`);
+  }
+  return res.data;
+}
+
 describe("maintenance phases that outlive their deadline (#3809)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -57,7 +69,7 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
   it("reports a slow phase as timed out with no counts, and skips every later phase", async () => {
     const slow = deferred();
     const later = quickAdapters({ syncTelemetry: () => slow.promise });
-    const run = MaintenanceService.run({ deadlineMs: 1000, adapters: later });
+    const run = runPipeline({ deadlineMs: 1000, adapters: later });
 
     await vi.advanceTimersByTimeAsync(750);
     const summary = await run;
@@ -80,7 +92,7 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
 
   it("a late completion cannot change the summary already returned", async () => {
     const slow = deferred();
-    const run = MaintenanceService.run({
+    const run = runPipeline({
       deadlineMs: 1000,
       adapters: quickAdapters({ syncTelemetry: () => slow.promise }),
     });
@@ -100,7 +112,7 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
     process.on("unhandledRejection", unhandled);
     try {
       const slow = deferred();
-      const run = MaintenanceService.run({
+      const run = runPipeline({
         deadlineMs: 1000,
         adapters: quickAdapters({ syncTelemetry: () => slow.promise }),
       });
@@ -118,11 +130,8 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
   });
 
   it("classifies a deadline by the timer, even when the injected clock has not moved", async () => {
-    // The clock a caller injects can lag the timers. A phase whose deadline
-    // fired is still running, so it must read as timed out, never as an
-    // established failure.
     const slow = deferred();
-    const run = MaintenanceService.run({
+    const run = runPipeline({
       deadlineMs: 1000,
       clock: () => 1_000_000,
       adapters: quickAdapters({ syncTelemetry: () => slow.promise }),
@@ -134,11 +143,8 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
   });
 
   it("reports a phase's own error as failed, even when it arrives after the deadline window", async () => {
-    // Synchronous work can hold the event loop past the deadline, so the
-    // task's own rejection settles before the timer runs. The task finished,
-    // so the outcome is known: it failed.
     let now = 1_000_000;
-    const summary = await MaintenanceService.run({
+    const summary = await runPipeline({
       deadlineMs: 1000,
       clock: () => now,
       adapters: quickAdapters({
@@ -156,9 +162,6 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
   });
 
   it("an overlapping invocation re-runs claimed work, so each adapter must be replay safe", async () => {
-    // Invocation 1 times out while its write is still in flight; invocation
-    // 2 starts before that write lands. The coordinator has no lock, so the
-    // synthetic store sees both, and only an idempotent write keeps it right.
     const store = new Map<string, number>();
     const pending = deferred();
     let calls = 0;
@@ -173,14 +176,14 @@ describe("maintenance phases that outlive their deadline (#3809)", () => {
       return createSuccess({ processed: 1 });
     });
 
-    const first = MaintenanceService.run({
+    const first = runPipeline({
       deadlineMs: 1000,
       adapters: quickAdapters({ syncTelemetry }),
     });
     await vi.advanceTimersByTimeAsync(750);
     const firstSummary = await first;
 
-    const secondSummary = await MaintenanceService.run({
+    const secondSummary = await runPipeline({
       deadlineMs: 1000,
       adapters: quickAdapters({ syncTelemetry }),
     });

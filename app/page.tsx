@@ -1,5 +1,5 @@
 import { IntentLink } from "@/components/ui/IntentLink";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { ListPublishedCaseStudiesHandler } from "@/lib/services";
 import { ProjectTeaserGrid } from "@/components/ProjectTeaserGrid";
 import { BaseCaseStudy } from "@/types/domain";
 import { Hero } from "@/components/Hero";
@@ -46,7 +46,8 @@ interface HydratedCaseStudy extends BaseCaseStudy {
 }
 
 export default async function PortfolioHomePage() {
-  const data = await CaseStudyService.getAllPublishedCaseStudies();
+  const studiesResult = await new ListPublishedCaseStudiesHandler().execute();
+  const data = studiesResult.success ? studiesResult.data : [];
 
   // Aggregated server-side hydration for each case study
   const caseStudies: HydratedCaseStudy[] = await Promise.all(

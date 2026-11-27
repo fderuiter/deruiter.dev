@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EmailService } from "@/lib/services/email-service";
+import {
+  EnqueueEmailHandler,
+  GetSuppressedEmailsHandler,
+  SendContactInquiryHandler,
+  SendFeedbackNotificationHandler,
+  SendRawEmailHandler,
+  createSuccess,
+  resetResendClient,
+} from "@/lib/services";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import * as Sentry from "@sentry/nextjs";
@@ -22,10 +30,10 @@ vi.mock("resend", () => {
   };
 });
 
-describe("EmailService (Spec & Handler)", () => {
+describe("Email Vertical Slices (Spec & Handler)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    EmailService.resetClient();
+    resetResendClient();
     // No suppression record: recipients are known eligible. A failed lookup
     // is unknown, not eligible (#3806), so tests must state eligibility.
     vi.spyOn(prisma.suppressionList, "findUnique").mockResolvedValue(
@@ -34,24 +42,25 @@ describe("EmailService (Spec & Handler)", () => {
   });
 
   afterEach(() => {
-    EmailService.resetClient();
+    resetResendClient();
   });
 
   describe("Simulated Delivery Mode", () => {
     it("should return simulated message ID when RESEND_API_KEY is not provisioned", async () => {
-      // Ensure RESEND_API_KEY is empty
       const origKey = env.RESEND_API_KEY;
       (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "";
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "recipient@example.com",
         subject: "Simulated Test",
         html: "<p>Hello</p>",
       });
 
       expect(result.success).toBe(true);
-      expect(result.simulated).toBe(true);
-      expect(result.data?.id).toMatch(/^sim_msg_/);
+      if (result.success) {
+        expect(result.data.simulated).toBe(true);
+        expect(result.data.id).toMatch(/^sim_msg_/);
+      }
       expect(mockSend).not.toHaveBeenCalled();
 
       (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = origKey;
@@ -61,56 +70,71 @@ describe("EmailService (Spec & Handler)", () => {
   describe("Production Transport Unconfigured Mode (#3793)", () => {
     afterEach(() => {
       vi.unstubAllEnvs();
-      EmailService.resetClient();
+      resetResendClient();
     });
 
     it("should return configuration failure and queue outbound email when RESEND_API_KEY is absent in production", async () => {
       vi.stubEnv("VERCEL_ENV", "production");
       vi.stubEnv("RESEND_API_KEY", "");
-      EmailService.resetClient();
+      resetResendClient();
 
       const queueSpy = vi
-        .spyOn(EmailService, "queueOutboundEmail")
-        .mockResolvedValueOnce("queue_msg_prod_123");
+        .spyOn(EnqueueEmailHandler.prototype, "execute")
+        .mockResolvedValueOnce(
+          createSuccess({ queueId: "queue_msg_prod_123" })
+        );
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "recipient@example.com",
         subject: "Unconfigured Production Test",
         html: "<p>Important message</p>",
       });
 
       expect(result.success).toBe(false);
-      expect(result.simulated).toBeUndefined();
-      expect(result.queued).toBe(true);
-      expect(result.queueId).toBe("queue_msg_prod_123");
-      expect(result.error).toContain("unconfigured");
+      if (!result.success) {
+        expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
+        expect(result.error.message).toContain("unconfigured");
+        expect(result.error.details).toEqual({
+          queued: true,
+          queueId: "queue_msg_prod_123",
+        });
+      }
       expect(mockSend).not.toHaveBeenCalled();
       expect(queueSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ to: "recipient@example.com" }),
-        expect.any(String),
-        expect.stringContaining("unconfigured")
+        expect.objectContaining({
+          options: expect.objectContaining({ to: "recipient@example.com" }),
+          mode: "retry",
+          fromAddress: expect.any(String),
+          errorReason: expect.stringContaining("unconfigured"),
+        })
       );
     });
 
     it("should return configuration failure and queue outbound email when RESEND_API_KEY is blank in production", async () => {
       vi.stubEnv("VERCEL_ENV", "production");
       vi.stubEnv("RESEND_API_KEY", "   ");
-      EmailService.resetClient();
+      resetResendClient();
 
       const queueSpy = vi
-        .spyOn(EmailService, "queueOutboundEmail")
-        .mockResolvedValueOnce("queue_msg_blank_123");
+        .spyOn(EnqueueEmailHandler.prototype, "execute")
+        .mockResolvedValueOnce(
+          createSuccess({ queueId: "queue_msg_blank_123" })
+        );
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "recipient@example.com",
         subject: "Blank Key Production Test",
         html: "<p>Important message</p>",
       });
 
       expect(result.success).toBe(false);
-      expect(result.simulated).toBeUndefined();
-      expect(result.queued).toBe(true);
-      expect(result.queueId).toBe("queue_msg_blank_123");
+      if (!result.success) {
+        expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
+        expect(result.error.details).toEqual({
+          queued: true,
+          queueId: "queue_msg_blank_123",
+        });
+      }
       expect(mockSend).not.toHaveBeenCalled();
       expect(queueSpy).toHaveBeenCalled();
     });
@@ -118,11 +142,11 @@ describe("EmailService (Spec & Handler)", () => {
     it("should return configuration failure without queueing when skipQueue is true in production", async () => {
       vi.stubEnv("VERCEL_ENV", "production");
       vi.stubEnv("RESEND_API_KEY", "");
-      EmailService.resetClient();
+      resetResendClient();
 
-      const queueSpy = vi.spyOn(EmailService, "queueOutboundEmail");
+      const queueSpy = vi.spyOn(EnqueueEmailHandler.prototype, "execute");
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "recipient@example.com",
         subject: "Unconfigured SkipQueue Test",
         html: "<p>Important message</p>",
@@ -130,9 +154,11 @@ describe("EmailService (Spec & Handler)", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.simulated).toBeUndefined();
-      expect(result.queued).toBeUndefined();
-      expect(result.error).toContain("unconfigured");
+      if (!result.success) {
+        expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
+        expect(result.error.message).toContain("unconfigured");
+        expect(result.error.details).toBeUndefined();
+      }
       expect(mockSend).not.toHaveBeenCalled();
       expect(queueSpy).not.toHaveBeenCalled();
     });
@@ -140,17 +166,19 @@ describe("EmailService (Spec & Handler)", () => {
     it("should force simulated delivery in preview even when a production-like API key is configured", async () => {
       vi.stubEnv("VERCEL_ENV", "preview");
       vi.stubEnv("RESEND_API_KEY", "re_live_preview");
-      EmailService.resetClient();
+      resetResendClient();
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "preview-visitor@example.com",
         subject: "Preview Isolated",
         html: "<p>Preview content</p>",
       });
 
       expect(result.success).toBe(true);
-      expect(result.simulated).toBe(true);
-      expect(result.data?.id).toMatch(/^sim_msg_/);
+      if (result.success) {
+        expect(result.data.simulated).toBe(true);
+        expect(result.data.id).toMatch(/^sim_msg_/);
+      }
       expect(mockSend).not.toHaveBeenCalled();
     });
   });
@@ -163,14 +191,16 @@ describe("EmailService (Spec & Handler)", () => {
         error: null,
       });
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "target@example.com",
         subject: "Live Dispatch Test",
         html: "<h1>Greetings</h1>",
       });
 
       expect(result.success).toBe(true);
-      expect(result.data?.id).toBe("resend_msg_abc123");
+      if (result.success) {
+        expect(result.data.id).toBe("resend_msg_abc123");
+      }
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: "target@example.com",
@@ -187,20 +217,22 @@ describe("EmailService (Spec & Handler)", () => {
         error: { message: "Domain not verified", name: "validation_error" },
       });
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "target@example.com",
         subject: "Failing Dispatch Test",
         html: "<p>Fail</p>",
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Domain not verified");
+      if (!result.success) {
+        expect(result.error.message).toBe("Domain not verified");
+      }
       await new Promise((r) => setTimeout(r, 0));
       expect(Sentry.captureException).toHaveBeenCalled();
     });
   });
 
-  describe("sendContactInquiry", () => {
+  describe("SendContactInquiryHandler", () => {
     it("should dispatch both admin notification and visitor confirmation", async () => {
       (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "re_test_123456";
       mockSend.mockResolvedValue({
@@ -216,19 +248,21 @@ describe("EmailService (Spec & Handler)", () => {
         message: "Let us build an engine together!",
       };
 
-      const result = await EmailService.sendContactInquiry(
+      const result = await new SendContactInquiryHandler().execute({
         submission,
-        "hash_123"
-      );
+        connectionHash: "hash_123",
+      });
 
       expect(result.success).toBe(true);
-      expect(result.adminResult.success).toBe(true);
-      expect(result.confirmationResult?.success).toBe(true);
+      if (result.success) {
+        expect(result.data.adminDelivery.id).toBe("msg_inquiry_ok");
+        expect(result.data.confirmationResult?.success).toBe(true);
+      }
       expect(mockSend).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe("sendFeedbackNotification", () => {
+  describe("SendFeedbackNotificationHandler", () => {
     it("should dispatch feedback alert to admin email", async () => {
       (env as { RESEND_API_KEY?: string }).RESEND_API_KEY = "re_test_123456";
       mockSend.mockResolvedValueOnce({
@@ -243,10 +277,14 @@ describe("EmailService (Spec & Handler)", () => {
         connectionHash: "hash_456",
       };
 
-      const result = await EmailService.sendFeedbackNotification(payload);
+      const result = await new SendFeedbackNotificationHandler().execute(
+        payload
+      );
 
       expect(result.success).toBe(true);
-      expect(result.data?.id).toBe("msg_feedback_ok");
+      if (result.success) {
+        expect(result.data.id).toBe("msg_feedback_ok");
+      }
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: expect.stringContaining("clinical-chaos"),
@@ -255,11 +293,16 @@ describe("EmailService (Spec & Handler)", () => {
     });
   });
 
-  describe("getSuppressedEmails", () => {
+  describe("GetSuppressedEmailsHandler", () => {
     it("returns empty set when given an empty list without querying database", async () => {
       const findManySpy = vi.spyOn(prisma.suppressionList, "findMany");
-      const result = await EmailService.getSuppressedEmails([]);
-      expect(result.size).toBe(0);
+      const result = await new GetSuppressedEmailsHandler().execute({
+        emails: [],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.size).toBe(0);
+      }
       expect(findManySpy).not.toHaveBeenCalled();
     });
 
@@ -275,27 +318,38 @@ describe("EmailService (Spec & Handler)", () => {
           },
         ]);
 
-      const result = await EmailService.getSuppressedEmails([
-        "  Bounced@Example.com ",
-        "clean@example.com",
-      ]);
+      const result = await new GetSuppressedEmailsHandler().execute({
+        emails: ["  Bounced@Example.com ", "clean@example.com"],
+      });
 
       expect(findManySpy).toHaveBeenCalledWith({
         where: { email: { in: ["bounced@example.com", "clean@example.com"] } },
         select: { email: true },
       });
-      expect(result.has("bounced@example.com")).toBe(true);
-      expect(result.has("clean@example.com")).toBe(false);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.has("bounced@example.com")).toBe(true);
+        expect(result.data.has("clean@example.com")).toBe(false);
+      }
     });
 
-    it("propagates database rejections so caller can handle unknown eligibility (#3806)", async () => {
+    it("returns SUPPRESSION_LOOKUP_FAILED when database rejects so caller handles unknown eligibility (#3806)", async () => {
       vi.spyOn(prisma.suppressionList, "findMany").mockRejectedValueOnce(
         new Error("Neon connection terminated")
       );
 
-      await expect(
-        EmailService.getSuppressedEmails(["user@example.com"])
-      ).rejects.toThrow("Neon connection terminated");
+      const result = await new GetSuppressedEmailsHandler().execute({
+        emails: ["user@example.com"],
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        error: {
+          code: "SUPPRESSION_LOOKUP_FAILED",
+          message: "Neon connection terminated",
+          recoverable: true,
+        },
+      });
     });
   });
 });

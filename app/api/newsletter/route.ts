@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NewsletterSubscriptionSchema } from "@/lib/schemas";
-import { NewsletterService } from "@/lib/services/newsletter-service";
-import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import {
+  SubscribeNewsletterHandler,
+  getConnectionHashFromRequest,
+} from "@/lib/services";
+import { createApiHandler, serviceFailureResponse } from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { logger } from "@/lib/logger";
 
@@ -69,24 +71,27 @@ export const POST = createApiHandler(
       // 4. Record the signup as PENDING and send the double opt-in link.
       // The response is identical whether or not the address was already
       // subscribed, so the form cannot be used to probe the list.
-      const result = await NewsletterService.subscribe(data.email);
+      const result = await new SubscribeNewsletterHandler().execute({
+        email: data.email,
+      });
 
       if (!result.success) {
-        return NextResponse.json(
-          {
-            error:
-              result.error ||
-              "Unable to register subscription at this time. Please try again later.",
+        return serviceFailureResponse(result, {
+          statusOverrides: {
+            EMAIL_DELIVERY_FAILED: 503,
+            STORAGE_UNAVAILABLE: 503,
           },
-          { status: 500 }
-        );
+          errorMessage:
+            "Unable to register subscription at this time. Please try again later.",
+          logContext: "Newsletter subscription failed:",
+        });
       }
 
       return NextResponse.json(
         {
           success: true,
           message: "Check your inbox to confirm your subscription.",
-          simulated: result.simulated,
+          simulated: result.data.simulated,
         },
         { status: 201 }
       );

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { NewsletterTokenQuerySchema } from "@/lib/schemas";
-import { NewsletterService } from "@/lib/services/newsletter-service";
-import { createApiHandler } from "@/lib/route-wrapper";
+import { UnsubscribeSubscriberHandler } from "@/lib/services";
+import { createApiHandler, serviceFailureResponse } from "@/lib/route-wrapper";
+import { logger } from "@/lib/logger";
 import { newsletterLinkPage } from "../link-page";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +13,25 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createApiHandler(
   async (_req, { data }) => {
-    const outcome = await NewsletterService.unsubscribe(data.token);
-    if (outcome === "unsubscribed" || outcome === "already_unsubscribed") {
+    const result = await new UnsubscribeSubscriberHandler().execute({
+      token: data.token,
+    });
+    if (result.success) {
       return newsletterLinkPage(
         200,
         "You're unsubscribed",
         "You won't receive any more Systems Dispatch emails. Nothing else is needed."
+      );
+    }
+    if (result.error.code === "STORAGE_UNAVAILABLE") {
+      logger.error(
+        "Newsletter unsubscribe storage failure:",
+        result.error.details ?? new Error(result.error.message)
+      );
+      return newsletterLinkPage(
+        503,
+        "Unsubscribe temporarily unavailable",
+        "We could not update your subscription right now. Please try opening this link again in a few minutes."
       );
     }
     return newsletterLinkPage(
@@ -35,9 +49,17 @@ export const GET = createApiHandler(
  */
 export const POST = createApiHandler(
   async (_req, { data }) => {
-    const outcome = await NewsletterService.unsubscribe(data.token);
-    if (outcome === "invalid") {
-      return NextResponse.json({ error: "Unknown token" }, { status: 404 });
+    const result = await new UnsubscribeSubscriberHandler().execute({
+      token: data.token,
+    });
+    if (!result.success) {
+      if (result.error.code === "INVALID_TOKEN") {
+        return NextResponse.json({ error: "Unknown token" }, { status: 404 });
+      }
+      return serviceFailureResponse(result, {
+        errorMessage: "Unable to process unsubscribe request right now",
+        logContext: "Newsletter RFC 8058 unsubscribe storage failure:",
+      });
     }
     return NextResponse.json({ success: true }, { status: 200 });
   },

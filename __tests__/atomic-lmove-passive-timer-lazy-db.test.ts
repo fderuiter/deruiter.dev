@@ -73,7 +73,11 @@ vi.mock("@upstash/ratelimit", () => {
   };
 });
 
-import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
+import {
+  CheckTelemetryRateLimitHandler,
+  SyncBufferedEventsHandler,
+  _testCache,
+} from "@/lib/services";
 
 describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Criteria", () => {
   beforeEach(() => {
@@ -102,7 +106,9 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
     mockExec.mockResolvedValueOnce([...mockEvents, ...Array(48).fill(null)]);
     mockCreateMany.mockResolvedValueOnce({ count: 2 });
 
-    const result = await TelemetryService.syncBufferedEvents(50);
+    const result = await new SyncBufferedEventsHandler().execute({
+      batchSize: 50,
+    });
 
     expect(result).toEqual({
       success: true,
@@ -137,14 +143,28 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
 
   // Acceptance Criterion 2: Background interval timer workers are completely removed
   it("has zero active background setInterval timers in the telemetry service codebase", () => {
-    const filePath = path.resolve(
-      process.cwd(),
-      "lib/services/telemetry-service.ts"
-    );
-    const source = fs.readFileSync(filePath, "utf-8");
+    const collectFiles = (dir: string): string[] => {
+      const out: string[] = [];
+      for (const entry of fs.readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        if (fs.statSync(full).isDirectory()) {
+          out.push(...collectFiles(full));
+        } else if (entry.endsWith(".ts")) {
+          out.push(full);
+        }
+      }
+      return out;
+    };
 
-    expect(source).not.toContain("setInterval");
-    expect(source).not.toContain("clearInterval");
+    const telemetryDir = path.resolve(process.cwd(), "lib/services/telemetry");
+    const files = collectFiles(telemetryDir);
+    expect(files.length).toBeGreaterThan(0);
+
+    for (const filePath of files) {
+      const source = fs.readFileSync(filePath, "utf-8");
+      expect(source).not.toContain("setInterval");
+      expect(source).not.toContain("clearInterval");
+    }
   });
 
   // Acceptance Criterion 3: Rate-limiting memory state rotates passively based on active request timestamps
@@ -158,7 +178,7 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
     const dateSpy = vi.spyOn(Date, "now").mockReturnValue(now);
 
     // Initial request populates active generation
-    await TelemetryService.isRateLimited(req);
+    await new CheckTelemetryRateLimitHandler().execute({ request: req });
     expect(_testCache.active.size).toBe(1);
     expect(_testCache.inactive.size).toBe(0);
 
@@ -166,7 +186,7 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
     dateSpy.mockReturnValue(now + 6000);
 
     // Subsequent request triggers passive swap
-    await TelemetryService.isRateLimited(req);
+    await new CheckTelemetryRateLimitHandler().execute({ request: req });
 
     // Memory state swapped passively: previous active generation moved to inactive
     expect(_testCache.inactive.size).toBeGreaterThan(0);
@@ -203,7 +223,7 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
     mockCreateMany.mockRejectedValueOnce(dbError);
 
     await expect(
-      TelemetryService.syncBufferedEvents(10)
+      new SyncBufferedEventsHandler().execute({ batchSize: 10 })
     ).resolves.toMatchObject({
       success: false,
       error: { code: "PERSISTENCE_FAILED", details: dbError },

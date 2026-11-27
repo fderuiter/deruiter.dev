@@ -14,8 +14,12 @@ import {
 } from "../scripts/generate-llms-txt";
 
 vi.mock("@/lib/prisma", () => ({ default: {}, prisma: {} }));
-vi.mock("@/lib/services/case-study-service", () => ({
-  CaseStudyService: { getAllPublishedCaseStudies: async () => [] },
+vi.mock("@/lib/services", () => ({
+  ListPublishedCaseStudiesHandler: class {
+    async execute() {
+      return { success: true as const, data: [] };
+    }
+  },
 }));
 vi.mock("@/lib/blog", () => ({ getAllPublishedBlogPosts: async () => [] }));
 

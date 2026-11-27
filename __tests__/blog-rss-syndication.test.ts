@@ -2,9 +2,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as getRss } from "@/app/blog/rss.xml/route";
 import {
-  BlogPostService,
+  ListPublishedBlogPostsHandler,
+  createSuccess,
   type BlogPostData,
-} from "@/lib/services/blog-service";
+} from "@/lib/services";
 import { resolveBaseUrl } from "@/lib/domain";
 import { JSDOM } from "jsdom";
 
@@ -46,9 +47,10 @@ describe("Blog RSS/Atom Syndication (Issue #763)", () => {
       },
     ];
 
-    vi.spyOn(BlogPostService, "getAllPublishedBlogPosts").mockResolvedValue(
-      mockPosts as BlogPostData[]
-    );
+    vi.spyOn(
+      ListPublishedBlogPostsHandler.prototype,
+      "execute"
+    ).mockResolvedValue(createSuccess(mockPosts as BlogPostData[]));
 
     const res = await getRss();
     expect(res.status).toBe(200);
@@ -82,22 +84,27 @@ describe("Blog RSS/Atom Syndication (Issue #763)", () => {
 
   it("stays well-formed XML when a post body contains a CDATA terminator", async () => {
     const body = "<pre><code>if (a[b[0]]> 1) return;</code></pre>";
-    vi.spyOn(BlogPostService, "getAllPublishedBlogPosts").mockResolvedValue([
-      {
-        id: "post-cdata",
-        slug: "cdata-terminator",
-        title: "Arrays & <Generics>",
-        dek: "Nested ]]> sequences in prose.",
-        body,
-        pillar: "systems-architecture",
-        tags: "xml",
-        published: true,
-        reading_time_minutes: 1,
-        hero_image_url: null,
-        created_at: new Date("2026-03-10T12:00:00.000Z"),
-        updated_at: new Date("2026-03-10T12:00:00.000Z"),
-      },
-    ] as BlogPostData[]);
+    vi.spyOn(
+      ListPublishedBlogPostsHandler.prototype,
+      "execute"
+    ).mockResolvedValue(
+      createSuccess([
+        {
+          id: "post-cdata",
+          slug: "cdata-terminator",
+          title: "Arrays & <Generics>",
+          dek: "Nested ]]> sequences in prose.",
+          body,
+          pillar: "systems-architecture",
+          tags: "xml",
+          published: true,
+          reading_time_minutes: 1,
+          hero_image_url: null,
+          created_at: new Date("2026-03-10T12:00:00.000Z"),
+          updated_at: new Date("2026-03-10T12:00:00.000Z"),
+        },
+      ] as BlogPostData[])
+    );
 
     const xml = await (await getRss()).text();
 

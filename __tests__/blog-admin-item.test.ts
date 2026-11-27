@@ -223,8 +223,31 @@ describe("GET and PATCH /api/admin/blog/[id]", () => {
     );
 
     expect(duplicate.status).toBe(409);
-    expect(unavailable.status).toBe(500);
+    expect(unavailable.status).toBe(503);
     expect(redis.del).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 on database failure during GET and DELETE", async () => {
+    vi.mocked(prisma.blogPost.findFirst).mockRejectedValueOnce(
+      new Error("database unavailable")
+    );
+    vi.mocked(prisma.blogPost.findUnique).mockRejectedValueOnce(
+      new Error("database unavailable")
+    );
+
+    const readRes = await GET(
+      new NextRequest("http://localhost:3000/api/admin/blog/draft-1"),
+      routeContext
+    );
+    const deleteRes = await DELETE(
+      new NextRequest("http://localhost:3000/api/admin/blog/draft-1", {
+        method: "DELETE",
+      }),
+      routeContext
+    );
+
+    expect(readRes.status).toBe(503);
+    expect(deleteRes.status).toBe(503);
   });
 
   it("does not update or evict when concurrent publication wins the race", async () => {

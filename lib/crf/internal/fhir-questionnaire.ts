@@ -36,6 +36,9 @@ const TABLE_ITEM_CONTROLS = new Set([
   "atable",
 ]);
 
+/** Maximum nested `Questionnaire.item` levels accepted before rejecting import. */
+const MAX_FHIR_ITEM_DEPTH = 32;
+
 /**
  * Maps ClinicalDataType to FHIR QuestionnaireItemType
  */
@@ -664,8 +667,14 @@ function parseLeafField(
   fieldCounter: { count: number },
   domain: string,
   valueSets: Record<string, unknown>[],
-  collector: CodelistCollector
+  collector: CodelistCollector,
+  depth = 0
 ): CRFField {
+  if (depth > MAX_FHIR_ITEM_DEPTH) {
+    throw new Error(
+      `Questionnaire items are nested more than ${MAX_FHIR_ITEM_DEPTH} levels deep.`
+    );
+  }
   fieldCounter.count += 1;
   const idx = fieldCounter.count;
   const rawLinkId =
@@ -730,7 +739,14 @@ function parseLeafField(
     for (const child of item.item) {
       if (!isRecord(child) || child.type === "display") continue;
       cols.push(
-        parseLeafField(child, fieldCounter, domain, valueSets, collector)
+        parseLeafField(
+          child,
+          fieldCounter,
+          domain,
+          valueSets,
+          collector,
+          depth + 1
+        )
       );
     }
     if (cols.length > 0) {
@@ -768,8 +784,15 @@ function collectSectionFieldsFromItems(
   fieldCounter: { count: number },
   domain: string,
   valueSets: Record<string, unknown>[],
-  collector: CodelistCollector
+  collector: CodelistCollector,
+  depth = 0
 ): CRFField[] {
+  if (depth > MAX_FHIR_ITEM_DEPTH) {
+    throw new Error(
+      `Questionnaire items are nested more than ${MAX_FHIR_ITEM_DEPTH} levels deep.`
+    );
+  }
+
   const fields: CRFField[] = [];
 
   for (const entry of items) {
@@ -789,7 +812,14 @@ function collectSectionFieldsFromItems(
 
       if (isRepeatingTable) {
         fields.push(
-          parseLeafField(entry, fieldCounter, domain, valueSets, collector)
+          parseLeafField(
+            entry,
+            fieldCounter,
+            domain,
+            valueSets,
+            collector,
+            depth
+          )
         );
       } else {
         fields.push(
@@ -798,7 +828,8 @@ function collectSectionFieldsFromItems(
             fieldCounter,
             domain,
             valueSets,
-            collector
+            collector,
+            depth + 1
           )
         );
       }
@@ -806,7 +837,7 @@ function collectSectionFieldsFromItems(
     }
 
     fields.push(
-      parseLeafField(entry, fieldCounter, domain, valueSets, collector)
+      parseLeafField(entry, fieldCounter, domain, valueSets, collector, depth)
     );
   }
 
@@ -889,7 +920,8 @@ function parseFhirQuestionnaireInternal(
         fieldCounter,
         domain,
         allValueSets,
-        collector
+        collector,
+        1
       );
 
       sections.push({

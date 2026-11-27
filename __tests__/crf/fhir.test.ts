@@ -405,5 +405,285 @@ describe("CRF Studio - FHIR Questionnaire & aCRF Generator", () => {
         entry: [{ resource: { resourceType: "Patient", id: "p1" } }],
       })
     ).toThrow(/contains no Questionnaire resources/i);
+
+    expect(() => importFormFromFhirQuestionnaire("   ")).toThrow(
+      /Empty HL7 FHIR JSON payload/
+    );
+    expect(() => importFormFromFhirQuestionnaire("[1, 2, 3]")).toThrow(
+      /root value must be an object/
+    );
+  });
+
+  it("bounds Questionnaire item nesting depth at 32 levels for both nested groups and repeating table groups", () => {
+    const buildNestedQuestionnaire = (
+      nestedLevels: number,
+      repeats: boolean
+    ): Record<string, unknown> => {
+      let current: Record<string, unknown> = {
+        linkId: "DEEP_LEAF",
+        text: "Deep Leaf Question",
+        type: "string",
+      };
+      for (let level = nestedLevels; level >= 1; level--) {
+        current = {
+          linkId: `GRP_${level}`,
+          text: `Group ${level}`,
+          type: "group",
+          ...(repeats ? { repeats: true } : {}),
+          item: [current],
+        };
+      }
+      return {
+        resourceType: "Questionnaire",
+        id: "depth-check",
+        title: "Depth Check",
+        status: "active",
+        item: [current],
+      };
+    };
+
+    // Exactly at the 32-level nesting limit still imports cleanly
+    const groupAtLimit = importFormFromFhirQuestionnaire(
+      buildNestedQuestionnaire(32, false)
+    );
+    expect(groupAtLimit.sections[0].fields.map((f) => f.variableName)).toEqual([
+      "DEEP_LEAF",
+    ]);
+
+    const repeatingAtLimit = importFormFromFhirQuestionnaire(
+      buildNestedQuestionnaire(32, true)
+    );
+    expect(repeatingAtLimit.sections[0].isRepeating).toBe(true);
+    expect(repeatingAtLimit.sections[0].fields[0].dataType).toBe(
+      "repeating_table"
+    );
+
+    // Nested past the 32-level limit fails with a readable error on both paths
+    expect(() =>
+      importFormFromFhirQuestionnaire(buildNestedQuestionnaire(33, false))
+    ).toThrow("Questionnaire items are nested more than 32 levels deep.");
+
+    expect(() =>
+      importStudyFromFhirQuestionnaire(buildNestedQuestionnaire(33, true))
+    ).toThrow("Questionnaire items are nested more than 32 levels deep.");
+  });
+
+  it("handles missing answerValueSet lookups, boolean fallback to CL_NY, canonical ValueSet compose concepts, and alternative FHIR item metadata", () => {
+    const bundleWithValueSetAndEdgeCases = {
+      resourceType: "Bundle",
+      type: "collection",
+      entry: [
+        {
+          resource: {
+            resourceType: "ValueSet",
+            url: "https://example.org/fhir/ValueSet/tumor-response",
+            compose: {
+              include: [
+                {
+                  system: "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+                  concept: [
+                    { code: "C4870", display: "Complete Response" },
+                    { code: "C999999", display: "Unmapped NCIt Term" },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        {
+          resource: {
+            resourceType: "Questionnaire",
+            name: "StandaloneEligibility",
+            url: "https://sponsor.example.org/fhir/Questionnaire/PROTO-77/IE",
+            status: "active",
+            item: [
+              {
+                linkId: "UNMATCHED_VS_CHOICE",
+                text: "Choice With Missing ValueSet",
+                type: "choice",
+                answerValueSet:
+                  "https://example.org/fhir/ValueSet/does-not-exist",
+              },
+              {
+                linkId: "BLANK_VS_BOOL",
+                text: "Eligible for Enrollment",
+                type: "boolean",
+                answerValueSet: "   ",
+              },
+              {
+                linkId: "DIRECT_BOOL",
+                text: "Signed Informed Consent",
+                type: "boolean",
+              },
+              {
+                linkId: "COMPOSE_VS",
+                text: "Overall Response",
+                type: "choice",
+                repeats: true,
+                extension: [
+                  {
+                    url: "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    valueCode: "autocomplete",
+                  },
+                ],
+                answerValueSet:
+                  "https://example.org/fhir/ValueSet/tumor-response",
+              },
+              {
+                linkId: "NOTES_BOX",
+                text: "Investigator Notes",
+                type: "string",
+                readOnly: true,
+                extension: [
+                  {
+                    url: "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    valueCoding: { code: "text-box" },
+                  },
+                ],
+              },
+              {
+                linkId: "SYSBP_STR_UNIT",
+                text: "Systolic BP",
+                type: "quantity",
+                extension: [
+                  {
+                    url: "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                    valueString: "mm[Hg]",
+                  },
+                ],
+              },
+              {
+                linkId: "GLUC_INIT_UNIT",
+                text: "Baseline Glucose",
+                type: "decimal",
+                initial: [
+                  {
+                    valueQuantity: {
+                      value: 95,
+                      unit: "mg/dL",
+                    },
+                  },
+                ],
+              },
+              {
+                linkId: "DUP_OPT",
+                text: "Primary Cohort",
+                type: "choice",
+                answerOption: [{ valueInteger: 1 }, { valueInteger: 2 }],
+              },
+              {
+                linkId: "DUP_OPT_SAME_FP",
+                text: "Secondary Cohort",
+                type: "choice",
+                answerOption: [{ valueInteger: 1 }, { valueInteger: 2 }],
+              },
+              {
+                linkId: "DUP_OPT",
+                text: "Conflicting Same-Variable Cohort",
+                type: "choice",
+                answerOption: [{ valueInteger: 3 }, { valueInteger: 4 }],
+              },
+              {
+                linkId: "VISIT_TS",
+                text: "Assessment Timestamp",
+                type: "dateTime",
+              },
+              {
+                linkId: "DOSE_TIME",
+                text: "Dose Time",
+                type: "time",
+              },
+              {
+                linkId: "FREE_TEXT",
+                text: "Comments",
+                type: "text",
+              },
+              {
+                linkId: "EXT_REF",
+                text: "External Reference URL",
+                type: "url",
+              },
+            ],
+          },
+        },
+        {
+          resource: {
+            resourceType: "Questionnaire",
+            name: "StandaloneEligibility",
+            status: "active",
+            item: [],
+          },
+        },
+      ],
+    };
+
+    const study = importStudyFromFhirQuestionnaire(
+      bundleWithValueSetAndEdgeCases
+    );
+    expect(study.protocolNumber).toBe("PROTO-77");
+    expect(study.forms).toHaveLength(2);
+    // Duplicate form IDs in a Bundle are disambiguated
+    expect(study.forms[0].id).not.toBe(study.forms[1].id);
+    // Empty Questionnaire still yields a default section
+    expect(study.forms[1].sections).toHaveLength(1);
+    expect(study.forms[1].sections[0].fields).toEqual([]);
+
+    const fields = study.forms[0].sections[0].fields;
+    const unmatchedChoice = fields.find(
+      (f) => f.variableName === "UNMATCHED_VS_CHOICE"
+    )!;
+    expect(unmatchedChoice.dataType).toBe("single_select");
+    expect(unmatchedChoice.codelistId).toBeUndefined();
+    expect(unmatchedChoice.customOptions).toBeUndefined();
+
+    const blankVsBool = fields.find((f) => f.variableName === "BLANK_VS_BOOL")!;
+    expect(blankVsBool.dataType).toBe("radio");
+    expect(blankVsBool.codelistId).toBe("CL_NY");
+
+    const directBool = fields.find((f) => f.variableName === "DIRECT_BOOL")!;
+    expect(directBool.dataType).toBe("radio");
+    expect(directBool.codelistId).toBe("CL_NY");
+    expect(study.codelists.some((cl) => cl.id === "CL_NY")).toBe(true);
+
+    const composeVs = fields.find((f) => f.variableName === "COMPOSE_VS")!;
+    expect(composeVs.dataType).toBe("multi_select");
+    expect(composeVs.customOptions).toHaveLength(2);
+
+    const notesBox = fields.find((f) => f.variableName === "NOTES_BOX")!;
+    expect(notesBox.dataType).toBe("textarea");
+    expect(notesBox.readOnly).toBe(true);
+
+    const sysBp = fields.find((f) => f.variableName === "SYSBP_STR_UNIT")!;
+    expect(sysBp.unit).toBe("mm[Hg]");
+
+    const gluc = fields.find((f) => f.variableName === "GLUC_INIT_UNIT")!;
+    expect(gluc.unit).toBe("mg/dL");
+
+    const dup1 = fields[7];
+    const dupSameFp = fields[8];
+    const dupConflict = fields[9];
+    expect(dupSameFp.codelistId).toBe(dup1.codelistId);
+    expect(dupConflict.codelistId).toBe(`${dup1.codelistId}_1`);
+
+    expect(fields.find((f) => f.variableName === "VISIT_TS")?.dataType).toBe(
+      "datetime"
+    );
+    expect(fields.find((f) => f.variableName === "DOSE_TIME")?.dataType).toBe(
+      "time"
+    );
+    expect(fields.find((f) => f.variableName === "FREE_TEXT")?.dataType).toBe(
+      "textarea"
+    );
+    expect(fields.find((f) => f.variableName === "EXT_REF")?.dataType).toBe(
+      "text"
+    );
+
+    // Re-exporting covers checkbox/multi_select and repeating_table FHIR item types
+    const exported = exportFormToFhirQuestionnaire(study.forms[0], study) as {
+      item: Array<{ item: Array<{ type: string }> }>;
+    };
+    expect(exported.item[0].item.some((i) => i.type === "open-choice")).toBe(
+      true
+    );
   });
 });

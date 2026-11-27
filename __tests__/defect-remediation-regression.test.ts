@@ -65,6 +65,9 @@ import {
   exportStudyToCdiscOdmXml,
   exportStudyToSas,
   importStudyFromCsvSpec,
+  importFormFromFhirQuestionnaire,
+  importStudyFromFhirQuestionnaire,
+  detectAndParseStudyFile,
   evaluateVisitWindowConflicts,
   parsePosixShellArgs,
   generateCliCommandForField,
@@ -3451,5 +3454,52 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     ]);
     const jobPermBlocks = trainJobsBlock.match(/^ {4}permissions:\n/gm) ?? [];
     expect(jobPermBlocks).toHaveLength(trainJobNames.length);
+  });
+});
+
+describe("FHIR Questionnaire item recursion depth bound (#4127)", () => {
+  const buildDeepQuestionnaire = (
+    nestedLevels: number,
+    repeats: boolean
+  ): Record<string, unknown> => {
+    let current: Record<string, unknown> = {
+      linkId: "DEEP_LEAF",
+      text: "Leaf Question",
+      type: "string",
+    };
+    for (let level = nestedLevels; level >= 1; level--) {
+      current = {
+        linkId: `GRP_${level}`,
+        text: `Group ${level}`,
+        type: "group",
+        ...(repeats ? { repeats: true } : {}),
+        item: [current],
+      };
+    }
+    return {
+      resourceType: "Questionnaire",
+      id: "deep-recursion-guard",
+      status: "active",
+      item: [current],
+    };
+  };
+
+  it("rejects deeply nested group and repeating_table item trees with a bounded import error instead of overflowing the call stack", () => {
+    expect(() =>
+      importFormFromFhirQuestionnaire(buildDeepQuestionnaire(3000, false))
+    ).toThrow("Questionnaire items are nested more than 32 levels deep.");
+
+    expect(() =>
+      importStudyFromFhirQuestionnaire(buildDeepQuestionnaire(3000, true))
+    ).toThrow("Questionnaire items are nested more than 32 levels deep.");
+
+    expect(() =>
+      detectAndParseStudyFile(
+        JSON.stringify(buildDeepQuestionnaire(100, false)),
+        "deep-questionnaire.json"
+      )
+    ).toThrow(
+      "HL7 FHIR R4 Parsing Error: Questionnaire items are nested more than 32 levels deep."
+    );
   });
 });

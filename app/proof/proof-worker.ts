@@ -19,6 +19,7 @@ type WorkerAction =
       mode: "normal" | "loop";
       theoremId?: TheoremId;
       customFormulas?: string[];
+      sandboxSteps?: string[];
     }
   | { type: "ABORT"; requestId?: number };
 
@@ -135,14 +136,17 @@ function cancelCurrentSimulation() {
 function runNormalSimulation(
   requestId: number,
   theoremId: TheoremId = "modus-ponens",
-  customFormulas?: string[]
+  customFormulas?: string[],
+  sandboxSteps?: string[]
 ) {
   cancelCurrentSimulation();
   activeRequestId = requestId;
   let steps =
     THEOREM_SIMULATION_STEPS[theoremId] ||
     THEOREM_SIMULATION_STEPS["modus-ponens"];
-  if (theoremId === "custom") {
+  if (sandboxSteps && sandboxSteps.length > 0) {
+    steps = sandboxSteps;
+  } else if (theoremId === "custom") {
     try {
       if (!customFormulas || customFormulas.length !== 4)
         throw new Error("Load custom formulas before simulation.");
@@ -237,7 +241,8 @@ self.addEventListener("message", (event: MessageEvent<WorkerAction>) => {
       runNormalSimulation(
         reqId,
         data.theoremId || "modus-ponens",
-        data.customFormulas
+        data.customFormulas,
+        data.sandboxSteps
       );
     }
   }

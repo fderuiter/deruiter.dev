@@ -5,14 +5,36 @@ import { prisma } from "@/lib/db";
 import { redis, isRedisConfigured } from "@/lib/redis";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
-  BlogPostService,
+  CreateDraftBlogPostHandler,
+  EvictBlogCacheHandler,
+  GetPublishedBlogPostHandler,
+  ListPublishedBlogPostsHandler,
   isValidBlogPost,
   isValidPillar,
   parseValidDate,
   parseBlogPostDates,
   toValidBlogPosts,
   compareBlogPostsNewestFirst,
-} from "@/lib/services/blog-service";
+  type CreateBlogDraftInput,
+} from "@/lib/services";
+
+const BlogPostService = {
+  async evictBlogPostCache(slug: string) {
+    const res = await new EvictBlogCacheHandler().execute({ slug });
+    return res.success ? res.data.evicted : false;
+  },
+  async createDraftBlogPost(input: CreateBlogDraftInput) {
+    return new CreateDraftBlogPostHandler().execute(input);
+  },
+  async getBlogPostBySlug(slug: string) {
+    const res = await new GetPublishedBlogPostHandler().execute({ slug });
+    return res.success ? res.data : null;
+  },
+  async getAllPublishedBlogPosts() {
+    const res = await new ListPublishedBlogPostsHandler().execute();
+    return res.success ? res.data : [];
+  },
+};
 import {
   getAllPublishedBlogPosts,
   getBlogPostBySlug,

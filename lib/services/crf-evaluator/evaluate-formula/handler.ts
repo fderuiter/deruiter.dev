@@ -4,7 +4,7 @@ import {
   EvaluateFormulaResult,
   EvaluateFormulaErrorCode,
 } from "./spec";
-import { parseAndEvaluateFormula } from "@/lib/crf";
+import { parseAndEvaluateFormula } from "@/lib/crf/evaluator";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 const ERROR_SUGGESTIONS: Record<EvaluateFormulaErrorCode, string> = {

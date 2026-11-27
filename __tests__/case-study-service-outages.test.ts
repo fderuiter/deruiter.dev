@@ -94,11 +94,108 @@ async function load(mode: EnvMode = "default", allowFallback = false) {
   );
   vi.stubEnv("VERCEL_ENV", mode === "default" ? "development" : "production");
   vi.stubEnv("ALLOW_FALLBACK_PRODUCTION_BUILD", allowFallback ? "1" : "");
-  const service = await import("@/lib/services/case-study-service");
+  const service = await import("@/lib/services");
   const integrity = await import("@/lib/build-integrity");
   const redisMod = await import("@/lib/redis");
+  const CaseStudyService = {
+    async getAllPublishedCaseStudies() {
+      const res = await new service.ListPublishedCaseStudiesHandler().execute();
+      return res.success ? res.data : [];
+    },
+    async getAllPublishedSlugs() {
+      const studies = await this.getAllPublishedCaseStudies();
+      return studies.map((s) => s.slug);
+    },
+    async getCaseStudyBySlug(slug: string) {
+      const res = await new service.GetCaseStudyBySlugHandler().execute({
+        slug,
+      });
+      return res.success ? res.data : null;
+    },
+    async getPublishedCaseStudies() {
+      const res = await new service.ListCaseStudySummariesHandler().execute();
+      return res.success ? res.data : [];
+    },
+    async getReactions(slug: string, connectionHash: string) {
+      const res = await new service.GetCaseStudyReactionsHandler().execute({
+        slug,
+        connectionHash,
+      });
+      if (!res.success) {
+        throw new Error(res.error.message);
+      }
+      return { success: true as const, ...res.data };
+    },
+    async submitReaction(
+      input: {
+        caseStudySlug: string;
+        reactionType: import("@/lib/services").SubmitCaseStudyReactionInput["reactionType"];
+      },
+      connectionHash: string
+    ) {
+      return new service.SubmitCaseStudyReactionHandler().execute({
+        ...input,
+        connectionHash,
+      });
+    },
+    async getFeedback(slug: string, connectionHash: string) {
+      return new service.GetCaseStudyFeedbackHandler().execute({
+        slug,
+        connectionHash,
+      });
+    },
+    async submitFeedback(
+      input: {
+        caseStudySlug: string;
+        takeaways: string[];
+        comments: string;
+      },
+      connectionHash: string,
+      operationKey?: string
+    ) {
+      return new service.SubmitCaseStudyFeedbackHandler().execute({
+        ...input,
+        connectionHash,
+        operationKey,
+      });
+    },
+    async evictCaseStudyCache(slug: string) {
+      const res = await new service.EvictCaseStudyCacheHandler().execute({
+        slug,
+      });
+      return res.success ? res.data.evicted : false;
+    },
+    async submitCaseStudy(input: {
+      title: string;
+      slug: string;
+      primary_language: string;
+      editorial_content: string;
+      architectural_narrative: string;
+      tags: string;
+      github_url: string;
+    }) {
+      const res = await new service.CreateCaseStudyDraftHandler().execute(
+        input
+      );
+      if (!res.success) {
+        throw new Error(res.error.message);
+      }
+      return res.data;
+    },
+    async updateCaseStudyImage(slug: string, heroImageUrl: string | null) {
+      return new service.UpdateCaseStudyImageHandler().execute({
+        slug,
+        heroImageUrl,
+      });
+    },
+    async flushBufferedReactionsToDatabase(batchSize?: number) {
+      return new service.FlushCaseStudyReactionsHandler().execute(
+        batchSize !== undefined ? { batchSize } : undefined
+      );
+    },
+  };
   return {
-    CaseStudyService: service.CaseStudyService,
+    CaseStudyService,
     DataSourceUnavailableError: integrity.DataSourceUnavailableError,
     key: redisMod.getScopedRedisKey,
   };
@@ -324,7 +421,7 @@ describe("getAllPublishedCaseStudies outage matrix", () => {
       CaseStudyService.getAllPublishedCaseStudies()
     ).resolves.toEqual(FALLBACK_CASE_STUDIES);
     expect(m.logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining("getAllPublishedCaseStudies"),
+      expect.stringContaining("Database query failed"),
       expect.any(Error)
     );
   });
@@ -538,10 +635,11 @@ describe("getPublishedCaseStudies outage matrix", () => {
   it("returns the fixed Playwright fixture without touching any data source", async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "true");
-    const { CaseStudyService } =
-      await import("@/lib/services/case-study-service");
+    const { ListCaseStudySummariesHandler } = await import("@/lib/services");
 
-    const result = await CaseStudyService.getPublishedCaseStudies();
+    const res = await new ListCaseStudySummariesHandler().execute();
+    expect(res.success).toBe(true);
+    const result = res.success ? res.data : [];
 
     expect(result.length).toBeGreaterThan(0);
     expect(m.redis.get).not.toHaveBeenCalled();
@@ -783,54 +881,51 @@ describe("getReactions outage matrix", () => {
   });
 });
 
-describe("Neon-down mock stores keep reads and writes consistent", () => {
-  it("reactions submitted while Neon is down are counted by later reads", async () => {
+describe("Neon-down reaction writes fail explicitly with STORAGE_UNAVAILABLE", () => {
+  it("returns STORAGE_UNAVAILABLE instead of fabricating in-memory reaction persistence when Neon is down", async () => {
     const { CaseStudyService } = await load();
     m.redisConfigured.value = false;
-    m.prisma.caseStudyReaction.createMany.mockRejectedValue(neonDown());
-    m.prisma.caseStudyReaction.groupBy.mockRejectedValue(neonDown());
-    m.prisma.caseStudyReaction.findMany.mockRejectedValue(neonDown());
+    const err = neonDown();
+    m.prisma.caseStudyReaction.createMany.mockRejectedValue(err);
+    m.prisma.caseStudyReaction.groupBy.mockRejectedValue(err);
+    m.prisma.caseStudyReaction.findMany.mockRejectedValue(err);
 
-    await CaseStudyService.submitReaction(
+    const first = await CaseStudyService.submitReaction(
       { caseStudySlug: "offline-slug", reactionType: "insightful" },
       "h1"
     );
-    const second = await CaseStudyService.submitReaction(
-      { caseStudySlug: "offline-slug", reactionType: "insightful" },
-      "h2"
-    );
-    expect(second.counts.insightful).toBe(2);
-    expect(second.userReactions).toEqual(["insightful"]);
+    expect(first).toMatchObject({
+      success: false,
+      error: {
+        code: "STORAGE_UNAVAILABLE",
+        recoverable: true,
+        details: err,
+      },
+    });
 
-    // Base counts (getBaseReactionCounts) and the direct DB fallback both
-    // read the in-memory store.
     const read = await CaseStudyService.getReactions("offline-slug", "h1");
-    expect(read.counts.insightful).toBe(2);
-
-    m.redisConfigured.value = true;
-    m.redis.hgetall.mockRejectedValueOnce(redisDown());
-    const readRedisDown = await CaseStudyService.getReactions(
-      "offline-slug",
-      "h1"
-    );
-    expect(readRedisDown.counts.insightful).toBe(2);
+    expect(read.counts.insightful).toBe(0);
   });
 
-  it("logs the direct-write fallback on a running production server", async () => {
+  it("carries the underlying database error on STORAGE_UNAVAILABLE in production runtime", async () => {
     const { CaseStudyService } = await load("production-runtime");
     m.redisConfigured.value = false;
-    m.prisma.caseStudyReaction.createMany.mockRejectedValueOnce(neonDown());
+    const err = neonDown();
+    m.prisma.caseStudyReaction.createMany.mockRejectedValueOnce(err);
 
     const result = await CaseStudyService.submitReaction(
       { caseStudySlug: "s", reactionType: "thorough" },
       "h"
     );
 
-    expect(result.counts.thorough).toBe(1);
-    expect(m.logger.error).toHaveBeenCalledWith(
-      "Database reaction creation failed, using mock fallback:",
-      expect.any(Error)
-    );
+    expect(result).toMatchObject({
+      success: false,
+      error: {
+        code: "STORAGE_UNAVAILABLE",
+        recoverable: true,
+        details: err,
+      },
+    });
   });
 
   it("writes reactions straight to Postgres when Redis is not configured", async () => {
@@ -850,9 +945,12 @@ describe("Neon-down mock stores keep reads and writes consistent", () => {
       "h"
     );
 
-    expect(result.counts.thorough).toBe(3);
-    expect(result.counts).not.toHaveProperty("retired_type");
-    expect(result.userReactions).toEqual(["thorough"]);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.counts.thorough).toBe(3);
+      expect(result.data.counts).not.toHaveProperty("retired_type");
+      expect(result.data.userReactions).toEqual(["thorough"]);
+    }
   });
 });
 
@@ -868,7 +966,10 @@ describe("submitReaction with Redis up but degraded", () => {
       "h"
     );
 
-    expect(result.userReactions).toEqual(["insightful", "thorough"]);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.userReactions).toEqual(["insightful", "thorough"]);
+    }
     expect(m.pipe.hincrby).not.toHaveBeenCalled();
   });
 
@@ -884,7 +985,10 @@ describe("submitReaction with Redis up but degraded", () => {
       "h"
     );
 
-    expect(result.userReactions).toEqual(["insightful"]);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.userReactions).toEqual(["insightful"]);
+    }
   });
 
   it("buffers a new reaction and merges the buffer into the counts", async () => {
@@ -904,8 +1008,11 @@ describe("submitReaction with Redis up but degraded", () => {
     );
 
     // Members that miss the just-added type still report it.
-    expect(result.userReactions).toEqual(["thorough", "insightful"]);
-    expect(result.counts).toMatchObject({ insightful: 2, thorough: 0 });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.userReactions).toEqual(["thorough", "insightful"]);
+      expect(result.data.counts).toMatchObject({ insightful: 2, thorough: 0 });
+    }
     expect(m.pipe.rpush).toHaveBeenCalledTimes(1);
   });
 
@@ -920,8 +1027,11 @@ describe("submitReaction with Redis up but degraded", () => {
       "h"
     );
 
-    expect(result.userReactions).toEqual(["thorough"]);
-    expect(result.counts.thorough).toBe(2);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.userReactions).toEqual(["thorough"]);
+      expect(result.data.counts.thorough).toBe(2);
+    }
   });
 
   it("falls back to the direct Postgres write when the buffer pipeline fails", async () => {
@@ -941,7 +1051,10 @@ describe("submitReaction with Redis up but degraded", () => {
       "h"
     );
 
-    expect(result.counts.actionable).toBe(1);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.counts.actionable).toBe(1);
+    }
     expect(m.logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("Redis buffering failed"),
       expect.any(Error)
@@ -971,8 +1084,11 @@ describe("feedback with Neon up/down", () => {
 
     const result = await CaseStudyService.getFeedback("s", "me");
 
-    expect(result.hasSubmitted).toBe(true);
-    expect(result.feedback.map((f) => f.takeaways)).toEqual([["a"], []]);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.hasSubmitted).toBe(true);
+      expect(result.data.feedback.map((f) => f.takeaways)).toEqual([["a"], []]);
+    }
   });
 
   it("an empty feedback list is a normal result", async () => {
@@ -981,7 +1097,10 @@ describe("feedback with Neon up/down", () => {
 
     const result = await CaseStudyService.getFeedback("s", "me");
 
-    expect(result).toMatchObject({ hasSubmitted: false, totalFeedback: 0 });
+    expect(result).toMatchObject({
+      success: true,
+      data: { hasSubmitted: false, totalFeedback: 0 },
+    });
   });
 
   it("rate-limits a second submission within the hour", async () => {
@@ -993,7 +1112,10 @@ describe("feedback with Neon up/down", () => {
       "me"
     );
 
-    expect(result.rateLimited).toBe(true);
+    expect(result).toMatchObject({
+      success: false,
+      error: { code: "RATE_LIMITED", recoverable: true },
+    });
     expect(m.prisma.caseStudyFeedback.create).not.toHaveBeenCalled();
   });
 
@@ -1013,8 +1135,11 @@ describe("feedback with Neon up/down", () => {
     );
 
     expect(result).toMatchObject({
-      rateLimited: false,
-      feedback: { id: "new", takeaways: ["x"] },
+      success: true,
+      data: {
+        replayed: false,
+        feedback: { id: "new", takeaways: ["x"] },
+      },
     });
   });
 
@@ -1034,10 +1159,11 @@ describe("feedback with Neon up/down", () => {
     );
 
     expect(result).toMatchObject({
-      rateLimited: false,
       success: true,
-      replayed: true,
-      feedback: { id: "first" },
+      data: {
+        replayed: true,
+        feedback: { id: "first" },
+      },
     });
     expect(m.prisma.caseStudyFeedback.findFirst).toHaveBeenCalledWith({
       where: { connectionHash: "me", operationKey: "feedback_1:0" },
@@ -1067,43 +1193,45 @@ describe("feedback with Neon up/down", () => {
     );
 
     expect(result).toMatchObject({
-      replayed: true,
-      feedback: { id: "winner" },
+      success: true,
+      data: {
+        replayed: true,
+        feedback: { id: "winner" },
+      },
     });
     expect(m.prisma.caseStudyFeedback.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ operationKey: "feedback_1:0" }),
     });
   });
 
-  it("Neon down: accepts feedback into memory, rate-limits a repeat and reads it back", async () => {
+  it("Neon down: returns STORAGE_UNAVAILABLE instead of storing feedback in memory", async () => {
     const { CaseStudyService } = await load("production-runtime");
-    m.prisma.caseStudyFeedback.findFirst.mockRejectedValue(neonDown());
-    m.prisma.caseStudyFeedback.findMany.mockRejectedValue(neonDown());
+    const err = neonDown();
+    m.prisma.caseStudyFeedback.findFirst.mockRejectedValue(err);
+    m.prisma.caseStudyFeedback.findMany.mockRejectedValue(err);
 
     const first = await CaseStudyService.submitFeedback(
       { caseStudySlug: "mem", takeaways: ["t"], comments: "c" },
       "me"
     );
-    const repeat = await CaseStudyService.submitFeedback(
-      { caseStudySlug: "mem", takeaways: ["t"], comments: "c" },
-      "me"
-    );
     const read = await CaseStudyService.getFeedback("mem", "me");
-    const readOther = await CaseStudyService.getFeedback("empty", "me");
 
-    expect(first).toMatchObject({ rateLimited: false, success: true });
-    expect(repeat.rateLimited).toBe(true);
-    expect(read).toMatchObject({ hasSubmitted: true, totalFeedback: 1 });
-    expect(read.feedback[0]).toMatchObject({ id: "mock-0", takeaways: ["t"] });
-    expect(readOther).toMatchObject({ hasSubmitted: false, totalFeedback: 0 });
-    expect(m.logger.error).toHaveBeenCalledWith(
-      "Database feedback creation failed, using fallback:",
-      expect.any(Error)
-    );
-    expect(m.logger.error).toHaveBeenCalledWith(
-      "Failed to query case study feedback:",
-      expect.any(Error)
-    );
+    expect(first).toMatchObject({
+      success: false,
+      error: {
+        code: "STORAGE_UNAVAILABLE",
+        recoverable: true,
+        details: err,
+      },
+    });
+    expect(read).toMatchObject({
+      success: false,
+      error: {
+        code: "STORAGE_UNAVAILABLE",
+        recoverable: true,
+        details: err,
+      },
+    });
   });
 });
 

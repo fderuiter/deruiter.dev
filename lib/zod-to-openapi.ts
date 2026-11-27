@@ -83,8 +83,8 @@ function cleanOpenApiSchema(obj: unknown): unknown {
  * Programmatically converts a canonical Zod schema into an OpenAPI 3.0-compliant
  * JSON schema component definition.
  */
-export function zodToOpenApi(schema: z.ZodTypeAny): Record<string, unknown> {
+export function zodToOpenApi(schema: z.ZodType): Record<string, unknown> {
   const unwrapped = unwrapZodSchema(schema);
-  const raw = z.toJSONSchema(unwrapped as z.ZodTypeAny, { target: "openApi3" });
+  const raw = z.toJSONSchema(unwrapped as z.ZodType, { target: "openApi3" });
   return cleanOpenApiSchema(raw) as Record<string, unknown>;
 }

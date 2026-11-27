@@ -31,18 +31,19 @@ const transactionClient = {
   telemetryDailyRollup: { groupBy: mockRollupGroupBy },
 };
 
-let computeAggregateStats: typeof import("@/lib/services/telemetry-service").TelemetryService.computeAggregateStats;
-let TelemetryService: typeof import("@/lib/services/telemetry-service").TelemetryService;
-let _testCache: typeof import("@/lib/services/telemetry-service")._testCache;
+let ComputeTelemetryAggregateStatsHandler: typeof import("@/lib/services").ComputeTelemetryAggregateStatsHandler;
+let GetTelemetryAggregateStatsHandler: typeof import("@/lib/services").GetTelemetryAggregateStatsHandler;
+let RefreshTelemetryAggregateStatsHandler: typeof import("@/lib/services").RefreshTelemetryAggregateStatsHandler;
+let _testCache: typeof import("@/lib/services")._testCache;
 
-describe("TelemetryService.computeAggregateStats", () => {
+describe("ComputeTelemetryAggregateStatsHandler", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
 
-    const mod = await import("@/lib/services/telemetry-service");
-    TelemetryService = mod.TelemetryService;
-    computeAggregateStats = mod.TelemetryService.computeAggregateStats;
+    const mod = await import("@/lib/services");
+    ComputeTelemetryAggregateStatsHandler =
+      mod.ComputeTelemetryAggregateStatsHandler;
     _testCache = mod._testCache;
     _testCache.reset();
 
@@ -81,8 +82,13 @@ describe("TelemetryService.computeAggregateStats", () => {
       },
     ]);
 
-    await expect(computeAggregateStats()).resolves.toEqual({
-      "/dashboard": { views: 15, clicks: 9 },
+    await expect(
+      new ComputeTelemetryAggregateStatsHandler().execute()
+    ).resolves.toEqual({
+      success: true,
+      data: {
+        "/dashboard": { views: 15, clicks: 9 },
+      },
     });
   });
 
@@ -98,9 +104,14 @@ describe("TelemetryService.computeAggregateStats", () => {
       },
     ]);
 
-    await expect(computeAggregateStats()).resolves.toEqual({
-      "/live": { views: 4, clicks: 0 },
-      "/archived": { views: 0, clicks: 6 },
+    await expect(
+      new ComputeTelemetryAggregateStatsHandler().execute()
+    ).resolves.toEqual({
+      success: true,
+      data: {
+        "/live": { views: 4, clicks: 0 },
+        "/archived": { views: 0, clicks: 6 },
+      },
     });
   });
 
@@ -126,13 +137,18 @@ describe("TelemetryService.computeAggregateStats", () => {
       },
     ]);
 
-    await expect(computeAggregateStats()).resolves.toEqual({
-      "/dashboard": { views: 2, clicks: 3 },
+    await expect(
+      new ComputeTelemetryAggregateStatsHandler().execute()
+    ).resolves.toEqual({
+      success: true,
+      data: {
+        "/dashboard": { views: 2, clicks: 3 },
+      },
     });
   });
 
   it("uses two grouped queries in one RepeatableRead transaction", async () => {
-    await computeAggregateStats();
+    await new ComputeTelemetryAggregateStatsHandler().execute();
 
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockTransaction.mock.calls[0]?.[1]).toEqual({
@@ -153,7 +169,7 @@ describe("TelemetryService.computeAggregateStats", () => {
   });
 
   it.each(["raw events", "daily rollups"] as const)(
-    "rejects when the %s aggregate fails",
+    "returns AGGREGATE_FAILED when the %s aggregate fails",
     async (aggregate) => {
       const failure = new Error(`${aggregate} query failed`);
       if (aggregate === "raw events") {
@@ -162,17 +178,22 @@ describe("TelemetryService.computeAggregateStats", () => {
         mockRollupGroupBy.mockRejectedValue(failure);
       }
 
-      await expect(computeAggregateStats()).rejects.toThrow(failure.message);
+      await expect(
+        new ComputeTelemetryAggregateStatsHandler().execute()
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "AGGREGATE_FAILED", details: failure },
+      });
     }
   );
 });
 
-describe("TelemetryService.getAggregateStats reads only Redis (#3201)", () => {
+describe("GetTelemetryAggregateStatsHandler reads only Redis (#3201)", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
-    const mod = await import("@/lib/services/telemetry-service");
-    TelemetryService = mod.TelemetryService;
+    const mod = await import("@/lib/services");
+    GetTelemetryAggregateStatsHandler = mod.GetTelemetryAggregateStatsHandler;
     _testCache = mod._testCache;
     _testCache.reset();
     vi.clearAllMocks();
@@ -187,8 +208,13 @@ describe("TelemetryService.getAggregateStats reads only Redis (#3201)", () => {
   it("returns the stored aggregate without touching the database", async () => {
     mockRedisGet.mockResolvedValue({ "/dashboard": { views: 3, clicks: 1 } });
 
-    await expect(TelemetryService.getAggregateStats()).resolves.toEqual({
-      "/dashboard": { views: 3, clicks: 1 },
+    await expect(
+      new GetTelemetryAggregateStatsHandler().execute()
+    ).resolves.toEqual({
+      success: true,
+      data: {
+        "/dashboard": { views: 3, clicks: 1 },
+      },
     });
     expect(mockRedisGet).toHaveBeenCalledWith("telemetry:aggregate");
     expect(mockTransaction).not.toHaveBeenCalled();
@@ -196,14 +222,24 @@ describe("TelemetryService.getAggregateStats reads only Redis (#3201)", () => {
   });
 
   it("returns the empty aggregate when the key is missing", async () => {
-    await expect(TelemetryService.getAggregateStats()).resolves.toEqual({});
+    await expect(
+      new GetTelemetryAggregateStatsHandler().execute()
+    ).resolves.toEqual({
+      success: true,
+      data: {},
+    });
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
   it("returns the empty aggregate when the stored value is malformed", async () => {
     mockRedisGet.mockResolvedValue({ "/dashboard": { views: "lots" } });
 
-    await expect(TelemetryService.getAggregateStats()).resolves.toEqual({});
+    await expect(
+      new GetTelemetryAggregateStatsHandler().execute()
+    ).resolves.toEqual({
+      success: true,
+      data: {},
+    });
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
@@ -211,33 +247,38 @@ describe("TelemetryService.getAggregateStats reads only Redis (#3201)", () => {
     vi.useFakeTimers();
     try {
       mockRedisGet.mockResolvedValue({ "/a": { views: 1, clicks: 0 } });
-      await TelemetryService.getAggregateStats();
-      await TelemetryService.getAggregateStats();
+      await new GetTelemetryAggregateStatsHandler().execute();
+      await new GetTelemetryAggregateStatsHandler().execute();
       expect(mockRedisGet).toHaveBeenCalledTimes(1);
 
       vi.advanceTimersByTime(10_001);
-      await TelemetryService.getAggregateStats();
+      await new GetTelemetryAggregateStatsHandler().execute();
       expect(mockRedisGet).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("rejects when Redis cannot be read", async () => {
-    mockRedisGet.mockRejectedValue(new Error("Redis down"));
+  it("returns STORAGE_UNAVAILABLE when Redis cannot be read", async () => {
+    const redisError = new Error("Redis down");
+    mockRedisGet.mockRejectedValue(redisError);
 
-    await expect(TelemetryService.getAggregateStats()).rejects.toThrow(
-      "Redis down"
-    );
+    await expect(
+      new GetTelemetryAggregateStatsHandler().execute()
+    ).resolves.toMatchObject({
+      success: false,
+      error: { code: "STORAGE_UNAVAILABLE", details: redisError },
+    });
   });
 });
 
-describe("TelemetryService.refreshAggregateStats (#3201)", () => {
+describe("RefreshTelemetryAggregateStatsHandler (#3201)", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
-    const mod = await import("@/lib/services/telemetry-service");
-    TelemetryService = mod.TelemetryService;
+    const mod = await import("@/lib/services");
+    RefreshTelemetryAggregateStatsHandler =
+      mod.RefreshTelemetryAggregateStatsHandler;
     _testCache = mod._testCache;
     _testCache.reset();
     vi.clearAllMocks();
@@ -263,7 +304,7 @@ describe("TelemetryService.refreshAggregateStats (#3201)", () => {
   });
 
   it("computes the aggregate once and writes it to the Redis key", async () => {
-    const result = await TelemetryService.refreshAggregateStats();
+    const result = await new RefreshTelemetryAggregateStatsHandler().execute();
 
     expect(result).toEqual({ success: true, data: { projects: 1 } });
     expect(mockTransaction).toHaveBeenCalledTimes(1);
@@ -275,7 +316,7 @@ describe("TelemetryService.refreshAggregateStats (#3201)", () => {
   it("reports AGGREGATE_FAILED and writes nothing when the query fails", async () => {
     mockRawGroupBy.mockRejectedValue(new Error("Neon asleep"));
 
-    const result = await TelemetryService.refreshAggregateStats();
+    const result = await new RefreshTelemetryAggregateStatsHandler().execute();
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("AGGREGATE_FAILED");
@@ -285,7 +326,7 @@ describe("TelemetryService.refreshAggregateStats (#3201)", () => {
   it("reports AGGREGATE_FAILED when the Redis write fails", async () => {
     mockRedisSet.mockRejectedValue(new Error("Redis down"));
 
-    const result = await TelemetryService.refreshAggregateStats();
+    const result = await new RefreshTelemetryAggregateStatsHandler().execute();
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("AGGREGATE_FAILED");

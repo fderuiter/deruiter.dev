@@ -1,8 +1,8 @@
 import {
   extractClientIp,
   generateClientConnectionHashSync,
-  RequestOrHeaders,
-} from "@/lib/services/privacy-service";
+  type RequestOrHeaders,
+} from "@/lib/privacy";
 
 /**
  * Synchronous Rule-Based Profanity & Rant Barrier

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fromPartial } from "@total-typescript/shoehorn";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { UpdateCaseStudyImageHandler } from "@/lib/services";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { prisma } from "@/lib/db";
 
@@ -59,10 +59,10 @@ describe("CaseStudyService.updateCaseStudyImage ServiceResult contract (ADR 0028
       fromPartial(row("/api/media/new.png"))
     );
 
-    const result = await CaseStudyService.updateCaseStudyImage(
-      fallback.slug,
-      "/api/media/new.png"
-    );
+    const result = await new UpdateCaseStudyImageHandler().execute({
+      slug: fallback.slug,
+      heroImageUrl: "/api/media/new.png",
+    });
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -74,10 +74,10 @@ describe("CaseStudyService.updateCaseStudyImage ServiceResult contract (ADR 0028
   it("returns CASE_STUDY_NOT_FOUND instead of throwing for an unknown slug", async () => {
     vi.mocked(prisma.caseStudy.findUnique).mockResolvedValue(null);
 
-    const result = await CaseStudyService.updateCaseStudyImage(
-      "no-such-study",
-      "/api/media/new.png"
-    );
+    const result = await new UpdateCaseStudyImageHandler().execute({
+      slug: "no-such-study",
+      heroImageUrl: "/api/media/new.png",
+    });
 
     expect(result).toMatchObject({
       success: false,
@@ -97,10 +97,10 @@ describe("CaseStudyService.updateCaseStudyImage ServiceResult contract (ADR 0028
     );
     vi.mocked(prisma.caseStudy.update).mockRejectedValue(dbError);
 
-    const result = await CaseStudyService.updateCaseStudyImage(
-      fallback.slug,
-      "/api/media/new.png"
-    );
+    const result = await new UpdateCaseStudyImageHandler().execute({
+      slug: fallback.slug,
+      heroImageUrl: "/api/media/new.png",
+    });
 
     expect(result).toMatchObject({
       success: false,

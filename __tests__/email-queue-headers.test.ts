@@ -15,6 +15,7 @@ vi.mock("@/lib/db", () => ({
     // Leasing is one FOR UPDATE SKIP LOCKED statement (#1116).
     $queryRaw: mockQueryRaw,
     outboundEmailQueue: {
+      findUnique: vi.fn().mockResolvedValue(null),
       create: mockCreate,
       update: mockUpdate,
     },
@@ -30,7 +31,11 @@ vi.mock("resend", () => ({
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-import { EmailService } from "@/lib/services/email-service";
+import {
+  EnqueueEmailHandler,
+  ProcessRetryQueueHandler,
+  resetResendClient,
+} from "@/lib/services";
 
 const HEADERS = {
   "List-Unsubscribe":
@@ -57,20 +62,27 @@ const queuedRow = (headers: unknown) => ({
 describe("Outbound queue header fidelity (#841)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetResendClient();
     process.env.RESEND_API_KEY = "re_test_key";
     mockQueryRaw.mockResolvedValue([]);
     mockCreate.mockResolvedValue({ id: "queue-news" });
   });
 
   it("enqueues a first-attempt PENDING row that keeps its headers", async () => {
-    const id = await EmailService.enqueueEmail({
-      to: "reader@example.com",
-      subject: "New dispatch",
-      html: "<p>post</p>",
-      headers: HEADERS,
+    const result = await new EnqueueEmailHandler().execute({
+      options: {
+        to: "reader@example.com",
+        subject: "New dispatch",
+        html: "<p>post</p>",
+        headers: HEADERS,
+      },
+      mode: "pending",
     });
 
-    expect(id).toBe("queue-news");
+    expect(result).toEqual({
+      success: true,
+      data: { queueId: "queue-news" },
+    });
     const written = mockCreate.mock.calls[0][0].data;
     expect(written).toMatchObject({
       status: "PENDING",
@@ -83,7 +95,7 @@ describe("Outbound queue header fidelity (#841)", () => {
   it("replays stored List-Unsubscribe headers on the send", async () => {
     mockQueryRaw.mockResolvedValueOnce([queuedRow(HEADERS)]);
 
-    await EmailService.processRetryQueue();
+    await new ProcessRetryQueueHandler().execute();
 
     expect(mockSend).toHaveBeenCalledTimes(1);
     expect(mockSend.mock.calls[0][0].headers).toEqual(HEADERS);
@@ -92,7 +104,7 @@ describe("Outbound queue header fidelity (#841)", () => {
   it("drops a malformed headers column instead of sending it", async () => {
     mockQueryRaw.mockResolvedValueOnce([queuedRow(["not", "an", "object"])]);
 
-    await EmailService.processRetryQueue();
+    await new ProcessRetryQueueHandler().execute();
 
     expect(mockSend.mock.calls[0][0].headers).toBeUndefined();
   });

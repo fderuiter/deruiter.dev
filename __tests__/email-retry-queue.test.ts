@@ -1,12 +1,17 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { fromAny } from "@total-typescript/shoehorn";
 import {
+  CheckRecipientEligibilityHandler,
   ELIGIBILITY_DEFERRED_REASON,
-  EmailService,
-  RawEmailOptions,
+  EnqueueEmailHandler,
+  ProcessRetryQueueHandler,
+  SendRawEmailHandler,
+  resetResendClient,
   type EmailRetryCounts,
   type EmailRetryResult,
-} from "@/lib/services/email-service";
+  type RawEmailOptions,
+} from "@/lib/services";
 import { prisma } from "@/lib/db";
 
 // In-memory mock store for OutboundEmailQueue & SuppressionList
@@ -35,10 +40,7 @@ const mockSuppressionStore = new Map<
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    // Emulates the single lease statement (#1116). The mock body runs without
-    // an await, so like the real statement it is atomic: an overlapping call
-    // sees rows this one leased as no longer due. Bound values arrive in
-    // template order: now, queueId (twice), limit, leaseUntil, updatedAt.
+    // Emulates the single lease statement (#1116).
     $queryRaw: vi
       .fn()
       .mockImplementation(
@@ -99,6 +101,12 @@ vi.mock("@/lib/db", () => ({
         ),
     },
     outboundEmailQueue: {
+      findUnique: vi
+        .fn()
+        .mockImplementation(
+          async ({ where }: { where: { id: string } }) =>
+            mockQueueStore.get(where.id) ?? null
+        ),
       create: vi
         .fn()
         .mockImplementation(
@@ -172,18 +180,32 @@ async function retryCounts(
   return result.data;
 }
 
+async function queueOutboundEmail(
+  options: RawEmailOptions,
+  fromAddress?: string,
+  errorReason?: string
+): Promise<string | null> {
+  const result = await new EnqueueEmailHandler().execute({
+    options,
+    mode: "retry",
+    fromAddress,
+    errorReason,
+  });
+  return result.success ? result.data.queueId : null;
+}
+
 describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockQueueStore.clear();
     mockSuppressionStore.clear();
-    EmailService.resetClient();
+    resetResendClient();
     process.env.RESEND_API_KEY = "re_test_mock_api_key";
     process.env.VITEST = "";
   });
 
   afterEach(() => {
-    EmailService.resetClient();
+    resetResendClient();
     process.env.VITEST = "1";
     vi.unstubAllEnvs();
   });
@@ -204,14 +226,15 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         html: "<p>Hello world</p>",
       };
 
-      const result = await EmailService.sendRawEmail(options);
+      const result = await new SendRawEmailHandler().execute(options);
 
       expect(result.success).toBe(true);
-      expect(result.queued).toBe(true);
-      expect(result.queueId).toBeDefined();
+      if (!result.success) return;
+      expect(result.data.queued).toBe(true);
+      expect(result.data.queueId).toBeDefined();
 
       expect(mockQueueStore.size).toBe(1);
-      const queuedItem = mockQueueStore.get(result.queueId!);
+      const queuedItem = mockQueueStore.get(result.data.queueId!);
       expect(queuedItem?.to).toBe("recipient@example.com");
       expect(queuedItem?.status).toBe("RETRYING");
       expect(queuedItem?.attempts).toBe(1);
@@ -229,13 +252,14 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         html: "<p>Retry content</p>",
       };
 
-      const result = await EmailService.sendRawEmail(options);
+      const result = await new SendRawEmailHandler().execute(options);
 
       expect(result.success).toBe(true);
-      expect(result.queued).toBe(true);
-      expect(result.queueId).toBeDefined();
+      if (!result.success) return;
+      expect(result.data.queued).toBe(true);
+      expect(result.data.queueId).toBeDefined();
 
-      const queuedItem = mockQueueStore.get(result.queueId!);
+      const queuedItem = mockQueueStore.get(result.data.queueId!);
       expect(queuedItem?.to).toBe("transient@example.com");
       expect(queuedItem?.lastError).toContain("ECONNRESET");
     });
@@ -252,19 +276,20 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         html: "<p>Content</p>",
       };
 
-      const result = await EmailService.sendRawEmail(options);
+      const result = await new SendRawEmailHandler().execute(options);
 
       expect(result.success).toBe(false);
-      expect(result.queued).toBeUndefined();
-      expect(result.error).toBe("Domain not verified");
+      if (!result.success) {
+        expect(result.error.code).toBe("PROVIDER_REJECTED");
+        expect(result.error.message).toBe("Domain not verified");
+      }
       expect(mockQueueStore.size).toBe(0);
     });
   });
 
   describe("processRetryQueue() Execution & Exponential Backoff", () => {
     it("successfully delivers queued items when upstream recovers and updates status to DELIVERED", async () => {
-      // Seed a pending queue item
-      const queueId = await EmailService.queueOutboundEmail(
+      const queueId = await queueOutboundEmail(
         {
           to: "pending@example.com",
           subject: "Pending Email",
@@ -274,14 +299,13 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         "Initial 429 rate limit"
       );
 
-      // Upstream Resend is now healthy
       mockSendFn.mockResolvedValueOnce({
         data: { id: "msg_success_123" },
         error: null,
       });
 
       const summary = await retryCounts(
-        EmailService.processRetryQueue({
+        new ProcessRetryQueueHandler().execute({
           now: new Date(Date.now() + 5000),
         })
       );
@@ -290,7 +314,6 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       expect(summary.succeeded).toBe(1);
       expect(summary.failed).toBe(0);
 
-      // A null id would mean the seed row was never persisted.
       expect(queueId).not.toBeNull();
       const item = mockQueueStore.get(queueId as string);
       expect(item?.status).toBe("DELIVERED");
@@ -301,7 +324,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
     });
 
     it("leases due rows so overlapping workers dispatch each email once", async () => {
-      const queueId = await EmailService.queueOutboundEmail(
+      const queueId = await queueOutboundEmail(
         {
           to: "leased@example.com",
           subject: "Lease Test",
@@ -317,8 +340,8 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       const now = new Date(Date.now() + 5000);
 
       const [workerA, workerB] = await Promise.all([
-        retryCounts(EmailService.processRetryQueue({ now })),
-        retryCounts(EmailService.processRetryQueue({ now })),
+        retryCounts(new ProcessRetryQueueHandler().execute({ now })),
+        retryCounts(new ProcessRetryQueueHandler().execute({ now })),
       ]);
 
       expect(queueId).not.toBeNull();
@@ -348,7 +371,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
 
       const summary = await retryCounts(
-        EmailService.processRetryQueue({
+        new ProcessRetryQueueHandler().execute({
           maxBatchSize: 100,
         })
       );
@@ -382,7 +405,9 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         }
         mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
 
-        const summary = await retryCounts(EmailService.processRetryQueue());
+        const summary = await retryCounts(
+          new ProcessRetryQueueHandler().execute()
+        );
 
         expect(summary.processed).toBe(5);
         expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
@@ -396,16 +421,14 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       it("hands a row leased by one worker to no later worker", async () => {
         seedDue("single", new Date(0));
         mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
-        // The first worker's send fails transiently, so the row is still
-        // RETRYING, but its lease has moved nextRetryAt past `now`.
         mockSendFn.mockRejectedValueOnce(new Error("socket hang up"));
         const now = new Date(1000);
 
         const first = await retryCounts(
-          EmailService.processRetryQueue({ now })
+          new ProcessRetryQueueHandler().execute({ now })
         );
         const second = await retryCounts(
-          EmailService.processRetryQueue({ now })
+          new ProcessRetryQueueHandler().execute({ now })
         );
 
         expect(first.processed).toBe(1);
@@ -416,13 +439,15 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       it("dispatches oldest-due first whatever order RETURNING yields", async () => {
         seedDue("newer", new Date(2000));
         seedDue("older", new Date(1000));
-        vi.mocked(prisma.$queryRaw).mockImplementationOnce((async () => [
-          { ...mockQueueStore.get("newer"), dueAt: new Date(2000) },
-          { ...mockQueueStore.get("older"), dueAt: new Date(1000) },
-        ]) as unknown as typeof prisma.$queryRaw);
+        vi.mocked(prisma.$queryRaw).mockImplementationOnce(
+          fromAny(async () => [
+            { ...mockQueueStore.get("newer"), dueAt: new Date(2000) },
+            { ...mockQueueStore.get("older"), dueAt: new Date(1000) },
+          ])
+        );
         mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
 
-        await EmailService.processRetryQueue();
+        await new ProcessRetryQueueHandler().execute();
 
         expect(mockSendFn.mock.calls.map((call) => call[0].to)).toEqual([
           "older@example.com",
@@ -439,7 +464,9 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
           .spyOn(console, "error")
           .mockImplementation(() => undefined);
 
-        await expect(EmailService.processRetryQueue()).resolves.toMatchObject({
+        await expect(
+          new ProcessRetryQueueHandler().execute()
+        ).resolves.toMatchObject({
           success: false,
           error: { code: "QUEUE_LEASE_FAILED" },
         });
@@ -453,8 +480,6 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       it("returns QUEUE_UPDATE_FAILED instead of throwing when a row update fails (#1532)", async () => {
         seedDue("stuck", new Date(0));
         mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
-        // The DELIVERED write fails inside the send guard, then the RETRYING
-        // fallback write fails too, which is what escapes the row loop.
         vi.mocked(prisma.outboundEmailQueue.update)
           .mockRejectedValueOnce(new Error("db asleep mid-run"))
           .mockRejectedValueOnce(new Error("db asleep mid-run"));
@@ -462,7 +487,9 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
           .spyOn(console, "error")
           .mockImplementation(() => undefined);
 
-        await expect(EmailService.processRetryQueue()).resolves.toMatchObject({
+        await expect(
+          new ProcessRetryQueueHandler().execute()
+        ).resolves.toMatchObject({
           success: false,
           error: {
             code: "QUEUE_UPDATE_FAILED",
@@ -476,19 +503,20 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
     it("forces simulated delivery in Preview even when an API key is attached", async () => {
       vi.stubEnv("VERCEL_ENV", "preview");
 
-      const result = await EmailService.sendRawEmail({
+      const result = await new SendRawEmailHandler().execute({
         to: "preview@example.com",
         subject: "Preview isolation",
         html: "<p>must not leave preview</p>",
       });
 
       expect(result.success).toBe(true);
-      expect(result.simulated).toBe(true);
+      if (result.success) {
+        expect(result.data.simulated).toBe(true);
+      }
       expect(mockSendFn).not.toHaveBeenCalled();
     });
 
     it("applies exponential backoff on consecutive failures and marks FAILED after max attempts", async () => {
-      // Seed an item that has failed 4 times already
       const record: MockQueueItem = {
         id: "queue_max_attempts",
         to: "failing@example.com",
@@ -500,20 +528,21 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         tags: null,
         attempts: 4,
         status: "RETRYING",
-        nextRetryAt: new Date(Date.now() - 5000), // Due for retry
+        nextRetryAt: new Date(Date.now() - 5000),
         lastError: "Rate limit",
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockQueueStore.set(record.id, record);
 
-      // Still failing upstream
       mockSendFn.mockResolvedValueOnce({
         data: null,
         error: { message: "Rate limit 429", name: "rate_limit_exceeded" },
       });
 
-      const summary = await retryCounts(EmailService.processRetryQueue());
+      const summary = await retryCounts(
+        new ProcessRetryQueueHandler().execute()
+      );
 
       expect(summary.processed).toBe(1);
       expect(summary.failed).toBe(1);
@@ -532,12 +561,14 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         },
       });
 
-      const initialDispatch = await EmailService.sendRawEmail({
+      const initialDispatch = await new SendRawEmailHandler().execute({
         to: "suppressed@example.com",
         subject: "Suppression Check Test",
         html: "<p>Test</p>",
       });
-      expect(initialDispatch.queued).toBe(true);
+      expect(initialDispatch.success).toBe(true);
+      if (!initialDispatch.success) return;
+      expect(initialDispatch.data.queued).toBe(true);
 
       mockSuppressionStore.set("suppressed@example.com", {
         email: "suppressed@example.com",
@@ -546,7 +577,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       mockSendFn.mockClear();
 
       const summary = await retryCounts(
-        EmailService.processRetryQueue({
+        new ProcessRetryQueueHandler().execute({
           now: new Date(Date.now() + 5000),
         })
       );
@@ -555,7 +586,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       expect(summary.failed).toBe(1);
       expect(mockSendFn).not.toHaveBeenCalled();
 
-      const updated = mockQueueStore.get(initialDispatch.queueId!);
+      const updated = mockQueueStore.get(initialDispatch.data.queueId!);
       expect(updated?.status).toBe("FAILED");
       expect(updated?.lastError).toContain("suppression list");
     });
@@ -568,7 +599,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         error: null,
       });
 
-      await EmailService.sendRawEmail({
+      await new SendRawEmailHandler().execute({
         to: "visitor@example.com",
         subject: "Default Sender Verification",
         html: "<p>Testing sender</p>",
@@ -586,7 +617,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
     it("preserves due queue row and returns TRANSPORT_UNCONFIGURED when RESEND_API_KEY is absent in production", async () => {
       vi.stubEnv("VERCEL_ENV", "production");
       vi.stubEnv("RESEND_API_KEY", "");
-      EmailService.resetClient();
+      resetResendClient();
 
       const queueId = "queue_unconfigured_prod";
       const now = new Date(10000);
@@ -601,36 +632,34 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         tags: null,
         attempts: 1,
         status: "RETRYING",
-        nextRetryAt: new Date(now.getTime() - 1000), // due
+        nextRetryAt: new Date(now.getTime() - 1000),
         lastError: "Initial attempt failed",
         createdAt: new Date(0),
         updatedAt: new Date(0),
       });
 
-      const result = await EmailService.processRetryQueue({ now });
+      const result = await new ProcessRetryQueueHandler().execute({ now });
 
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.code).toBe("TRANSPORT_UNCONFIGURED");
       }
 
-      // Acceptance check: Production + absent/blank credential + one due row makes no provider call and never writes DELIVERED
       expect(mockSendFn).not.toHaveBeenCalled();
 
       const item = mockQueueStore.get(queueId);
       expect(item).toBeDefined();
-      expect(item?.status).toBe("RETRYING"); // Retains pending/retrying status
+      expect(item?.status).toBe("RETRYING");
       expect(item?.status).not.toBe("DELIVERED");
       expect(item?.status).not.toBe("FAILED");
-      expect(item?.attempts).toBe(1); // Retry caps preserved: not incremented
-      // Lease ownership preserved: nextRetryAt moved into lease window (5 minutes from now)
+      expect(item?.attempts).toBe(1);
       expect(item?.nextRetryAt.getTime()).toBe(now.getTime() + 5 * 60 * 1000);
     });
 
     it("preserves due queue row when RESEND_API_KEY is blank in production", async () => {
       vi.stubEnv("VERCEL_ENV", "production");
       vi.stubEnv("RESEND_API_KEY", "   ");
-      EmailService.resetClient();
+      resetResendClient();
 
       const queueId = "queue_blank_key_prod";
       const now = new Date(10000);
@@ -645,13 +674,13 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         tags: null,
         attempts: 2,
         status: "PENDING",
-        nextRetryAt: new Date(now.getTime() - 2000), // due
+        nextRetryAt: new Date(now.getTime() - 2000),
         lastError: null,
         createdAt: new Date(0),
         updatedAt: new Date(0),
       });
 
-      const result = await EmailService.processRetryQueue({ now });
+      const result = await new ProcessRetryQueueHandler().execute({ now });
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -667,10 +696,9 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
     });
 
     it("recovers and delivers the preserved queue row once credentials become available", async () => {
-      // Step 1: In production without key, mail is preserved
       vi.stubEnv("VERCEL_ENV", "production");
       vi.stubEnv("RESEND_API_KEY", "");
-      EmailService.resetClient();
+      resetResendClient();
 
       const queueId = "queue_recovering_prod";
       const initialTime = new Date(10000);
@@ -691,29 +719,26 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         updatedAt: new Date(0),
       });
 
-      const unconfiguredResult = await EmailService.processRetryQueue({
+      const unconfiguredResult = await new ProcessRetryQueueHandler().execute({
         now: initialTime,
       });
       expect(unconfiguredResult.success).toBe(false);
       expect(mockSendFn).not.toHaveBeenCalled();
 
-      // Row is still RETRYING, leased until initialTime + 5 minutes
       const unconfiguredItem = mockQueueStore.get(queueId);
       expect(unconfiguredItem?.status).toBe("RETRYING");
       const leaseExpiry = unconfiguredItem!.nextRetryAt;
 
-      // Step 2: Operator provisions the API key
       vi.stubEnv("RESEND_API_KEY", "re_test_mock_api_key");
-      EmailService.resetClient();
+      resetResendClient();
       mockSendFn.mockResolvedValueOnce({
         data: { id: "resend_recovered_success" },
         error: null,
       });
 
-      // Advance clock past the lease window
       const recoveryTime = new Date(leaseExpiry.getTime() + 1000);
       const configuredResult = await retryCounts(
-        EmailService.processRetryQueue({ now: recoveryTime })
+        new ProcessRetryQueueHandler().execute({ now: recoveryTime })
       );
 
       expect(configuredResult.processed).toBe(1);
@@ -760,13 +785,13 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
     vi.clearAllMocks();
     mockQueueStore.clear();
     mockSuppressionStore.clear();
-    EmailService.resetClient();
+    resetResendClient();
     process.env.RESEND_API_KEY = "re_test_mock_api_key";
     process.env.VITEST = "";
   });
 
   afterEach(() => {
-    EmailService.resetClient();
+    resetResendClient();
     process.env.VITEST = "1";
     vi.unstubAllEnvs();
   });
@@ -777,24 +802,36 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
       reason: "COMPLAINT",
     });
     await expect(
-      EmailService.checkRecipientEligibility("ok@example.com")
-    ).resolves.toEqual({ status: "eligible" });
+      new CheckRecipientEligibilityHandler().execute({
+        recipients: ["ok@example.com"],
+      })
+    ).resolves.toEqual({
+      success: true,
+      data: { status: "eligible" },
+    });
     await expect(
-      EmailService.checkRecipientEligibility("Gone@Example.com ")
-    ).resolves.toEqual({ status: "suppressed", reason: "COMPLAINT" });
+      new CheckRecipientEligibilityHandler().execute({
+        recipients: ["Gone@Example.com "],
+      })
+    ).resolves.toEqual({
+      success: true,
+      data: { status: "suppressed", reason: "COMPLAINT" },
+    });
     findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
     await expect(
-      EmailService.checkRecipientEligibility("ok@example.com")
+      new CheckRecipientEligibilityHandler().execute({
+        recipients: ["ok@example.com"],
+      })
     ).resolves.toEqual({
-      status: "unknown",
-      code: "SUPPRESSION_LOOKUP_FAILED",
+      success: true,
+      data: { status: "unknown", code: "SUPPRESSION_LOOKUP_FAILED" },
     });
   });
 
   it("defers an inline send to the durable queue without calling the provider", async () => {
     findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
 
-    const result = await EmailService.sendRawEmail({
+    const result = await new SendRawEmailHandler().execute({
       to: "visitor@example.com",
       subject: "Thanks for writing",
       html: "<p>confirmation</p>",
@@ -803,10 +840,13 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
     expect(mockSendFn).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       success: true,
-      queued: true,
-      deferred: true,
+      data: {
+        queued: true,
+        deferred: true,
+      },
     });
-    const row = mockQueueStore.get(result.queueId!);
+    if (!result.success) return;
+    const row = mockQueueStore.get(result.data.queueId!);
     expect(row?.lastError).toBe(ELIGIBILITY_DEFERRED_REASON);
     expect(row?.status).toBe("RETRYING");
   });
@@ -816,7 +856,7 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
     const create = vi.mocked(prisma.outboundEmailQueue.create);
     create.mockRejectedValueOnce(new Error("Neon unreachable"));
 
-    const result = await EmailService.sendRawEmail({
+    const result = await new SendRawEmailHandler().execute({
       to: "visitor@example.com",
       subject: "Thanks for writing",
       html: "<p>confirmation</p>",
@@ -825,23 +865,26 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
     expect(mockSendFn).not.toHaveBeenCalled();
     expect(result).toEqual({
       success: false,
-      retryable: true,
-      errorCode: "RECIPIENT_ELIGIBILITY_UNKNOWN",
-      error: expect.stringContaining("not sent or queued"),
+      error: {
+        code: "RECIPIENT_ELIGIBILITY_UNKNOWN",
+        message: expect.stringContaining("not sent or queued"),
+        recoverable: true,
+      },
     });
-    expect(result.queued).toBeUndefined();
   });
 
   it("does not queue a skipQueue send when eligibility is unknown", async () => {
     findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
-    const result = await EmailService.sendRawEmail({
+    const result = await new SendRawEmailHandler().execute({
       to: "visitor@example.com",
       subject: "s",
       html: "<p>h</p>",
       skipQueue: true,
     });
     expect(result.success).toBe(false);
-    expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+    if (!result.success) {
+      expect(result.error.code).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+    }
     expect(mockQueueStore.size).toBe(0);
     expect(mockSendFn).not.toHaveBeenCalled();
   });
@@ -851,7 +894,9 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
     findUnique().mockRejectedValueOnce(new Error("Neon unreachable"));
     const now = new Date("2026-11-22T12:00:00Z");
 
-    const first = await retryCounts(EmailService.processRetryQueue({ now }));
+    const first = await retryCounts(
+      new ProcessRetryQueueHandler().execute({ now })
+    );
 
     expect(first).toEqual({
       processed: 1,
@@ -868,7 +913,7 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
 
     mockSendFn.mockResolvedValueOnce({ data: { id: "msg_1" }, error: null });
     const second = await retryCounts(
-      EmailService.processRetryQueue({
+      new ProcessRetryQueueHandler().execute({
         now: new Date(held.nextRetryAt.getTime() + 1),
       })
     );
@@ -895,7 +940,7 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
       reason: "UNSUBSCRIBED",
     });
 
-    const summary = await retryCounts(EmailService.processRetryQueue());
+    const summary = await retryCounts(new ProcessRetryQueueHandler().execute());
 
     expect(summary).toEqual({
       processed: 1,
@@ -913,7 +958,7 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
       .mockResolvedValueOnce(null)
       .mockRejectedValueOnce(new Error("Neon unreachable"));
 
-    const summary = await retryCounts(EmailService.processRetryQueue());
+    const summary = await retryCounts(new ProcessRetryQueueHandler().execute());
 
     expect(summary.deferred).toBe(1);
     expect(mockSendFn).not.toHaveBeenCalled();
@@ -933,7 +978,7 @@ describe("unknown recipient eligibility fails closed (#3806)", () => {
         createdAt: new Date(0),
       });
 
-    const summary = await retryCounts(EmailService.processRetryQueue());
+    const summary = await retryCounts(new ProcessRetryQueueHandler().execute());
 
     expect(summary).toMatchObject({ failed: 1, deferred: 0 });
     expect(mockSendFn).not.toHaveBeenCalled();

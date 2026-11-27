@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BlogPostReactionSubmissionSchema } from "@/lib/schemas";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { getConnectionHashFromRequest } from "@/lib/services/privacy-service";
-import { createApiHandler, zodIssueDetails } from "@/lib/route-wrapper";
+import {
+  type DuplicateBlogReactionDetails,
+  GetBlogReactionsHandler,
+  SubmitBlogReactionHandler,
+  getConnectionHashFromRequest,
+} from "@/lib/services";
+import {
+  createApiHandler,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
 import { checkSubmissionAttemptRateLimit } from "@/lib/moderation";
 import { isRedisConfigured, redis, getScopedRedisKey } from "@/lib/redis";
 import { logger } from "@/lib/logger";
@@ -22,8 +30,17 @@ export const GET = createApiHandler(
     }
 
     const connectionHash = await getConnectionHashFromRequest(req);
-    const result = await BlogPostService.getReactions(slug, connectionHash);
-    return NextResponse.json(result);
+    const result = await new GetBlogReactionsHandler().execute({
+      slug,
+      connectionHash,
+    });
+    if (!result.success) {
+      return serviceFailureResponse(result);
+    }
+    return NextResponse.json({
+      success: true,
+      ...result.data,
+    });
   },
   { auth: "public" }
 );
@@ -70,32 +87,49 @@ export const POST = createApiHandler(
         }
       }
 
-      const result = await BlogPostService.submitReaction(data, connectionHash);
+      const result = await new SubmitBlogReactionHandler().execute({
+        blogPostSlug: data.blogPostSlug,
+        reactionType: data.reactionType,
+        connectionHash,
+      });
 
-      if (result.notFound) {
-        return NextResponse.json(
-          { error: result.message || "Blog post not found or not published" },
-          { status: 404 }
-        );
-      }
+      if (!result.success) {
+        if (result.error.code === "BLOG_POST_NOT_FOUND") {
+          return NextResponse.json(
+            {
+              error:
+                result.error.message || "Blog post not found or not published",
+            },
+            { status: 404 }
+          );
+        }
 
-      if ((result as { duplicate?: boolean }).duplicate) {
-        return NextResponse.json(
-          {
-            error: "Duplicate reaction within the sliding window",
-            counts: result.counts,
-            userReactions: result.userReactions,
-          },
-          { status: 429 }
-        );
+        if (result.error.code === "RATE_LIMITED") {
+          const duplicateDetails = result.error.details as
+            DuplicateBlogReactionDetails | undefined;
+          return NextResponse.json(
+            {
+              error: "Duplicate reaction within the sliding window",
+              counts: duplicateDetails?.counts ?? {},
+              userReactions: duplicateDetails?.userReactions ?? [],
+            },
+            { status: 429 }
+          );
+        }
+
+        return serviceFailureResponse(result, {
+          errorMessage:
+            "Reaction storage is temporarily unavailable. Your reaction remains queued for retry.",
+          logContext: "Blog post reaction persistence failed:",
+        });
       }
 
       return NextResponse.json(
         {
-          success: result.success,
-          reactionType: result.reactionType,
-          counts: result.counts,
-          userReactions: result.userReactions,
+          success: true,
+          reactionType: result.data.reactionType,
+          counts: result.data.counts,
+          userReactions: result.data.userReactions,
         },
         { status: 200 }
       );

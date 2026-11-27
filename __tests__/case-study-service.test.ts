@@ -1,6 +1,20 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import {
+  EvictCaseStudyCacheHandler,
+  ListCaseStudySummariesHandler,
+} from "@/lib/services";
+
+const CaseStudyService = {
+  async getPublishedCaseStudies() {
+    const res = await new ListCaseStudySummariesHandler().execute();
+    return res.success ? res.data : [];
+  },
+  async evictCaseStudyCache(slug: string) {
+    const res = await new EvictCaseStudyCacheHandler().execute({ slug });
+    return res.success ? res.data.evicted : false;
+  },
+};
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";

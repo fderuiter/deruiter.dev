@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  ProjectImageService,
+  DeleteProjectImageHandler,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
+  UploadProjectImageHandler,
   type ProjectImageErrorCode,
-} from "@/lib/services/project-image-service";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+} from "@/lib/services";
 import { applySecurityHeaders } from "@/lib/security-headers";
-import { sanitizeError } from "@/lib/error-sanitization";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { logger } from "@/lib/logger";
 
@@ -102,11 +101,11 @@ export const POST = createApiHandler(
       const mimeType = fileBlob.type || "application/octet-stream";
 
       // 3. Process, Validate & Upload Project Image Asset
-      const result = await ProjectImageService.uploadProjectImage(
+      const result = await new UploadProjectImageHandler().execute({
         slug,
-        buffer,
-        mimeType
-      );
+        fileBuffer: buffer,
+        mimeType,
+      });
 
       if (!result.success) {
         if (CLIENT_ERROR_CODES.has(result.error.code)) {
@@ -117,10 +116,11 @@ export const POST = createApiHandler(
           return applySecurityHeaders(res, req);
         }
 
-        logger.error("Project image upload failed:", {
-          code: result.error.code,
-          cause: sanitizeError(result.error.details),
-        });
+        logger.error(
+          "Project image upload failed:",
+          result.error.details ?? new Error(result.error.message),
+          { code: result.error.code }
+        );
         const res = NextResponse.json(
           { error: "Failed to process and store project image" },
           { status: 500 }
@@ -142,7 +142,7 @@ export const POST = createApiHandler(
       return applySecurityHeaders(res, req);
     } catch (err: unknown) {
       // Only request parsing (multipart form data) can throw here.
-      logger.error("Project image upload failed:", sanitizeError(err));
+      logger.error("Project image upload failed:", err);
       const res = NextResponse.json(
         { error: "Failed to process and store project image" },
         { status: 500 }
@@ -171,20 +171,7 @@ export const DELETE = createApiHandler(
     }
 
     try {
-      const existing = await CaseStudyService.getCaseStudyBySlug(slug);
-      if (!existing) {
-        const res = NextResponse.json(
-          { error: `Case study with slug "${slug}" not found` },
-          { status: 404 }
-        );
-        return applySecurityHeaders(res, req);
-      }
-
-      const priorKey = ProjectImageService.extractMediaKeyFromUrl(
-        existing.hero_image_url
-      );
-
-      const cleared = await CaseStudyService.updateCaseStudyImage(slug, null);
+      const cleared = await new DeleteProjectImageHandler().execute({ slug });
       if (!cleared.success) {
         if (cleared.error.code === "CASE_STUDY_NOT_FOUND") {
           const res = NextResponse.json(
@@ -195,7 +182,7 @@ export const DELETE = createApiHandler(
         }
         logger.error(
           "Failed to clear project image:",
-          sanitizeError(cleared.error.details)
+          cleared.error.details ?? new Error(cleared.error.message)
         );
         const res = NextResponse.json(
           { error: "Failed to clear project image" },
@@ -204,24 +191,13 @@ export const DELETE = createApiHandler(
         return applySecurityHeaders(res, req);
       }
 
-      if (priorKey) {
-        const cleanup = await ProjectImageService.deleteMediaAsset(priorKey);
-        if (!cleanup.success) {
-          logger.warn(
-            "Project image reference was cleared, but media cleanup failed.",
-            sanitizeError(cleanup.error.details),
-            { slug, code: cleanup.error.code }
-          );
-        }
-      }
-
       const res = NextResponse.json(
-        { success: true, data: { slug, hero_image_url: null } },
+        { success: true, data: cleared.data },
         { status: 200 }
       );
       return applySecurityHeaders(res, req);
     } catch (err) {
-      logger.error("Failed to clear project image:", sanitizeError(err));
+      logger.error("Failed to clear project image:", err);
       const res = NextResponse.json(
         { error: "Failed to clear project image" },
         { status: 500 }

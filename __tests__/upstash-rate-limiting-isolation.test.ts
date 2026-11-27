@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getRedisKeyPrefix, getScopedRedisKey } from "@/lib/redis";
-import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
+import { CheckTelemetryRateLimitHandler, _testCache } from "@/lib/services";
 import { NextRequest } from "next/server";
 import { runUpstashVerification } from "../scripts/verify-upstash";
 import { POST as contactPost } from "../app/api/contact/route";
@@ -143,7 +143,9 @@ describe("Upstash Redis Isolation and Bounded Outage Suite", () => {
         headers: { "x-forwarded-for": "192.168.1.50" },
       });
 
-      const promise = TelemetryService.isRateLimited(req);
+      const promise = new CheckTelemetryRateLimitHandler().execute({
+        request: req,
+      });
 
       // Wait until crypto hashing finishes and mockRatelimitLimit is entered
       await calledPromise;
@@ -151,7 +153,10 @@ describe("Upstash Redis Isolation and Bounded Outage Suite", () => {
       // Fast-forward past the 1500ms request deadline
       await vi.advanceTimersByTimeAsync(2000);
 
-      const result = await promise;
+      const envelope = await promise;
+      expect(envelope.success).toBe(true);
+      if (!envelope.success) return;
+      const result = envelope.data;
 
       // Fail-open to local fallback: request allowed, but circuit breaker active
       expect(result.limited).toBe(false);
@@ -174,19 +179,26 @@ describe("Upstash Redis Isolation and Bounded Outage Suite", () => {
       });
 
       // Trigger circuit breaker
-      await TelemetryService.isRateLimited(req);
+      await new CheckTelemetryRateLimitHandler().execute({ request: req });
       expect(_testCache.circuitBreakerCooldownUntil).toBe(now + 30000);
 
       // Now send 100 requests locally
       for (let i = 0; i < 99; i++) {
-        const res = await TelemetryService.isRateLimited(req);
-        expect(res.limited).toBe(false);
+        const res = await new CheckTelemetryRateLimitHandler().execute({
+          request: req,
+        });
+        expect(res.success && res.data.limited).toBe(false);
       }
 
       // 101st request should be limited locally
-      const blockedRes = await TelemetryService.isRateLimited(req);
-      expect(blockedRes.limited).toBe(true);
-      expect(blockedRes.headers?.["X-RateLimit-Remaining"]).toBe("0");
+      const blockedRes = await new CheckTelemetryRateLimitHandler().execute({
+        request: req,
+      });
+      expect(blockedRes.success).toBe(true);
+      if (blockedRes.success) {
+        expect(blockedRes.data.limited).toBe(true);
+        expect(blockedRes.data.headers?.["X-RateLimit-Remaining"]).toBe("0");
+      }
     });
 
     it("recovers to remote rate limiting once 30-second cooldown expires", async () => {
@@ -198,11 +210,11 @@ describe("Upstash Redis Isolation and Bounded Outage Suite", () => {
       });
 
       // First call fails, trips circuit breaker
-      await TelemetryService.isRateLimited(req);
+      await new CheckTelemetryRateLimitHandler().execute({ request: req });
       expect(mockRatelimitLimit).toHaveBeenCalledTimes(1);
 
       // Subsequent call within cooldown does not hit remote
-      await TelemetryService.isRateLimited(req);
+      await new CheckTelemetryRateLimitHandler().execute({ request: req });
       expect(mockRatelimitLimit).toHaveBeenCalledTimes(1);
 
       // Advance past 30-second cooldown
@@ -216,10 +228,17 @@ describe("Upstash Redis Isolation and Bounded Outage Suite", () => {
       });
 
       // Call after cooldown should probe remote again
-      const recoveryResult = await TelemetryService.isRateLimited(req);
+      const recoveryResult = await new CheckTelemetryRateLimitHandler().execute(
+        { request: req }
+      );
       expect(mockRatelimitLimit).toHaveBeenCalledTimes(2);
-      expect(recoveryResult.limited).toBe(false);
-      expect(recoveryResult.headers?.["X-RateLimit-Remaining"]).toBe("95");
+      expect(recoveryResult.success).toBe(true);
+      if (recoveryResult.success) {
+        expect(recoveryResult.data.limited).toBe(false);
+        expect(recoveryResult.data.headers?.["X-RateLimit-Remaining"]).toBe(
+          "95"
+        );
+      }
     });
   });
 

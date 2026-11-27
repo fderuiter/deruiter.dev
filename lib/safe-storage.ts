@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { sanitizeError } from "./error-sanitization";
 import { logger } from "@/lib/logger";
 
 export const STORAGE_CHANGE_EVENT = "portfolio-persistent-state-change";
@@ -181,8 +180,7 @@ export class SafeStorageAdapter {
         return parsed as T;
       }
     } catch (error) {
-      const sanitized = sanitizeError(error);
-      logger.warn(`SafeStorage: getItem failed for key "${key}":`, sanitized);
+      logger.warn(`SafeStorage: getItem failed for key "${key}":`, error);
       const cached = this.memoryCache.get(key);
       if (cached) {
         return cached.parsedValue as T;
@@ -289,10 +287,9 @@ export class SafeStorageAdapter {
         // A caller that opted out of the memory copy expects failed writes
         // and handles them itself, so only retained writes are reported.
         if (options?.retainInMemory !== false) {
-          const sanitized = sanitizeError(error);
           logger.warn(
             `SafeStorage: setRawItem failed for key "${key}". Value retained in memory.`,
-            sanitized
+            error
           );
         }
       }
@@ -334,11 +331,7 @@ export class SafeStorageAdapter {
       try {
         window.localStorage.removeItem(key);
       } catch (error) {
-        const sanitized = sanitizeError(error);
-        logger.warn(
-          `SafeStorage: removeItem failed for key "${key}":`,
-          sanitized
-        );
+        logger.warn(`SafeStorage: removeItem failed for key "${key}":`, error);
       }
     }
 
@@ -355,8 +348,7 @@ export class SafeStorageAdapter {
       try {
         window.localStorage.clear();
       } catch (error) {
-        const sanitized = sanitizeError(error);
-        logger.warn("SafeStorage: clear failed:", sanitized);
+        logger.warn("SafeStorage: clear failed:", error);
       }
     }
 
@@ -463,8 +455,7 @@ export class SafeStorageAdapter {
           count++;
         }
       } catch (error) {
-        const sanitized = sanitizeError(error);
-        logger.warn("SafeStorage: error during pruneExpired:", sanitized);
+        logger.warn("SafeStorage: error during pruneExpired:", error);
       }
     }
 
@@ -576,10 +567,9 @@ export class SafeStorageAdapter {
     }
 
     // If quota constraint persists after evicting all expirable keys, retain active state in memory fallback cache
-    const sanitized = sanitizeError(initialError);
     logger.warn(
       `SafeStorage: Storage quota exceeded for key "${key}". Active state retained in memory.`,
-      sanitized
+      initialError
     );
 
     return false;

@@ -2,7 +2,10 @@ import React from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { BlogAuthoringForm } from "@/components/admin/BlogAuthoringForm";
-import { BlogPostService } from "@/lib/services/blog-service";
+import {
+  GetPublishedBlogPostHandler,
+  ListPublishedBlogPostsHandler,
+} from "@/lib/services";
 import { prisma } from "@/lib/db";
 import {
   BlogDraftCreateSchema,
@@ -317,8 +320,10 @@ describe("Draft vs Published Isolation State Machine", () => {
       unpublishedDraft as never
     );
 
-    const result = await BlogPostService.getBlogPostBySlug("secret-draft");
-    expect(result).toBeNull();
+    const result = await new GetPublishedBlogPostHandler().execute({
+      slug: "secret-draft",
+    });
+    expect(result).toEqual({ success: true, data: null });
   });
 
   it("excludes unpublished drafts from public getAllPublishedBlogPosts list", async () => {
@@ -355,7 +360,10 @@ describe("Draft vs Published Isolation State Machine", () => {
 
     vi.mocked(prisma.blogPost.findMany).mockResolvedValue(mixedPosts as never);
 
-    const results = await BlogPostService.getAllPublishedBlogPosts();
-    expect(results.some((p) => p.slug === "secret-draft")).toBe(false);
+    const results = await new ListPublishedBlogPostsHandler().execute();
+    expect(results.success).toBe(true);
+    if (results.success) {
+      expect(results.data.some((p) => p.slug === "secret-draft")).toBe(false);
+    }
   });
 });

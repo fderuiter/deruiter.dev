@@ -2,19 +2,35 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import {
-  MaintenanceService,
+  DispatchNewsletterAnnouncementsHandler,
+  FlushBlogReactionsHandler,
+  FlushCaseStudyReactionsHandler,
+  GetRetryQueueHealthHandler,
+  ProcessRetryQueueHandler,
+  RefreshTelemetryAggregateStatsHandler,
+  RollupAndPruneTelemetryHandler,
+  RunMaintenancePipelineHandler,
+  SyncBufferedEventsHandler,
+  createFailure,
+  createSuccess,
   type MaintenancePhaseResult,
-} from "@/lib/services/maintenance-service";
+  type MaintenanceSummary,
+  type RunMaintenancePipelineInput,
+} from "@/lib/services";
 import { GET, maxDuration } from "@/app/api/cron/maintenance/route";
 import { logger } from "@/lib/logger";
-import { createFailure, createSuccess } from "@/lib/services/service-result";
-import { TelemetryService } from "@/lib/services/telemetry-service";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { BlogPostService } from "@/lib/services/blog-service";
-import { NewsletterService } from "@/lib/services/newsletter-service";
-import { EmailService } from "@/lib/services/email-service";
 
 type PhaseTask = () => Promise<MaintenancePhaseResult>;
+
+async function runPipeline(
+  input?: RunMaintenancePipelineInput
+): Promise<MaintenanceSummary> {
+  const res = await new RunMaintenancePipelineHandler().execute(input);
+  if (!res.success) {
+    throw new Error(`Unexpected pipeline failure: ${res.error.code}`);
+  }
+  return res.data;
+}
 
 function adapters(
   overrides?: Partial<{
@@ -61,7 +77,7 @@ describe("unified maintenance pipeline (#714)", () => {
 
   it("executes every phase sequentially and returns structured counts", async () => {
     const calls: string[] = [];
-    const result = await MaintenanceService.run({
+    const result = await runPipeline({
       now: new Date("2026-09-13T00:00:00.000Z"),
       adapters: adapters({
         syncTelemetry: vi.fn(async () => {
@@ -106,7 +122,7 @@ describe("unified maintenance pipeline (#714)", () => {
     const retention = vi
       .fn()
       .mockResolvedValue(createSuccess({ rawEventsDeleted: 0 }));
-    const result = await MaintenanceService.run({
+    const result = await runPipeline({
       adapters: adapters({
         syncTelemetry: vi.fn().mockRejectedValue(new Error("redis offline")),
         processEmailRetry: emailRetry,
@@ -127,7 +143,7 @@ describe("unified maintenance pipeline (#714)", () => {
     const retention = vi
       .fn()
       .mockResolvedValue(createSuccess({ rawEventsDeleted: 0 }));
-    const result = await MaintenanceService.run({
+    const result = await runPipeline({
       adapters: adapters({
         dispatchNewsletter: vi
           .fn()
@@ -166,7 +182,7 @@ describe("unified maintenance pipeline (#714)", () => {
     const retention = vi
       .fn()
       .mockResolvedValue(createSuccess({ rawEventsDeleted: 0 }));
-    const result = await MaintenanceService.run({
+    const result = await runPipeline({
       deadlineMs: 500,
       clock: () => currentTime,
       adapters: adapters({
@@ -195,7 +211,10 @@ describe("unified maintenance pipeline (#714)", () => {
     const empty = createSuccess({ processed: 0, inserted: 0 });
 
     function stubOtherPhases() {
-      vi.spyOn(NewsletterService, "dispatchDue").mockResolvedValue(
+      vi.spyOn(
+        DispatchNewsletterAnnouncementsHandler.prototype,
+        "execute"
+      ).mockResolvedValue(
         createSuccess({
           openDispatches: 0,
           queued: 0,
@@ -204,39 +223,48 @@ describe("unified maintenance pipeline (#714)", () => {
           capacity: 10,
         })
       );
-      vi.spyOn(EmailService, "processRetryQueue").mockResolvedValue(
+      vi.spyOn(ProcessRetryQueueHandler.prototype, "execute").mockResolvedValue(
         createSuccess({ processed: 0, succeeded: 0, failed: 0, deferred: 0 })
       );
-      vi.spyOn(EmailService, "getRetryQueueHealth").mockResolvedValue({
-        depth: 0,
-        oldestPendingAgeMs: null,
-        terminalFailures: 0,
-        retryExhausted: 0,
-        eligibilityDeferred: 0,
-      });
-      vi.spyOn(TelemetryService, "rollupAndPruneRawEvents").mockResolvedValue(
+      vi.spyOn(
+        GetRetryQueueHealthHandler.prototype,
+        "execute"
+      ).mockResolvedValue(
+        createSuccess({
+          depth: 0,
+          oldestPendingAgeMs: null,
+          terminalFailures: 0,
+          retryExhausted: 0,
+          eligibilityDeferred: 0,
+        })
+      );
+      vi.spyOn(
+        RollupAndPruneTelemetryHandler.prototype,
+        "execute"
+      ).mockResolvedValue(
         createSuccess({ rollupsUpserted: 0, rawEventsDeleted: 0 })
       );
       return vi
-        .spyOn(TelemetryService, "refreshAggregateStats")
+        .spyOn(RefreshTelemetryAggregateStatsHandler.prototype, "execute")
         .mockResolvedValue(createSuccess({ projects: 3 }));
     }
 
     it("reports every counter when all services succeed", async () => {
       stubOtherPhases();
-      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(
-        counts
-      );
       vi.spyOn(
-        CaseStudyService,
-        "flushBufferedReactionsToDatabase"
+        SyncBufferedEventsHandler.prototype,
+        "execute"
       ).mockResolvedValue(counts);
       vi.spyOn(
-        BlogPostService,
-        "flushBufferedReactionsToDatabase"
+        FlushCaseStudyReactionsHandler.prototype,
+        "execute"
+      ).mockResolvedValue(counts);
+      vi.spyOn(
+        FlushBlogReactionsHandler.prototype,
+        "execute"
       ).mockResolvedValue(createSuccess({ processed: 1, inserted: 1 }));
 
-      const result = await MaintenanceService.run();
+      const result = await runPipeline();
 
       expect(result.success).toBe(true);
       expect(result.phases.telemetry.counts).toEqual({
@@ -258,14 +286,14 @@ describe("unified maintenance pipeline (#714)", () => {
     it("refreshes the aggregate once after the flush, and a failed refresh keeps the phase completed (#3201)", async () => {
       const refresh = stubOtherPhases();
       const sync = vi
-        .spyOn(TelemetryService, "syncBufferedEvents")
+        .spyOn(SyncBufferedEventsHandler.prototype, "execute")
         .mockResolvedValue(counts);
       vi.spyOn(
-        CaseStudyService,
-        "flushBufferedReactionsToDatabase"
+        FlushCaseStudyReactionsHandler.prototype,
+        "execute"
       ).mockResolvedValue(counts);
       const blogFlush = vi
-        .spyOn(BlogPostService, "flushBufferedReactionsToDatabase")
+        .spyOn(FlushBlogReactionsHandler.prototype, "execute")
         .mockResolvedValue(counts);
       refresh.mockResolvedValue(
         createFailure(
@@ -274,7 +302,7 @@ describe("unified maintenance pipeline (#714)", () => {
         )
       );
 
-      const result = await MaintenanceService.run();
+      const result = await runPipeline();
 
       expect(refresh).toHaveBeenCalledOnce();
       expect(refresh.mock.invocationCallOrder[0]).toBeGreaterThan(
@@ -289,12 +317,13 @@ describe("unified maintenance pipeline (#714)", () => {
 
     it("fails the phase on a reaction flush failure after draining both queues", async () => {
       stubOtherPhases();
-      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(
-        counts
-      );
       vi.spyOn(
-        CaseStudyService,
-        "flushBufferedReactionsToDatabase"
+        SyncBufferedEventsHandler.prototype,
+        "execute"
+      ).mockResolvedValue(counts);
+      vi.spyOn(
+        FlushCaseStudyReactionsHandler.prototype,
+        "execute"
       ).mockResolvedValue(
         createFailure(
           "PERSISTENCE_FAILED",
@@ -302,10 +331,10 @@ describe("unified maintenance pipeline (#714)", () => {
         )
       );
       const blogFlush = vi
-        .spyOn(BlogPostService, "flushBufferedReactionsToDatabase")
+        .spyOn(FlushBlogReactionsHandler.prototype, "execute")
         .mockResolvedValue(counts);
 
-      const result = await MaintenanceService.run();
+      const result = await runPipeline();
 
       expect(blogFlush).toHaveBeenCalledOnce();
       expect(result.partial).toBe(true);
@@ -319,18 +348,21 @@ describe("unified maintenance pipeline (#714)", () => {
 
     it("stops the telemetry phase at a sync failure without flushing reactions", async () => {
       stubOtherPhases();
-      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(
+      vi.spyOn(
+        SyncBufferedEventsHandler.prototype,
+        "execute"
+      ).mockResolvedValue(
         createFailure(
           "QUEUE_UNAVAILABLE",
           "Telemetry buffer could not be read from Redis"
         )
       );
       const caseStudyFlush = vi.spyOn(
-        CaseStudyService,
-        "flushBufferedReactionsToDatabase"
+        FlushCaseStudyReactionsHandler.prototype,
+        "execute"
       );
 
-      const result = await MaintenanceService.run();
+      const result = await runPipeline();
 
       expect(caseStudyFlush).not.toHaveBeenCalled();
       expect(result.phases.telemetry.status).toBe("failed");
@@ -339,36 +371,45 @@ describe("unified maintenance pipeline (#714)", () => {
 
     it("records newsletter, email retry and retention failures from their results", async () => {
       stubOtherPhases();
-      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(empty);
       vi.spyOn(
-        CaseStudyService,
-        "flushBufferedReactionsToDatabase"
+        SyncBufferedEventsHandler.prototype,
+        "execute"
       ).mockResolvedValue(empty);
       vi.spyOn(
-        BlogPostService,
-        "flushBufferedReactionsToDatabase"
+        FlushCaseStudyReactionsHandler.prototype,
+        "execute"
       ).mockResolvedValue(empty);
-      vi.spyOn(NewsletterService, "dispatchDue").mockResolvedValue(
+      vi.spyOn(
+        FlushBlogReactionsHandler.prototype,
+        "execute"
+      ).mockResolvedValue(empty);
+      vi.spyOn(
+        DispatchNewsletterAnnouncementsHandler.prototype,
+        "execute"
+      ).mockResolvedValue(
         createFailure(
           "DISPATCH_FAILED",
           "Newsletter dispatch phase could not complete"
         )
       );
-      vi.spyOn(EmailService, "processRetryQueue").mockResolvedValue(
+      vi.spyOn(ProcessRetryQueueHandler.prototype, "execute").mockResolvedValue(
         createFailure(
           "QUEUE_LEASE_FAILED",
           "Could not lease due rows from the outbound email queue"
         )
       );
-      const health = vi.spyOn(EmailService, "getRetryQueueHealth");
-      vi.spyOn(TelemetryService, "rollupAndPruneRawEvents").mockResolvedValue(
+      const health = vi.spyOn(GetRetryQueueHealthHandler.prototype, "execute");
+      vi.spyOn(
+        RollupAndPruneTelemetryHandler.prototype,
+        "execute"
+      ).mockResolvedValue(
         createFailure(
           "RETENTION_FAILED",
           "Telemetry rollup and prune transaction failed"
         )
       );
 
-      const result = await MaintenanceService.run();
+      const result = await runPipeline();
 
       expect(result.phases.telemetry.status).toBe("completed");
       expect(result.phases.newsletter.status).toBe("failed");
@@ -384,7 +425,7 @@ describe("unified maintenance pipeline (#714)", () => {
   it("rejects an unauthorized cron request before invoking the runner", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("CRON_SECRET", "maintenance-secret");
-    const run = vi.spyOn(MaintenanceService, "run");
+    const run = vi.spyOn(RunMaintenancePipelineHandler.prototype, "execute");
     const response = await GET(
       new NextRequest("https://www.deruiter.dev/api/cron/maintenance")
     );
@@ -396,20 +437,24 @@ describe("unified maintenance pipeline (#714)", () => {
   it("runs an authenticated request with validated batch input", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("CRON_SECRET", "maintenance-secret");
-    const run = vi.spyOn(MaintenanceService, "run").mockResolvedValue({
-      success: true,
-      partial: false,
-      startedAt: "2026-09-13T00:00:00.000Z",
-      completedAt: "2026-09-13T00:00:00.100Z",
-      durationMs: 100,
-      deadlineMs: 8000,
-      phases: {
-        telemetry: { status: "completed", durationMs: 10, counts: {} },
-        newsletter: { status: "completed", durationMs: 10, counts: {} },
-        emailRetry: { status: "completed", durationMs: 10, counts: {} },
-        retention: { status: "completed", durationMs: 10, counts: {} },
-      },
-    });
+    const run = vi
+      .spyOn(RunMaintenancePipelineHandler.prototype, "execute")
+      .mockResolvedValue(
+        createSuccess({
+          success: true,
+          partial: false,
+          startedAt: "2026-09-13T00:00:00.000Z",
+          completedAt: "2026-09-13T00:00:00.100Z",
+          durationMs: 100,
+          deadlineMs: 8000,
+          phases: {
+            telemetry: { status: "completed", durationMs: 10, counts: {} },
+            newsletter: { status: "completed", durationMs: 10, counts: {} },
+            emailRetry: { status: "completed", durationMs: 10, counts: {} },
+            retention: { status: "completed", durationMs: 10, counts: {} },
+          },
+        })
+      );
     const response = await GET(
       new NextRequest(
         "https://www.deruiter.dev/api/cron/maintenance?batch=25",
@@ -438,25 +483,30 @@ describe("unified maintenance pipeline (#714)", () => {
       message: "",
       timestamp: "",
     }));
-    vi.spyOn(MaintenanceService, "run").mockResolvedValue({
-      success: false,
-      partial: true,
-      startedAt: "2026-09-13T00:00:00.000Z",
-      completedAt: "2026-09-13T00:00:07.000Z",
-      durationMs: 7000,
-      deadlineMs: 7000,
-      phases: {
-        telemetry: {
-          status: "failed",
-          durationMs: 10,
-          counts: {},
-          error: "connect ECONNREFUSED",
+    vi.spyOn(
+      RunMaintenancePipelineHandler.prototype,
+      "execute"
+    ).mockResolvedValue(
+      createSuccess({
+        success: false,
+        partial: true,
+        startedAt: "2026-09-13T00:00:00.000Z",
+        completedAt: "2026-09-13T00:00:07.000Z",
+        durationMs: 7000,
+        deadlineMs: 7000,
+        phases: {
+          telemetry: {
+            status: "failed",
+            durationMs: 10,
+            counts: {},
+            error: "connect ECONNREFUSED",
+          },
+          newsletter: { status: "completed", durationMs: 10, counts: {} },
+          emailRetry: { status: "completed", durationMs: 10, counts: {} },
+          retention: { status: "skipped", durationMs: 0, counts: {} },
         },
-        newsletter: { status: "completed", durationMs: 10, counts: {} },
-        emailRetry: { status: "completed", durationMs: 10, counts: {} },
-        retention: { status: "skipped", durationMs: 0, counts: {} },
-      },
-    });
+      })
+    );
 
     const response = await GET(
       new NextRequest("https://www.deruiter.dev/api/cron/maintenance", {

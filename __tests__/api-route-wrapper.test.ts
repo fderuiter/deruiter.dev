@@ -8,10 +8,19 @@ import { fromPartial } from "@total-typescript/shoehorn";
 import { GET as getMedia } from "@/app/api/media/[key]/route";
 import { POST as postResend } from "@/app/api/webhooks/resend/route";
 import { POST as postQStashRetry } from "@/app/api/webhooks/qstash/retry/route";
-import { ProjectImageService } from "@/lib/services/project-image-service";
-import { EmailService } from "@/lib/services/email-service";
+import {
+  GetMediaAssetHandler,
+  HandleResendWebhookHandler,
+  ProcessRetryQueueHandler,
+  createFailure,
+} from "@/lib/services";
 import { SECURITY_HEADERS } from "@/lib/security-headers";
-import { zodIssueDetails } from "@/lib/route-wrapper";
+import {
+  mapServiceErrorToHttpStatus,
+  serviceFailureResponse,
+  zodIssueDetails,
+} from "@/lib/route-wrapper";
+import { logger } from "@/lib/logger";
 
 /**
  * The media and webhook routes go through `createApiHandler` like every
@@ -19,7 +28,7 @@ import { zodIssueDetails } from "@/lib/route-wrapper";
  */
 
 vi.mock("@/lib/qstash-retry", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/qstash-retry")>();
+  const actual = await importOriginal<typeof import("@upstash/qstash")>();
   return {
     ...actual,
     isQStashReceivingConfigured: vi.fn(() => true),
@@ -39,7 +48,7 @@ afterEach(() => {
 
 describe("GET /api/media/[key] through the route wrapper", () => {
   it("serves the asset with the wrapper's headers and keeps its own strict CSP", async () => {
-    vi.spyOn(ProjectImageService, "getMediaAsset").mockResolvedValue(
+    vi.spyOn(GetMediaAssetHandler.prototype, "execute").mockResolvedValue(
       fromPartial({
         success: true,
         data: { buffer: Buffer.from("png-bytes"), contentType: "image/png" },
@@ -64,7 +73,7 @@ describe("GET /api/media/[key] through the route wrapper", () => {
   });
 
   it("returns 404 for a missing asset", async () => {
-    vi.spyOn(ProjectImageService, "getMediaAsset").mockResolvedValue(
+    vi.spyOn(GetMediaAssetHandler.prototype, "execute").mockResolvedValue(
       fromPartial({ success: true, data: null })
     );
     const req = new NextRequest("http://localhost:3000/api/media/none.png");
@@ -81,7 +90,7 @@ describe("GET /api/media/[key] through the route wrapper", () => {
 describe("webhooks through the route wrapper", () => {
   it("rejects a Resend delivery with a bad signature before touching the payload", async () => {
     vi.stubEnv("RESEND_WEBHOOK_SECRET", "whsec_dGVzdC1zZWNyZXQ=");
-    const handle = vi.spyOn(EmailService, "handleWebhookEvent");
+    const handle = vi.spyOn(HandleResendWebhookHandler.prototype, "execute");
     const req = new NextRequest("http://localhost:3000/api/webhooks/resend", {
       method: "POST",
       body: JSON.stringify({ type: "email.bounced", data: {} }),
@@ -104,7 +113,7 @@ describe("webhooks through the route wrapper", () => {
   });
 
   it("rejects a QStash delivery with a bad signature before any retry", async () => {
-    const retry = vi.spyOn(EmailService, "processRetryQueue");
+    const retry = vi.spyOn(ProcessRetryQueueHandler.prototype, "execute");
     const req = new NextRequest(
       "http://localhost:3000/api/webhooks/qstash/retry",
       {
@@ -120,6 +129,53 @@ describe("webhooks through the route wrapper", () => {
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Invalid QStash signature" });
     expect(retry).not.toHaveBeenCalled();
+  });
+});
+
+describe("mapServiceErrorToHttpStatus & serviceFailureResponse", () => {
+  it("maps canonical domain error codes to HTTP status codes", () => {
+    expect(mapServiceErrorToHttpStatus("NOT_FOUND")).toBe(404);
+    expect(mapServiceErrorToHttpStatus("POST_NOT_FOUND")).toBe(404);
+    expect(mapServiceErrorToHttpStatus("INVALID_TOKEN")).toBe(404);
+    expect(mapServiceErrorToHttpStatus("DUPLICATE_SLUG")).toBe(409);
+    expect(mapServiceErrorToHttpStatus("RATE_LIMITED")).toBe(429);
+    expect(mapServiceErrorToHttpStatus("UNAUTHORIZED")).toBe(401);
+    expect(mapServiceErrorToHttpStatus("FORBIDDEN")).toBe(403);
+    expect(mapServiceErrorToHttpStatus("SCHEMA_VALIDATION_FAILED")).toBe(422);
+    expect(mapServiceErrorToHttpStatus("INVALID_INPUT")).toBe(400);
+    expect(mapServiceErrorToHttpStatus("STORAGE_UNAVAILABLE")).toBe(503);
+    expect(mapServiceErrorToHttpStatus("PERSISTENCE_FAILED")).toBe(503);
+    expect(mapServiceErrorToHttpStatus("UNKNOWN_ERROR", 502)).toBe(502);
+  });
+
+  it("logs raw Error cause once for 5xx responses and honors statusOverrides", async () => {
+    const logSpy = vi.spyOn(logger, "error").mockImplementation(() => ({
+      level: "error",
+      message: "",
+      timestamp: "",
+    }));
+    const cause = new Error("Neon socket closed");
+
+    const unavailableRes = serviceFailureResponse(
+      createFailure("STORAGE_UNAVAILABLE", "Database temporarily unavailable", {
+        recoverable: true,
+        details: cause,
+      }),
+      { logContext: "Persist failed:" }
+    );
+    expect(unavailableRes.status).toBe(503);
+    await expect(unavailableRes.json()).resolves.toEqual({
+      error: "Database temporarily unavailable",
+    });
+    expect(logSpy).toHaveBeenCalledWith("Persist failed:", cause, undefined);
+
+    logSpy.mockClear();
+    const clientRes = serviceFailureResponse(
+      createFailure("CUSTOM_CLIENT_CODE", "Bad input"),
+      { statusOverrides: { CUSTOM_CLIENT_CODE: 400 } }
+    );
+    expect(clientRes.status).toBe(400);
+    expect(logSpy).not.toHaveBeenCalled();
   });
 });
 

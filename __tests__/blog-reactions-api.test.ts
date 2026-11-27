@@ -202,4 +202,55 @@ describe("Blog Post Reactions API (/api/blog/reactions)", () => {
     const json = await res.json();
     expect(json.error).toContain("Duplicate reaction");
   });
+
+  it("returns 503 on database failure and preserves queued offline items instead of claiming 200", async () => {
+    const { createOfflineDispatcher, createMemoryOfflineQueueStore } =
+      await import("@/lib/offline-queue");
+    vi.mocked(prisma.blogPostReaction.findFirst).mockRejectedValueOnce(
+      new Error("Neon database unreachable")
+    );
+
+    const req = new NextRequest("http://localhost/api/blog/reactions", {
+      method: "POST",
+      headers: {
+        "x-forwarded-for": "10.0.0.42",
+        "user-agent": "outage-agent",
+      },
+      body: JSON.stringify({
+        blogPostSlug: "cdisc-crf-compiler-architecture",
+        reactionType: "insightful",
+      }),
+    });
+
+    const res = await blogReactionPOST(req);
+    expect(res.status).toBe(503);
+
+    const store = createMemoryOfflineQueueStore();
+    await store.enqueue(
+      {
+        id: "rx_offline_1",
+        type: "reaction",
+        endpoint: "/api/blog/reactions",
+        body: {
+          blogPostSlug: "cdisc-crf-compiler-architecture",
+          reactionType: "insightful",
+        },
+      },
+      1000
+    );
+    const dispatcher = createOfflineDispatcher({
+      store,
+      now: () => 2000,
+      setTimer: () => 0,
+      send: async () =>
+        res.ok
+          ? { kind: "ok" }
+          : { kind: "transient", status: res.status, reason: "HTTP 503" },
+    });
+    const outcome = await dispatcher.flush();
+    expect(outcome.processed).toBe(0);
+    const remaining = await store.list();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.retries).toBe(1);
+  });
 });

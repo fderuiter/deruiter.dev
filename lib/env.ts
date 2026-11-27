@@ -29,11 +29,11 @@ export const serverEnvSchema = z.object({
   POSTGRES_DATABASE: z.string().optional(),
   POSTGRES_URL_NO_SSL: z.string().optional(),
   POSTGRES_PRISMA_URL: z.string().optional(),
-  UPSTASH_REDIS_REST_URL: z.string().url().optional().or(z.literal("")),
+  UPSTASH_REDIS_REST_URL: z.url().optional().or(z.literal("")),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   UPSTASH_REDIS_KEY_PREFIX: z.string().optional(),
   CRON_SECRET: z.string().optional(),
-  QSTASH_URL: z.string().url().optional().or(z.literal("")),
+  QSTASH_URL: z.url().optional().or(z.literal("")),
   QSTASH_TOKEN: z.string().optional(),
   QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
   QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
@@ -78,8 +78,8 @@ if (typeof process !== "undefined" && process.env) {
  * Safe to be bundled and exposed in the browser.
  */
 export const clientEnvSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.string().url().optional().or(z.literal("")),
-  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")),
+  NEXT_PUBLIC_APP_URL: z.url().optional().or(z.literal("")),
+  NEXT_PUBLIC_SENTRY_DSN: z.url().optional().or(z.literal("")),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
 });
 

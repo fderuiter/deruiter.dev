@@ -15,6 +15,9 @@ import {
   executeExportCommand,
   executeDiffCommand,
   executeCliString,
+  parsePosixShellArgs,
+  quotePosixShellArg,
+  generateCliCommandForField,
   stripAnsi,
   StudyProtocolEngine,
 } from "@/lib/crf";
@@ -752,5 +755,144 @@ describe("cli-engine — executeCliString dispatcher", () => {
     const res = executeCliString(study, "frobnicate now");
     expect(res.success).toBe(false);
     expect(res.error).toBe("Unknown command: frobnicate now");
+  });
+
+  it("unquotes POSIX single/double quotes and round-trips generateCliCommandForField with --span and --calc", () => {
+    const parsed = parsePosixShellArgs(
+      `crf add field VS --var BMI --type calculated --span 12 --label 'Patient'\\''s BMI (kg/m2)' --calc "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)" --required`
+    );
+    expect(parsed).toEqual({
+      success: true,
+      args: [
+        "crf",
+        "add",
+        "field",
+        "VS",
+        "--var",
+        "BMI",
+        "--type",
+        "calculated",
+        "--span",
+        "12",
+        "--label",
+        "Patient's BMI (kg/m2)",
+        "--calc",
+        "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+        "--required",
+      ],
+    });
+
+    const quoted = quotePosixShellArg("Patient's Baseline --help");
+    expect(parsePosixShellArgs(`crf add form CM --name ${quoted}`)).toEqual({
+      success: true,
+      args: ["crf", "add", "form", "CM", "--name", "Patient's Baseline --help"],
+    });
+
+    const generated = generateCliCommandForField("VS", {
+      id: "f_bmider",
+      variableName: "BMIDER",
+      label: "Patient's Body Mass Index (kg/m2)",
+      dataType: "calculated",
+      unit: "kg/m2",
+      columnSpan: 12,
+      required: true,
+      calculationFormula: "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+    });
+
+    const roundTrip = executeCliString(study, generated);
+    expect(roundTrip.success).toBe(true);
+    const createdField = roundTrip.data as {
+      variableName: string;
+      label: string;
+      dataType: string;
+      unit?: string;
+      columnSpan: number;
+      required: boolean;
+      calculationFormula?: string;
+    };
+    expect(createdField.variableName).toBe("BMIDER");
+    expect(createdField.label).toBe("Patient's Body Mass Index (kg/m2)");
+    expect(createdField.dataType).toBe("calculated");
+    expect(createdField.unit).toBe("kg/m2");
+    expect(createdField.columnSpan).toBe(12);
+    expect(createdField.required).toBe(true);
+    expect(createdField.calculationFormula).toBe(
+      "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)"
+    );
+  });
+
+  it("rejects unclosed quotes and trailing escapes cleanly", () => {
+    for (const malformed of [
+      "crf add field VS --label 'unclosed single",
+      'crf add field VS --label "unclosed double',
+      "crf add field VS --label trailing\\",
+    ]) {
+      const tokenResult = parsePosixShellArgs(malformed);
+      expect(tokenResult.success).toBe(false);
+
+      const cliRes = executeCliString(study, malformed);
+      expect(cliRes.success).toBe(false);
+      expect(cliRes.error).toBeDefined();
+
+      const jsonRes = executeCliString(study, malformed, { json: true });
+      expect(jsonRes.success).toBe(false);
+      expect(jsonRes.document).not.toMatch(/\x1b\[/);
+      expect(JSON.parse(jsonRes.document)).toMatchObject({
+        success: false,
+      });
+    }
+  });
+});
+
+describe("cli-engine — pure JSON envelopes without ANSI codes", () => {
+  const ansiPattern = /\x1b\[/;
+
+  it("emits pure JSON without ANSI codes across failure and success paths when options.json is true", () => {
+    const study = assignedVsStudy();
+    const responses = [
+      executeInfoCommand(study, { json: true }),
+      executeValidateCommand(study, { json: true }),
+      executeAddFormCommand(study, "AE", undefined, { json: true }),
+      executeRemoveFormCommand(study, "ZZ", { json: true }),
+      executeAddFieldCommand(
+        study,
+        "ZZ",
+        { variableName: "X", dataType: "text" },
+        { json: true }
+      ),
+      executeRemoveFieldCommand(study, "VS", "NONEXISTENT", { json: true }),
+      executeVisitCommand(study, "rm", ["Nonexistent"], { json: true }),
+      executeVisitCommand(study, "assign", ["Screening"], { json: true }),
+      executeVisitCommand(study, fromAny("bogus"), [], { json: true }),
+      executeRuleCommand(study, "list", [], { json: true }),
+      executeRuleCommand(study, "add", ["ZZ"], { json: true }),
+      executeRuleCommand(study, fromAny("drop"), [], { json: true }),
+      executeListCommand(study, fromAny("arms"), { json: true }),
+      executePresetCommand(study, "list", undefined, { json: true }),
+      executePresetCommand(study, "load", "oncology_recist", { json: true }),
+      executePresetCommand(study, "load", undefined, { json: true }),
+      executePresetCommand(study, fromAny("save"), undefined, { json: true }),
+      executeExportCommand(study, "odm", { json: true }),
+      executeExportCommand(study, fromAny("pdf"), { json: true }),
+      executeDiffCommand(study, study, { json: true }),
+      executeCliString(study, "crf help", { json: true }),
+      executeCliString(study, "crf wizard", { json: true }),
+      executeCliString(study, "crf diff", { json: true }),
+      executeCliString(study, "mode matrix", { json: true }),
+      executeCliString(study, "mode cinema", { json: true }),
+      executeCliString(study, "open branding", { json: true }),
+      executeCliString(study, "open settings", { json: true }),
+      executeCliString(study, "frobnicate now", { json: true }),
+    ];
+
+    for (const res of responses) {
+      expect(res.document).not.toMatch(ansiPattern);
+      const parsed = JSON.parse(res.document);
+      expect(parsed).toBeDefined();
+      if (!res.success) {
+        expect(parsed.success).toBe(false);
+        expect(typeof parsed.error).toBe("string");
+      }
+    }
   });
 });

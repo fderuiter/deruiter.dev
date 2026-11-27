@@ -334,8 +334,9 @@ jobs:
           name: release-candidate-build
 
       - name: Run the Playwright suite (chromium shard)
-        run: npx --no-install playwright test --project=chromium --shard=${{ matrix.shard }}/3 --reporter=github,blob
+        run: npx --no-install playwright test --project=chromium --shard="$MATRIX_SHARD/3" --reporter=github,blob
         env:
+          MATRIX_SHARD: ${{ matrix.shard }}
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
 

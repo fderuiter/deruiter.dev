@@ -34,7 +34,6 @@ import {
   ansi,
   CliExecutionOptions,
   StudyProtocolEngine,
-  parseUniversalCrf,
   exportUniversalCrfJson,
 } from "../lib/crf";
 
@@ -352,51 +351,156 @@ async function runInteractiveWizard(): Promise<void> {
   rl.close();
 }
 
+const ALL_VALUED_OPTIONS = new Set([
+  "--preset",
+  "--name",
+  "--var",
+  "--type",
+  "--unit",
+  "--label",
+  "--tier",
+  "--span",
+  "--calc",
+  "--day",
+  "--win",
+  "--expr",
+  "--msg",
+  "--target",
+  "--action",
+  "--format",
+  "--out",
+]);
+
+function hasStandaloneGlobalFlag(
+  argv: readonly string[],
+  ...flags: string[]
+): boolean {
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+    if (ALL_VALUED_OPTIONS.has(token)) {
+      i++;
+      continue;
+    }
+    if (flags.includes(token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function emitCliFailure(
+  errorMessage: string,
+  ansiMessage: string,
+  isJson: boolean
+): never {
+  if (isJson) {
+    console.log(
+      JSON.stringify(
+        {
+          success: false,
+          error: errorMessage,
+        },
+        null,
+        2
+      )
+    );
+  } else {
+    console.error(ansiMessage);
+  }
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
+  const isJson = hasStandaloneGlobalFlag(args, "--json");
+  const isDryRun = hasStandaloneGlobalFlag(args, "--dry-run");
+
   if (
     args.length === 0 ||
-    args.includes("--help") ||
-    args.includes("-h") ||
+    hasStandaloneGlobalFlag(args, "--help", "-h") ||
     args[0] === "help"
   ) {
+    if (isJson) {
+      console.log(
+        JSON.stringify(
+          {
+            success: true,
+            commands: [
+              "info",
+              "validate",
+              "wizard",
+              "list",
+              "preset",
+              "init",
+              "add form",
+              "add field",
+              "rm form",
+              "rm field",
+              "visit",
+              "rule",
+              "export",
+              "diff",
+              "help",
+            ],
+          },
+          null,
+          2
+        )
+      );
+      return;
+    }
     printHelp();
     return;
   }
 
   const options: CliExecutionOptions = {
-    json: args.includes("--json"),
-    dryRun: args.includes("--dry-run"),
+    json: isJson,
+    dryRun: isDryRun,
   };
 
   const command = args[0];
 
   // 1. Wizard
   if (command === "wizard") {
+    if (options.json) {
+      emitCliFailure(
+        "Interactive wizard cannot run in --json mode. Use non-interactive commands such as 'crf init' or 'crf add'.",
+        `${ansi.brightRed}Interactive wizard cannot run in --json mode.${ansi.reset}`,
+        true
+      );
+    }
     await runInteractiveWizard();
     return;
   }
 
   // 2. List
   if (command === "list") {
-    const category = (args[1] || "domains") as
+    const positional = args.slice(1).filter((a) => !a.startsWith("--"));
+    const category = (positional[0] || "domains") as
       "domains" | "presets" | "forms" | "visits";
-    const fileArg = args[2] && !args[2].startsWith("--") ? args[2] : undefined;
+    const fileArg = positional[1];
     const { study } = loadProtocol(fileArg);
     const result = executeListCommand(study, category, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     return;
   }
 
   // 3. Preset
   if (command === "preset") {
-    const sub = (args[1] || "list") as "list" | "load";
-    const presetId = args[2] && !args[2].startsWith("--") ? args[2] : undefined;
-    const fileArg = args[3] && !args[3].startsWith("--") ? args[3] : undefined;
+    const positional = args.slice(1).filter((a) => !a.startsWith("--"));
+    const sub = (positional[0] || "list") as "list" | "load";
+    const presetId = positional[1];
+    const fileArg = positional[2];
     const loaded = loadProtocol(fileArg, { allowMissing: sub === "load" });
 
     const result = executePresetCommand(loaded.study, sub, presetId, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy, { replaces: true });
     }
@@ -416,9 +520,24 @@ async function main(): Promise<void> {
     if (!options.dryRun) {
       saveProtocolToFile(targetFile, study);
     }
-    console.log(
-      `${ansi.bold}${ansi.brightGreen}✔ Initialized Universal CRF protocol at ${targetFile}${ansi.reset}`
-    );
+    if (options.json) {
+      console.log(
+        JSON.stringify(
+          {
+            success: true,
+            file: targetFile,
+            protocolNumber: study.protocolNumber,
+            dryRun: Boolean(options.dryRun),
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      console.log(
+        `${ansi.bold}${ansi.brightGreen}✔ Initialized Universal CRF protocol at ${targetFile}${ansi.reset}`
+      );
+    }
     return;
   }
 
@@ -428,6 +547,9 @@ async function main(): Promise<void> {
     const { study } = loadProtocol(fileArg);
     const result = executeInfoCommand(study, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     return;
   }
 
@@ -445,7 +567,7 @@ async function main(): Promise<void> {
 
   // 7. Add Form
   if (command === "add" && args[1] === "form") {
-    const domain = args[2] || "CUSTOM";
+    const domain = args[2] && !args[2].startsWith("--") ? args[2] : "CUSTOM";
     const nameIdx = args.indexOf("--name");
     const customName =
       nameIdx !== -1 && args[nameIdx + 1]
@@ -462,6 +584,9 @@ async function main(): Promise<void> {
 
     const result = executeAddFormCommand(study, domain, customName, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy);
     }
@@ -470,54 +595,77 @@ async function main(): Promise<void> {
 
   // 8. Add Field
   if (command === "add" && args[1] === "field") {
-    const formDomain = args[2] || "DM";
-    const varIdx = args.indexOf("--var");
-    const varName =
-      varIdx !== -1 && args[varIdx + 1] ? args[varIdx + 1] : "TESTVAR";
-    const typeIdx = args.indexOf("--type");
-    const dataType = (
-      typeIdx !== -1 && args[typeIdx + 1] ? args[typeIdx + 1] : "text"
-    ) as Parameters<typeof executeAddFieldCommand>[2]["dataType"];
-    // A flag only counts where it is not the value of a valued option, so a
-    // label such as "--required" stays a label (#3812).
-    // --span and --calc are emitted by the copied command, so their values
-    // must not be read as a flag or as the study file either.
-    const valuedOptions = new Set([
-      "--var",
-      "--type",
-      "--unit",
-      "--label",
-      "--tier",
-      "--span",
-      "--calc",
-    ]);
-    const hasFlag = (...names: string[]) =>
-      args.some(
-        (a, i) => names.includes(a) && !valuedOptions.has(args[i - 1] ?? "")
-      );
-    const req = hasFlag("--required");
-    const unitIdx = args.indexOf("--unit");
-    const unit =
-      unitIdx !== -1 && args[unitIdx + 1] ? args[unitIdx + 1] : undefined;
-    const labelIdx = args.indexOf("--label");
-    const label =
-      labelIdx !== -1 && args[labelIdx + 1] ? args[labelIdx + 1] : undefined;
+    const hasDomain = args[2] !== undefined && !args[2].startsWith("--");
+    const formDomain = hasDomain ? args[2] : "DM";
+    // Scan options left-to-right so values such as "--required" or "--sdv"
+    // passed to --label or --calc stay option values (#3812).
+    const fieldTokens = args.slice(hasDomain ? 3 : 2);
+    let varName = "TESTVAR";
+    let dataType: Parameters<typeof executeAddFieldCommand>[2]["dataType"] =
+      "text";
+    let req = false;
+    let unit: string | undefined;
+    let label: string | undefined;
+    let tier: "optional" | "hard_stop" | "auto_query" | undefined;
+    let columnSpan: number | undefined;
+    let calculationFormula: string | undefined;
+    let allowPartial = false;
+    let preventFutureDate = false;
+    let allowNullFlavor = false;
+    let requiresSdv = false;
+    let isBlinded = false;
+    let fileArg: string | undefined;
 
-    const tierIdx = args.indexOf("--tier");
-    const tier =
-      tierIdx !== -1 && args[tierIdx + 1]
-        ? (args[tierIdx + 1] as "optional" | "hard_stop" | "auto_query")
-        : undefined;
-    const allowPartial = hasFlag("--allow-partial", "--partial");
-    const preventFutureDate = hasFlag("--prevent-future-date", "--no-future");
-    const allowNullFlavor = hasFlag("--null-flavor", "--null-flavors");
-    const requiresSdv = hasFlag("--sdv");
-    const isBlinded = hasFlag("--blinded");
+    for (let i = 0; i < fieldTokens.length; i++) {
+      const token = fieldTokens[i];
+      if (token === "--var") {
+        if (i + 1 < fieldTokens.length) varName = fieldTokens[++i] || "TESTVAR";
+      } else if (token === "--type") {
+        if (i + 1 < fieldTokens.length) {
+          dataType = (fieldTokens[++i] || "text") as Parameters<
+            typeof executeAddFieldCommand
+          >[2]["dataType"];
+        }
+      } else if (token === "--unit") {
+        if (i + 1 < fieldTokens.length) unit = fieldTokens[++i];
+      } else if (token === "--label") {
+        if (i + 1 < fieldTokens.length) label = fieldTokens[++i];
+      } else if (token === "--tier") {
+        if (i + 1 < fieldTokens.length) {
+          tier = fieldTokens[++i] as "optional" | "hard_stop" | "auto_query";
+        }
+      } else if (token === "--span") {
+        if (i + 1 < fieldTokens.length) {
+          const parsedSpan = Number(fieldTokens[++i]);
+          if (
+            Number.isInteger(parsedSpan) &&
+            parsedSpan >= 1 &&
+            parsedSpan <= 12
+          ) {
+            columnSpan = parsedSpan;
+          }
+        }
+      } else if (token === "--calc") {
+        if (i + 1 < fieldTokens.length) calculationFormula = fieldTokens[++i];
+      } else if (token === "--required") {
+        req = true;
+      } else if (token === "--allow-partial" || token === "--partial") {
+        allowPartial = true;
+      } else if (token === "--prevent-future-date" || token === "--no-future") {
+        preventFutureDate = true;
+      } else if (token === "--null-flavor" || token === "--null-flavors") {
+        allowNullFlavor = true;
+      } else if (token === "--sdv") {
+        requiresSdv = true;
+      } else if (token === "--blinded") {
+        isBlinded = true;
+      } else if (token === "--json" || token === "--dry-run") {
+        // Handled globally
+      } else if (!token.startsWith("--") && !fileArg) {
+        fileArg = token;
+      }
+    }
 
-    const fileArg = args.find(
-      (a, i) =>
-        i > 2 && !a.startsWith("--") && !valuedOptions.has(args[i - 1] ?? "")
-    );
     const loaded = loadProtocol(fileArg);
     const { study } = loaded;
 
@@ -530,6 +678,8 @@ async function main(): Promise<void> {
         required: req,
         unit,
         label,
+        columnSpan,
+        calculationFormula,
         requirementTier: tier,
         allowPartial: allowPartial || undefined,
         preventFutureDate: preventFutureDate || undefined,
@@ -540,6 +690,9 @@ async function main(): Promise<void> {
       options
     );
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy);
     }
@@ -548,13 +701,23 @@ async function main(): Promise<void> {
 
   // 9. Remove (rm) Form / Field
   if ((command === "rm" || command === "remove") && args[1] === "form") {
-    const domain = args[2];
+    const domain = args[2] && !args[2].startsWith("--") ? args[2] : undefined;
+    if (!domain) {
+      emitCliFailure(
+        "Missing domain",
+        `${ansi.brightRed}Usage: crf rm form <domain>${ansi.reset}`,
+        Boolean(options.json)
+      );
+    }
     const fileArg =
       args[3] && !args[3].startsWith("--") ? args[3] : DEFAULT_FILE;
     const loaded = loadProtocol(fileArg);
     const { study } = loaded;
     const result = executeRemoveFormCommand(study, domain, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy);
     }
@@ -562,8 +725,16 @@ async function main(): Promise<void> {
   }
 
   if ((command === "rm" || command === "remove") && args[1] === "field") {
-    const formDomain = args[2];
-    const varName = args[3];
+    const formDomain =
+      args[2] && !args[2].startsWith("--") ? args[2] : undefined;
+    const varName = args[3] && !args[3].startsWith("--") ? args[3] : undefined;
+    if (!formDomain || !varName) {
+      emitCliFailure(
+        "Missing arguments",
+        `${ansi.brightRed}Usage: crf rm field <form> <var>${ansi.reset}`,
+        Boolean(options.json)
+      );
+    }
     const fileArg =
       args[4] && !args[4].startsWith("--") ? args[4] : DEFAULT_FILE;
     const loaded = loadProtocol(fileArg);
@@ -575,6 +746,9 @@ async function main(): Promise<void> {
       options
     );
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy);
     }
@@ -583,10 +757,12 @@ async function main(): Promise<void> {
 
   // 10. Visit
   if (command === "visit") {
-    const sub = args[1] as "add" | "rm" | "assign" | "unassign";
+    const sub = (args[1] && !args[1].startsWith("--") ? args[1] : undefined) as
+      "add" | "rm" | "assign" | "unassign";
+    const subIdx = args[1] && !args[1].startsWith("--") ? 2 : 1;
     const fileArg = args.find(
       (a, i) =>
-        i > 1 &&
+        i >= subIdx &&
         !a.startsWith("--") &&
         args[i - 1] !== "--day" &&
         args[i - 1] !== "--win" &&
@@ -594,9 +770,18 @@ async function main(): Promise<void> {
     );
     const loaded = loadProtocol(fileArg);
     const { study } = loaded;
-    const visitArgs = args.slice(2).filter((a) => a !== fileArg);
+    const visitArgs = args.slice(subIdx).filter((a, idx) => {
+      const prev = idx > 0 ? args[subIdx + idx - 1] : "";
+      if (prev !== "--day" && prev !== "--win") {
+        if (a === "--json" || a === "--dry-run" || a === fileArg) return false;
+      }
+      return true;
+    });
     const result = executeVisitCommand(study, sub, visitArgs, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy);
     }
@@ -605,20 +790,34 @@ async function main(): Promise<void> {
 
   // 11. Rule
   if (command === "rule") {
-    const sub = (args[1] || "list") as "add" | "list";
+    const hasSub = args[1] !== undefined && !args[1].startsWith("--");
+    const sub = (hasSub ? args[1] : "list") as "add" | "list";
+    const subIdx = hasSub ? 2 : 1;
     const fileArg = args.find(
       (a, i) =>
-        i > 1 &&
+        i >= subIdx &&
         !a.startsWith("--") &&
         args[i - 1] !== "--expr" &&
         args[i - 1] !== "--msg" &&
+        args[i - 1] !== "--target" &&
+        args[i - 1] !== "--action" &&
         a.endsWith(".json")
     );
     const loaded = loadProtocol(fileArg);
     const { study } = loaded;
-    const ruleArgs = args.slice(2).filter((a) => a !== fileArg);
+    const ruleValued = new Set(["--expr", "--msg", "--target", "--action"]);
+    const ruleArgs = args.slice(subIdx).filter((a, idx) => {
+      const prev = idx > 0 ? args[subIdx + idx - 1] : "";
+      if (!ruleValued.has(prev)) {
+        if (a === "--json" || a === "--dry-run" || a === fileArg) return false;
+      }
+      return true;
+    });
     const result = executeRuleCommand(study, sub, ruleArgs, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     if (result.updatedStudy && !options.dryRun) {
       saveProtocol(loaded, result.updatedStudy);
     }
@@ -643,46 +842,111 @@ async function main(): Promise<void> {
     );
     const { study } = loadProtocol(fileArg);
 
-    const result = executeExportCommand(study, fmt, options);
-    if (!result.success) {
-      console.error(result.document);
-      process.exit(1);
+    if (outPath) {
+      const rawResult = executeExportCommand(study, fmt, {
+        ...options,
+        json: false,
+      });
+      if (!rawResult.success) {
+        const errResult = executeExportCommand(study, fmt, options);
+        if (options.json) {
+          console.log(errResult.document);
+        } else {
+          console.error(errResult.document);
+        }
+        process.exit(1);
+      }
+      if (!options.dryRun) {
+        fs.writeFileSync(outPath, rawResult.document, "utf-8");
+      }
+      if (options.json) {
+        console.log(
+          JSON.stringify(
+            {
+              success: true,
+              format: fmt,
+              outPath,
+              dryRun: Boolean(options.dryRun),
+              ...(rawResult.data as Record<string, unknown>),
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        console.log(
+          `${ansi.bold}${ansi.brightGreen}✔ Exported ${fmt.toUpperCase()} metadata to ${outPath}${ansi.reset}`
+        );
+      }
+      return;
     }
 
-    if (outPath && !options.dryRun) {
-      fs.writeFileSync(outPath, result.document, "utf-8");
-      console.log(
-        `${ansi.bold}${ansi.brightGreen}✔ Exported ${fmt.toUpperCase()} metadata to ${outPath}${ansi.reset}`
-      );
-    } else {
-      console.log(result.document);
+    const result = executeExportCommand(study, fmt, options);
+    if (!result.success) {
+      if (options.json) {
+        console.log(result.document);
+      } else {
+        console.error(result.document);
+      }
+      process.exit(1);
     }
+    console.log(result.document);
     return;
   }
 
   // 13. Diff
   if (command === "diff") {
-    const fileA = args[1];
-    const fileB = args[2];
+    const positional = args.slice(1).filter((a) => !a.startsWith("--"));
+    const fileA = positional[0];
+    const fileB = positional[1];
     if (!fileA || !fileB) {
-      console.error(
-        `${ansi.brightRed}Usage: crf diff <file1> <file2>${ansi.reset}`
+      emitCliFailure(
+        "Usage: crf diff <file1> <file2>",
+        `${ansi.brightRed}Usage: crf diff <file1> <file2>${ansi.reset}`,
+        Boolean(options.json)
       );
-      process.exit(1);
     }
 
-    const studyA = parseUniversalCrf(fs.readFileSync(fileA, "utf-8"));
-    const studyB = parseUniversalCrf(fs.readFileSync(fileB, "utf-8"));
+    const studyA = loadProtocol(fileA).study;
+    const studyB = loadProtocol(fileB).study;
 
     const result = executeDiffCommand(studyA, studyB, options);
     console.log(result.document);
+    if (!result.success) {
+      process.exit(1);
+    }
     return;
   }
 
-  printHelp();
+  const unknownTarget =
+    (command === "add" || command === "rm" || command === "remove") &&
+    args[1] &&
+    !args[1].startsWith("--")
+      ? `${command} ${args[1]}`
+      : command;
+  emitCliFailure(
+    `Unknown command: ${unknownTarget}`,
+    `${ansi.brightRed}Unknown command '${unknownTarget}'. Run 'crf help' for available commands.${ansi.reset}`,
+    Boolean(options.json)
+  );
 }
 
 main().catch((err) => {
+  const isJson = hasStandaloneGlobalFlag(process.argv.slice(2), "--json");
+  if (isJson) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(
+      JSON.stringify(
+        {
+          success: false,
+          error: message,
+        },
+        null,
+        2
+      )
+    );
+    process.exit(1);
+  }
   if (err instanceof CrfInputError) {
     console.error(`${ansi.brightRed}${err.message}${ansi.reset}`);
   } else {

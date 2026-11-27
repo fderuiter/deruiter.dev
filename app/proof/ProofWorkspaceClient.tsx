@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
+import { getActiveHostUrl } from "@/lib/clipboard";
 import {
   THEOREMS,
   type Edge,
@@ -507,7 +508,7 @@ export function ProofWorkspaceClient() {
       setParam("edges", candidateEntries.edges ?? null, { replace: true });
     }
 
-    const shareUrl = `${window.location.origin}${window.location.pathname}${candidate.hash}`;
+    const shareUrl = `${getActiveHostUrl()}${window.location.pathname}${candidate.hash}`;
     copyShareLink(shareUrl);
   };
 

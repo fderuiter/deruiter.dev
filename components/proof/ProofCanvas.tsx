@@ -11,6 +11,12 @@ import {
   IconWand,
   IconArrowBackUp,
   IconArrowForwardUp,
+  IconPlus,
+  IconTarget,
+  IconPencil,
+  IconTrash,
+  IconCheck,
+  IconUpload,
 } from "@tabler/icons-react";
 import {
   TheoremDefinition,
@@ -68,7 +74,21 @@ interface ProofCanvasProps {
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
   currentFallacy?: FallacyDiagnosis | null;
   handleRollback?: () => void;
+  onDismissFallacy?: () => void;
   ruleMatches?: RuleMatch[];
+  onAddSandboxNode?: (
+    role: "premise" | "conclusion",
+    formula: string
+  ) => { ok: boolean; error?: string; nodeId?: string };
+  onUpdateSandboxNode?: (
+    nodeId: string,
+    formula: string
+  ) => { ok: boolean; error?: string };
+  onDeleteSandboxNode?: (nodeId: string) => void;
+  onClearSandbox?: () => void;
+  onLoadSandboxStarter?: () => void;
+  onCheckCountermodel?: () => void;
+  onOpenImportExport?: () => void;
 }
 
 export const ProofCanvas: React.FC<ProofCanvasProps> = ({
@@ -104,13 +124,70 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   mobileActiveView,
   currentFallacy,
   handleRollback,
+  onDismissFallacy,
   ruleMatches,
+  onAddSandboxNode,
+  onUpdateSandboxNode,
+  onDeleteSandboxNode,
+  onClearSandbox,
+  onLoadSandboxStarter,
+  onCheckCountermodel,
+  onOpenImportExport,
 }) => {
   const proofStatus = evaluateProofStatus(edges, activeTheorem);
+  const sandboxProvenSet = React.useMemo(
+    () =>
+      activeTheorem.isSandbox ? new Set(proofStatus.provenNodeIds ?? []) : null,
+    [activeTheorem.isSandbox, proofStatus.provenNodeIds]
+  );
   const [containerWidth, setContainerWidth] = React.useState<number>(760);
   const [activePopoverNodeId, setActivePopoverNodeId] = React.useState<
     string | null
   >(null);
+  const [draftFormula, setDraftFormula] = React.useState("");
+  const [draftError, setDraftError] = React.useState<string | null>(null);
+  const [editingNodeId, setEditingNodeId] = React.useState<string | null>(null);
+  const [editingFormula, setEditingFormula] = React.useState("");
+  const [editingError, setEditingError] = React.useState<string | null>(null);
+  const formulaInputRef = React.useRef<HTMLInputElement>(null);
+
+  const submitSandboxNode = (role: "premise" | "conclusion") => {
+    if (!onAddSandboxNode) return;
+    if (!draftFormula.trim()) {
+      setDraftError(
+        "Enter a formula (for example, P -> Q) before adding a node."
+      );
+      formulaInputRef.current?.focus();
+      return;
+    }
+    const res = onAddSandboxNode(role, draftFormula);
+    if (!res.ok) {
+      setDraftError(res.error ?? "Invalid formula.");
+      return;
+    }
+    setDraftFormula("");
+    setDraftError(null);
+    formulaInputRef.current?.focus();
+  };
+
+  const beginNodeEdit = (nodeId: string, currentLabel: string) => {
+    setEditingNodeId(nodeId);
+    setEditingFormula(currentLabel);
+    setEditingError(null);
+  };
+
+  const submitNodeEdit = (e: React.FormEvent, nodeId: string) => {
+    e.preventDefault();
+    if (!onUpdateSandboxNode) return;
+    const res = onUpdateSandboxNode(nodeId, editingFormula);
+    if (!res.ok) {
+      setEditingError(res.error ?? "Invalid formula.");
+      return;
+    }
+    setEditingNodeId(null);
+    setEditingFormula("");
+    setEditingError(null);
+  };
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -269,18 +346,98 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
         </div>
 
         {/* Tactic Goal Ribbon */}
-        <div className="bg-slate-950/60 px-4 py-2 border-b border-slate-800/80 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-slate-300">
+        <div className="bg-slate-950/60 px-4 py-2 border-b border-slate-800/80 flex items-center justify-between gap-2 text-xs">
+          <div className="flex min-w-0 items-center gap-2 text-slate-300">
             <IconBulb className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="font-medium text-amber-300/90">
+            <span className="font-medium text-amber-300/90 shrink-0">
               {activeTacticHint.title}:
             </span>
-            <span className="text-slate-400">{activeTacticHint.hint}</span>
+            <span className="min-w-0 truncate text-slate-400">
+              {activeTacticHint.hint}
+            </span>
           </div>
           <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0">
-            Goal: Node {activeTheorem.targetNodeId}
+            {activeTheorem.targetNodeId
+              ? `Goal: Node ${activeTheorem.targetNodeId}`
+              : activeTheorem.isSandbox
+                ? "Open Sandbox"
+                : "Goal"}
           </span>
         </div>
+
+        {/* Sandbox Authoring Controls */}
+        {activeTheorem.isSandbox && (
+          <div
+            role="region"
+            aria-label="Sandbox node authoring"
+            className="px-4 py-2.5 border-b border-slate-800/80 bg-slate-900/90 flex flex-col gap-2"
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <input
+                ref={formulaInputRef}
+                type="text"
+                value={draftFormula}
+                onChange={(e) => {
+                  setDraftFormula(e.target.value);
+                  if (draftError) setDraftError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    submitSandboxNode(e.shiftKey ? "conclusion" : "premise");
+                  }
+                }}
+                aria-label="Sandbox formula"
+                placeholder="Formula (e.g. P -> Q, ~(A & B), R)"
+                className="min-w-0 flex-1 basis-48 px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-cyan"
+              />
+              <button
+                type="button"
+                onClick={() => submitSandboxNode("premise")}
+                className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-sky-500/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-mono font-bold inline-flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+              >
+                <IconPlus className="w-3.5 h-3.5" />
+                <span>Add Premise</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => submitSandboxNode("conclusion")}
+                className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-indigo-400/50 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-200 text-xs font-mono font-bold inline-flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+              >
+                <IconTarget className="w-3.5 h-3.5" />
+                <span>Add Goal</span>
+              </button>
+              {onCheckCountermodel && (
+                <button
+                  type="button"
+                  onClick={onCheckCountermodel}
+                  className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-amber-500/50 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 text-xs font-mono font-bold inline-flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+                >
+                  <IconAlertTriangle className="w-3.5 h-3.5" />
+                  <span>Check Countermodel</span>
+                </button>
+              )}
+              {activeTheorem.nodes.length > 0 && onClearSandbox && (
+                <button
+                  type="button"
+                  onClick={onClearSandbox}
+                  className="px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-mono inline-flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+                >
+                  <IconTrash className="w-3.5 h-3.5" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
+            {draftError && (
+              <p
+                role="alert"
+                className="text-xs font-mono text-rose-300 bg-rose-950/50 border border-rose-800/60 rounded-lg px-2.5 py-1.5"
+              >
+                {draftError}
+              </p>
+            )}
+          </div>
+        )}
 
         <p
           id="proof-node-keyboard-help"
@@ -313,7 +470,9 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                         {currentFallacy.fallacyName}
                       </span>
                       <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold bg-red-900/80 text-red-200 rounded border border-red-700/80">
-                        FALLACY DETECTED
+                        {currentFallacy.sourceId || currentFallacy.targetId
+                          ? "FALLACY DETECTED"
+                          : "COUNTERMODEL"}
                       </span>
                     </div>
                     <span className="text-[11px] text-red-300/90 font-mono truncate">
@@ -321,7 +480,8 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     </span>
                   </div>
                 </div>
-                {handleRollback && (
+                {(currentFallacy.sourceId || currentFallacy.targetId) &&
+                handleRollback ? (
                   <button
                     type="button"
                     onClick={handleRollback}
@@ -331,7 +491,17 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     <IconRefresh className="w-3.5 h-3.5" />
                     <span>Revert Edge</span>
                   </button>
-                )}
+                ) : onDismissFallacy ? (
+                  <button
+                    type="button"
+                    onClick={onDismissFallacy}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer active:scale-[0.98]"
+                    aria-label="Dismiss countermodel banner"
+                  >
+                    <IconX className="w-3.5 h-3.5" />
+                    <span>Dismiss</span>
+                  </button>
+                ) : null}
               </div>
             </div>
           )}
@@ -503,17 +673,56 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                 })()}
             </svg>
 
+            {/* Empty Sandbox Helper Card */}
+            {activeTheorem.isSandbox && activeTheorem.nodes.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+                <div className="pointer-events-auto max-w-md w-full rounded-2xl border border-slate-800 bg-slate-950/90 p-5 text-center shadow-2xl space-y-3">
+                  <div className="text-sm font-bold text-white">
+                    Open Sandbox Proof Canvas
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Enter propositional formulas in the bar above to add premise
+                    and goal cards, then select cards and fire tactics from the
+                    Rule Palette to spawn derived steps dynamically.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                    {onLoadSandboxStarter && (
+                      <button
+                        type="button"
+                        onClick={onLoadSandboxStarter}
+                        className="px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-brand-cyan/50 bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan text-xs font-mono font-bold inline-flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+                      >
+                        <IconSparkles className="w-3.5 h-3.5" />
+                        <span>Load Starter Example</span>
+                      </button>
+                    )}
+                    {onOpenImportExport && (
+                      <button
+                        type="button"
+                        onClick={onOpenImportExport}
+                        className="px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-mono font-bold inline-flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+                      >
+                        <IconUpload className="w-3.5 h-3.5 text-brand-cyan" />
+                        <span>Import .proof.json</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Draggable Logic Nodes */}
             {activeTheorem.nodes.map((node) => {
               const offset = nodeOffsets[node.id] || { x: 0, y: 0 };
               const isSelected = selectedNodeIds.includes(node.id);
               const isInspected = inspectedNodeId === node.id;
               const isGivenPremise = node.type === "premise";
-              const isNodeProven =
-                isGivenPremise ||
-                (node.id === activeTheorem.intermediateNodeId
-                  ? proofStatus.isC_Proven
-                  : proofStatus.isE_Proven);
+              const isNodeProven = sandboxProvenSet
+                ? sandboxProvenSet.has(node.id)
+                : isGivenPremise ||
+                  (node.id === activeTheorem.intermediateNodeId
+                    ? proofStatus.isC_Proven
+                    : proofStatus.isE_Proven);
 
               const isDimmed =
                 dragConnection &&
@@ -613,54 +822,138 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       </div>
                     )}
 
-                  <button
-                    type="button"
-                    tabIndex={0}
-                    aria-label={`Node ${node.id}, ${isGivenPremise ? "GIVEN" : isNodeProven ? "PROVEN" : "PENDING"}, ${node.label}, ${node.meaning}, ${node.type}, ${isSelected ? "selected" : "not selected"}`}
-                    aria-pressed={isSelected}
-                    aria-describedby="proof-node-keyboard-help"
-                    onClick={(event) =>
-                      handleNodeClick(node.id, event.shiftKey)
-                    }
-                    onKeyDown={(event) => {
-                      if (
-                        event.shiftKey &&
-                        (event.key === "Enter" || event.key === " ")
-                      ) {
-                        event.preventDefault();
-                        handleNodeClick(node.id, true);
+                  {editingNodeId === node.id && activeTheorem.isSandbox ? (
+                    <form
+                      onSubmit={(e) => submitNodeEdit(e, node.id)}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="space-y-1.5 pr-2"
+                    >
+                      <div className="text-[10px] font-mono font-bold text-brand-cyan">
+                        Edit Node {node.id}
+                      </div>
+                      <input
+                        type="text"
+                        value={editingFormula}
+                        onChange={(e) => {
+                          setEditingFormula(e.target.value);
+                          if (editingError) setEditingError(null);
+                        }}
+                        aria-label={`Edit formula for Node ${node.id}`}
+                        autoFocus
+                        className="w-full min-w-0 px-2 py-1 rounded bg-slate-950 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-brand-cyan"
+                      />
+                      {editingError && (
+                        <p
+                          role="alert"
+                          className="text-[10px] font-mono text-rose-300"
+                        >
+                          {editingError}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="submit"
+                          aria-label={`Save Node ${node.id}`}
+                          className="px-2 py-1 rounded bg-brand-cyan text-slate-950 text-[10px] font-mono font-bold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <IconCheck className="w-3 h-3" />
+                          <span>Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingNodeId(null);
+                            setEditingError(null);
+                          }}
+                          aria-label={`Cancel editing Node ${node.id}`}
+                          className="px-2 py-1 rounded bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      tabIndex={0}
+                      aria-label={`Node ${node.id}, ${isGivenPremise ? "GIVEN" : isNodeProven ? "PROVEN" : "PENDING"}, ${node.label}, ${node.meaning}, ${node.type}, ${isSelected ? "selected" : "not selected"}`}
+                      aria-pressed={isSelected}
+                      aria-describedby="proof-node-keyboard-help"
+                      onClick={(event) =>
+                        handleNodeClick(node.id, event.shiftKey)
                       }
-                    }}
-                    className="block w-full min-h-11 min-w-0 pr-4 text-left rounded-md cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400"
-                  >
-                    {/* Node Header & Status */}
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">
-                        Node {node.id}
-                      </span>{" "}
-                      <span
-                        className={`text-[9px] font-mono px-1 py-0.5 rounded ${
-                          isGivenPremise
-                            ? "bg-slate-800 text-sky-300 border border-slate-600/40"
+                      onKeyDown={(event) => {
+                        if (
+                          event.shiftKey &&
+                          (event.key === "Enter" || event.key === " ")
+                        ) {
+                          event.preventDefault();
+                          handleNodeClick(node.id, true);
+                        }
+                      }}
+                      className="block w-full min-h-11 min-w-0 pr-4 text-left rounded-md cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400"
+                    >
+                      {/* Node Header & Status */}
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">
+                          Node {node.id}
+                        </span>{" "}
+                        <span
+                          className={`text-[9px] font-mono px-1 py-0.5 rounded ${
+                            isGivenPremise
+                              ? "bg-slate-800 text-sky-300 border border-slate-600/40"
+                              : isNodeProven
+                                ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
+                                : "bg-amber-950 text-amber-400 border border-amber-800/40"
+                          }`}
+                        >
+                          {isGivenPremise
+                            ? "GIVEN"
                             : isNodeProven
-                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
-                              : "bg-amber-950 text-amber-400 border border-amber-800/40"
-                        }`}
-                      >
-                        {isGivenPremise
-                          ? "GIVEN"
-                          : isNodeProven
-                            ? "PROVEN"
-                            : "PENDING"}
-                      </span>
-                    </div>{" "}
-                    <div className="min-w-0 break-words font-mono text-sm font-bold text-white mb-0.5">
-                      {node.label}
-                    </div>{" "}
-                    <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
-                      {node.meaning}
+                              ? "PROVEN"
+                              : "PENDING"}
+                        </span>
+                      </div>{" "}
+                      <div className="min-w-0 break-words font-mono text-sm font-bold text-white mb-0.5">
+                        {node.label}
+                      </div>{" "}
+                      <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
+                        {node.meaning}
+                      </div>
+                    </button>
+                  )}
+
+                  {activeTheorem.isSandbox && editingNodeId !== node.id && (
+                    <div
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1.5 pt-1.5 border-t border-slate-800/80 flex items-center justify-end gap-1 pr-2"
+                    >
+                      {(node.type === "premise" ||
+                        node.type === "conclusion") &&
+                        onUpdateSandboxNode && (
+                          <button
+                            type="button"
+                            onClick={() => beginNodeEdit(node.id, node.label)}
+                            aria-label={`Edit Node ${node.id}`}
+                            className="p-1 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded text-slate-400 hover:text-brand-cyan hover:bg-slate-800 transition cursor-pointer"
+                          >
+                            <IconPencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      {onDeleteSandboxNode && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteSandboxNode(node.id)}
+                          aria-label={`Delete Node ${node.id}`}
+                          className="p-1 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
+                        >
+                          <IconTrash className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
-                  </button>
+                  )}
 
                   {/* Connection Anchor Handle Port (Right Edge) */}
                   <TooltipButton

@@ -3173,6 +3173,40 @@ describe("Unknown suppression eligibility never sends (#3806)", () => {
   });
 });
 
+describe("Sandbox Proof LaTeX complete backslash escaping (CodeQL #43)", () => {
+  it("escapes backslashes and TeX metacharacters when serializing AST identifiers", async () => {
+    const { createSandboxTheorem } = await import("@/lib/proof-custom");
+    const theorem = createSandboxTheorem([
+      {
+        id: "P1",
+        label: "P1",
+        ast: { type: "var", name: "a\\input{evil}_1" },
+        type: "premise",
+        description: "Premise",
+        meaning: "Premise",
+        x: 100,
+        y: 100,
+      },
+      {
+        id: "G1",
+        label: "G1",
+        ast: { type: "not", operand: { type: "var", name: "b_2" } },
+        type: "conclusion",
+        description: "Goal",
+        meaning: "Goal",
+        x: 300,
+        y: 100,
+      },
+    ]);
+
+    expect(theorem.latexCode).not.toContain("\\input{evil}");
+    expect(theorem.latexCode).toContain(
+      "a\\textbackslash{}input\\{evil\\}\\_1"
+    );
+    expect(theorem.latexCode).toContain("\\neg b\\_2");
+  });
+});
+
 describe("Typed formula evaluation and CLI error contracts", () => {
   const fields: CRFField[] = [
     fromPartial<CRFField>({

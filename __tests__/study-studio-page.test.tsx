@@ -53,28 +53,43 @@ describe("Clinical Study Studio page", () => {
       "study-tab-analysis",
       "study-tab-randomization",
     ]);
-    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    const expectActiveTabPanelLink = (activeIndex: number, panelId: string) => {
+      tabs.forEach((tab, index) => {
+        if (index === activeIndex) {
+          expect(tab.getAttribute("aria-selected")).toBe("true");
+          expect(tab.getAttribute("aria-controls")).toBe(panelId);
+          const panel = document.getElementById(panelId);
+          expect(panel).not.toBeNull();
+          expect(panel?.getAttribute("role")).toBe("tabpanel");
+        } else {
+          expect(tab.getAttribute("aria-selected")).toBe("false");
+          expect(tab.hasAttribute("aria-controls")).toBe(false);
+        }
+      });
+    };
+
+    expectActiveTabPanelLink(0, "study-panel-design");
 
     fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
-    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+    expectActiveTabPanelLink(1, "study-panel-schedule");
     expect(
       screen.getByRole("heading", { level: 2, name: "Schedule" })
     ).toBeTruthy();
 
     fireEvent.keyDown(tabs[1], { key: "End" });
-    expect(tabs[4].getAttribute("aria-selected")).toBe("true");
+    expectActiveTabPanelLink(4, "study-panel-randomization");
     expect(
       screen.getByRole("heading", { level: 2, name: "Randomization" })
     ).toBeTruthy();
 
     fireEvent.keyDown(tabs[4], { key: "Home" });
-    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expectActiveTabPanelLink(0, "study-panel-design");
     expect(
       screen.getByRole("heading", { level: 2, name: "Design" })
     ).toBeTruthy();
 
     fireEvent.keyDown(tabs[0], { key: "ArrowLeft" });
-    expect(tabs[4].getAttribute("aria-selected")).toBe("true");
+    expectActiveTabPanelLink(4, "study-panel-randomization");
   });
 
   it("is registered once and sits in the Clinical menu", () => {

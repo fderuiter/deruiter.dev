@@ -110,7 +110,9 @@ export function StudyStudioWorkspace({
                     type="button"
                     role="tab"
                     aria-selected={selected}
-                    aria-controls={`study-panel-${tab.id}`}
+                    aria-controls={
+                      selected ? `study-panel-${tab.id}` : undefined
+                    }
                     tabIndex={selected ? 0 : -1}
                     onClick={() => selectTab(tab.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, index)}

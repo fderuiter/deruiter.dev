@@ -489,5 +489,186 @@ describe("ContactForm Component", () => {
         (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
       ).toBe("Saved Message Content");
     });
+
+    it("scopes draft persistence, submit cleanup, and reset cleanup to draftKey", async () => {
+      const scheduleDraftKey = "portfolio_contact_form_draft_schedule";
+      safeStorage.setItem(CONTACT_FORM_DRAFT_KEY, {
+        name: "Contact Page Visitor",
+        email: "contact@example.com",
+        intent: "general",
+        subject: "",
+        message: "",
+      });
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+
+      render(
+        <ContactForm
+          draftKey={scheduleDraftKey}
+          initialIntent="collaboration"
+          initialSubject="30-Min General Chat"
+          initialMessage="30-minute general chat (Timezone: America/Chicago)."
+        />
+      );
+
+      expect(
+        (screen.getByLabelText(/Your Name/i) as HTMLInputElement).value
+      ).toBe("");
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("30-Min General Chat");
+      expect(
+        (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
+      ).toBe("30-minute general chat (Timezone: America/Chicago).");
+      expect(
+        screen
+          .getByRole("radio", { name: "collaboration" })
+          .getAttribute("aria-checked")
+      ).toBe("true");
+
+      fireEvent.change(screen.getByLabelText(/Your Name/i), {
+        target: { value: "Ada Lovelace" },
+      });
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "ada@example.com" },
+      });
+
+      const scheduleDraft =
+        safeStorage.getItem<Record<string, unknown>>(scheduleDraftKey);
+      expect(scheduleDraft).toEqual({
+        name: "Ada Lovelace",
+        email: "ada@example.com",
+      });
+      expect(scheduleDraft?.intent).toBeUndefined();
+      expect(scheduleDraft?.subject).toBeUndefined();
+      expect(scheduleDraft?.message).toBeUndefined();
+
+      fireEvent.click(screen.getByRole("button", { name: /Send Message/i }));
+      await screen.findByTestId("contact-form-success");
+
+      expect(safeStorage.getItem(scheduleDraftKey)).toBeNull();
+      expect(safeStorage.getItem(CONTACT_FORM_DRAFT_KEY)).toMatchObject({
+        name: "Contact Page Visitor",
+        email: "contact@example.com",
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Send Another Message/i })
+      );
+      expect(safeStorage.getItem(scheduleDraftKey)).toBeNull();
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("30-Min General Chat");
+    });
+
+    it("syncs live initialSubject and initialMessage updates until each field is edited directly", () => {
+      const scheduleDraftKey = "portfolio_contact_form_draft_schedule";
+      const { rerender } = render(
+        <ContactForm
+          draftKey={scheduleDraftKey}
+          initialIntent="collaboration"
+          initialSubject="30-Min General Chat"
+          initialMessage="Default 30-min message"
+        />
+      );
+
+      fireEvent.change(screen.getByLabelText(/Your Name/i), {
+        target: { value: "Ada Lovelace" },
+      });
+
+      rerender(
+        <ContactForm
+          draftKey={scheduleDraftKey}
+          initialIntent="collaboration"
+          initialSubject="Chat Agenda: Code, Systems & Web Craft"
+          initialMessage="Proposed Agenda: Next.js & React 19 Architecture (10m)"
+        />
+      );
+
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("Chat Agenda: Code, Systems & Web Craft");
+      expect(
+        (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
+      ).toBe("Proposed Agenda: Next.js & React 19 Architecture (10m)");
+
+      fireEvent.change(screen.getByLabelText(/Subject/i), {
+        target: { value: "Custom Subject From Visitor" },
+      });
+
+      rerender(
+        <ContactForm
+          draftKey={scheduleDraftKey}
+          initialIntent="collaboration"
+          initialSubject="Chat Agenda: Healthcare & Clinical Data"
+          initialMessage="Proposed Agenda (Timezone: UTC): GxP & eClinical Architecture (15m)"
+        />
+      );
+
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("Custom Subject From Visitor");
+      expect(
+        (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
+      ).toBe(
+        "Proposed Agenda (Timezone: UTC): GxP & eClinical Architecture (15m)"
+      );
+
+      fireEvent.change(screen.getByLabelText(/Message/i), {
+        target: { value: "Custom agenda notes written manually." },
+      });
+
+      rerender(
+        <ContactForm
+          draftKey={scheduleDraftKey}
+          initialIntent="collaboration"
+          initialSubject="30-Min General Chat"
+          initialMessage="30-minute general chat"
+        />
+      );
+
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("Custom Subject From Visitor");
+      expect(
+        (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
+      ).toBe("Custom agenda notes written manually.");
+    });
+
+    it("falls back to initial props when legacy draft fields are blank and keeps retired recruiting tab-stop fallback", () => {
+      safeStorage.setItem(CONTACT_FORM_DRAFT_KEY, {
+        name: "Legacy Visitor",
+        email: "legacy@example.com",
+        intent: "recruiting",
+        subject: "",
+        message: "   ",
+      });
+
+      render(
+        <ContactForm
+          initialSubject="Pre-filled Prop Subject"
+          initialMessage="Pre-filled Prop Message"
+        />
+      );
+
+      expect(
+        (screen.getByLabelText(/Your Name/i) as HTMLInputElement).value
+      ).toBe("Legacy Visitor");
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("Pre-filled Prop Subject");
+      expect(
+        (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
+      ).toBe("Pre-filled Prop Message");
+
+      const radios = screen.getAllByRole("radio");
+      expect(
+        radios.every((r) => r.getAttribute("aria-checked") === "false")
+      ).toBe(true);
+      expect(radios[0]?.getAttribute("tabindex")).toBe("0");
+    });
   });
 });

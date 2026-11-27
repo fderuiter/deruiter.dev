@@ -12,6 +12,7 @@ import {
   fireEvent,
 } from "@testing-library/react";
 import { NeuroReconClient } from "@/components/neuro/NeuroReconClient";
+import { DEFAULT_ROI_INTENSITY_TOLERANCE } from "@/lib/neuro";
 
 import { getByTooltip } from "./helpers/tooltip";
 /**
@@ -61,6 +62,7 @@ const TOOL_TITLES = {
   control_point: /^Control Point/,
   paint: /^Voxel Paint Brush/,
   erase: /^Voxel Erase Brush/,
+  roi_select: /^ROI Region Grow/,
 } as const;
 
 function activeTool(): string | undefined {
@@ -128,10 +130,12 @@ describe("NeuroRecon studio hotkeys (#1580)", () => {
     ["2", "control_point"],
     ["3", "paint"],
     ["4", "erase"],
+    ["5", "roi_select"],
     ["1", "inspect"],
     ["c", "control_point"],
     ["b", "paint"],
     ["e", "erase"],
+    ["g", "roi_select"],
     ["v", "inspect"],
   ])("selects a tool with the bare key %s", (key, tool) => {
     render(<NeuroReconClient />);
@@ -145,6 +149,22 @@ describe("NeuroRecon studio hotkeys (#1580)", () => {
     render(<NeuroReconClient />);
     press("E", { shiftKey: true });
     expect(activeTool()).toBe("erase");
+    press("G", { shiftKey: true });
+    expect(activeTool()).toBe("roi_select");
+  });
+
+  it("activates ROI Region Grow via toolbar click, hides brush controls, and shows ROI prompt", () => {
+    render(<NeuroReconClient />);
+    expect(activeTool()).toBe("erase");
+    expect(screen.queryByLabelText("Brush radius 1")).not.toBeNull();
+
+    fireEvent.click(getByTooltip(/^ROI Region Grow \[5 \/ G\]/));
+    expect(activeTool()).toBe("roi_select");
+    expect(window.location.hash).toContain("tool=roi_select");
+    expect(screen.queryByLabelText("Brush radius 1")).toBeNull();
+    expect(
+      screen.getByTestId("neuro-roi-toolbar-prompt").textContent
+    ).toContain(`±${DEFAULT_ROI_INTENSITY_TOLERANCE} INT`);
   });
 
   it.each([

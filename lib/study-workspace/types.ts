@@ -1,4 +1,7 @@
-import type { UsdmV4Document } from "@/lib/clinical-standards";
+import type {
+  UsdmV4Document,
+  VisitConflictSummary,
+} from "@/lib/clinical-standards";
 import type {
   RandomizationAlgorithmId,
   RandomizationRequest,
@@ -311,6 +314,219 @@ export interface StudyDesignGrid {
 export interface StudyDesignCellRef {
   readonly armId: string;
   readonly epochId: string;
+}
+
+/** One visit (encounter) column in the schedule of activities view. */
+export interface StudyScheduleVisit {
+  readonly id: string;
+  readonly name: string;
+  readonly type: StudyDesignTerm | null;
+  readonly scheduledInstanceId: string | null;
+  readonly epochId: string | null;
+  /** Planned study day (Day 1 = anchor, no Day 0), or null when untimed. */
+  readonly targetDay: number | null;
+  readonly windowBefore: number;
+  readonly windowAfter: number;
+  /** True when this visit carries the timeline's Fixed Reference timing. */
+  readonly isAnchor: boolean;
+  /** True when this visit represents an unscheduled/repeat event visit. */
+  readonly isUnscheduled: boolean;
+}
+
+/** One clinical activity row in the schedule of activities view. */
+export interface StudyScheduleActivity {
+  readonly id: string;
+  readonly name: string;
+  /** Optional SDTM domain code carried on the USDM extension attribute. */
+  readonly sdtmDomain: string | null;
+}
+
+/** One visit-by-activity cell in the schedule matrix. */
+export interface StudyScheduleCell {
+  readonly encounterId: string;
+  readonly activityId: string;
+  readonly scheduled: boolean;
+}
+
+/** One row of the schedule matrix: an activity and its cell at each visit. */
+export interface StudyScheduleRow {
+  readonly activity: StudyScheduleActivity;
+  readonly cells: readonly StudyScheduleCell[];
+}
+
+/** What the schedule view found missing or inconsistent in the study. */
+export type StudyScheduleFindingKind =
+  | "missing-timeline"
+  | "missing-anchor-timing"
+  | "unscheduled-encounter"
+  | "missing-encounter-timing"
+  | "encounter-order"
+  | "activity-order"
+  | "unknown-encounter"
+  | "unknown-activity";
+
+/** A finding reported by the schedule view, naming the USDM ids involved. */
+export interface StudyScheduleFinding {
+  readonly kind: StudyScheduleFindingKind;
+  readonly message: string;
+  readonly ids: readonly string[];
+}
+
+/** The visits-by-activities schedule projection of the selected study design. */
+export interface StudyScheduleGrid {
+  readonly designId: string;
+  readonly timelineId: string | null;
+  readonly anchorEncounterId: string | null;
+  /** Visits ordered by planned study day ascending, with untimed visits last. */
+  readonly visits: readonly StudyScheduleVisit[];
+  /** Activities in `previousId`/`nextId` chain order when intact. */
+  readonly activities: readonly StudyScheduleActivity[];
+  readonly rows: readonly StudyScheduleRow[];
+  /** Total count of scheduled `(visit, activity)` links on the main timeline. */
+  readonly scheduledLinkCount: number;
+  /** Real-time visit window overlap evaluation for timed visits. */
+  readonly windowConflicts: VisitConflictSummary;
+  readonly findings: readonly StudyScheduleFinding[];
+}
+
+/** One endpoint nested under an objective in the narrative view. */
+export interface StudyEndpointView {
+  readonly id: string;
+  readonly objectiveId: string;
+  readonly name: string;
+  readonly text: string;
+  readonly purpose: string;
+  readonly level: StudyDesignTerm | null;
+}
+
+/** One study objective and its nested endpoints in the narrative view. */
+export interface StudyObjectiveView {
+  readonly id: string;
+  readonly name: string;
+  readonly text: string;
+  readonly level: StudyDesignTerm | null;
+  readonly endpoints: readonly StudyEndpointView[];
+}
+
+/** One eligibility criterion paired with its resolved text item. */
+export interface StudyCriterionView {
+  readonly id: string;
+  readonly name: string;
+  readonly identifier: string;
+  readonly category: StudyDesignTerm | null;
+  readonly criterionItemId: string;
+  readonly itemName: string;
+  readonly text: string;
+  /** False when `criterionItemId` does not resolve to an item on the version. */
+  readonly hasCriterionItem: boolean;
+}
+
+/** What the narrative view found missing or inconsistent in the study. */
+export type StudyNarrativeFindingKind =
+  | "missing-objective-text"
+  | "missing-objective-level"
+  | "missing-endpoint-text"
+  | "missing-endpoint-purpose"
+  | "missing-endpoint-level"
+  | "criterion-order"
+  | "missing-criterion-item"
+  | "missing-criterion-text"
+  | "missing-criterion-category"
+  | "unlisted-population-criterion";
+
+/** A finding reported by the narrative view, naming the USDM ids involved. */
+export interface StudyNarrativeFinding {
+  readonly kind: StudyNarrativeFindingKind;
+  readonly message: string;
+  readonly ids: readonly string[];
+}
+
+/** Objectives, nested endpoints and eligibility criteria of the selected design. */
+export interface StudyNarrativeView {
+  readonly designId: string;
+  readonly objectives: readonly StudyObjectiveView[];
+  readonly endpointCount: number;
+  readonly criteria: readonly StudyCriterionView[];
+  readonly findings: readonly StudyNarrativeFinding[];
+}
+
+/** One analysis population defined on the selected design. */
+export interface StudyAnalysisPopulationView {
+  readonly id: string;
+  readonly name: string;
+  readonly label: string;
+  readonly text: string;
+  readonly subsetOfIds: readonly string[];
+}
+
+/** One intercurrent event and handling strategy inside an estimand. */
+export interface StudyIntercurrentEventView {
+  readonly id: string;
+  readonly estimandId: string;
+  readonly name: string;
+  readonly text: string;
+  readonly strategy: string;
+}
+
+/** An endpoint offered as a target variable of interest for estimands. */
+export interface StudyAnalysisEndpointOption {
+  readonly id: string;
+  readonly objectiveId: string;
+  readonly objectiveName: string;
+  readonly name: string;
+  readonly text: string;
+  readonly level: StudyDesignTerm | null;
+}
+
+/** An intervention offered for linking to estimands. */
+export interface StudyAnalysisInterventionOption {
+  readonly id: string;
+  readonly name: string;
+  readonly role: StudyDesignTerm | null;
+}
+
+/** One ICH E9(R1) estimand projected from the selected design. */
+export interface StudyEstimandView {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly populationSummary: string;
+  readonly analysisPopulationId: string;
+  /** Resolved population name, or null when `analysisPopulationId` is broken. */
+  readonly analysisPopulationName: string | null;
+  readonly variableOfInterestId: string;
+  /** Resolved target endpoint name, or null when `variableOfInterestId` is broken. */
+  readonly endpointName: string | null;
+  readonly interventionIds: readonly string[];
+  readonly intercurrentEvents: readonly StudyIntercurrentEventView[];
+}
+
+/** What the analysis-intent view found missing or broken in the study. */
+export type StudyAnalysisFindingKind =
+  | "missing-endpoint-link"
+  | "missing-population-link"
+  | "missing-intervention-link"
+  | "unknown-intervention-link"
+  | "missing-population-summary"
+  | "missing-intercurrent-events"
+  | "missing-intercurrent-event-details"
+  | "unknown-population-subset";
+
+/** A finding reported by the analysis-intent view, naming the USDM ids involved. */
+export interface StudyAnalysisFinding {
+  readonly kind: StudyAnalysisFindingKind;
+  readonly message: string;
+  readonly ids: readonly string[];
+}
+
+/** Estimands, analysis populations and link catalogs of the selected design. */
+export interface StudyAnalysisIntentView {
+  readonly designId: string;
+  readonly estimands: readonly StudyEstimandView[];
+  readonly analysisPopulations: readonly StudyAnalysisPopulationView[];
+  readonly availableEndpoints: readonly StudyAnalysisEndpointOption[];
+  readonly availableInterventions: readonly StudyAnalysisInterventionOption[];
+  readonly findings: readonly StudyAnalysisFinding[];
 }
 
 /**

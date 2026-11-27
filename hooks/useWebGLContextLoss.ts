@@ -87,7 +87,10 @@ export function useWebGLContextLoss(
           },
           onContextRestored: (event) => {
             setRecoveryCount((c) => c + 1);
-            announcerRef.current?.announce(`${label} context restored.`, "polite");
+            announcerRef.current?.announce(
+              `${label} context restored.`,
+              "polite"
+            );
             onRestoredRef.current?.(event);
           },
         });
@@ -118,7 +121,8 @@ export function useWebGLContextLoss(
       if (managerRef.current) {
         return managerRef.current.simulateLoss(restoreDelayMs);
       }
-      const targetCanvas = canvasRefInternal.current || directCanvas || canvasRef?.current || null;
+      const targetCanvas =
+        canvasRefInternal.current || directCanvas || canvasRef?.current || null;
       if (targetCanvas) {
         bindCanvas(targetCanvas);
         const activeMgr = managerRef.current as ContextLossManager | null;

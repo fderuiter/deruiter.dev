@@ -104,7 +104,9 @@ function renderTutorial() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <CabinetPauseProvider controller={controller}>
       <CabinetTutorialContext.Provider value={value}>
-        <RetroLabyrinthSessionProvider>{children}</RetroLabyrinthSessionProvider>
+        <RetroLabyrinthSessionProvider>
+          {children}
+        </RetroLabyrinthSessionProvider>
       </CabinetTutorialContext.Provider>
     </CabinetPauseProvider>
   );

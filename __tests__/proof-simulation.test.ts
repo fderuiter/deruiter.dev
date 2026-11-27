@@ -14,8 +14,7 @@ import {
  * depends on and a rendered hook test cannot see.
  */
 const root = path.resolve(__dirname, "..");
-const read = (file: string) =>
-  fs.readFileSync(path.join(root, file), "utf-8");
+const read = (file: string) => fs.readFileSync(path.join(root, file), "utf-8");
 
 describe("proof simulation wiring", () => {
   it("keeps the Worker URL literal the bundler needs to emit the worker chunk", () => {

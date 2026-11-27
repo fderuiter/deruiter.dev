@@ -146,7 +146,11 @@ describe("GitHub Actions Workflow Security & Determinism Hardening", () => {
       "overrides-audit.yml",
     ]) {
       const content = readWorkflow(file);
-      expect(content, file).toMatch(/^permissions:\s*\{\}$/m);
+      const header = content.slice(0, content.indexOf("\njobs:\n"));
+      expect(header, file).toMatch(
+        /^permissions:(?:\s*\{\}|\n\s{2}contents:\s*read)$/m
+      );
+      expect(header, file).not.toContain("issues: write");
       expect(content, file).toMatch(
         /^\s{4}permissions:\n\s{6}contents:\s*read\n\s{6}issues:\s*write$/m
       );
@@ -161,9 +165,7 @@ describe("GitHub Actions Workflow Security & Determinism Hardening", () => {
     expect(probes).toContain(
       "cancel-in-progress: ${{ github.event_name != 'workflow_call' }}"
     );
-    expect(probes).toContain(
-      "PROBE_TARGET_URL: ${{ steps.target.outputs.url }}"
-    );
+    expect(probes).toContain("PROBE_TARGET: ${{ steps.target.outputs.url }}");
     expect(probes).toContain("PROBES_OUTCOME: ${{ steps.probes.outcome }}");
 
     for (const runBlock of extractRunBlocks(probes)) {

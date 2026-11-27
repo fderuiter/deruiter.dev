@@ -50,7 +50,9 @@ describe("/merch discovery", () => {
     expect(read("components/arcade/LaserLoonClient.tsx")).toMatch(
       /href="\/merch"/
     );
-    expect(read("lib/command-palette/static-navs.ts")).toMatch(/url: "\/merch"/);
+    expect(read("lib/command-palette/static-navs.ts")).toMatch(
+      /url: "\/merch"/
+    );
   });
 
   it("has a social preview card and a sitemap entry", async () => {

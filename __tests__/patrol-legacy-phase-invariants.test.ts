@@ -100,9 +100,12 @@ describe("Patrol legacy phase vocabulary (#3810)", () => {
 
   it("RESET always returns to canonical INTRO", () => {
     for (const from of [...CANONICAL, ...LEGACY]) {
-      const next = reduceShiftState(createInitialShiftState("scenario-1", from), {
-        type: "RESET",
-      });
+      const next = reduceShiftState(
+        createInitialShiftState("scenario-1", from),
+        {
+          type: "RESET",
+        }
+      );
       expect(next.phase).toBe("INTRO");
       expect(next.isCompleted).toBe(false);
     }
@@ -124,7 +127,9 @@ describe("Patrol legacy phase vocabulary (#3810)", () => {
   it("records the one contradiction: a terminal initial phase starts with isCompleted false", () => {
     // Reachable only through the initialPhase option. No production caller
     // passes a terminal phase, so this is follow-up scope, not a live defect.
-    expect(createInitialShiftState(null, "SHIFT_COMPLETE").isCompleted).toBe(false);
+    expect(createInitialShiftState(null, "SHIFT_COMPLETE").isCompleted).toBe(
+      false
+    );
     expect(createInitialShiftState(null, "completed").isCompleted).toBe(false);
   });
 });

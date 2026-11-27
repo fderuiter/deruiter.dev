@@ -119,7 +119,9 @@ describe("Responsive Layout & Multi-Viewport Suite", () => {
       // 2 columns (Tablet): items distributed across 2 columns
       const tabletResult = distributeItemsGreedily(mockItems, 2, 16);
       expect(tabletResult.columns).toHaveLength(2);
-      expect(tabletResult.columns[0].length + tabletResult.columns[1].length).toBe(4);
+      expect(
+        tabletResult.columns[0].length + tabletResult.columns[1].length
+      ).toBe(4);
 
       // 3 columns (Desktop): items distributed across 3 columns
       const desktopResult = distributeItemsGreedily(mockItems, 3, 16);
@@ -160,7 +162,9 @@ describe("Responsive Layout & Multi-Viewport Suite", () => {
           observerCallback!([
             {
               contentRect: { width: 1200, height: 200 },
-              target: container.querySelector('[data-testid="headline-container"]')!,
+              target: container.querySelector(
+                '[data-testid="headline-container"]'
+              )!,
             },
           ]);
         });
@@ -169,7 +173,9 @@ describe("Responsive Layout & Multi-Viewport Suite", () => {
       const readyEl = container.querySelector('[data-testid="is-ready"]');
       expect(readyEl?.textContent).toBe("ready");
 
-      const desktopHeight = Number(container.querySelector('[data-testid="height"]')?.textContent);
+      const desktopHeight = Number(
+        container.querySelector('[data-testid="height"]')?.textContent
+      );
       expect(desktopHeight).toBeGreaterThan(0);
 
       // Simulate mobile resize
@@ -178,13 +184,17 @@ describe("Responsive Layout & Multi-Viewport Suite", () => {
           observerCallback!([
             {
               contentRect: { width: 360, height: 200 },
-              target: container.querySelector('[data-testid="headline-container"]')!,
+              target: container.querySelector(
+                '[data-testid="headline-container"]'
+              )!,
             },
           ]);
         });
       }
 
-      const mobileHeight = Number(container.querySelector('[data-testid="height"]')?.textContent);
+      const mobileHeight = Number(
+        container.querySelector('[data-testid="height"]')?.textContent
+      );
       expect(mobileHeight).toBeGreaterThan(0);
     });
   });
@@ -212,7 +222,9 @@ describe("Responsive Layout & Multi-Viewport Suite", () => {
       const upBtn = container.querySelector('button[aria-label="Move Up"]');
       const downBtn = container.querySelector('button[aria-label="Move Down"]');
       const leftBtn = container.querySelector('button[aria-label="Move Left"]');
-      const rightBtn = container.querySelector('button[aria-label="Move Right"]');
+      const rightBtn = container.querySelector(
+        'button[aria-label="Move Right"]'
+      );
       const fireBtn = container.querySelector('button[aria-label="FIRE"]');
       const switchBtn = container.querySelector('button[aria-label="SWITCH"]');
 
@@ -240,7 +252,9 @@ describe("Responsive Layout & Multi-Viewport Suite", () => {
       expect(onActionAPress).toHaveBeenCalled();
 
       act(() => {
-        switchBtn?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        switchBtn?.dispatchEvent(
+          new MouseEvent("mousedown", { bubbles: true })
+        );
       });
       expect(onActionBPress).toHaveBeenCalled();
     });

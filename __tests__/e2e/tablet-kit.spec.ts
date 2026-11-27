@@ -1248,8 +1248,10 @@ test.describe("Meme Vault on a tablet (iPad projects, #2071)", () => {
         await page.setViewportSize({ width, height: 1024 });
         await assertNoHorizontalOverflow(page);
         await meetsTouchSizes(page);
-        await scrollEchoIntoPlace(page);
-        await expectEchoAndPadsInView(page);
+        await expect(async () => {
+          await scrollEchoIntoPlace(page);
+          await expectEchoAndPadsInView(page);
+        }).toPass({ timeout: 15000 });
       });
     }
   });

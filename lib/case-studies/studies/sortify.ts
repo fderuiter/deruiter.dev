@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-12",
-    slug: "sortify",
-    title: "Sortify: Organize Documents Locally",
-    primary_language: "Python",
-    github_url: "https://github.com/fderuiter/Sortify",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Python, PyQt6, ONNX, SQLCipher, Machine Learning, Clinical Trials, HIPAA, Document Classification, NLP",
-    editorial_content:
-      "A local document classifier using **ONNX** embeddings and **TF-IDF** to group related files. **SQLCipher** stores encrypted metadata, while two-phase file operations help recover interrupted moves.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-12",
+  slug: "sortify",
+  title: "Sortify: Organize Documents Locally",
+  primary_language: "Python",
+  github_url: "https://github.com/fderuiter/Sortify",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Python, PyQt6, ONNX, SQLCipher, Machine Learning, Clinical Trials, HIPAA, Document Classification, NLP",
+  editorial_content:
+    "A local document classifier using **ONNX** embeddings and **TF-IDF** to group related files. **SQLCipher** stores encrypted metadata, while two-phase file operations help recover interrupted moves.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>A folder full of documents is easy to accumulate and tedious to organize. Sortify groups related files using local text models, keeps metadata in an encrypted registry, and treats interrupted file moves as something to plan for.</p>
 <p><strong>The approach:</strong> ONNX embeddings and TF-IDF provide complementary similarity signals. SQLCipher stores metadata, and two-phase file operations support recovery.</p>
 <p><strong>Reported project measurements:</strong> 100% offline air-gapped execution with zero remote API telemetry; sub-15ms classification latency per document; zero-data-loss two-phase commit file relocation with SHA-256 verification across 50,000+ files.</p>
@@ -107,6 +107,6 @@ class HybridDocumentClassifier:
   <li>Standard <code>os.rename()</code> fails across disk partitions with <code>EXDEV</code> errors. The shadow staging two-phase commit makes a move atomic whatever the mount configuration.</li>
   <li>Encryption costs time, so the SQLite cache is tuned (<code>PRAGMA cache_size = -64000</code>) to keep record retrieval sub-5ms over 100k indexed files.</li>
 </ul>`,
-    created_at: new Date("2026-02-20T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-02-20T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

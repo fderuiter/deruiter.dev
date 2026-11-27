@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { validateEnv, getEnv } from "../lib/env";
 import {
   validateCommitMessage,
@@ -429,8 +430,19 @@ describe("Developer Experience (DX) Tooling Suite", () => {
   });
 
   describe("5. IDE & Workspace Configuration Integrity", () => {
-    it("verifies that all .vscode files and .editorconfig exist", () => {
+    const createIdeFixture = (): string => {
+      const tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "dx-ide-config-test-")
+      );
+      const result = checkWorkspaceIdeConfig(tempDir, true);
+      expect(result.status).toBe("fixed");
+      return tempDir;
+    };
+
+    it("verifies that all .vscode files, .editorconfig, and Prettier configs exist", () => {
       expect(fs.existsSync(path.join(root, ".editorconfig"))).toBe(true);
+      expect(fs.existsSync(path.join(root, ".prettierrc"))).toBe(true);
+      expect(fs.existsSync(path.join(root, ".prettierignore"))).toBe(true);
       expect(fs.existsSync(path.join(root, ".vscode", "settings.json"))).toBe(
         true
       );
@@ -449,6 +461,130 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       const result = checkWorkspaceIdeConfig(root, false);
       expect(result.status).toBe("pass");
       expect(result.id).toBe("workspace-ide-config");
+    });
+
+    it("catches invalid editor formatters and mismatched rulers in .vscode/settings.json", () => {
+      const tempDir = createIdeFixture();
+      try {
+        fs.writeFileSync(
+          path.join(tempDir, ".vscode", "settings.json"),
+          JSON.stringify(
+            {
+              "editor.formatOnSave": true,
+              "editor.defaultFormatter": "vscode.typescript-language-features",
+              "editor.rulers": [100, 120],
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+
+        const failed = checkWorkspaceIdeConfig(tempDir, false);
+        expect(failed.status).toBe("fail");
+        expect(failed.fixable).toBe(true);
+        expect(failed.details?.join("\n")).toContain("editor.defaultFormatter");
+        expect(failed.details?.join("\n")).toContain("editor.rulers");
+
+        const fixed = checkWorkspaceIdeConfig(tempDir, true);
+        expect(fixed.status).toBe("fixed");
+        expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it("catches invalid or missing extension recommendations in .vscode/extensions.json", () => {
+      const tempDir = createIdeFixture();
+      try {
+        fs.writeFileSync(
+          path.join(tempDir, ".vscode", "extensions.json"),
+          JSON.stringify(
+            {
+              recommendations: [
+                "dbaeumer.vscode-eslint",
+                "davidlday.vscode-markdownlint",
+                "not-a-valid-id",
+              ],
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+
+        const failed = checkWorkspaceIdeConfig(tempDir, false);
+        expect(failed.status).toBe("fail");
+        expect(failed.details?.join("\n")).toContain(
+          "davidlday.vscode-markdownlint"
+        );
+        expect(failed.details?.join("\n")).toContain("esbenp.prettier-vscode");
+        expect(failed.details?.join("\n")).toContain(
+          "EditorConfig.EditorConfig"
+        );
+        expect(failed.details?.join("\n")).toContain(
+          "DavidAnson.vscode-markdownlint"
+        );
+        expect(failed.details?.join("\n")).toContain("not-a-valid-id");
+
+        const fixed = checkWorkspaceIdeConfig(tempDir, true);
+        expect(fixed.status).toBe("fixed");
+        expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
+
+        const repaired = JSON.parse(
+          fs.readFileSync(
+            path.join(tempDir, ".vscode", "extensions.json"),
+            "utf-8"
+          )
+        ) as { recommendations: string[] };
+        expect(repaired.recommendations).toContain(
+          "DavidAnson.vscode-markdownlint"
+        );
+        expect(repaired.recommendations).toContain("esbenp.prettier-vscode");
+        expect(repaired.recommendations).toContain("EditorConfig.EditorConfig");
+        expect(repaired.recommendations).not.toContain(
+          "davidlday.vscode-markdownlint"
+        );
+        expect(repaired.recommendations).not.toContain("not-a-valid-id");
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it("catches missing .prettierignore generated entries and broad .claude ignores", () => {
+      const tempDir = createIdeFixture();
+      try {
+        fs.writeFileSync(
+          path.join(tempDir, "lint-staged.config.cjs"),
+          'const GENERATED_ARTIFACTS = new Set(["public/custom-generated.js"]);\n',
+          "utf-8"
+        );
+        fs.writeFileSync(
+          path.join(tempDir, ".prettierignore"),
+          "node_modules\n.claude\n",
+          "utf-8"
+        );
+
+        const failed = checkWorkspaceIdeConfig(tempDir, false);
+        expect(failed.status).toBe("fail");
+        expect(failed.details?.join("\n")).toContain(
+          "ignores '.claude' broadly instead of '.claude/worktrees'"
+        );
+        expect(failed.details?.join("\n")).toContain("lib/design-manifest.ts");
+        expect(failed.details?.join("\n")).toContain("public/garmin-engine.js");
+        expect(failed.details?.join("\n")).toContain(
+          "public/third-party-notices.txt"
+        );
+        expect(failed.details?.join("\n")).toContain(
+          "public/custom-generated.js"
+        );
+
+        const fixed = checkWorkspaceIdeConfig(tempDir, true);
+        expect(fixed.status).toBe("fixed");
+        expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
     });
   });
 });

@@ -23,12 +23,12 @@ on:
         type: string
         default: ""
 
-permissions:
-  contents: read
-
 concurrency:
   group: synthetic-probes-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+permissions:
+  contents: read
 
 env:
   # Canonical production domain, per ADR/AGENTS.md §18.
@@ -39,6 +39,8 @@ jobs:
     name: Headless Synthetic Probe Matrix
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     # #1771: the same digest-pinned Playwright image as ci.yml's browser
     # jobs, so Chromium and its OS libraries are preinstalled and match the
     # locked @playwright/test version exactly.
@@ -72,14 +74,13 @@ jobs:
             TARGET="${DEFAULT_PROBE_TARGET}"
           fi
           case "$TARGET" in
-            *[[:space:]]*)
-              echo "::error::Probe target URL must not contain whitespace or control characters."
+            *[[:space:]]*|*[[:cntrl:]]*)
+              echo "::error::target_url must be a single-line URL without whitespace or control characters."
               exit 1
               ;;
-            https://*|http://*)
-              ;;
+            https://*|http://*) ;;
             *)
-              echo "::error::Probe target URL must start with https:// or http://."
+              echo "::error::target_url must start with https:// or http://."
               exit 1
               ;;
           esac
@@ -99,19 +100,19 @@ jobs:
       - name: Publish Synthetic Health Summary
         if: always()
         env:
-          PROBE_TARGET_URL: ${{ steps.target.outputs.url }}
+          PROBE_TARGET: ${{ steps.target.outputs.url }}
           PROBES_OUTCOME: ${{ steps.probes.outcome }}
         run: |
-          RESULT_SUMMARY="❌ Probe run did not pass — see the job log for the failing spec"
+          PROBE_RESULT="❌ Probe run did not pass — see the job log for the failing spec"
           if [ "${PROBES_OUTCOME}" = "success" ]; then
-            RESULT_SUMMARY="✅ All probed journeys healthy"
+            PROBE_RESULT="✅ All probed journeys healthy"
           fi
           {
             echo "# 🛰️ Synthetic Journey Monitoring Report"
             echo ""
-            echo "- **Target:** ${PROBE_TARGET_URL}"
+            echo "- **Target:** ${PROBE_TARGET}"
             echo "- **Checked:** $(date -u)"
-            echo "- **Result:** ${RESULT_SUMMARY}"
+            echo "- **Result:** ${PROBE_RESULT}"
             echo ""
             echo "Journeys covered by this suite:"
             echo ""

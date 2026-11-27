@@ -503,7 +503,12 @@ describe("ROI analytics worker client", () => {
     {
       task: "marching_squares",
       dispatch: (neuro: NeuroModule) =>
-        neuro.requestMarchingSquaresAsync(new Uint8Array([0, 1, 1, 0]), 2, 2, 0.5),
+        neuro.requestMarchingSquaresAsync(
+          new Uint8Array([0, 1, 1, 0]),
+          2,
+          2,
+          0.5
+        ),
       staleReply: {
         type: "marching_squares" as const,
         contours: staleContours,
@@ -829,9 +834,9 @@ describe("ROI analytics worker client", () => {
           code: "ROI_REQUEST_SUPERSEDED",
         })
       ).toBe(true);
-      expect(neuro.isRoiRequestSupersededError(new Error("generic error"))).toBe(
-        false
-      );
+      expect(
+        neuro.isRoiRequestSupersededError(new Error("generic error"))
+      ).toBe(false);
       expect(neuro.isRoiRequestSupersededError(null)).toBe(false);
       expect(neuro.isRoiRequestSupersededError("string")).toBe(false);
       expect(neuro.isRoiRequestSupersededError(undefined)).toBe(false);

@@ -979,9 +979,7 @@ class Cumulative {
 }
 
 /** Days from onset to report, summed and counted by the day of the report. */
-function reportDays(
-  events: readonly WarehouseRow[]
-): [Cumulative, Cumulative] {
+function reportDays(events: readonly WarehouseRow[]): [Cumulative, Cumulative] {
   return [
     new Cumulative(
       events.map((e) => [

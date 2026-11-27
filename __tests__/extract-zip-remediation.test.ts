@@ -156,7 +156,9 @@ describe("extract-zip remediation", () => {
       ...(fs.existsSync(path.join(repositoryRoot, "security-audit-ignore.json"))
         ? [readJson<AuditIgnoreRule[]>("security-audit-ignore.json")]
         : []),
-      ...(fs.existsSync(path.join(repositoryRoot, "scripts/security-audit-ignore.json"))
+      ...(fs.existsSync(
+        path.join(repositoryRoot, "scripts/security-audit-ignore.json")
+      )
         ? [readJson<AuditIgnoreRule[]>("scripts/security-audit-ignore.json")]
         : []),
       DEFAULT_IGNORE_LIST,

@@ -20,9 +20,19 @@ class MockResizeObserver {
 
 globalThis.ResizeObserver = MockResizeObserver as any;
 
-function TestComponent({ onResize }: { onResize: (entry: ResizeObserverEntry) => void }) {
+function TestComponent({
+  onResize,
+}: {
+  onResize: (entry: ResizeObserverEntry) => void;
+}) {
   const ref = useResizeObserver<HTMLDivElement>(onResize);
-  return <div ref={ref} data-testid="observe-target" style={{ width: "100px", height: "100px" }} />;
+  return (
+    <div
+      ref={ref}
+      data-testid="observe-target"
+      style={{ width: "100px", height: "100px" }}
+    />
+  );
 }
 
 describe("useResizeObserver Hook - Throttling & Layout Isolation", () => {
@@ -81,9 +91,21 @@ describe("useResizeObserver Hook - Throttling & Layout Isolation", () => {
   });
 
   it("observes height changes when opt-in vertical resize mode is enabled (trackVertical = true)", async () => {
-    function VerticalComponent({ onResize }: { onResize: (entry: ResizeObserverEntry) => void }) {
-      const ref = useResizeObserver<HTMLDivElement>(onResize, { trackVertical: true });
-      return <div ref={ref} data-testid="observe-vertical-target" style={{ width: "100px", height: "100px" }} />;
+    function VerticalComponent({
+      onResize,
+    }: {
+      onResize: (entry: ResizeObserverEntry) => void;
+    }) {
+      const ref = useResizeObserver<HTMLDivElement>(onResize, {
+        trackVertical: true,
+      });
+      return (
+        <div
+          ref={ref}
+          data-testid="observe-vertical-target"
+          style={{ width: "100px", height: "100px" }}
+        />
+      );
     }
 
     const handleResize = vi.fn();

@@ -224,9 +224,7 @@ describe("Study Director share card: office runs", () => {
     );
     expect(container.textContent).toMatch(/office run · seed office-1/);
     fireEvent.click(screen.getByRole("button", { name: /copy link/i }));
-    expect(
-      await screen.findByText(/same study in the office/)
-    ).toBeTruthy();
+    expect(await screen.findByText(/same study in the office/)).toBeTruthy();
   });
 
   it("leaves desk runs without the office tag", () => {

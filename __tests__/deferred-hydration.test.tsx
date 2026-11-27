@@ -39,7 +39,9 @@ describe("DeferredHydration & Structure-Matched Skeletons Suite", () => {
     });
 
     // Check animate-pulse class is active for visual loading indicator
-    expect(container.querySelector(".motion-safe\\:animate-pulse")).not.toBeNull();
+    expect(
+      container.querySelector(".motion-safe\\:animate-pulse")
+    ).not.toBeNull();
 
     // Check that grid containers and blocks exist
     expect(container.textContent).toBe(""); // should be empty of real text, just skeleton divs
@@ -53,7 +55,9 @@ describe("DeferredHydration & Structure-Matched Skeletons Suite", () => {
     });
 
     // Verify loading placeholders and animate-pulse elements are present
-    expect(container.querySelector(".motion-safe\\:animate-pulse")).not.toBeNull();
+    expect(
+      container.querySelector(".motion-safe\\:animate-pulse")
+    ).not.toBeNull();
     const timelineItems = container.querySelectorAll(".relative");
     expect(timelineItems.length).toBeGreaterThan(0);
   });

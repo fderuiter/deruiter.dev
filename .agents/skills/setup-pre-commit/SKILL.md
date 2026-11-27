@@ -42,7 +42,7 @@ This creates `.husky/` dir and adds `prepare: "husky"` to package.json.
 
 Write this file (no shebang needed for Husky v9+):
 
-```
+```bash
 npx lint-staged
 npm run typecheck
 npm run test
@@ -50,11 +50,24 @@ npm run test
 
 **Adapt**: Replace `npm` with detected package manager. If repo has no `typecheck` or `test` script in package.json, omit those lines and tell the user.
 
-### 5. Create `.lintstagedrc`
+### 5. Create `.lintstagedrc` and formatting scripts
+
+Configure staged formatting (`lint-staged.config.cjs` or `.lintstagedrc`):
 
 ```json
 {
   "*": "prettier --ignore-unknown --write"
+}
+```
+
+Ensure `package.json` exposes workspace formatting scripts that match the CI `static-gate` (`Type Check (Memory Budget) & Lint` running `npm run format:check -- --cache --cache-location .prettiercache`):
+
+```json
+{
+  "scripts": {
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown"
+  }
 }
 ```
 
@@ -77,10 +90,10 @@ Only create if no Prettier config exists. Use these defaults:
 ### 7. Verify
 
 - [ ] `.husky/pre-commit` exists and is executable
-- [ ] `.lintstagedrc` exists
+- [ ] `lint-staged` configuration exists and skips generated artifacts
 - [ ] `prepare` script in package.json is `"husky"`
-- [ ] `prettier` config exists
-- [ ] Run `npx lint-staged` to verify it works
+- [ ] `prettier` config and `.prettierignore` exist
+- [ ] Run `npx lint-staged` and `npm run format:check` to verify local formatting matches CI `static-gate`
 
 ### 8. Commit
 

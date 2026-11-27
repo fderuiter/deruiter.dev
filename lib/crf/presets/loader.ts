@@ -10,7 +10,9 @@ export async function getOncologyPreset(): Promise<StudyProtocol> {
   return ONCOLOGY_RECIST_PRESET;
 }
 
-export async function getPresetById(id: string): Promise<StudyProtocol | undefined> {
+export async function getPresetById(
+  id: string
+): Promise<StudyProtocol | undefined> {
   return STUDY_PRESETS.find((p) => p.id === id)?.study;
 }
 

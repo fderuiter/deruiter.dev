@@ -95,6 +95,7 @@ Generate **3–5 ranked hypotheses** before testing any of them. Single-hypothes
 
 Each hypothesis must be **falsifiable**: state the prediction it makes.
 
+<!-- markdownlint-disable-next-line MD033 -->
 > Format: "If <X> is the cause, then <changing Y> will make the bug disappear / <changing Z> will make it worse."
 
 If you cannot state the prediction, the hypothesis is a vibe: discard or sharpen it.

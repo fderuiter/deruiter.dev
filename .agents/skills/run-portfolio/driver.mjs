@@ -8,7 +8,7 @@
  * server. Designed for agents: wrap in tmux, send-keys commands one at a
  * time, capture-pane the output.
  *
- * Usage: node .claude/skills/run-portfolio/driver.mjs
+ * Usage: node .agents/skills/run-portfolio/driver.mjs
  */
 import * as readline from "node:readline";
 import * as fs from "node:fs";

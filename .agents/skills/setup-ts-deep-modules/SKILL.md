@@ -15,7 +15,7 @@ For the vocabulary (deep module, interface, seam, depth), call the Skill tool wi
 
 ## The shape this enforces
 
-```
+```text
 src/packages/
   <name>/
     index.ts        ← an entry point (public). Import this from outside.

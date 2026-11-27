@@ -8,12 +8,12 @@ This repository maintains two distinct skill directories:
 
 | Directory | Primary Purpose | Tools Reading This Folder |
 | :--- | :--- | :--- |
-| **`.agents/skills/`** | The canonical, shared catalog of tracked engineering skills (Matt Pocock skills suite, licensed under MIT). Contains 34 reusable engineering and design workflows. | **Antigravity (Google DeepMind)**, Jules, and agent runtimes following open workspace standards. Antigravity discovers this directory by walking up from the workspace directory to the repository root. |
-| **`.claude/skills/`** | Claude Code skills directory. Houses repository-specific operational skills (`humanizer`, `run-portfolio`, `steward`) alongside symbolic links to select project engineering skills. | **Claude Code (Anthropic)**. Claude Code scans `.claude/skills/` and `~/.claude/skills/` exclusively; it does not inspect `.agents/skills/`. |
+| **`.agents/skills/`** | The canonical, shared catalog of tracked engineering and operational skills (34 workflows from the Matt Pocock skills suite under MIT, plus `humanizer` under MIT, `run-portfolio`, and `steward`). Contains 37 reusable workflows. | **Antigravity (Google DeepMind)**, Jules, and agent runtimes following open workspace standards. Antigravity discovers this directory by walking up from the workspace directory to the repository root. |
+| **`.claude/skills/`** | Claude Code skills directory containing symbolic links to the eight shared engineering and operational skills used in Claude Code sessions. | **Claude Code (Anthropic)**. Claude Code scans `.claude/skills/` and `~/.claude/skills/` exclusively; it does not inspect `.agents/skills/`. |
 
 ## Bridged Skills
 
-To make core engineering practices available during Claude Code sessions without duplicating skill definitions or introducing drift, five skills are linked from `.claude/skills/` to `.agents/skills/`:
+To make core engineering and repository operational practices available during Claude Code sessions without duplicating skill definitions or introducing drift, eight skills are linked from `.claude/skills/` to `.agents/skills/`:
 
 | Skill | Link Target | Workflow Purpose |
 | :--- | :--- | :--- |
@@ -22,16 +22,11 @@ To make core engineering practices available during Claude Code sessions without
 | **`diagnosing-bugs`** | `../../.agents/skills/diagnosing-bugs` | Structured diagnosis loop for complex bugs and performance regressions before attempting a fix. |
 | **`resolving-merge-conflicts`** | `../../.agents/skills/resolving-merge-conflicts` | Step-by-step resolution of git merge and rebase conflicts preserving feature synthesis. |
 | **`to-tickets`** | `../../.agents/skills/to-tickets` | Decompose specifications or design plans into tracer-bullet tickets with explicit blocking edges. |
+| **`humanizer`** | `../../.agents/skills/humanizer` | Prose and writing style reviewer eliminating AI writing tells and enforcing portfolio voice. |
+| **`run-portfolio`** | `../../.agents/skills/run-portfolio` | Local development server manager, arcade playtester, and UI diagnostic tool. |
+| **`steward`** | `../../.agents/skills/steward` | Architecture, hygiene, and repository invariant steward. |
 
-These links allow Claude Code to discover each skill upon session startup, exposing them both for autonomous model invocation and as interactive slash commands (such as `/tdd` or `/triage`).
-
-## Repository Operational Skills in `.claude/skills/`
-
-The remaining directories in `.claude/skills/` are repository-specific tools authored specifically for Claude Code:
-
-- **`humanizer`**: Prose and writing style reviewer eliminating AI writing tells and enforcing portfolio voice.
-- **`run-portfolio`**: Local development server manager, arcade playtester, and UI diagnostic tool.
-- **`steward`**: Architecture, hygiene, and repository invariant steward.
+These links allow Claude Code to discover each skill upon session startup, exposing them both for autonomous model invocation and as interactive slash commands (such as `/tdd`, `/triage`, `/humanizer`, `/run-portfolio`, or `/steward`), while keeping every canonical skill definition in `.agents/skills/`.
 
 ## Symlink Mechanics and Fresh Clone Setup
 
@@ -39,7 +34,7 @@ All bridges in `.claude/skills/` are tracked as Git symbolic links (`mode 120000
 
 ### Linux and macOS
 
-Native POSIX filesystems support Git symbolic links by default (`core.symlinks = true`). A standard clone resolves all five links immediately:
+Native POSIX filesystems support Git symbolic links by default (`core.symlinks = true`). A standard clone resolves all eight links immediately:
 
 ```bash
 git clone https://github.com/fderuiter/deruiter.dev.git

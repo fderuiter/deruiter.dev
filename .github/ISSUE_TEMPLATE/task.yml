@@ -2,6 +2,7 @@ name: Task
 description: A specific, bounded piece of work that an agent or a person can finish in one pull request.
 title: "chore: "
 labels:
+  - type:chore
   - needs-triage
 body:
   - type: markdown

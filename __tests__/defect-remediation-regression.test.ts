@@ -3318,10 +3318,6 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     .sort();
   const readWorkflow = (name: string) =>
     fs.readFileSync(path.join(workflowDir, name), "utf8");
-  const BOT_PR_PUSH_WORKFLOWS = new Set([
-    "cdisc-library-sync.yml",
-    "standards-watch.yml",
-  ]);
 
   it("enforces explicit checkout credential policy, concurrency controls, and lockfile-pinned npm caching across all 13 workflows", () => {
     expect(workflowFiles).toHaveLength(13);
@@ -3338,10 +3334,9 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
         .filter((step) => step.includes("uses: actions/checkout@"));
       for (const step of checkouts) {
         const stepTitle = step.split("\n")[0];
-        const expectedPersist = BOT_PR_PUSH_WORKFLOWS.has(file)
-          ? "persist-credentials: true"
-          : "persist-credentials: false";
-        expect(step, `${file} -> ${stepTitle}`).toContain(expectedPersist);
+        expect(step, `${file} -> ${stepTitle}`).toContain(
+          "persist-credentials: false"
+        );
       }
 
       const cachedSetupNode = content
@@ -3419,12 +3414,23 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
       "overrides-audit.yml",
       "cdisc-library-sync.yml",
       "standards-watch.yml",
-      "issue-hygiene.yml",
     ]) {
       const wf = readWorkflow(file);
-      expect(wf, file).toMatch(/^permissions: \{\}$/m);
+      const header = wf.slice(0, wf.indexOf("\njobs:\n"));
+      expect(header, file).toMatch(/^permissions:\n {2}contents: read$/m);
+      expect(header, file).not.toContain("write");
       expect(wf, file).toMatch(/^ {4}permissions:\n/m);
     }
+
+    for (const file of ["cdisc-library-sync.yml", "standards-watch.yml"]) {
+      expect(readWorkflow(file), file).toContain(
+        "gh auth setup-git --hostname github.com --force"
+      );
+    }
+
+    const issueHygiene = readWorkflow("issue-hygiene.yml");
+    expect(issueHygiene).toMatch(/^permissions: \{\}$/m);
+    expect(issueHygiene).toMatch(/^ {4}permissions:\n/m);
 
     const weeklyTrain = readWorkflow("weekly-train.yml");
     expect(weeklyTrain).not.toMatch(/run:.*\$\{\{/);

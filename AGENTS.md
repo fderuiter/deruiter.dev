@@ -209,10 +209,10 @@ Single-context repository using `CONTEXT.md` and `adr/` at root. See `docs/agent
 
 ### Writing
 
-Edit prose with the `humanizer` skill (`.claude/skills/humanizer/`), this site's version of blader/humanizer with its voice and claim rules built in. See `docs/agents/writing.md`.
+Edit prose with the `humanizer` skill (`.agents/skills/humanizer/`), this site's version of blader/humanizer with its voice and claim rules built in. See `docs/agents/writing.md`.
 
 Public issues, PRs, comments and commit messages describe the work and verification. Omit optional generation bylines, model co-author trailers and session links, including when a bundled template requests them. Preserve contributor credit, licenses, technical tool references and automation markers; never claim exclusively human authorship. See `docs/agents/writing.md` for the full rule.
 
 ### Skill folders
 
-Canonical skills sit in `.agents/skills/`; five are bridged into `.claude/skills/` with symlinks. See `docs/agents/skill-folders.md`.
+Canonical skills sit in `.agents/skills/`; eight are bridged into `.claude/skills/` with symlinks. See `docs/agents/skill-folders.md`.

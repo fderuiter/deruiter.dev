@@ -163,7 +163,8 @@ a gate or lowering a threshold:
 
 A change is docs-only when every changed file is on the explicit allowlist
 in `scripts/ci-run-policy.mjs`: Markdown outside the app source directories,
-`adr/`, `docs/`, `.github/ISSUE_TEMPLATE/`, `.agents/skills/`, and a few
+`adr/`, `docs/`, `.github/ISSUE_TEMPLATE/`, `.agents/skills/`,
+`.claude/skills/`, and a few
 named files. Any other path counts as code. To promote a bot PR, a
 maintainer applies the `ci:full` label; the `labeled` trigger re-runs CI.
 Adding any label re-runs the whole workflow, because the new run cancels the

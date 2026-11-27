@@ -77,6 +77,22 @@ describe("public repository readiness contracts", () => {
     expect(
       fs.existsSync(path.join(root, ".github/ISSUE_TEMPLATE/bug_report.yml"))
     ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(root, ".github/ISSUE_TEMPLATE/feature_request.yml")
+      )
+    ).toBe(true);
+    expect(
+      fs.existsSync(path.join(root, ".github/ISSUE_TEMPLATE/task.yml"))
+    ).toBe(true);
+    expect(read(".github/ISSUE_TEMPLATE/bug_report.yml")).toContain(
+      "- type:bug"
+    );
+    expect(read(".github/ISSUE_TEMPLATE/feature_request.yml")).toContain(
+      "- type:feature"
+    );
+    expect(read(".github/ISSUE_TEMPLATE/task.yml")).toContain("- type:chore");
+    expect(read(".github/ISSUE_TEMPLATE/task.yml")).toContain("- needs-triage");
     expect(read("SECURITY.md")).toContain("Report a vulnerability");
     expect(read(".github/ISSUE_TEMPLATE/config.yml")).toContain(
       "/security/advisories/new"

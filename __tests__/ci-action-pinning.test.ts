@@ -2,6 +2,25 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import yaml from "yaml";
+
+interface WorkflowStep {
+  name?: string;
+  uses?: string;
+  with?: Record<string, unknown>;
+  run?: string;
+}
+
+interface WorkflowJob {
+  permissions?: Record<string, string>;
+  steps?: WorkflowStep[];
+}
+
+interface WorkflowDocument {
+  permissions?: Record<string, string>;
+  concurrency?: Record<string, unknown>;
+  jobs?: Record<string, WorkflowJob>;
+}
 
 describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
   const workflowDir = path.join(process.cwd(), ".github/workflows");
@@ -11,9 +30,27 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     .readdirSync(workflowDir)
     .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
 
+  const parseWorkflow = (file: string): WorkflowDocument => {
+    const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+    return yaml
+      .parseDocument(content, {
+        strict: true,
+        uniqueKeys: true,
+      })
+      .toJS() as WorkflowDocument;
+  };
+
   it("finds workflow files to inspect", () => {
     expect(workflowFiles.length).toBeGreaterThan(0);
   });
+
+  it.each(workflowFiles)(
+    "%s parses cleanly under strict YAML rules with unique keys",
+    (file) => {
+      const doc = parseWorkflow(file);
+      expect(doc.jobs).toBeDefined();
+    }
+  );
 
   it.each(workflowFiles)(
     "%s pins all external actions to full 40-character commit SHAs with inline comments",
@@ -56,26 +93,113 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     }
   );
 
-  // Only the two bot-PR workflows push branches via scripts/open-bot-pr.sh;
-  // every other checkout across .github/workflows must disable persisted git
-  // credentials so package scripts and subprocesses never read GITHUB_TOKEN
-  // from .git/config.
-  const GIT_PUSH_WORKFLOWS = new Set([
-    "cdisc-library-sync.yml",
-    "standards-watch.yml",
-  ]);
-
-  it.each(workflowFiles.filter((file) => !GIT_PUSH_WORKFLOWS.has(file)))(
-    "%s sets persist-credentials: false on every actions/checkout step",
+  it.each(workflowFiles)(
+    "%s declares explicit token permissions and concurrency controls",
     (file) => {
       const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
-      const checkoutSteps = content
-        .split(/\n\s+-\s+name:\s+/)
-        .slice(1)
-        .filter((step) => /uses:\s*actions\/checkout@/.test(step));
-      for (const step of checkoutSteps) {
-        expect(step).toMatch(/persist-credentials:\s*false/);
+      expect(content).toMatch(/^permissions:/m);
+      expect(content).toMatch(/^\s*concurrency:/m);
+    }
+  );
+
+  it.each(workflowFiles)(
+    "%s disables credential persistence on every actions/checkout step",
+    (file) => {
+      const doc = parseWorkflow(file);
+      for (const [jobId, job] of Object.entries(doc.jobs ?? {})) {
+        for (const step of job.steps ?? []) {
+          if (step.uses?.startsWith("actions/checkout@")) {
+            expect(
+              step.with?.["persist-credentials"],
+              `${file} -> ${jobId} -> ${step.name ?? "checkout"}`
+            ).toBe(false);
+          }
+        }
       }
+    }
+  );
+
+  it.each(workflowFiles)(
+    "%s keys every npm setup-node cache explicitly to package-lock.json",
+    (file) => {
+      const doc = parseWorkflow(file);
+      for (const [jobId, job] of Object.entries(doc.jobs ?? {})) {
+        for (const step of job.steps ?? []) {
+          if (
+            step.uses?.startsWith("actions/setup-node@") &&
+            step.with?.cache === "npm"
+          ) {
+            expect(
+              step.with?.["cache-dependency-path"],
+              `${file} -> ${jobId} -> ${step.name ?? "setup-node"}`
+            ).toBe("package-lock.json");
+          }
+        }
+      }
+    }
+  );
+
+  it.each(workflowFiles)(
+    "%s never interpolates untrusted inputs, event payloads, or dynamic outputs directly inside run: shell scripts",
+    (file) => {
+      const doc = parseWorkflow(file);
+      const unsafeExpressions: string[] = [];
+
+      for (const [jobId, job] of Object.entries(doc.jobs ?? {})) {
+        for (const step of job.steps ?? []) {
+          if (!step.run) continue;
+          for (const match of step.run.matchAll(/\$\{\{([\s\S]*?)\}\}/g)) {
+            const expr = match[1].trim();
+            // Only static integer matrix.shard and fixed-enum needs.<job>.result
+            // are allowed inside run: blocks; all inputs, event fields, refs,
+            // SHAs, step/job outputs, vars, and secrets must pass via env:.
+            const isSafeStaticExpr =
+              expr === "matrix.shard" ||
+              /^needs\.[a-z0-9-]+\.result$/.test(expr);
+            if (!isSafeStaticExpr) {
+              unsafeExpressions.push(
+                `${jobId} -> ${step.name ?? "run"}: \${{ ${expr} }}`
+              );
+            }
+          }
+        }
+      }
+
+      expect(unsafeExpressions).toEqual([]);
+    }
+  );
+
+  it("scopes every weekly-train.yml job to explicit least-privilege permissions", () => {
+    const doc = parseWorkflow("weekly-train.yml");
+    expect(doc.jobs?.gate?.permissions).toEqual({
+      contents: "read",
+      checks: "read",
+      issues: "write",
+    });
+    expect(doc.jobs?.["rc-build"]?.permissions).toEqual({ contents: "read" });
+    expect(doc.jobs?.["rc-browser"]?.permissions).toEqual({ contents: "read" });
+    expect(doc.jobs?.["rc-failed"]?.permissions).toEqual({ issues: "write" });
+    expect(doc.jobs?.train?.permissions).toEqual({
+      contents: "write",
+      issues: "write",
+    });
+    expect(doc.jobs?.probe?.permissions).toEqual({ contents: "read" });
+    expect(doc.jobs?.publish?.permissions).toEqual({ contents: "write" });
+    expect(doc.jobs?.["hold-after-probe"]?.permissions).toEqual({
+      issues: "write",
+    });
+  });
+
+  it.each([
+    "cdisc-library-sync.yml",
+    "overrides-audit.yml",
+    "scheduled-security-audit.yml",
+    "standards-watch.yml",
+  ])(
+    "%s keeps top-level permissions read-only and scopes write grants to the job",
+    (file) => {
+      const doc = parseWorkflow(file);
+      expect(doc.permissions).toEqual({ contents: "read" });
     }
   );
 

@@ -5,11 +5,11 @@ and game copy, the README, docs, PR bodies and issues.
 
 ## Skill
 
-Use `humanizer` (`.claude/skills/humanizer/SKILL.md`). It finds and removes
+Use `humanizer` (`.agents/skills/humanizer/SKILL.md`). It finds and removes
 repetitive phrasing, and it carries this site's voice, the claims the site
 never makes, where each surface's prose lives, and the tests to run before
-pushing. Claude Code loads it from `.claude/skills/` on its own; other
-agents can read the file directly.
+pushing. Agents reading `.agents/skills/` discover it there; Claude Code
+loads it through the `.claude/skills/humanizer` symlink.
 
 It started as [blader/humanizer](https://github.com/blader/humanizer)
 (MIT) and is now ours to edit. `UPSTREAM.md` beside it records the source

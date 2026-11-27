@@ -26,7 +26,7 @@ Check for `package-lock.json` (npm), `pnpm-lock.yaml` (pnpm), `yarn.lock` (yarn)
 
 Install as devDependencies:
 
-```
+```text
 husky lint-staged prettier
 ```
 

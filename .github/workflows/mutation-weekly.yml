@@ -37,6 +37,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -80,6 +81,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -112,6 +114,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -153,6 +156,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci

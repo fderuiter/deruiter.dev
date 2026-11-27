@@ -92,6 +92,52 @@ describe("CI Workflow Toolchain Pinning", () => {
     }
   );
 
+  it.each(workflowFiles)(
+    "%s passes --no-install to every executed npx command so workflows never fetch unpinned packages",
+    (file) => {
+      const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+      const unpinnedNpx: string[] = [];
+
+      let insideRunBlock = false;
+      let runBlockIndent = 0;
+
+      for (const rawLine of content.split("\n")) {
+        const line = rawLine.replace(/\s+$/, "");
+        if (line.trim() === "") continue;
+
+        const indent = line.length - line.trimStart().length;
+        const trimmed = line.trim();
+
+        const blockRun = trimmed.match(/^run:\s*[|>][-+]?\s*$/);
+        if (blockRun) {
+          insideRunBlock = true;
+          runBlockIndent = indent;
+          continue;
+        }
+
+        const inlineRun = trimmed.match(/^run:\s*(\S.*)$/);
+        if (inlineRun) {
+          insideRunBlock = false;
+          const cmd = inlineRun[1].trim();
+          if (/^npx\s+(?!--no-install\b)/.test(cmd)) {
+            unpinnedNpx.push(cmd);
+          }
+          continue;
+        }
+
+        if (insideRunBlock) {
+          if (indent <= runBlockIndent) {
+            insideRunBlock = false;
+          } else if (/^npx\s+(?!--no-install\b)/.test(trimmed)) {
+            unpinnedNpx.push(trimmed);
+          }
+        }
+      }
+
+      expect(unpinnedNpx).toEqual([]);
+    }
+  );
+
   it("runs the typecheck gate through the pinned compiler", () => {
     const ciPath = path.join(workflowDir, "ci.yml");
     const ci = fs.readFileSync(ciPath, "utf8");

@@ -91,6 +91,7 @@ describe("CI run policy (#1773)", () => {
       ".github/ISSUE_TEMPLATE/bug_report.yml",
       ".github/pull_request_template.md",
       ".agents/skills/example/SKILL.md",
+      ".claude/skills/tdd",
       "LICENSE",
     ])("%s is documentation", (file) => {
       expect(isNonCodePath(file)).toBe(true);

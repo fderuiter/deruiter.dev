@@ -65,6 +65,9 @@ import {
   exportStudyToCdiscOdmXml,
   exportStudyToSas,
   importStudyFromCsvSpec,
+  importFormFromFhirQuestionnaire,
+  importStudyFromFhirQuestionnaire,
+  detectAndParseStudyFile,
   evaluateVisitWindowConflicts,
   parsePosixShellArgs,
   generateCliCommandForField,
@@ -143,6 +146,7 @@ import { generateStudyPdf } from "@/lib/crf/export-pdf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
 import { SCENARIOS } from "@/lib/neuro/scenarios";
+import { DEFAULT_ROI_INTENSITY_TOLERANCE, TOOL_MODES } from "@/lib/neuro";
 import {
   generateSyntheticVolume,
   getIndex,
@@ -3371,6 +3375,35 @@ describe("Typed formula evaluation and CLI error contracts", () => {
     expect(unclosed.document).not.toMatch(/\x1b\[/);
     expect(JSON.parse(unclosed.document).success).toBe(false);
   });
+
+  describe("NeuroRecon ROI hash allowlist parity", () => {
+    it("derives HASH_TOOLS from TOOL_MODES including roi_select so #tool=roi_select never falls back to brush edits", () => {
+      expect(TOOL_MODES).toEqual([
+        "inspect",
+        "control_point",
+        "paint",
+        "erase",
+        "roi_select",
+      ]);
+
+      const clientSrc = fs.readFileSync(
+        path.resolve(__dirname, "../components/neuro/NeuroReconClient.tsx"),
+        "utf8"
+      );
+      expect(clientSrc).toContain(
+        "const HASH_TOOLS: readonly string[] = TOOL_MODES;"
+      );
+
+      expect(DEFAULT_ROI_INTENSITY_TOLERANCE).toBe(15);
+      const toolbarSrc = fs.readFileSync(
+        path.resolve(__dirname, "../components/neuro/NeuroToolbar.tsx"),
+        "utf8"
+      );
+      expect(toolbarSrc).toContain(
+        "roiTolerance = DEFAULT_ROI_INTENSITY_TOLERANCE,"
+      );
+    });
+  });
 });
 
 describe("GitHub Actions workflow security and determinism hardening", () => {
@@ -3514,5 +3547,52 @@ describe("GitHub Actions workflow security and determinism hardening", () => {
     ]);
     const jobPermBlocks = trainJobsBlock.match(/^ {4}permissions:\n/gm) ?? [];
     expect(jobPermBlocks).toHaveLength(trainJobNames.length);
+  });
+});
+
+describe("FHIR Questionnaire item recursion depth bound (#4127)", () => {
+  const buildDeepQuestionnaire = (
+    nestedLevels: number,
+    repeats: boolean
+  ): Record<string, unknown> => {
+    let current: Record<string, unknown> = {
+      linkId: "DEEP_LEAF",
+      text: "Leaf Question",
+      type: "string",
+    };
+    for (let level = nestedLevels; level >= 1; level--) {
+      current = {
+        linkId: `GRP_${level}`,
+        text: `Group ${level}`,
+        type: "group",
+        ...(repeats ? { repeats: true } : {}),
+        item: [current],
+      };
+    }
+    return {
+      resourceType: "Questionnaire",
+      id: "deep-recursion-guard",
+      status: "active",
+      item: [current],
+    };
+  };
+
+  it("rejects deeply nested group and repeating_table item trees with a bounded import error instead of overflowing the call stack", () => {
+    expect(() =>
+      importFormFromFhirQuestionnaire(buildDeepQuestionnaire(3000, false))
+    ).toThrow("Questionnaire items are nested more than 32 levels deep.");
+
+    expect(() =>
+      importStudyFromFhirQuestionnaire(buildDeepQuestionnaire(3000, true))
+    ).toThrow("Questionnaire items are nested more than 32 levels deep.");
+
+    expect(() =>
+      detectAndParseStudyFile(
+        JSON.stringify(buildDeepQuestionnaire(100, false)),
+        "deep-questionnaire.json"
+      )
+    ).toThrow(
+      "HL7 FHIR R4 Parsing Error: Questionnaire items are nested more than 32 levels deep."
+    );
   });
 });

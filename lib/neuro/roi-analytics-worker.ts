@@ -8,6 +8,7 @@
  */
 
 import {
+  DEFAULT_ROI_INTENSITY_TOLERANCE,
   compute256BinHistogram,
   computeMarchingSquares,
   runRegionGrowing,
@@ -56,7 +57,7 @@ export function processROIWorkerRequest(req: ROIWorkerRequest): {
         brainmask,
         dims,
         seed,
-        intensityTolerance || 15,
+        intensityTolerance || DEFAULT_ROI_INTENSITY_TOLERANCE,
         spacing
       );
       transferables.push(result.roiMask.buffer as ArrayBuffer);

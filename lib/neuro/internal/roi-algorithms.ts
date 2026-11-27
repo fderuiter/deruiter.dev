@@ -152,6 +152,11 @@ export function getVoxelVolumeMm3(
 }
 
 /**
+ * Default voxel signal intensity tolerance (±INT) for 3D region-growing segmentation.
+ */
+export const DEFAULT_ROI_INTENSITY_TOLERANCE = 15;
+
+/**
  * Execute 3D region-growing segmentation starting from a seed voxel.
  */
 export function runRegionGrowing(
@@ -159,7 +164,7 @@ export function runRegionGrowing(
   brainmask: Uint8Array,
   dimensions: { width: number; height: number; depth: number },
   seed: VoxelCoord,
-  intensityTolerance = 15,
+  intensityTolerance = DEFAULT_ROI_INTENSITY_TOLERANCE,
   spacing: VoxelSpacing = DEFAULT_VOXEL_SPACING
 ): ROISegmentationResult {
   const { width, height, depth } = dimensions;

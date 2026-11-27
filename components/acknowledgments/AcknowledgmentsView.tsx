@@ -44,6 +44,13 @@ const NON_NPM_CREDITS: readonly {
     url: "https://opendyslexic.org",
   },
   {
+    name: "DuckDB WebAssembly extensions (parquet, json)",
+    use: "Signed wasm_eh extension binaries loaded on demand when a visitor opens a local Parquet or JSON dataset in the SQL workbench.",
+    license: "MIT",
+    url: "https://github.com/duckdb/duckdb",
+    note: "Copyright 2018-2025 Stichting DuckDB Foundation. License and SHA-256 pins: components/platform/sql/extensions/",
+  },
+  {
     name: `CDISC USDM ${USDM_V4_VERSION} API schema`,
     use: "Validates the USDM study definitions CRF Studio exports and the Study Data Pipeline reads.",
     license: "MIT",

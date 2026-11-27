@@ -83,10 +83,10 @@ describe("Interactive Terminology Tooltips - Component Structures", () => {
   );
   const tooltipPath = path.resolve(__dirname, "../components/ui/Tooltip.tsx");
 
-  it("should have imported usePersistentState and implemented DOMParser rehydration in RichNarrative", () => {
+  it("should have imported useTerminology and implemented DOMParser rehydration in RichNarrative", () => {
     const content = fs.readFileSync(richNarrativePath, "utf-8");
     expect(content).toContain(
-      'import { usePersistentState } from "@/hooks/usePersistentState";'
+      'import { useTerminology } from "@/components/providers/TerminologyProvider";'
     );
     expect(content).toContain("new DOMParser()");
     expect(content).toContain(

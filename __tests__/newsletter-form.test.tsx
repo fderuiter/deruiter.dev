@@ -7,6 +7,7 @@ import {
   waitFor,
   cleanup,
 } from "@testing-library/react";
+import axe from "axe-core";
 import { NewsletterForm } from "@/components/NewsletterForm";
 
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -162,5 +163,72 @@ describe("NewsletterForm Component", () => {
           .hasAttribute("disabled")
       ).toBe(false)
     );
+  });
+
+  it("assigns unique IDs across concurrent instances so each label focuses its own input", async () => {
+    const computed = window.getComputedStyle;
+    const spy = vi
+      .spyOn(window, "getComputedStyle")
+      .mockImplementation((element) => computed.call(window, element));
+
+    try {
+      const { container } = render(
+        <div>
+          <NewsletterForm variant="card" />
+          <NewsletterForm variant="compact" />
+        </div>
+      );
+
+      const emailInputs = screen.getAllByLabelText(
+        "Email address"
+      ) as HTMLInputElement[];
+      expect(emailInputs).toHaveLength(2);
+      expect(emailInputs[0].id).toBeTruthy();
+      expect(emailInputs[1].id).toBeTruthy();
+      expect(emailInputs[0].id).not.toBe(emailInputs[1].id);
+
+      const honeypotInputs = Array.from(
+        container.querySelectorAll<HTMLInputElement>('input[name="_gotcha"]')
+      );
+      expect(honeypotInputs).toHaveLength(2);
+      expect(honeypotInputs[0].id).toBeTruthy();
+      expect(honeypotInputs[1].id).toBeTruthy();
+      expect(honeypotInputs[0].id).not.toBe(honeypotInputs[1].id);
+
+      expect(container.querySelector("#newsletter-email-input")).toBeNull();
+      expect(container.querySelector("#newsletter-company-url")).toBeNull();
+
+      const emailLabels = Array.from(
+        container.querySelectorAll("label")
+      ).filter((label) => label.textContent === "Email address");
+      expect(emailLabels).toHaveLength(2);
+      expect(emailLabels[0].htmlFor).toBe(emailInputs[0].id);
+      expect(emailLabels[1].htmlFor).toBe(emailInputs[1].id);
+      expect(emailLabels[0].control).toBe(emailInputs[0]);
+      expect(emailLabels[1].control).toBe(emailInputs[1]);
+
+      const activatedInputs: HTMLInputElement[] = [];
+      emailInputs[0].addEventListener("click", () => {
+        activatedInputs.push(emailInputs[0]);
+        emailInputs[0].focus();
+      });
+      emailInputs[1].addEventListener("click", () => {
+        activatedInputs.push(emailInputs[1]);
+        emailInputs[1].focus();
+      });
+
+      emailLabels[0].click();
+      expect(activatedInputs).toEqual([emailInputs[0]]);
+      expect(document.activeElement).toBe(emailInputs[0]);
+
+      emailLabels[1].click();
+      expect(activatedInputs).toEqual([emailInputs[0], emailInputs[1]]);
+      expect(document.activeElement).toBe(emailInputs[1]);
+
+      const results = await axe.run(container);
+      expect(results.violations).toEqual([]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

@@ -2143,7 +2143,7 @@ export const RUN_SAVE_VERSION = 5;
 export const RunSaveSchema = z.object({
   version: z.literal(RUN_SAVE_VERSION),
   actId: id,
-  savedAt: z.string().datetime(),
+  savedAt: z.iso.datetime(),
   seed: z.string().regex(/^[A-Za-z0-9-]{1,64}$/),
   /** The run's sponsor. Absent in older saves, which are Virtual Biotech. */
   sponsorId: SponsorIdSchema.optional(),

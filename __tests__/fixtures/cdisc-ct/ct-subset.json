@@ -301,6 +301,37 @@
         "UNPLANNED TREATMENT": "C142240"
       }
     },
+    "C188725": {
+      "publishingSet": "DDF",
+      "submissionValue": "Objective Level Value Set Terminology",
+      "name": "Objective Level Value Set Terminology",
+      "extensible": false,
+      "terms": {
+        "Exploratory Objective": "C163559",
+        "Primary Objective": "C85826",
+        "Secondary Objective": "C85827"
+      }
+    },
+    "C188726": {
+      "publishingSet": "DDF",
+      "submissionValue": "Endpoint Level Value Set Terminology",
+      "name": "Endpoint Level Value Set Terminology",
+      "extensible": false,
+      "terms": {
+        "Exploratory Endpoint": "C170559",
+        "Primary Endpoint": "C94496",
+        "Secondary Endpoint": "C139173"
+      }
+    },
+    "C188728": {
+      "publishingSet": "DDF",
+      "submissionValue": "Encounter Type Value Set Terminology",
+      "name": "Encounter Type Value Set Terminology",
+      "extensible": true,
+      "terms": {
+        "Visit": "C25716"
+      }
+    },
     "C201264": {
       "publishingSet": "DDF",
       "submissionValue": "Timing Type Value Set Terminology",
@@ -310,6 +341,18 @@
         "After": "C201356",
         "Before": "C201357",
         "Fixed Reference": "C201358"
+      }
+    },
+    "C201265": {
+      "publishingSet": "DDF",
+      "submissionValue": "Timing Relative To From Value Set Terminology",
+      "name": "Timing Relative To From Value Set Terminology",
+      "extensible": false,
+      "terms": {
+        "End to End": "C201352",
+        "End to Start": "C201353",
+        "Start to End": "C201354",
+        "Start to Start": "C201355"
       }
     },
     "C207417": {

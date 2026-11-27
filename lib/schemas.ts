@@ -74,7 +74,7 @@ export function blogHeroImageUrlIssue(value: string): string | null {
 const blogDraftHeroImageUrl = z
   .string()
   .trim()
-  .url("Hero image URL must be a valid URL.")
+  .check(z.url("Hero image URL must be a valid URL."))
   .max(2048, "Hero image URL cannot exceed 2048 characters.")
   .superRefine((value, ctx) => {
     const issue = blogHeroImageUrlIssue(value);
@@ -169,7 +169,7 @@ export const RateLimitParamsSchema = z.object({
  * Schema for fallback secondary memory properties
  */
 export const FallbackMemorySchema = z.object({
-  redisUrl: z.string().url("Must be a valid redis connection URL").optional(),
+  redisUrl: z.url("Must be a valid redis connection URL").optional(),
   redisToken: z.string().min(1, "Redis token cannot be empty").optional(),
   ttlSeconds: z.number().int().positive().default(172800), // 48 hours
 });
@@ -241,14 +241,26 @@ export const CaseStudySubmissionSchema = z
       { message: "Tags are required" }
     ),
     github_url: z.string().trim().optional(),
-    hero_image_url: z.string().trim().url().max(2048).nullable().optional(),
-    heroImageUrl: z.string().trim().url().max(2048).nullable().optional(),
+    hero_image_url: z
+      .string()
+      .trim()
+      .check(z.url())
+      .max(2048)
+      .nullable()
+      .optional(),
+    heroImageUrl: z
+      .string()
+      .trim()
+      .check(z.url())
+      .max(2048)
+      .nullable()
+      .optional(),
   })
   .superRefine((data, ctx) => {
     const lang = data.primary_language || data.language;
     if (!lang) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Primary language is required",
         path: ["primary_language"],
       });
@@ -257,7 +269,7 @@ export const CaseStudySubmissionSchema = z
     const ed = data.editorial_content || data.summary || data.summary_markdown;
     if (!ed) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Summary / editorial content is required",
         path: ["editorial_content"],
       });
@@ -269,7 +281,7 @@ export const CaseStudySubmissionSchema = z
       data.architectural_narrative_html;
     if (!arch) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Architectural narrative is required",
         path: ["architectural_narrative"],
       });
@@ -280,7 +292,7 @@ export const CaseStudySubmissionSchema = z
       const check = validateConstructiveContent(data.title);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: check.reason || "Title violates community tone standards",
           path: ["title"],
         });
@@ -291,7 +303,7 @@ export const CaseStudySubmissionSchema = z
       const check = validateConstructiveContent(ed);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: check.reason || "Summary violates community tone standards",
           path: ["editorial_content"],
         });
@@ -302,7 +314,7 @@ export const CaseStudySubmissionSchema = z
       const check = validateConstructiveContent(arch);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message:
             check.reason ||
             "Architectural narrative violates community tone standards",
@@ -316,7 +328,7 @@ export const CaseStudySubmissionSchema = z
       const check = validateConstructiveContent(tagsStr);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: check.reason || "Tags violate community tone standards",
           path: ["tags"],
         });
@@ -376,7 +388,7 @@ export const FeedbackSubmissionSchema = z
       const commentsCheck = validateConstructiveContent(data.comments);
       if (!commentsCheck.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message:
             commentsCheck.reason ||
             "Submission text violates community tone standards",
@@ -390,7 +402,7 @@ export const FeedbackSubmissionSchema = z
         const takeawayCheck = validateConstructiveContent(takeaway);
         if (!takeawayCheck.isValid) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: "custom",
             message:
               takeawayCheck.reason ||
               "Submission text violates community tone standards",
@@ -448,7 +460,10 @@ export const ContactSubmissionSchema = z
       .trim()
       .min(2, "Please enter your name (at least 2 characters).")
       .max(100, "Name cannot exceed 100 characters."),
-    email: z.string().trim().email("Please provide a valid email address."),
+    email: z
+      .string()
+      .trim()
+      .check(z.email("Please provide a valid email address.")),
     intent: z
       .enum(CONTACT_INTENTS, {
         message:
@@ -473,7 +488,7 @@ export const ContactSubmissionSchema = z
       const check = validateConstructiveContent(data.name);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: check.reason || "Name violates community tone standards",
           path: ["name"],
         });
@@ -484,7 +499,7 @@ export const ContactSubmissionSchema = z
       const check = validateConstructiveContent(data.subject);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: check.reason || "Subject violates community tone standards",
           path: ["subject"],
         });
@@ -495,7 +510,7 @@ export const ContactSubmissionSchema = z
       const check = validateConstructiveContent(data.message);
       if (!check.isValid) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: check.reason || "Message violates community tone standards",
           path: ["message"],
         });
@@ -521,7 +536,10 @@ export type ContactResponse = z.infer<typeof ContactResponseSchema>;
  * Schema for Newsletter subscription POST payload validation
  */
 export const NewsletterSubscriptionSchema = z.object({
-  email: z.string().trim().email("Please enter a valid email address."),
+  email: z
+    .string()
+    .trim()
+    .check(z.email("Please enter a valid email address.")),
   _gotcha: z.string().optional(),
   _clientTimestamp: z.number().int().positive().optional(),
 });
@@ -579,22 +597,20 @@ export const ResendWebhookEventSchema = z.object({
     message: "Invalid or unsupported Resend event type",
   }),
   created_at: z.string().optional(),
-  data: z
-    .object({
-      id: z.string().optional(),
-      from: z.string().optional(),
-      to: z.array(z.string()).optional(),
-      subject: z.string().optional(),
-      created_at: z.string().optional(),
-      status: z.string().optional(),
-      bounce: z
-        .object({
-          message: z.string().optional(),
-          type: z.string().optional(),
-        })
-        .optional(),
-    })
-    .passthrough(),
+  data: z.looseObject({
+    id: z.string().optional(),
+    from: z.string().optional(),
+    to: z.array(z.string()).optional(),
+    subject: z.string().optional(),
+    created_at: z.string().optional(),
+    status: z.string().optional(),
+    bounce: z
+      .object({
+        message: z.string().optional(),
+        type: z.string().optional(),
+      })
+      .optional(),
+  }),
 });
 
 export type ResendWebhookEvent = z.infer<typeof ResendWebhookEventSchema>;
@@ -664,8 +680,8 @@ export const MaintenancePhaseSummarySchema = z.object({
 export const MaintenanceSummarySchema = z.object({
   success: z.boolean(),
   partial: z.boolean(),
-  startedAt: z.string().datetime(),
-  completedAt: z.string().datetime(),
+  startedAt: z.iso.datetime(),
+  completedAt: z.iso.datetime(),
   durationMs: z.number().int(),
   deadlineMs: z.number().int().max(8000),
   phases: z.record(z.string(), MaintenancePhaseSummarySchema),
@@ -687,9 +703,9 @@ export const BlogDraftSchema = z.object({
   tags: z.string(),
   published: z.literal(false),
   reading_time_minutes: z.number().int().min(1).nullable().optional(),
-  hero_image_url: z.string().url().nullable().optional(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  hero_image_url: z.url().nullable().optional(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
 });
 
 /** Schema for paginated BlogDraft collection */
@@ -724,7 +740,7 @@ export const FeedbackItemSchema = z.object({
   id: z.string(),
   takeaways: z.array(z.string()),
   comments: z.string(),
-  createdAt: z.string().datetime(),
+  createdAt: z.iso.datetime(),
 });
 
 /** Schema for Feedback GET response */
@@ -745,7 +761,7 @@ export const FeedbackPostResponseSchema = z.object({
     caseStudySlug: z.string(),
     takeaways: z.array(z.string()),
     comments: z.string(),
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
   }),
 });
 
@@ -785,7 +801,7 @@ export const CaseStudyPostResponseSchema = z.object({
     architectural_narrative: z.string(),
     published: z.boolean(),
     tags: z.string(),
-    created_at: z.string().datetime().optional(),
+    created_at: z.iso.datetime().optional(),
   }),
 });
 
@@ -797,7 +813,7 @@ export const TelemetryPostResponseSchema = z.object({
     id: z.string(),
     projectSlug: z.string(),
     eventType: z.string(),
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
   }),
 });
 

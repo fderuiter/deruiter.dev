@@ -11,7 +11,6 @@ import {
   STORAGE_CHANGE_EVENT,
   type StorageOptions,
 } from "@/lib/safe-storage";
-import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 
 const subscribers = new Set<() => void>();
@@ -81,8 +80,7 @@ export function usePersistentState<T>(
         safeStorage.setItem(key, newValue, options);
         notifySubscribers();
       } catch (error) {
-        const sanitized = sanitizeError(error);
-        logger.warn(`Error setting localStorage key "${key}":`, sanitized);
+        logger.warn(`Error setting localStorage key "${key}":`, error);
       }
     },
     [key, initialValue, options]

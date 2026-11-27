@@ -87,20 +87,11 @@ describe("NeuroRecon Web Worker Mesh Generator & Zero-Copy ArrayBuffer Transfer 
   });
 
   it("handles Web Worker messages and transfers ArrayBuffers with zero-copy ownership transfer", async () => {
-    let _workerHandler: ((e: MessageEvent<MeshWorkerRequest>) => void) | null =
-      null;
     const postMessageSpy = vi.fn();
 
     // Mock Worker scope environment
     const mockWorkerSelf = {
-      addEventListener: (
-        type: string,
-        handler: (e: MessageEvent<MeshWorkerRequest>) => void
-      ) => {
-        if (type === "message") {
-          _workerHandler = handler;
-        }
-      },
+      addEventListener: vi.fn(),
       postMessage: postMessageSpy,
     };
 

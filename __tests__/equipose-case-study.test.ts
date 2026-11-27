@@ -8,7 +8,21 @@ import { CANONICAL_ROUTES } from "@/lib/dx/page-bench";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
 import { compileTerms } from "@/lib/term-compiler";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import {
+  GetCaseStudyBySlugHandler,
+  ListPublishedCaseStudiesHandler,
+} from "@/lib/services";
+
+const CaseStudyService = {
+  async getCaseStudyBySlug(slug: string) {
+    const res = await new GetCaseStudyBySlugHandler().execute({ slug });
+    return res.success ? res.data : null;
+  },
+  async getAllPublishedCaseStudies() {
+    const res = await new ListPublishedCaseStudiesHandler().execute();
+    return res.success ? res.data : [];
+  },
+};
 import { prisma } from "@/lib/db";
 import { loadSeedPayloads } from "./helpers/seed-payloads";
 

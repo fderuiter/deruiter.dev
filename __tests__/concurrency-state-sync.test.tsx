@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
@@ -238,7 +238,7 @@ describe("Concurrency & State Synchronization Guardrail Suite", () => {
 
       globalThis.fetch = vi
         .fn()
-        .mockImplementation(async (url: string, init?: any) => {
+        .mockImplementation(async (_url: string, init?: any) => {
           if (init?.method === "POST") {
             return { ok: false, status: 500 };
           }

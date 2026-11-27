@@ -123,8 +123,16 @@ import {
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 import { evaluateCanaryRollout } from "@/scripts/canary-analyzer";
-import { CaseStudyService } from "@/lib/services/case-study-service";
-import { EmailService } from "@/lib/services/email-service";
+import {
+  CheckRecipientEligibilityHandler,
+  CheckTelemetryRateLimitHandler,
+  GetCaseStudyBySlugHandler,
+  ListPublishedCaseStudiesHandler,
+  ProcessRetryQueueHandler,
+  SendRawEmailHandler,
+  _testCache,
+  resetResendClient,
+} from "@/lib/services";
 import { prisma } from "@/lib/db";
 import {
   exportToCDISCODMXML,
@@ -141,7 +149,6 @@ import {
 } from "@/lib/neuro/volume-generator";
 import { createNearFooterSectionStudy } from "./crf/pdf-export-fixtures";
 import { resolveSnippetTerminology } from "@/components/ProjectTeaserGrid";
-import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
 import { NextRequest } from "next/server";
 import { calculateFOV } from "@/lib/dungeon";
 
@@ -1103,16 +1110,21 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
 
   describe("Case Study Serverless Prerender Resilience & Fallback Invariant", () => {
     it("safely retrieves static case studies when serverless database is missing records or offline", async () => {
-      const study = await CaseStudyService.getCaseStudyBySlug("laser-loon");
+      const studyRes = await new GetCaseStudyBySlugHandler().execute({
+        slug: "laser-loon",
+      });
+      const study = studyRes.success ? studyRes.data : null;
       expect(study).not.toBeNull();
       expect(study?.slug).toBe("laser-loon");
       expect(study?.title).toContain("Laser Loon");
 
-      const allStudies = await CaseStudyService.getAllPublishedCaseStudies();
+      const allStudiesRes =
+        await new ListPublishedCaseStudiesHandler().execute();
+      const allStudies = allStudiesRes.success ? allStudiesRes.data : [];
       expect(allStudies.length).toBeGreaterThan(0);
       expect(allStudies.some((s) => s.slug === "laser-loon")).toBe(true);
 
-      const allSlugs = await CaseStudyService.getAllPublishedSlugs();
+      const allSlugs = allStudies.map((s) => s.slug);
       expect(allSlugs).toContain("laser-loon");
     });
   });
@@ -1480,7 +1492,13 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       });
 
       const now = Date.now();
-      const res = await TelemetryService.isRateLimited(req);
+      const rlRes = await new CheckTelemetryRateLimitHandler().execute({
+        request: req,
+      });
+      expect(rlRes.success).toBe(true);
+      const res = rlRes.success
+        ? rlRes.data
+        : { limited: true, headers: undefined };
 
       // Verify valid rate limit object returned with fallback headers
       expect(res.limited).toBe(false);
@@ -1615,14 +1633,17 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       vi.resetModules();
 
       try {
-        const { TelemetryService: isolatedTelemetryService } =
-          await import("@/lib/services/telemetry-service");
+        const { ComputeTelemetryAggregateStatsHandler } =
+          await import("@/lib/services");
 
         await expect(
-          isolatedTelemetryService.computeAggregateStats()
+          new ComputeTelemetryAggregateStatsHandler().execute()
         ).resolves.toEqual({
-          "/legacy": { views: 13, clicks: 0 },
-          "/archived": { views: 0, clicks: 3 },
+          success: true,
+          data: {
+            "/legacy": { views: 13, clicks: 0 },
+            "/archived": { views: 0, clicks: 3 },
+          },
         });
         expect(transaction).toHaveBeenCalledTimes(1);
       } finally {
@@ -2942,14 +2963,14 @@ describe("Arcade cabinet launch recovery regression (#3794)", () => {
 describe("Email queue preservation when production transport is unconfigured (#3793)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
-    EmailService.resetClient();
+    resetResendClient();
     vi.restoreAllMocks();
   });
 
   it("never marks queued mail DELIVERED and returns TRANSPORT_UNCONFIGURED failure when production transport credentials are absent", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("RESEND_API_KEY", "");
-    EmailService.resetClient();
+    resetResendClient();
 
     const now = new Date(10000);
     const mockRow = {
@@ -2978,7 +2999,7 @@ describe("Email queue preservation when production transport is unconfigured (#3
       .spyOn(prisma.outboundEmailQueue, "update")
       .mockResolvedValue(mockRow as never);
 
-    const result = await EmailService.processRetryQueue({ now });
+    const result = await new ProcessRetryQueueHandler().execute({ now });
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -2991,15 +3012,17 @@ describe("Email queue preservation when production transport is unconfigured (#3
     vi.spyOn(prisma.suppressionList, "findUnique").mockResolvedValue(
       null as never
     );
-    const rawResult = await EmailService.sendRawEmail({
+    const rawResult = await new SendRawEmailHandler().execute({
       to: "client@example.com",
       subject: "Direct send attempt",
       html: "<p>Unconfigured inline send</p>",
       skipQueue: true,
     });
     expect(rawResult.success).toBe(false);
-    expect(rawResult.simulated).toBeUndefined();
-    expect(rawResult.error).toContain("unconfigured");
+    if (!rawResult.success) {
+      expect(rawResult.error.code).toBe("TRANSPORT_UNCONFIGURED");
+      expect(rawResult.error.message).toContain("unconfigured");
+    }
   });
 });
 
@@ -3135,7 +3158,7 @@ describe("Unknown suppression eligibility never sends (#3806)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
-    EmailService.resetClient();
+    resetResendClient();
   });
 
   it("returns unknown, not eligible, when the suppression lookup throws", async () => {
@@ -3143,17 +3166,22 @@ describe("Unknown suppression eligibility never sends (#3806)", () => {
       new Error("Neon unreachable")
     );
     await expect(
-      EmailService.checkRecipientEligibility("someone@example.com")
+      new CheckRecipientEligibilityHandler().execute({
+        recipients: ["someone@example.com"],
+      })
     ).resolves.toEqual({
-      status: "unknown",
-      code: "SUPPRESSION_LOOKUP_FAILED",
+      success: true,
+      data: {
+        status: "unknown",
+        code: "SUPPRESSION_LOOKUP_FAILED",
+      },
     });
   });
 
   it("makes no provider call and no success claim when lookup and queue both fail", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("RESEND_API_KEY", "re_regression_key");
-    EmailService.resetClient();
+    resetResendClient();
     vi.spyOn(prisma.suppressionList, "findUnique").mockRejectedValue(
       new Error("Neon unreachable")
     );
@@ -3161,15 +3189,50 @@ describe("Unknown suppression eligibility never sends (#3806)", () => {
       new Error("Neon unreachable")
     );
 
-    const result = await EmailService.sendRawEmail({
+    const result = await new SendRawEmailHandler().execute({
       to: "someone@example.com",
       subject: "Regression",
       html: "<p>Regression</p>",
     });
 
     expect(result.success).toBe(false);
-    expect(result.queued).toBeUndefined();
-    expect(result.errorCode).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+    if (!result.success) {
+      expect(result.error.code).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
+    }
+  });
+});
+
+describe("Sandbox Proof LaTeX complete backslash escaping (CodeQL #43)", () => {
+  it("escapes backslashes and TeX metacharacters when serializing AST identifiers", async () => {
+    const { createSandboxTheorem } = await import("@/lib/proof-custom");
+    const theorem = createSandboxTheorem([
+      {
+        id: "P1",
+        label: "P1",
+        ast: { type: "var", name: "a\\input{evil}_1" },
+        type: "premise",
+        description: "Premise",
+        meaning: "Premise",
+        x: 100,
+        y: 100,
+      },
+      {
+        id: "G1",
+        label: "G1",
+        ast: { type: "not", operand: { type: "var", name: "b_2" } },
+        type: "conclusion",
+        description: "Goal",
+        meaning: "Goal",
+        x: 300,
+        y: 100,
+      },
+    ]);
+
+    expect(theorem.latexCode).not.toContain("\\input{evil}");
+    expect(theorem.latexCode).toContain(
+      "a\\textbackslash{}input\\{evil\\}\\_1"
+    );
+    expect(theorem.latexCode).toContain("\\neg b\\_2");
   });
 });
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CaseStudyService } from "@/lib/services/case-study-service";
+import { ListPublishedCaseStudiesHandler } from "@/lib/services";
 import { CaseStudyShowcase } from "@/components/CaseStudyShowcase";
 import { BaseCaseStudy } from "@/types/domain";
 import {
@@ -58,7 +58,8 @@ interface HydratedCaseStudy extends BaseCaseStudy {
 }
 
 export default async function CaseStudiesPage() {
-  const data = await CaseStudyService.getAllPublishedCaseStudies();
+  const studiesResult = await new ListPublishedCaseStudiesHandler().execute();
+  const data = studiesResult.success ? studiesResult.data : [];
 
   const caseStudies: HydratedCaseStudy[] = await Promise.all(
     data.map(async (d) => {

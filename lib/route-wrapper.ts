@@ -4,8 +4,135 @@ import { applySecurityHeaders } from "@/lib/security-headers";
 import { logger } from "@/lib/logger";
 import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { validateSyncRequest } from "@/lib/security";
+import type { ServiceFailure } from "@/lib/services/service-result";
 
 export type ApiAuthRequirement = "clerk_admin" | "cron_secret" | "public";
+
+/**
+ * Maps a typed domain error code from a `ServiceFailure` envelope to its
+ * canonical HTTP status code so routes translate domain errors uniformly.
+ */
+export function mapServiceErrorToHttpStatus(
+  code: string,
+  fallbackStatus = 500
+): number {
+  const normalized = code.trim().toUpperCase();
+
+  if (
+    normalized === "NOT_FOUND" ||
+    normalized.endsWith("_NOT_FOUND") ||
+    normalized === "INVALID_TOKEN"
+  ) {
+    return 404;
+  }
+
+  if (normalized === "CONFLICT" || normalized.startsWith("DUPLICATE_")) {
+    return 409;
+  }
+
+  if (normalized === "RATE_LIMITED" || normalized.startsWith("TOO_MANY_")) {
+    return 429;
+  }
+
+  if (normalized === "UNAUTHORIZED" || normalized === "INVALID_SIGNATURE") {
+    return 401;
+  }
+
+  if (normalized === "FORBIDDEN") {
+    return 403;
+  }
+
+  if (normalized === "PAYLOAD_TOO_LARGE") {
+    return 413;
+  }
+
+  if (normalized === "UNSUPPORTED_MEDIA_TYPE") {
+    return 415;
+  }
+
+  if (
+    normalized === "UNPROCESSABLE_ENTITY" ||
+    normalized === "SCHEMA_VALIDATION_FAILED"
+  ) {
+    return 422;
+  }
+
+  if (
+    normalized === "VALIDATION_ERROR" ||
+    normalized === "BAD_REQUEST" ||
+    normalized.startsWith("INVALID_") ||
+    normalized.startsWith("EMPTY_") ||
+    normalized.startsWith("MISSING_") ||
+    normalized.startsWith("MALFORMED_")
+  ) {
+    return 400;
+  }
+
+  if (
+    normalized === "STORAGE_UNAVAILABLE" ||
+    normalized === "PERSISTENCE_FAILED" ||
+    normalized === "QUEUE_LEASE_FAILED" ||
+    normalized === "FLUSH_FAILED" ||
+    normalized === "PROVIDER_UNAVAILABLE" ||
+    normalized.startsWith("STORAGE_") ||
+    normalized.startsWith("DATABASE_") ||
+    normalized.startsWith("REDIS_")
+  ) {
+    return 503;
+  }
+
+  return fallbackStatus;
+}
+
+/** Options controlling how a `ServiceFailure` is converted to an HTTP response. */
+export interface ServiceFailureResponseOptions {
+  fallbackStatus?: number;
+  statusOverrides?: Readonly<Record<string, number>>;
+  errorMessage?: string;
+  details?: ApiValidationDetail[];
+  extraBody?: Readonly<Record<string, unknown>>;
+  logContext?: string;
+  logMeta?: Record<string, unknown>;
+  suppressErrorLog?: boolean;
+}
+
+/**
+ * Translates a `ServiceFailure` envelope into a JSON `NextResponse` and
+ * performs single-pass error logging for 5xx failures, forwarding raw `Error`
+ * instances to `StructuredLogger` so Sentry retains multi-frame stack traces.
+ */
+export function serviceFailureResponse(
+  failure: ServiceFailure<string>,
+  options?: ServiceFailureResponseOptions
+): NextResponse {
+  const status =
+    options?.statusOverrides?.[failure.error.code] ??
+    mapServiceErrorToHttpStatus(
+      failure.error.code,
+      options?.fallbackStatus ?? 500
+    );
+
+  if (!options?.suppressErrorLog && status >= 500) {
+    const rawCause =
+      failure.error.details instanceof Error
+        ? failure.error.details
+        : new Error(failure.error.message);
+    logger.error(
+      options?.logContext ?? `API service failure (${failure.error.code}):`,
+      rawCause,
+      options?.logMeta
+    );
+  }
+
+  return NextResponse.json(
+    {
+      error: options?.errorMessage ?? failure.error.message,
+      ...(options?.details ? { details: options.details } : {}),
+      ...(options?.extraBody ?? {}),
+    },
+    { status }
+  );
+}
 
 export interface ApiWrapperOptions<TSchema extends z.ZodType = z.ZodType> {
   schema?: TSchema;

@@ -9,11 +9,12 @@ export const QSTASH_RETRY_PATH = "/api/webhooks/qstash/retry";
 
 /**
  * Delay, in seconds, before each successive QStash-driven retry: 5 minutes,
- * 15 minutes, then 1 hour. The last entry repeats. Attempts are bounded by the
- * queue's own retry ceiling, so one email costs at most a handful of the 500
- * free-tier messages per day (ADR 0036).
+ * 15 minutes, then 1 hour. The last entry repeats.
  */
 export const QSTASH_RETRY_DELAYS_SECONDS: readonly number[] = [300, 900, 3600];
+
+/** Bounds one delivery chain even when the database cannot advance attempts. */
+export const MAX_QSTASH_FOLLOW_UPS = 5;
 
 /** Picks the delay for the given number of attempts already made (1-based). */
 export function getQStashRetryDelaySeconds(attempts: number): number {
@@ -49,12 +50,16 @@ export function getQStashRetryUrl(): string {
  * Publishes a delayed message asking the webhook to retry one queued email.
  * Best effort: returns false, never throws, so a QStash outage or missing
  * configuration leaves the durable queue and the daily maintenance retry as
- * the fallback.
+ * the fallback. Pass the current delivery's follow-up count when republishing.
  */
 export async function scheduleEmailRetry(
   queueId: string,
-  attempts: number
+  attempts: number,
+  followUps?: number
 ): Promise<boolean> {
+  if (followUps !== undefined && followUps >= MAX_QSTASH_FOLLOW_UPS) {
+    return false;
+  }
   if (!isQStashPublishingEnabled()) return false;
   const e = getEnv();
   try {
@@ -64,7 +69,10 @@ export async function scheduleEmailRetry(
     });
     await client.publishJSON({
       url: getQStashRetryUrl(),
-      body: { queueId },
+      body:
+        followUps === undefined
+          ? { queueId }
+          : { queueId, followUps: followUps + 1 },
       delay: getQStashRetryDelaySeconds(attempts),
       // Retries beyond the first delivery attempt consume the daily message
       // budget; the handler reschedules explicitly instead.

@@ -114,8 +114,11 @@ describe("guard coverage", () => {
     const root = process.cwd();
 
     for (const service of [
-      "lib/services/blog-service.ts",
-      "lib/services/case-study-service.ts",
+      "lib/services/blog/list-published-blog-posts/handler.ts",
+      "lib/services/blog/get-published-blog-post/handler.ts",
+      "lib/services/case-study/list-published-case-studies/handler.ts",
+      "lib/services/case-study/list-case-study-summaries/handler.ts",
+      "lib/services/case-study/get-case-study-by-slug/handler.ts",
     ]) {
       const source = readFileSync(join(root, service), "utf-8");
       const dbFallbacks =
@@ -130,15 +133,17 @@ describe("guard coverage", () => {
   it("leaves cache-read fallbacks unguarded, since a cache miss is not a data-source failure", async () => {
     const { readFileSync } = await import("fs");
     const { join } = await import("path");
-    const source = readFileSync(
-      join(process.cwd(), "lib/services/case-study-service.ts"),
-      "utf-8"
-    );
-    const cacheFallbacks = source.match(/cache read failed/g) ?? [];
-    expect(cacheFallbacks.length).toBeGreaterThan(0);
+    for (const handlerPath of [
+      "lib/services/case-study/get-case-study-by-slug/handler.ts",
+      "lib/services/blog/get-published-blog-post/handler.ts",
+    ]) {
+      const source = readFileSync(join(process.cwd(), handlerPath), "utf-8");
+      const cacheFallbacks = source.match(/cache read failed/g) ?? [];
+      expect(cacheFallbacks.length).toBeGreaterThan(0);
 
-    for (const m of source.matchAll(/cache read failed[\s\S]{0,400}?\n/g)) {
-      expect(m[0]).not.toContain("failBuildOnDataSourceError");
+      for (const m of source.matchAll(/cache read failed[\s\S]{0,400}?\n/g)) {
+        expect(m[0]).not.toContain("failBuildOnDataSourceError");
+      }
     }
   });
 });

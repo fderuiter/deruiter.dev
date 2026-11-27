@@ -6,7 +6,6 @@ import {
   useEffect,
   startTransition,
 } from "react";
-import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 import { generateId } from "@/lib/utils";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
@@ -193,17 +192,11 @@ const transport: TelemetryTransport = async (item, options) => {
         : new Error(
             `Failed to persist telemetry event with status: ${res.status}`
           );
-      logger.error(
-        "Optimistic telemetry sync persistence failed:",
-        sanitizeError(errToLog)
-      );
+      logger.error("Optimistic telemetry sync persistence failed:", errToLog);
     }
     return res;
   } catch (err) {
-    logger.error(
-      "Optimistic telemetry sync persistence failed:",
-      sanitizeError(err)
-    );
+    logger.error("Optimistic telemetry sync persistence failed:", err);
     throw err;
   }
 };
@@ -247,10 +240,7 @@ async function fetchTelemetryAggregates(options?: {
       }));
     } catch (err) {
       if (!expectedOffline) {
-        logger.error(
-          "Background telemetry synchronization failed:",
-          sanitizeError(err)
-        );
+        logger.error("Background telemetry synchronization failed:", err);
       } else if (!offlineSyncReported) {
         offlineSyncReported = true;
         logger.warn(
@@ -433,7 +423,7 @@ if (typeof window !== "undefined") {
         } catch (err) {
           logger.warn(
             "Failed to parse cross-tab telemetry storage event:",
-            sanitizeError(err)
+            err
           );
         }
       } else {

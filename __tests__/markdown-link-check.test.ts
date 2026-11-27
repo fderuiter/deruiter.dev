@@ -212,4 +212,102 @@ describe("markdown link integrity checking (ADR 0023)", () => {
       path.join(root, "node_modules", "some-pkg", "README.md")
     );
   });
+
+  it("scans .agents/skills and symlinked .claude/skills directories by default while skipping worktrees", () => {
+    const root = createFullWorkspaceFixture();
+    const canonicalSkillDir = path.join(
+      root,
+      ".agents",
+      "skills",
+      "demo-skill"
+    );
+    const referencesDir = path.join(canonicalSkillDir, "references");
+    const claudeSkillsDir = path.join(root, ".claude", "skills");
+    const worktreeDir = path.join(root, ".agents", "worktrees", "wt-1");
+
+    fs.mkdirSync(referencesDir, { recursive: true });
+    fs.mkdirSync(claudeSkillsDir, { recursive: true });
+    fs.mkdirSync(worktreeDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(referencesDir, "guide.md"),
+      "Back to [SKILL](../SKILL.md).\n",
+      "utf8"
+    );
+    fs.writeFileSync(
+      path.join(canonicalSkillDir, "SKILL.md"),
+      "See [guide](references/guide.md) and [missing](missing.md).\n",
+      "utf8"
+    );
+    fs.writeFileSync(
+      path.join(worktreeDir, "STALE.md"),
+      "[Broken worktree link](nowhere.md)\n",
+      "utf8"
+    );
+
+    fs.symlinkSync(
+      "../../.agents/skills/demo-skill",
+      path.join(claudeSkillsDir, "demo-skill"),
+      "dir"
+    );
+
+    const files = listMarkdownFiles([".agents", ".claude/skills"], root);
+    expect(files).toContain(path.join(canonicalSkillDir, "SKILL.md"));
+    expect(files).toContain(
+      path.join(claudeSkillsDir, "demo-skill", "SKILL.md")
+    );
+    expect(files).not.toContain(path.join(worktreeDir, "STALE.md"));
+
+    const result = checkMarkdownLinkIntegrity(root);
+    expect(result.status).toBe("fail");
+    expect(result.details).toContain(
+      ".agents/skills/demo-skill/SKILL.md: broken link to 'missing.md'"
+    );
+    expect(result.details).toContain(
+      ".claude/skills/demo-skill/SKILL.md: broken link to 'missing.md'"
+    );
+  });
+
+  it("ignores placeholder links inside fenced code blocks and inline code spans", () => {
+    const docs = createDocsFixture();
+    const root = path.dirname(docs);
+    fs.writeFileSync(path.join(docs, "real.md"), "# Real\n", "utf8");
+    fs.writeFileSync(
+      path.join(docs, "examples.md"),
+      [
+        "Real link to [real](real.md).",
+        "Inline placeholder: `see [src/packages/README.md](./src/packages/README.md)`.",
+        "Double-backtick span: ``use `[title](placeholder)` syntax``.",
+        "```markdown",
+        "- [<closed ticket title>](link): <one-line gist>",
+        "```",
+        "~~~md",
+        "[tilde-fenced](does-not-exist.md)",
+        "~~~",
+      ].join("\n") + "\n",
+      "utf8"
+    );
+
+    const result = checkMarkdownLinkIntegrity(root, docs);
+    expect(result).toEqual({ status: "pass", details: [] });
+  });
+
+  it("checks links between unmatched backticks in separate paragraphs", () => {
+    const docs = createDocsFixture();
+    fs.writeFileSync(
+      path.join(docs, "examples.md"),
+      "An unmatched ` delimiter.\n\n[Real guide](missing.md)\n\nAnother unmatched ` delimiter.\n",
+      "utf8"
+    );
+
+    expect(checkMarkdownLinkIntegrity(path.dirname(docs), docs)).toEqual({
+      status: "fail",
+      details: ["docs/examples.md: broken link to 'missing.md'"],
+    });
+  });
+
+  it("passes across all real repository markdown targets including .agents/skills and .claude/skills", () => {
+    const result = checkMarkdownLinkIntegrity(process.cwd());
+    expect(result).toEqual({ status: "pass", details: [] });
+  });
 });

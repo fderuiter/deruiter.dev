@@ -22,6 +22,7 @@ Turn something the user can't answer alone into a **questionnaire**: a Markdown 
 
 Frame the document as a **discovery questionnaire**: the user lacks context, the recipient holds it. Order questions most-important-first, since async means you may only get one pass, and group them under `##` headings by theme once there are more than a handful. Write it using the template below.
 
+<!-- markdownlint-disable MD033 -->
 <questionnaire-template>
 
 # <Questionnaire title>
@@ -55,3 +56,4 @@ _Why this matters: it decides whether we provision for burst traffic now or defe
 A closing catch-all: anything we didn't ask that we should know?
 
 </questionnaire-template>
+<!-- markdownlint-enable MD033 -->

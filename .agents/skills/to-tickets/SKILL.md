@@ -29,6 +29,7 @@ Look for opportunities to prefactor the code to make the implementation easier. 
 
 Break the work into **tracer bullet** tickets.
 
+<!-- markdownlint-disable MD033 -->
 <vertical-slice-rules>
 
 - Each slice cuts a narrow but COMPLETE path through every layer (schema, API, UI, tests): vertical, NOT a horizontal slice of one layer
@@ -37,6 +38,7 @@ Break the work into **tracer bullet** tickets.
 - Any prefactoring should be done first
 
 </vertical-slice-rules>
+<!-- markdownlint-enable MD033 -->
 
 Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
@@ -69,6 +71,7 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 Do NOT close or modify any parent issue.
 
+<!-- markdownlint-disable MD025 MD033 -->
 <local-ticket-template>
 
 # <NN>: <Ticket title>
@@ -104,5 +107,6 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 - A reference to each blocking ticket, or "None (can start immediately)".
 
 </issue-template>
+<!-- markdownlint-enable MD025 MD033 -->
 
 In either form, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.

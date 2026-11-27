@@ -51,7 +51,7 @@
     "inventory:vercel": "tsx scripts/vercel-retention-inventory.ts",
     "inventory:neon": "tsx scripts/neon-capacity-inventory.ts",
     "headroom:vercel": "tsx scripts/vercel-headroom.ts",
-    "lint:docs": "markdownlint \"**/*.md\" --ignore node_modules --ignore .next --ignore coverage --ignore .agents --ignore scratch --ignore tmp --ignore test-results --ignore playwright-report",
+    "lint:docs": "markdownlint \"**/*.md\" --dot --ignore node_modules --ignore .next --ignore coverage --ignore scratch --ignore tmp --ignore test-results --ignore playwright-report",
     "prebuild": "tsx scripts/generate-theme.ts && tsx scripts/generate-llms-txt.ts",
     "build": "node scripts/build.js",
     "start": "next start",

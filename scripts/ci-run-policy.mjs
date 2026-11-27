@@ -80,6 +80,7 @@ const NON_CODE_DIRECTORIES = Object.freeze([
   "docs/",
   ".github/ISSUE_TEMPLATE/",
   ".agents/skills/",
+  ".claude/skills/",
 ]);
 
 /**

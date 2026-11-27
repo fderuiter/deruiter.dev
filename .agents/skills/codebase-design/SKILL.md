@@ -35,7 +35,7 @@ Use these terms exactly: don't substitute "component," "service," "API," or "bou
 
 **Deep module** = small interface + lots of implementation:
 
-```
+```text
 ┌─────────────────────┐
 │   Small Interface   │  ← Few methods, simple params
 ├─────────────────────┤
@@ -47,7 +47,7 @@ Use these terms exactly: don't substitute "component," "service," "API," or "bou
 
 **Shallow module** = large interface + little implementation (avoid):
 
-```
+```text
 ┌─────────────────────────────────┐
 │       Large Interface           │  ← Many methods, complex params
 ├─────────────────────────────────┤
@@ -114,5 +114,5 @@ Good interfaces make testing natural:
 
 ## Going deeper
 
-- **Deepening a cluster given its dependencies**, see [DEEPENING.md](DEEPENING.md): dependency categories, seam discipline, and replace-don't-layer testing.
-- **Exploring alternative interfaces**, see [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md): spin up parallel sub-agents to design the interface several radically different ways, then compare on depth, locality, and seam placement.
+- **Deepening a cluster given its dependencies**, see [DEEPENING.md](references/DEEPENING.md): dependency categories, seam discipline, and replace-don't-layer testing.
+- **Exploring alternative interfaces**, see [DESIGN-IT-TWICE.md](references/DESIGN-IT-TWICE.md): spin up parallel sub-agents to design the interface several radically different ways, then compare on depth, locality, and seam placement.

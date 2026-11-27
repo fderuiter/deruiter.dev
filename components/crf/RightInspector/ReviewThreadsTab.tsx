@@ -82,16 +82,16 @@ export function ReviewThreadsTab({
 
   return (
     <section className="space-y-4 p-4" aria-label="Local field review threads">
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-zinc-100">
+      <div className="rounded-lg border studio-border-default studio-surface-subtle p-3">
+        <h4 className="text-xs font-bold uppercase tracking-wide studio-fg-primary">
           Local authoring review
         </h4>
-        <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+        <p className="mt-1 text-[11px] leading-relaxed studio-fg-muted">
           Saved with this study. These notes are separate from simulated EDC
           audit history and do not represent a shared account.
         </p>
         <div className="mt-3 grid grid-cols-1 gap-2">
-          <label className="text-[10px] text-zinc-400" htmlFor={authorNameId}>
+          <label className="text-[10px] studio-fg-muted" htmlFor={authorNameId}>
             Reviewer name
             <input
               id={authorNameId}
@@ -100,11 +100,11 @@ export function ReviewThreadsTab({
                 onAuthorChange({ ...author, name: event.target.value })
               }
               autoComplete="name"
-              className="mt-1 w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-100"
+              className="mt-1 w-full rounded border studio-border-strong studio-surface-subtle px-2 py-1.5 text-xs studio-fg-primary"
               placeholder="Enter your name"
             />
           </label>
-          <label className="text-[10px] text-zinc-400" htmlFor={authorRoleId}>
+          <label className="text-[10px] studio-fg-muted" htmlFor={authorRoleId}>
             Reviewer role
             <select
               id={authorRoleId}
@@ -115,7 +115,7 @@ export function ReviewThreadsTab({
                   role: event.target.value as StudyReviewRole,
                 })
               }
-              className="mt-1 w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-100"
+              className="mt-1 w-full rounded border studio-border-strong studio-surface-subtle px-2 py-1.5 text-xs studio-fg-primary"
             >
               {REVIEW_ROLES.map((role) => (
                 <option key={role} value={role}>
@@ -128,15 +128,15 @@ export function ReviewThreadsTab({
       </div>
 
       {commentTarget && (
-        <div className="rounded-lg border border-zinc-800 p-3">
-          <h4 className="text-xs font-semibold text-zinc-100">
+        <div className="rounded-lg border studio-border-default p-3">
+          <h4 className="text-xs font-semibold studio-fg-primary">
             {replyingToThread
               ? "Reply to field thread"
               : fieldThread
                 ? "Continue field thread"
                 : "Start a field thread"}
           </h4>
-          <p className="mt-1 text-[11px] text-zinc-400">
+          <p className="mt-1 text-[11px] studio-fg-muted">
             {commentTarget.variableName} · {commentTarget.label}
           </p>
           <label className="sr-only" htmlFor={commentId}>
@@ -147,14 +147,14 @@ export function ReviewThreadsTab({
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             rows={3}
-            className="mt-2 w-full resize-y rounded border border-zinc-700 bg-zinc-950 px-2 py-2 text-xs text-zinc-100"
+            className="mt-2 w-full resize-y rounded border studio-border-strong studio-surface-subtle px-2 py-2 text-xs studio-fg-primary"
             placeholder="Add context or a question about this field"
           />
           <button
             type="button"
             onClick={submitComment}
             disabled={!actor.name || !comment.trim()}
-            className="mt-2 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200 enabled:hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2 rounded border studio-accent-amber px-3 py-1.5 text-xs studio-hover-amber disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add comment
           </button>
@@ -163,16 +163,16 @@ export function ReviewThreadsTab({
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h4 className="text-xs font-semibold text-zinc-100">
+          <h4 className="text-xs font-semibold studio-fg-primary">
             Study review threads
           </h4>
-          <span className="font-mono text-[10px] text-amber-300">
+          <span className="font-mono text-[10px] studio-fg-amber">
             {threads.filter((thread) => getStatus(thread) === "open").length}{" "}
             open
           </span>
         </div>
         {threads.length === 0 ? (
-          <p className="rounded border border-dashed border-zinc-800 p-3 text-xs text-zinc-500">
+          <p className="rounded border border-dashed studio-border-default p-3 text-xs studio-fg-muted">
             No review threads in this study yet. Select a field to start one.
           </p>
         ) : (
@@ -183,14 +183,14 @@ export function ReviewThreadsTab({
             return (
               <article
                 key={thread.id}
-                className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3"
+                className="rounded-lg border studio-border-default studio-surface-subtle p-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="break-words text-xs font-semibold text-zinc-100">
+                    <p className="break-words text-xs font-semibold studio-fg-primary">
                       {thread.target.variableName} · {thread.target.label}
                     </p>
-                    <p className="mt-1 text-[10px] text-zinc-500">
+                    <p className="mt-1 text-[10px] studio-fg-muted">
                       {deleted
                         ? "Deleted field · history retained"
                         : `${thread.target.formName} · ${thread.target.formId}`}
@@ -199,17 +199,17 @@ export function ReviewThreadsTab({
                   <span
                     className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] uppercase ${
                       status === "open"
-                        ? "border-amber-500/30 text-amber-300"
-                        : "border-emerald-500/30 text-emerald-300"
+                        ? "studio-border-amber studio-fg-amber"
+                        : "studio-border-emerald studio-fg-emerald"
                     }`}
                   >
                     {status}
                   </span>
                 </div>
-                <ol className="mt-3 space-y-2 border-l border-zinc-800 pl-3">
+                <ol className="mt-3 space-y-2 border-l studio-border-default pl-3">
                   {thread.events.map((event) => (
                     <li key={event.id} className="text-[11px]">
-                      <p className="leading-relaxed text-zinc-300">
+                      <p className="leading-relaxed studio-fg-secondary">
                         {event.type === "comment" && event.body}
                         {event.type === "resolved" && "Resolved this thread."}
                         {event.type === "reopened" && "Reopened this thread."}
@@ -218,7 +218,7 @@ export function ReviewThreadsTab({
                         {event.type === "target-deleted" &&
                           `Field ${event.target.variableName} was deleted; this discussion remains attached to its stable identity.`}
                       </p>
-                      <p className="mt-0.5 flex flex-wrap gap-x-2 text-[9px] text-zinc-500">
+                      <p className="mt-0.5 flex flex-wrap gap-x-2 text-[9px] studio-fg-muted">
                         <span>
                           {event.author.name} · {event.author.role}
                         </span>
@@ -233,7 +233,7 @@ export function ReviewThreadsTab({
                     setComment("");
                     setReplyingToThreadId(thread.id);
                   }}
-                  className="mt-3 rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-300 hover:border-zinc-500"
+                  className="mt-3 rounded border studio-border-strong px-2 py-1 text-[10px] studio-fg-secondary studio-hover-border"
                 >
                   Reply to thread
                 </button>
@@ -247,7 +247,7 @@ export function ReviewThreadsTab({
                     )
                   }
                   disabled={!actor.name}
-                  className="ml-2 mt-3 rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-300 enabled:hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="ml-2 mt-3 rounded border studio-border-strong px-2 py-1 text-[10px] studio-fg-secondary studio-hover-border disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {status === "open" ? "Resolve thread" : "Reopen thread"}
                 </button>

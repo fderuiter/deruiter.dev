@@ -291,8 +291,8 @@ describe("CRF Studio - Light Mode & Theming", () => {
     expect(handleToggle).toHaveBeenCalledTimes(1);
   });
 
-  describe("border-zinc-850 dark mode remediation (#3053)", () => {
-    it("renders StudioHeader with canonical border-zinc-800 instead of phantom border-zinc-850", async () => {
+  describe("semantic studio theme tokens & zero-zinc contract", () => {
+    it("renders StudioHeader with semantic studio-surface-header and studio-border-default classes", async () => {
       await act(async () => {
         root = createRoot(container);
         root.render(
@@ -318,11 +318,12 @@ describe("CRF Studio - Light Mode & Theming", () => {
 
       const header = container.querySelector("header");
       expect(header).not.toBeNull();
-      expect(header?.className).toContain("border-zinc-800");
-      expect(header?.className).not.toContain("border-zinc-850");
+      expect(header?.className).toContain("studio-surface-header");
+      expect(header?.className).toContain("studio-border-default");
+      expect(header?.className).not.toContain("border-zinc-");
     });
 
-    it("verifies zero phantom zinc-850 class occurrences across components/crf TSX/TS files", () => {
+    it("verifies zero raw zinc-* utility class occurrences across components/crf TSX/TS files", () => {
       const crfDir = path.join(process.cwd(), "components/crf");
 
       function findFiles(dir: string): string[] {
@@ -348,9 +349,8 @@ describe("CRF Studio - Light Mode & Theming", () => {
 
       for (const filePath of crfFiles) {
         const content = fs.readFileSync(filePath, "utf8");
-        // Regex checking for class uses of zinc-850 (e.g. border-zinc-850, bg-zinc-850, etc.)
         const matches = content.match(
-          /(?:border|bg|text|hover:bg|divide)-zinc-850(?:\/\d+)?/g
+          /(?:[a-z-]+:)*(?:border|bg|text|divide|ring|placeholder|decoration)-zinc-\d+(?:\/[\d.[\]]+)?/g
         );
         if (matches) {
           const relPath = path.relative(process.cwd(), filePath);
@@ -360,26 +360,94 @@ describe("CRF Studio - Light Mode & Theming", () => {
 
       expect(
         violations,
-        `Found phantom zinc-850 utility class occurrences in CRF components:\n${violations.join("\n")}`
+        `Found raw zinc-* utility class occurrences in CRF components:\n${violations.join("\n")}`
       ).toHaveLength(0);
     });
 
-    it("verifies studio-theme.css contains defensive dark fallback and light-mode cascades for border-zinc-850", () => {
+    it("verifies studio-theme.css defines scoped semantic tokens without !important and >= 4.5:1 light-mode badge contrast", () => {
       const cssPath = path.join(
         process.cwd(),
         "components/crf/studio-theme.css"
       );
       const cssContent = fs.readFileSync(cssPath, "utf8");
 
-      expect(cssContent).toContain(
-        '[data-studio-theme="dark"] .border-zinc-850'
+      expect(cssContent).not.toContain("!important");
+      expect(cssContent).toContain('[data-studio-theme="light"]');
+      expect(cssContent).toContain('[data-studio-theme="dark"]');
+      expect(cssContent).toContain("--studio-surface-root:");
+      expect(cssContent).toContain("--studio-fg-primary:");
+      expect(cssContent).toContain("--studio-border-default:");
+      expect(cssContent).toContain("--studio-accent-cyan-fg:");
+      expect(cssContent).toContain("--studio-accent-amber-fg:");
+      expect(cssContent).toContain("--studio-accent-purple-fg:");
+      expect(cssContent).toContain("--studio-accent-emerald-fg:");
+
+      const lightMatch = cssContent.match(
+        /\[data-studio-theme="light"\]\s*\{([\s\S]*?)\n\}/
       );
-      expect(cssContent).toContain(
-        '[data-studio-theme="light"] .border-zinc-800'
-      );
-      expect(cssContent).toContain(
-        '[data-studio-theme="light"] .border-zinc-800\\/60'
-      );
+      expect(lightMatch).not.toBeNull();
+      const lightBlock = lightMatch![1];
+
+      const readHex = (token: string): string => {
+        const m = lightBlock.match(
+          new RegExp(`${token}:\\s*(#[0-9a-fA-F]{6})`)
+        );
+        expect(m, `Missing hex token ${token} in light theme`).not.toBeNull();
+        return m![1];
+      };
+
+      const relLuminance = (hex: string): number => {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        const lin = (c: number) =>
+          c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+      };
+
+      const contrast = (fg: string, bg: string): number => {
+        const l1 = relLuminance(fg);
+        const l2 = relLuminance(bg);
+        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+      };
+
+      // Phase III & CDASH 100% badges (cyan), StudySpine DM badge (muted), Next: Schedule the forms badge (amber), purple & emerald accents
+      expect(
+        contrast(
+          readHex("--studio-fg-muted"),
+          readHex("--studio-surface-muted")
+        )
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(
+          readHex("--studio-accent-purple-fg"),
+          readHex("--studio-accent-purple-bg")
+        )
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(
+          readHex("--studio-accent-cyan-fg"),
+          readHex("--studio-accent-cyan-bg")
+        )
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(
+          readHex("--studio-accent-cyan-fg"),
+          readHex("--studio-accent-cyan-bg-strong")
+        )
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(
+          readHex("--studio-accent-amber-fg"),
+          readHex("--studio-accent-amber-bg")
+        )
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(
+          readHex("--studio-accent-emerald-fg"),
+          readHex("--studio-accent-emerald-bg")
+        )
+      ).toBeGreaterThanOrEqual(4.5);
     });
   });
 });

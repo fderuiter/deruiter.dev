@@ -735,19 +735,19 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6">
+    <div className="flex-1 flex flex-col h-full studio-surface-subtle p-4 sm:p-6 overflow-y-auto space-y-6">
       {/* Top Banner & Multi-Role Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 sm:pb-6 border-b studio-border-default">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shrink-0">
+            <span className="p-1.5 rounded-lg studio-accent-emerald border shrink-0">
               <IconShieldCheck className="w-5 h-5" />
             </span>
-            <h2 className="text-base sm:text-lg font-bold text-white font-mono truncate">
+            <h2 className="text-base sm:text-lg font-bold studio-fg-primary font-mono truncate">
               Live EDC data entry
             </h2>
           </div>
-          <p className="text-xs text-zinc-400 font-sans mt-1">
+          <p className="text-xs studio-fg-muted font-sans mt-1">
             Try a Part 11-style workflow: subject data entry, CRA source data
             verification (SDV), investigator locking and the longitudinal visit
             matrix.
@@ -756,8 +756,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         </div>
 
         {/* User Role Switcher */}
-        <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 p-1 rounded-xl shadow-inner max-w-full overflow-x-auto scrollbar-none">
-          <span className="text-[10px] font-mono text-zinc-500 uppercase px-1.5 hidden sm:inline">
+        <div className="flex items-center gap-1.5 studio-surface-card border studio-border-default p-1 rounded-xl shadow-inner max-w-full overflow-x-auto scrollbar-none">
+          <span className="text-[10px] font-mono studio-fg-muted uppercase px-1.5 hidden sm:inline">
             Active Role:
           </span>
           {(
@@ -773,8 +773,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               onClick={() => setCurrentRole(role)}
               className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
                 currentRole === role
-                  ? "bg-brand-cyan text-black font-bold shadow-sm"
-                  : "text-zinc-400 hover:text-white"
+                  ? "studio-btn-cyan font-bold shadow-sm"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               {role}
@@ -784,13 +784,13 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       </div>
 
       {/* Sub-View Navigation Tabs */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto scrollbar-none">
+      <div className="flex shrink-0 items-center gap-2 border-b studio-border-default pb-2 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setSubView("form_entry")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
             subView === "form_entry"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconFileText className="w-4 h-4" />
@@ -800,8 +800,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           onClick={() => setSubView("subject_matrix")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
             subView === "subject_matrix"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconTable className="w-4 h-4" />
@@ -811,8 +811,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           onClick={() => setSubView("queries")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
             subView === "queries"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconMessageCircleQuestion className="w-4 h-4" />
@@ -825,8 +825,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           onClick={() => setSubView("audit_trail")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
             subView === "audit_trail"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconHistory className="w-4 h-4" />
@@ -838,22 +838,27 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       {subView === "form_entry" && activeForm && (
         <div className="space-y-6">
           {/* Protocol Navigation Context: Subject, Visit, Form */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl studio-surface-subtle border studio-border-default">
             {/* Subject ID Selector */}
             <div>
-              <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+              <label
+                htmlFor="edc-active-subject-select"
+                className="block text-[10px] font-mono studio-fg-muted mb-1"
+              >
                 Active Subject / Patient ID
               </label>
               {isAddingSubject ? (
                 <div className="flex gap-2">
                   <input
+                    id="edc-active-subject-select"
                     type="text"
                     value={newSubjectInput}
                     onChange={(e) => setNewSubjectInput(e.target.value)}
                     placeholder="e.g. 001-104"
-                    className="w-full px-2.5 py-1 bg-zinc-950 border border-zinc-700 rounded-lg text-xs text-white font-mono"
+                    className="w-full px-2.5 py-1 studio-surface-subtle border studio-border-strong rounded-lg text-xs studio-fg-primary font-mono"
                   />
                   <button
+                    aria-label="Confirm new subject"
                     onClick={() => {
                       if (newSubjectInput.trim()) {
                         setAvailableSubjects([
@@ -865,7 +870,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         setNewSubjectInput("");
                       }
                     }}
-                    className="p-1 rounded bg-brand-cyan text-black"
+                    className="p-1 rounded studio-btn-cyan"
                   >
                     <IconCheck className="w-4 h-4" />
                   </button>
@@ -873,9 +878,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               ) : (
                 <div className="flex gap-2">
                   <select
+                    id="edc-active-subject-select"
                     value={subjectId}
                     onChange={(e) => setSubjectId(e.target.value)}
-                    className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-xl text-xs text-white font-mono focus:border-brand-cyan focus:outline-none"
+                    className="flex-1 px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
                   >
                     {availableSubjects.map((s) => (
                       <option key={s} value={s}>
@@ -885,7 +891,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </select>
                   <TooltipButton
                     onClick={() => setIsAddingSubject(true)}
-                    className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono"
+                    className="px-2.5 py-1 rounded-xl studio-surface-muted studio-hover-active studio-fg-primary text-xs font-mono"
                     tooltip="Enroll New Simulated Subject"
                     aria-label="Enroll New Simulated Subject"
                   >
@@ -897,13 +903,17 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
             {/* Visit Selector */}
             <div>
-              <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+              <label
+                htmlFor="edc-protocol-visit-select"
+                className="block text-[10px] font-mono studio-fg-muted mb-1"
+              >
                 Protocol Visit
               </label>
               <select
+                id="edc-protocol-visit-select"
                 value={activeVisitId}
                 onChange={(e) => setActiveVisitId(e.target.value)}
-                className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-xl text-xs text-white font-mono focus:border-brand-cyan focus:outline-none"
+                className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
               >
                 {study.visits.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -915,13 +925,17 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
             {/* Form Selector */}
             <div>
-              <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+              <label
+                htmlFor="edc-crf-form-select"
+                className="block text-[10px] font-mono studio-fg-muted mb-1"
+              >
                 CRF Form
               </label>
               <select
+                id="edc-crf-form-select"
                 value={activeFormId}
                 onChange={(e) => setActiveFormId(e.target.value)}
-                className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-700 rounded-xl text-xs text-white font-mono focus:border-brand-cyan focus:outline-none"
+                className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
               >
                 {study.forms.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -933,24 +947,24 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           </div>
 
           {/* Form Header Card with PI Lock and SDV Actions */}
-          <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-5">
-            <div className="flex items-start justify-between gap-4 border-b border-zinc-800 pb-4">
+          <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-5">
+            <div className="flex items-start justify-between gap-4 border-b studio-border-default pb-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-brand-cyan/15 text-brand-cyan border border-brand-cyan/30">
+                  <span className="px-2 py-0.5 rounded text-xs font-mono font-bold studio-accent-cyan-strong border">
                     {activeForm.domain}
                   </span>
-                  <h2 className="text-base font-bold text-white font-mono">
+                  <h2 className="text-base font-bold studio-fg-primary font-mono">
                     {activeForm.name}
                   </h2>
                   {isCurrentFormLocked && (
-                    <span className="inline-flex items-center gap-1 font-mono text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                    <span className="inline-flex items-center gap-1 font-mono text-[10px] studio-accent-sky px-2 py-0.5 rounded border">
                       <IconLock className="w-3 h-3" />
                       <span>Locked (PI)</span>
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-400 font-sans">
+                <p className="text-xs studio-fg-muted font-sans">
                   {activeForm.description}
                 </p>
               </div>
@@ -958,7 +972,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               <div className="flex items-center gap-2">
                 <TooltipButton
                   onClick={handleSaveForm}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-brand-cyan text-black hover:bg-white transition-all shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
                   tooltip="Save Form Data and run 3-Tier Missing Data Engine"
                 >
                   <IconDeviceFloppy className="w-4 h-4" />
@@ -970,8 +984,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     onClick={handleToggleLockForm}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all shadow-sm ${
                       isCurrentFormLocked
-                        ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-                        : "bg-sky-500 text-black hover:bg-white"
+                        ? "studio-surface-muted studio-hover-active studio-fg-primary border studio-border-strong"
+                        : "studio-btn-sky"
                     }`}
                   >
                     {isCurrentFormLocked ? (
@@ -989,7 +1003,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                 )}
 
                 {isFormSigned && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-emerald border font-mono text-xs">
                     <IconShieldCheck className="w-4 h-4" />
                     <span>Signed</span>
                   </div>
@@ -1002,26 +1016,26 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               <div
                 className={`p-3 rounded-xl border flex items-start gap-2.5 font-mono text-xs ${
                   saveStatus.type === "error"
-                    ? "bg-red-500/10 border-red-500/40 text-red-300"
-                    : "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
+                    ? "studio-accent-red"
+                    : "studio-accent-emerald"
                 }`}
               >
                 {saveStatus.type === "error" ? (
-                  <IconAlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <IconAlertTriangle className="w-4 h-4 studio-fg-red shrink-0 mt-0.5" />
                 ) : (
-                  <IconCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <IconCheck className="w-4 h-4 studio-fg-emerald shrink-0 mt-0.5" />
                 )}
                 <div className="flex-1 space-y-1">
                   <div className="font-bold">{saveStatus.message}</div>
                   {saveStatus.hardStops && saveStatus.hardStops.length > 0 && (
-                    <div className="text-[11px] text-red-400 font-sans">
+                    <div className="text-[11px] studio-fg-red font-sans">
                       Hard-stop blocked fields:{" "}
                       {saveStatus.hardStops.join(", ")}
                     </div>
                   )}
                   {saveStatus.autoQueries &&
                     saveStatus.autoQueries.length > 0 && (
-                      <div className="text-[11px] text-amber-300 font-sans">
+                      <div className="text-[11px] studio-fg-amber font-sans">
                         Auto-generated open queries raised for:{" "}
                         {saveStatus.autoQueries.join(", ")}
                       </div>
@@ -1033,7 +1047,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
             {/* Form Fields Rendering */}
             {activeForm.sections.map((section) => (
               <div key={section.id} className="space-y-3">
-                <h3 className="text-xs font-bold text-zinc-300 font-mono border-b border-zinc-800/60 pb-1.5">
+                <h3 className="text-xs font-bold studio-fg-secondary font-mono border-b studio-border-subtle pb-1.5">
                   {section.title}
                 </h3>
 
@@ -1078,10 +1092,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         key={field.id}
                         className={`p-3 rounded-xl border transition-all ${
                           fieldError
-                            ? "bg-red-500/10 border-red-500/60 ring-1 ring-red-500/30"
+                            ? "studio-bg-red studio-border-red ring-1 ring-red-500/30"
                             : fieldQueries.length > 0
-                              ? "bg-amber-500/5 border-amber-500/40 ring-1 ring-amber-500/20"
-                              : "bg-zinc-950/70 border-zinc-800/80"
+                              ? "studio-bg-amber studio-border-amber ring-1 ring-amber-500/20"
+                              : "studio-surface-subtle studio-border-default"
                         }`}
                         style={{ gridColumn: `span ${field.columnSpan}` }}
                       >
@@ -1090,12 +1104,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                           <div>
                             <label
                               htmlFor={inputId}
-                              className="block text-xs font-semibold text-zinc-200 cursor-pointer"
+                              className="block text-xs font-semibold studio-fg-primary cursor-pointer"
                             >
                               {field.label}
                               {isFieldRequired && (
                                 <span
-                                  className="text-red-400 ml-0.5"
+                                  className="studio-fg-red ml-0.5"
                                   title={
                                     fieldState?.requirednessSource
                                       ? `Required by rule: ${fieldState.requirednessSource.ruleName}`
@@ -1112,7 +1126,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                               </span>
                             )}
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px] font-mono text-zinc-500">
+                              <span className="text-[10px] font-mono studio-fg-muted">
                                 {field.variableName}
                               </span>
 
@@ -1120,12 +1134,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                               <span
                                 className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold border ${
                                   field.requirementTier === "auto_query"
-                                    ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                                    ? "studio-accent-amber"
                                     : field.requirementTier === "hard_stop" ||
                                         (!field.requirementTier &&
                                           isFieldRequired)
-                                      ? "bg-red-500/15 text-red-300 border-red-500/30"
-                                      : "bg-zinc-900 text-zinc-400 border-zinc-800"
+                                      ? "studio-accent-red"
+                                      : "studio-surface-card studio-fg-muted studio-border-default"
                                 }`}
                               >
                                 {field.requirementTier === "auto_query"
@@ -1138,14 +1152,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                               </span>
 
                               {field.requiresSdv && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono studio-accent-emerald border">
                                   <IconShieldCheck className="w-3 h-3" />
                                   <span>SDV</span>
                                 </span>
                               )}
 
                               {field.isBlinded && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono studio-accent-indigo border">
                                   <span>Blinded</span>
                                 </span>
                               )}
@@ -1161,8 +1175,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 }
                                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border ${
                                   isSdv
-                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                                    : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-white"
+                                    ? "studio-accent-emerald-strong"
+                                    : "studio-surface-card studio-fg-muted studio-border-default studio-hover-fg-primary"
                                 }`}
                                 tooltip="Source Data Verification"
                               >
@@ -1172,7 +1186,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
                             {/* CDISC Null Flavor Toggle Pills */}
                             {(field.allowNullFlavor || true) && (
-                              <div className="flex items-center gap-0.5 bg-zinc-900/80 p-0.5 rounded-lg border border-zinc-800">
+                              <div className="flex items-center gap-0.5 studio-surface-card p-0.5 rounded-lg border studio-border-default">
                                 {(["ND", "NA", "UNK"] as const).map((nf) => {
                                   const isSelectedNf = currentVal === nf;
                                   return (
@@ -1192,8 +1206,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                       }
                                       className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border ${
                                         isSelectedNf
-                                          ? "bg-brand-cyan text-black border-brand-cyan font-extrabold"
-                                          : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                                          ? "studio-btn-cyan font-extrabold"
+                                          : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
                                       }`}
                                       tooltip={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
                                     >
@@ -1208,14 +1222,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
                         {/* Field Input Area */}
                         {isBlindedForUser ? (
-                          <div className="p-2.5 bg-zinc-900/90 border border-zinc-800 rounded-lg text-zinc-400 font-mono text-xs flex items-center gap-2">
-                            <IconEyeOff className="w-4 h-4 text-indigo-400 shrink-0" />
+                          <div className="p-2.5 studio-surface-card border studio-border-default rounded-lg studio-fg-muted font-mono text-xs flex items-center gap-2">
+                            <IconEyeOff className="w-4 h-4 studio-fg-indigo shrink-0" />
                             <span>
                               [MASKED PROTOCOL DATA: BLINDED TO SPONSOR]
                             </span>
                           </div>
                         ) : hasNullFlavor ? (
-                          <div className="p-2 bg-zinc-900 border border-brand-cyan/40 rounded-lg text-brand-cyan font-mono text-xs flex items-center justify-between">
+                          <div className="p-2 studio-surface-card border studio-border-cyan rounded-lg studio-fg-cyan font-mono text-xs flex items-center justify-between">
                             <span className="font-bold">
                               Null Flavor: {currentVal} (
                               {
@@ -1232,7 +1246,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 isCurrentFormLocked &&
                                 currentRole !== "Principal Investigator"
                               }
-                              className="text-[10px] text-zinc-400 hover:text-white underline font-mono"
+                              className="text-[10px] studio-fg-muted studio-hover-fg-primary underline font-mono"
                             >
                               Clear Null Flavor
                             </button>
@@ -1247,7 +1261,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   <div>
                                     <label
                                       htmlFor={`${inputId}-day`}
-                                      className="block text-[9px] font-mono text-zinc-500 mb-0.5"
+                                      className="block text-[9px] font-mono studio-fg-muted mb-0.5"
                                     >
                                       Day
                                     </label>
@@ -1292,7 +1306,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                         isCurrentFormLocked &&
                                         currentRole !== "Principal Investigator"
                                       }
-                                      className="w-full px-2 py-1 text-xs bg-zinc-900 border border-zinc-700 rounded text-white font-mono focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                      className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                     >
                                       <option value="">-- Day --</option>
                                       {field.allowPartial && (
@@ -1314,7 +1328,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   <div>
                                     <label
                                       htmlFor={`${inputId}-month`}
-                                      className="block text-[9px] font-mono text-zinc-500 mb-0.5"
+                                      className="block text-[9px] font-mono studio-fg-muted mb-0.5"
                                     >
                                       Month
                                     </label>
@@ -1359,7 +1373,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                         isCurrentFormLocked &&
                                         currentRole !== "Principal Investigator"
                                       }
-                                      className="w-full px-2 py-1 text-xs bg-zinc-900 border border-zinc-700 rounded text-white font-mono focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                      className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                     >
                                       <option value="">-- Month --</option>
                                       {field.allowPartial && (
@@ -1398,7 +1412,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   <div>
                                     <label
                                       htmlFor={inputId}
-                                      className="block text-[9px] font-mono text-zinc-500 mb-0.5"
+                                      className="block text-[9px] font-mono studio-fg-muted mb-0.5"
                                     >
                                       Year
                                     </label>
@@ -1447,20 +1461,20 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                         isCurrentFormLocked &&
                                         currentRole !== "Principal Investigator"
                                       }
-                                      className="w-full px-2 py-1 text-xs bg-zinc-900 border border-zinc-700 rounded text-white font-mono focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                      className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                     />
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 pt-0.5">
+                                <div className="flex items-center justify-between text-[10px] font-mono studio-fg-muted pt-0.5">
                                   <span>
                                     ISO:{" "}
-                                    <strong className="text-brand-cyan">
+                                    <strong className="studio-fg-cyan">
                                       {String(currentVal || "—")}
                                     </strong>
                                   </span>
                                   {field.preventFutureDate && (
-                                    <span className="text-amber-400/90">
+                                    <span className="studio-fg-amber">
                                       ≤ Current UTC
                                     </span>
                                   )}
@@ -1485,7 +1499,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   isCurrentFormLocked &&
                                   currentRole !== "Principal Investigator"
                                 }
-                                className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
                                 placeholder={
                                   field.placeholder || "Enter value..."
                                 }
@@ -1508,7 +1522,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   isCurrentFormLocked &&
                                   currentRole !== "Principal Investigator"
                                 }
-                                className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none resize-none disabled:opacity-50"
+                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none resize-none disabled:opacity-50"
                                 placeholder={
                                   field.placeholder || "Enter narrative..."
                                 }
@@ -1548,11 +1562,11 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     isCurrentFormLocked &&
                                     currentRole !== "Principal Investigator"
                                   }
-                                  className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                  className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                   placeholder={field.placeholder || "0"}
                                 />
                                 {field.unit && (
-                                  <span className="absolute right-2.5 top-1.5 text-[11px] font-mono text-zinc-400">
+                                  <span className="absolute right-2.5 top-1.5 text-[11px] font-mono studio-fg-muted">
                                     {field.unit}
                                   </span>
                                 )}
@@ -1583,7 +1597,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     ? "YYYY-MM-DD (e.g. 2026-08-UNK)"
                                     : "YYYY-MM-DD")
                                 }
-                                className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                               />
                             )}
 
@@ -1609,7 +1623,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 ).map((opt) => (
                                   <label
                                     key={opt.code}
-                                    className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer"
+                                    className="flex items-center gap-2 text-xs studio-fg-secondary cursor-pointer"
                                   >
                                     <input
                                       type="radio"
@@ -1623,7 +1637,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                         isCurrentFormLocked &&
                                         currentRole !== "Principal Investigator"
                                       }
-                                      className="text-brand-cyan focus:ring-0"
+                                      className="studio-fg-cyan focus:ring-0"
                                     />
                                     <span>{opt.label}</span>
                                   </label>
@@ -1646,7 +1660,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   isCurrentFormLocked &&
                                   currentRole !== "Principal Investigator"
                                 }
-                                className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none disabled:opacity-50"
+                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
                               >
                                 <option value="">-- Select Option --</option>
                                 {(
@@ -1695,7 +1709,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   return (
                                     <label
                                       key={opt.code}
-                                      className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer"
+                                      className="flex items-center gap-2 text-xs studio-fg-secondary cursor-pointer"
                                     >
                                       <input
                                         type="checkbox"
@@ -1722,7 +1736,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                           currentRole !==
                                             "Principal Investigator"
                                         }
-                                        className="text-brand-cyan rounded border-zinc-700 bg-zinc-900 focus:ring-0"
+                                        className="studio-fg-cyan rounded studio-border-strong studio-surface-card focus:ring-0"
                                       />
                                       <span>{opt.label}</span>
                                     </label>
@@ -1738,16 +1752,16 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 aria-describedby={
                                   fieldError ? errorId : undefined
                                 }
-                                className="p-2 rounded-lg bg-brand-cyan/10 border border-brand-cyan/30 flex items-center justify-between font-mono min-h-[34px]"
+                                className="p-2 rounded-lg studio-bg-cyan border studio-border-cyan flex items-center justify-between font-mono min-h-[34px]"
                               >
-                                <span className="text-xs text-brand-cyan font-bold">
+                                <span className="text-xs studio-fg-cyan font-bold">
                                   {currentVal !== undefined &&
                                   currentVal !== null
                                     ? String(currentVal)
                                     : ""}
                                 </span>
                                 {field.unit && (
-                                  <span className="text-[10px] text-zinc-400">
+                                  <span className="text-[10px] studio-fg-muted">
                                     {field.unit}
                                   </span>
                                 )}
@@ -1762,9 +1776,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                             id={errorId}
                             role="alert"
                             aria-live="polite"
-                            className="text-[10px] text-red-400 font-mono mt-1.5 flex items-center gap-1"
+                            className="text-[10px] studio-fg-red font-mono mt-1.5 flex items-center gap-1"
                           >
-                            <IconAlertTriangle className="w-3 h-3 text-red-400 shrink-0" />
+                            <IconAlertTriangle className="w-3 h-3 studio-fg-red shrink-0" />
                             <span>{fieldError}</span>
                           </p>
                         )}
@@ -1776,14 +1790,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
             ))}
 
             {/* Bottom Save Action */}
-            <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
-              <div className="text-xs text-zinc-400 font-mono">
+            <div className="pt-4 border-t studio-border-default flex items-center justify-between">
+              <div className="text-xs studio-fg-muted font-mono">
                 Active Form: <strong>{activeForm.name}</strong> (
                 {activeForm.domain})
               </div>
               <button
                 onClick={handleSaveForm}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold bg-brand-cyan text-black hover:bg-white transition-all shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
               >
                 <IconDeviceFloppy className="w-4 h-4" />
                 <span>Save &amp; Validate Form Data</span>
@@ -1795,30 +1809,30 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
       {/* VIEW 2: SUBJECT STATUS MATRIX (Rave / Veeva CDMS Style) */}
       {subView === "subject_matrix" && (
-        <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+        <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white font-mono">
+              <h2 className="text-sm font-bold studio-fg-primary font-mono">
                 Longitudinal Subject vs. Visit Progression Matrix
               </h2>
-              <p className="text-xs text-zinc-400 font-sans mt-0.5">
+              <p className="text-xs studio-fg-muted font-sans mt-0.5">
                 Click any cell to jump into patient form data entry.
               </p>
             </div>
             <div className="flex items-center gap-3 text-[10px] font-mono">
-              <span className="flex items-center gap-1 text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />{" "}
+              <span className="flex items-center gap-1 studio-fg-emerald">
+                <span className="w-2 h-2 rounded-full studio-dot-emerald" />{" "}
                 Complete
               </span>
-              <span className="flex items-center gap-1 text-amber-400">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />{" "}
+              <span className="flex items-center gap-1 studio-fg-amber">
+                <span className="w-2 h-2 rounded-full studio-dot-amber" />{" "}
                 Incomplete
               </span>
-              <span className="flex items-center gap-1 text-sky-400">
-                <span className="w-2 h-2 rounded-full bg-sky-400" /> Locked
+              <span className="flex items-center gap-1 studio-fg-sky">
+                <span className="w-2 h-2 rounded-full studio-dot-sky" /> Locked
               </span>
-              <span className="flex items-center gap-1 text-red-400">
-                <span className="w-2 h-2 rounded-full bg-red-400" /> Query
+              <span className="flex items-center gap-1 studio-fg-red">
+                <span className="w-2 h-2 rounded-full studio-dot-red" /> Query
               </span>
             </div>
           </div>
@@ -1834,7 +1848,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               </caption>
               <thead>
                 <tr
-                  className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400"
+                  className="border-b studio-border-default studio-surface-subtle studio-fg-muted"
                   role="row"
                 >
                   <th scope="col" role="columnheader" className="p-3">
@@ -1848,24 +1862,24 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                       className="p-3 text-center"
                     >
                       <div>{v.name}</div>
-                      <div className="text-[10px] text-zinc-500">
+                      <div className="text-[10px] studio-fg-muted">
                         Day {v.targetDay}
                       </div>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y studio-divide-default">
                 {availableSubjects.map((subj) => (
                   <tr
                     key={subj}
                     role="row"
-                    className="hover:bg-zinc-800/40 transition-colors"
+                    className="studio-hover-surface transition-colors"
                   >
                     <th
                       scope="row"
                       role="rowheader"
-                      className="p-3 font-bold text-brand-cyan text-left font-normal"
+                      className="p-3 font-bold studio-fg-cyan text-left font-normal"
                     >
                       {subj}
                     </th>
@@ -1899,12 +1913,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   }}
                                   className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all border ${
                                     status.openQueriesCount > 0
-                                      ? "bg-red-500/20 text-red-400 border-red-500/40 motion-safe:animate-pulse"
+                                      ? "studio-accent-red-strong motion-safe:animate-pulse"
                                       : status.isLocked
-                                        ? "bg-sky-500/20 text-sky-400 border-sky-500/40"
+                                        ? "studio-accent-sky-strong"
                                         : status.isComplete
-                                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                                          : "bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:text-white"
+                                          ? "studio-accent-emerald-strong"
+                                          : "studio-surface-muted studio-fg-muted studio-border-strong studio-hover-fg-primary"
                                   }`}
                                   tooltip={`Open ${form.name} for ${subj}`}
                                 >
@@ -1930,13 +1944,13 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
       {/* VIEW 3: QUERIES & DISCREPANCIES */}
       {subView === "queries" && (
-        <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
-          <h2 className="text-sm font-bold text-white font-mono">
+        <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
+          <h2 className="text-sm font-bold studio-fg-primary font-mono">
             Clinical Discrepancy &amp; Query Management Ledger
           </h2>
 
           {queries.length === 0 ? (
-            <div className="p-8 text-center text-zinc-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl">
+            <div className="p-8 text-center studio-fg-muted font-mono text-xs border border-dashed studio-border-default rounded-xl">
               No open queries or validation discrepancies across subjects.
             </div>
           ) : (
@@ -1944,36 +1958,38 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               {queries.map((q) => (
                 <div
                   key={q.id}
-                  className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 font-mono text-xs"
+                  className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-2 font-mono text-xs"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                           q.severity === "error"
-                            ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                            : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                            ? "studio-accent-red-strong border"
+                            : "studio-accent-amber-strong border"
                         }`}
                       >
                         {q.severity}
                       </span>
-                      <span className="font-bold text-white">
+                      <span className="font-bold studio-fg-primary">
                         Subject {q.subjectId}
                       </span>
-                      <span className="text-zinc-500">
+                      <span className="studio-fg-muted">
                         • Variable: {q.fieldName}
                       </span>
                     </div>
-                    <span className="text-[10px] text-zinc-500">
+                    <span className="text-[10px] studio-fg-muted">
                       {q.raisedAt.slice(0, 19)}
                     </span>
                   </div>
 
-                  <p className="text-zinc-300 font-sans text-xs">{q.message}</p>
+                  <p className="studio-fg-secondary font-sans text-xs">
+                    {q.message}
+                  </p>
 
                   {q.response && (
-                    <div className="p-2.5 rounded bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-400 font-sans">
-                      <span className="font-bold text-zinc-200">
+                    <div className="p-2.5 rounded studio-surface-card border studio-border-default text-[11px] studio-fg-muted font-sans">
+                      <span className="font-bold studio-fg-primary">
                         Site Response:
                       </span>{" "}
                       {q.response}
@@ -1984,7 +2000,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     <div className="pt-2 flex justify-end gap-2">
                       <button
                         onClick={() => setActiveQueryToAnswer(q)}
-                        className="px-3 py-1 rounded bg-brand-cyan text-black font-bold text-xs hover:bg-white"
+                        className="px-3 py-1 rounded studio-btn-cyan font-bold text-xs"
                       >
                         Respond to Query
                       </button>
@@ -1999,8 +2015,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
       {/* VIEW 4: PART 11 AUDIT TRAIL */}
       {subView === "audit_trail" && (
-        <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
-          <h2 className="text-sm font-bold text-white font-mono">
+        <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
+          <h2 className="text-sm font-bold studio-fg-primary font-mono">
             Part 11-style audit trail (simulation)
           </h2>
 
@@ -2010,7 +2026,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                 Part 11-style audit trail (simulation)
               </caption>
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">
+                <tr className="border-b studio-border-default studio-surface-subtle studio-fg-muted">
                   <th scope="col" className="p-2.5">
                     Timestamp
                   </th>
@@ -2034,24 +2050,28 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y studio-divide-default">
                 {auditLog.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-zinc-800/30">
-                    <td className="p-2.5 text-zinc-500 whitespace-nowrap">
+                  <tr key={entry.id} className="studio-hover-surface">
+                    <td className="p-2.5 studio-fg-muted whitespace-nowrap">
                       {entry.timestamp.slice(0, 19)}
                     </td>
-                    <td className="p-2.5 text-brand-cyan font-bold">
+                    <td className="p-2.5 studio-fg-cyan font-bold">
                       {entry.subjectId}
                     </td>
-                    <td className="p-2.5 text-white">{entry.fieldName}</td>
-                    <td className="p-2.5 text-zinc-400">
+                    <td className="p-2.5 studio-fg-primary">
+                      {entry.fieldName}
+                    </td>
+                    <td className="p-2.5 studio-fg-muted">
                       {String(entry.previousValue ?? "—")}
                     </td>
-                    <td className="p-2.5 text-emerald-400 font-bold">
+                    <td className="p-2.5 studio-fg-emerald font-bold">
                       {String(entry.newValue ?? "—")}
                     </td>
-                    <td className="p-2.5 text-zinc-300">{entry.userRole}</td>
-                    <td className="p-2.5 text-zinc-400 font-sans text-xs">
+                    <td className="p-2.5 studio-fg-secondary">
+                      {entry.userRole}
+                    </td>
+                    <td className="p-2.5 studio-fg-muted font-sans text-xs">
                       {entry.reasonForChange}
                     </td>
                   </tr>
@@ -2064,54 +2084,54 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
       {/* MODAL: 21 CFR Part 11 Reason for Change Prompt */}
       {pendingChange && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-              <IconShieldCheck className="w-5 h-5 text-brand-cyan" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-sm">
+          <div className="studio-surface-elevated border studio-border-strong rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold studio-fg-primary font-mono flex items-center gap-2">
+              <IconShieldCheck className="w-5 h-5 studio-fg-cyan" />
               <span>21 CFR Part 11 Audit Justification</span>
             </h3>
-            <p className="text-xs text-zinc-400 font-sans">
+            <p className="text-xs studio-fg-muted font-sans">
               Modifying existing clinical observation data requires a documented
               Reason for Change.
             </p>
 
-            <div className="p-3 rounded bg-zinc-950 border border-zinc-800 font-mono text-xs space-y-1">
+            <div className="p-3 rounded studio-surface-subtle border studio-border-default font-mono text-xs space-y-1">
               <div>
                 Variable:{" "}
-                <span className="text-brand-cyan">
+                <span className="studio-fg-cyan">
                   {pendingChange.field.variableName}
                 </span>
               </div>
               <div>
                 Previous Value:{" "}
-                <span className="text-zinc-400">
+                <span className="studio-fg-muted">
                   {String(pendingChange.oldVal)}
                 </span>
               </div>
               <div>
                 New Value:{" "}
-                <span className="text-emerald-400">
+                <span className="studio-fg-emerald">
                   {String(pendingChange.newVal)}
                 </span>
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+              <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                 Reason for Change Justification:
               </label>
               <textarea
                 rows={2}
                 value={changeReasonInput}
                 onChange={(e) => setChangeReasonInput(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-xs bg-zinc-950 border border-zinc-700 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none"
+                className="w-full px-2.5 py-1.5 text-xs studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none"
               />
             </div>
 
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setPendingChange(null)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono"
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-active studio-fg-secondary text-xs font-mono"
               >
                 Cancel
               </button>
@@ -2124,7 +2144,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     changeReasonInput
                   )
                 }
-                className="px-3 py-1.5 rounded-lg bg-brand-cyan hover:bg-white text-black font-bold text-xs font-mono"
+                className="px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs font-mono"
               >
                 Confirm Audit Signature
               </button>
@@ -2135,12 +2155,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
       {/* MODAL: Query Response */}
       {activeQueryToAnswer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-bold text-white font-mono">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-sm">
+          <div className="studio-surface-elevated border studio-border-strong rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold studio-fg-primary font-mono">
               Respond to Clinical Query
             </h3>
-            <p className="text-xs text-zinc-400 font-sans">
+            <p className="text-xs studio-fg-muted font-sans">
               {activeQueryToAnswer.message}
             </p>
 
@@ -2149,13 +2169,13 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               value={queryResponseText}
               onChange={(e) => setQueryResponseText(e.target.value)}
               placeholder="Enter site investigator response and verification rationale..."
-              className="w-full px-3 py-2 text-xs bg-zinc-950 border border-zinc-700 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none"
+              className="w-full px-3 py-2 text-xs studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none"
             />
 
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setActiveQueryToAnswer(null)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-xs font-mono"
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-fg-secondary text-xs font-mono"
               >
                 Cancel
               </button>
@@ -2177,7 +2197,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   setActiveQueryToAnswer(null);
                   setQueryResponseText("");
                 }}
-                className="px-3 py-1.5 rounded-lg bg-brand-cyan text-black font-bold text-xs font-mono"
+                className="px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs font-mono"
               >
                 Submit Response
               </button>

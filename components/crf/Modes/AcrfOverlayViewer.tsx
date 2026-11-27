@@ -101,19 +101,19 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6">
+    <div className="flex-1 flex flex-col h-full studio-surface-canvas p-4 sm:p-6 overflow-y-auto space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b studio-border-default">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400">
+            <span className="p-1.5 rounded-lg studio-accent-sky border">
               <IconFileCode className="w-5 h-5" />
             </span>
-            <h2 className="text-lg font-bold text-white font-mono">
+            <h2 className="text-lg font-bold studio-fg-primary font-mono">
               Visual Annotated CRF (aCRF) Submission Studio
             </h2>
           </div>
-          <p className="text-xs text-zinc-400 font-sans mt-1">
+          <p className="text-xs studio-fg-muted font-sans mt-1">
             Publication-ready blank case report form with{" "}
             {standardCitation("SDTMIG")} / CDASH variable annotation overlays
             for FDA, EMA, and PMDA filings.
@@ -124,9 +124,9 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
           {onOpenBranding && (
             <button
               onClick={onOpenBranding}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-mono transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-surface-card studio-hover-surface border studio-border-default studio-fg-secondary studio-hover-fg-primary text-xs font-mono transition-all"
             >
-              <IconPalette className="w-4 h-4 text-brand-cyan" />
+              <IconPalette className="w-4 h-4 studio-fg-cyan" />
               <span>Branding</span>
             </button>
           )}
@@ -134,7 +134,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
           {onOpenExportModal && (
             <button
               onClick={onOpenExportModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl studio-btn-sky font-mono text-xs font-bold transition-all shadow-sm"
             >
               <IconFileSpreadsheet className="w-4 h-4" />
               <span>Export Docx / PDF</span>
@@ -146,11 +146,11 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
             label="Copy aCRF HTML"
             copiedLabel="Copied HTML!"
             successMessage="aCRF HTML content copied to clipboard"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-mono transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-surface-muted studio-hover-active border studio-border-strong studio-fg-primary text-xs font-mono transition-all cursor-pointer"
           />
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-cyan text-black hover:bg-white font-mono text-xs font-bold transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm"
           >
             <IconPrinter className="w-4 h-4" />
             <span>
@@ -163,13 +163,13 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
       </div>
 
       {/* View Mode Switcher */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+      <div className="flex items-center gap-2 border-b studio-border-default pb-2">
         <button
           onClick={() => setViewMode("single_form")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono transition-all ${
             viewMode === "single_form"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card border studio-border-default studio-fg-muted studio-hover-fg-primary studio-hover-surface"
           }`}
         >
           <IconFileCode className="w-4 h-4" />
@@ -179,8 +179,8 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
           onClick={() => setViewMode("study_book")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono transition-all ${
             viewMode === "study_book"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card border studio-border-default studio-fg-muted studio-hover-fg-primary studio-hover-surface"
           }`}
         >
           <IconBook className="w-4 h-4" />
@@ -190,8 +190,8 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
           onClick={() => setViewMode("sdtm_matrix")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono transition-all ${
             viewMode === "sdtm_matrix"
-              ? "bg-brand-cyan text-black font-bold"
-              : "bg-zinc-900 text-zinc-400 hover:text-white"
+              ? "studio-btn-cyan font-bold"
+              : "studio-surface-card border studio-border-default studio-fg-muted studio-hover-fg-primary studio-hover-surface"
           }`}
         >
           <IconTable className="w-4 h-4" />
@@ -210,8 +210,8 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                 onClick={() => setSelectedFormId(f.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-all whitespace-nowrap flex items-center gap-2 border ${
                   f.id === selectedFormId
-                    ? "bg-brand-cyan/15 border-brand-cyan/40 text-brand-cyan font-bold"
-                    : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white"
+                    ? "studio-accent-cyan-strong font-bold"
+                    : "studio-surface-card studio-border-default studio-fg-muted studio-hover-fg-primary studio-hover-surface"
                 }`}
               >
                 <span>[{f.domain}]</span>
@@ -221,23 +221,23 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
           </div>
 
           {/* Form Paper Document Card */}
-          <div className="bg-white text-zinc-900 p-8 sm:p-10 rounded-2xl shadow-2xl border border-zinc-300 max-w-4xl mx-auto space-y-6">
+          <div className="studio-paper p-8 sm:p-10 rounded-2xl shadow-2xl border max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="border-b-2 border-zinc-900 pb-4 flex items-end justify-between">
-              <div>
-                <h2 className="text-xl font-extrabold uppercase text-zinc-900 tracking-tight">
+            <div className="border-b-2 studio-paper-border-strong pb-4 flex items-end justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold uppercase studio-paper-fg tracking-tight">
                   {study.studyName}
                 </h2>
-                <div className="font-mono text-xs text-zinc-600 mt-1">
+                <div className="font-mono text-xs studio-paper-fg-muted mt-1">
                   Protocol: {study.protocolNumber} | Phase: {study.phase} |
                   Sponsor: {study.sponsor}
                 </div>
               </div>
-              <div className="text-right">
-                <span className="bg-zinc-900 text-white font-mono font-bold text-xs px-2.5 py-1 rounded">
+              <div className="text-right shrink-0">
+                <span className="inline-block whitespace-nowrap studio-paper-badge-ink font-mono font-bold text-xs px-2.5 py-1 rounded">
                   SUBMISSION aCRF
                 </span>
-                <div className="font-mono text-xs text-zinc-500 mt-1">
+                <div className="font-mono text-xs studio-paper-fg-muted mt-1 whitespace-nowrap">
                   Domain: {activeForm.domain} | v{activeForm.version}
                 </div>
               </div>
@@ -247,7 +247,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
               <h3 className="text-base font-bold text-sky-700 font-mono">
                 {activeForm.name}
               </h3>
-              <p className="text-xs text-zinc-600 mt-0.5">
+              <p className="text-xs studio-paper-fg-muted mt-0.5">
                 {activeForm.description}
               </p>
             </div>
@@ -256,12 +256,12 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
             {activeForm.sections.map((sec) => (
               <div
                 key={sec.id}
-                className="border border-zinc-300 rounded-lg overflow-hidden space-y-0"
+                className="border studio-paper-border rounded-lg overflow-hidden space-y-0"
               >
-                <div className="bg-zinc-100 px-4 py-2 font-bold font-mono text-xs text-zinc-800 border-b border-zinc-300">
+                <div className="studio-paper-muted px-4 py-2 font-bold font-mono text-xs studio-paper-fg border-b studio-paper-border">
                   {sec.title}
                 </div>
-                <div className="grid grid-cols-12 gap-3 p-4 bg-zinc-50/50">
+                <div className="grid grid-cols-12 gap-3 p-4 studio-paper-subtle">
                   {sec.fields.map((field) => {
                     const sdtmTag =
                       field.cdashMetadata?.acrfAnnotation ||
@@ -271,35 +271,35 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                     return (
                       <div
                         key={field.id}
-                        className="relative border border-zinc-200 bg-white rounded-lg p-3 shadow-xs"
+                        className="relative border studio-paper-border-subtle studio-paper rounded-lg p-3 shadow-xs"
                         style={{ gridColumn: `span ${field.columnSpan || 12}` }}
                       >
                         {/* SDTM Annotation Badge */}
                         <div
                           className={`absolute -top-2.5 right-2 font-mono text-[9px] font-bold text-white px-2 py-0.5 rounded shadow-sm flex items-center gap-1 ${
-                            isDerived ? "bg-purple-600" : "bg-sky-600"
+                            isDerived ? "bg-purple-700" : "bg-sky-700"
                           }`}
                         >
                           <span>{sdtmTag}</span>
-                          <span className="opacity-75 text-[8px]">
+                          <span className="text-[8px]">
                             {isDerived ? "[Derived]" : "[CRF]"}
                           </span>
                         </div>
 
-                        <div className="text-xs font-semibold text-zinc-800 mb-1">
+                        <div className="text-xs font-semibold studio-paper-fg mb-1">
                           {field.label}
                           {field.required && (
-                            <span className="text-red-500 ml-0.5">*</span>
+                            <span className="text-red-700 ml-0.5">*</span>
                           )}
                         </div>
 
                         {field.description && (
-                          <p className="text-[10px] text-zinc-500 mb-2">
+                          <p className="text-[10px] studio-paper-fg-muted mb-2">
                             {field.description}
                           </p>
                         )}
 
-                        <div className="h-6 border-b border-dashed border-zinc-300 flex items-end pb-0.5 text-[11px] text-zinc-400 font-mono">
+                        <div className="h-6 border-b border-dashed studio-paper-border flex items-end pb-0.5 text-[11px] studio-paper-fg-muted font-mono">
                           {field.placeholder || "_________________________"}
                           {field.unit && ` (${field.unit})`}
                         </div>
@@ -315,15 +315,15 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
 
       {/* VIEW 2: UNIFIED STUDY aCRF BOOK */}
       {viewMode === "study_book" && (
-        <div className="bg-white text-zinc-900 p-8 sm:p-12 rounded-2xl shadow-2xl border border-zinc-300 max-w-4xl mx-auto space-y-8">
-          <div className="text-center py-8 border-b-2 border-zinc-900 space-y-3">
+        <div className="studio-paper p-8 sm:p-12 rounded-2xl shadow-2xl border max-w-4xl mx-auto space-y-8">
+          <div className="text-center py-8 border-b-2 studio-paper-border-strong space-y-3">
             <span className="text-xs font-mono font-bold tracking-widest text-sky-700 uppercase">
               Regulatory Submission Annotated CRF Book (aCRF)
             </span>
-            <h2 className="text-2xl font-extrabold text-zinc-900">
+            <h2 className="text-2xl font-extrabold studio-paper-fg">
               {study.studyName}
             </h2>
-            <p className="text-xs font-mono text-zinc-600">
+            <p className="text-xs font-mono studio-paper-fg-muted">
               Protocol: {study.protocolNumber} | Phase: {study.phase} | Version:{" "}
               {study.version}
             </p>
@@ -331,13 +331,13 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
 
           {/* Table of Contents */}
           <div className="space-y-3">
-            <h3 className="font-mono font-bold text-sm text-zinc-900 uppercase border-b border-zinc-300 pb-1">
+            <h3 className="font-mono font-bold text-sm studio-paper-fg uppercase border-b studio-paper-border pb-1">
               Table of Contents
             </h3>
             <table className="w-full text-left font-mono text-xs">
               <caption className="sr-only">aCRF Book Table of Contents</caption>
               <thead>
-                <tr className="border-b border-zinc-300 bg-zinc-100">
+                <tr className="border-b studio-paper-border studio-paper-muted">
                   <th scope="col" className="p-2">
                     Section #
                   </th>
@@ -352,7 +352,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200">
+              <tbody className="divide-y studio-paper-divide">
                 {study.forms.map((f, idx) => (
                   <tr key={f.id}>
                     <td className="p-2">{idx + 1}</td>
@@ -371,20 +371,20 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
 
       {/* VIEW 3: SDTM MAPPING MATRIX */}
       {viewMode === "sdtm_matrix" && (
-        <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+        <div className="p-5 rounded-2xl studio-surface-card border studio-border-default space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white font-mono">
+            <h2 className="text-sm font-bold studio-fg-primary font-mono">
               CDISC SDTMIG v{CLINICAL_STANDARDS_PROFILE.SDTMIG} Target Variable
               Mapping Matrix
             </h2>
             <div className="flex items-center gap-2 text-[10px] font-mono">
-              <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              <span className="px-2 py-0.5 rounded studio-accent-sky border">
                 [CRF] Direct Collected
               </span>
-              <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              <span className="px-2 py-0.5 rounded studio-accent-purple border">
                 [Derived] Algorithm
               </span>
-              <span className="px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/30">
+              <span className="px-2 py-0.5 rounded studio-accent-cyan border">
                 [Assigned] System
               </span>
             </div>
@@ -397,7 +397,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                 Variable Mapping Matrix
               </caption>
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">
+                <tr className="border-b studio-border-default studio-surface-subtle studio-fg-muted">
                   <th scope="col" className="p-2.5">
                     Domain
                   </th>
@@ -424,28 +424,30 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y studio-divide-subtle">
                 {sdtmMatrix.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-zinc-800/30">
-                    <td className="p-2.5 font-bold text-brand-cyan">
+                  <tr key={idx} className="studio-hover-subtle">
+                    <td className="p-2.5 font-bold studio-fg-cyan">
                       {row.formDomain}
                     </td>
-                    <td className="p-2.5 text-white">{row.variableName}</td>
-                    <td className="p-2.5 text-zinc-300 font-sans text-xs">
+                    <td className="p-2.5 studio-fg-primary">
+                      {row.variableName}
+                    </td>
+                    <td className="p-2.5 studio-fg-secondary font-sans text-xs">
                       {row.label}
                     </td>
-                    <td className="p-2.5 text-zinc-500">{row.dataType}</td>
-                    <td className="p-2.5 text-sky-400 font-bold">
+                    <td className="p-2.5 studio-fg-muted">{row.dataType}</td>
+                    <td className="p-2.5 studio-fg-sky font-bold">
                       {row.sdtmTarget}
                     </td>
                     <td className="p-2.5">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                           row.origin === "Derived"
-                            ? "bg-purple-500/20 text-purple-300"
+                            ? "studio-accent-purple"
                             : row.origin === "Assigned"
-                              ? "bg-teal-500/20 text-teal-300"
-                              : "bg-sky-500/20 text-sky-300"
+                              ? "studio-accent-cyan"
+                              : "studio-accent-sky"
                         }`}
                       >
                         {row.origin}
@@ -453,16 +455,16 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
                     </td>
                     <td className="p-2.5">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                           row.core === "HR"
-                            ? "bg-red-500/20 text-red-300"
-                            : "bg-zinc-800 text-zinc-400"
+                            ? "studio-accent-red"
+                            : "studio-surface-muted studio-fg-muted studio-border-default"
                         }`}
                       >
                         {row.core}
                       </span>
                     </td>
-                    <td className="p-2.5 text-zinc-500">
+                    <td className="p-2.5 studio-fg-muted">
                       {row.nciCode || "—"}
                     </td>
                   </tr>

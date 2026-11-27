@@ -407,11 +407,10 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       {/* Variable Name & Display Label */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-[11px] font-mono text-zinc-400">
-            CDASH / SDTM Variable Name{" "}
-            <span className="text-brand-cyan">*</span>
+          <label className="block text-[11px] font-mono studio-fg-muted">
+            CDASH / SDTM Variable Name <span className="studio-fg-cyan">*</span>
           </label>
-          <span className="text-[10px] font-mono text-zinc-500">
+          <span className="text-[10px] font-mono studio-fg-muted">
             {variableNameDraft.length}/8 chars
           </span>
         </div>
@@ -420,15 +419,15 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
           maxLength={8}
           value={variableNameDraft}
           onChange={(e) => setVariableNameDraft(e.target.value.toUpperCase())}
-          className={`w-full px-2.5 py-1.5 bg-zinc-950 border rounded-lg text-white font-mono uppercase focus:outline-none ${
+          className={`w-full px-2.5 py-1.5 studio-surface-subtle border rounded-lg studio-fg-primary font-mono uppercase focus:outline-none ${
             !varValidation.isValid && variableNameDraft
-              ? "border-red-500/70 focus:border-red-400 ring-1 ring-red-500/20"
-              : "border-zinc-800 focus:border-brand-cyan"
+              ? "border-red-500/70 studio-border-red ring-1 ring-red-500/20"
+              : "studio-border-default studio-focus-input"
           }`}
           placeholder="e.g. BRTHYR, SYSBP, AETERM, DITERM"
         />
         {!varValidation.isValid && variableNameDraft && (
-          <p className="text-[10px] text-red-400 font-mono mt-1">
+          <p className="text-[10px] studio-fg-red font-mono mt-1">
             ⚠ {varValidation.error}
           </p>
         )}
@@ -437,13 +436,13 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             <TooltipButton
               type="button"
               onClick={() => handleRenameEverywhere(variableNameDraft)}
-              className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
+              className="px-2 py-0.5 rounded studio-accent-cyan studio-hover-bg-cyan border text-[10px] font-mono flex items-center gap-1 transition-colors"
               tooltip="Atomically updates variable name and all AST rules, conditions, and formulas"
             >
               <span>Rename Everywhere (Atomic)</span>
             </TooltipButton>
             {renameSuccess && (
-              <span className="text-[10px] font-mono text-emerald-400 animate-in fade-in">
+              <span className="text-[10px] font-mono studio-fg-emerald animate-in fade-in">
                 ✓ {renameSuccess}
               </span>
             )}
@@ -452,28 +451,28 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       </div>
 
       <div>
-        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-          Question Text / Form Label <span className="text-brand-cyan">*</span>
+        <label className="block text-[11px] font-mono studio-fg-muted mb-1">
+          Question Text / Form Label <span className="studio-fg-cyan">*</span>
         </label>
         <input
           type="text"
           value={field.label}
           onChange={(e) => onUpdateField({ label: e.target.value })}
           onBlur={onCommitReviewTargetChange}
-          className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none"
+          className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none"
           placeholder="e.g. Primary Device Deficiency Classification"
         />
       </div>
 
       <div>
-        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+        <label className="block text-[11px] font-mono studio-fg-muted mb-1">
           Instruction / Clinical Description
         </label>
         <textarea
           rows={2}
           value={field.description || ""}
           onChange={(e) => onUpdateField({ description: e.target.value })}
-          className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-300 font-sans focus:border-brand-cyan focus:outline-none resize-none"
+          className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-secondary font-sans studio-focus-input focus:outline-none resize-none"
           placeholder="e.g. Select the primary reason observed during procedure."
         />
       </div>
@@ -481,7 +480,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       {/* Data Type & Grid Width */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+          <label className="block text-[11px] font-mono studio-fg-muted mb-1">
             Data Type
           </label>
           <select
@@ -489,7 +488,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             onChange={(e) =>
               onUpdateField({ dataType: e.target.value as ClinicalDataType })
             }
-            className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-sans focus:border-brand-cyan focus:outline-none"
+            className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none"
           >
             {DATA_TYPES.map((dt) => (
               <option key={dt.type} value={dt.type}>
@@ -500,7 +499,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+          <label className="block text-[11px] font-mono studio-fg-muted mb-1">
             Grid Width ({field.columnSpan}/12)
           </label>
           <select
@@ -508,7 +507,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             onChange={(e) =>
               onUpdateField({ columnSpan: parseInt(e.target.value, 10) })
             }
-            className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none"
+            className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((col) => (
               <option key={col} value={col}>
@@ -527,12 +526,12 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       </div>
 
       {/* 3-Tier Missing Data Engine */}
-      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
+      <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default space-y-2.5">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-mono text-zinc-300 font-bold uppercase">
+          <label className="text-[11px] font-mono studio-fg-secondary font-bold uppercase">
             3-Tier Missing Data Engine
           </label>
-          <span className="text-[10px] font-mono text-brand-cyan">
+          <span className="text-[10px] font-mono studio-fg-cyan">
             {field.requirementTier ||
               (field.required ? "hard_stop" : "optional")}
           </span>
@@ -547,8 +546,8 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all border ${
               field.requirementTier === "optional" ||
               (!field.requirementTier && !field.required)
-                ? "bg-zinc-800 text-white border-zinc-600 shadow-sm"
-                : "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                ? "studio-surface-muted studio-fg-primary studio-border-strong shadow-sm"
+                : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
             }`}
           >
             Optional
@@ -561,8 +560,8 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all border ${
               field.requirementTier === "hard_stop" ||
               (!field.requirementTier && field.required)
-                ? "bg-red-500/20 text-red-300 border-red-500/40 shadow-sm"
-                : "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:text-red-300"
+                ? "studio-accent-red-strong shadow-sm"
+                : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-red"
             }`}
           >
             Hard Stop
@@ -574,15 +573,15 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             }
             className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all border ${
               field.requirementTier === "auto_query"
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm"
-                : "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:text-amber-300"
+                ? "studio-accent-amber-strong shadow-sm"
+                : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-amber"
             }`}
           >
             Auto-Query
           </button>
         </div>
 
-        <p className="text-[10px] text-zinc-400 leading-normal">
+        <p className="text-[10px] studio-fg-muted leading-normal">
           {field.requirementTier === "auto_query"
             ? "Allows form save when empty, but registers an open EDC discrepancy query ticket."
             : field.requirementTier === "hard_stop" ||
@@ -597,9 +596,9 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               type="checkbox"
               checked={field.readOnly || false}
               onChange={(e) => onUpdateField({ readOnly: e.target.checked })}
-              className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
+              className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0"
             />
-            <span className="text-xs text-zinc-300">Read-Only</span>
+            <span className="text-xs studio-fg-secondary">Read-Only</span>
           </label>
         </div>
       </div>
@@ -608,18 +607,18 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       {(field.dataType === "precision_date" ||
         field.dataType === "date" ||
         field.dataType === "partial_date") && (
-        <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
-          <div className="text-[11px] font-mono text-zinc-300 font-bold uppercase flex items-center justify-between">
+        <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default space-y-2.5">
+          <div className="text-[11px] font-mono studio-fg-secondary font-bold uppercase flex items-center justify-between">
             <span>Precision Date Controls</span>
-            <span className="text-[10px] text-brand-cyan">ISO 8601</span>
+            <span className="text-[10px] studio-fg-cyan">ISO 8601</span>
           </div>
           <div className="space-y-2">
-            <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700">
+            <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg studio-surface-subtle border studio-border-default studio-hover-border-strong">
               <div>
-                <span className="text-xs text-zinc-200 block font-medium">
+                <span className="text-xs studio-fg-primary block font-medium">
                   Allow Partial Dates
                 </span>
-                <span className="text-[10px] text-zinc-400">
+                <span className="text-[10px] studio-fg-muted">
                   Permit missing/unknown day or month (e.g. 2026-08-UNK,
                   2026-UNK-UNK)
                 </span>
@@ -634,16 +633,16 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                 onChange={(e) =>
                   onUpdateField({ allowPartial: e.target.checked })
                 }
-                className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0 ml-2"
+                className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0 ml-2"
               />
             </label>
 
-            <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700">
+            <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg studio-surface-subtle border studio-border-default studio-hover-border-strong">
               <div>
-                <span className="text-xs text-zinc-200 block font-medium">
+                <span className="text-xs studio-fg-primary block font-medium">
                   Prevent Future Dates
                 </span>
-                <span className="text-[10px] text-zinc-400">
+                <span className="text-[10px] studio-fg-muted">
                   Enforce boundary check against current UTC timestamp
                 </span>
               </div>
@@ -653,7 +652,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                 onChange={(e) =>
                   onUpdateField({ preventFutureDate: e.target.checked })
                 }
-                className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0 ml-2"
+                className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0 ml-2"
               />
             </label>
           </div>
@@ -661,17 +660,17 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       )}
 
       {/* Clinical Governance & Null Flavors */}
-      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
-        <div className="text-[11px] font-mono text-zinc-300 font-bold uppercase">
+      <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default space-y-2.5">
+        <div className="text-[11px] font-mono studio-fg-secondary font-bold uppercase">
           Clinical Governance &amp; Null Flavors
         </div>
         <div className="space-y-2">
-          <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700">
+          <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg studio-surface-subtle border studio-border-default studio-hover-border-strong">
             <div>
-              <span className="text-xs text-zinc-200 block font-medium">
+              <span className="text-xs studio-fg-primary block font-medium">
                 Allow CDISC Null Flavors
               </span>
-              <span className="text-[10px] text-zinc-400">
+              <span className="text-[10px] studio-fg-muted">
                 Attach compact ND (Not Done), NA (Not Applicable), UNK (Unknown)
                 badges
               </span>
@@ -682,16 +681,16 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               onChange={(e) =>
                 onUpdateField({ allowNullFlavor: e.target.checked })
               }
-              className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0 ml-2"
+              className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0 ml-2"
             />
           </label>
 
-          <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700">
+          <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg studio-surface-subtle border studio-border-default studio-hover-border-strong">
             <div>
-              <span className="text-xs text-zinc-200 block font-medium">
+              <span className="text-xs studio-fg-primary block font-medium">
                 Requires SDV (CRA Monitor)
               </span>
-              <span className="text-[10px] text-zinc-400">
+              <span className="text-[10px] studio-fg-muted">
                 Flag variable for mandatory Source Document Verification audit
               </span>
             </div>
@@ -699,16 +698,16 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               type="checkbox"
               checked={field.requiresSdv ?? false}
               onChange={(e) => onUpdateField({ requiresSdv: e.target.checked })}
-              className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0 ml-2"
+              className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0 ml-2"
             />
           </label>
 
-          <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700">
+          <label className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg studio-surface-subtle border studio-border-default studio-hover-border-strong">
             <div>
-              <span className="text-xs text-zinc-200 block font-medium">
+              <span className="text-xs studio-fg-primary block font-medium">
                 Blinded Variable
               </span>
-              <span className="text-[10px] text-zinc-400">
+              <span className="text-[10px] studio-fg-muted">
                 Mask observation from sponsor roles until database lock
               </span>
             </div>
@@ -716,7 +715,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               type="checkbox"
               checked={field.isBlinded ?? false}
               onChange={(e) => onUpdateField({ isBlinded: e.target.checked })}
-              className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0 ml-2"
+              className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0 ml-2"
             />
           </label>
         </div>
@@ -726,25 +725,25 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       {(field.dataType === "number" ||
         field.dataType === "integer" ||
         field.dataType === "calculated") && (
-        <div className="space-y-3 pt-2 border-t border-zinc-800">
-          <div className="text-[11px] font-mono text-zinc-400 font-semibold uppercase">
+        <div className="space-y-3 pt-2 border-t studio-border-default">
+          <div className="text-[11px] font-mono studio-fg-muted font-semibold uppercase">
             Numeric Boundaries &amp; Units
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+              <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                 Unit
               </label>
               <input
                 type="text"
                 value={field.unit || ""}
                 onChange={(e) => onUpdateField({ unit: e.target.value })}
-                className="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white font-mono"
+                className="w-full px-2 py-1 studio-surface-subtle border studio-border-default rounded text-xs studio-fg-primary font-mono"
                 placeholder="mmHg, kg, °C"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+              <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                 Min Value
               </label>
               <input
@@ -758,12 +757,12 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                         : parseFloat(e.target.value),
                   })
                 }
-                className="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white font-mono"
+                className="w-full px-2 py-1 studio-surface-subtle border studio-border-default rounded text-xs studio-fg-primary font-mono"
                 placeholder="None"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+              <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                 Max Value
               </label>
               <input
@@ -777,7 +776,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                         : parseFloat(e.target.value),
                   })
                 }
-                className="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white font-mono"
+                className="w-full px-2 py-1 studio-surface-subtle border studio-border-default rounded text-xs studio-fg-primary font-mono"
                 placeholder="None"
               />
             </div>
@@ -787,26 +786,26 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
       {/* RICH QUESTION OPTIONS BUILDER (Radio, Single Select, Multi Select) */}
       {isCodelistField && (
-        <div className="space-y-3 pt-3 border-t border-zinc-800">
+        <div className="space-y-3 pt-3 border-t studio-border-default">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono text-white font-bold uppercase flex items-center gap-1.5">
-              <IconListDetails className="w-3.5 h-3.5 text-brand-cyan" />
+            <span className="text-[11px] font-mono studio-fg-primary font-bold uppercase flex items-center gap-1.5">
+              <IconListDetails className="w-3.5 h-3.5 studio-fg-cyan" />
               <span>Options &amp; Terminology</span>
             </span>
-            <span className="text-[10px] font-mono text-zinc-400">
+            <span className="text-[10px] font-mono studio-fg-muted">
               {currentOptions.length} choice
               {currentOptions.length === 1 ? "" : "s"}
             </span>
           </div>
 
           {/* Source Switcher: Standard vs Custom */}
-          <div className="flex rounded-lg p-0.5 bg-zinc-900 border border-zinc-800">
+          <div className="flex rounded-lg p-0.5 studio-surface-card border studio-border-default">
             <button
               onClick={() => handleSetOptionMode("standard")}
               className={`flex-1 py-1.5 px-2 rounded-md text-[11px] font-mono font-medium transition-all ${
                 optionMode === "standard"
-                  ? "bg-zinc-800 text-brand-cyan shadow-sm font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  ? "studio-surface-muted studio-fg-cyan shadow-sm font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               Standard Codelist
@@ -815,8 +814,8 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               onClick={() => handleSetOptionMode("custom")}
               className={`flex-1 py-1.5 px-2 rounded-md text-[11px] font-mono font-medium transition-all ${
                 optionMode === "custom"
-                  ? "bg-zinc-800 text-brand-cyan shadow-sm font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  ? "studio-surface-muted studio-fg-cyan shadow-sm font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               Custom Options ({field.customOptions?.length || 0})
@@ -825,8 +824,8 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
           {/* STANDARD CODELIST SELECTOR */}
           {optionMode === "standard" && (
-            <div className="space-y-2 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800">
-              <label className="block text-[10px] font-mono text-zinc-400">
+            <div className="space-y-2 p-2.5 rounded-xl studio-surface-subtle border studio-border-default">
+              <label className="block text-[10px] font-mono studio-fg-muted">
                 Select Controlled Codelist Library
               </label>
               <select
@@ -837,7 +836,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                     customOptions: undefined,
                   });
                 }}
-                className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-750 rounded-lg text-white font-sans text-xs focus:border-brand-cyan focus:outline-none"
+                className="w-full px-2.5 py-1.5 studio-surface-card border studio-border-default rounded-lg studio-fg-primary font-sans text-xs studio-focus-input focus:outline-none"
               >
                 <option value="">-- Choose Standard / Study Codelist --</option>
                 {codelists.map((cl) => (
@@ -849,12 +848,12 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               </select>
 
               {currentCodelist && (
-                <div className="pt-2 border-t border-zinc-800/80 space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                <div className="pt-2 border-t studio-border-default space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono studio-fg-muted">
                     <span>Preview Choices:</span>
                     <button
                       onClick={() => handleSetOptionMode("custom")}
-                      className="text-brand-cyan hover:underline"
+                      className="studio-fg-cyan hover:underline"
                     >
                       Clone &amp; Customize
                     </button>
@@ -863,10 +862,10 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                     {currentCodelist.options.map((opt) => (
                       <span
                         key={opt.code}
-                        className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-300 font-sans"
+                        className="px-1.5 py-0.5 rounded studio-surface-card border studio-border-default text-[10px] studio-fg-secondary font-sans"
                       >
                         {opt.label}{" "}
-                        <code className="text-zinc-500">({opt.code})</code>
+                        <code className="studio-fg-muted">({opt.code})</code>
                       </span>
                     ))}
                   </div>
@@ -880,8 +879,8 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
             <div className="space-y-3">
               {/* Quick Template Buttons */}
               <div className="space-y-1.5">
-                <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                  <IconSparkles className="w-3 h-3 text-brand-cyan" />
+                <div className="text-[10px] font-mono studio-fg-muted uppercase tracking-wider flex items-center gap-1">
+                  <IconSparkles className="w-3 h-3 studio-fg-cyan" />
                   <span>Quick-Insert Templates</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -889,11 +888,11 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                     <TooltipButton
                       key={tpl.name}
                       onClick={() => handleApplyTemplate(tpl)}
-                      className="px-2 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-brand-cyan/40 text-[10px] font-sans text-zinc-300 hover:text-white transition-all flex items-center gap-1"
+                      className="px-2 py-1 rounded-md studio-surface-card studio-hover-surface border studio-border-default studio-hover-border-cyan text-[10px] font-sans studio-fg-secondary studio-hover-fg-primary transition-all flex items-center gap-1"
                       tooltip={`Load ${tpl.options.length} options for ${tpl.name}`}
                     >
                       <span>{tpl.name}</span>
-                      <span className="text-[9px] font-mono text-brand-cyan/80 bg-brand-cyan/10 px-1 rounded">
+                      <span className="text-[9px] font-mono studio-fg-cyan studio-bg-cyan px-1 rounded">
                         {tpl.options.length}
                       </span>
                     </TooltipButton>
@@ -902,13 +901,13 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               </div>
 
               {/* Bulk Text Import Drawer */}
-              <div className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 space-y-2">
+              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default space-y-2">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setIsBulkOpen(!isBulkOpen)}
-                    className="text-[10px] font-mono text-zinc-400 hover:text-brand-cyan flex items-center gap-1 transition-colors"
+                    className="text-[10px] font-mono studio-fg-muted studio-hover-fg-cyan flex items-center gap-1 transition-colors"
                   >
-                    <IconClipboardText className="w-3 h-3 text-brand-cyan" />
+                    <IconClipboardText className="w-3 h-3 studio-fg-cyan" />
                     <span>
                       {isBulkOpen
                         ? "Hide Bulk Paste Tool"
@@ -924,19 +923,19 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                       value={bulkInput}
                       onChange={(e) => setBulkInput(e.target.value)}
                       placeholder="Paste options here, e.g.:&#10;Mild&#10;Moderate&#10;Severe&#10;or: Option A, Option B, Option C"
-                      className="w-full px-2 py-1.5 text-xs bg-zinc-900 border border-zinc-750 rounded text-white font-sans focus:border-brand-cyan focus:outline-none resize-none"
+                      className="w-full px-2 py-1.5 text-xs studio-surface-card border studio-border-default rounded studio-fg-primary font-sans studio-focus-input focus:outline-none resize-none"
                     />
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setIsBulkOpen(false)}
-                        className="px-2 py-1 text-[10px] font-mono text-zinc-400 hover:text-white"
+                        className="px-2 py-1 text-[10px] font-mono studio-fg-muted studio-hover-fg-primary"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleApplyBulkText}
                         disabled={!bulkInput.trim()}
-                        className="px-2.5 py-1 rounded bg-brand-cyan/20 hover:bg-brand-cyan text-brand-cyan hover:text-black font-mono text-[10px] font-bold border border-brand-cyan/40 transition-all disabled:opacity-40"
+                        className="px-2.5 py-1 rounded studio-accent-cyan studio-hover-cyan font-mono text-[10px] font-bold border transition-all disabled:opacity-40"
                       >
                         Apply Bulk Options
                       </button>
@@ -947,7 +946,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
               {/* Interactive Rows Editor */}
               <div className="space-y-1.5">
-                <div className="grid grid-cols-12 gap-1 text-[9px] font-mono text-zinc-400 uppercase px-1">
+                <div className="grid grid-cols-12 gap-1 text-[9px] font-mono studio-fg-muted uppercase px-1">
                   <span className="col-span-1 text-center">#</span>
                   <span className="col-span-5">Display Label</span>
                   <span className="col-span-3">SDTM Code</span>
@@ -959,9 +958,9 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                   {(field.customOptions || []).map((opt, idx) => (
                     <div
                       key={idx}
-                      className="grid grid-cols-12 gap-1 items-center p-1 rounded-md bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 transition-colors"
+                      className="grid grid-cols-12 gap-1 items-center p-1 rounded-md studio-surface-card border studio-border-default studio-hover-border-strong transition-colors"
                     >
-                      <span className="col-span-1 text-center font-mono text-[10px] text-zinc-500 font-bold">
+                      <span className="col-span-1 text-center font-mono text-[10px] studio-fg-muted font-bold">
                         {opt.order || idx + 1}
                       </span>
                       <input
@@ -970,7 +969,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                         onChange={(e) =>
                           handleUpdateOptionItem(idx, { label: e.target.value })
                         }
-                        className="col-span-5 px-1.5 py-1 text-[11px] bg-zinc-950 border border-zinc-800 rounded text-white font-sans focus:border-brand-cyan focus:outline-none"
+                        className="col-span-5 px-1.5 py-1 text-[11px] studio-surface-subtle border studio-border-default rounded studio-fg-primary font-sans studio-focus-input focus:outline-none"
                         placeholder="Choice Label"
                       />
                       <input
@@ -981,7 +980,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                             code: e.target.value.toUpperCase(),
                           })
                         }
-                        className="col-span-3 px-1.5 py-1 text-[10px] bg-zinc-950 border border-zinc-800 rounded text-brand-cyan font-mono uppercase focus:border-brand-cyan focus:outline-none"
+                        className="col-span-3 px-1.5 py-1 text-[10px] studio-surface-subtle border studio-border-default rounded studio-fg-cyan font-mono uppercase studio-focus-input focus:outline-none"
                         placeholder="CODE"
                       />
                       <input
@@ -992,14 +991,14 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                             nciCode: e.target.value.toUpperCase(),
                           })
                         }
-                        className="col-span-2 px-1 py-1 text-[9px] bg-zinc-950 border border-zinc-800 rounded text-zinc-400 font-mono uppercase focus:border-brand-cyan focus:outline-none"
+                        className="col-span-2 px-1 py-1 text-[9px] studio-surface-subtle border studio-border-default rounded studio-fg-muted font-mono uppercase studio-focus-input focus:outline-none"
                         placeholder="C-Code"
                       />
                       <div className="col-span-1 flex items-center justify-end gap-0.5">
                         <TooltipButton
                           onClick={() => handleMoveOption(idx, -1)}
                           disabled={idx === 0}
-                          className="p-0.5 text-zinc-500 hover:text-white disabled:opacity-20"
+                          className="p-0.5 studio-fg-muted studio-hover-fg-primary disabled:opacity-20"
                           tooltip="Move Up"
                           aria-label="Move Up"
                         >
@@ -1010,7 +1009,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                           disabled={
                             idx === (field.customOptions?.length || 0) - 1
                           }
-                          className="p-0.5 text-zinc-500 hover:text-white disabled:opacity-20"
+                          className="p-0.5 studio-fg-muted studio-hover-fg-primary disabled:opacity-20"
                           tooltip="Move Down"
                           aria-label="Move Down"
                         >
@@ -1018,7 +1017,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                         </TooltipButton>
                         <TooltipButton
                           onClick={() => handleDeleteOptionItem(idx)}
-                          className="p-0.5 text-zinc-500 hover:text-red-400 transition-colors"
+                          className="p-0.5 studio-fg-muted studio-hover-fg-red transition-colors"
                           tooltip="Delete Choice"
                           aria-label="Delete Choice"
                         >
@@ -1030,7 +1029,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
                   {(!field.customOptions ||
                     field.customOptions.length === 0) && (
-                    <div className="text-center p-3 rounded-lg border border-dashed border-zinc-800 text-zinc-500 text-[11px]">
+                    <div className="text-center p-3 rounded-lg border border-dashed studio-border-default studio-fg-muted text-[11px]">
                       No custom choices defined yet. Click &quot;Add
                       Option&quot; or select a template above.
                     </div>
@@ -1041,7 +1040,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                 <div className="flex items-center justify-between pt-1 gap-2">
                   <button
                     onClick={handleAddOption}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-brand-cyan border border-zinc-750 text-[11px] font-mono font-medium transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md studio-surface-card studio-hover-surface studio-fg-cyan border studio-border-default text-[11px] font-mono font-medium transition-colors"
                   >
                     <IconPlus className="w-3 h-3" />
                     <span>Add Option</span>
@@ -1051,7 +1050,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
                     (field.customOptions?.length || 0) > 0 && (
                       <TooltipButton
                         onClick={handleSaveAsStudyCodelist}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan border border-brand-cyan/40 text-[10px] font-mono font-bold transition-all"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md studio-accent-cyan-strong studio-hover-bg-cyan-strong border text-[10px] font-mono font-bold transition-all"
                         tooltip="Promote these choices into a reusable study-level controlled codelist"
                       >
                         <IconDeviceFloppy className="w-3 h-3" />
@@ -1067,7 +1066,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
       {/* Dynamic AST Formula Builder for Calculated Fields */}
       {field.dataType === "calculated" && (
-        <div className="pt-2 border-t border-zinc-800">
+        <div className="pt-2 border-t studio-border-default">
           <AstRuleEditor
             formula={field.calculationFormula || ""}
             onChange={(newFormula) =>
@@ -1081,28 +1080,28 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
       {/* VAS scale labels */}
       {field.dataType === "vas_scale" && (
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800">
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t studio-border-default">
           <div>
-            <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+            <label className="block text-[10px] font-mono studio-fg-muted mb-1">
               Min Label (0mm)
             </label>
             <input
               type="text"
               value={field.scaleMinLabel || ""}
               onChange={(e) => onUpdateField({ scaleMinLabel: e.target.value })}
-              className="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white"
+              className="w-full px-2 py-1 studio-surface-subtle border studio-border-default rounded text-xs studio-fg-primary"
               placeholder="e.g. No Pain"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+            <label className="block text-[10px] font-mono studio-fg-muted mb-1">
               Max Label (100mm)
             </label>
             <input
               type="text"
               value={field.scaleMaxLabel || ""}
               onChange={(e) => onUpdateField({ scaleMaxLabel: e.target.value })}
-              className="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white"
+              className="w-full px-2 py-1 studio-surface-subtle border studio-border-default rounded text-xs studio-fg-primary"
               placeholder="e.g. Worst Pain"
             />
           </div>

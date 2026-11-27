@@ -14,10 +14,10 @@ export const NoPhiNotice: React.FC<NoPhiNoticeProps> = ({ className = "" }) => (
   <p
     role="note"
     data-testid="no-phi-notice"
-    className={`flex min-w-0 items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-950/30 px-3 py-2 text-xs font-sans leading-snug text-amber-200 break-words ${className}`}
+    className={`flex min-w-0 items-start gap-2 rounded-xl border studio-accent-amber px-3 py-2 text-xs font-sans leading-snug break-words ${className}`}
   >
     <IconAlertTriangle
-      className="mt-px h-4 w-4 shrink-0 text-amber-400"
+      className="mt-px h-4 w-4 shrink-0 studio-fg-amber"
       aria-hidden="true"
     />
     <span className="min-w-0">

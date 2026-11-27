@@ -207,25 +207,25 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       run: onOpenOmnibar,
     },
     "add-form": {
-      icon: <IconSparkles className="w-3.5 h-3.5 text-amber-400" />,
+      icon: <IconSparkles className="w-3.5 h-3.5 studio-fg-amber" />,
       run: onOpenFormCatalog,
     },
     "library-upgrades": {
-      icon: <IconBooks className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconBooks className="w-3.5 h-3.5 studio-fg-cyan" />,
       run: onOpenLibraryUpgrades,
     },
     baselines: {
-      icon: <IconBookmark className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconBookmark className="w-3.5 h-3.5 studio-fg-cyan" />,
       run: onOpenBaselines,
     },
     "compare-baseline": {
-      icon: <IconGitCompare className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconGitCompare className="w-3.5 h-3.5 studio-fg-cyan" />,
       run: onOpenCompareBaseline,
     },
     branding: {
       icon: (
         <span
-          className="block w-3.5 h-3.5 rounded-full border border-zinc-700"
+          className="block w-3.5 h-3.5 rounded-full border studio-border-strong"
           style={{ backgroundColor: branding.primaryColor }}
         />
       ),
@@ -234,9 +234,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     "toggle-theme": {
       icon:
         theme === "light" ? (
-          <IconMoon className="w-3.5 h-3.5 text-amber-500" />
+          <IconMoon className="w-3.5 h-3.5 studio-fg-amber" />
         ) : (
-          <IconSun className="w-3.5 h-3.5 text-amber-400" />
+          <IconSun className="w-3.5 h-3.5 studio-fg-amber" />
         ),
       label:
         theme === "light"
@@ -246,58 +246,58 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     },
     "toggle-sidebar": {
       icon: (
-        <IconLayoutSidebarLeftCollapse className="w-3.5 h-3.5 text-brand-cyan" />
+        <IconLayoutSidebarLeftCollapse className="w-3.5 h-3.5 studio-fg-cyan" />
       ),
       checked: isLeftSidebarOpen,
       run: activeMode === "designer" ? onToggleLeftSidebar : undefined,
     },
     "toggle-inspector": {
       icon: (
-        <IconLayoutSidebarRightCollapse className="w-3.5 h-3.5 text-brand-cyan" />
+        <IconLayoutSidebarRightCollapse className="w-3.5 h-3.5 studio-fg-cyan" />
       ),
       checked: isRightInspectorOpen,
       run: activeMode === "designer" ? onToggleRightInspector : undefined,
     },
     "toggle-terminal": {
-      icon: <IconTerminal2 className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconTerminal2 className="w-3.5 h-3.5 studio-fg-cyan" />,
       checked: isTerminalOpen,
       run: onToggleTerminal,
     },
     guide: {
-      icon: <IconHelp className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconHelp className="w-3.5 h-3.5 studio-fg-cyan" />,
       run: onOpenWizard,
     },
     tour: {
-      icon: <IconPlayerPlay className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconPlayerPlay className="w-3.5 h-3.5 studio-fg-cyan" />,
       run: onStartSpotlightTour,
     },
     diagnostics: {
       icon:
         totalIssues > 0 ? (
-          <IconBug className="w-3.5 h-3.5 text-amber-400" />
+          <IconBug className="w-3.5 h-3.5 studio-fg-amber" />
         ) : (
-          <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <IconCheck className="w-3.5 h-3.5 studio-fg-emerald" />
         ),
       badge: issueLabel,
       run: onOpenDiagnostics,
     },
     "toggle-test-dock": {
-      icon: <IconFlask2 className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconFlask2 className="w-3.5 h-3.5 studio-fg-cyan" />,
       checked: isTestDockOpen,
       run: onToggleTestDock,
     },
     simulate: {
       icon: (
-        <IconPlayerPlay className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+        <IconPlayerPlay className="w-3.5 h-3.5 studio-fg-emerald studio-fill-emerald" />
       ),
       run: simulateProtocol,
     },
     "export-doc": {
-      icon: <IconFileSpreadsheet className="w-3.5 h-3.5 text-blue-400" />,
+      icon: <IconFileSpreadsheet className="w-3.5 h-3.5 studio-fg-sky" />,
       run: onOpenExportDocument,
     },
     "copy-link": {
-      icon: <IconLink className="w-3.5 h-3.5 text-brand-cyan" />,
+      icon: <IconLink className="w-3.5 h-3.5 studio-fg-cyan" />,
       run: onCopyShareLink,
     },
   };
@@ -414,20 +414,20 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   return (
     <header
       ref={headerObserverRef}
-      className="border-b border-zinc-800 bg-zinc-950/95 sticky top-0 z-30 backdrop-blur-xl"
+      className="border-b studio-border-default studio-surface-header sticky top-0 z-30 backdrop-blur-xl"
     >
       {/* TIER 1: Brand, Protocol Selector & Global Actions Bar */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-zinc-900/80 gap-3">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b studio-border-subtle gap-3">
         {/* Left Side: Brand, Protocol Selector & Menus */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-brand-cyan motion-safe:animate-pulse shrink-0" />
-            <span className="font-mono text-xs sm:text-sm font-extrabold text-white tracking-wider uppercase truncate">
+            <span className="w-2 h-2 rounded-full studio-dot-cyan motion-safe:animate-pulse shrink-0" />
+            <span className="font-mono text-xs sm:text-sm font-extrabold studio-fg-primary tracking-wider uppercase truncate">
               CRF Studio
             </span>
           </div>
 
-          <div className="h-3.5 w-px bg-zinc-800 hidden sm:block shrink-0" />
+          <div className="h-3.5 w-px studio-surface-muted hidden sm:block shrink-0" />
 
           {/* Protocol Preset Selector */}
           <div className="hidden sm:flex items-center min-w-0 sm:max-w-[240px] md:max-w-[280px] shrink">
@@ -435,7 +435,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               onChange={(e) => onSelectPreset(e.target.value)}
               value={currentPreset?.id || "custom"}
               aria-label="Select Clinical Protocol Preset"
-              className="w-full bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 text-xs font-mono text-zinc-200 rounded-lg px-2.5 py-1 focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan focus:outline-none truncate transition-colors cursor-pointer"
+              className="w-full studio-surface-input border studio-border-default studio-hover-border text-xs font-mono studio-fg-primary rounded-lg px-2.5 py-1 studio-focus-input focus:ring-1 focus:outline-none truncate transition-colors cursor-pointer"
             >
               {!currentPreset ? (
                 <option value="custom">
@@ -450,7 +450,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             </select>
           </div>
 
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 hidden sm:inline-flex shrink-0 whitespace-nowrap">
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold studio-accent-cyan border hidden sm:inline-flex shrink-0 whitespace-nowrap">
             {study.phase}
           </span>
 
@@ -462,12 +462,12 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                 {totalIssues > 0 ? (
                   <IconBug
                     aria-hidden="true"
-                    className="w-3 h-3 text-amber-400"
+                    className="w-3 h-3 studio-fg-amber"
                   />
                 ) : (
                   <IconCheck
                     aria-hidden="true"
-                    className="w-3 h-3 text-emerald-400"
+                    className="w-3 h-3 studio-fg-emerald"
                   />
                 )}
                 {issueLabel}
@@ -484,14 +484,14 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             <TooltipButton
               type="button"
               onClick={onOpenOmnibar}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98] pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center"
+              className="p-1.5 rounded-lg studio-surface-subtle studio-hover-surface studio-fg-secondary studio-hover-fg-primary border studio-border-default transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98] pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center"
               tooltip="Find forms, fields, visits and actions (F)"
               aria-label="Find, F: search the study"
               aria-keyshortcuts="F"
             >
               <IconSearch className="w-3.5 h-3.5" aria-hidden />
               <span className="hidden lg:inline">Find</span>{" "}
-              <kbd className="hidden lg:inline-block text-[9px] px-1 rounded bg-zinc-950 border border-zinc-700 text-zinc-400">
+              <kbd className="hidden lg:inline-block text-[9px] px-1 rounded studio-surface-muted border studio-border-strong studio-fg-muted">
                 F
               </kbd>
             </TooltipButton>
@@ -509,7 +509,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           value={currentPreset?.id || "custom"}
           onChange={(event) => onSelectPreset(event.target.value)}
           aria-label="Select Clinical Protocol Preset"
-          className="w-full min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+          className="w-full min-w-0 rounded-lg border studio-border-default studio-surface-input px-2.5 py-2 text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none focus:ring-1"
         >
           {!currentPreset ? (
             <option value="custom">
@@ -525,12 +525,12 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       </div>
 
       {/* TIER 2: Segmented Mode Navigation Rail & Workspace Visibility Toggles */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 bg-zinc-950/90 gap-2 border-t border-zinc-900/50">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 studio-surface-rail gap-2 border-t studio-border-subtle">
         <select
           value={activeMode}
           onChange={(event) => onChangeMode(event.target.value as StudioMode)}
           aria-label="Studio mode"
-          className="sm:hidden min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+          className="sm:hidden min-w-0 flex-1 rounded-lg border studio-border-default studio-surface-input px-2.5 py-2 text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none focus:ring-1"
         >
           {STUDIO_STAGES.map((stage) => (
             <optgroup key={stage.id} label={stage.label}>
@@ -559,12 +559,12 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               {stageIndex > 0 && (
                 <span
                   aria-hidden="true"
-                  className="mx-1 h-4 w-px bg-zinc-800 shrink-0"
+                  className="mx-1 h-4 w-px studio-surface-muted shrink-0"
                 />
               )}
               <span
                 aria-hidden="true"
-                className="hidden lg:inline text-[10px] font-mono uppercase tracking-wider text-zinc-400 whitespace-nowrap"
+                className="hidden lg:inline text-[10px] font-mono uppercase tracking-wider studio-fg-muted whitespace-nowrap"
               >
                 {stage.label}
               </span>
@@ -584,8 +584,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     tooltip={`${item.description} (${item.shortcut})`}
                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 ${
                       isActive
-                        ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent"
+                        ? "studio-accent-cyan-strong font-bold border shadow-xs"
+                        : "studio-fg-muted studio-hover-fg-primary studio-hover-surface border border-transparent"
                     }`}
                   >
                     {item.icon}
@@ -597,8 +597,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     <span
                       className={`text-[9px] px-1 py-0.2 rounded font-mono hidden 2xl:inline-block ${
                         isActive
-                          ? "bg-brand-cyan/25 text-brand-cyan font-bold"
-                          : "bg-zinc-900 text-zinc-600"
+                          ? "studio-bg-cyan studio-fg-cyan font-bold"
+                          : "studio-surface-muted studio-fg-muted"
                       }`}
                     >
                       {item.shortcut}
@@ -625,9 +625,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           }
           disabled={nextStep.kind === "pipeline" && isSendingToPipeline}
           data-testid="studio-next-step"
-          className="inline-flex items-center gap-1 px-2.5 py-2 sm:py-1 rounded-lg border border-amber-800/50 bg-amber-950/30 text-amber-200 hover:bg-amber-900/40 text-[11px] font-mono font-semibold whitespace-nowrap shrink-0 transition-colors disabled:opacity-60 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-brand-cyan outline-none"
+          className="inline-flex items-center gap-1 px-2.5 py-2 sm:py-1 rounded-lg border studio-accent-amber studio-hover-amber text-[11px] font-mono font-semibold whitespace-nowrap shrink-0 transition-colors disabled:opacity-60 active:scale-[0.98] focus-visible:ring-2 studio-focus-ring outline-none"
         >
-          <span className="hidden md:inline text-amber-400/80">Next:</span>
+          <span className="hidden md:inline studio-fg-amber">Next:</span>
           {nextStep.label}
           <IconArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </TooltipButton>

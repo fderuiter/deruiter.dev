@@ -430,19 +430,19 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   };
 
   return (
-    <div className="flex-1 min-w-0 min-h-0 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6">
+    <div className="flex-1 min-w-0 min-h-0 flex flex-col h-full studio-surface-subtle p-4 sm:p-6 overflow-y-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b studio-border-default">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400">
+            <span className="p-1.5 rounded-lg studio-accent-purple border">
               <IconCode className="w-5 h-5" />
             </span>
-            <h2 className="text-lg font-bold text-white font-mono">
+            <h2 className="text-lg font-bold studio-fg-primary font-mono">
               CDISC Standards &amp; Interoperability Exporter
             </h2>
           </div>
-          <p className="text-xs text-zinc-400 font-sans mt-1">
+          <p className="text-xs studio-fg-muted font-sans mt-1">
             Export study protocols and CRFs to CDISC ODM-XML, SAS programs (PROC
             FORMAT &amp; ATTRIB), R tidyverse tibbles, HL7 FHIR Questionnaires,
             and JSON Study Bundles.
@@ -453,9 +453,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           {onOpenBranding && (
             <button
               onClick={onOpenBranding}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-mono transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-surface-card studio-hover-surface border studio-border-default studio-fg-secondary text-xs font-mono transition-all"
             >
-              <IconPalette className="w-4 h-4 text-brand-cyan" />
+              <IconPalette className="w-4 h-4 studio-fg-cyan" />
               <span>Branding</span>
             </button>
           )}
@@ -463,7 +463,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           {onOpenExportDocument && (
             <button
               onClick={onOpenExportDocument}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl studio-btn-sky font-mono text-xs font-bold transition-all shadow-sm"
             >
               <IconFileText className="w-4 h-4" />
               <span>Export Word / PDF</span>
@@ -474,9 +474,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             <button
               type="button"
               onClick={onOpenReviewPackage}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-mono text-xs font-bold transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl studio-surface-card studio-hover-surface border studio-border-default studio-fg-primary font-mono text-xs font-bold transition-all"
             >
-              <IconArchive className="w-4 h-4 text-amber-400" />
+              <IconArchive className="w-4 h-4 studio-fg-amber" />
               <span>Review Package</span>
             </button>
           )}
@@ -486,11 +486,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             label="Copy Code"
             copiedLabel="Copied!"
             successMessage="Export code copied to clipboard"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-mono transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-surface-muted studio-hover-active border studio-border-strong studio-fg-primary text-xs font-mono transition-all cursor-pointer"
           />
           <button
             onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-cyan text-black hover:bg-white font-mono text-xs font-bold transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm"
           >
             <IconDownload className="w-4 h-4" />
             <span>Download File</span>
@@ -502,7 +502,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => recordEvent("crf", "project_click")}
-            className="inline-flex items-center gap-1.5 px-2 py-1.5 text-zinc-400 hover:text-white font-mono text-xs underline decoration-zinc-600 underline-offset-4 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2 py-1.5 studio-fg-muted studio-hover-fg-primary font-mono text-xs underline decoration-current underline-offset-4 transition-colors"
           >
             <IconCalendar className="w-4 h-4" />
             <span>Schedule Consultation</span>
@@ -511,16 +511,16 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       </div>
 
       {/* Domain / Form Filter Control */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-300">
-          <IconAdjustments className="w-4 h-4 text-brand-cyan" />
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl studio-surface-subtle border studio-border-default">
+        <div className="flex items-center gap-2 text-xs font-mono studio-fg-secondary">
+          <IconAdjustments className="w-4 h-4 studio-fg-cyan" />
           <span className="font-bold">Domain &amp; Form Scope:</span>
         </div>
         <div className="flex items-center gap-2">
           {isWholeStudyTab && (
             <span
               id="export-scope-note"
-              className="text-[11px] font-sans text-zinc-400"
+              className="text-[11px] font-sans studio-fg-muted"
             >
               This format always exports the whole study.
             </span>
@@ -530,7 +530,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             onChange={(e) => setSelectedFormId(e.target.value)}
             disabled={isWholeStudyTab}
             aria-describedby={isWholeStudyTab ? "export-scope-note" : undefined}
-            className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 studio-surface-subtle border studio-border-default rounded-lg text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Filter export domain scope"
           >
             <option value="all">All Study Domains (Full Protocol Suite)</option>
@@ -544,7 +544,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           {scopeFormId !== "all" && (
             <button
               onClick={() => setSelectedFormId("all")}
-              className="text-[11px] font-mono text-zinc-400 hover:text-brand-cyan underline"
+              className="text-[11px] font-mono studio-fg-muted studio-hover-fg-cyan underline"
             >
               Reset to Full Study
             </button>
@@ -556,7 +556,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           overflow resolve min-height to 0, so without shrink-0 they collapse
           to fit the viewport instead of letting the column scroll (#1784). */}
       <div
-        className="flex shrink-0 min-w-0 border-b border-zinc-800 gap-2 overflow-x-auto"
+        className="flex shrink-0 min-w-0 border-b studio-border-default gap-2 overflow-x-auto"
         role="tablist"
         aria-label="Export Format Tabs"
       >
@@ -574,11 +574,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "universal")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "universal"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
-          <IconFileText className="w-4 h-4 text-brand-cyan" />
+          <IconFileText className="w-4 h-4 studio-fg-cyan" />
           <span>Universal CRF (.json)</span>
         </button>
 
@@ -596,11 +596,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "usdm")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "usdm"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
-          <IconCode className="w-4 h-4 text-purple-400" />
+          <IconCode className="w-4 h-4 studio-fg-purple" />
           <span>CDISC USDM v{CLINICAL_STANDARDS_PROFILE.USDM} (.json)</span>
         </button>
 
@@ -618,8 +618,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "odm")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "odm"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconCode className="w-4 h-4" />
@@ -640,11 +640,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "sas")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "sas"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
-          <IconTerminal className="w-4 h-4 text-emerald-400" />
+          <IconTerminal className="w-4 h-4 studio-fg-emerald" />
           <span>SAS Script (.sas)</span>
         </button>
 
@@ -662,11 +662,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "r")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "r"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
-          <IconFileCode className="w-4 h-4 text-sky-400" />
+          <IconFileCode className="w-4 h-4 studio-fg-sky" />
           <span>R Scaffolding (.R)</span>
         </button>
 
@@ -684,11 +684,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "fhir")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "fhir"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
-          <IconFlame className="w-4 h-4 text-orange-400" />
+          <IconFlame className="w-4 h-4 studio-fg-amber" />
           <span>HL7 FHIR R4</span>
         </button>
 
@@ -706,8 +706,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "sdtm_spec")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "sdtm_spec"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconFileSpreadsheet className="w-4 h-4" />
@@ -728,8 +728,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "json")}
           className={`px-3 sm:px-4 py-2 text-xs font-mono transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === "json"
-              ? "border-brand-cyan text-brand-cyan font-bold"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <IconCode className="w-4 h-4" />
@@ -738,8 +738,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       </div>
 
       {activeTab === "usdm" && (
-        <div className="shrink-0 min-w-0 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
-          <p className="min-w-0 flex-1 text-xs font-sans text-zinc-300 break-words">
+        <div className="shrink-0 min-w-0 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl studio-surface-subtle border studio-border-default">
+          <p className="min-w-0 flex-1 text-xs font-sans studio-fg-secondary break-words">
             Run the study data pipeline on {study.protocolNumber}: this USDM
             export opens in the Study Data Pipeline, which lists the domains it
             tabulates and the ones it leaves out before anything runs.
@@ -748,13 +748,13 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             href={STUDY_DATA_HANDOFF_PATH}
             onClick={handleRunPipeline}
             aria-disabled={isGenerating || undefined}
-            className="inline-flex shrink-0 items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/60 text-amber-200 font-mono text-xs font-bold transition-all active:scale-[0.98] aria-disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-1.5 px-3.5 py-1.5 rounded-xl studio-accent-amber studio-hover-amber border font-mono text-xs font-bold transition-all active:scale-[0.98] aria-disabled:opacity-60"
           >
             <IconPlayerPlay className="w-4 h-4" />
             <span>Run the pipeline on this study</span>
           </a>
           {handoffError && (
-            <p role="alert" className="basis-full text-xs text-rose-300">
+            <p role="alert" className="basis-full text-xs studio-fg-red">
               {handoffError}
             </p>
           )}
@@ -774,7 +774,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               hidden={activeTab !== "sdtm_spec"}
               className={
                 activeTab === "sdtm_spec"
-                  ? "shrink-0 min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-x-auto shadow-xl"
+                  ? "shrink-0 min-w-0 rounded-2xl border studio-border-default studio-surface-subtle overflow-x-auto shadow-xl"
                   : "hidden"
               }
             >
@@ -783,7 +783,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   SDTM Mapping Specifications
                 </caption>
                 <thead>
-                  <tr className="border-b border-zinc-800 bg-zinc-950/80 text-zinc-400">
+                  <tr className="border-b studio-border-default studio-surface-subtle studio-fg-muted">
                     <th scope="col" className="p-3">
                       Domain
                     </th>
@@ -807,30 +807,30 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800">
+                <tbody className="divide-y studio-divide-default">
                   {specFields.map(({ field, form }) => (
                     <tr
                       key={`${form.id}_${field.id}`}
-                      className="hover:bg-zinc-800/40"
+                      className="studio-hover-surface"
                     >
-                      <td className="p-3 font-bold text-brand-cyan">
+                      <td className="p-3 font-bold studio-fg-cyan">
                         {form.domain}
                       </td>
-                      <td className="p-3 text-zinc-300 font-sans">
+                      <td className="p-3 studio-fg-secondary font-sans">
                         {form.name}
                       </td>
-                      <td className="p-3 font-bold text-white">
+                      <td className="p-3 font-bold studio-fg-primary">
                         {field.variableName}
                       </td>
-                      <td className="p-3 text-zinc-300 font-sans">
+                      <td className="p-3 studio-fg-secondary font-sans">
                         {field.label}
                       </td>
-                      <td className="p-3 text-zinc-500">{field.dataType}</td>
-                      <td className="p-3 text-zinc-400">
+                      <td className="p-3 studio-fg-muted">{field.dataType}</td>
+                      <td className="p-3 studio-fg-muted">
                         {field.cdashMetadata?.core ||
                           (field.required ? "R" : "O")}
                       </td>
-                      <td className="p-3 text-sky-400">
+                      <td className="p-3 studio-fg-sky">
                         {field.cdashMetadata?.acrfAnnotation ||
                           `${form.domain}.${field.variableName}`}
                       </td>
@@ -838,7 +838,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   ))}
                   {specFields.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-4 text-center text-zinc-500">
+                      <td
+                        colSpan={7}
+                        className="p-4 text-center studio-fg-muted"
+                      >
                         No fields found for selected form/domain scope.
                       </td>
                     </tr>
@@ -859,18 +862,18 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             hidden={activeTab !== tabId}
             className={
               activeTab === tabId
-                ? "shrink-0 min-w-0 h-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs overflow-x-auto max-h-[450px]"
+                ? "shrink-0 min-w-0 h-auto rounded-2xl border studio-border-default studio-surface-subtle p-4 font-mono text-xs overflow-x-auto max-h-[450px]"
                 : "hidden"
             }
           >
             {activeTab === tabId &&
               (isGenerating ? (
-                <div className="flex items-center gap-2 text-zinc-400 py-6 justify-center font-mono">
-                  <IconLoader2 className="w-4 h-4 animate-spin text-brand-cyan" />
+                <div className="flex items-center gap-2 studio-fg-muted py-6 justify-center font-mono">
+                  <IconLoader2 className="w-4 h-4 animate-spin studio-fg-cyan" />
                   <span>Generating export representation...</span>
                 </div>
               ) : (
-                <pre className="text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                <pre className="studio-fg-secondary whitespace-pre-wrap leading-relaxed">
                   {activeContent}
                 </pre>
               ))}
@@ -879,10 +882,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       })}
 
       {/* Import Section */}
-      <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-4">
+      <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
         <div className="flex items-center gap-2">
-          <IconUpload className="w-4 h-4 text-brand-cyan" />
-          <h2 className="text-xs font-bold text-white font-mono uppercase">
+          <IconUpload className="w-4 h-4 studio-fg-cyan" />
+          <h2 className="text-xs font-bold studio-fg-primary font-mono uppercase">
             Multi-Format Protocol Import &amp; Ingestion
           </h2>
         </div>
@@ -893,35 +896,39 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         />
 
         <div className="space-y-1.5 pt-1">
-          <label className="text-[11px] font-mono text-zinc-400 block">
+          <label
+            htmlFor="export-raw-study-import-textarea"
+            className="text-[11px] font-mono studio-fg-muted block"
+          >
             Or paste raw JSON / XML / CSV text directly:
           </label>
           <textarea
+            id="export-raw-study-import-textarea"
             rows={3}
             value={importJsonText}
             onChange={(e) => setImportJsonText(e.target.value)}
             placeholder="Paste exported StudyProtocol JSON here to load..."
-            className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-300 focus:border-brand-cyan focus:outline-none"
+            className="w-full p-3 studio-surface-subtle border studio-border-default rounded-xl text-xs font-mono studio-fg-secondary studio-focus-input focus:outline-none"
           />
         </div>
 
         {importError && (
-          <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400 font-mono">
+          <div className="p-2.5 rounded-lg studio-accent-red border text-xs font-mono">
             {importError}
           </div>
         )}
 
         {preflightViolations.length > 0 && (
-          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 space-y-3 font-mono">
+          <div className="p-4 rounded-xl studio-bg-red border studio-border-red space-y-3 font-mono">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase">
-                <IconAlertCircle className="w-4 h-4 text-red-400" />
+              <div className="flex items-center gap-2 studio-fg-red font-bold text-xs uppercase">
+                <IconAlertCircle className="w-4 h-4 studio-fg-red" />
                 <span>
                   CDISC Conformance Pre-Flight Violations (
                   {preflightViolations.length})
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-400">
+              <span className="text-[11px] studio-fg-muted">
                 {
                   preflightViolations.filter((v) => v.severity === "error")
                     .length
@@ -935,7 +942,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               </span>
             </div>
 
-            <p className="text-xs text-zinc-300 font-sans">
+            <p className="text-xs studio-fg-secondary font-sans">
               Import halted due to CDISC conformance violations in the protocol
               specification. Review the pre-flight violation summary below or
               click Auto-Fix to remediate.
@@ -945,40 +952,42 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               {preflightViolations.map((viol) => (
                 <div
                   key={viol.id}
-                  className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 text-xs flex flex-col gap-1"
+                  className="p-2.5 rounded-lg studio-surface-subtle border studio-border-default text-xs flex flex-col gap-1"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
                           viol.severity === "error"
-                            ? "bg-red-500/20 border border-red-500/40 text-red-400"
-                            : "bg-amber-500/20 border border-amber-500/40 text-amber-400"
+                            ? "studio-accent-red-strong border"
+                            : "studio-accent-amber-strong border"
                         }`}
                       >
                         {viol.ruleId} ({viol.severity})
                       </span>
                       {viol.formName && (
-                        <span className="text-zinc-300 font-bold">
+                        <span className="studio-fg-secondary font-bold">
                           Form: {viol.formName}
                         </span>
                       )}
                       {viol.variableName && (
-                        <span className="text-brand-cyan font-mono text-[11px]">
+                        <span className="studio-fg-cyan font-mono text-[11px]">
                           Variable: {viol.variableName}
                         </span>
                       )}
                     </div>
                     {viol.autoFixAvailable && (
-                      <span className="text-[10px] text-emerald-400 font-sans font-semibold">
+                      <span className="text-[10px] studio-fg-emerald font-sans font-semibold">
                         Auto-Fix Available
                       </span>
                     )}
                   </div>
 
-                  <p className="text-zinc-300 font-sans">{viol.message}</p>
+                  <p className="studio-fg-secondary font-sans">
+                    {viol.message}
+                  </p>
                   {viol.suggestedFix && (
-                    <p className="text-zinc-400 text-[11px] font-sans italic">
+                    <p className="studio-fg-muted text-[11px] font-sans italic">
                       Suggested Fix: {viol.suggestedFix}
                     </p>
                   )}
@@ -986,11 +995,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t studio-border-default">
               <button
                 type="button"
                 onClick={handleAutoFixAndImport}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 studio-btn-emerald font-mono text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
               >
                 <IconWand className="w-4 h-4" />
                 <span>1-Click Auto-Fix &amp; Import Protocol</span>
@@ -1000,7 +1009,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 <button
                   type="button"
                   onClick={handleBypassAndImport}
-                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono rounded-xl transition-all cursor-pointer"
+                  className="px-3 py-1.5 studio-surface-muted studio-hover-active studio-fg-secondary text-xs font-mono rounded-xl transition-all cursor-pointer"
                 >
                   Proceed with Warnings
                 </button>
@@ -1013,7 +1022,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           <button
             onClick={handlePerformImport}
             disabled={!importJsonText.trim()}
-            className="px-4 py-2 bg-zinc-800 hover:bg-brand-cyan text-white hover:text-black font-mono text-xs font-bold rounded-xl transition-all disabled:opacity-40 disabled:pointer-events-none"
+            className="px-4 py-2 studio-surface-muted studio-fg-primary studio-hover-cyan font-mono text-xs font-bold rounded-xl transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
             Import Protocol into Studio
           </button>

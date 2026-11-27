@@ -35,10 +35,10 @@ interface AstRuleEditorProps {
 }
 
 const BRACKET_DEPTH_CLASSES = [
-  "text-sky-400 font-bold", // Depth 0
-  "text-purple-400 font-bold", // Depth 1
-  "text-amber-400 font-bold", // Depth 2
-  "text-emerald-400 font-bold", // Depth 3
+  "studio-fg-sky font-bold", // Depth 0
+  "studio-fg-purple font-bold", // Depth 1
+  "studio-fg-amber font-bold", // Depth 2
+  "studio-fg-emerald font-bold", // Depth 3
 ];
 
 const DEFAULT_SAMPLE_VALUES: Record<string, number> = {
@@ -207,7 +207,9 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
   const renderHighlightedContent = () => {
     if (!formula) {
       return (
-        <span className="text-zinc-600 italic select-none">{placeholder}</span>
+        <span className="studio-fg-muted italic select-none">
+          {placeholder}
+        </span>
       );
     }
 
@@ -228,40 +230,40 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
         );
       }
 
-      let colorClass = "text-zinc-200";
+      let colorClass = "studio-fg-primary";
 
       if (token.type === "FUNCTION") {
-        colorClass = "text-brand-cyan font-bold";
+        colorClass = "studio-fg-cyan font-bold";
       } else if (token.type === "IDENTIFIER") {
         const ref = referencedVars.find(
           (r) => r.name.toLowerCase() === token.value.toLowerCase()
         );
         if (ref && !ref.exists) {
           colorClass =
-            "text-rose-400 underline decoration-rose-500/80 decoration-wavy";
+            "studio-fg-red underline decoration-rose-500/80 decoration-wavy";
         } else if (ref && !ref.isNumeric) {
           colorClass =
-            "text-amber-400 underline decoration-amber-500/80 decoration-wavy";
+            "studio-fg-amber underline decoration-amber-500/80 decoration-wavy";
         } else {
-          colorClass = "text-emerald-400 font-semibold";
+          colorClass = "studio-fg-emerald font-semibold";
         }
       } else if (token.type === "NUMBER") {
-        colorClass = "text-amber-300 font-mono";
+        colorClass = "studio-fg-amber font-mono";
       } else if (token.type === "OP") {
         colorClass = "text-pink-400 font-bold";
       } else if (token.type === "COMMA") {
-        colorClass = "text-zinc-400";
+        colorClass = "studio-fg-muted";
       } else if (token.type === "LPAREN" || token.type === "RPAREN") {
         if (token.unmatched) {
           colorClass =
-            "text-rose-400 bg-rose-500/20 ring-1 ring-rose-500 rounded px-0.5 font-bold";
+            "studio-fg-red studio-bg-red-strong ring-1 ring-rose-500 rounded px-0.5 font-bold";
         } else {
           const depthIdx = (token.depth ?? 0) % BRACKET_DEPTH_CLASSES.length;
           colorClass = BRACKET_DEPTH_CLASSES[depthIdx];
         }
       } else if (token.type === "INVALID") {
         colorClass =
-          "text-rose-400 bg-rose-500/20 underline decoration-rose-500 font-bold";
+          "studio-fg-red studio-bg-red-strong underline decoration-rose-500 font-bold";
       }
 
       elements.push(
@@ -292,7 +294,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
     <div className={`space-y-2.5 ${className}`}>
       {/* Header & Quick Action Buttons */}
       <div className="flex items-center justify-between">
-        <label className="text-[11px] font-mono text-brand-cyan font-semibold uppercase flex items-center gap-1">
+        <label className="text-[11px] font-mono studio-fg-cyan font-semibold uppercase flex items-center gap-1">
           <IconMathFunction className="w-3.5 h-3.5" />
           <span>{label}</span>
         </label>
@@ -303,7 +305,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
             <TooltipButton
               type="button"
               onClick={() => setShowPresets(!showPresets)}
-              className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
+              className="px-2 py-0.5 rounded studio-accent-cyan studio-hover-bg-cyan border text-[10px] font-mono flex items-center gap-1 transition-colors"
               tooltip="Select Clinical Derivation Preset"
             >
               <IconSparkles className="w-3 h-3" />
@@ -311,30 +313,30 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
             </TooltipButton>
 
             {showPresets && (
-              <div className="absolute right-0 top-full mt-1.5 w-72 max-h-80 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
-                <div className="px-2 py-1 text-[10px] font-mono text-zinc-400 uppercase font-semibold border-b border-zinc-800 flex justify-between">
+              <div className="absolute right-0 top-full mt-1.5 w-72 max-h-80 overflow-y-auto studio-surface-card border studio-border-strong rounded-xl shadow-2xl z-50 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                <div className="px-2 py-1 text-[10px] font-mono studio-fg-muted uppercase font-semibold border-b studio-border-default flex justify-between">
                   <span>Clinical Derivations</span>
-                  <span className="text-brand-cyan">1-Click Auto-Map</span>
+                  <span className="studio-fg-cyan">1-Click Auto-Map</span>
                 </div>
                 {CLINICAL_FORMULA_PRESETS.map((preset) => (
                   <button
                     key={preset.id}
                     type="button"
                     onClick={() => handleSelectPreset(preset)}
-                    className="w-full text-left p-2 rounded-lg hover:bg-zinc-800/80 transition-colors border border-transparent hover:border-brand-cyan/30 group"
+                    className="w-full text-left p-2 rounded-lg studio-hover-surface transition-colors border border-transparent studio-hover-border-cyan group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-white group-hover:text-brand-cyan">
+                      <span className="text-xs font-mono font-bold studio-fg-primary studio-group-hover-fg-cyan">
                         {preset.name}
                       </span>
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 uppercase font-mono">
+                      <span className="text-[9px] px-1 py-0.2 rounded studio-surface-muted studio-fg-muted uppercase font-mono">
                         {preset.category}
                       </span>
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5 line-clamp-1">
+                    <p className="text-[10px] studio-fg-muted mt-0.5 line-clamp-1">
                       {preset.description}
                     </p>
-                    <code className="text-[9px] text-brand-cyan/70 font-mono mt-1 block truncate">
+                    <code className="text-[9px] studio-fg-cyan font-mono mt-1 block truncate">
                       {preset.formula}
                     </code>
                   </button>
@@ -349,8 +351,8 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
             onClick={() => setShowTester(!showTester)}
             className={`px-2 py-0.5 rounded border text-[10px] font-mono flex items-center gap-1 transition-colors ${
               showTester
-                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700 text-zinc-300"
+                ? "studio-accent-emerald-strong"
+                : "studio-surface-card studio-hover-surface studio-border-strong studio-fg-secondary"
             }`}
             tooltip="Toggle Live Test Evaluation"
           >
@@ -362,7 +364,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
           <TooltipButton
             type="button"
             onClick={() => setShowFunctionsGuide(!showFunctionsGuide)}
-            className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white transition-colors"
+            className="p-1 rounded studio-surface-card studio-hover-surface border studio-border-strong studio-fg-muted studio-hover-fg-primary transition-colors"
             tooltip="Formula Reference Guide"
             aria-label="Formula Reference Guide"
           >
@@ -372,7 +374,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
       </div>
 
       {/* Editor Box with Synchronized Transparent Textarea & Syntax Highlighted Backdrop */}
-      <div className="relative rounded-lg border border-zinc-700 focus-within:border-brand-cyan bg-zinc-950/90 overflow-hidden font-mono text-xs shadow-inner">
+      <div className="relative rounded-lg border studio-border-strong studio-focus-within studio-surface-subtle overflow-hidden font-mono text-xs shadow-inner">
         {/* Backdrop Syntax Highlighter */}
         <pre
           ref={preRef}
@@ -396,37 +398,37 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
           autoCorrect="off"
           aria-label="AST Formula Input"
           placeholder={placeholder}
-          className="relative z-10 w-full p-2.5 bg-transparent text-transparent caret-white selection:bg-brand-cyan/30 border-none outline-none resize-none font-mono text-xs leading-relaxed overflow-y-auto"
+          className="relative z-10 w-full p-2.5 bg-transparent text-transparent studio-caret selection:bg-brand-cyan/30 border-none outline-none resize-none font-mono text-xs leading-relaxed overflow-y-auto"
         />
 
         {/* Bottom Status Bar inside Editor */}
-        <div className="px-2.5 py-1 bg-zinc-900/80 border-t border-zinc-800 flex items-center justify-between text-[10px] font-mono select-none">
+        <div className="px-2.5 py-1 studio-surface-card border-t studio-border-default flex items-center justify-between text-[10px] font-mono select-none">
           <div className="flex items-center gap-2">
             {errorCount > 0 ? (
-              <span className="text-rose-400 flex items-center gap-1 font-semibold">
+              <span className="studio-fg-red flex items-center gap-1 font-semibold">
                 <IconAlertCircle className="w-3 h-3" />
                 <span>
                   {errorCount} {errorCount === 1 ? "Error" : "Errors"}
                 </span>
               </span>
             ) : warningCount > 0 ? (
-              <span className="text-amber-400 flex items-center gap-1 font-semibold">
+              <span className="studio-fg-amber flex items-center gap-1 font-semibold">
                 <IconAlertTriangle className="w-3 h-3" />
                 <span>
                   {warningCount} {warningCount === 1 ? "Warning" : "Warnings"}
                 </span>
               </span>
             ) : formula.trim() ? (
-              <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+              <span className="studio-fg-emerald flex items-center gap-1 font-semibold">
                 <IconCheck className="w-3 h-3" />
                 <span>Syntax Verified</span>
               </span>
             ) : (
-              <span className="text-zinc-500">Ready to compose</span>
+              <span className="studio-fg-muted">Ready to compose</span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-zinc-500">
+          <div className="flex items-center gap-2 studio-fg-muted">
             <span>Len: {formula.length}</span>
             <span>Vars: {referencedVars.length}</span>
           </div>
@@ -445,25 +447,25 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                   key={`diag_${dIdx}_${diag.code}`}
                   className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono flex items-start gap-2 ${
                     isErr
-                      ? "bg-rose-950/40 border-rose-800/50 text-rose-300"
+                      ? "studio-accent-red"
                       : isWarn
-                        ? "bg-amber-950/40 border-amber-800/50 text-amber-300"
-                        : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                        ? "studio-accent-amber"
+                        : "studio-surface-card studio-border-default studio-fg-muted"
                   }`}
                 >
                   {isErr ? (
-                    <IconAlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                    <IconAlertCircle className="w-3.5 h-3.5 studio-fg-red shrink-0 mt-0.5" />
                   ) : isWarn ? (
-                    <IconAlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                    <IconAlertTriangle className="w-3.5 h-3.5 studio-fg-amber shrink-0 mt-0.5" />
                   ) : (
-                    <IconCheck className="w-3.5 h-3.5 text-brand-cyan shrink-0 mt-0.5" />
+                    <IconCheck className="w-3.5 h-3.5 studio-fg-cyan shrink-0 mt-0.5" />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="leading-tight">{diag.message}</div>
                     {diag.start !== undefined &&
                       diag.end !== undefined &&
                       diag.start < diag.end && (
-                        <div className="text-[9px] text-zinc-500 mt-0.5">
+                        <div className="text-[9px] studio-fg-muted mt-0.5">
                           Column {diag.start + 1} - {diag.end}
                         </div>
                       )}
@@ -477,9 +479,9 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
 
       {/* Live Sample Evaluation Tester Box (#671) */}
       {showTester && (
-        <div className="p-3 rounded-xl bg-zinc-950 border border-emerald-900/40 space-y-2.5 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
-            <span className="text-[11px] font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+        <div className="p-3 rounded-xl studio-surface-subtle border studio-border-emerald space-y-2.5 animate-in fade-in">
+          <div className="flex items-center justify-between border-b studio-border-default pb-1.5">
+            <span className="text-[11px] font-mono font-bold studio-fg-emerald flex items-center gap-1.5">
               <IconPlayerPlay className="w-3.5 h-3.5" />
               Live Evaluation Preview
             </span>
@@ -488,18 +490,18 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                 <span
                   className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase ${
                     derivationExplanation.status === "success"
-                      ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/50"
+                      ? "studio-accent-emerald-strong"
                       : derivationExplanation.status === "missing_inputs"
-                        ? "bg-amber-950/80 text-amber-300 border-amber-700/50"
+                        ? "studio-accent-amber-strong"
                         : derivationExplanation.status === "invalid_unit"
-                          ? "bg-purple-950/80 text-purple-300 border-purple-700/50"
-                          : "bg-rose-950/80 text-rose-300 border-rose-700/50"
+                          ? "studio-accent-purple-strong"
+                          : "studio-accent-red-strong"
                   }`}
                 >
                   {derivationExplanation.status.replace("_", " ")}
                 </span>
               )}
-              <div className="text-xs font-mono font-bold text-white bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/50">
+              <div className="text-xs font-mono font-bold studio-fg-primary studio-bg-emerald-strong px-2 py-0.5 rounded border studio-border-emerald">
                 Result:{" "}
                 {derivationExplanation?.result !== null &&
                 derivationExplanation?.result !== undefined
@@ -514,10 +516,10 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
           {/* Diagnostics Alert if any */}
           {derivationExplanation?.diagnostics &&
             derivationExplanation.diagnostics.length > 0 && (
-              <div className="p-2 rounded bg-amber-950/40 border border-amber-800/40 text-[10px] font-mono text-amber-300 space-y-1">
+              <div className="p-2 rounded studio-accent-amber border text-[10px] font-mono space-y-1">
                 {derivationExplanation.diagnostics.map((diag, i) => (
                   <div key={`diag_${i}`} className="flex items-start gap-1.5">
-                    <IconAlertTriangle className="w-3 h-3 shrink-0 mt-0.5 text-amber-400" />
+                    <IconAlertTriangle className="w-3 h-3 shrink-0 mt-0.5 studio-fg-amber" />
                     <span>{diag}</span>
                   </div>
                 ))}
@@ -525,7 +527,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
             )}
 
           {referencedVars.length === 0 ? (
-            <p className="text-[10px] font-mono text-zinc-500">
+            <p className="text-[10px] font-mono studio-fg-muted">
               No variables referenced yet. Type or click variable pills below.
             </p>
           ) : (
@@ -536,9 +538,9 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                 );
                 return (
                   <div key={`test_val_${v.name}`} className="space-y-0.5">
-                    <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                    <div className="flex items-center justify-between text-[9px] font-mono studio-fg-muted">
                       <span className="truncate">{v.name}</span>
-                      <span className="text-zinc-500">
+                      <span className="studio-fg-muted">
                         {dep?.actualUnit ||
                           v.field?.unit ||
                           dep?.expectedUnit ||
@@ -554,7 +556,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                           [v.name]: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-white font-mono focus:border-emerald-500 focus:outline-none"
+                      className="w-full px-2 py-1 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary font-mono studio-hover-border-emerald focus:outline-none"
                     />
                   </div>
                 );
@@ -565,23 +567,23 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
           {/* Step-by-Step Clinical Derivation Breakdown */}
           {derivationExplanation?.steps &&
             derivationExplanation.steps.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800">
-                <span className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider">
+              <div className="space-y-1.5 pt-2 border-t studio-border-default">
+                <span className="text-[10px] font-mono font-semibold studio-fg-muted uppercase tracking-wider">
                   Derivation Steps ({derivationExplanation.steps.length})
                 </span>
-                <div className="space-y-1 bg-zinc-900/60 rounded-lg p-2 border border-zinc-800/80">
+                <div className="space-y-1 studio-surface-subtle rounded-lg p-2 border studio-border-default">
                   {derivationExplanation.steps.map((step) => (
                     <div
                       key={`step_${step.stepNumber}`}
                       className="text-[10px] font-mono space-y-0.5"
                     >
-                      <div className="text-zinc-400 font-semibold flex items-center gap-1">
-                        <span className="w-3.5 h-3.5 rounded-full bg-zinc-800 text-zinc-300 inline-flex items-center justify-center text-[8px] font-bold">
+                      <div className="studio-fg-muted font-semibold flex items-center gap-1">
+                        <span className="w-3.5 h-3.5 rounded-full studio-surface-muted studio-fg-secondary inline-flex items-center justify-center text-[8px] font-bold">
                           {step.stepNumber}
                         </span>
                         <span>{step.description}</span>
                       </div>
-                      <div className="pl-4 text-emerald-400 font-mono">
+                      <div className="pl-4 studio-fg-emerald font-mono">
                         <code>{step.expression}</code>
                       </div>
                     </div>
@@ -591,7 +593,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
             )}
 
           {derivationExplanation?.summary && (
-            <div className="text-[10px] font-mono text-zinc-400 italic pt-0.5">
+            <div className="text-[10px] font-mono studio-fg-muted italic pt-0.5">
               {derivationExplanation.summary}
             </div>
           )}
@@ -600,11 +602,11 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
 
       {/* Functions Reference Guide Modal/Box */}
       {showFunctionsGuide && (
-        <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-[10px] font-mono space-y-1.5 text-zinc-300">
-          <div className="text-brand-cyan font-bold uppercase text-[10px]">
+        <div className="p-2.5 rounded-lg studio-surface-subtle border studio-border-default text-[10px] font-mono space-y-1.5 studio-fg-secondary">
+          <div className="studio-fg-cyan font-bold uppercase text-[10px]">
             Supported Math Functions
           </div>
-          <div className="grid grid-cols-2 gap-1 text-zinc-400">
+          <div className="grid grid-cols-2 gap-1 studio-fg-muted">
             <div>
               <code>round(x, n)</code> - Round decimals
             </div>
@@ -635,7 +637,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
 
       {/* Quick Insert: Available Form Variables */}
       <div className="space-y-1.5 pt-1">
-        <div className="text-[10px] font-mono text-zinc-400 flex items-center justify-between">
+        <div className="text-[10px] font-mono studio-fg-muted flex items-center justify-between">
           <span>Form Variables (Click to insert):</span>
         </div>
 
@@ -657,8 +659,8 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
                   onClick={() => insertToken(f.variableName || f.id)}
                   className={`px-1.5 py-0.5 rounded border text-[10px] font-mono transition-colors flex items-center gap-1 ${
                     isNumeric
-                      ? "bg-zinc-900 hover:bg-brand-cyan/20 border-zinc-800 text-zinc-300 hover:text-brand-cyan hover:border-brand-cyan/40"
-                      : "bg-zinc-950 hover:bg-amber-500/10 border-zinc-800 text-zinc-500 hover:text-amber-300 hover:border-amber-500/40"
+                      ? "studio-surface-card studio-hover-bg-cyan studio-border-default studio-fg-secondary studio-hover-fg-cyan studio-hover-border-cyan"
+                      : "studio-surface-subtle studio-hover-bg-amber studio-border-default studio-fg-muted studio-hover-fg-amber studio-hover-border-amber"
                   }`}
                   tooltip={`${f.label} (${f.dataType})`}
                 >
@@ -694,7 +696,7 @@ export const AstRuleEditor: React.FC<AstRuleEditorProps> = ({
             key={btn.label}
             type="button"
             onClick={() => insertToken(btn.token)}
-            className="px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[10px] font-mono text-zinc-400 hover:text-white transition-colors"
+            className="px-1.5 py-0.5 rounded studio-surface-card studio-hover-surface border studio-border-default text-[10px] font-mono studio-fg-muted studio-hover-fg-primary transition-colors"
           >
             {btn.label}
           </button>

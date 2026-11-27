@@ -208,7 +208,7 @@ export const LibraryUpgradeModal: React.FC<LibraryUpgradeModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 studio-surface-scrim"
       onClick={onClose}
     >
       <div
@@ -281,7 +281,7 @@ export const LibraryUpgradeModal: React.FC<LibraryUpgradeModalProps> = ({
                 <button
                   type="button"
                   onClick={handleUndo}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-700/60 hover:bg-emerald-900/30 active:scale-[0.98]"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border studio-border-emerald studio-hover-bg-emerald active:scale-[0.98]"
                 >
                   <IconArrowBackUp className="w-3.5 h-3.5" aria-hidden="true" />
                   Undo upgrade
@@ -334,7 +334,7 @@ export const LibraryUpgradeModal: React.FC<LibraryUpgradeModalProps> = ({
                           type="button"
                           onClick={() => handleReview(item.use.id)}
                           aria-label={`Review upgrade of ${item.use.entryName} to version ${item.latestVersion}`}
-                          className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg bg-amber-500 text-zinc-950 hover:bg-amber-400 active:scale-[0.98]"
+                          className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg studio-btn-amber active:scale-[0.98]"
                         >
                           Review upgrade
                         </button>
@@ -551,7 +551,7 @@ export const LibraryUpgradeModal: React.FC<LibraryUpgradeModalProps> = ({
               type="button"
               onClick={handleApply}
               disabled={!allResolved}
-              className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg bg-amber-500 text-zinc-950 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg studio-btn-amber disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               Apply upgrade
             </button>

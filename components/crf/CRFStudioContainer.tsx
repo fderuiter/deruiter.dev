@@ -980,11 +980,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
           "--brand-accent": activeBranding.accentColor || "#0ea5e9",
         } as React.CSSProperties
       }
-      className={`flex flex-col min-h-dvh md:min-h-0 md:h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] md:max-h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] ${
-        theme === "light"
-          ? "bg-slate-50 text-slate-900"
-          : "bg-zinc-950 text-foreground"
-      } overflow-visible md:overflow-hidden relative`}
+      className={`flex flex-col min-h-dvh md:min-h-0 md:h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] md:max-h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] studio-surface-root studio-fg-primary overflow-visible md:overflow-hidden relative`}
     >
       {/* Studio Header Bar */}
       <StudioHeader
@@ -1021,7 +1017,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
       />
 
       {repoSnapshot.isHydrated ? (
-        <div className="border-b border-zinc-800 bg-zinc-950/90 px-3 py-1.5 sm:px-4">
+        <div className="border-b studio-border-default studio-surface-rail px-3 py-1.5 sm:px-4">
           <StudyRepositoryBar
             repository={repository}
             currentStudyId={repoBinding?.studyId}
@@ -1040,8 +1036,8 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
         aria-live="polite"
         className={`absolute bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 text-[10px] font-mono px-2.5 py-1 rounded-lg border backdrop-blur-md whitespace-nowrap ${
           draftSaveStatus === "error"
-            ? "bg-rose-950/80 border-rose-500/40 text-rose-200"
-            : "bg-zinc-900/80 border-zinc-800 text-zinc-400 pointer-events-none"
+            ? "studio-accent-red-strong"
+            : "studio-surface-card studio-border-default studio-fg-muted pointer-events-none"
         }`}
       >
         {recoveredDraftSavedAt && draftSaveStatus !== "error" && (
@@ -1057,7 +1053,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             <button
               type="button"
               onClick={downloadDraft}
-              className="underline hover:text-rose-100 cursor-pointer"
+              className="underline studio-hover-fg-red cursor-pointer"
             >
               Download draft
             </button>
@@ -1069,14 +1065,14 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
       <div className="flex-1 flex min-h-0 overflow-visible md:overflow-hidden relative">
         {activeMode === "designer" && !activeForm && (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-            <div className="max-w-md space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/70 p-6">
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-brand-cyan">
+            <div className="max-w-md space-y-2 rounded-xl border studio-border-default studio-surface-subtle p-6">
+              <p className="font-mono text-xs uppercase tracking-[0.14em] studio-fg-cyan">
                 Empty CRF Form Set
               </p>
-              <h3 className="text-base font-semibold text-white">
+              <h3 className="text-base font-semibold studio-fg-primary">
                 {study.title || study.protocolNumber} has no forms yet
               </h3>
-              <p className="text-xs leading-relaxed text-zinc-300">
+              <p className="text-xs leading-relaxed studio-fg-secondary">
                 Add a CDASH domain form from the catalog or start a blank form
                 to author case report fields for this USDM study.
               </p>
@@ -1084,14 +1080,14 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFormCatalogOpen(true)}
-                  className="min-h-11 rounded-lg bg-brand-cyan px-3.5 py-2 font-mono text-xs font-bold text-black transition-colors hover:bg-brand-cyan/90"
+                  className="min-h-11 rounded-lg studio-btn-cyan px-3.5 py-2 font-mono text-xs font-bold transition-colors"
                 >
                   Add Form from Catalog
                 </button>
                 <button
                   type="button"
                   onClick={() => editor.addForm()}
-                  className="min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3.5 py-2 font-mono text-xs text-zinc-200 transition-colors hover:border-zinc-500"
+                  className="min-h-11 rounded-lg border studio-border-strong studio-surface-subtle px-3.5 py-2 font-mono text-xs studio-fg-primary transition-colors studio-hover-border"
                 >
                   New Blank Form
                 </button>
@@ -1107,7 +1103,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               <aside
                 aria-label="Study navigator"
                 data-tour="navigator"
-                className="hidden md:flex w-60 lg:w-64 2xl:w-72 bg-zinc-950 border-r border-zinc-800 flex-col shrink-0 transition-all"
+                className="hidden md:flex w-60 lg:w-64 2xl:w-72 studio-surface-subtle border-r studio-border-default flex-col shrink-0 transition-all"
               >
                 <StudySpine
                   study={study}
@@ -1144,7 +1140,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             {/* Mobile Stack Views (Visible only on < md screens) */}
             <div className="md:hidden flex-1 flex flex-col min-w-0">
               {mobileActiveView === "forms" && (
-                <div className="flex-1 overflow-y-auto bg-zinc-950">
+                <div className="flex-1 overflow-y-auto studio-surface-subtle">
                   <StudySpine
                     study={study}
                     activeVisitId={activeVisitId}
@@ -1211,7 +1207,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               )}
 
               {mobileActiveView === "inspector" && (
-                <div className="flex-1 overflow-y-auto bg-zinc-950">
+                <div className="flex-1 overflow-y-auto studio-surface-subtle">
                   <InspectorPanel
                     form={activeForm}
                     selectedField={selectedField}
@@ -1279,7 +1275,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               <aside
                 aria-label="Field inspector"
                 data-tour="inspector"
-                className="hidden md:flex w-72 lg:w-80 xl:w-96 bg-zinc-950 shrink-0 flex-col transition-all"
+                className="hidden md:flex w-72 lg:w-80 xl:w-96 studio-surface-subtle shrink-0 flex-col transition-all"
               >
                 <InspectorPanel
                   form={activeForm}
@@ -1329,7 +1325,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             {isRightInspectorOpen && (
               <aside
                 aria-label="Field inspector"
-                className="hidden lg:flex w-80 bg-zinc-950 shrink-0 flex-col transition-all border-l border-zinc-800"
+                className="hidden lg:flex w-80 studio-surface-subtle shrink-0 flex-col transition-all border-l studio-border-default"
               >
                 <InspectorPanel
                   form={activeForm}
@@ -1439,14 +1435,14 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
       {activeMode === "designer" && (
         <nav
           aria-label="Mobile View Navigation"
-          className="md:hidden flex items-center justify-around border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-lg px-2 py-1.5 z-20"
+          className="md:hidden flex items-center justify-around border-t studio-border-default studio-surface-subtle backdrop-blur-lg px-2 py-1.5 z-20"
         >
           <button
             onClick={() => setMobileActiveView("forms")}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
               mobileActiveView === "forms"
-                ? "text-brand-cyan font-bold bg-brand-cyan/10"
-                : "text-zinc-400 hover:text-zinc-200"
+                ? "studio-fg-cyan font-bold studio-bg-cyan"
+                : "studio-fg-muted studio-hover-fg-primary"
             }`}
           >
             <IconFileSpreadsheet className="w-4 h-4" />
@@ -1459,8 +1455,8 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             onClick={() => setMobileActiveView("canvas")}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
               mobileActiveView === "canvas"
-                ? "text-brand-cyan font-bold bg-brand-cyan/10"
-                : "text-zinc-400 hover:text-zinc-200"
+                ? "studio-fg-cyan font-bold studio-bg-cyan"
+                : "studio-fg-muted studio-hover-fg-primary"
             }`}
           >
             <IconLayoutGrid className="w-4 h-4" />
@@ -1471,8 +1467,8 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             onClick={() => setMobileActiveView("inspector")}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
               mobileActiveView === "inspector"
-                ? "text-brand-cyan font-bold bg-brand-cyan/10"
-                : "text-zinc-400 hover:text-zinc-200"
+                ? "studio-fg-cyan font-bold studio-bg-cyan"
+                : "studio-fg-muted studio-hover-fg-primary"
             }`}
           >
             <IconAdjustments className="w-4 h-4" />
@@ -1487,7 +1483,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
       {isMobileWidgetDrawerOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+            className="fixed inset-0 z-40 studio-surface-scrim backdrop-blur-xs md:hidden"
             onClick={() => setIsMobileWidgetDrawerOpen(false)}
           />
           <div
@@ -1496,21 +1492,21 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             aria-modal="true"
             aria-labelledby="mobile-widget-sheet-title"
             tabIndex={-1}
-            className="fixed bottom-0 inset-x-0 z-50 max-h-[75vh] bg-zinc-950 border-t border-zinc-800 rounded-t-3xl p-4 overflow-y-auto md:hidden shadow-2xl space-y-3 animate-in slide-in-from-bottom duration-200"
+            className="fixed bottom-0 inset-x-0 z-50 max-h-[75vh] studio-surface-subtle border-t studio-border-default rounded-t-3xl p-4 overflow-y-auto md:hidden shadow-2xl space-y-3 animate-in slide-in-from-bottom duration-200"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+            <div className="flex items-center justify-between pb-2 border-b studio-border-default">
               <div className="flex items-center gap-2">
-                <IconSparkles className="w-4 h-4 text-brand-cyan" />
+                <IconSparkles className="w-4 h-4 studio-fg-cyan" />
                 <span
                   id="mobile-widget-sheet-title"
-                  className="text-xs font-mono font-bold text-white uppercase"
+                  className="text-xs font-mono font-bold studio-fg-primary uppercase"
                 >
                   Add Clinical Widget
                 </span>
               </div>
               <button
                 onClick={() => setIsMobileWidgetDrawerOpen(false)}
-                className="p-1 rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
+                className="p-1 rounded-full studio-surface-card studio-fg-muted studio-hover-fg-primary"
                 aria-label="Close Widget Palette"
               >
                 <IconX className="w-4 h-4" />
@@ -1604,25 +1600,25 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="replace-study-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-xs animate-in fade-in duration-150"
           onClick={() => editor.cancelStudyReplacement()}
         >
           <div
             ref={replaceStudyModalRef}
-            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4"
+            className="w-full max-w-md studio-surface-elevated border studio-border-default rounded-2xl p-5 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <h3
                   id="replace-study-modal-title"
-                  className="text-sm font-bold font-mono text-white"
+                  className="text-sm font-bold font-mono studio-fg-primary"
                 >
                   Unsaved Changes in Current Draft
                 </h3>
-                <p className="text-xs text-zinc-400 font-sans">
+                <p className="text-xs studio-fg-muted font-sans">
                   You have unsaved changes in your current study draft. Loading{" "}
-                  <span className="font-mono text-brand-cyan font-bold">
+                  <span className="font-mono studio-fg-cyan font-bold">
                     {pendingStudyReplacement.label}
                   </span>{" "}
                   will replace your active workspace.
@@ -1631,14 +1627,14 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               <button
                 type="button"
                 onClick={() => editor.cancelStudyReplacement()}
-                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="p-1 rounded studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
                 aria-label="Cancel study replacement"
               >
                 <IconX className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+            <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
               Choose &quot;Save Snapshot &amp; Replace&quot; to preserve your
               current work in local snapshots before replacing, or &quot;Discard
               &amp; Replace&quot; to switch without saving.
@@ -1648,7 +1644,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               <button
                 type="button"
                 onClick={() => editor.cancelStudyReplacement()}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-xs font-mono text-zinc-300 transition-colors"
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-active text-xs font-mono studio-fg-secondary transition-colors"
               >
                 Cancel
               </button>
@@ -1657,7 +1653,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                 onClick={() =>
                   editor.confirmStudyReplacement({ saveSnapshot: false })
                 }
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-xs font-mono text-zinc-400 hover:text-red-400 border border-zinc-700 transition-colors"
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-bg-red text-xs font-mono studio-fg-muted studio-hover-fg-red border studio-border-strong transition-colors"
               >
                 Discard &amp; Replace
               </button>
@@ -1666,7 +1662,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                 onClick={() =>
                   editor.confirmStudyReplacement({ saveSnapshot: true })
                 }
-                className="px-3.5 py-1.5 rounded-lg bg-brand-cyan hover:bg-brand-cyan/90 text-xs font-mono font-bold text-black transition-colors shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg studio-btn-cyan text-xs font-mono font-bold transition-colors shadow-sm"
               >
                 Save Snapshot &amp; Replace
               </button>
@@ -1681,30 +1677,30 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="impact-deletion-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-xs animate-in fade-in duration-150"
           onClick={() => editor.cancelImpactDeletion()}
         >
           <div
             ref={impactDeletionModalRef}
-            className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4"
+            className="w-full max-w-lg studio-surface-elevated border studio-border-default rounded-2xl p-5 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+                  <span className="w-2.5 h-2.5 rounded-full studio-dot-amber shrink-0" />
                   <h3
                     id="impact-deletion-modal-title"
-                    className="text-sm font-bold font-mono text-white"
+                    className="text-sm font-bold font-mono studio-fg-primary"
                   >
                     Dependency Sentinel: Blast Radius Preview
                   </h3>
                 </div>
-                <p className="text-xs text-zinc-400 font-sans">
+                <p className="text-xs studio-fg-muted font-sans">
                   {impactPendingDeletion.type === "field" ? (
                     <>
                       Field{" "}
-                      <span className="font-mono text-brand-cyan font-bold">
+                      <span className="font-mono studio-fg-cyan font-bold">
                         {impactPendingDeletion.field.variableName}
                       </span>{" "}
                       (&quot;{impactPendingDeletion.field.label}&quot;) is
@@ -1713,7 +1709,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                   ) : (
                     <>
                       Section{" "}
-                      <span className="font-mono text-brand-cyan font-bold">
+                      <span className="font-mono studio-fg-cyan font-bold">
                         {impactPendingDeletion.section.title}
                       </span>{" "}
                       contains fields with active dependencies in your study
@@ -1725,7 +1721,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               <button
                 type="button"
                 onClick={() => editor.cancelImpactDeletion()}
-                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="p-1 rounded studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
                 aria-label="Cancel deletion"
               >
                 <IconX className="w-4 h-4" />
@@ -1733,8 +1729,8 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             </div>
 
             {/* References Blast Radius Details */}
-            <div className="bg-zinc-950/80 rounded-xl p-3 border border-zinc-800 space-y-2 max-h-52 overflow-y-auto">
-              <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold flex items-center justify-between">
+            <div className="studio-surface-subtle rounded-xl p-3 border studio-border-default space-y-2 max-h-52 overflow-y-auto">
+              <div className="text-[11px] font-mono studio-fg-muted uppercase tracking-wider font-semibold flex items-center justify-between">
                 <span>
                   Active References (
                   {impactPendingDeletion.type === "field"
@@ -1742,7 +1738,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                     : impactPendingDeletion.preview.totalReferencesCount}
                   )
                 </span>
-                <span className="text-amber-400 text-[10px]">
+                <span className="studio-fg-amber text-[10px]">
                   Cascading Cleanup
                 </span>
               </div>
@@ -1753,17 +1749,17 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                 ).map((ref, idx) => (
                   <li
                     key={`ref_${idx}`}
-                    className="text-xs font-mono text-zinc-300 p-2 rounded bg-zinc-900/60 border border-zinc-800/80 space-y-0.5"
+                    className="text-xs font-mono studio-fg-secondary p-2 rounded studio-surface-subtle border studio-border-default space-y-0.5"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold text-brand-cyan">
+                      <span className="text-[10px] uppercase font-bold studio-fg-cyan">
                         {ref.type.replace(/_/g, " ")}
                       </span>
-                      <span className="text-[10px] text-zinc-500">
+                      <span className="text-[10px] studio-fg-muted">
                         {ref.formName}
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-300 font-sans">
+                    <p className="text-[11px] studio-fg-secondary font-sans">
                       {ref.description}
                     </p>
                   </li>
@@ -1771,7 +1767,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               </ul>
             </div>
 
-            <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+            <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
               Confirming deletion will cleanly prune all referencing rules,
               triggers, and conditions across the protocol in a single commit,
               preserving 1-operation undo.
@@ -1781,14 +1777,14 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
               <button
                 type="button"
                 onClick={() => editor.cancelImpactDeletion()}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-xs font-mono text-zinc-300 transition-colors"
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-active text-xs font-mono studio-fg-secondary transition-colors"
               >
                 Cancel (Keep Field)
               </button>
               <button
                 type="button"
                 onClick={editor.confirmImpactDeletion}
-                className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-mono font-bold text-white transition-colors shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg studio-btn-red text-xs font-mono font-bold transition-colors shadow-sm"
               >
                 Delete &amp; Cascade Prune
               </button>

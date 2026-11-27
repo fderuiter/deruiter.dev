@@ -181,16 +181,16 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
     <div
       role="region"
       aria-label="Interactive Clinical Terminal Console"
-      className="border-t border-zinc-800 bg-zinc-950 text-zinc-200 flex flex-col h-72 sm:h-80 shadow-2xl relative z-20 animate-in slide-in-from-bottom-5 duration-200 font-mono"
+      className="border-t studio-border-default studio-surface-subtle studio-fg-primary flex flex-col h-72 sm:h-80 shadow-2xl relative z-20 animate-in slide-in-from-bottom-5 duration-200 font-mono"
     >
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/90 border-b border-zinc-800 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 studio-surface-card border-b studio-border-default shrink-0">
         <div className="flex items-center gap-2">
-          <IconTerminal2 className="w-4 h-4 text-brand-cyan" />
-          <span className="text-xs font-bold text-white tracking-wide">
+          <IconTerminal2 className="w-4 h-4 studio-fg-cyan" />
+          <span className="text-xs font-bold studio-fg-primary tracking-wide">
             CRF Studio Terminal Console
           </span>
-          <span className="text-[10px] text-zinc-500 hidden sm:inline">
+          <span className="text-[10px] studio-fg-muted hidden sm:inline">
             • Live Bidirectional Studio Sync
           </span>
         </div>
@@ -201,10 +201,10 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
             <button
               key={qc}
               onClick={() => handleExecute(qc)}
-              className="px-2 py-0.5 rounded text-[10px] bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-brand-cyan border border-zinc-800 transition-colors whitespace-nowrap"
+              className="px-2 py-0.5 rounded text-[10px] studio-surface-subtle studio-hover-surface studio-fg-muted studio-hover-fg-cyan border studio-border-default transition-colors whitespace-nowrap"
             >
               {qc === "crf wizard" ? (
-                <span className="inline-flex items-center gap-1 text-sky-400 font-bold">
+                <span className="inline-flex items-center gap-1 studio-fg-sky font-bold">
                   <IconSparkles className="w-2.5 h-2.5" />
                   <span>{qc}</span>
                 </span>
@@ -218,7 +218,7 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
         <div className="flex items-center gap-1 shrink-0">
           <TooltipButton
             onClick={() => setHistory([])}
-            className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1 rounded studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
             tooltip="Clear Console (clear)"
             aria-label="Clear Console (clear)"
           >
@@ -226,7 +226,7 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
           </TooltipButton>
           <TooltipButton
             onClick={onClose}
-            className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1 rounded studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
             tooltip="Close Terminal Drawer (Esc or `)"
             aria-label="Close Terminal Drawer (Esc or `)"
           >
@@ -239,21 +239,23 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
       <div className="flex-1 p-3 overflow-y-auto space-y-3 text-xs leading-relaxed">
         {history.map((item) => (
           <div key={item.id} className="space-y-1">
-            <div className="flex items-center justify-between text-zinc-500 text-[10px]">
+            <div className="flex items-center justify-between studio-fg-muted text-[10px]">
               <div className="flex items-center gap-1.5">
-                <span className="text-brand-cyan font-bold">crf&gt;</span>
-                <span className="text-white font-bold">{item.command}</span>
+                <span className="studio-fg-cyan font-bold">crf&gt;</span>
+                <span className="studio-fg-primary font-bold">
+                  {item.command}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span>{item.timestamp}</span>
                 <TooltipButton
                   onClick={() => handleCopyOutput(item)}
-                  className="hover:text-white p-0.5 rounded"
+                  className="studio-hover-fg-primary p-0.5 rounded"
                   tooltip="Copy Output"
                   aria-label="Copy Output"
                 >
                   {copied && copiedId === item.id ? (
-                    <IconCheck className="w-3 h-3 text-emerald-400" />
+                    <IconCheck className="w-3 h-3 studio-fg-emerald" />
                   ) : (
                     <IconCopy className="w-3 h-3" />
                   )}
@@ -263,8 +265,8 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
             <pre
               className={`p-2 rounded-lg text-[11px] whitespace-pre-wrap font-mono ${
                 item.success
-                  ? "bg-zinc-900/60 text-zinc-300 border border-zinc-800"
-                  : "bg-red-950/30 text-red-300 border border-red-900/40"
+                  ? "studio-surface-subtle studio-fg-secondary border studio-border-default"
+                  : "studio-accent-red border"
               }`}
             >
               {item.output}
@@ -275,8 +277,8 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
       </div>
 
       {/* Command Input Prompt Bar */}
-      <div className="px-3 py-2 bg-zinc-900 border-t border-zinc-800 flex items-center gap-2 shrink-0">
-        <span className="text-brand-cyan font-bold text-xs select-none">
+      <div className="px-3 py-2 studio-surface-card border-t studio-border-default flex items-center gap-2 shrink-0">
+        <span className="studio-fg-cyan font-bold text-xs select-none">
           crf&gt;
         </span>
         <input
@@ -286,12 +288,12 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type 'crf wizard', 'crf validate', 'crf list domains', 'crf add form VS'..."
-          className="flex-1 bg-transparent text-xs text-white placeholder:text-zinc-600 focus:outline-none font-mono"
+          className="flex-1 bg-transparent text-xs studio-fg-primary studio-placeholder focus:outline-none font-mono"
         />
         <TooltipButton
           onClick={() => handleExecute(inputVal)}
           disabled={!inputVal.trim()}
-          className="p-1 rounded bg-brand-cyan/20 hover:bg-brand-cyan text-brand-cyan hover:text-black disabled:opacity-30 disabled:pointer-events-none transition-all"
+          className="p-1 rounded studio-accent-cyan studio-hover-cyan disabled:opacity-30 disabled:pointer-events-none transition-all"
           tooltip="Execute Command (Enter)"
           aria-label="Execute Command (Enter)"
         >

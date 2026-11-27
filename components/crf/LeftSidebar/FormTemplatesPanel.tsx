@@ -30,7 +30,7 @@ function countFields(template: FormTemplate): number {
 }
 
 const BUTTON =
-  "inline-flex min-h-[28px] items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-mono text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 active:scale-[0.98]";
+  "inline-flex min-h-[28px] items-center gap-1 rounded border studio-border-strong studio-surface-card px-2 py-1 text-[10px] font-mono studio-fg-primary transition-colors studio-hover-surface studio-hover-fg-primary focus:outline-none focus-visible:ring-1 studio-focus-ring active:scale-[0.98]";
 
 /**
  * Saved whole-form templates: delete, export and import. Adding one to the
@@ -88,9 +88,9 @@ export function FormTemplatesPanel() {
   };
 
   return (
-    <div className="space-y-2 pt-2 border-t border-zinc-800">
+    <div className="space-y-2 pt-2 border-t studio-border-default">
       <div className="flex items-center justify-between gap-2 px-1">
-        <span className="flex min-w-0 items-center gap-1 text-[11px] font-mono font-semibold uppercase tracking-wider text-amber-400">
+        <span className="flex min-w-0 items-center gap-1 text-[11px] font-mono font-semibold uppercase tracking-wider studio-fg-amber">
           <IconBookmark className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">
             My form templates ({templates.length})
@@ -123,7 +123,7 @@ export function FormTemplatesPanel() {
       </div>
 
       {templates.length === 0 ? (
-        <p className="px-1 text-[11px] font-mono italic text-zinc-400">
+        <p className="px-1 text-[11px] font-mono italic studio-fg-muted">
           No saved form templates. Use the bookmark button on a form to save it
           here; saved templates appear in the form catalog.
         </p>
@@ -132,14 +132,14 @@ export function FormTemplatesPanel() {
           {templates.map((template) => (
             <li
               key={template.id}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2"
+              className="rounded-xl border studio-border-default studio-surface-subtle p-2"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <h4 className="truncate text-xs font-bold text-zinc-200">
+                  <h4 className="truncate text-xs font-bold studio-fg-primary">
                     {template.name}
                   </h4>
-                  <p className="truncate text-[10px] text-zinc-400">
+                  <p className="truncate text-[10px] studio-fg-muted">
                     {template.form.sections.length} sections ·{" "}
                     {countFields(template)} fields
                   </p>
@@ -149,7 +149,7 @@ export function FormTemplatesPanel() {
                     <button
                       type="button"
                       onClick={() => handleDelete(template)}
-                      className={`${BUTTON} border-rose-500/40 text-rose-200`}
+                      className={`${BUTTON} studio-border-red studio-fg-red`}
                       aria-label={`Confirm delete ${template.name}`}
                     >
                       Delete
@@ -180,7 +180,10 @@ export function FormTemplatesPanel() {
         </ul>
       )}
 
-      <p role="status" className="px-1 text-[11px] font-mono text-zinc-300">
+      <p
+        role="status"
+        className="px-1 text-[11px] font-mono studio-fg-secondary"
+      >
         {message}
       </p>
     </div>

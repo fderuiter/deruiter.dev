@@ -255,12 +255,12 @@ export const StudySpine: React.FC<StudySpineProps> = ({
 
   return (
     <div
-      className="flex flex-col h-full bg-zinc-950/95 select-none"
+      className="flex flex-col h-full studio-surface-sidebar select-none"
       data-testid="study-spine-root"
     >
       {/* 3-Way Sub-Navigation Header */}
       <div
-        className="flex border-b border-zinc-800/80 bg-zinc-900/60 p-1 gap-1 shrink-0"
+        className="flex border-b studio-border-default studio-surface-subtle p-1 gap-1 shrink-0"
         role="tablist"
         aria-label="Study Spine Navigation"
       >
@@ -278,8 +278,8 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "spine")}
           className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "spine"
-              ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+              ? "studio-accent-cyan-strong font-bold border shadow-sm"
+              : "studio-fg-muted studio-hover-fg-primary studio-hover-surface border border-transparent"
           }`}
           tooltip="Study Spine (Longitudinal Timeline)"
         >
@@ -301,8 +301,8 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "forms")}
           className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "forms"
-              ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+              ? "studio-accent-cyan-strong font-bold border shadow-sm"
+              : "studio-fg-muted studio-hover-fg-primary studio-hover-surface border border-transparent"
           }`}
           tooltip="Protocol Forms & Global Library"
         >
@@ -324,8 +324,8 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           onKeyDown={(e) => handleTabKeyDown(e, "palette")}
           className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "palette"
-              ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+              ? "studio-accent-cyan-strong font-bold border shadow-sm"
+              : "studio-fg-muted studio-hover-fg-primary studio-hover-surface border border-transparent"
           }`}
           tooltip="Widget Palette"
         >
@@ -346,13 +346,13 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           className={activeTab === "spine" ? "space-y-3" : "hidden"}
         >
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
-              <IconTimeline className="w-3.5 h-3.5 text-brand-cyan" />
+            <span className="text-[11px] font-mono uppercase tracking-wider studio-fg-muted font-semibold flex items-center gap-1.5">
+              <IconTimeline className="w-3.5 h-3.5 studio-fg-cyan" />
               Study Timeline ({study.visits.length} Visits)
             </span>
             <TooltipButton
               onClick={onAddVisit}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-mono transition-colors border border-zinc-700"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded studio-surface-muted studio-hover-active studio-fg-primary text-[11px] font-mono transition-colors border studio-border-strong"
               tooltip="Add New Protocol Visit"
             >
               <IconPlus className="w-3 h-3" />
@@ -369,24 +369,24 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               return (
                 <div
                   key={epoch.id}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900/30 overflow-hidden"
+                  className="rounded-xl border studio-border-default studio-surface-subtle overflow-hidden"
                 >
                   {/* Epoch Header */}
                   <div
                     onClick={() => toggleEpochCollapse(epoch.id)}
-                    className="flex items-center justify-between px-2.5 py-2 bg-zinc-900/60 hover:bg-zinc-800/60 cursor-pointer border-b border-zinc-800/60 transition-colors"
+                    className="flex items-center justify-between px-2.5 py-2 studio-surface-subtle studio-hover-surface cursor-pointer border-b studio-border-subtle transition-colors"
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       {isEpochCollapsed ? (
-                        <IconChevronRight className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                        <IconChevronRight className="w-3.5 h-3.5 studio-fg-muted shrink-0" />
                       ) : (
-                        <IconChevronDown className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
+                        <IconChevronDown className="w-3.5 h-3.5 studio-fg-cyan shrink-0" />
                       )}
-                      <span className="text-xs font-bold font-mono text-zinc-200 truncate">
+                      <span className="text-xs font-bold font-mono studio-fg-primary truncate">
                         {epoch.name}
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-750">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded studio-surface-muted studio-fg-muted border studio-border-default">
                       {epochVisits.length}{" "}
                       {epochVisits.length === 1 ? "visit" : "visits"}
                     </span>
@@ -396,7 +396,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                   {!isEpochCollapsed && (
                     <div className="p-1.5 space-y-1.5">
                       {epochVisits.length === 0 ? (
-                        <p className="text-[11px] text-zinc-500 font-mono italic px-2 py-1">
+                        <p className="text-[11px] studio-fg-muted font-mono italic px-2 py-1">
                           No visits scheduled in this epoch.
                         </p>
                       ) : (
@@ -418,10 +418,10 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                               onDrop={(e) => handleDropOnVisit(e, visit.id)}
                               className={`rounded-lg border transition-all ${
                                 isDropTarget
-                                  ? "border-brand-cyan bg-brand-cyan/20 ring-2 ring-brand-cyan/40 scale-[1.01]"
+                                  ? "studio-border-cyan studio-bg-cyan-strong ring-2 studio-ring-cyan scale-[1.01]"
                                   : isVisitActive
-                                    ? "border-brand-cyan/40 bg-zinc-900/90 shadow-sm"
-                                    : "border-zinc-800/80 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900/40"
+                                    ? "studio-border-cyan studio-surface-card shadow-sm"
+                                    : "studio-border-default studio-surface-subtle studio-hover-border-strong studio-hover-subtle"
                               }`}
                             >
                               {/* Visit Row */}
@@ -441,7 +441,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                       e.stopPropagation();
                                       toggleVisitCollapse(visit.id);
                                     }}
-                                    className="p-0.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300"
+                                    className="p-0.5 studio-hover-surface rounded studio-fg-muted studio-hover-fg-secondary"
                                     aria-label={
                                       isVisitCollapsed
                                         ? `Expand ${visit.name}`
@@ -452,7 +452,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                     {isVisitCollapsed ? (
                                       <IconChevronRight className="w-3 h-3" />
                                     ) : (
-                                      <IconChevronDown className="w-3 h-3 text-brand-cyan" />
+                                      <IconChevronDown className="w-3 h-3 studio-fg-cyan" />
                                     )}
                                   </button>
 
@@ -461,19 +461,19 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                       <span
                                         className={`text-xs font-bold truncate ${
                                           isVisitActive
-                                            ? "text-brand-cyan"
-                                            : "text-zinc-200"
+                                            ? "studio-fg-cyan"
+                                            : "studio-fg-primary"
                                         }`}
                                       >
                                         {visit.name}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-[10px] text-zinc-400 font-mono">
+                                      <span className="text-[10px] studio-fg-muted font-mono">
                                         Day {visit.targetDay} (
                                         {formatVisitWindow(visit)})
                                       </span>
-                                      <span className="text-[9px] font-mono px-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                      <span className="text-[9px] font-mono px-1 rounded studio-surface-muted studio-fg-muted border studio-border-strong">
                                         {assignedForms.length}{" "}
                                         {assignedForms.length === 1
                                           ? "form"
@@ -490,7 +490,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                       e.stopPropagation();
                                       onDeleteVisit(visit.id);
                                     }}
-                                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-all"
+                                    className="p-1 rounded opacity-0 group-hover:opacity-100 studio-hover-bg-red studio-fg-muted studio-hover-fg-red transition-all"
                                     tooltip="Delete Visit"
                                     aria-label="Delete Visit"
                                   >
@@ -501,9 +501,9 @@ export const StudySpine: React.FC<StudySpineProps> = ({
 
                               {/* Assigned Forms Sub-Tree */}
                               {!isVisitCollapsed && (
-                                <div className="border-t border-zinc-800/60 p-1.5 bg-zinc-950/80 space-y-1">
+                                <div className="border-t studio-border-subtle p-1.5 studio-surface-subtle space-y-1">
                                   {assignedForms.length === 0 ? (
-                                    <p className="text-[10px] text-zinc-500 font-mono italic px-2 py-1">
+                                    <p className="text-[10px] studio-fg-muted font-mono italic px-2 py-1">
                                       Drop a form template here to assign.
                                     </p>
                                   ) : (
@@ -524,19 +524,19 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                           }}
                                           className={`flex items-center justify-between p-1.5 rounded-md border cursor-pointer transition-all ${
                                             isFormActive
-                                              ? "bg-brand-cyan/20 border-brand-cyan/60 text-white font-medium shadow-sm"
-                                              : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white"
+                                              ? "studio-bg-cyan-strong studio-border-cyan studio-fg-primary font-medium shadow-sm"
+                                              : "studio-surface-subtle studio-border-default studio-hover-border-strong studio-fg-secondary studio-hover-fg-primary"
                                           }`}
                                         >
                                           <div className="flex items-center gap-1.5 min-w-0">
-                                            <IconGripVertical className="w-3 h-3 text-zinc-600 cursor-grab shrink-0" />
-                                            <IconFileSpreadsheet className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
+                                            <IconGripVertical className="w-3 h-3 studio-fg-muted cursor-grab shrink-0" />
+                                            <IconFileSpreadsheet className="w-3.5 h-3.5 studio-fg-cyan shrink-0" />
                                             <span className="text-xs truncate">
                                               {form.name}
                                             </span>
                                           </div>
                                           <div className="flex items-center gap-1">
-                                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                            <span className="text-[9px] font-mono px-1 py-0.2 rounded studio-surface-muted studio-fg-muted border studio-border-strong">
                                               {form.domain || "CRF"}
                                             </span>
                                             <TooltipButton
@@ -548,7 +548,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                                   form.id
                                                 );
                                               }}
-                                              className="p-0.5 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                                              className="p-0.5 rounded studio-fg-muted studio-hover-fg-red studio-hover-surface transition-colors"
                                               tooltip={`Unassign ${form.name} from ${visit.name}`}
                                               aria-label={`Unassign ${form.name} from ${visit.name}`}
                                             >
@@ -585,12 +585,12 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           {/* Active Protocol Forms Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">
+              <span className="text-[11px] font-mono uppercase tracking-wider studio-fg-muted font-semibold">
                 Study Forms ({study.forms.length})
               </span>
               <TooltipButton
                 onClick={onAddForm}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-mono transition-colors border border-zinc-700"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded studio-surface-muted studio-hover-active studio-fg-primary text-[11px] font-mono transition-colors border studio-border-strong"
                 tooltip="Add Blank Form"
               >
                 <IconPlus className="w-3 h-3" />
@@ -626,20 +626,20 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                         onSelectForm(form.id);
                       }
                     }}
-                    className={`group relative p-2 rounded-xl border cursor-pointer transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
+                    className={`group relative p-2 rounded-xl border cursor-pointer transition-all outline-none focus-visible:ring-2 studio-focus-ring ${
                       isActive
-                        ? "bg-brand-cyan/10 border-brand-cyan/50 shadow-sm"
-                        : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/60"
+                        ? "studio-bg-cyan studio-border-cyan shadow-sm"
+                        : "studio-surface-subtle studio-border-default studio-hover-border-strong studio-hover-subtle"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <IconGripVertical className="w-3.5 h-3.5 text-zinc-600 cursor-grab shrink-0" />
+                        <IconGripVertical className="w-3.5 h-3.5 studio-fg-muted cursor-grab shrink-0" />
                         <span
                           className={`p-1.5 rounded-lg border shrink-0 ${
                             isActive
-                              ? "bg-brand-cyan text-black border-brand-cyan"
-                              : "bg-zinc-900 text-zinc-400 border-zinc-800"
+                              ? "studio-btn-cyan"
+                              : "studio-surface-card studio-fg-muted studio-border-default"
                           }`}
                         >
                           <IconFileSpreadsheet className="w-4 h-4" />
@@ -647,21 +647,23 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                         <div className="min-w-0">
                           <div
                             className={`text-xs font-bold truncate ${
-                              isActive ? "text-white" : "text-zinc-300"
+                              isActive
+                                ? "studio-fg-primary"
+                                : "studio-fg-secondary"
                             }`}
                           >
                             {form.name}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-750">
+                            <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded studio-surface-muted studio-fg-muted border studio-border-default">
                               {form.domain || "CRF"}
                             </span>
-                            <span className="text-[10px] text-zinc-500 font-mono">
+                            <span className="text-[10px] studio-fg-muted font-mono">
                               {fieldCount} fields
                             </span>
                             {(formUseCounts.get(form.id) ?? 0) > 1 && (
                               <span
-                                className="text-[10px] text-amber-400 font-mono"
+                                className="text-[10px] studio-fg-amber font-mono"
                                 data-testid={`form-use-count-${form.id}`}
                               >
                                 shared · {formUseCounts.get(form.id)} uses
@@ -679,7 +681,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                               e.stopPropagation();
                               setVariantFormId(form.id);
                             }}
-                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                            className="p-1 rounded studio-hover-surface studio-fg-muted studio-hover-fg-primary"
                             tooltip="Visit uses & variants"
                             aria-label={`Inspect visit uses of form ${form.name}`}
                           >
@@ -691,7 +693,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                             e.stopPropagation();
                             onDuplicateForm(form.id);
                           }}
-                          className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                          className="p-1 rounded studio-hover-surface studio-fg-muted studio-hover-fg-primary"
                           tooltip="Duplicate Form"
                           aria-label={`Duplicate form ${form.name}`}
                         >
@@ -703,7 +705,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                               e.stopPropagation();
                               handleDeleteFormClick(form);
                             }}
-                            className="p-1 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
+                            className="p-1 rounded studio-hover-bg-red studio-fg-muted studio-hover-fg-red"
                             tooltip="Delete Form"
                             aria-label={`Delete form ${form.name}`}
                           >
@@ -718,11 +720,11 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             </div>
             {activeFormUseCount > 1 && (
               <p
-                className="px-1 text-[11px] text-zinc-400 leading-relaxed break-words"
+                className="px-1 text-[11px] studio-fg-muted leading-relaxed break-words"
                 data-testid="shared-form-notice"
               >
                 Edits to{" "}
-                <span className="font-mono text-zinc-200">
+                <span className="font-mono studio-fg-primary">
                   {activeFormName}
                 </span>{" "}
                 change all {activeFormUseCount} of its visit uses.
@@ -732,7 +734,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                     <button
                       type="button"
                       onClick={() => setVariantFormId(activeFormId)}
-                      className="font-mono text-amber-400 hover:text-amber-300 underline underline-offset-2"
+                      className="font-mono studio-fg-amber studio-hover-fg-amber underline underline-offset-2"
                     >
                       Inspect uses
                     </button>
@@ -742,20 +744,20 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             )}
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-zinc-800">
+          <div className="space-y-2 pt-2 border-t studio-border-default">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">
+              <span className="text-[11px] font-mono uppercase tracking-wider studio-fg-amber font-semibold">
                 Form catalog
               </span>
               <button
                 type="button"
                 onClick={onOpenFormCatalog}
-                className="text-[10px] text-zinc-400 hover:text-amber-300 font-mono transition-colors"
+                className="text-[10px] studio-fg-muted studio-hover-fg-amber font-mono transition-colors"
               >
                 Open larger view
               </button>
             </div>
-            <p className="px-1 text-[10px] text-zinc-400">
+            <p className="px-1 text-[10px] studio-fg-muted">
               Forms go to the selected visit. Blocks go into the open form.
             </p>
             <FormCatalogList
@@ -801,25 +803,25 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-form-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-xs animate-in fade-in duration-150"
           onClick={() => setFormPendingDeletion(null)}
         >
           <div
             ref={deleteFormDialogRef}
-            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4"
+            className="w-full max-w-md studio-surface-elevated border studio-border-default rounded-2xl p-5 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <h3
                   id="delete-form-dialog-title"
-                  className="text-sm font-bold font-mono text-white"
+                  className="text-sm font-bold font-mono studio-fg-primary"
                 >
                   Delete Form &amp; Prune Visit Assignments
                 </h3>
-                <p className="text-xs text-zinc-400 font-sans">
+                <p className="text-xs studio-fg-muted font-sans">
                   Form{" "}
-                  <span className="font-mono text-brand-cyan font-bold">
+                  <span className="font-mono studio-fg-cyan font-bold">
                     {formPendingDeletion.name}
                   </span>{" "}
                   ({formPendingDeletion.domain}) is currently assigned in the
@@ -829,7 +831,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               <button
                 type="button"
                 onClick={() => setFormPendingDeletion(null)}
-                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="p-1 rounded studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
                 aria-label="Cancel"
               >
                 <IconX className="w-4 h-4" />
@@ -837,21 +839,21 @@ export const StudySpine: React.FC<StudySpineProps> = ({
             </div>
 
             {/* Affected Assignments Preview */}
-            <div className="bg-zinc-950/80 rounded-xl p-3 border border-zinc-800 space-y-2 max-h-48 overflow-y-auto">
-              <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
+            <div className="studio-surface-subtle rounded-xl p-3 border studio-border-default space-y-2 max-h-48 overflow-y-auto">
+              <div className="text-[11px] font-mono studio-fg-muted uppercase tracking-wider font-semibold">
                 Affected Visits ({formDeletionPreview.affectedVisits.length})
               </div>
               <ul className="space-y-1">
                 {formDeletionPreview.affectedVisits.map((v) => (
                   <li
                     key={v.id}
-                    className="text-xs font-mono text-zinc-300 flex items-center justify-between"
+                    className="text-xs font-mono studio-fg-secondary flex items-center justify-between"
                   >
                     <span className="flex items-center gap-1.5 truncate">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full studio-dot-amber shrink-0" />
                       <span className="truncate">{v.name}</span>
                     </span>
-                    <span className="text-zinc-500 text-[10px] shrink-0">
+                    <span className="studio-fg-muted text-[10px] shrink-0">
                       Day {v.targetDay}
                     </span>
                   </li>
@@ -859,17 +861,17 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               </ul>
 
               {formDeletionPreview.affectedArms.length > 0 && (
-                <div className="pt-2 border-t border-zinc-800 space-y-1">
-                  <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
+                <div className="pt-2 border-t studio-border-default space-y-1">
+                  <div className="text-[11px] font-mono studio-fg-muted uppercase tracking-wider font-semibold">
                     Affected Arms ({formDeletionPreview.affectedArms.length})
                   </div>
                   <ul className="space-y-1">
                     {formDeletionPreview.affectedArms.map((a) => (
                       <li
                         key={a.id}
-                        className="text-xs font-mono text-zinc-300 flex items-center gap-1.5"
+                        className="text-xs font-mono studio-fg-secondary flex items-center gap-1.5"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full studio-dot-purple shrink-0" />
                         <span>{a.name}</span>
                       </li>
                     ))}
@@ -878,7 +880,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               )}
             </div>
 
-            <p className="text-[11px] text-zinc-500 font-sans leading-relaxed">
+            <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
               Confirming deletion will atomically remove this form and cleanly
               prune all visit and arm assignments across the protocol in a
               single commit.
@@ -888,7 +890,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               <button
                 type="button"
                 onClick={() => setFormPendingDeletion(null)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-mono text-zinc-300 transition-colors"
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-active text-xs font-mono studio-fg-secondary transition-colors"
               >
                 Cancel
               </button>
@@ -899,7 +901,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                   setFormPendingDeletion(null);
                   onDeleteForm(idToDelete);
                 }}
-                className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-mono font-bold text-white transition-colors shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg studio-btn-red text-xs font-mono font-bold transition-colors shadow-sm"
               >
                 Delete Form
               </button>

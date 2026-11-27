@@ -244,7 +244,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 studio-surface-scrim backdrop-blur-sm animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
@@ -253,22 +253,22 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
         aria-modal="true"
         aria-labelledby="baseline-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-zinc-950 border border-zinc-750 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border-brand-cyan/30 text-zinc-100"
+        className="w-full max-w-2xl studio-surface-elevated border studio-border-default rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] studio-border-cyan studio-fg-primary"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-800 bg-zinc-900/60 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b studio-border-default studio-surface-subtle flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-brand-cyan/10 text-brand-cyan">
+            <span className="p-1.5 rounded-lg studio-bg-cyan studio-fg-cyan">
               <IconShieldLock className="w-5 h-5" />
             </span>
             <div>
               <h2
                 id="baseline-modal-title"
-                className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2"
+                className="text-sm font-mono font-bold studio-fg-primary uppercase tracking-wider flex items-center gap-2"
               >
                 Study Baselines &amp; Version History
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs studio-fg-muted mt-0.5">
                 Save immutable snapshots and restore into new drafts without
                 rewriting history.
               </p>
@@ -277,14 +277,14 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close Baselines Dialog"
-            className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+            className="p-1 studio-fg-muted studio-hover-fg-primary rounded-lg studio-hover-surface transition-colors"
           >
             <IconX className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 px-4 pt-3 border-b border-zinc-800 bg-zinc-950">
+        <div className="flex items-center gap-1 px-4 pt-3 border-b studio-border-default studio-surface-subtle">
           <button
             type="button"
             onClick={() => {
@@ -293,13 +293,13 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
             }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-t-lg transition-all border-b-2 ${
               activeTab === "list"
-                ? "border-brand-cyan text-brand-cyan bg-zinc-900/50"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                ? "studio-border-cyan studio-fg-cyan studio-surface-subtle"
+                : "border-transparent studio-fg-muted studio-hover-fg-primary"
             }`}
           >
             <IconHistory className="w-3.5 h-3.5" />
             <span>Saved Baselines</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] studio-surface-muted studio-fg-secondary">
               {baselines.length}
             </span>
           </button>
@@ -312,8 +312,8 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
             }}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-t-lg transition-all border-b-2 ${
               activeTab === "create"
-                ? "border-brand-cyan text-brand-cyan bg-zinc-900/50"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                ? "studio-border-cyan studio-fg-cyan studio-surface-subtle"
+                : "border-transparent studio-fg-muted studio-hover-fg-primary"
             }`}
           >
             <IconPlus className="w-3.5 h-3.5" />
@@ -327,14 +327,14 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
             role="status"
             className={`px-4 py-2 text-xs font-mono flex items-center gap-2 border-b ${
               feedback.type === "success"
-                ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/50"
-                : "bg-rose-950/60 text-rose-300 border-rose-800/50"
+                ? "studio-accent-emerald-strong"
+                : "studio-accent-red-strong"
             }`}
           >
             {feedback.type === "success" ? (
-              <IconCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+              <IconCheck className="w-4 h-4 shrink-0 studio-fg-emerald" />
             ) : (
-              <IconAlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+              <IconAlertTriangle className="w-4 h-4 shrink-0 studio-fg-red" />
             )}
             <span>{feedback.message}</span>
           </div>
@@ -345,7 +345,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
           {activeTab === "list" ? (
             <div className="space-y-4">
               {/* Summary toolbar */}
-              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 pb-2 border-b border-zinc-800">
+              <div className="flex items-center justify-between text-xs font-mono studio-fg-muted pb-2 border-b studio-border-default">
                 <span>
                   {baselines.length === 0
                     ? "No saved baselines in local storage."
@@ -356,15 +356,15 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                     <TooltipButton
                       type="button"
                       onClick={handleExportAll}
-                      className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 studio-surface-muted studio-hover-active studio-fg-primary rounded text-[11px] transition-colors"
                       tooltip="Export all baselines as JSON bundle"
                     >
-                      <IconDownload className="w-3 h-3 text-brand-cyan" />
+                      <IconDownload className="w-3 h-3 studio-fg-cyan" />
                       <span>Export All</span>
                     </TooltipButton>
                   )}
-                  <label className="flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] cursor-pointer transition-colors">
-                    <IconUpload className="w-3 h-3 text-brand-cyan" />
+                  <label className="flex items-center gap-1 px-2 py-1 studio-surface-muted studio-hover-active studio-fg-primary rounded text-[11px] cursor-pointer transition-colors">
+                    <IconUpload className="w-3 h-3 studio-fg-cyan" />
                     <span>Import</span>
                     <input
                       type="file"
@@ -379,13 +379,13 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
               {/* Baseline List */}
               {baselines.length === 0 ? (
                 <div className="py-12 text-center">
-                  <div className="inline-flex p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-500 mb-3">
+                  <div className="inline-flex p-3 rounded-2xl studio-surface-card border studio-border-default studio-fg-muted mb-3">
                     <IconBookmark className="w-8 h-8" />
                   </div>
-                  <h3 className="text-sm font-mono font-bold text-zinc-300">
+                  <h3 className="text-sm font-mono font-bold studio-fg-secondary">
                     No Baselines Recorded
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                  <p className="text-xs studio-fg-muted mt-1 max-w-sm mx-auto">
                     Create an immutable baseline snapshot to lock protocol
                     amendments, interim reviews, or regulatory submission
                     milestones.
@@ -393,7 +393,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab("create")}
-                    className="mt-4 px-3.5 py-1.5 rounded-xl bg-brand-cyan text-black font-mono text-xs font-bold hover:bg-brand-cyan/90 transition-all shadow-sm"
+                    className="mt-4 px-3.5 py-1.5 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm"
                   >
                     + Save Current Study as Baseline
                   </button>
@@ -403,20 +403,20 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                   {baselines.map((base) => (
                     <div
                       key={base.id}
-                      className="p-3.5 rounded-xl bg-zinc-900/70 border border-zinc-800 hover:border-zinc-700 transition-all space-y-2.5"
+                      className="p-3.5 rounded-xl studio-surface-subtle border studio-border-default studio-hover-border-strong transition-all space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30">
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold studio-accent-cyan-strong border">
                               {base.versionTag}
                             </span>
-                            <span className="text-xs font-bold text-white">
+                            <span className="text-xs font-bold studio-fg-primary">
                               {base.label}
                             </span>
                           </div>
                           {base.description && (
-                            <p className="text-xs text-zinc-400 mt-1 font-sans line-clamp-2">
+                            <p className="text-xs studio-fg-muted mt-1 font-sans line-clamp-2">
                               {base.description}
                             </p>
                           )}
@@ -427,7 +427,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                           <TooltipButton
                             type="button"
                             onClick={() => setBaselinePendingRestore(base)}
-                            className="px-2.5 py-1 bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan border border-brand-cyan/30 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1"
+                            className="px-2.5 py-1 studio-accent-cyan-strong studio-hover-bg-cyan-strong border rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1"
                             tooltip="Restore baseline into a new draft"
                           >
                             <IconArrowBackUp className="w-3.5 h-3.5" />
@@ -437,7 +437,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                           <TooltipButton
                             type="button"
                             onClick={() => handleDownloadSingle(base)}
-                            className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+                            className="p-1 studio-fg-muted studio-hover-fg-primary rounded-lg studio-hover-surface transition-colors"
                             tooltip="Download study JSON"
                             aria-label={`Download ${base.versionTag} JSON`}
                           >
@@ -449,7 +449,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                             onClick={() =>
                               handleDeleteBaseline(base.id, base.versionTag)
                             }
-                            className="p-1 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                            className="p-1 studio-fg-muted studio-hover-fg-red rounded-lg studio-hover-surface transition-colors"
                             tooltip="Delete baseline"
                             aria-label={`Delete ${base.versionTag}`}
                           >
@@ -459,7 +459,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                       </div>
 
                       {/* Metadata row */}
-                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 pt-2 border-t border-zinc-800/80 flex-wrap gap-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono studio-fg-muted pt-2 border-t studio-border-default flex-wrap gap-2">
                         <div className="flex items-center gap-3">
                           <span>
                             Created:{" "}
@@ -474,7 +474,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                           <span>•</span>
                           <span>
                             Actor:{" "}
-                            <span className="text-zinc-300">
+                            <span className="studio-fg-secondary">
                               {base.actor.name}
                             </span>
                             {base.actor.role ? ` (${base.actor.role})` : ""}
@@ -482,17 +482,17 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                          <span className="px-1.5 py-0.5 rounded studio-surface-muted studio-fg-muted">
                             {base.provenance?.totalForms ??
                               base.study.forms.length}{" "}
                             forms
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                          <span className="px-1.5 py-0.5 rounded studio-surface-muted studio-fg-muted">
                             {base.provenance?.totalVisits ??
                               base.study.visits.length}{" "}
                             visits
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                          <span className="px-1.5 py-0.5 rounded studio-surface-muted studio-fg-muted">
                             {base.provenance?.totalFields ?? "—"} fields
                           </span>
                         </div>
@@ -506,27 +506,27 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
             /* Create New Baseline Form */
             <form onSubmit={handleCreateBaseline} className="space-y-4">
               {/* Snapshot Scope Summary */}
-              <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-mono font-bold text-white">
+              <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-mono font-bold studio-fg-primary">
                   <span>Current Study Snapshot Scope</span>
-                  <span className="text-brand-cyan">
+                  <span className="studio-fg-cyan">
                     {study.protocolNumber || "UNASSIGNED"}
                   </span>
                 </div>
-                <div className="text-xs text-zinc-400">
+                <div className="text-xs studio-fg-muted">
                   {study.studyName || "Untitled Study Protocol"}
                 </div>
-                <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px] font-mono text-zinc-400">
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
+                <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px] font-mono studio-fg-muted">
+                  <span className="px-1.5 py-0.5 rounded studio-surface-muted">
                     {studyStats.formsCount} Forms
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
+                  <span className="px-1.5 py-0.5 rounded studio-surface-muted">
                     {studyStats.visitsCount} Visits
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
+                  <span className="px-1.5 py-0.5 rounded studio-surface-muted">
                     {studyStats.fieldsCount} Fields
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-800">
+                  <span className="px-1.5 py-0.5 rounded studio-surface-muted">
                     {studyStats.rulesCount} Rules
                   </span>
                 </div>
@@ -537,7 +537,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                 <div>
                   <label
                     htmlFor="baseline-version-tag"
-                    className="block text-xs font-mono font-semibold text-zinc-300 mb-1"
+                    className="block text-xs font-mono font-semibold studio-fg-secondary mb-1"
                   >
                     Version Tag *
                   </label>
@@ -548,14 +548,14 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                     value={versionTag}
                     onChange={(e) => setVersionTag(e.target.value)}
                     placeholder="e.g. v1.0.0"
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    className="w-full px-3 py-2 studio-surface-card border studio-border-strong rounded-xl text-xs font-mono studio-fg-primary focus:outline-none studio-focus-input focus:ring-1"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="baseline-label"
-                    className="block text-xs font-mono font-semibold text-zinc-300 mb-1"
+                    className="block text-xs font-mono font-semibold studio-fg-secondary mb-1"
                   >
                     Baseline Label / Title *
                   </label>
@@ -566,7 +566,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     placeholder="e.g. Protocol Amendment 1 Interim Lock"
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    className="w-full px-3 py-2 studio-surface-card border studio-border-strong rounded-xl text-xs font-mono studio-fg-primary focus:outline-none studio-focus-input focus:ring-1"
                   />
                 </div>
               </div>
@@ -575,7 +575,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
               <div>
                 <label
                   htmlFor="baseline-description"
-                  className="block text-xs font-mono font-semibold text-zinc-300 mb-1"
+                  className="block text-xs font-mono font-semibold studio-fg-secondary mb-1"
                 >
                   Clinical Context &amp; Amendment Notes
                 </label>
@@ -585,7 +585,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. Formal protocol amendment freeze prior to Cohort 2 expansion."
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-sans text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  className="w-full px-3 py-2 studio-surface-card border studio-border-strong rounded-xl text-xs font-sans studio-fg-primary focus:outline-none studio-focus-input focus:ring-1"
                 />
               </div>
 
@@ -594,7 +594,7 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                 <div>
                   <label
                     htmlFor="baseline-actor-name"
-                    className="block text-xs font-mono font-semibold text-zinc-300 mb-1"
+                    className="block text-xs font-mono font-semibold studio-fg-secondary mb-1"
                   >
                     Author / Actor Name *
                   </label>
@@ -604,14 +604,14 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                     required
                     value={actorName}
                     onChange={(e) => setActorName(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    className="w-full px-3 py-2 studio-surface-card border studio-border-strong rounded-xl text-xs font-mono studio-fg-primary focus:outline-none studio-focus-input focus:ring-1"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="baseline-actor-role"
-                    className="block text-xs font-mono font-semibold text-zinc-300 mb-1"
+                    className="block text-xs font-mono font-semibold studio-fg-secondary mb-1"
                   >
                     Role / Title
                   </label>
@@ -620,23 +620,23 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
                     type="text"
                     value={actorRole}
                     onChange={(e) => setActorRole(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                    className="w-full px-3 py-2 studio-surface-card border studio-border-strong rounded-xl text-xs font-mono studio-fg-primary focus:outline-none studio-focus-input focus:ring-1"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end gap-2 border-t border-zinc-800">
+              <div className="pt-3 flex items-center justify-end gap-2 border-t studio-border-default">
                 <button
                   type="button"
                   onClick={() => setActiveTab("list")}
-                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs transition-colors"
+                  className="px-3.5 py-1.5 rounded-xl studio-surface-muted studio-hover-active studio-fg-secondary font-mono text-xs transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 rounded-xl bg-brand-cyan text-black font-mono text-xs font-bold hover:bg-brand-cyan/90 transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <IconShieldLock className="w-4 h-4" />
                   <span>
@@ -656,32 +656,32 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="restore-confirm-title"
-            className="p-4 sm:p-5 border-t border-brand-cyan/40 bg-zinc-900 space-y-3 animate-in slide-in-from-bottom-2 duration-150"
+            className="p-4 sm:p-5 border-t studio-border-cyan studio-surface-card space-y-3 animate-in slide-in-from-bottom-2 duration-150"
           >
             <div className="flex items-start gap-3">
-              <span className="p-2 rounded-xl bg-brand-cyan/10 text-brand-cyan shrink-0 mt-0.5">
+              <span className="p-2 rounded-xl studio-bg-cyan studio-fg-cyan shrink-0 mt-0.5">
                 <IconArrowBackUp className="w-5 h-5" />
               </span>
               <div className="space-y-1">
                 <h4
                   id="restore-confirm-title"
-                  className="text-xs font-mono font-bold text-white uppercase tracking-wider"
+                  className="text-xs font-mono font-bold studio-fg-primary uppercase tracking-wider"
                 >
                   Restore Baseline &apos;{baselinePendingRestore.versionTag}
                   &apos; as New Draft?
                 </h4>
-                <p className="text-xs text-zinc-300">
+                <p className="text-xs studio-fg-secondary">
                   This creates a brand new working draft derived from baseline{" "}
                   <strong>&quot;{baselinePendingRestore.label}&quot;</strong>{" "}
                   with fresh provenance metadata. The original baseline remains
                   100% immutable and untouched in history.
                 </p>
-                <label className="flex items-center gap-2 pt-1.5 cursor-pointer text-xs font-mono text-zinc-300">
+                <label className="flex items-center gap-2 pt-1.5 cursor-pointer text-xs font-mono studio-fg-secondary">
                   <input
                     type="checkbox"
                     checked={incrementOnRestore}
                     onChange={(e) => setIncrementOnRestore(e.target.checked)}
-                    className="rounded border-zinc-700 bg-zinc-800 text-brand-cyan focus:ring-brand-cyan"
+                    className="rounded studio-border-strong studio-surface-muted studio-fg-cyan studio-focus-input"
                   />
                   <span>
                     Increment version to next draft iteration (e.g.{" "}
@@ -698,14 +698,14 @@ export const BaselineManagerModal: React.FC<BaselineManagerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setBaselinePendingRestore(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs transition-colors"
+                className="px-3.5 py-1.5 rounded-xl studio-surface-muted studio-hover-active studio-fg-secondary font-mono text-xs transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmRestore}
-                className="px-4 py-1.5 rounded-xl bg-brand-cyan text-black font-mono text-xs font-bold hover:bg-brand-cyan/90 transition-all shadow-sm"
+                className="px-4 py-1.5 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm"
               >
                 Confirm &amp; Begin New Draft
               </button>

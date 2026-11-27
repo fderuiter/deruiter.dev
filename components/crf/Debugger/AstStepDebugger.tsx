@@ -37,11 +37,11 @@ interface AstStepDebuggerProps {
 }
 
 const RESULT_BADGE_STYLE: Record<ConditionResult | "short_circuit", string> = {
-  true: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40",
-  false: "bg-zinc-800 text-zinc-300 border-zinc-700",
-  missing: "bg-amber-500/15 text-amber-400 border-amber-500/40",
-  incompatible: "bg-rose-500/15 text-rose-400 border-rose-500/40",
-  short_circuit: "bg-purple-500/15 text-purple-300 border-purple-500/40",
+  true: "studio-accent-emerald",
+  false: "studio-surface-muted studio-fg-secondary studio-border-strong",
+  missing: "studio-accent-amber",
+  incompatible: "studio-accent-red",
+  short_circuit: "studio-accent-purple",
 };
 
 const RESULT_LABEL: Record<ConditionResult | "short_circuit", string> = {
@@ -180,23 +180,25 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
   return (
     <div
-      className={`p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4 shadow-xl ${className}`}
+      className={`p-4 rounded-2xl studio-surface-subtle border studio-border-default space-y-4 shadow-xl ${className}`}
     >
       {/* Top Header & Rule Evaluation Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b studio-border-default">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="p-1.5 rounded-lg bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan shrink-0">
+          <span className="p-1.5 rounded-lg studio-accent-cyan border shrink-0">
             <IconSparkles className="w-4 h-4" />
           </span>
           <div className="min-w-0">
-            <h3 className="text-xs font-mono font-bold text-white truncate flex items-center gap-2">
+            <h3 className="text-xs font-mono font-bold studio-fg-primary truncate flex items-center gap-2">
               <span>AST Step Debugger: {rule.name}</span>
             </h3>
-            <p className="text-[10px] text-zinc-400 font-sans truncate mt-0.5">
+            <p className="text-[10px] studio-fg-muted font-sans truncate mt-0.5">
               Action:{" "}
-              <span className="font-mono text-zinc-300">{rule.actionType}</span>{" "}
+              <span className="font-mono studio-fg-secondary">
+                {rule.actionType}
+              </span>{" "}
               · Target:{" "}
-              <span className="font-mono text-brand-cyan">
+              <span className="font-mono studio-fg-cyan">
                 {rule.targetFieldId}
               </span>
             </p>
@@ -226,15 +228,15 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
       {/* Sample Profiles Quick Selector */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+        <div className="flex items-center justify-between text-[10px] font-mono studio-fg-muted">
           <span className="flex items-center gap-1">
-            <IconAdjustmentsHorizontal className="w-3 h-3 text-brand-cyan" />
+            <IconAdjustmentsHorizontal className="w-3 h-3 studio-fg-cyan" />
             Sample Subject Data Profiles:
           </span>
           <button
             type="button"
             onClick={() => setShowOverrides(!showOverrides)}
-            className="text-brand-cyan hover:underline text-[10px]"
+            className="studio-fg-cyan hover:underline text-[10px]"
           >
             {showOverrides ? "Hide Value Overrides" : "Edit Value Overrides"}
           </button>
@@ -246,7 +248,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
               key={profile.id}
               type="button"
               onClick={() => handleSelectProfile(profile)}
-              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-[11px] font-mono border border-zinc-800 hover:border-brand-cyan/40 transition-colors"
+              className="px-2.5 py-1 rounded-lg studio-surface-card studio-hover-surface studio-fg-secondary text-[11px] font-mono border studio-border-default studio-hover-border-cyan transition-colors"
               tooltip={profile.description}
             >
               {profile.name}
@@ -257,8 +259,8 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
       {/* Mock Value Override Grid */}
       {showOverrides && (
-        <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-2">
-          <div className="text-[10px] font-mono text-zinc-400 font-semibold uppercase">
+        <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default space-y-2">
+          <div className="text-[10px] font-mono studio-fg-muted font-semibold uppercase">
             Mock Field Input Values (Instant Real-time Calculation):
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -271,17 +273,21 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
               return (
                 <div key={rf.id} className="space-y-1">
-                  <label className="block text-[9px] font-mono text-zinc-400 truncate">
+                  <label
+                    htmlFor={`ast-debug-mock-${rf.id}`}
+                    className="block text-[9px] font-mono studio-fg-muted truncate"
+                  >
                     {rf.variableName} {rf.unit ? `(${rf.unit})` : ""}
                   </label>
                   <input
+                    id={`ast-debug-mock-${rf.id}`}
                     type="text"
                     value={currentVal === null ? "" : String(currentVal)}
                     onChange={(e) =>
                       handleFieldValueChange(rf.variableName, e.target.value)
                     }
                     placeholder="Missing"
-                    className="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white font-mono focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-2 py-1 studio-surface-subtle border studio-border-default rounded text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
                   />
                 </div>
               );
@@ -291,13 +297,13 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
       )}
 
       {/* STEPPER CONTROLS BAR */}
-      <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-3 rounded-xl studio-surface-card border studio-border-default flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <TooltipButton
             type="button"
             onClick={() => setRawStepIndex(0)}
             disabled={activeStepIndex === 0}
-            className="p-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono transition-colors"
+            className="p-1.5 rounded-lg studio-surface-subtle studio-hover-surface disabled:opacity-40 studio-fg-secondary border studio-border-default text-xs font-mono transition-colors"
             tooltip="First Step"
             aria-label="First Step"
           >
@@ -307,7 +313,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
             type="button"
             onClick={() => setRawStepIndex((prev) => Math.max(0, prev - 1))}
             disabled={activeStepIndex === 0}
-            className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono flex items-center gap-1 transition-colors"
+            className="px-2.5 py-1.5 rounded-lg studio-surface-subtle studio-hover-surface disabled:opacity-40 studio-fg-secondary border studio-border-default text-xs font-mono flex items-center gap-1 transition-colors"
             tooltip="Step Back"
           >
             <IconChevronLeft className="w-3.5 h-3.5" />
@@ -318,8 +324,8 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
             onClick={() => setIsPlaying(!isPlaying)}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 border transition-colors ${
               isPlaying
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                : "bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40 hover:bg-brand-cyan/30"
+                ? "studio-accent-amber-strong"
+                : "studio-accent-cyan-strong studio-hover-bg-cyan-strong"
             }`}
           >
             {isPlaying ? (
@@ -342,7 +348,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
               )
             }
             disabled={activeStepIndex >= trace.steps.length - 1}
-            className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono flex items-center gap-1 transition-colors"
+            className="px-2.5 py-1.5 rounded-lg studio-surface-subtle studio-hover-surface disabled:opacity-40 studio-fg-secondary border studio-border-default text-xs font-mono flex items-center gap-1 transition-colors"
             tooltip="Step Next"
           >
             <span>Next</span>
@@ -352,7 +358,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
             type="button"
             onClick={() => setRawStepIndex(trace.steps.length - 1)}
             disabled={activeStepIndex >= trace.steps.length - 1}
-            className="p-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 border border-zinc-800 text-xs font-mono transition-colors"
+            className="p-1.5 rounded-lg studio-surface-subtle studio-hover-surface disabled:opacity-40 studio-fg-secondary border studio-border-default text-xs font-mono transition-colors"
             tooltip="End Step"
             aria-label="End Step"
           >
@@ -361,17 +367,19 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-zinc-400">
+          <span className="text-xs font-mono studio-fg-muted">
             Step{" "}
-            <span className="text-brand-cyan font-bold">
+            <span className="studio-fg-cyan font-bold">
               {activeStepIndex + 1}
             </span>{" "}
             of{" "}
-            <span className="text-white font-bold">{trace.steps.length}</span>
+            <span className="studio-fg-primary font-bold">
+              {trace.steps.length}
+            </span>
           </span>
           {trace.hasShortCircuit && (
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-              <IconBolt className="w-3 h-3 text-purple-400" />
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold studio-accent-purple-strong border flex items-center gap-1">
+              <IconBolt className="w-3 h-3 studio-fg-purple" />
               <span>Short-Circuited</span>
             </span>
           )}
@@ -380,13 +388,13 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
       {/* ACTIVE STEP DETAIL INSPECTOR CARD */}
       {activeStep && (
-        <div className="p-4 rounded-xl bg-zinc-900 border border-brand-cyan/40 space-y-2.5 shadow-lg relative overflow-hidden">
+        <div className="p-4 rounded-xl studio-surface-card border studio-border-cyan space-y-2.5 shadow-lg relative overflow-hidden">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 inline-flex items-center justify-center text-xs font-mono font-bold">
+              <span className="w-5 h-5 rounded-full studio-accent-cyan-strong border inline-flex items-center justify-center text-xs font-mono font-bold">
                 {activeStep.stepIndex}
               </span>
-              <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+              <span className="text-xs font-mono font-bold studio-fg-primary uppercase tracking-wider">
                 {activeStep.nodeType === "rule_summary"
                   ? "Rule Outcome Summary"
                   : `Condition Node: ${activeStep.variableName}`}
@@ -407,16 +415,16 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
           </div>
 
           {/* Sentence / Comparison Breakdown */}
-          <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-200">
+          <div className="p-3 rounded-lg studio-surface-subtle border studio-border-default text-xs font-mono studio-fg-primary">
             {activeStep.sentence}
           </div>
 
           {/* Short-Circuit Explanation Callout */}
           {activeStep.shortCircuited && activeStep.shortCircuitReason && (
-            <div className="p-2.5 rounded-lg bg-purple-950/40 border border-purple-800/50 text-[11px] font-mono text-purple-300 flex items-start gap-2">
-              <IconBolt className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+            <div className="p-2.5 rounded-lg studio-accent-purple border text-[11px] font-mono flex items-start gap-2">
+              <IconBolt className="w-4 h-4 studio-fg-purple shrink-0 mt-0.5" />
               <div>
-                <div className="font-bold uppercase text-[10px] text-purple-200">
+                <div className="font-bold uppercase text-[10px] studio-fg-purple">
                   Logical Short-Circuit Triggered
                 </div>
                 <div>{activeStep.shortCircuitReason}</div>
@@ -426,10 +434,10 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
           {/* Missing or Incompatible Input Diagnostics */}
           {activeStep.diagnostics.length > 0 && (
-            <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-800/50 text-[11px] font-mono text-amber-300 space-y-1">
+            <div className="p-2.5 rounded-lg studio-accent-amber border text-[11px] font-mono space-y-1">
               {activeStep.diagnostics.map((diag, dIdx) => (
                 <div key={dIdx} className="flex items-start gap-1.5">
-                  <IconAlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <IconAlertTriangle className="w-3.5 h-3.5 studio-fg-amber shrink-0 mt-0.5" />
                   <span>{diag}</span>
                 </div>
               ))}
@@ -440,7 +448,7 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
 
       {/* CONDITION TREE & STEP LIST */}
       <div className="space-y-1.5 pt-1">
-        <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
+        <div className="text-[10px] font-mono studio-fg-muted uppercase tracking-wider font-semibold">
           Condition Execution Tree ({trace.steps.length} Steps):
         </div>
 
@@ -453,16 +461,16 @@ export const AstStepDebugger: React.FC<AstStepDebuggerProps> = ({
                 onClick={() => setRawStepIndex(sIdx)}
                 className={`p-2.5 rounded-xl border text-xs font-mono cursor-pointer transition-all ${
                   isActive
-                    ? "bg-zinc-900 border-brand-cyan ring-1 ring-brand-cyan/40 shadow-md"
-                    : "bg-zinc-950/70 border-zinc-800 hover:border-zinc-700"
+                    ? "studio-surface-card studio-border-cyan ring-1 studio-ring-cyan shadow-md"
+                    : "studio-surface-subtle studio-border-default studio-hover-border-strong"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] text-zinc-500 font-bold shrink-0">
+                    <span className="text-[10px] studio-fg-muted font-bold shrink-0">
                       #{step.stepIndex}
                     </span>
-                    <span className="truncate text-zinc-300">
+                    <span className="truncate studio-fg-secondary">
                       {step.sentence}
                     </span>
                   </div>

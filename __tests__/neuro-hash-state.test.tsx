@@ -11,6 +11,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { NeuroReconClient } from "@/components/neuro/NeuroReconClient";
+import { getByTooltip } from "./helpers/tooltip";
 
 /**
  * Issue #1451: NeuroRecon derives its view, dataset and tool from
@@ -79,6 +80,8 @@ function datasetButton(label: string) {
 const has3DView = () => document.querySelector(THREE_D_PANE) !== null;
 const hasBrushControls = () =>
   screen.queryByLabelText("Brush radius 1") !== null;
+const hasRoiToolbarPrompt = () =>
+  screen.queryByTestId("neuro-roi-toolbar-prompt") !== null;
 
 describe("NeuroRecon hash-derived startup state (#1451)", () => {
   beforeEach(() => {
@@ -150,6 +153,46 @@ describe("NeuroRecon hash-derived startup state (#1451)", () => {
     navigateHistory("view=2d&tool=erase");
     expect(has3DView()).toBe(false);
     expect(hasBrushControls()).toBe(true);
+
+    navigateHistory("view=2d&tool=roi_select");
+    expect(has3DView()).toBe(false);
+    expect(hasBrushControls()).toBe(false);
+    expect(hasRoiToolbarPrompt()).toBe(true);
+    expect(getByTooltip(/^ROI Region Grow/).className).toContain("font-bold");
+  });
+
+  it("preserves #tool=roi_select on deep link and falls back to recommendedTool for unknown #tool values", async () => {
+    setHash("tool=roi_select");
+    render(<NeuroReconClient />);
+
+    await waitFor(() =>
+      expect(getByTooltip(/^ROI Region Grow/).className).toContain("font-bold")
+    );
+    expect(hasBrushControls()).toBe(false);
+    expect(hasRoiToolbarPrompt()).toBe(true);
+
+    // Unknown #tool value falls back to Case 01 recommendedTool ("erase")
+    navigateHistory("tool=invalid_mode");
+    expect(getByTooltip(/^Voxel Erase Brush/).className).toContain("font-bold");
+    expect(hasBrushControls()).toBe(true);
+    expect(hasRoiToolbarPrompt()).toBe(false);
+  });
+
+  it("surfaces a 2D slice hint banner when roi_select is active in 3D Only view and opens Split 3D/2D", async () => {
+    setHash("view=3d&tool=roi_select");
+    render(<NeuroReconClient />);
+
+    const hint = await screen.findByTestId("neuro-roi-3d-slice-hint");
+    expect(hint.textContent).toContain("ROI Region Grow seeds from 2D");
+    expect(screen.queryByText("2D Multi-Planar Orthoview")).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Open Split 3D\/2D Slices/i })
+    );
+    expect(window.location.hash).not.toContain("view=3d");
+    expect(window.location.hash).toContain("tool=roi_select");
+    expect(screen.queryByTestId("neuro-roi-3d-slice-hint")).toBeNull();
+    expect(screen.getByText("2D Multi-Planar Orthoview")).not.toBeNull();
   });
 
   it("hydrates a deep link without a server/client markup mismatch", async () => {
@@ -184,6 +227,45 @@ describe("NeuroRecon hash-derived startup state (#1451)", () => {
     // After hydration the client snapshot applies the deep link.
     await waitFor(() => expect(host.querySelector(THREE_D_PANE)).toBeNull());
     expect(host.querySelector('[aria-label="Brush radius 1"]')).not.toBeNull();
+
+    act(() => root?.unmount());
+    host.remove();
+  });
+
+  it("hydrates a #tool=roi_select deep link without a server/client markup mismatch", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const { hydrateRoot } = await import("react-dom/client");
+
+    setHash("");
+    const html = renderToString(<NeuroReconClient />);
+
+    setHash("view=2d&tool=roi_select");
+    const host = document.createElement("div");
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const recoverable = vi.fn();
+
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(host, <NeuroReconClient />, {
+        onRecoverableError: recoverable,
+      });
+    });
+
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(
+      errorSpy.mock.calls.filter((args) =>
+        String(args[0]).toLowerCase().includes("hydrat")
+      )
+    ).toEqual([]);
+
+    await waitFor(() =>
+      expect(
+        host.querySelector('[data-testid="neuro-roi-toolbar-prompt"]')
+      ).not.toBeNull()
+    );
+    expect(host.querySelector('[aria-label="Brush radius 1"]')).toBeNull();
 
     act(() => root?.unmount());
     host.remove();

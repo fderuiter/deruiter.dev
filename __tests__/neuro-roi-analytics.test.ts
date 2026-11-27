@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import {
+  DEFAULT_ROI_INTENSITY_TOLERANCE,
   compute256BinHistogram,
   computeMarchingSquares,
   runRegionGrowing,
@@ -58,8 +59,15 @@ describe("Worker-Based Mesh and Contour Analytics Pipeline Suite", () => {
       volume.brainmask,
       volume.dimensions,
       seed,
-      15
+      DEFAULT_ROI_INTENSITY_TOLERANCE
     );
+    const defaultResult = runRegionGrowing(
+      volume.rawT1,
+      volume.brainmask,
+      volume.dimensions,
+      seed
+    );
+    expect(defaultResult.stats).toEqual(result.stats);
 
     expect(result.stats.seed).toEqual(seed);
     expect(result.stats.voxelCount).toBeGreaterThan(10);

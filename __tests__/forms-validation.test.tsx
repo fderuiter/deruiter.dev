@@ -281,7 +281,11 @@ describe("contact and newsletter fields support autofill and touch input (#3973)
     expect(email.hasAttribute("aria-label")).toBe(false);
     expect(email.getAttribute("autocomplete")).toBe("email");
     expect(email.className).toContain("pointer-coarse:text-base");
-    const label = document.querySelector('label[for="newsletter-email-input"]');
+    expect(email.id).toBeTruthy();
+    const label = Array.from(document.querySelectorAll("label")).find(
+      (el) => el.htmlFor === email.id
+    );
     expect(label?.textContent).toBe("Email address");
+    expect(label?.closest('[aria-hidden="true"]')).toBeNull();
   });
 });

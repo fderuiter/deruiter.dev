@@ -146,6 +146,7 @@ import { generateStudyPdf } from "@/lib/crf/export-pdf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
 import { SCENARIOS } from "@/lib/neuro/scenarios";
+import { DEFAULT_ROI_INTENSITY_TOLERANCE, TOOL_MODES } from "@/lib/neuro";
 import {
   generateSyntheticVolume,
   getIndex,
@@ -3373,6 +3374,35 @@ describe("Typed formula evaluation and CLI error contracts", () => {
     expect(unclosed.success).toBe(false);
     expect(unclosed.document).not.toMatch(/\x1b\[/);
     expect(JSON.parse(unclosed.document).success).toBe(false);
+  });
+
+  describe("NeuroRecon ROI hash allowlist parity", () => {
+    it("derives HASH_TOOLS from TOOL_MODES including roi_select so #tool=roi_select never falls back to brush edits", () => {
+      expect(TOOL_MODES).toEqual([
+        "inspect",
+        "control_point",
+        "paint",
+        "erase",
+        "roi_select",
+      ]);
+
+      const clientSrc = fs.readFileSync(
+        path.resolve(__dirname, "../components/neuro/NeuroReconClient.tsx"),
+        "utf8"
+      );
+      expect(clientSrc).toContain(
+        "const HASH_TOOLS: readonly string[] = TOOL_MODES;"
+      );
+
+      expect(DEFAULT_ROI_INTENSITY_TOLERANCE).toBe(15);
+      const toolbarSrc = fs.readFileSync(
+        path.resolve(__dirname, "../components/neuro/NeuroToolbar.tsx"),
+        "utf8"
+      );
+      expect(toolbarSrc).toContain(
+        "roiTolerance = DEFAULT_ROI_INTENSITY_TOLERANCE,"
+      );
+    });
   });
 });
 

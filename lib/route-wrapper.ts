@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z, ZodSchema } from "zod";
+import { z } from "zod";
 import { applySecurityHeaders } from "@/lib/security-headers";
 import { logger } from "@/lib/logger";
 import { isCurrentUserAdmin } from "@/lib/auth/admin";
@@ -7,7 +7,7 @@ import { validateSyncRequest } from "@/lib/security";
 
 export type ApiAuthRequirement = "clerk_admin" | "cron_secret" | "public";
 
-export interface ApiWrapperOptions<TSchema extends ZodSchema = ZodSchema> {
+export interface ApiWrapperOptions<TSchema extends z.ZodType = z.ZodType> {
   schema?: TSchema;
   type?: "body" | "query";
   customValidationError?: (
@@ -98,7 +98,7 @@ export type ApiRouteHandler = {
  * Provides automated Zod request schema validation, uniform error transformation,
  * Sentry exception logging, error sanitization, and security header enforcement.
  */
-export function createApiHandler<TSchema extends ZodSchema>(
+export function createApiHandler<TSchema extends z.ZodType>(
   handler: ApiHandler<z.infer<TSchema>>,
   options: ApiWrapperOptions<TSchema> & { schema: TSchema }
 ): ApiRouteHandler;
@@ -108,7 +108,7 @@ export function createApiHandler(
   options?: ApiWrapperOptions
 ): ApiRouteHandler;
 
-export function createApiHandler<TSchema extends ZodSchema>(
+export function createApiHandler<TSchema extends z.ZodType>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: ApiHandler<any>,
   options?: ApiWrapperOptions<TSchema>

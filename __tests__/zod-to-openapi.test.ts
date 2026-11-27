@@ -8,6 +8,7 @@ import {
   BlogDraftCreateSchema,
   BlogDraftUpdateSchema,
   TelemetryEventSchema,
+  FallbackMemorySchema,
   SyncParamsSchema,
   FeedbackSubmissionSchema,
   ReactionSubmissionSchema,
@@ -96,5 +97,106 @@ describe("zodToOpenApi Converter Engine", () => {
         `${name} should not contain $schema`
       ).toBeUndefined();
     }
+  });
+
+  it("trims surrounding whitespace before email and URL format or max-length checks", () => {
+    const contact = ContactSubmissionSchema.safeParse({
+      name: "Ada Lovelace",
+      email: " ada@example.com ",
+      subject: "Protocol inquiry",
+      message: "Checking whitespace trimming around contact email.",
+    });
+    expect(contact.success).toBe(true);
+    if (contact.success) {
+      expect(contact.data.email).toBe("ada@example.com");
+    }
+
+    const newsletter = NewsletterSubmissionSchema.safeParse({
+      email: " ada@example.com ",
+    });
+    expect(newsletter.success).toBe(true);
+    if (newsletter.success) {
+      expect(newsletter.data.email).toBe("ada@example.com");
+    }
+
+    const maxUrl =
+      "https://images.example/" +
+      "a".repeat(2048 - "https://images.example/".length);
+    const paddedMaxUrl = `  ${maxUrl}  `;
+
+    const draftUpdate = BlogDraftUpdateSchema.safeParse({
+      heroImageUrl: paddedMaxUrl,
+    });
+    expect(draftUpdate.success).toBe(true);
+    if (draftUpdate.success) {
+      expect(draftUpdate.data.heroImageUrl).toBe(maxUrl);
+    }
+
+    const caseStudy = CaseStudySubmissionSchema.safeParse({
+      title: "Clinical Schema Migration",
+      slug: "clinical-schema-migration",
+      primary_language: "TypeScript",
+      editorial_content: "Summary of contract-preserving schema migration.",
+      architectural_narrative: "<p>Validation pipeline narrative.</p>",
+      tags: ["zod", "openapi"],
+      hero_image_url: paddedMaxUrl,
+      heroImageUrl: paddedMaxUrl,
+    });
+    expect(caseStudy.success).toBe(true);
+
+    const overMaxUrl = `${maxUrl}x`;
+    const draftOverMax = BlogDraftUpdateSchema.safeParse({
+      heroImageUrl: overMaxUrl,
+    });
+    expect(draftOverMax.success).toBe(false);
+  });
+
+  it("preserves unrecognized webhook properties, URL validation, and ISO timestamps", () => {
+    const webhook = ResendWebhookEventSchema.safeParse({
+      type: "email.delivered",
+      data: {
+        id: "msg_123",
+        providerRegion: "us-east-1",
+      },
+    });
+    expect(webhook.success).toBe(true);
+    if (webhook.success) {
+      expect(webhook.data.data).toMatchObject({
+        id: "msg_123",
+        providerRegion: "us-east-1",
+      });
+    }
+
+    expect(
+      FallbackMemorySchema.safeParse({
+        redisUrl: "https://redis.example.com",
+      }).success
+    ).toBe(true);
+    expect(
+      FallbackMemorySchema.safeParse({ redisUrl: "not-a-url" }).success
+    ).toBe(false);
+
+    expect(
+      MaintenanceSummarySchema.safeParse({
+        success: true,
+        partial: false,
+        startedAt: "2026-11-27T08:00:00.000Z",
+        completedAt: "2026-11-27T08:00:02.000Z",
+        durationMs: 2000,
+        deadlineMs: 8000,
+        phases: {},
+      }).success
+    ).toBe(true);
+    expect(
+      MaintenanceSummarySchema.safeParse({
+        success: true,
+        partial: false,
+        startedAt: "2026-11-27",
+        completedAt: "2026-11-27T08:00:02.000Z",
+        durationMs: 2000,
+        deadlineMs: 8000,
+        phases: {},
+      }).success
+    ).toBe(false);
   });
 });

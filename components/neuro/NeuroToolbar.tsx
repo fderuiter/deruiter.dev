@@ -31,6 +31,7 @@ import { TooltipButton } from "@/components/ui/Tooltip";
 interface NeuroToolbarProps {
   toolMode: ToolMode;
   brushRadius: number;
+  roiTolerance?: number;
   activeLayer?: NeuroEditLayer;
   hasOverlayMask?: boolean;
   overlayMaskName?: string;
@@ -65,6 +66,7 @@ interface NeuroToolbarProps {
 export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
   toolMode,
   brushRadius,
+  roiTolerance = 15,
   activeLayer = "brainmask",
   hasOverlayMask = false,
   overlayMaskName,
@@ -131,7 +133,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
     {
       id: "roi_select",
       label: "ROI Region Grow",
-      key: "5 / G",
+      key: `${NEURO_TOOL_HOTKEYS.roi_select.digit} / ${NEURO_TOOL_HOTKEYS.roi_select.letter}`,
       icon: <IconTarget className="w-4 h-4 text-purple-400" />,
     },
   ];
@@ -248,6 +250,22 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Inline ROI Tolerance & Seed Prompt (when ROI Region Grow active) */}
+        {toolMode === "roi_select" && (
+          <div
+            data-testid="neuro-roi-toolbar-prompt"
+            className="flex flex-wrap items-center gap-2 min-w-0 bg-zinc-950 px-3 py-2 min-h-[44px] rounded-xl border border-zinc-800 text-xs font-mono"
+          >
+            <span className="text-zinc-400">ROI TOLERANCE:</span>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold tabular-nums">
+              ±{roiTolerance} INT
+            </span>
+            <span className="text-zinc-300 min-w-0 break-words sm:border-l sm:border-zinc-800 sm:pl-2">
+              Click any 2D slice voxel to seed 3D region growing
+            </span>
           </div>
         )}
 

@@ -10,11 +10,19 @@ interface BentoLayoutContextType {
   setTransitioning: (id: string, transitioning: boolean) => void;
 }
 
-const BentoLayoutContext = createContext<BentoLayoutContextType | undefined>(undefined);
+const BentoLayoutContext = createContext<BentoLayoutContextType | undefined>(
+  undefined
+);
 
-export const BentoLayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [heightOverrides, setHeightOverrides] = useState<Record<string, number>>({});
-  const [isTransitioning, setIsTransitioning] = useState<Record<string, boolean>>({});
+export const BentoLayoutProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [heightOverrides, setHeightOverrides] = useState<
+    Record<string, number>
+  >({});
+  const [isTransitioning, setIsTransitioning] = useState<
+    Record<string, boolean>
+  >({});
 
   const registerHeightOverride = useCallback((id: string, height: number) => {
     setHeightOverrides((prev) => {

@@ -1,5 +1,9 @@
 import { compileCaseStudy } from "../compiler";
-import type { CaseStudyCommands, CaseStudyData, CaseStudyPlayback } from "../types";
+import type {
+  CaseStudyCommands,
+  CaseStudyData,
+  CaseStudyPlayback,
+} from "../types";
 
 export const CRF_XL_COMMANDS_OBJ: CaseStudyCommands = {
   "crf-xl compile --input oncology_study_protocol.xlsx --format cdisc-odm": {
@@ -66,19 +70,19 @@ export const CRF_XL_PLAYBACK_OBJ: CaseStudyPlayback = [
 ];
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-19",
-    slug: "crf-xl",
-    title: "CRF.xl: From Spreadsheet to Clinical Forms",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/CRF.xl",
-    interactive_url: "/crf",
-    interactive_label: "Launch CRF Studio",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, React, Office.js, Web Workers, CDISC, ODM-XML, CDISC ODM, DAG Validation, 21 CFR Part 11, Playwright, Jest",
-    editorial_content:
-      "An **Excel add-in** that turns protocol spreadsheets into **CDISC CDASH** forms and **ODM-XML** exports. It checks rule dependencies and runs compilation in background workers so the workbook stays usable.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-19",
+  slug: "crf-xl",
+  title: "CRF.xl: From Spreadsheet to Clinical Forms",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/CRF.xl",
+  interactive_url: "/crf",
+  interactive_label: "Launch CRF Studio",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, React, Office.js, Web Workers, CDISC, ODM-XML, CDISC ODM, DAG Validation, 21 CFR Part 11, Playwright, Jest",
+  editorial_content:
+    "An **Excel add-in** that turns protocol spreadsheets into **CDISC CDASH** forms and **ODM-XML** exports. It checks rule dependencies and runs compilation in background workers so the workbook stays usable.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Clinical form specifications often begin in Excel. CRF.xl works from that starting point, turning workbook grids into form definitions and ODM-XML while checking the dependencies between calculation rules.</p>
 <p><strong>The approach:</strong> Office.js reads the workbook, a dependency graph checks formula relationships, and Web Workers generate the clinical form exports.</p>
 <p><strong>Reported project measurements:</strong> Sub-10ms UI thread responsiveness during 10,000+ item parsing via asynchronous chunking workers; 100% strict compliance verification against CDISC ODM 1.3.2 foundation schemas; automated 21 CFR Part 11 audit trails with cryptographic state digests.</p>
@@ -218,8 +222,8 @@ function serializeODMStudy(study: {
   <li>Checking skip conditions for cycles on blur stops a circular rule from setting off an endless validation cascade while the protocol is being written.</li>
   <li>Writing strict XML and validating against CDASH 2.2 controlled terminology prevents data migration failures in the EDC downstream.</li>
 </ul>`,
-    commands_json: JSON.stringify(CRF_XL_COMMANDS_OBJ),
-    playback_json: JSON.stringify(CRF_XL_PLAYBACK_OBJ),
-    created_at: new Date("2026-03-22T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  commands_json: JSON.stringify(CRF_XL_COMMANDS_OBJ),
+  playback_json: JSON.stringify(CRF_XL_PLAYBACK_OBJ),
+  created_at: new Date("2026-03-22T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

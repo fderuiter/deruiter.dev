@@ -104,7 +104,9 @@ describe("Study Director audit: honest readouts (#2187)", () => {
   it("says the night's spend is today's, with the running total", () => {
     const night = goHome({ ...fresh(), minute: 17 * 60 });
     const spend = night.report.lines.find((l) => / spent today, /.test(l.text));
-    expect(spend?.text).toMatch(/^\$[\d,]+ spent today, \$[\d,]+ of \$[\d,]+ so far$/);
+    expect(spend?.text).toMatch(
+      /^\$[\d,]+ spent today, \$[\d,]+ of \$[\d,]+ so far$/
+    );
   });
 });
 

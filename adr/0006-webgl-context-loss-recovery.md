@@ -11,6 +11,7 @@ Accepted
 Interactive 3D visualization and HTML5 canvas engines (including NeuroRecon 3D Viewer in `components/neuro/Brain3DViewer.tsx` and 2D canvas simulations across `components/arcade/` and `components/LaserLoon.tsx`) operate directly on browser GPU contexts. Under high GPU load, dual-GPU switching (e.g. integrated to discrete GPU switching on laptops), background mobile tab suspension, display disconnects/reconnects, or device sleep-wake cycles, the browser may discard WebGL and 2D canvas context to reclaim resources.
 
 In standard WebGL / Three.js applications without isolated context lifecycle handling:
+
 1. When `webglcontextlost` fires, if `event.preventDefault()` is not explicitly invoked, the browser marks the canvas context as permanently destroyed and will never trigger `webglcontextrestored`.
 2. Continuing to execute render loops (`requestAnimationFrame`) during context loss produces unhandled WebGL errors and memory leaks.
 3. Upon restoration, GPU memory (compiled shaders, vertex buffer objects, textures) is wiped clean; attempting to render without clean re-instantiation leaves blank or corrupted viewports, requiring a destructive full page reload that destroys user session state (camera rotation, active parcel hover, voxel crosshairs, autorotation settings).

@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { parseMarkdownToRichItems } from "@/hooks/usePretextLayout";
-import { resolveCodeChipExtraWidth, validateLayoutHeight } from "@/lib/graphics-engine";
+import {
+  resolveCodeChipExtraWidth,
+  validateLayoutHeight,
+} from "@/lib/graphics-engine";
 
 // Mock TerminologyProvider
 vi.mock("@/components/providers/TerminologyProvider", () => ({
@@ -26,8 +29,8 @@ describe("Responsive Regex Tokenizer & CSS Variable Synchronization Suite", () =
         "italic 16px sans-serif",
         "bold 16px monospace"
       );
-      
-      const codeItem = items.find(item => item.type === "code");
+
+      const codeItem = items.find((item) => item.type === "code");
       expect(codeItem).toBeDefined();
       expect(codeItem?.extraWidth).toBe(resolveCodeChipExtraWidth());
     });
@@ -60,7 +63,7 @@ describe("Responsive Regex Tokenizer & CSS Variable Synchronization Suite", () =
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("resize"));
       }
-      
+
       validateLayoutHeight(100, 80, "Test Context");
       expect(console.warn).not.toHaveBeenCalled();
     });

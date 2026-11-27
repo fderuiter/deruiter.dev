@@ -18,3 +18,5 @@ export * from "./mesh-generator";
 export * from "./mesh-worker";
 export * from "./roi-analytics";
 export * from "./roi-analytics-worker";
+export * from "./nifti";
+export * from "./storage";

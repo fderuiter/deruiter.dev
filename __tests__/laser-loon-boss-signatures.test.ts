@@ -135,7 +135,12 @@ describe("Starflake shield (#2144)", () => {
         LOON.y
       )
     ).toBe(false);
-    const other = { ...spawnBossForAct(1, 1).boss, x: 600, y: 210, shieldAngle: Math.PI };
+    const other = {
+      ...spawnBossForAct(1, 1).boss,
+      x: 600,
+      y: 210,
+      shieldAngle: Math.PI,
+    };
     expect(isShieldFacing(other, LOON.x, LOON.y)).toBe(false);
   });
 

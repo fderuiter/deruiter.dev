@@ -28,16 +28,15 @@ export function PageLayout({
   ...props
 }: PageLayoutProps) {
   const variantStyles = {
-    standard: "min-h-dvh w-full overflow-x-hidden pt-28 sm:pt-32 pb-16 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col scrollbar-gutter-stable",
-    studio: "min-h-dvh w-full overflow-x-hidden pt-28 pb-16 px-4 sm:px-6 lg:px-8 flex flex-col flex-1 scrollbar-gutter-stable",
+    standard:
+      "min-h-dvh w-full overflow-x-hidden pt-28 sm:pt-32 pb-16 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col scrollbar-gutter-stable",
+    studio:
+      "min-h-dvh w-full overflow-x-hidden pt-28 pb-16 px-4 sm:px-6 lg:px-8 flex flex-col flex-1 scrollbar-gutter-stable",
     full: "min-h-dvh w-full overflow-x-hidden flex flex-col scrollbar-gutter-stable",
   };
 
   return (
-    <Component
-      className={cn(variantStyles[variant], className)}
-      {...props}
-    >
+    <Component className={cn(variantStyles[variant], className)} {...props}>
       {children}
     </Component>
   );

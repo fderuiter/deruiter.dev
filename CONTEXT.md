@@ -12,9 +12,8 @@
 
 ## Agent Tooling & Workflow Capabilities
 
-- **Canonical Agent Skills**: The authoritative, shared suite of engineering skills tracked in `.agents/skills/`, defining structured workflows (such as triage, test-driven development, bug diagnosis, and ticket decomposition) consumed natively by general agent runtimes.
-- **Tool-Specific Skills**: Operational workflow skills hosted directly in a tool-designated directory (such as `.claude/skills/`), tailored to the command model and execution constraints of a single agent runtime.
-- **Bridged Skills**: Canonical agent skills mapped into a tool-specific skill directory through relative symbolic links, enabling single-directory agent tools to discover and run shared engineering workflows without content duplication or synchronization drift.
+- **Canonical Agent Skills**: The authoritative, shared catalog of engineering and repository operational skills tracked in `.agents/skills/`, defining structured workflows (such as triage, test-driven development, bug diagnosis, ticket decomposition, prose review, local app driving, and pull-request stewardship) consumed natively by general agent runtimes.
+- **Bridged Skills**: Canonical agent skills mapped from `.agents/skills/` into a tool-designated directory (such as `.claude/skills/`) through relative Git symbolic links, enabling single-directory agent tools to discover and run shared workflows without content duplication or synchronization drift.
 
 ## Release Branches
 
@@ -599,4 +598,3 @@ When refactoring authored copy, select replacement punctuation based on the gram
 - **Game View Slot (`defineGameViews`)**: The view router dynamically mounting dedicated layouts (`DesktopView`, `TabletView`, `PhoneView`) above which the game session sits, enabling view switches across viewports without dropping the running simulation.
 - **Optic Arsenal**: Laser Loon's selectable laser weapon types (`ruby-laser`, `cyan-pulse`, `aurora-wave`, `ice-cannon`) mapped to numeric optic actions (`optic-ruby` through `optic-cryo`).
 - **Tremolo Blast**: Laser Loon's emergency defensive pulse attack mapped to `tremolo` (`KeyU` / gamepad Y / touch dock tap).
-

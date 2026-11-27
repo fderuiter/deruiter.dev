@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const SKILL_DIR = path.join(process.cwd(), ".claude/skills/humanizer");
+const SKILL_DIR = path.join(process.cwd(), ".agents/skills/humanizer");
 const UPSTREAM = "https://github.com/blader/humanizer";
 const ADAPTED_FROM = "8c307f367c91bd974002f10f2be2965d642c13df";
 

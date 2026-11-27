@@ -25,4 +25,3 @@ export const TelemetryTracker: React.FC<TelemetryTrackerProps> = ({ slug }) => {
 
   return null;
 };
-

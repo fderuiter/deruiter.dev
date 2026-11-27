@@ -1381,7 +1381,10 @@ export function updateBossAttack(
         const vx = (loonX - mouthX) / frames;
         const vy = (loonY - boss.y - 0.5 * ay * frames * frames) / frames;
         nextTargets.push(
-          shot(mouthX, boss.y, vx, vy, { ay, radius: BOSS_PROJECTILE_RADIUS + 3 })
+          shot(mouthX, boss.y, vx, vy, {
+            ay,
+            radius: BOSS_PROJECTILE_RADIUS + 3,
+          })
         );
       }
       break;
@@ -1655,7 +1658,9 @@ export function mergeActBest(
     record: {
       ...record,
       [actNumber]: {
-        stars: previous ? (Math.max(previous.stars, stars) as 1 | 2 | 3) : stars,
+        stars: previous
+          ? (Math.max(previous.stars, stars) as 1 | 2 | 3)
+          : stars,
         bestSeconds: previous
           ? Math.min(previous.bestSeconds, clearSeconds)
           : clearSeconds,
@@ -1696,7 +1701,10 @@ const SURVIVAL_WAVE_LABELS = ["Lake", "Fair", "Hearing", "Capitol"] as const;
  * @param elapsedSeconds - Seconds of unpaused survival so far.
  */
 export function getSurvivalWave(elapsedSeconds: number): SurvivalWave {
-  const seconds = Math.max(0, Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0);
+  const seconds = Math.max(
+    0,
+    Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0
+  );
   const wave = Math.floor(seconds / SURVIVAL_WAVE_SECONDS);
   const rosterIndex = wave % SURVIVAL_WAVE_LABELS.length;
   const heat = Math.min(1, seconds / SURVIVAL_FULL_HEAT_SECONDS);

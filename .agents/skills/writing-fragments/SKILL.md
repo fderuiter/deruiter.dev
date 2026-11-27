@@ -7,6 +7,7 @@ metadata:
   version: "1.0"
 ---
 
+<!-- markdownlint-disable MD033 -->
 <what-to-do>
 
 This is pure **explore**: widen the space of what could be written without committing to structure. Committing is _exploit_, a separate skill's job. Run a grilling session that produces fragments, interviewing the user relentlessly about whatever they want to write about. Imposing phases, outlines, or article structure is out of scope here.
@@ -80,3 +81,4 @@ Before every write: re-read the file from disk. The user may have edited, reorde
 The user can say "cut the last one", "rewrite that one sharper", "merge those two" at any time. Treat those as first-class instructions.
 
 </supporting-info>
+<!-- markdownlint-enable MD033 -->

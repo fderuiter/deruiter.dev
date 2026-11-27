@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -56,7 +58,9 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
     it("renders fallback skeleton on initial paint and schedules interactive transition", async () => {
       const TestApp = () => (
         <DeferredHydration fallback={<SkillsGridSkeleton />}>
-          <div data-testid="interactive-content">Interactive Content Loaded</div>
+          <div data-testid="interactive-content">
+            Interactive Content Loaded
+          </div>
         </DeferredHydration>
       );
 
@@ -65,7 +69,9 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
       });
 
       // Skeleton should be active initially
-      expect(container.querySelector(".motion-safe\\:animate-pulse")).not.toBeNull();
+      expect(
+        container.querySelector(".motion-safe\\:animate-pulse")
+      ).not.toBeNull();
 
       // Advance timers to trigger deferred hydration transitions
       await act(async () => {
@@ -73,7 +79,9 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
       });
 
       // Interactive content should be rendered after non-blocking idle transition
-      const content = container.querySelector('[data-testid="interactive-content"]');
+      const content = container.querySelector(
+        '[data-testid="interactive-content"]'
+      );
       expect(content).not.toBeNull();
       expect(content?.textContent).toBe("Interactive Content Loaded");
     });
@@ -121,7 +129,9 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
       const parseSpy = vi.spyOn(DOMParser.prototype, "parseFromString");
 
       await act(async () => {
-        root.render(<RichNarrative html={sampleHtml} className="test-narrative" />);
+        root.render(
+          <RichNarrative html={sampleHtml} className="test-narrative" />
+        );
       });
 
       // The initial paint container should exist and display text content
@@ -162,7 +172,9 @@ describe("Progressive Item Batching & Deferred Narrative Parsing Suite", () => {
         root.render(<TimelineSkeleton />);
       });
 
-      expect(container.querySelector(".motion-safe\\:animate-pulse")).not.toBeNull();
+      expect(
+        container.querySelector(".motion-safe\\:animate-pulse")
+      ).not.toBeNull();
       const nodes = container.querySelectorAll(".rounded-full");
       expect(nodes.length).toBeGreaterThan(0);
     });

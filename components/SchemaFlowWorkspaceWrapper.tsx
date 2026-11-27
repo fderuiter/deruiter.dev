@@ -15,4 +15,3 @@ const SchemaFlowWorkspace = dynamic(
 export default function SchemaFlowWorkspaceWrapper() {
   return <SchemaFlowWorkspace />;
 }
-

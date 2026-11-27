@@ -9,7 +9,7 @@ export const colors = {
   dim: "\x1b[2m",
   italic: "\x1b[3m",
   underline: "\x1b[4m",
-  
+
   // Foreground
   black: "\x1b[30m",
   red: "\x1b[31m",
@@ -39,7 +39,10 @@ export const colors = {
   bgCyan: "\x1b[46m",
 };
 
-export function badge(text: string, type: "pass" | "fail" | "warn" | "info" | "fixed"): string {
+export function badge(
+  text: string,
+  type: "pass" | "fail" | "warn" | "info" | "fixed"
+): string {
   switch (type) {
     case "pass":
       return `${colors.brightGreen}${colors.bold}✔ PASS${colors.reset} ${colors.green}${text}${colors.reset}`;
@@ -76,7 +79,10 @@ export interface TableColumn {
   align?: "left" | "right";
 }
 
-export function renderTable(columns: TableColumn[], rows: Record<string, string | number>[]): string {
+export function renderTable(
+  columns: TableColumn[],
+  rows: Record<string, string | number>[]
+): string {
   // Determine column widths
   const widths = columns.map((col) => {
     const headerLen = col.header.length;
@@ -88,17 +94,19 @@ export function renderTable(columns: TableColumn[], rows: Record<string, string 
   });
 
   let out = "";
-  
+
   // Header row
   const headerRow = columns
     .map((col, idx) => {
       const text = col.header;
-      return col.align === "right" ? text.padStart(widths[idx]) : text.padEnd(widths[idx]);
+      return col.align === "right"
+        ? text.padStart(widths[idx])
+        : text.padEnd(widths[idx]);
     })
     .join(`${colors.gray}│${colors.reset}`);
-  
+
   out += `${colors.bold}${colors.cyan}${headerRow}${colors.reset}\n`;
-  
+
   // Separator
   const sep = widths.map((w) => "─".repeat(w)).join("┼");
   out += `${colors.gray}${sep}${colors.reset}\n`;
@@ -108,7 +116,9 @@ export function renderTable(columns: TableColumn[], rows: Record<string, string 
     const rowStr = columns
       .map((col, idx) => {
         const val = String(row[col.key] ?? "");
-        return col.align === "right" ? val.padStart(widths[idx]) : val.padEnd(widths[idx]);
+        return col.align === "right"
+          ? val.padStart(widths[idx])
+          : val.padEnd(widths[idx]);
       })
       .join(`${colors.gray}│${colors.reset}`);
     out += `${rowStr}\n`;

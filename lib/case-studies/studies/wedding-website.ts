@@ -2,20 +2,20 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-4",
-    slug: "wedding-website",
-    title: "Our Wedding Website: A Registry, a Heart, and a Lapsed Domain",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/wedding_website",
-    interactive_url: "/wedding",
-    interactive_label: "See the wedding archive",
-    published: true,
-    simulated_telemetry: false,
-    hero_image_url: "/images/wedding/12-first-dance.jpg",
-    tags: "TypeScript, Next.js, React, Tailwind CSS, Prisma, PostgreSQL, Neon, Vercel, React Three Fiber, Build vs Buy",
-    editorial_content:
-      "The website for our 10/10/25 wedding: a **Next.js** and **Prisma** site with a custom registry that fills itself in from a pasted product link, group gifts, and a 3D heart. RSVPs went through an iCloud invite on purpose. A year later the domain had lapsed, so the site lives on as a static archive.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-4",
+  slug: "wedding-website",
+  title: "Our Wedding Website: A Registry, a Heart, and a Lapsed Domain",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/wedding_website",
+  interactive_url: "/wedding",
+  interactive_label: "See the wedding archive",
+  published: true,
+  simulated_telemetry: false,
+  hero_image_url: "/images/wedding/12-first-dance.jpg",
+  tags: "TypeScript, Next.js, React, Tailwind CSS, Prisma, PostgreSQL, Neon, Vercel, React Three Fiber, Build vs Buy",
+  editorial_content:
+    "The website for our 10/10/25 wedding: a **Next.js** and **Prisma** site with a custom registry that fills itself in from a pasted product link, group gifts, and a 3D heart. RSVPs went through an iCloud invite on purpose. A year later the domain had lapsed, so the site lives on as a static archive.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>Abbi and I got married on 10 October 2025 at the Plummer House in Rochester, Minnesota, for under $4,000. The free wedding platforms are free because they sell to you: vendor ads, upsells, and a registry that takes a cut. I wanted a site that looked like us, pushed nothing at our guests, and kept their names off a marketing list. I'm also an engineer, so "how hard can it be?" was always going to win.</p>
 <p><strong>The approach:</strong> A Next.js site with a home page (our story, the schedule, the venue, travel notes and an FAQ), a custom registry, a wedding party page, things to do in Rochester, a forecast for the day, a photo gallery, and an admin page so Abbi could edit the registry without me. The first commit was 11 April 2025. By the last release before the wedding the repository had 171 commits.</p>
 <p><strong>What it deliberately did not do:</strong> RSVPs. The RSVP page was a button linking to an iCloud invite. RSVPs are where real guest data, plus-ones, kids and deadlines meet, and a solved tool was worth more there than a custom one.</p>
@@ -107,6 +107,6 @@ static async contributeToItem(
   <li><a href="https://github.com/fderuiter/wedding_website/blob/75c6524/src/app/heart/page.tsx" target="_blank" rel="noopener noreferrer"><code>src/app/heart/page.tsx</code></a>: the heart</li>
   <li><a href="https://github.com/fderuiter/wedding_website/blob/75c6524/PROJECT_HISTORY.md" target="_blank" rel="noopener noreferrer"><code>PROJECT_HISTORY.md</code></a>: the JSON, SQLite and Postgres history</li>
 </ul>`,
-    created_at: new Date("2026-02-10T00:00:00Z"),
-    updated_at: new Date("2026-10-11T00:00:00Z"),
-  });
+  created_at: new Date("2026-02-10T00:00:00Z"),
+  updated_at: new Date("2026-10-11T00:00:00Z"),
+});

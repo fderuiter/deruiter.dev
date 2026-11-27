@@ -138,7 +138,10 @@ describe("Direct Inline Coordinate Scaling & Index Clamping Invariants", () => {
 });
 
 describe("CommandPalette Roguelike Registration", () => {
-  const cmdPath = path.resolve(__dirname, "../lib/command-palette/static-navs.ts");
+  const cmdPath = path.resolve(
+    __dirname,
+    "../lib/command-palette/static-navs.ts"
+  );
   const content = fs.readFileSync(cmdPath, "utf-8");
 
   it("registers Retro Labyrinth under STATIC_NAVS with roguelike description", () => {

@@ -108,12 +108,20 @@ describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
       hookResult = useTelemetry(options);
       return (
         <div>
-          <span data-testid="views">{hookResult.telemetry["test-project"]?.views ?? 0}</span>
-          <span data-testid="clicks">{hookResult.telemetry["test-project"]?.clicks ?? 0}</span>
-          <span data-testid="sync-failed">{hookResult.syncFailed ? "true" : "false"}</span>
+          <span data-testid="views">
+            {hookResult.telemetry["test-project"]?.views ?? 0}
+          </span>
+          <span data-testid="clicks">
+            {hookResult.telemetry["test-project"]?.clicks ?? 0}
+          </span>
+          <span data-testid="sync-failed">
+            {hookResult.syncFailed ? "true" : "false"}
+          </span>
           <span data-testid="queue-len">{hookResult.queueLength}</span>
           <span data-testid="queue-cap">{hookResult.queueCapacity}</span>
-          <span data-testid="deferred-len">{hookResult.pendingDeferredLength}</span>
+          <span data-testid="deferred-len">
+            {hookResult.pendingDeferredLength}
+          </span>
         </div>
       );
     };
@@ -152,8 +160,12 @@ describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
       hookResult = useTelemetry();
       return (
         <div>
-          <span data-testid="views">{hookResult.telemetry["test-project"]?.views ?? 0}</span>
-          <span data-testid="clicks">{hookResult.telemetry["test-project"]?.clicks ?? 0}</span>
+          <span data-testid="views">
+            {hookResult.telemetry["test-project"]?.views ?? 0}
+          </span>
+          <span data-testid="clicks">
+            {hookResult.telemetry["test-project"]?.clicks ?? 0}
+          </span>
         </div>
       );
     };
@@ -184,8 +196,12 @@ describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
       hookResult = useTelemetry();
       return (
         <div>
-          <span data-testid="views">{hookResult.telemetry["test-project"]?.views ?? 0}</span>
-          <span data-testid="clicks">{hookResult.telemetry["test-project"]?.clicks ?? 0}</span>
+          <span data-testid="views">
+            {hookResult.telemetry["test-project"]?.views ?? 0}
+          </span>
+          <span data-testid="clicks">
+            {hookResult.telemetry["test-project"]?.clicks ?? 0}
+          </span>
         </div>
       );
     };
@@ -221,13 +237,21 @@ describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
       if (init?.method === "POST") {
         return { ok: false, status: 429, statusText: "Too Many Requests" };
       }
-      return { ok: true, status: 200, json: async () => ({ "test-project": { views: 50, clicks: 20 } }) };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ "test-project": { views: 50, clicks: 20 } }),
+      };
     });
 
     let hookResult: any;
     const TestComponent = () => {
       hookResult = useTelemetry();
-      return <div data-testid="views">{hookResult.telemetry["test-project"]?.views ?? 0}</div>;
+      return (
+        <div data-testid="views">
+          {hookResult.telemetry["test-project"]?.views ?? 0}
+        </div>
+      );
     };
 
     await act(async () => {
@@ -249,7 +273,9 @@ describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
 
     // Must be rolled back to 50
     expect(hookResult.telemetry["test-project"].views).toBe(50);
-    expect(warnSpy).toHaveBeenCalledWith("Telemetry record rate limited by API.");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Telemetry record rate limited by API."
+    );
     warnSpy.mockRestore();
   });
 

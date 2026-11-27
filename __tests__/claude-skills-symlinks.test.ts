@@ -1,7 +1,9 @@
 // @vitest-environment node
 /**
- * Verifies that the five project engineering skills are linked into .claude/skills/
- * and resolve cleanly to valid SKILL.md definitions (#3500).
+ * Verifies that all eight shared project and operational skills are linked into
+ * .claude/skills/, resolve cleanly to canonical .agents/skills/<name> SKILL.md
+ * definitions, keep @AGENTS.md as the single source of truth in CLAUDE.md, and
+ * keep issue template labels aligned (#3500).
  */
 import { describe, it, expect } from "vitest";
 import cp from "node:child_process";
@@ -14,18 +16,27 @@ const LINKED_SKILLS = [
   "diagnosing-bugs",
   "resolving-merge-conflicts",
   "to-tickets",
+  "humanizer",
+  "run-portfolio",
+  "steward",
 ] as const;
 
 describe("claude skills symlinks (#3500)", () => {
-  it("tracks the five linked skills with mode 120000 in the git index", () => {
+  it("tracks all eight linked skills with mode 120000 in the git index", () => {
     const output = cp
       .execSync("git ls-files -s .claude/skills", { encoding: "utf8" })
       .trim();
 
     for (const skill of LINKED_SKILLS) {
-      const regex = new RegExp(`^120000\\s+[0-9a-f]{40}\\s+0\\s+\\.claude/skills/${skill}$`, "m");
+      const regex = new RegExp(
+        `^120000\\s+[0-9a-f]{40}\\s+0\\s+\\.claude/skills/${skill}$`,
+        "m"
+      );
       expect(output).toMatch(regex);
     }
+
+    const trackedEntries = output.split(/\r?\n/).filter(Boolean);
+    expect(trackedEntries).toHaveLength(LINKED_SKILLS.length);
   });
 
   it("points each symlink to the corresponding .agents/skills/<name> directory", () => {
@@ -52,7 +63,7 @@ describe("claude skills symlinks (#3500)", () => {
     }
   });
 
-  it("documents both folders and the five linked skills in docs/agents/skill-folders.md", () => {
+  it("documents both folders and all eight linked skills in docs/agents/skill-folders.md", () => {
     const docPath = path.join(process.cwd(), "docs/agents/skill-folders.md");
     expect(fs.existsSync(docPath)).toBe(true);
 
@@ -65,5 +76,24 @@ describe("claude skills symlinks (#3500)", () => {
     for (const skill of LINKED_SKILLS) {
       expect(docContent).toContain(skill);
     }
+  });
+
+  it("keeps @AGENTS.md as the single source of truth in CLAUDE.md without duplicating ## Agent skills", () => {
+    const claudeMd = fs.readFileSync(
+      path.join(process.cwd(), "CLAUDE.md"),
+      "utf8"
+    );
+    expect(claudeMd).toContain("@AGENTS.md");
+    expect(claudeMd).not.toContain("## Agent skills");
+  });
+
+  it("assigns type:chore alongside needs-triage in .github/ISSUE_TEMPLATE/task.yml", () => {
+    const taskTemplate = fs.readFileSync(
+      path.join(process.cwd(), ".github/ISSUE_TEMPLATE/task.yml"),
+      "utf8"
+    );
+    expect(taskTemplate).toMatch(
+      /^labels:\r?\n\s+-\s+type:chore\r?\n\s+-\s+needs-triage$/m
+    );
   });
 });

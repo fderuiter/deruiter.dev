@@ -10,7 +10,10 @@ import { getDeviceSettings } from "@/lib/arcade";
  */
 export const triggerHaptic = (pattern: number | number[] = 15): void => {
   if (!getDeviceSettings().haptics) return;
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+  if (
+    typeof navigator !== "undefined" &&
+    typeof navigator.vibrate === "function"
+  ) {
     try {
       navigator.vibrate(pattern);
     } catch {

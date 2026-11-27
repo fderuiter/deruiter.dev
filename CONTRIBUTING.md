@@ -271,7 +271,8 @@ npm run quality
 | `npm run doctor`                     | `bench-gate` / Verify ADR Invariants & Doctor Health Diagnostics  | Diagnostic audit of architectural and testing invariants (routes, layout, WCAG a11y, hydration)        |
 | `npm run doctor:fix`                 | Local Auto-remediation                                            | Auto-remediates fixable architectural invariants and updates OpenAPI & TypeDoc contracts               |
 | `npm run env:check`                  | Local environment preflight                                       | Validates `.env.local` schema definitions against `lib/env.ts` and `.env.example`                      |
-| `npm run check`                      | `static-gate` / Type Check (Memory Budget) & Lint                 | Static TypeScript checking and ESLint (CI covers dependency boundaries through `verify`)               |
+| `npm run check`                      | `static-gate` / Type Check (Memory Budget) & Lint                 | Static TypeScript checking, ESLint, and Prettier check (CI covers dependency boundaries via `verify`)  |
+| `npm run format:check`               | `static-gate` / Type Check (Memory Budget) & Lint                 | Read-only Prettier formatting check across authored files (`npm run format` writes fixes in place)     |
 | `npm run lint:docs`                  | `static-gate` / Lint Documentation                                | Markdown formatting and structure linting via `markdownlint-cli`                                       |
 | `npm run check-docs-drift`           | `static-gate` / Check Documentation Drift                         | Checks that the TypeDoc API docs, OpenAPI schema and onboarding guides are in step                     |
 | `npm run check:migrations:drift`     | `static-gate` / Check Schema Drift                                | Verifies Prisma database schema against active migrations and checks for drift                         |

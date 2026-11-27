@@ -7,7 +7,21 @@
  * real-dataset label with a synthetic defect case.
  */
 
-import type { DatasetSource, ScenarioId } from "./types";
+import type {
+  DatasetSource,
+  ScenarioId,
+  VolumeDimensions,
+  VolumeSourceFormat,
+  VoxelSpacing,
+} from "./types";
+
+/** Metadata describing an uploaded scan driving both 2D slices and 3D surfaces. */
+export interface UploadedVolumeProvenanceInfo {
+  fileName: string;
+  dimensions: VolumeDimensions;
+  spacing: VoxelSpacing;
+  format?: Exclude<VolumeSourceFormat, "synthetic">;
+}
 
 /** Per-view source labels shown in the workspace and onboarding. */
 export interface NeuroProvenance {
@@ -24,11 +38,24 @@ export interface NeuroProvenance {
 const SYNTHETIC_VOLUME = "Synthetic phantom volume (generated)";
 const SYNTHETIC_QA = "Synthetic estimates from the phantom";
 
-/** Resolve the provenance labels for a dataset selection. */
+/** Resolve the provenance labels for a dataset selection and optional uploaded scan. */
 export function getNeuroProvenance(
   dataset: DatasetSource,
-  datasetName?: string
+  datasetName?: string,
+  uploadedVolume?: UploadedVolumeProvenanceInfo | null
 ): NeuroProvenance {
+  if (uploadedVolume) {
+    const { fileName, dimensions, spacing, format } = uploadedVolume;
+    const fmtLabel = format === "mgz" ? "FreeSurfer MGZ" : "NIfTI";
+    const gridLabel = `${dimensions.width}x${dimensions.height}x${dimensions.depth}`;
+    const spacingLabel = `${Number(spacing.x.toFixed(2))}x${Number(spacing.y.toFixed(2))}x${Number(spacing.z.toFixed(2))} mm`;
+    return {
+      mesh: `Live 3D marching-cubes surface (${fileName})`,
+      volume: `Uploaded ${fmtLabel} volume (${fileName}, ${gridLabel} @ ${spacingLabel})`,
+      qa: `Volumetric metrics computed from ${fileName}`,
+      isMixedSource: false,
+    };
+  }
   if (dataset === "case_study") {
     return {
       mesh: "Bundled reference cortical mesh",

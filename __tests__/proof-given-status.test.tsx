@@ -2,11 +2,7 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { ProofWorkspaceClient } from "@/app/proof/ProofWorkspaceClient";
-import {
-  THEOREMS,
-  getDeductionLedger,
-  getStepStatusLabel,
-} from "@/lib/proof";
+import { THEOREMS, getDeductionLedger, getStepStatusLabel } from "@/lib/proof";
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/proof");

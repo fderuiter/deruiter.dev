@@ -82,7 +82,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     // Announcer announced failure
     expect(mockAnnounce).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to load cabinet: Network error loading game module"),
+      expect.stringContaining(
+        "Failed to load cabinet: Network error loading game module"
+      ),
       "assertive"
     );
 
@@ -132,7 +134,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
   });
 
   it("preserves non-Error string rejection details on failure view", async () => {
-    const importComponent = vi.fn().mockRejectedValue("Failed to fetch dynamically imported module: 404");
+    const importComponent = vi
+      .fn()
+      .mockRejectedValue("Failed to fetch dynamically imported module: 404");
 
     render(
       <PlayCabinet
@@ -160,7 +164,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     const alert = screen.getByRole("alert");
     expect(alert).toBeDefined();
-    expect(alert.textContent).toContain("Failed to fetch dynamically imported module: 404");
+    expect(alert.textContent).toContain(
+      "Failed to fetch dynamically imported module: 404"
+    );
   });
 
   it("allows Retry after failure to launch the cabinet once import resolves", async () => {
@@ -279,7 +285,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
   });
 
   it("returns to attract mode and restores focus when Exit is clicked on the failure screen", async () => {
-    const importComponent = vi.fn().mockRejectedValue(new Error("Connection reset"));
+    const importComponent = vi
+      .fn()
+      .mockRejectedValue(new Error("Connection reset"));
     const onExit = vi.fn();
 
     render(
@@ -313,11 +321,15 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     // Cabinet is back in attract screen
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: /Launch Cabinet/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    ).toBeDefined();
     expect(onExit).toHaveBeenCalledTimes(1);
 
     // Focus restored to Launch button
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Launch Cabinet/i }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    );
   });
 
   it("cancels warmup when Escape is pressed from anywhere (document.body)", async () => {
@@ -356,7 +368,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     // Warmup canceled, back to attract
     expect(screen.queryByText(/Warming up CRT display/i)).toBeNull();
-    expect(screen.getByRole("button", { name: /Launch Cabinet/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    ).toBeDefined();
   });
 
   it("handles Escape key from window/document on the failure screen to exit back to attract mode", async () => {
@@ -394,7 +408,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     // Exited to attract mode
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: /Launch Cabinet/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    ).toBeDefined();
   });
 
   it("discards delayed import resolution if user exits before import completes", async () => {
@@ -439,7 +455,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
     });
 
     // Back to attract screen
-    expect(screen.getByRole("button", { name: /Launch Cabinet/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    ).toBeDefined();
 
     // Now the deferred import resolves
     await act(async () => {
@@ -454,7 +472,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     // Must REMAIN in attract mode! Must NOT relaunch!
     expect(screen.queryByTestId("game-content")).toBeNull();
-    expect(screen.getByRole("button", { name: /Launch Cabinet/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    ).toBeDefined();
   });
 
   it("discards delayed rejection if user exits before import fails", async () => {
@@ -508,7 +528,9 @@ describe("PlayCabinet launch recovery and attempt lifecycle (#3794)", () => {
 
     // Cabinet must NOT show failure screen; it stays in attract screen
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: /Launch Cabinet/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Launch Cabinet/i })
+    ).toBeDefined();
   });
 
   it("ignores repeated launch clicks while warming up to prevent multiple attempts or history pushes", async () => {

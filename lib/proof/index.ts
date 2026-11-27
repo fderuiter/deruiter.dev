@@ -3,4 +3,3 @@
  */
 
 export * from "./internal/proof-utils";
-

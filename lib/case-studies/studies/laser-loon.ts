@@ -2,19 +2,19 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-7",
-    slug: "laser-loon",
-    title: "Laser Loon: Minnesota, With Eye Lasers",
-    primary_language: "Graphic Design",
-    github_url: "https://github.com/fderuiter/laser-loon",
-    interactive_url: "/work/laser-loon",
-    interactive_label: "View Laser Loon Showcase",
-    published: true,
-    simulated_telemetry: false,
-    tags: "Graphic Design, Vector Illustration, Iconography, Open Asset Distribution, Cultural Branding",
-    editorial_content:
-      "My submission to Minnesota's state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-7",
+  slug: "laser-loon",
+  title: "Laser Loon: Minnesota, With Eye Lasers",
+  primary_language: "Graphic Design",
+  github_url: "https://github.com/fderuiter/laser-loon",
+  interactive_url: "/work/laser-loon",
+  interactive_label: "View Laser Loon Showcase",
+  published: true,
+  simulated_telemetry: false,
+  tags: "Graphic Design, Vector Illustration, Iconography, Open Asset Distribution, Cultural Branding",
+  editorial_content:
+    "My submission to Minnesota's state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>For Minnesota's state flag redesign, I submitted a common loon with red eye lasers. Submission F277 became Laser Loon. This project collects the artwork in formats people can use on screens, in print, and on whatever else needs a laser-eyed bird.</p>
 <p><strong>The approach:</strong> The bird silhouette and laser layers remain editable as vectors. The download set includes source, print, and web formats.</p>
 <p><strong>Reported project measurements:</strong> Sub-5KB optimized SVG payload; 300 DPI lossless raster masters; full CMYK/RGB print-pipeline interoperability.</p>
@@ -88,6 +88,6 @@ flowchart TD
   <li>The art is released under Creative Commons CC0, a public domain dedication, so anyone can share it or print it on merchandise without asking.</li>
   <li>Screens get an sRGB color profile and printed goods a separate CMYK spot-color one, so the lasers don't print dull on commercial textiles.</li>
 </ul>`,
-    created_at: new Date("2026-03-05T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-03-05T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

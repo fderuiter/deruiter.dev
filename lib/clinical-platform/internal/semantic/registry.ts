@@ -1145,7 +1145,10 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
       name: "Serious adverse event report time (median)",
       description:
         "Median calendar days from a serious adverse event's onset to the site's report of it, over serious events reported by the data cut. Serious events are held to a tighter limit, so they are measured on their own.",
-      formula: { kind: "simple", measure: daysToReport(is("is_serious", true)) },
+      formula: {
+        kind: "simple",
+        measure: daysToReport(is("is_serious", true)),
+      },
       allowedDimensions: MONTHLY_DIMENSIONS,
       unit: "days",
       format: ONE_DECIMAL,

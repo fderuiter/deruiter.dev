@@ -15,7 +15,10 @@
  * SDTM hints USDM v4 has no property for: an activity's domain, and a
  * biomedical concept's test code and standard unit.
  */
-import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "@/lib/clinical-standards";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/clinical-standards";
 import {
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_SDTM_STRESU_EXTENSION_URL,

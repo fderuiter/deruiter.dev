@@ -14,10 +14,16 @@ function TestComponent() {
       <button onClick={() => announce("Proof verified successfully", "polite")}>
         Announce Polite
       </button>
-      <button onClick={() => announce("Critical Error: Rule cycle detected", "assertive")}>
+      <button
+        onClick={() =>
+          announce("Critical Error: Rule cycle detected", "assertive")
+        }
+      >
         Announce Assertive
       </button>
-      <button onClick={() => announce("User SSN 123-45-6789 verified", "polite")}>
+      <button
+        onClick={() => announce("User SSN 123-45-6789 verified", "polite")}
+      >
         Announce PII
       </button>
     </div>
@@ -88,13 +94,17 @@ describe("A11yProvider Integration (Thin DOM Live-Region Renderer)", () => {
     const politeNode = document.querySelector('[aria-live="polite"]');
     expect(politeNode?.textContent).toBe("Proof verified successfully");
 
-    const assertiveBtn = screen.getByRole("button", { name: "Announce Assertive" });
+    const assertiveBtn = screen.getByRole("button", {
+      name: "Announce Assertive",
+    });
     act(() => {
       assertiveBtn.click();
     });
 
     const assertiveNode = document.querySelector('[aria-live="assertive"]');
-    expect(assertiveNode?.textContent).toBe("Critical Error: Rule cycle detected");
+    expect(assertiveNode?.textContent).toBe(
+      "Critical Error: Rule cycle detected"
+    );
     expect(politeNode?.textContent).toBe("");
   });
 
@@ -155,7 +165,9 @@ describe("A11yProvider Integration (Thin DOM Live-Region Renderer)", () => {
   });
 
   it("maintains stable referential identity for the announce callback across re-renders", () => {
-    const callbackRefs: Array<(msg: string, priority?: "polite" | "assertive") => void> = [];
+    const callbackRefs: Array<
+      (msg: string, priority?: "polite" | "assertive") => void
+    > = [];
 
     function RefTracker() {
       const { announce } = useAnnouncer();
@@ -184,7 +196,11 @@ describe("A11yProvider Integration (Thin DOM Live-Region Renderer)", () => {
   it("provides safe fallback announcer when useAnnouncer is called outside of A11yProvider", () => {
     function StandaloneComponent() {
       const { announce } = useAnnouncer();
-      return <button onClick={() => announce("Standalone message")}>Standalone</button>;
+      return (
+        <button onClick={() => announce("Standalone message")}>
+          Standalone
+        </button>
+      );
     }
 
     render(<StandaloneComponent />);

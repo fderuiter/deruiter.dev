@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -44,7 +46,8 @@ describe("CaseStudyBentoCard Inline Terminology Parsing Suite", () => {
 
   const mockStudy = {
     ...FALLBACK_CASE_STUDIES[0],
-    editorial_content: "Lead architect for GxP compliant eCRF systems with Node.js and XML data.",
+    editorial_content:
+      "Lead architect for GxP compliant eCRF systems with Node.js and XML data.",
     githubStats: null,
   };
 
@@ -125,9 +128,13 @@ describe("CaseStudyBentoCard Inline Terminology Parsing Suite", () => {
     expect(container.textContent).toContain("eCRF");
 
     // Toggle terminology to simplified mode
-    const toggleButton = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.getAttribute("aria-label")?.includes("Terminology") || b.textContent?.includes("Mode") || b.getAttribute("title")?.includes("Terminology")
-    ) || container.querySelector("button")!;
+    const toggleButton =
+      Array.from(container.querySelectorAll("button")).find(
+        (b) =>
+          b.getAttribute("aria-label")?.includes("Terminology") ||
+          b.textContent?.includes("Mode") ||
+          b.getAttribute("title")?.includes("Terminology")
+      ) || container.querySelector("button")!;
 
     await act(async () => {
       toggleButton.click();
@@ -142,7 +149,8 @@ describe("CaseStudyBentoCard Inline Terminology Parsing Suite", () => {
   it("preserves markdown formatting (bold, code, italic) alongside parsed terms", async () => {
     const formattedStudy = {
       ...mockStudy,
-      editorial_content: "**GxP compliant** eCRF with `node index.js` and *SAX streaming*.",
+      editorial_content:
+        "**GxP compliant** eCRF with `node index.js` and *SAX streaming*.",
     };
 
     await act(async () => {
@@ -170,7 +178,8 @@ describe("CaseStudyBentoCard Inline Terminology Parsing Suite", () => {
   it("does not render raw HTML markup tags or escaped string literals", async () => {
     const rawTagStudy = {
       ...mockStudy,
-      editorial_content: 'Lead for <span data-key="ecrf" data-term="electronic forms" data-definition="def">eCRF &amp; GxP</span> systems.',
+      editorial_content:
+        'Lead for <span data-key="ecrf" data-term="electronic forms" data-definition="def">eCRF &amp; GxP</span> systems.',
     };
 
     await act(async () => {

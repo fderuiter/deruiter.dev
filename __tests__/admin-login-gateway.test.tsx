@@ -30,7 +30,9 @@ describe("AdminLoginGateway Production Component Suite", () => {
   afterEach(() => {
     cleanup();
     if (navigator.clipboard && originalWriteText) {
-      navigator.clipboard.writeText = originalWriteText as (data: string) => Promise<void>;
+      navigator.clipboard.writeText = originalWriteText as (
+        data: string
+      ) => Promise<void>;
     }
   });
 
@@ -73,23 +75,35 @@ describe("AdminLoginGateway Production Component Suite", () => {
     render(<AdminLoginGateway />);
 
     // Toggle drawer open
-    const toggleButton = screen.getByRole("button", { name: /Environment Setup & Architecture/i });
+    const toggleButton = screen.getByRole("button", {
+      name: /Environment Setup & Architecture/i,
+    });
     expect(toggleButton).toBeDefined();
 
     fireEvent.click(toggleButton);
 
     expect(screen.getByText("npm run setup:clerk")).toBeDefined();
-    expect(screen.getByText('ADMIN_EMAILS="your-email@example.com"')).toBeDefined();
+    expect(
+      screen.getByText('ADMIN_EMAILS="your-email@example.com"')
+    ).toBeDefined();
 
     // Copy wizard command
-    const copyWizardButton = screen.getByRole("button", { name: /Copy setup wizard command/i });
+    const copyWizardButton = screen.getByRole("button", {
+      name: /Copy setup wizard command/i,
+    });
     fireEvent.click(copyWizardButton);
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("npm run setup:clerk");
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      "npm run setup:clerk"
+    );
 
     // Copy email snippet
-    const copyEmailButton = screen.getByRole("button", { name: /Copy admin email template/i });
+    const copyEmailButton = screen.getByRole("button", {
+      name: /Copy admin email template/i,
+    });
     fireEvent.click(copyEmailButton);
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ADMIN_EMAILS="your-email@example.com"');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'ADMIN_EMAILS="your-email@example.com"'
+    );
 
     // Toggle drawer closed
     fireEvent.click(toggleButton);
@@ -98,16 +112,22 @@ describe("AdminLoginGateway Production Component Suite", () => {
 
   it("handles clipboard write failures gracefully", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    navigator.clipboard.writeText = vi.fn().mockRejectedValue(new Error("Clipboard denied"));
+    navigator.clipboard.writeText = vi
+      .fn()
+      .mockRejectedValue(new Error("Clipboard denied"));
     const originalExecCommand = document.execCommand;
     document.execCommand = vi.fn().mockReturnValue(false);
 
     render(<AdminLoginGateway />);
 
-    const toggleButton = screen.getByRole("button", { name: /Environment Setup & Architecture/i });
+    const toggleButton = screen.getByRole("button", {
+      name: /Environment Setup & Architecture/i,
+    });
     fireEvent.click(toggleButton);
 
-    const copyWizardButton = screen.getByRole("button", { name: /Copy setup wizard command/i });
+    const copyWizardButton = screen.getByRole("button", {
+      name: /Copy setup wizard command/i,
+    });
     fireEvent.click(copyWizardButton);
 
     // Allow promise rejection to propagate
@@ -125,7 +145,9 @@ describe("AdminLoginGateway Production Component Suite", () => {
   it("provides an accessible return navigation link to case studies", () => {
     render(<AdminLoginGateway />);
 
-    const returnLink = screen.getByRole("link", { name: /Return to Case Studies Index/i });
+    const returnLink = screen.getByRole("link", {
+      name: /Return to Case Studies Index/i,
+    });
     expect(returnLink).toBeDefined();
     expect(returnLink.getAttribute("href")).toBe("/case-studies");
   });

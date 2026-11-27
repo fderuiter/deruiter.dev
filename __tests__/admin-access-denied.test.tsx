@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+} from "@testing-library/react";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
 
 const mockRefresh = vi.fn();
@@ -15,7 +21,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@clerk/nextjs", () => ({
-  UserButton: () => <div data-testid="mock-clerk-user-button">ClerkUserButton</div>,
+  UserButton: () => (
+    <div data-testid="mock-clerk-user-button">ClerkUserButton</div>
+  ),
 }));
 
 describe("AdminAccessDenied In-Route Authorization Console", () => {
@@ -41,7 +49,9 @@ describe("AdminAccessDenied In-Route Authorization Console", () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     if (navigator.clipboard && originalWriteText) {
-      navigator.clipboard.writeText = originalWriteText as (data: string) => Promise<void>;
+      navigator.clipboard.writeText = originalWriteText as (
+        data: string
+      ) => Promise<void>;
     }
   });
 
@@ -55,7 +65,9 @@ describe("AdminAccessDenied In-Route Authorization Console", () => {
     );
 
     expect(screen.getByTestId("admin-access-denied-console")).toBeDefined();
-    expect(screen.getByText(/403 Forbidden: Unlisted Author Identity/i)).toBeDefined();
+    expect(
+      screen.getByText(/403 Forbidden: Unlisted Author Identity/i)
+    ).toBeDefined();
     expect(screen.getByText("Frederick de Ruiter")).toBeDefined();
     expect(screen.getByText("author@example.com")).toBeDefined();
     expect(screen.getByText("user_clerk_98765")).toBeDefined();
@@ -71,14 +83,18 @@ describe("AdminAccessDenied In-Route Authorization Console", () => {
       />
     );
 
-    const emailCopyBtn = screen.getByRole("button", { name: "Copy email configuration snippet" });
+    const emailCopyBtn = screen.getByRole("button", {
+      name: "Copy email configuration snippet",
+    });
     expect(emailCopyBtn).toBeDefined();
 
     await act(async () => {
       fireEvent.click(emailCopyBtn);
     });
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ADMIN_EMAILS="author@example.com"');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'ADMIN_EMAILS="author@example.com"'
+    );
     expect(emailCopyBtn.textContent).toContain("Copied");
 
     // Resets back after timeout
@@ -98,14 +114,18 @@ describe("AdminAccessDenied In-Route Authorization Console", () => {
       />
     );
 
-    const uidCopyBtn = screen.getByRole("button", { name: "Copy User ID configuration snippet" });
+    const uidCopyBtn = screen.getByRole("button", {
+      name: "Copy User ID configuration snippet",
+    });
     expect(uidCopyBtn).toBeDefined();
 
     await act(async () => {
       fireEvent.click(uidCopyBtn);
     });
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ADMIN_USER_IDS="user_clerk_98765"');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'ADMIN_USER_IDS="user_clerk_98765"'
+    );
     expect(uidCopyBtn.textContent).toContain("Copied");
   });
 
@@ -118,7 +138,9 @@ describe("AdminAccessDenied In-Route Authorization Console", () => {
       />
     );
 
-    const refreshBtn = screen.getByRole("button", { name: /Re-verify Authorization/i });
+    const refreshBtn = screen.getByRole("button", {
+      name: /Re-verify Authorization/i,
+    });
     expect(refreshBtn).toBeDefined();
 
     await act(async () => {

@@ -145,6 +145,8 @@ jobs:
     name: Static Gate (Drift, Docs, Typecheck, Lint, Invariants)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
 
     services:
       postgres:
@@ -172,6 +174,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -199,15 +202,18 @@ jobs:
       - name: Lint Documentation
         run: npm run lint:docs
 
-      # ESLint's cache uses the content strategy, so a restored entry only
-      # skips work on files whose bytes are unchanged; it can never hide a new
-      # error. The config here is not type-aware, so a file's lint result
-      # depends on that file alone. Restore only on PRs and save only from main.
-      - name: Restore ESLint Incremental State
+      # ESLint and Prettier caches only skip work on files whose inputs are
+      # unchanged; they can never hide a new lint or formatting error. The
+      # ESLint config here is not type-aware, so each file's result depends on
+      # that file alone. Pull requests restore main's cache read-only and never
+      # write PR-scoped entries; only pushes to main save below.
+      - name: Restore ESLint & Prettier Incremental State
+        if: github.event_name != 'workflow_dispatch'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .eslintcache
+            .prettiercache
           key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             static-incremental-${{ hashFiles('package-lock.json') }}-
@@ -225,13 +231,15 @@ jobs:
         run: |
           npm run typecheck:budget
           npm run lint -- --cache --cache-strategy content --cache-location .eslintcache
+          npm run format:check -- --cache --cache-location .prettiercache
 
-      - name: Save ESLint Incremental State (default branch only)
+      - name: Save ESLint & Prettier Incremental State (main only)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .eslintcache
+            .prettiercache
           key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
 
       # The full `npm run verify` runs in heavy-gate-report, after the bench
@@ -251,6 +259,8 @@ jobs:
     if: needs.changes.outputs.run_unit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -284,6 +294,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -329,6 +340,8 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.run_unit == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     # Blob reports record absolute file paths, and the shards run in the
     # container's /__w workspace. Merging on the bare runner, whose workspace
     # is /home/runner/work, put every file outside the project root: Vitest
@@ -350,6 +363,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -380,6 +394,8 @@ jobs:
     if: needs.changes.outputs.run_unit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -392,6 +408,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -438,6 +455,8 @@ jobs:
     needs: [changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -450,6 +469,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -484,6 +504,8 @@ jobs:
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -496,6 +518,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -568,6 +591,8 @@ jobs:
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -592,6 +617,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -642,6 +668,8 @@ jobs:
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -662,6 +690,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -710,6 +739,8 @@ jobs:
     if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -722,6 +753,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -853,6 +885,8 @@ jobs:
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -878,6 +912,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -947,6 +982,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
 
     steps:
       # #3601: the verdict comes from the run-scope table in
@@ -982,6 +1019,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.cross_device_matrix
     runs-on: ubuntu-latest
     timeout-minutes: 70
+    permissions:
+      contents: read
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -1002,6 +1041,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci
@@ -1033,6 +1073,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -1045,6 +1087,7 @@ jobs:
         with:
           node-version: 24
           cache: "npm"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install Dependencies
         run: npm ci

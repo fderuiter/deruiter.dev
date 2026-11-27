@@ -2,7 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import type { DiagnosticCheckResult } from "../doctor";
 
-const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+const HTTP_METHODS = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "HEAD",
+  "OPTIONS",
+];
 const AUTH_VALUES = ["public", "clerk_admin", "cron_secret"];
 
 function routeFiles(dir: string): string[] {
@@ -74,9 +82,15 @@ export function findApiRouteWrapperViolations(source: string): string[] {
   const reexported = /export\s*\{([^}]*)\}/g;
   for (const match of source.matchAll(reexported)) {
     for (const name of match[1].split(",")) {
-      const exported = name.trim().split(/\s+as\s+/).pop()?.trim();
+      const exported = name
+        .trim()
+        .split(/\s+as\s+/)
+        .pop()
+        ?.trim();
       if (exported && HTTP_METHODS.includes(exported)) {
-        problems.push(`${exported} is re-exported, so its wrapper can't be checked`);
+        problems.push(
+          `${exported} is re-exported, so its wrapper can't be checked`
+        );
       }
     }
   }
@@ -89,9 +103,10 @@ export function findApiRouteWrapperViolations(source: string): string[] {
       problems.push(`${method} is not created with createApiHandler(...)`);
       continue;
     }
-    const open = match.index + match[0].length + source
-      .slice(match.index + match[0].length)
-      .indexOf("(");
+    const open =
+      match.index +
+      match[0].length +
+      source.slice(match.index + match[0].length).indexOf("(");
     const args = callArguments(source, open);
     const options = args && args.length > 1 ? args[args.length - 1] : "";
     const auth = /(?:^|[{,\s])auth\s*:\s*["']([a-z_]+)["']/.exec(options);

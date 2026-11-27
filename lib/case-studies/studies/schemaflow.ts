@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-5",
-    slug: "schemaflow",
-    title: "SchemaFlow: Build JSON Schemas Visually",
-    primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/SchemaFlow",
-    published: true,
-    simulated_telemetry: false,
-    tags: "TypeScript, React, Flow, Schemas, AST, Node-RED",
-    editorial_content:
-      "A **React** and **TypeScript** graph editor for composing **JSON Schema**. Connect nodes, check for circular dependencies, and see the generated code as you work.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-5",
+  slug: "schemaflow",
+  title: "SchemaFlow: Build JSON Schemas Visually",
+  primary_language: "TypeScript",
+  github_url: "https://github.com/fderuiter/SchemaFlow",
+  published: true,
+  simulated_telemetry: false,
+  tags: "TypeScript, React, Flow, Schemas, AST, Node-RED",
+  editorial_content:
+    "A **React** and **TypeScript** graph editor for composing **JSON Schema**. Connect nodes, check for circular dependencies, and see the generated code as you work.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>JSON Schema is useful, but nested structures can be hard to follow in a text editor. SchemaFlow lets you compose them as a graph, inspect the connections, and see the generated schema as you work.</p>
 <p><strong>The approach:</strong> React renders the graph editor while TypeScript logic tracks dependencies, checks for cycles, and generates JSON Schema.</p>
 <p><strong>Reported project measurements:</strong> Sub-8ms canvas node interaction latency; 100% cyclical dependency detection and resolution via <code>$ref</code> pointers; automated real-time OpenAPI v3 code generation.</p>
@@ -92,6 +92,6 @@ function detectAndResolveCycles(nodes: SchemaNode[], connections: SchemaConnecti
   <li>Moving JSON Schema serialization to Web Workers stopped frame drops on graphs with 100+ connected schema nodes.</li>
   <li>Recursive <code>$ref</code> handling: turning cycles into JSON Schema <code>$ref</code> definitions stopped the browser tab crashing on recursive types such as file trees.</li>
 </ul>`,
-    created_at: new Date("2026-02-15T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-02-15T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

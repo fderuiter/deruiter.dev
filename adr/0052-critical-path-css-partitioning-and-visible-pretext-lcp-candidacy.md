@@ -7,6 +7,7 @@ Accepted on 2026-09-25. Extends [ADR 0040](0040-dyslexia-first-typography-and-dy
 ## Context
 
 PageSpeed and Core Web Vitals audits on the production landing page (`/`) identified three performance bottlenecks:
+
 1. **LCP Element Attribution & Render Delay**: Pretext text components historically rendered an opaque visual layout element (`data-pretext-layer="visual"`) underneath a transparent semantic overlay (`data-pretext-layer="semantic"`, styled with `color: transparent; -webkit-text-fill-color: transparent`). Chromium and WebKit disregard transparent text when calculating Largest Contentful Paint (LCP) candidates. Consequently, the browser scored an arbitrary `<p>` tag rather than the semantic `<h1>` as the page's LCP element.
 2. **Hydration Forced Reflows**: Synchronous layout measurements (`getBoundingClientRect`) and document-level style mutations (`document.documentElement.style.setProperty("--header-height", ...)`) fired during initial mount across `Navbar.tsx`, `BentoGrid.tsx`, and `usePretextLayout.tsx`, causing forced synchronous layout reflows on the main thread during hydration.
 3. **Render-Blocking Global CSS Weight**: The root stylesheet (`app/globals.css`, imported in `app/layout.tsx`) bundled hundreds of lines of specialized arcade cabinet animations, CRT scanline filters, loud shake keyframes, and landscape orientation media queries. Because Next.js 16 compiles root layout imports into a single critical-path stylesheet, the entire 308 KB raw (~38.6 KB gzip) file blocked first paint on `/`.

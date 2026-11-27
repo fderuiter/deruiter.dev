@@ -118,7 +118,9 @@ describe("the risk heatmap (#2914)", () => {
     expect(time.red).toContain("more than 30 days overdue");
     expect(money.amber).toBe("Either is above 105% and neither above 110%.");
     for (const rule of rules) {
-      expect(rule.reason).toBe(PORTFOLIO_RISK_THRESHOLDS[rule.dimension].reason);
+      expect(rule.reason).toBe(
+        PORTFOLIO_RISK_THRESHOLDS[rule.dimension].reason
+      );
     }
   });
 });

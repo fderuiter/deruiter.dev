@@ -2,9 +2,11 @@
   "recommendations": [
     "TypeScriptTeam.native-preview",
     "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "EditorConfig.EditorConfig",
     "bradlc.vscode-tailwindcss",
     "vitest.explorer",
-    "davidlday.vscode-markdownlint",
+    "DavidAnson.vscode-markdownlint",
     "ms-playwright.playwright",
     "Prisma.prisma"
   ]

@@ -2,17 +2,17 @@ import { compileCaseStudy } from "../compiler";
 import type { CaseStudyData } from "../types";
 
 export const caseStudy: CaseStudyData = compileCaseStudy({
-    id: "canonical-2",
-    slug: "cadence-clinical",
-    title: "Cadence Clinical: From Protocol to Study Data",
-    primary_language: "Python / Vue 3",
-    github_url: "https://github.com/fderuiter/cadence-clinical",
-    published: true,
-    simulated_telemetry: false,
-    tags: "clinical-trials, cdisc-usdm, hexagonal-architecture, gxp-compliance, distributed-systems, vue3-vite",
-    editorial_content:
-      "A clinical study has a lot of moving parts. **Cadence Clinical** connects protocol design with study records, using **Neo4j** for relationships and **PostgreSQL** for transactions, with audit trails and digital signatures.",
-    architectural_narrative: `<h3>The problem</h3>
+  id: "canonical-2",
+  slug: "cadence-clinical",
+  title: "Cadence Clinical: From Protocol to Study Data",
+  primary_language: "Python / Vue 3",
+  github_url: "https://github.com/fderuiter/cadence-clinical",
+  published: true,
+  simulated_telemetry: false,
+  tags: "clinical-trials, cdisc-usdm, hexagonal-architecture, gxp-compliance, distributed-systems, vue3-vite",
+  editorial_content:
+    "A clinical study has a lot of moving parts. **Cadence Clinical** connects protocol design with study records, using **Neo4j** for relationships and **PostgreSQL** for transactions, with audit trails and digital signatures.",
+  architectural_narrative: `<h3>The problem</h3>
 <p>A protocol describes how a study should run. The database has to keep up when that protocol changes. Cadence Clinical connects protocol relationships, day-to-day study records, and an audit history so those pieces can be reasoned about together.</p>
 <p><strong>The approach:</strong> Neo4j represents protocol relationships; PostgreSQL handles record transactions. Ports and adapters separate the study logic from storage, with append-only audit records and RSA-PSS signatures.</p>
 <p><strong>Reported project measurements:</strong> Sub-50ms API gateway latency; 100% GxP audit trail traceability; 65% faster cold test runner execution via <code>uv</code> monorepo workspaces.</p>
@@ -92,6 +92,6 @@ def verify_manifest_signature(public_key: rsa.RSAPublicKey, signature: bytes, pa
   <li>All signature verification moved from PKCS#1 v1.5 to RSA-PSS, which closes the padding oracle side channel of the older scheme.</li>
   <li>Cascading a protocol amendment runs as a Neo4j graph traversal, so it does not lock the busy relational subject tables during an active trial.</li>
 </ul>`,
-    created_at: new Date("2026-01-20T00:00:00Z"),
-    updated_at: new Date("2026-08-18T00:00:00Z"),
-  });
+  created_at: new Date("2026-01-20T00:00:00Z"),
+  updated_at: new Date("2026-08-18T00:00:00Z"),
+});

@@ -28,13 +28,31 @@ describe("findApiRouteWrapperViolations", () => {
   });
 
   it.each([
-    ["export async function GET() { return new Response(); }", "GET is a plain function"],
+    [
+      "export async function GET() { return new Response(); }",
+      "GET is a plain function",
+    ],
     ["export function DELETE() {}", "DELETE is a plain function"],
-    ["const GET = createApiHandler(h, { auth: \"public\" });\nexport { GET };", "GET is re-exported"],
-    ["export const PUT = withSomethingElse(handler);", "PUT is not created with createApiHandler"],
-    ["export const PATCH = createApiHandler(async () => Response.json({ auth: \"public\" }));", "PATCH does not declare an auth strategy"],
-    ["export const POST = createApiHandler(h, { schema: S });", "POST does not declare an auth strategy"],
-    ["export const GET = createApiHandler(h, { auth: \"admin\" });", 'unknown auth strategy "admin"'],
+    [
+      'const GET = createApiHandler(h, { auth: "public" });\nexport { GET };',
+      "GET is re-exported",
+    ],
+    [
+      "export const PUT = withSomethingElse(handler);",
+      "PUT is not created with createApiHandler",
+    ],
+    [
+      'export const PATCH = createApiHandler(async () => Response.json({ auth: "public" }));',
+      "PATCH does not declare an auth strategy",
+    ],
+    [
+      "export const POST = createApiHandler(h, { schema: S });",
+      "POST does not declare an auth strategy",
+    ],
+    [
+      'export const GET = createApiHandler(h, { auth: "admin" });',
+      'unknown auth strategy "admin"',
+    ],
   ])("reports %j", (source, problem) => {
     const problems = findApiRouteWrapperViolations(source);
     expect(problems).toHaveLength(1);
@@ -65,7 +83,10 @@ describe("checkApiRouteWrapper", () => {
 
   it("fails on a seeded unwrapped handler and names the file", () => {
     writeRoute("ok", WRAPPED);
-    writeRoute("bad", "export async function POST() { return new Response(); }");
+    writeRoute(
+      "bad",
+      "export async function POST() { return new Response(); }"
+    );
     const result = checkApiRouteWrapper(root);
     expect(result.status).toBe("fail");
     expect(result.details).toEqual([

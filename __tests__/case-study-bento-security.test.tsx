@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -70,26 +72,38 @@ describe("CaseStudyBentoCard snippet text is literal", () => {
   });
 
   it("keeps literal source inside inline code (alert 20)", async () => {
-    const el = await renderSnippet("Use `Array<T>` and `<span onclick=x>` here.");
-    const codes = Array.from(el.querySelectorAll("code")).map((c) => c.textContent);
+    const el = await renderSnippet(
+      "Use `Array<T>` and `<span onclick=x>` here."
+    );
+    const codes = Array.from(el.querySelectorAll("code")).map(
+      (c) => c.textContent
+    );
     expect(codes).toContain("Array<T>");
     expect(codes).toContain("<span onclick=x>");
     expect(el.querySelector("[onclick]")).toBeNull();
   });
 
   it("keeps malformed markup after the last token as text (alert 21)", async () => {
-    const el = await renderSnippet("Start **here** then <img src=x onerror=alert(1) and a tail.");
+    const el = await renderSnippet(
+      "Start **here** then <img src=x onerror=alert(1) and a tail."
+    );
     expect(el.textContent).toContain("<img src=x onerror=alert(1) and a tail.");
     expect(el.querySelector("img[onerror]")).toBeNull();
   });
 
   it("renders a token-free snippet unchanged", async () => {
-    const el = await renderSnippet("Plain Array<T> prose with no tokens, café.");
-    expect(el.textContent).toContain("Plain Array<T> prose with no tokens, café.");
+    const el = await renderSnippet(
+      "Plain Array<T> prose with no tokens, café."
+    );
+    expect(el.textContent).toContain(
+      "Plain Array<T> prose with no tokens, café."
+    );
   });
 
   it("decodes an entity once, not twice", async () => {
-    const el = await renderSnippet("Escaped &amp;lt;b&amp;gt; stays literal before **x**.");
+    const el = await renderSnippet(
+      "Escaped &amp;lt;b&amp;gt; stays literal before **x**."
+    );
     expect(el.textContent).toContain("Escaped &lt;b&gt; stays literal");
     expect(el.querySelector("b")).toBeNull();
   });

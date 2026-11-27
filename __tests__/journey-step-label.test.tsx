@@ -22,7 +22,10 @@ describe("JourneyStepLabel (#3143)", () => {
 
   it("shows the plain fallback, with no number, off the journey", () => {
     const { container } = render(
-      <JourneyStepLabel path="/clinical/standards" fallback="Standards evidence" />
+      <JourneyStepLabel
+        path="/clinical/standards"
+        fallback="Standards evidence"
+      />
     );
     expect(container.textContent).toBe("Standards evidence");
   });

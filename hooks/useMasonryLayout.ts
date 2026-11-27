@@ -36,7 +36,12 @@ export function useMasonryLayout<T extends MasonryItem>(
 
   const [layoutState, setLayoutState] = useState<{
     colCount: number;
-    columns: (T & { height: number; preCalculatedRealityHeight?: number; paragraphsLines: RichInlineLine[][]; paragraphsItems: ExtendedRichInlineItem[][] })[][];
+    columns: (T & {
+      height: number;
+      preCalculatedRealityHeight?: number;
+      paragraphsLines: RichInlineLine[][];
+      paragraphsItems: ExtendedRichInlineItem[][];
+    })[][];
     isReady: boolean;
   }>({
     colCount: LAYOUT_CONFIG.COLS.SM,
@@ -57,16 +62,29 @@ export function useMasonryLayout<T extends MasonryItem>(
 
     const data: Record<string, PreparedData> = {};
     for (const study of allItems) {
-      const blocks = preparePretextBlocks(study.editorial_content || "", LAYOUT_CONFIG.FONT_SIZE, "--font-inter");
-      const realityContent = getRealityContent(study.slug || study.id, study.editorial_content || "");
-      const realityBlocks = preparePretextBlocks(realityContent, LAYOUT_CONFIG.FONT_SIZE, "--font-inter");
+      const blocks = preparePretextBlocks(
+        study.editorial_content || "",
+        LAYOUT_CONFIG.FONT_SIZE,
+        "--font-inter"
+      );
+      const realityContent = getRealityContent(
+        study.slug || study.id,
+        study.editorial_content || ""
+      );
+      const realityBlocks = preparePretextBlocks(
+        realityContent,
+        LAYOUT_CONFIG.FONT_SIZE,
+        "--font-inter"
+      );
 
       const paragraphs = blocks
         .filter((b) => b.type === "paragraph" && b.prepared)
         .map((b) => ({ prepared: b.prepared!, items: b.items || [] }));
 
-      const paddingHeight = study.githubStats ? LAYOUT_CONFIG.PADDING_WITH_STATS : LAYOUT_CONFIG.PADDING_WITHOUT_STATS;
-      
+      const paddingHeight = study.githubStats
+        ? LAYOUT_CONFIG.PADDING_WITH_STATS
+        : LAYOUT_CONFIG.PADDING_WITHOUT_STATS;
+
       data[study.id] = {
         blocks,
         realityBlocks,
@@ -74,27 +92,30 @@ export function useMasonryLayout<T extends MasonryItem>(
         paddingHeight,
       };
     }
-    
+
     preparedDataRef.current = data;
   }, [allItems]);
 
-  const recalculateLayout = useCallback((containerWidth: number) => {
-    if (Object.keys(preparedDataRef.current).length === 0) return;
+  const recalculateLayout = useCallback(
+    (containerWidth: number) => {
+      if (Object.keys(preparedDataRef.current).length === 0) return;
 
-    const { colCount, columns } = calculateMasonryLayout(
-      containerWidth,
-      filteredItems,
-      preparedDataRef.current,
-      LAYOUT_CONFIG,
-      heightOverrides
-    );
+      const { colCount, columns } = calculateMasonryLayout(
+        containerWidth,
+        filteredItems,
+        preparedDataRef.current,
+        LAYOUT_CONFIG,
+        heightOverrides
+      );
 
-    setLayoutState({
-      colCount,
-      columns,
-      isReady: true,
-    });
-  }, [filteredItems, heightOverrides]);
+      setLayoutState({
+        colCount,
+        columns,
+        isReady: true,
+      });
+    },
+    [filteredItems, heightOverrides]
+  );
 
   const containerRef = useResizeObserver<HTMLDivElement>((entry) => {
     containerWidthRef.current = entry.contentRect.width;

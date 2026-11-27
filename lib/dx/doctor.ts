@@ -2618,8 +2618,100 @@ export function checkDesignTokens(root: string): DiagnosticCheckResult {
   };
 }
 
+const DEFAULT_PRETTIER_PRINT_WIDTH = 80;
+const REQUIRED_VSCODE_DEFAULT_FORMATTER = "esbenp.prettier-vscode";
+const REQUIRED_VSCODE_EXTENSIONS = [
+  "esbenp.prettier-vscode",
+  "EditorConfig.EditorConfig",
+  "DavidAnson.vscode-markdownlint",
+] as const;
+const DEPRECATED_VSCODE_EXTENSIONS: Readonly<Record<string, string>> = {
+  "davidlday.vscode-markdownlint": "DavidAnson.vscode-markdownlint",
+};
+const VSCODE_EXTENSION_ID_PATTERN = /^[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/;
+
+const BASELINE_GENERATED_ARTIFACTS = [
+  "app/icon.svg",
+  "public/favicon.svg",
+  "app/favicon.ico",
+  "public/favicon.ico",
+  "public/apple-touch-icon.png",
+  "public/icon-192.png",
+  "public/icon-512.png",
+  "lib/design-manifest.ts",
+  "public/garmin-engine.js",
+  "public/monkey-c-mayhem.js",
+] as const;
+
+const REQUIRED_PRETTIER_DUPLICATE_TREE_IGNORES = [
+  ".claude/worktrees",
+  ".stryker-tmp",
+] as const;
+
+const REQUIRED_PRETTIER_GENERATED_NOTICE_IGNORES = [
+  "public/third-party-notices.txt",
+  "lib/oss-credits/internal/credits.generated.json",
+  "lib/oss-credits/internal/registry-facts.generated.json",
+] as const;
+
+function normalizePrettierIgnoreEntry(line: string): string {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) return "";
+  return trimmed
+    .replace(/\\/g, "/")
+    .replace(/^(?:\.\/|\/)+/, "")
+    .replace(/\/+$/, "");
+}
+
+function readLintStagedGeneratedArtifacts(root: string): string[] {
+  const artifacts = new Set<string>(BASELINE_GENERATED_ARTIFACTS);
+  const lintStagedPath = path.join(root, "lint-staged.config.cjs");
+  if (!fs.existsSync(lintStagedPath)) {
+    return Array.from(artifacts);
+  }
+  try {
+    const content = fs.readFileSync(lintStagedPath, "utf-8");
+    const setBlock = content.match(
+      /GENERATED_ARTIFACTS\s*=\s*new\s+Set\(\s*\[([\s\S]*?)\]\s*\)/
+    );
+    if (setBlock?.[1]) {
+      for (const match of setBlock[1].matchAll(/["']([^"']+)["']/g)) {
+        const entry = normalizePrettierIgnoreEntry(match[1]);
+        if (entry) artifacts.add(entry);
+      }
+    }
+  } catch {
+    // Fall back to baseline generated artifacts when lint-staged config cannot be read.
+  }
+  return Array.from(artifacts);
+}
+
+function readExpectedPrettierPrintWidth(root: string): {
+  printWidth: number;
+  parseError?: string;
+} {
+  const prettierrcPath = path.join(root, ".prettierrc");
+  if (!fs.existsSync(prettierrcPath)) {
+    return { printWidth: DEFAULT_PRETTIER_PRINT_WIDTH };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(prettierrcPath, "utf-8")) as {
+      printWidth?: unknown;
+    };
+    if (typeof parsed.printWidth === "number" && parsed.printWidth > 0) {
+      return { printWidth: parsed.printWidth };
+    }
+    return { printWidth: DEFAULT_PRETTIER_PRINT_WIDTH };
+  } catch {
+    return {
+      printWidth: DEFAULT_PRETTIER_PRINT_WIDTH,
+      parseError: ".prettierrc is not valid JSON.",
+    };
+  }
+}
+
 /**
- * Check Workspace & IDE Configuration Integrity (.editorconfig, .vscode)
+ * Check Workspace & IDE Configuration Integrity (`.editorconfig`, `.vscode/`, `.prettierignore`)
  */
 export function checkWorkspaceIdeConfig(
   root: string,
@@ -2627,6 +2719,8 @@ export function checkWorkspaceIdeConfig(
 ): DiagnosticCheckResult {
   const requiredFiles = [
     { file: ".editorconfig", desc: "Universal EditorConfig rules" },
+    { file: ".prettierrc", desc: "Prettier formatting rules" },
+    { file: ".prettierignore", desc: "Prettier ignore rules" },
     {
       file: path.join(".vscode", "settings.json"),
       desc: "VS Code workspace settings",
@@ -2645,28 +2739,359 @@ export function checkWorkspaceIdeConfig(
     },
   ];
 
-  const missing: string[] = [];
+  const violations: string[] = [];
+  let canAutoFix = true;
 
   for (const rf of requiredFiles) {
     const full = path.join(root, rf.file);
     if (!fs.existsSync(full)) {
-      missing.push(`Missing ${rf.desc} (${rf.file})`);
+      violations.push(`Missing ${rf.desc} (${rf.file.replace(/\\/g, "/")})`);
     }
   }
 
-  if (missing.length > 0) {
-    if (fix) {
+  const { printWidth: expectedPrintWidth, parseError: prettierrcError } =
+    readExpectedPrettierPrintWidth(root);
+  if (prettierrcError) {
+    violations.push(prettierrcError);
+    canAutoFix = false;
+  }
+
+  const requiredPrettierIgnores = Array.from(
+    new Set([
+      ...readLintStagedGeneratedArtifacts(root),
+      ...REQUIRED_PRETTIER_DUPLICATE_TREE_IGNORES,
+      ...REQUIRED_PRETTIER_GENERATED_NOTICE_IGNORES,
+    ])
+  );
+
+  const settingsPath = path.join(root, ".vscode", "settings.json");
+  let parsedSettings: Record<string, unknown> | null = null;
+  let settingsNeedsUpdate = false;
+
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(settingsPath, "utf-8")) as unknown;
+      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        parsedSettings = raw as Record<string, unknown>;
+      } else {
+        violations.push(".vscode/settings.json must contain a JSON object.");
+        canAutoFix = false;
+      }
+    } catch {
+      violations.push(".vscode/settings.json is not valid JSON.");
+      canAutoFix = false;
+    }
+
+    if (parsedSettings) {
+      const formatter = parsedSettings["editor.defaultFormatter"];
+      if (formatter !== REQUIRED_VSCODE_DEFAULT_FORMATTER) {
+        violations.push(
+          `.vscode/settings.json: expected 'editor.defaultFormatter' to be '${REQUIRED_VSCODE_DEFAULT_FORMATTER}', found ${JSON.stringify(formatter)}.`
+        );
+        settingsNeedsUpdate = true;
+      }
+
+      const formatOnSave = parsedSettings["editor.formatOnSave"];
+      if (formatOnSave !== true) {
+        violations.push(
+          `.vscode/settings.json: expected 'editor.formatOnSave' to be true, found ${JSON.stringify(formatOnSave)}.`
+        );
+        settingsNeedsUpdate = true;
+      }
+
+      const rulers = parsedSettings["editor.rulers"];
+      const validRulers =
+        Array.isArray(rulers) &&
+        rulers.length === 1 &&
+        rulers[0] === expectedPrintWidth;
+      if (!validRulers) {
+        violations.push(
+          `.vscode/settings.json: expected 'editor.rulers' to match printWidth [${expectedPrintWidth}], found ${JSON.stringify(rulers)}.`
+        );
+        settingsNeedsUpdate = true;
+      }
+    }
+  }
+
+  const extensionsPath = path.join(root, ".vscode", "extensions.json");
+  let parsedExtensions: Record<string, unknown> | null = null;
+  let extensionsNeedsUpdate = false;
+
+  if (fs.existsSync(extensionsPath)) {
+    try {
+      const raw = JSON.parse(
+        fs.readFileSync(extensionsPath, "utf-8")
+      ) as unknown;
+      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        parsedExtensions = raw as Record<string, unknown>;
+      } else {
+        violations.push(".vscode/extensions.json must contain a JSON object.");
+        canAutoFix = false;
+      }
+    } catch {
+      violations.push(".vscode/extensions.json is not valid JSON.");
+      canAutoFix = false;
+    }
+
+    if (parsedExtensions) {
+      const recs = parsedExtensions.recommendations;
+      if (!Array.isArray(recs)) {
+        violations.push(
+          ".vscode/extensions.json: expected 'recommendations' to be an array of extension IDs."
+        );
+        extensionsNeedsUpdate = true;
+      } else {
+        const stringRecs = recs.filter(
+          (item): item is string => typeof item === "string"
+        );
+        if (stringRecs.length !== recs.length) {
+          violations.push(
+            ".vscode/extensions.json: non-string entry found in 'recommendations'."
+          );
+          extensionsNeedsUpdate = true;
+        }
+
+        for (const id of stringRecs) {
+          const replacement = DEPRECATED_VSCODE_EXTENSIONS[id];
+          if (replacement) {
+            violations.push(
+              `.vscode/extensions.json: invalid or deprecated extension '${id}'; use '${replacement}' instead.`
+            );
+            extensionsNeedsUpdate = true;
+          } else if (!VSCODE_EXTENSION_ID_PATTERN.test(id)) {
+            violations.push(
+              `.vscode/extensions.json: malformed extension identifier '${id}' (expected '<publisher>.<name>').`
+            );
+            extensionsNeedsUpdate = true;
+          }
+        }
+
+        for (const requiredExt of REQUIRED_VSCODE_EXTENSIONS) {
+          if (!stringRecs.includes(requiredExt)) {
+            violations.push(
+              `.vscode/extensions.json: missing recommended extension '${requiredExt}'.`
+            );
+            extensionsNeedsUpdate = true;
+          }
+        }
+      }
+    }
+  }
+
+  const prettierIgnorePath = path.join(root, ".prettierignore");
+  const missingIgnoreEntries: string[] = [];
+  let hasBroadClaudeIgnore = false;
+
+  if (fs.existsSync(prettierIgnorePath)) {
+    const rawIgnore = fs.readFileSync(prettierIgnorePath, "utf-8");
+    const activeIgnores = new Set(
+      rawIgnore.split(/\r?\n/).map(normalizePrettierIgnoreEntry).filter(Boolean)
+    );
+
+    if (
+      activeIgnores.has(".claude") ||
+      activeIgnores.has(".claude/*") ||
+      activeIgnores.has(".claude/**")
+    ) {
+      violations.push(
+        ".prettierignore: ignores '.claude' broadly instead of '.claude/worktrees', which skips tracked authored files under .claude/."
+      );
+      hasBroadClaudeIgnore = true;
+    }
+
+    for (const entry of requiredPrettierIgnores) {
+      if (!activeIgnores.has(entry)) {
+        violations.push(`.prettierignore: missing ignore entry '${entry}'.`);
+        missingIgnoreEntries.push(entry);
+      }
+    }
+  }
+
+  if (violations.length > 0) {
+    if (fix && canAutoFix) {
+      const fixesApplied: string[] = [];
       const vscodeDir = path.join(root, ".vscode");
-      if (!fs.existsSync(vscodeDir))
+      if (!fs.existsSync(vscodeDir)) {
         fs.mkdirSync(vscodeDir, { recursive: true });
+      }
 
       const editorConfigPath = path.join(root, ".editorconfig");
       if (!fs.existsSync(editorConfigPath)) {
         fs.writeFileSync(
           editorConfigPath,
-          `root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\ncharset = utf-8\ntrim_trailing_whitespace = true\ninsert_final_newline = true\n`,
+          "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\ncharset = utf-8\ntrim_trailing_whitespace = true\ninsert_final_newline = true\n",
           "utf-8"
         );
+        fixesApplied.push("Created .editorconfig");
+      }
+
+      const prettierrcPath = path.join(root, ".prettierrc");
+      if (!fs.existsSync(prettierrcPath)) {
+        fs.writeFileSync(
+          prettierrcPath,
+          `${JSON.stringify(
+            {
+              useTabs: false,
+              tabWidth: 2,
+              printWidth: DEFAULT_PRETTIER_PRINT_WIDTH,
+              singleQuote: false,
+              trailingComma: "es5",
+              semi: true,
+              arrowParens: "always",
+            },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .prettierrc");
+      }
+
+      if (!fs.existsSync(prettierIgnorePath)) {
+        fs.writeFileSync(
+          prettierIgnorePath,
+          `${[
+            "node_modules",
+            ".next",
+            "coverage",
+            ...requiredPrettierIgnores,
+          ].join("\n")}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .prettierignore");
+      } else if (hasBroadClaudeIgnore || missingIgnoreEntries.length > 0) {
+        let updatedIgnore = fs.readFileSync(prettierIgnorePath, "utf-8");
+        if (hasBroadClaudeIgnore) {
+          updatedIgnore = updatedIgnore
+            .split(/\r?\n/)
+            .map((line) => {
+              const norm = normalizePrettierIgnoreEntry(line);
+              if (
+                norm === ".claude" ||
+                norm === ".claude/*" ||
+                norm === ".claude/**"
+              ) {
+                return ".claude/worktrees";
+              }
+              return line;
+            })
+            .join("\n");
+        }
+        const refreshedSet = new Set(
+          updatedIgnore
+            .split(/\r?\n/)
+            .map(normalizePrettierIgnoreEntry)
+            .filter(Boolean)
+        );
+        const stillMissing = requiredPrettierIgnores.filter(
+          (entry) => !refreshedSet.has(entry)
+        );
+        if (stillMissing.length > 0) {
+          const prefix = updatedIgnore.endsWith("\n")
+            ? updatedIgnore
+            : `${updatedIgnore}\n`;
+          updatedIgnore = `${prefix}${stillMissing.join("\n")}\n`;
+        }
+        fs.writeFileSync(prettierIgnorePath, updatedIgnore, "utf-8");
+        fixesApplied.push("Synchronized .prettierignore rules");
+      }
+
+      if (!fs.existsSync(settingsPath)) {
+        fs.writeFileSync(
+          settingsPath,
+          `${JSON.stringify(
+            {
+              "editor.tabSize": 2,
+              "editor.insertSpaces": true,
+              "editor.formatOnSave": true,
+              "editor.defaultFormatter": REQUIRED_VSCODE_DEFAULT_FORMATTER,
+              "editor.rulers": [expectedPrintWidth],
+            },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .vscode/settings.json");
+      } else if (parsedSettings && settingsNeedsUpdate) {
+        const nextSettings: Record<string, unknown> = {
+          ...parsedSettings,
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": REQUIRED_VSCODE_DEFAULT_FORMATTER,
+          "editor.rulers": [expectedPrintWidth],
+        };
+        fs.writeFileSync(
+          settingsPath,
+          `${JSON.stringify(nextSettings, null, 2)}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Aligned .vscode/settings.json formatter and rulers");
+      }
+
+      if (!fs.existsSync(extensionsPath)) {
+        fs.writeFileSync(
+          extensionsPath,
+          `${JSON.stringify(
+            {
+              recommendations: [...REQUIRED_VSCODE_EXTENSIONS],
+            },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .vscode/extensions.json");
+      } else if (parsedExtensions && extensionsNeedsUpdate) {
+        const existingRecs = Array.isArray(parsedExtensions.recommendations)
+          ? parsedExtensions.recommendations.filter(
+              (item): item is string => typeof item === "string"
+            )
+          : [];
+        const sanitized: string[] = [];
+        for (const id of existingRecs) {
+          const mapped = DEPRECATED_VSCODE_EXTENSIONS[id] ?? id;
+          if (
+            VSCODE_EXTENSION_ID_PATTERN.test(mapped) &&
+            !sanitized.includes(mapped)
+          ) {
+            sanitized.push(mapped);
+          }
+        }
+        for (const requiredExt of REQUIRED_VSCODE_EXTENSIONS) {
+          if (!sanitized.includes(requiredExt)) {
+            sanitized.push(requiredExt);
+          }
+        }
+        fs.writeFileSync(
+          extensionsPath,
+          `${JSON.stringify(
+            { ...parsedExtensions, recommendations: sanitized },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Updated .vscode/extensions.json recommendations");
+      }
+
+      const launchPath = path.join(root, ".vscode", "launch.json");
+      if (!fs.existsSync(launchPath)) {
+        fs.writeFileSync(
+          launchPath,
+          `${JSON.stringify({ version: "0.2.0", configurations: [] }, null, 2)}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .vscode/launch.json");
+      }
+
+      const tasksPath = path.join(root, ".vscode", "tasks.json");
+      if (!fs.existsSync(tasksPath)) {
+        fs.writeFileSync(
+          tasksPath,
+          `${JSON.stringify({ version: "2.0.0", tasks: [] }, null, 2)}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .vscode/tasks.json");
       }
 
       return {
@@ -2675,8 +3100,9 @@ export function checkWorkspaceIdeConfig(
         category: "architecture",
         status: "fixed",
         message:
-          "Scaffolded missing workspace IDE configurations (.vscode, .editorconfig).",
-        fixedMessage: "Created missing IDE configs.",
+          "Remediated workspace IDE and formatting configurations (.vscode, .editorconfig, .prettierignore).",
+        details: fixesApplied,
+        fixedMessage: fixesApplied.join("; "),
       };
     }
 
@@ -2685,9 +3111,9 @@ export function checkWorkspaceIdeConfig(
       name: "IDE & Workspace Configuration Standards",
       category: "architecture",
       status: "fail",
-      message: `${missing.length} workspace configuration file(s) missing.`,
-      details: missing,
-      fixable: true,
+      message: `${violations.length} workspace IDE or formatting configuration issue(s) detected.`,
+      details: violations,
+      fixable: canAutoFix,
     };
   }
 
@@ -2697,7 +3123,7 @@ export function checkWorkspaceIdeConfig(
     category: "architecture",
     status: "pass",
     message:
-      "All VS Code workspace profiles (.vscode/) and .editorconfig are properly configured.",
+      "All VS Code workspace profiles (.vscode/), .editorconfig, and .prettierignore parity checks are properly configured.",
   };
 }
 

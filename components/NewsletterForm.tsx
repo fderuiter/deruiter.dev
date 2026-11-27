@@ -37,6 +37,8 @@ export function NewsletterForm({
   // failures do not mark the input itself as invalid.
   const [emailInvalid, setEmailInvalid] = useState(false);
   const errorId = useId();
+  const emailInputId = useId();
+  const honeypotId = useId();
 
   const mountedRef = useRef(false);
   const { playHover } = useAudio();
@@ -139,10 +141,10 @@ export function NewsletterForm({
         <form onSubmit={handleSubmit} className="space-y-2">
           {/* Honeypot anti-spam trap */}
           <div className="hidden" aria-hidden="true">
-            <label htmlFor="newsletter-company-url">Do not fill this out</label>
+            <label htmlFor={honeypotId}>Do not fill this out</label>
             <input
               type="text"
-              id="newsletter-company-url"
+              id={honeypotId}
               name="_gotcha"
               value={gotcha}
               onChange={(e) => setGotcha(e.target.value)}
@@ -152,7 +154,7 @@ export function NewsletterForm({
           </div>
 
           <label
-            htmlFor="newsletter-email-input"
+            htmlFor={emailInputId}
             className="block text-[11px] font-mono font-bold text-zinc-300"
           >
             Email address
@@ -164,7 +166,7 @@ export function NewsletterForm({
               </div>
               <input
                 type="email"
-                id="newsletter-email-input"
+                id={emailInputId}
                 name="email"
                 autoComplete="email"
                 spellCheck={false}

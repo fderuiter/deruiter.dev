@@ -8,13 +8,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { fireEvent } from "@testing-library/react";
 import SchedulePage from "@/app/schedule/page";
+import { CONTACT_FORM_DRAFT_KEY } from "@/components/ContactForm";
+import { safeStorage } from "@/lib/safe-storage";
 
 describe("SchedulePage Component & Interactive Agenda Customizer", () => {
   let container: HTMLDivElement | null = null;
   let root: Root | null = null;
 
   beforeEach(() => {
+    safeStorage.clear();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -39,6 +43,7 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
       container.parentNode.removeChild(container);
       container = null;
     }
+    safeStorage.clear();
   });
 
   it("renders the consultation header, topic categories, and timezone selector", async () => {
@@ -235,6 +240,100 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
 
     expect(subjectInput.value).toBe("Chat Agenda: Code, Systems & Web Craft");
     expect(messageInput.value).toContain("Open-Source Tooling & DX (10m)");
+  });
+
+  it("isolates schedule drafts from /contact drafts and syncs subtopics and timezone until manually edited", async () => {
+    safeStorage.setItem(CONTACT_FORM_DRAFT_KEY, {
+      name: "Contact Route Draft",
+      email: "contact@example.com",
+      intent: "general",
+      subject: "",
+      message: "",
+    });
+
+    await act(async () => {
+      root?.render(<SchedulePage />);
+    });
+
+    const nameInput = container?.querySelector(
+      'input[name="name"]'
+    ) as HTMLInputElement;
+    const subjectInput = container?.querySelector(
+      'input[name="subject"]'
+    ) as HTMLInputElement;
+    const messageInput = container?.querySelector(
+      'textarea[name="message"]'
+    ) as HTMLTextAreaElement;
+    const timezoneSelect = container?.querySelector(
+      'select[aria-label="Select Timezone"]'
+    ) as HTMLSelectElement;
+
+    expect(nameInput.value).toBe("");
+    expect(subjectInput.value).toBe("30-Min General Chat");
+    expect(messageInput.value).toContain("30-minute general chat");
+
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: "Ada Lovelace" } });
+    });
+
+    expect(
+      safeStorage.getItem("portfolio_contact_form_draft_schedule")
+    ).toEqual({
+      name: "Ada Lovelace",
+      email: "",
+    });
+
+    await act(async () => {
+      fireEvent.change(timezoneSelect, {
+        target: { value: "Europe/London" },
+      });
+    });
+
+    expect(messageInput.value).toContain("Timezone: Europe/London");
+
+    const dxSubtopicBtn = Array.from(
+      container?.querySelectorAll("button") || []
+    ).find((btn) => btn.textContent?.includes("Open-Source Tooling & DX"));
+
+    await act(async () => {
+      dxSubtopicBtn?.click();
+    });
+
+    expect(subjectInput.value).toBe("Chat Agenda: Code, Systems & Web Craft");
+    expect(messageInput.value).toContain("Open-Source Tooling & DX (10m)");
+    expect(messageInput.value).toContain("Timezone: Europe/London");
+
+    await act(async () => {
+      fireEvent.change(subjectInput, {
+        target: { value: "Custom Consultation Subject" },
+      });
+    });
+
+    const gxpSubtopicBtn = Array.from(
+      container?.querySelectorAll("button") || []
+    ).find((btn) => btn.textContent?.includes("GxP & eClinical Architecture"));
+
+    await act(async () => {
+      gxpSubtopicBtn?.click();
+      fireEvent.change(timezoneSelect, { target: { value: "UTC" } });
+    });
+
+    expect(subjectInput.value).toBe("Custom Consultation Subject");
+    expect(messageInput.value).toContain("GxP & eClinical Architecture (15m)");
+    expect(messageInput.value).toContain("Timezone: UTC");
+
+    await act(async () => {
+      fireEvent.change(messageInput, {
+        target: { value: "Custom consultation message notes." },
+      });
+    });
+
+    await act(async () => {
+      dxSubtopicBtn?.click();
+    });
+
+    expect(subjectInput.value).toBe("Custom Consultation Subject");
+    expect(messageInput.value).toBe("Custom consultation message notes.");
   });
 
   it("copies agenda context on Copy agenda button click without a modal", async () => {

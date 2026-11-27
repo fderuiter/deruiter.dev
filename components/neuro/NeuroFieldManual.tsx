@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { NEURO_RUN_RECON_KEY, NEURO_TOOL_HOTKEYS } from "@/lib/neuro";
 import {
   IconX,
   IconBook,
@@ -305,14 +306,41 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {activeTab === "shortcuts" && (
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: "1 / V", desc: "Inspect & Pan Crosshair Tool" },
                 {
-                  key: "2 / C",
+                  key: [
+                    NEURO_TOOL_HOTKEYS.inspect.digit,
+                    NEURO_TOOL_HOTKEYS.inspect.letter,
+                  ].join(" / "),
+                  desc: "Inspect & Pan Crosshair Tool",
+                },
+                {
+                  key: [
+                    NEURO_TOOL_HOTKEYS.control_point.digit,
+                    NEURO_TOOL_HOTKEYS.control_point.letter,
+                  ].join(" / "),
                   desc: "Control Point Placement Tool (110 intensity)",
                 },
-                { key: "3 / B", desc: "Voxel Paint Brush" },
-                { key: "4 / E", desc: "Voxel Erase Brush" },
-                { key: "5 / G", desc: "3D Region-Growing ROI Seed" },
+                {
+                  key: [
+                    NEURO_TOOL_HOTKEYS.paint.digit,
+                    NEURO_TOOL_HOTKEYS.paint.letter,
+                  ].join(" / "),
+                  desc: "Voxel Paint Brush",
+                },
+                {
+                  key: [
+                    NEURO_TOOL_HOTKEYS.erase.digit,
+                    NEURO_TOOL_HOTKEYS.erase.letter,
+                  ].join(" / "),
+                  desc: "Voxel Erase Brush",
+                },
+                {
+                  key: [
+                    NEURO_TOOL_HOTKEYS.roi_select.digit,
+                    NEURO_TOOL_HOTKEYS.roi_select.letter,
+                  ].join(" / "),
+                  desc: "3D Region-Growing ROI Seed",
+                },
                 { key: "Ctrl/Cmd + Z", desc: "Undo last stroke" },
                 {
                   key: "Ctrl/Cmd + Shift + Z",
@@ -322,7 +350,10 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   key: "Mouse Wheel",
                   desc: "Scroll through anatomical slices",
                 },
-                { key: "R / Space", desc: "Run recon-all pipeline execution" },
+                {
+                  key: [NEURO_RUN_RECON_KEY, "Space"].join(" / "),
+                  desc: "Run recon-all pipeline execution",
+                },
                 { key: "M / ?", desc: "Open this Field Manual" },
                 { key: "Cmd + K", desc: "Site-wide Command Palette" },
               ].map((s) => (

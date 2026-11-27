@@ -448,8 +448,17 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
   },
 };
 
-export type ToolMode =
-  "inspect" | "control_point" | "paint" | "erase" | "roi_select";
+/** Supported interactive studio tools in NeuroRecon. */
+export const TOOL_MODES = [
+  "inspect",
+  "control_point",
+  "paint",
+  "erase",
+  "roi_select",
+] as const;
+
+/** Union of supported interactive studio tools in NeuroRecon. */
+export type ToolMode = (typeof TOOL_MODES)[number];
 
 export type ScenarioId =
   | "dura_inclusion"

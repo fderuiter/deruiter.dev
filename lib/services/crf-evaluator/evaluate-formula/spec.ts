@@ -13,6 +13,7 @@ export type EvaluateFormulaInput = z.infer<typeof EvaluateFormulaInputSchema>;
 export const EvaluateFormulaErrorCode = z.enum([
   "EMPTY_FORMULA",
   "SYNTAX_ERROR",
+  "UNKNOWN_FUNCTION",
   "UNRESOLVED_VARIABLE",
   "DIVISION_BY_ZERO",
   "EVALUATION_ERROR",

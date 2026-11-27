@@ -88,6 +88,11 @@ interface StudioHeaderProps {
   onOpenOmnibar?: () => void;
   onStartSpotlightTour?: () => void;
   onCopyShareLink?: () => void;
+  onCommitToRepository?: () => Promise<{
+    readonly ok: boolean;
+    readonly usdm?: unknown;
+    readonly persistedToIndexedDb?: boolean;
+  }>;
 }
 
 export const StudioHeader: React.FC<StudioHeaderProps> = ({
@@ -120,6 +125,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onOpenOmnibar,
   onStartSpotlightTour,
   onCopyShareLink,
+  onCommitToRepository,
 }) => {
   const router = useRouter();
   const [isSendingToPipeline, setIsSendingToPipeline] = useState(false);
@@ -132,8 +138,23 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     setIsSendingToPipeline(true);
     let failed = true;
     try {
-      const { exportStudyToUsdmObject } = await import("@/lib/crf");
-      failed = storeStudyHandoff(exportStudyToUsdmObject(study)) !== null;
+      let exportedUsdm: unknown;
+      let persistedToIndexedDb = false;
+      if (onCommitToRepository) {
+        const committed = await onCommitToRepository();
+        if (!committed.ok) {
+          setIsSendingToPipeline(false);
+          return;
+        }
+        exportedUsdm = committed.usdm;
+        persistedToIndexedDb = Boolean(committed.persistedToIndexedDb);
+      }
+      if (exportedUsdm === undefined) {
+        const { exportStudyToUsdmObject } = await import("@/lib/crf");
+        exportedUsdm = exportStudyToUsdmObject(study);
+      }
+      const handoffErr = storeStudyHandoff(exportedUsdm);
+      failed = handoffErr !== null && !persistedToIndexedDb;
     } catch {
       failed = true;
     }
@@ -416,6 +437,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               aria-label="Select Clinical Protocol Preset"
               className="w-full bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 text-xs font-mono text-zinc-200 rounded-lg px-2.5 py-1 focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan focus:outline-none truncate transition-colors cursor-pointer"
             >
+              {!currentPreset ? (
+                <option value="custom">
+                  {study.title} ({study.protocolNumber})
+                </option>
+              ) : null}
               {presets.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} ({p.study.protocolNumber})
@@ -485,6 +511,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           aria-label="Select Clinical Protocol Preset"
           className="w-full min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
         >
+          {!currentPreset ? (
+            <option value="custom">
+              {study.title} ({study.protocolNumber})
+            </option>
+          ) : null}
           {presets.map((preset) => (
             <option key={preset.id} value={preset.id}>
               {preset.name} ({preset.study.protocolNumber})

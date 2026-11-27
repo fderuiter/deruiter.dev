@@ -52,6 +52,9 @@ import {
 } from "@/lib/proof";
 import {
   evaluateFormula,
+  parseAndEvaluateFormula,
+  explainCalculationDerivation,
+  lintFormula,
   evaluateCondition,
   evaluateRule,
   isMissingOrNullFlavor,
@@ -63,7 +66,12 @@ import {
   exportStudyToSas,
   importStudyFromCsvSpec,
   evaluateVisitWindowConflicts,
+  parsePosixShellArgs,
+  generateCliCommandForField,
+  executeCliString,
+  StudyProtocolEngine,
 } from "@/lib/crf";
+import { EvaluateFormulaHandler } from "@/lib/services";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import {
   getTacticBlock,
@@ -3191,5 +3199,286 @@ describe("Unknown suppression eligibility never sends (#3806)", () => {
     if (!result.success) {
       expect(result.error.code).toBe("RECIPIENT_ELIGIBILITY_UNKNOWN");
     }
+  });
+});
+
+describe("Typed formula evaluation and CLI error contracts", () => {
+  const fields: CRFField[] = [
+    fromPartial<CRFField>({
+      id: "f_weight",
+      variableName: "WEIGHT",
+      label: "Weight",
+      dataType: "number",
+      columnSpan: 6,
+      required: true,
+    }),
+    fromPartial<CRFField>({
+      id: "f_height",
+      variableName: "HEIGHT",
+      label: "Height",
+      dataType: "number",
+      columnSpan: 6,
+      required: true,
+    }),
+  ];
+
+  it("rejects invalid characters, adjacent operands, and unknown functions with typed errors across evaluator, service, linter, and derivation trace", () => {
+    const handler = new EvaluateFormulaHandler();
+
+    const invalidEq = handler.execute({
+      formula: "WEIGHT == 70",
+      fieldValues: { WEIGHT: 78 },
+      fieldsList: fields,
+    });
+    expect(invalidEq.success).toBe(false);
+    if (!invalidEq.success) {
+      expect(invalidEq.error.code).toBe("SYNTAX_ERROR");
+    }
+
+    const trailingToken = parseAndEvaluateFormula(
+      "WEIGHT 70",
+      { WEIGHT: 78 },
+      fields
+    );
+    expect(trailingToken.success).toBe(false);
+    if (!trailingToken.success) {
+      expect(trailingToken.error.code).toBe("SYNTAX_ERROR");
+    }
+
+    const unknownFn = handler.execute({
+      formula: "typoFn(WEIGHT, 100)",
+      fieldValues: { WEIGHT: 78 },
+      fieldsList: fields,
+    });
+    expect(unknownFn.success).toBe(false);
+    if (!unknownFn.success) {
+      expect(unknownFn.error.code).toBe("UNKNOWN_FUNCTION");
+    }
+
+    const missingClinicalInput = handler.execute({
+      formula: "WEIGHT / ((HEIGHT / 100) ^ 2)",
+      fieldValues: { WEIGHT: "ND", HEIGHT: 180 },
+      fieldsList: fields,
+    });
+    expect(missingClinicalInput).toEqual({
+      success: true,
+      data: {
+        value: null,
+        formula: "WEIGHT / ((HEIGHT / 100) ^ 2)",
+        isCalculated: false,
+      },
+    });
+
+    const lintAdj = lintFormula("WEIGHT 70", fields);
+    expect(lintAdj.isValid).toBe(false);
+    expect(lintAdj.diagnostics.some((d) => d.code === "UNEXPECTED_TOKEN")).toBe(
+      true
+    );
+
+    const trace = explainCalculationDerivation(
+      "typoFn(WEIGHT, 100)",
+      { WEIGHT: 78 },
+      fields
+    );
+    expect(trace.status).toBe("syntax_error");
+  });
+
+  it("keeps formula linting and evaluation aligned on grouped and omitted arguments", () => {
+    const validFormula = "sqrt((16))";
+    expect(lintFormula(validFormula, fields).isValid).toBe(true);
+    expect(parseAndEvaluateFormula(validFormula, {}, fields)).toEqual({
+      success: true,
+      value: 4,
+    });
+
+    const invalidFormula = "sqrt(16,)";
+    expect(lintFormula(invalidFormula, fields).isValid).toBe(false);
+    expect(parseAndEvaluateFormula(invalidFormula, {}, fields)).toMatchObject({
+      success: false,
+      error: { code: "SYNTAX_ERROR" },
+    });
+  });
+
+  it("round-trips POSIX-quoted generateCliCommandForField commands and emits ANSI-free JSON failure envelopes", () => {
+    const baseStudy = StudyProtocolEngine.addForm(
+      StudyProtocolEngine.createInitialStudy({
+        protocolNumber: "REG-001",
+        studyName: "Regression Study",
+      }),
+      "VS"
+    ).study;
+
+    const cmd = generateCliCommandForField("VS", {
+      id: "f_bmider",
+      variableName: "BMIDER",
+      label: "Subject's BMI (kg/m2)",
+      dataType: "calculated",
+      columnSpan: 12,
+      required: true,
+      calculationFormula: "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+    });
+
+    expect(parsePosixShellArgs(cmd).success).toBe(true);
+    const added = executeCliString(baseStudy, cmd);
+    expect(added.success).toBe(true);
+    expect(added.data).toMatchObject({
+      variableName: "BMIDER",
+      label: "Subject's BMI (kg/m2)",
+      columnSpan: 12,
+      calculationFormula: "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+    });
+
+    const unclosed = executeCliString(
+      baseStudy,
+      "crf add field VS --label 'unclosed",
+      { json: true }
+    );
+    expect(unclosed.success).toBe(false);
+    expect(unclosed.document).not.toMatch(/\x1b\[/);
+    expect(JSON.parse(unclosed.document).success).toBe(false);
+  });
+});
+
+describe("GitHub Actions workflow security and determinism hardening", () => {
+  const workflowDir = path.join(process.cwd(), ".github/workflows");
+  const workflowFiles = fs
+    .readdirSync(workflowDir)
+    .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"))
+    .sort();
+  const readWorkflow = (name: string) =>
+    fs.readFileSync(path.join(workflowDir, name), "utf8");
+
+  it("enforces explicit checkout credential policy, concurrency controls, and lockfile-pinned npm caching across all 13 workflows", () => {
+    expect(workflowFiles).toHaveLength(13);
+
+    for (const file of workflowFiles) {
+      const content = readWorkflow(file);
+      expect(content, `${file} declares concurrency`).toMatch(
+        /^\s*concurrency:\s*$/m
+      );
+
+      const checkouts = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter((step) => step.includes("uses: actions/checkout@"));
+      for (const step of checkouts) {
+        const stepTitle = step.split("\n")[0];
+        expect(step, `${file} -> ${stepTitle}`).toContain(
+          "persist-credentials: false"
+        );
+      }
+
+      const cachedSetupNode = content
+        .split(/\n\s+-\s+name:\s+/)
+        .slice(1)
+        .filter(
+          (step) =>
+            step.includes("uses: actions/setup-node@") &&
+            step.includes('cache: "npm"')
+        );
+      for (const step of cachedSetupNode) {
+        const stepTitle = step.split("\n")[0];
+        expect(step, `${file} -> ${stepTitle}`).toContain(
+          'cache-dependency-path: "package-lock.json"'
+        );
+      }
+    }
+  });
+
+  it("isolates PR incremental caching to restore-only and saves only on uncached main pushes", () => {
+    const ci = readWorkflow("ci.yml");
+    const staticGate = ci.slice(
+      ci.indexOf("  static-gate:"),
+      ci.indexOf("  unit-gate:")
+    );
+    expect(staticGate).not.toMatch(/uses: actions\/cache@/);
+    expect(staticGate).toMatch(
+      /id: eslint-cache\n\s+if: github\.event_name != 'workflow_dispatch'\n\s+uses: actions\/cache\/restore@/
+    );
+    expect(staticGate).toMatch(
+      /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.eslint-cache\.outputs\.cache-hit != 'true'\n\s+uses: actions\/cache\/save@/
+    );
+
+    const mutationGate = ci.slice(
+      ci.indexOf("  mutation-gate:"),
+      ci.indexOf("  security-gate:")
+    );
+    expect(mutationGate).not.toMatch(/uses: actions\/cache@/);
+    expect(mutationGate).toMatch(
+      /id: stryker-cache\n\s+if: github\.event_name != 'workflow_dispatch'\n\s+uses: actions\/cache\/restore@/
+    );
+    expect(mutationGate).toMatch(
+      /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.stryker-cache\.outputs\.cache-hit != 'true'\n\s+uses: actions\/cache\/save@/
+    );
+  });
+
+  it("eliminates unsafe run-block expression interpolation and scopes job-level write permissions across workflows", () => {
+    const synthetic = readWorkflow("synthetic-probes.yml");
+    expect(synthetic).toMatch(
+      /^concurrency:\n\s+group: synthetic-probes-\$\{\{ github\.event_name \}\}-\$\{\{ github\.ref \}\}/m
+    );
+    expect(synthetic).toContain(
+      "cancel-in-progress: ${{ github.event_name != 'workflow_call' }}"
+    );
+    expect(synthetic).not.toMatch(
+      /\$\{\{\s*steps\.target\.outputs\.url\s*\}\}\s*"/
+    );
+    expect(synthetic).toContain(
+      "PROBE_TARGET: ${{ steps.target.outputs.url }}"
+    );
+    expect(synthetic).toContain("PROBES_OUTCOME: ${{ steps.probes.outcome }}");
+
+    const scheduledAudit = readWorkflow("scheduled-security-audit.yml");
+    const scheduledHeader = scheduledAudit.slice(
+      0,
+      scheduledAudit.indexOf("\njobs:\n")
+    );
+    expect(scheduledHeader).toMatch(/^permissions:\n {2}contents: read$/m);
+    expect(scheduledHeader).not.toContain("issues: write");
+    expect(scheduledAudit).toMatch(
+      /^ {4}permissions:\n {6}contents: read\n {6}issues: write$/m
+    );
+
+    for (const file of [
+      "overrides-audit.yml",
+      "cdisc-library-sync.yml",
+      "standards-watch.yml",
+    ]) {
+      const wf = readWorkflow(file);
+      const header = wf.slice(0, wf.indexOf("\njobs:\n"));
+      expect(header, file).toMatch(/^permissions:\n {2}contents: read$/m);
+      expect(header, file).not.toContain("write");
+      expect(wf, file).toMatch(/^ {4}permissions:\n/m);
+    }
+
+    for (const file of ["cdisc-library-sync.yml", "standards-watch.yml"]) {
+      expect(readWorkflow(file), file).toContain(
+        "gh auth setup-git --hostname github.com --force"
+      );
+    }
+
+    const issueHygiene = readWorkflow("issue-hygiene.yml");
+    expect(issueHygiene).toMatch(/^permissions: \{\}$/m);
+    expect(issueHygiene).toMatch(/^ {4}permissions:\n/m);
+
+    const weeklyTrain = readWorkflow("weekly-train.yml");
+    expect(weeklyTrain).not.toMatch(/run:.*\$\{\{/);
+    expect(weeklyTrain).toContain("MATRIX_SHARD: ${{ matrix.shard }}");
+    const trainJobsBlock = weeklyTrain.slice(weeklyTrain.indexOf("\njobs:"));
+    const trainJobNames = [
+      ...trainJobsBlock.matchAll(/^ {2}([a-z][a-z0-9-]*):$/gm),
+    ].map((m) => m[1]);
+    expect(trainJobNames).toEqual([
+      "gate",
+      "rc-build",
+      "rc-browser",
+      "rc-failed",
+      "train",
+      "probe",
+      "publish",
+      "hold-after-probe",
+    ]);
+    const jobPermBlocks = trainJobsBlock.match(/^ {4}permissions:\n/gm) ?? [];
+    expect(jobPermBlocks).toHaveLength(trainJobNames.length);
   });
 });

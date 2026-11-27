@@ -86,3 +86,21 @@ export {
   type StudyRandomizationPlanChanges,
 } from "./internal/randomization";
 export type { StudyWorkspacePayload } from "./internal/revision";
+export {
+  STUDY_REPOSITORY_DB_NAME,
+  STUDY_REPOSITORY_DB_VERSION,
+  StudyRepositoryStoreError,
+  openStudyRepositoryStore,
+} from "./internal/repository-idb";
+export { createMemoryStudyRepositoryStore } from "./internal/repository-memory";
+export {
+  buildSeedRepositoryRecord,
+  describeStudyWorkspace,
+  summarizeStudyRepositoryRecord,
+} from "./internal/repository-meta";
+export {
+  STUDY_REPOSITORY_CHANNEL_NAME,
+  openStudyRepositorySync,
+} from "./internal/repository-sync";
+export { importStudyRepositoryFile } from "./internal/repository-file";
+export { reconcileUsdmStudyRevision } from "./internal/reconcile-usdm";

@@ -1,5 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, it, expect } from "vitest";
 import {
   executeInfoCommand,
   executeValidateCommand,
@@ -14,6 +18,8 @@ import {
   executeExportCommand,
   executeDiffCommand,
   executeCliString,
+  exportUniversalCrfJson,
+  parseUniversalCrf,
   stripAnsi,
 } from "@/lib/crf";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
@@ -259,4 +265,109 @@ describe("CRF CLI & Headless Command Engine", () => {
     expect(openRes.success).toBe(true);
     expect(openRes.uiAction?.payload).toBe("wizard");
   });
+});
+
+describe("scripts/crf.ts subprocess error contracts and flags", () => {
+  const repoRoot = process.cwd();
+  const tempDirs: string[] = [];
+
+  function createTempStudyFile(study: StudyProtocol): {
+    dir: string;
+    file: string;
+  } {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "crf-cli-contract-"));
+    tempDirs.push(dir);
+    const file = path.join(dir, "study.json");
+    fs.writeFileSync(file, exportUniversalCrfJson(study), "utf-8");
+    return { dir, file };
+  }
+
+  function runCli(args: string[]) {
+    return spawnSync(
+      process.execPath,
+      ["--import", "tsx", "scripts/crf.ts", ...args],
+      {
+        cwd: repoRoot,
+        encoding: "utf-8",
+        timeout: 60_000,
+      }
+    );
+  }
+
+  afterEach(() => {
+    for (const dir of tempDirs.splice(0)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("exits with code 1 and pure JSON without ANSI codes across failing subcommands, unknown commands, and CrfInputError", () => {
+    const sampleStudy = getOncologyPresetSync();
+    const { dir, file } = createTempStudyFile(sampleStudy);
+    const ansiPattern = /\x1b\[/;
+
+    // Batch check representative failures in --json mode and plain mode
+    const jsonFailureCases: string[][] = [
+      ["rm", "form", "NONEXISTENT", file, "--json"],
+      ["add", "field", "NONEXISTENT", "--var", "X", file, "--json"],
+      ["preset", "load", "--json"],
+      ["list", "bogus", file, "--json"],
+      ["export", file, "--format", "pdf", "--json"],
+      ["diff", file, "--json"],
+      ["frobnicate", "--json"],
+      ["info", path.join(dir, "missing-protocol.json"), "--json"],
+    ];
+
+    for (const argv of jsonFailureCases) {
+      const res = runCli(argv);
+      expect(res.status, `expected exit 1 for: crf ${argv.join(" ")}`).toBe(1);
+      expect(res.stdout).not.toMatch(ansiPattern);
+      const parsed = JSON.parse(res.stdout);
+      expect(parsed.success).toBe(false);
+      expect(typeof parsed.error).toBe("string");
+    }
+
+    const plainUnknown = runCli(["frobnicate"]);
+    expect(plainUnknown.status).toBe(1);
+    expect(plainUnknown.stderr).toContain("Unknown command");
+  }, 60_000);
+
+  it("persists --span and --calc via scripts/crf.ts add field", () => {
+    const sampleStudy = getOncologyPresetSync();
+    const { file } = createTempStudyFile(sampleStudy);
+
+    const res = runCli([
+      "add",
+      "field",
+      "VS",
+      "--var",
+      "BMICALC",
+      "--type",
+      "calculated",
+      "--span",
+      "12",
+      "--calc",
+      "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+      "--label",
+      "Derived BMI",
+      file,
+      "--json",
+    ]);
+    expect(res.status).toBe(0);
+    expect(res.stdout).not.toMatch(/\x1b\[/);
+    const addedField = JSON.parse(res.stdout);
+    expect(addedField.variableName).toBe("BMICALC");
+
+    const updated = parseUniversalCrf(fs.readFileSync(file, "utf-8"));
+    const vsForm = updated.forms.find((f) => f.domain === "VS");
+    const bmiField = vsForm?.sections
+      .flatMap((s) => s.fields)
+      .find((f) => f.variableName === "BMICALC");
+    expect(bmiField).toMatchObject({
+      variableName: "BMICALC",
+      dataType: "calculated",
+      columnSpan: 12,
+      calculationFormula: "round(WEIGHT / ((HEIGHT / 100) ^ 2), 1)",
+      label: "Derived BMI",
+    });
+  }, 60_000);
 });

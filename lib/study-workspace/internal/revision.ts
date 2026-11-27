@@ -36,10 +36,12 @@ export function payloadOf(workspace: StudyWorkspace): StudyWorkspacePayload {
 export class StudyWorkspaceConflictError extends Error {
   constructor(
     readonly expectedRevisionId: string,
-    readonly currentRevisionId: string
+    readonly currentRevisionId: string | null
   ) {
     super(
-      `The edit was made on ${expectedRevisionId}, but the workspace is at ${currentRevisionId}.`
+      currentRevisionId === null
+        ? `The workspace for revision ${expectedRevisionId} was removed.`
+        : `The edit was made on ${expectedRevisionId}, but the workspace is at ${currentRevisionId}.`
     );
     this.name = "StudyWorkspaceConflictError";
   }

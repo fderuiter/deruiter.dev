@@ -243,7 +243,8 @@ function mergePopulation(
   existingPop: UsdmV4StudyDesignPopulation | undefined,
   incomingPop: UsdmV4StudyDesignPopulation | undefined
 ): UsdmV4StudyDesignPopulation | undefined {
-  if (!incomingPop) return existingPop ? structuredClone(existingPop) : undefined;
+  if (!incomingPop)
+    return existingPop ? structuredClone(existingPop) : undefined;
   if (!existingPop) return structuredClone(incomingPop);
   const prevCohortsById = new Map(
     (existingPop.cohorts ?? []).map((cohort) => [cohort.id, cohort])
@@ -525,7 +526,10 @@ function mergeCriterionItems(
   return result;
 }
 
-function collectUsdmEntityIds(root: unknown, target = new Set<string>()): Set<string> {
+function collectUsdmEntityIds(
+  root: unknown,
+  target = new Set<string>()
+): Set<string> {
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       node.forEach(visit);
@@ -619,7 +623,8 @@ function mergeSelectedVersion(
   }
   // Keep version-level entity IDs (version id, titles, identifiers, orgs) reserved too.
   reservedForDesign.add(existingVersion.id);
-  for (const t of existingVersion.titles ?? []) collectUsdmEntityIds(t, reservedForDesign);
+  for (const t of existingVersion.titles ?? [])
+    collectUsdmEntityIds(t, reservedForDesign);
   for (const ident of existingVersion.studyIdentifiers ?? []) {
     collectUsdmEntityIds(ident, reservedForDesign);
   }

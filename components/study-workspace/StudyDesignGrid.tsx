@@ -157,7 +157,11 @@ export function StudyDesignGrid({
   );
 
   const persistWorkspaceRevision = useCallback(
-    (studyId: string, nextWorkspace: StudyWorkspace, expectedRevisionId: string) => {
+    (
+      studyId: string,
+      nextWorkspace: StudyWorkspace,
+      expectedRevisionId: string
+    ) => {
       void repository
         .saveWorkspace(studyId, nextWorkspace, {
           expectedRevisionId,
@@ -177,7 +181,10 @@ export function StudyDesignGrid({
           }
           setSession((prev) =>
             prev && prev.studyId === studyId
-              ? { ...prev, baseRevisionId: outcome.record.workspace.revision.id }
+              ? {
+                  ...prev,
+                  baseRevisionId: outcome.record.workspace.revision.id,
+                }
               : prev
           );
           if (repository.getSnapshot().persistence === "indexeddb") {

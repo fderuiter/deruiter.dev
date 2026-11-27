@@ -1,7 +1,10 @@
 "use client";
 
 import type { UsdmV4Document } from "@/lib/clinical-standards";
-import { DEMO_STUDY_ID, writeSelectedStudy } from "@/lib/clinical-study-context";
+import {
+  DEMO_STUDY_ID,
+  writeSelectedStudy,
+} from "@/lib/clinical-study-context";
 import {
   safeGetRawItem,
   safeRemoveItem,
@@ -178,7 +181,9 @@ export interface StudyRepositoryClient {
   getRecord(studyId: string): Promise<StudyRepositoryRecord | null>;
   selectStudy(studyId: string): Promise<StudyRepositoryRecord | null>;
   createBlankStudy(): Promise<StudyRepositoryRecord>;
-  importFile(input: StudyRepositoryFileInput): Promise<ClientImportStudyOutcome>;
+  importFile(
+    input: StudyRepositoryFileInput
+  ): Promise<ClientImportStudyOutcome>;
   confirmImportSelection(
     pending: PendingStudySelectionImport,
     selection: StudyWorkspaceSelection
@@ -207,9 +212,7 @@ export interface StudyRepositoryClient {
     }
   ): Promise<SaveStudyRepositoryOutcome>;
   deleteStudy(studyId: string): Promise<void>;
-  exportCheckedUsdm(
-    studyId: string
-  ): Promise<
+  exportCheckedUsdm(studyId: string): Promise<
     | {
         readonly status: "ok";
         readonly fileName: string;
@@ -366,7 +369,9 @@ export function createStudyRepositoryClient(
             const usdm = exportStudyToUsdmObject(crfDraft.study);
             const imported = await importUsdmStudy(
               { document: usdm },
-              { fileName: `${crfDraft.study.protocolNumber || "crf"}.usdm.json` }
+              {
+                fileName: `${crfDraft.study.protocolNumber || "crf"}.usdm.json`,
+              }
             );
             if (imported.status === "ok") {
               const existing = await currentStore.list();

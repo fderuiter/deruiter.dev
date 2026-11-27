@@ -430,10 +430,7 @@ export type StudyRepositoryPersistence = "indexeddb" | "memory";
 
 /** How a study entered the local repository catalog. */
 export type StudyRepositoryKind =
-  | "reference"
-  | "imported"
-  | "authored"
-  | "migrated";
+  "reference" | "imported" | "authored" | "migrated";
 
 /** One persisted study workspace record in the shared browser repository. */
 export interface StudyRepositoryRecord {
@@ -485,9 +482,7 @@ export interface StudyRepositorySaveOptions {
 
 /** Stable failure codes raised by {@link StudyRepositoryStore}. */
 export type StudyRepositoryStoreErrorCode =
-  | "STORE_UNAVAILABLE"
-  | "QUOTA_EXCEEDED"
-  | "TRANSACTION_ABORTED";
+  "STORE_UNAVAILABLE" | "QUOTA_EXCEEDED" | "TRANSACTION_ABORTED";
 
 /** Storage engine contract implemented by IndexedDB and in-memory fallback. */
 export interface StudyRepositoryStore {
@@ -626,4 +621,3 @@ export interface ReconcileUsdmStudyOptions {
   /** When true, returns the existing workspace if the canonical USDM hash did not change. */
   readonly skipIfUnchanged?: boolean;
 }
-

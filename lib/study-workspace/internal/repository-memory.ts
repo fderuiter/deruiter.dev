@@ -78,9 +78,7 @@ export function createMemoryStudyRepositoryStore(): StudyRepositoryStore {
       for (let index = 0; index < seeds.length; index += 1) {
         const seed = seeds[index];
         if (studies.has(seed.studyId)) continue;
-        const stamp = new Date(
-          Date.UTC(2026, 0, 1, 0, 0, index)
-        ).toISOString();
+        const stamp = new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString();
         const built = await buildSeedRepositoryRecord(seed, stamp);
         if (!studies.has(seed.studyId)) {
           studies.set(seed.studyId, built);

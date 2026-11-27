@@ -69,9 +69,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction(STUDIES_STORE, "readonly");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         const request = tx.objectStore(STUDIES_STORE).getAll();
@@ -95,9 +93,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction(STUDIES_STORE, "readonly");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         const request = tx.objectStore(STUDIES_STORE).get(studyId);
@@ -123,9 +119,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction(STUDIES_STORE, "readwrite");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         const store = tx.objectStore(STUDIES_STORE);
@@ -177,9 +171,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
 
       const built: StudyRepositoryRecord[] = [];
       for (let index = 0; index < missingSeeds.length; index += 1) {
-        const stamp = new Date(
-          Date.UTC(2026, 0, 1, 0, 0, index)
-        ).toISOString();
+        const stamp = new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString();
         built.push(await buildSeedRepositoryRecord(missingSeeds[index], stamp));
       }
 
@@ -188,9 +180,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction(STUDIES_STORE, "readwrite");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         const store = tx.objectStore(STUDIES_STORE);
@@ -214,9 +204,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction([STUDIES_STORE, META_STORE], "readwrite");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         tx.objectStore(STUDIES_STORE).delete(studyId);
@@ -248,9 +236,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction(META_STORE, "readonly");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         const req = tx.objectStore(META_STORE).get(key);
@@ -271,9 +257,7 @@ function createIdbRepositoryStore(db: IDBDatabase): StudyRepositoryStore {
         try {
           tx = db.transaction(META_STORE, "readwrite");
         } catch (caught) {
-          reject(
-            mapTransactionError(caught instanceof Error ? caught : null)
-          );
+          reject(mapTransactionError(caught instanceof Error ? caught : null));
           return;
         }
         const store = tx.objectStore(META_STORE);
@@ -335,7 +319,6 @@ export function openStudyRepositoryStore(
     request.onsuccess = () =>
       resolve({ ok: true, store: createIdbRepositoryStore(request.result) });
     request.onerror = () => resolve({ ok: false, code: "STORE_UNAVAILABLE" });
-    request.onblocked = () =>
-      resolve({ ok: false, code: "STORE_UNAVAILABLE" });
+    request.onblocked = () => resolve({ ok: false, code: "STORE_UNAVAILABLE" });
   });
 }

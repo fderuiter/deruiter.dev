@@ -16,9 +16,7 @@ const getServerSnapshot = (): StudyRepositorySnapshot =>
  * study repository (`IndexedDB` + `BroadcastChannel` with volatile memory
  * fallback), returning a deterministic initial snapshot for SSR safety.
  */
-export function useStudyRepository(
-  customClient?: StudyRepositoryClient
-): {
+export function useStudyRepository(customClient?: StudyRepositoryClient): {
   readonly snapshot: StudyRepositorySnapshot;
   readonly repository: StudyRepositoryClient;
 } {

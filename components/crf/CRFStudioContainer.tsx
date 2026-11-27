@@ -230,8 +230,15 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
 
   // Study State & History
   const studyHistory = useStudyHistory(loadInitialStudy);
-  const { study, canUndo, canRedo, undo, redo, commit, reset: resetStudy } =
-    studyHistory;
+  const {
+    study,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    commit,
+    reset: resetStudy,
+  } = studyHistory;
 
   const legacyDraftFallbackEnabled =
     typeof indexedDB === "undefined" ||
@@ -367,7 +374,8 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
                 outcome.latestRecord.workspace,
                 exported,
                 {
-                  expectedRevisionId: outcome.latestRecord.workspace.revision.id,
+                  expectedRevisionId:
+                    outcome.latestRecord.workspace.revision.id,
                   note: "Unsaved local CRF Studio snapshot",
                 }
               );

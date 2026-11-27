@@ -558,12 +558,10 @@ export function StudyDataWorkbench({
           };
           loadedRepoRef.current = initialBinding;
           setLoadedRepoBinding(initialBinding);
-          if (
-            !(
-              activeRecord.studyId === "DEMO-301" &&
-              activeRecord.workspace.revision.id === "R1"
-            )
-          ) {
+          if (!(
+            activeRecord.studyId === "DEMO-301" &&
+            activeRecord.workspace.revision.id === "R1"
+          )) {
             loadRepositoryStudy(activeRecord, false);
           }
           return;

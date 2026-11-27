@@ -59,7 +59,9 @@ class MemoryBroadcastHub {
 
 class HubChannel implements BroadcastChannelLike {
   onmessage: ((event: MessageEvent<unknown>) => void) | null = null;
-  private readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  private readonly listeners = new Set<
+    (event: MessageEvent<unknown>) => void
+  >();
   private closed = false;
 
   constructor(
@@ -145,14 +147,16 @@ function namespaceUsdmSubtree<T>(subtree: T, prefix: string): T {
 
 function firstArmOf(workspace: StudyWorkspace) {
   const arm = workspace.usdm.study.versions?.[0]?.studyDesigns?.[0]?.arms?.[0];
-  if (!arm) throw new Error("Expected study workspace to contain at least one arm");
+  if (!arm)
+    throw new Error("Expected study workspace to contain at least one arm");
   return arm;
 }
 
 function buildMultiVersionMultiDesignUsdm(): UsdmV4Document {
   const base = cloneDeep(DEMO_301_USDM);
   const templateVersion = base.study.versions?.[0];
-  if (!templateVersion) throw new Error("Expected DEMO_301_USDM to have a version");
+  if (!templateVersion)
+    throw new Error("Expected DEMO_301_USDM to have a version");
 
   const v1 = namespaceUsdmSubtree(
     cloneDeep(templateVersion),
@@ -197,7 +201,9 @@ function buildMultiVersionMultiDesignUsdm(): UsdmV4Document {
   designMain.name = "Main Randomized Cohort";
   designMain.label = "Main Randomized Cohort";
 
-  const designSub = cloneDeep(templateDesign) as UsdmV4InterventionalStudyDesign;
+  const designSub = cloneDeep(
+    templateDesign
+  ) as UsdmV4InterventionalStudyDesign;
   designSub.id = "sd-substudy";
   designSub.name = "Biomarker Substudy";
   designSub.label = "Biomarker Substudy";
@@ -967,10 +973,14 @@ describe("shared browser USDM study repository", () => {
       modifiedUsdm.study.versions[0].studyDesigns[0].arms[0].name =
         "Reconciled Arm R2";
     }
-    const savedR2 = await client.reconcileAndSaveUsdm("DEMO-301", modifiedUsdm, {
-      expectedRevisionId: "R1",
-      note: "Rename arm via reconcile",
-    });
+    const savedR2 = await client.reconcileAndSaveUsdm(
+      "DEMO-301",
+      modifiedUsdm,
+      {
+        expectedRevisionId: "R1",
+        note: "Rename arm via reconcile",
+      }
+    );
     expect(savedR2.status).toBe("saved");
 
     const staleReconcile = await client.reconcileAndSaveUsdm(
@@ -1018,8 +1028,12 @@ describe("shared browser USDM study repository", () => {
       ...demoRecord.workspace,
       usdm: brokenUsdm,
     };
-    await client.saveWorkspace("invalid-export-study", invalidWs, { force: true });
-    const invalidExport = await client.exportCheckedUsdm("invalid-export-study");
+    await client.saveWorkspace("invalid-export-study", invalidWs, {
+      force: true,
+    });
+    const invalidExport = await client.exportCheckedUsdm(
+      "invalid-export-study"
+    );
     expect(invalidExport?.status).toBe("invalid");
     expect(await client.exportCheckedUsdm("nonexistent")).toBeNull();
     expect(await client.exportWorkspaceSnapshot("nonexistent")).toBeNull();

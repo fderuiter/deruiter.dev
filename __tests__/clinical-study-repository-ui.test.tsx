@@ -18,7 +18,11 @@ import {
   type UsdmV4InterventionalStudyDesign,
   type UsdmV4StudyVersion,
 } from "@/lib/clinical-standards";
-import { DEMO_301_STUDY, DEMO_301_USDM, SUBJECT_COUNT_LIMITS } from "@/lib/study-data";
+import {
+  DEMO_301_STUDY,
+  DEMO_301_USDM,
+  SUBJECT_COUNT_LIMITS,
+} from "@/lib/study-data";
 import type { BroadcastChannelLike } from "@/lib/study-workspace";
 import { StudyPicker } from "@/components/clinical/StudyPicker";
 import {
@@ -59,7 +63,9 @@ class MemoryBroadcastHub {
 
 class HubChannel implements BroadcastChannelLike {
   onmessage: ((event: MessageEvent<unknown>) => void) | null = null;
-  private readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  private readonly listeners = new Set<
+    (event: MessageEvent<unknown>) => void
+  >();
   private closed = false;
 
   constructor(
@@ -367,12 +373,12 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     render(<StudyPicker repository={reloadedRepo} />);
     await waitFor(
       () => {
-        expect(screen.getByTestId("study-picker-summary").textContent).toContain(
-          "Synchronized Multi-Design Cardiovascular Trial"
-        );
-        expect(screen.getByTestId("study-picker-summary").textContent).toContain(
-          "Revision R1"
-        );
+        expect(
+          screen.getByTestId("study-picker-summary").textContent
+        ).toContain("Synchronized Multi-Design Cardiovascular Trial");
+        expect(
+          screen.getByTestId("study-picker-summary").textContent
+        ).toContain("Revision R1");
       },
       { timeout: 10_000 }
     );
@@ -445,9 +451,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     const clinicalView = render(<StudyPicker repository={repo} />);
     await waitFor(
       () => {
-        expect(screen.getByTestId("study-picker-summary").textContent).toContain(
-          "Revision R3"
-        );
+        expect(
+          screen.getByTestId("study-picker-summary").textContent
+        ).toContain("Revision R3");
       },
       { timeout: 10_000 }
     );
@@ -466,7 +472,11 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
     );
     fireEvent.click(screen.getByRole("tab", { name: "Study definition" }));
     expect(
-      await screen.findByText(/Placebo Matched Capsule/, {}, { timeout: 10_000 })
+      await screen.findByText(
+        /Placebo Matched Capsule/,
+        {},
+        { timeout: 10_000 }
+      )
     ).toBeTruthy();
     dataView.unmount();
     repo.dispose();
@@ -505,9 +515,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
 
     // Tab A renames the first arm and saves R2.
     fireEvent.click(
-      within(within(tabA.getByRole("table")).getAllByRole("rowheader")[0]).getByRole(
-        "button"
-      )
+      within(
+        within(tabA.getByRole("table")).getAllByRole("rowheader")[0]
+      ).getByRole("button")
     );
     const editArmA = tabA.getByRole("region", { name: /^Edit arm / });
     fireEvent.change(
@@ -534,9 +544,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
 
     // Attempting an edit in Tab B before reloading triggers StudyConflictModal instead of overwriting R2.
     fireEvent.click(
-      within(within(tabB.getByRole("table")).getAllByRole("rowheader")[0]).getByRole(
-        "button"
-      )
+      within(
+        within(tabB.getByRole("table")).getAllByRole("rowheader")[0]
+      ).getByRole("button")
     );
     const editArmB = tabB.getByRole("region", { name: /^Edit arm / });
     fireEvent.change(
@@ -670,9 +680,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       await repo.whenIdle();
     });
     expect(onSelect).toHaveBeenCalled();
-    expect(screen.getByTestId("study-repository-feedback").textContent).toContain(
-      "Created"
-    );
+    expect(
+      screen.getByTestId("study-repository-feedback").textContent
+    ).toContain("Created");
 
     // Reject oversized, invalid-workspace, and non-USDM imports with clear feedback.
     const input = screen.getByTestId("study-repository-file-input");
@@ -685,9 +695,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       fireEvent.change(input, { target: { files: [hugeFile] } });
       await repo.whenIdle();
     });
-    expect(screen.getByTestId("study-repository-feedback").textContent).toContain(
-      "exceeding the"
-    );
+    expect(
+      screen.getByTestId("study-repository-feedback").textContent
+    ).toContain("exceeding the");
 
     const badWsFile = new File(
       [JSON.stringify({ format: "study-workspace", schemaVersion: 999 })],
@@ -698,9 +708,9 @@ describe("cross-studio IndexedDB USDM study synchronization", () => {
       fireEvent.change(input, { target: { files: [badWsFile] } });
       await repo.whenIdle();
     });
-    expect(screen.getByTestId("study-repository-feedback").textContent).toContain(
-      "Workspace file could not be opened"
-    );
+    expect(
+      screen.getByTestId("study-repository-feedback").textContent
+    ).toContain("Workspace file could not be opened");
 
     const badUsdmFile = new File(["{not-json"], "broken.usdm.json", {
       type: "application/json",

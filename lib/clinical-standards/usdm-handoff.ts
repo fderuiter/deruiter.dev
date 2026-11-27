@@ -24,10 +24,7 @@ export const CRF_STUDIO_USDM_EXTENSION_URL_PREFIX =
 
 /** The tools that send or receive a USDM hand-off. */
 export type ClinicalTool =
-  | "study-studio"
-  | "crf-studio"
-  | "study-data"
-  | "clinical";
+  "study-studio" | "crf-studio" | "study-data" | "clinical";
 
 const CLINICAL_TOOLS: readonly ClinicalTool[] = [
   "study-studio",

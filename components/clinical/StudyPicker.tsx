@@ -125,21 +125,19 @@ export function StudyPicker({
           }}
           className="min-h-12 min-w-0 max-w-full border border-white/[0.12] bg-[#0d0e11] px-3 py-2 font-mono text-sm text-[#f4f4f6] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
         >
-          {!snapshot.isHydrated || snapshot.studies.length === 0 ? (
-            Object.values(CLINICAL_STUDIES).map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.id}
-              </option>
-            ))
-          ) : (
-            snapshot.studies.map((option) => (
-              <option key={option.studyId} value={option.studyId}>
-                {option.studyId === DEMO_STUDY_ID
-                  ? DEMO_STUDY_ID
-                  : `${option.protocolCode} (${option.revisionId})`}
-              </option>
-            ))
-          )}
+          {!snapshot.isHydrated || snapshot.studies.length === 0
+            ? Object.values(CLINICAL_STUDIES).map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.id}
+                </option>
+              ))
+            : snapshot.studies.map((option) => (
+                <option key={option.studyId} value={option.studyId}>
+                  {option.studyId === DEMO_STUDY_ID
+                    ? DEMO_STUDY_ID
+                    : `${option.protocolCode} (${option.revisionId})`}
+                </option>
+              ))}
         </select>
         <span className="border border-amber-500/40 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-amber-300">
           Synthetic data

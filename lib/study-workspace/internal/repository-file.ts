@@ -10,8 +10,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function looksLikeWorkspaceFilename(fileName: string | null | undefined): boolean {
-  return typeof fileName === "string" && /\.study\.json$/i.test(fileName.trim());
+function looksLikeWorkspaceFilename(
+  fileName: string | null | undefined
+): boolean {
+  return (
+    typeof fileName === "string" && /\.study\.json$/i.test(fileName.trim())
+  );
 }
 
 /**

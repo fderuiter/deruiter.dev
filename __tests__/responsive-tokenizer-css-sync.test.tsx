@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { parseMarkdownToRichItems } from "@/hooks/usePretextLayout";
+import { parseMarkdownToRichItems } from "@/lib/pretext-block-parser";
 import {
   resolveCodeChipExtraWidth,
   validateLayoutHeight,

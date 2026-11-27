@@ -20,7 +20,6 @@ import {
   fontConfigCache,
   textPrepareCache,
   textLayoutCache,
-  richLayoutCache,
 } from "@/lib/graphics-engine";
 
 // Mock ResizeObserver
@@ -141,7 +140,6 @@ describe("Wave 2: Cognitive Accessibility & Dyslexia Typography (#738, #739, #74
       fontConfigCache.set("test-key", {} as never);
       textPrepareCache.set("test-key", {} as never);
       textLayoutCache.set("test-key", {} as never);
-      richLayoutCache.set("test-key", {} as never);
 
       expect(cssPropertyCache.size).toBeGreaterThan(0);
 
@@ -155,7 +153,6 @@ describe("Wave 2: Cognitive Accessibility & Dyslexia Typography (#738, #739, #74
       expect(fontConfigCache.size).toBe(0);
       expect(textPrepareCache.size).toBe(0);
       expect(textLayoutCache.size).toBe(0);
-      expect(richLayoutCache.size).toBe(0);
     });
   });
 

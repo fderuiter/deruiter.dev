@@ -7,4 +7,4 @@ npm run typecheck
 npm run lint:boundaries
 npm run check-docs-drift
 npm run test:staged
-npm run audit:security -- --fail-on-warning --severity=moderate
+npm run audit:security

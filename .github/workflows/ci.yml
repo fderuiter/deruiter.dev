@@ -483,11 +483,11 @@ jobs:
         run: npm run audit:security -- --fail-on-warning --severity=moderate
 
       - name: Verify npm Package Overrides
-        if: (github.event_name != 'pull_request' || needs.changes.outputs.run_security_audit == 'true') && github.actor != 'dependabot[bot]'
+        if: (github.event_name != 'pull_request' || needs.changes.outputs.run_security_audit == 'true') && github.event.pull_request.user.login != 'dependabot[bot]'
         run: npm run audit:overrides -- --check
 
       - name: Verify npm Package Overrides (Dependabot)
-        if: github.event_name == 'pull_request' && needs.changes.outputs.run_security_audit == 'true' && github.actor == 'dependabot[bot]'
+        if: github.event_name == 'pull_request' && needs.changes.outputs.run_security_audit == 'true' && github.event.pull_request.user.login == 'dependabot[bot]'
         run: npm run audit:overrides -- --check --allow-removable
 
       - name: Note Skipped Dependency Vulnerability Audit

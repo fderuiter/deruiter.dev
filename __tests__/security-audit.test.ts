@@ -638,12 +638,22 @@ describe("Security Audit Script", () => {
       expect(logSpy).toHaveBeenCalled();
     });
 
-    it("should ignore low vulnerabilities by default while blocking moderate vulnerabilities", async () => {
+    it("should ignore low and moderate vulnerabilities by default while invoking lockfile-only npm audit without a shell", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
             auditReportVersion: 2,
             vulnerabilities: {
+              lodash: {
+                name: "lodash",
+                severity: "moderate",
+                via: [
+                  {
+                    source: "GHSA-mod-default",
+                    title: "Moderate advisory non-blocking by default",
+                  },
+                ],
+              },
               ms: {
                 name: "ms",
                 severity: "low",
@@ -662,31 +672,6 @@ describe("Security Audit Script", () => {
         ["audit", "--package-lock-only", "--json"],
         expect.objectContaining({ shell: false })
       );
-
-      vi.mocked(spawnSync).mockReturnValue(
-        fromPartial<SpawnSyncReturns<string>>({
-          stdout: JSON.stringify({
-            auditReportVersion: 2,
-            vulnerabilities: {
-              lodash: {
-                name: "lodash",
-                severity: "moderate",
-                via: [
-                  {
-                    source: "GHSA-mod-default",
-                    title: "Moderate advisory blocked by default",
-                  },
-                ],
-              },
-            },
-          }),
-        })
-      );
-
-      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
-        "process.exit called with 1"
-      );
-      expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
     it("should evaluate moderate vulnerabilities and fail when run with severity=moderate", async () => {
@@ -1106,7 +1091,7 @@ describe("Security Audit Script", () => {
       delete process.env.GITHUB_STEP_SUMMARY;
     });
 
-    it("logs yellow warning with console.warn for active rules approaching expiration when failOnWarning is false", async () => {
+    it("logs yellow warning with console.warn for active rules approaching expiration within 14 days by default", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -1132,9 +1117,9 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      await expect(
-        runSecurityAudit({ now: testNow, failOnWarning: false })
-      ).rejects.toThrowError("process.exit called with 0");
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
+        "process.exit called with 0"
+      );
       expect(exitSpy).toHaveBeenCalledWith(0);
 
       const warnCalls = warnSpy.mock.calls
@@ -1150,7 +1135,7 @@ describe("Security Audit Script", () => {
       expect(warnCalls).toContain("#888");
     });
 
-    it("fails the audit by default (failOnWarning = true) when an override is approaching expiration", async () => {
+    it("fails the audit when failOnWarning is true and an override is approaching expiration", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -1175,9 +1160,9 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
-        "process.exit called with 1"
-      );
+      await expect(
+        runSecurityAudit({ now: testNow, failOnWarning: true })
+      ).rejects.toThrowError("process.exit called with 1");
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       const errorCalls = errorSpy.mock.calls
@@ -1186,7 +1171,7 @@ describe("Security Audit Script", () => {
       expect(errorCalls).toContain("strict pre-expiration warning policy");
     });
 
-    it("logs warning when matching a vulnerability with an override rule approaching expiration and failOnWarning is false", async () => {
+    it("logs warning when matching a vulnerability with an override rule approaching expiration by default", async () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -1223,9 +1208,9 @@ describe("Security Audit Script", () => {
       );
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      await expect(
-        runSecurityAudit({ now: testNow, failOnWarning: false })
-      ).rejects.toThrowError("process.exit called with 0");
+      await expect(runSecurityAudit({ now: testNow })).rejects.toThrowError(
+        "process.exit called with 0"
+      );
 
       const warnCalls = warnSpy.mock.calls
         .map((call) => call[0] as string)

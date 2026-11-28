@@ -131,9 +131,15 @@ export interface ParsedDuckdbExtensionsReadme {
   }>;
 }
 
+/** Escapes all regular expression metacharacters in a literal string. */
+export function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** Extracts the pinned npm version, DuckDB version, and SHA-256 rows from README.md. */
 export function parseDuckdbExtensionsReadme(
-  readmeText: string
+  readmeText: string,
+  extensionFiles: readonly string[] = DUCKDB_EXTENSION_FILES
 ): ParsedDuckdbExtensionsReadme {
   const npmMatch = readmeText.match(
     /^- npm package: `@duckdb\/duckdb-wasm` `([^`]+)`$/m
@@ -155,9 +161,9 @@ export function parseDuckdbExtensionsReadme(
     sha256: m[5],
   }));
 
-  if (entries.length !== DUCKDB_EXTENSION_FILES.length) {
+  if (entries.length !== extensionFiles.length) {
     throw new Error(
-      `Expected ${DUCKDB_EXTENSION_FILES.length} extension rows in components/platform/sql/extensions/README.md, found ${entries.length}`
+      `Expected ${extensionFiles.length} extension rows in components/platform/sql/extensions/README.md, found ${entries.length}`
     );
   }
 
@@ -175,13 +181,19 @@ export function rewriteDuckdbExtensionsReadme(
     npmVersion: string;
     duckdbVersion: string;
     digests: Readonly<Record<string, string>>;
+    extensionFiles?: readonly string[];
   }
 ): string {
-  const { npmVersion, duckdbVersion, digests } = params;
+  const {
+    npmVersion,
+    duckdbVersion,
+    digests,
+    extensionFiles = DUCKDB_EXTENSION_FILES,
+  } = params;
   if (!/^v\d+\.\d+\.\d+$/.test(duckdbVersion)) {
     throw new Error(`Invalid DuckDB version: ${duckdbVersion}`);
   }
-  for (const file of DUCKDB_EXTENSION_FILES) {
+  for (const file of extensionFiles) {
     const digest = digests[file];
     if (!digest || !/^[0-9a-f]{64}$/.test(digest)) {
       throw new Error(`Missing or invalid SHA-256 digest for ${file}`);
@@ -200,16 +212,16 @@ export function rewriteDuckdbExtensionsReadme(
 
   const maxUrlCellWidth = Math.max(
     "Source URL".length,
-    ...DUCKDB_EXTENSION_FILES.map(
+    ...extensionFiles.map(
       (f) =>
         `\`https://extensions.duckdb.org/${duckdbVersion}/wasm_eh/${f}\``.length
     )
   );
 
-  for (const file of DUCKDB_EXTENSION_FILES) {
+  for (const file of extensionFiles) {
     const url = `https://extensions.duckdb.org/${duckdbVersion}/wasm_eh/${file}`;
     const digest = digests[file];
-    const escapedFile = file.replace(/\./g, "\\.");
+    const escapedFile = escapeRegExp(file);
     const rowRegex = new RegExp(
       `^\\|\\s*\`${escapedFile}\`\\s*\\|\\s*\`v[\\d.]+\`\\s*\\|\\s*\`wasm_eh\`\\s*\\|\\s*\`https:\\/\\/extensions\\.duckdb\\.org\\/[^\`]+\`\\s*\\|\\s*\`[0-9a-f]{64}\`\\s*\\|$`,
       "m"
@@ -222,7 +234,8 @@ export function rewriteDuckdbExtensionsReadme(
     const urlCell = `\`${url}\``.padEnd(maxUrlCellWidth);
     updated = updated.replace(
       rowRegex,
-      `| ${fileCell} | ${versionCell} | \`wasm_eh\` | ${urlCell} | \`${digest}\` |`
+      () =>
+        `| ${fileCell} | ${versionCell} | \`wasm_eh\` | ${urlCell} | \`${digest}\` |`
     );
   }
 

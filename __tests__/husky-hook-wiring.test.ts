@@ -263,6 +263,8 @@ describe("Husky hook wiring", () => {
       expect(hook.indexOf("test:staged")).toBeLessThan(
         hook.indexOf("audit:security")
       );
+      expect(hook).not.toContain("--fail-on-warning");
+      expect(hook).not.toContain("--severity=moderate");
     });
 
     it("propagates failure when npm quality or audit commands fail", () => {

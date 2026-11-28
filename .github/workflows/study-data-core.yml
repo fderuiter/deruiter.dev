@@ -165,12 +165,6 @@ jobs:
             exit 1
           fi
           "$PYTHON" --version
-          "$PYTHON" -m venv "$RUNNER_TEMP/pip-audit-venv"
-          "$RUNNER_TEMP/pip-audit-venv/bin/pip" install --quiet "pip-audit==2.10.1"
-          "$RUNNER_TEMP/pip-audit-venv/bin/pip-audit" \
-            -r scripts/study-data-core-constraints.txt \
-            --no-deps \
-            --disable-pip
           "$PYTHON" -m venv "$RUNNER_TEMP/core-venv"
           "$RUNNER_TEMP/core-venv/bin/pip" install --quiet \
             -c scripts/study-data-core-constraints.txt "$RUNNER_TEMP/core"

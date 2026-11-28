@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canonicalPostgresPin,
   checkDuckdbExtensionsDrift,
+  escapeRegExp,
   lockedDuckdbWasmVersion,
   lockedPlaywrightVersion,
   parseDuckdbExtensionsReadme,
@@ -162,6 +163,45 @@ describe("deps:fix (#2730)", () => {
           sourceUrl:
             "https://extensions.duckdb.org/v1.5.0/wasm_eh/parquet.duckdb_extension.wasm",
           sha256: newParquetSha,
+        },
+      ]);
+    });
+
+    it("escapes regex metacharacters like + and ( in extension file names when rewriting rows", () => {
+      const specialFile = "c++(v2).duckdb_extension.wasm";
+      expect(escapeRegExp(specialFile)).toBe(
+        "c\\+\\+\\(v2\\)\\.duckdb_extension\\.wasm"
+      );
+
+      const readmeWithSpecialFile = [
+        "# Vendored DuckDB WebAssembly extensions",
+        "",
+        "- npm package: `@duckdb/duckdb-wasm` `1.32.0`",
+        "- DuckDB version: `v1.4.3`",
+        "- Platform: `wasm_eh`",
+        "",
+        "| File                            | DuckDB version | Platform  | Source URL                                                                     | SHA-256                                                            |",
+        "| ------------------------------- | -------------- | --------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |",
+        `| \`${specialFile}\`  | \`v1.4.3\`       | \`wasm_eh\` | \`https://extensions.duckdb.org/v1.4.3/wasm_eh/${specialFile}\` | \`${shaA}\` |`,
+        "",
+      ].join("\n");
+
+      const nextSha = "3".repeat(64);
+      const rewritten = rewriteDuckdbExtensionsReadme(readmeWithSpecialFile, {
+        npmVersion: "1.33.0",
+        duckdbVersion: "v1.5.0",
+        digests: { [specialFile]: nextSha },
+        extensionFiles: [specialFile],
+      });
+
+      const reparsed = parseDuckdbExtensionsReadme(rewritten, [specialFile]);
+      expect(reparsed.entries).toEqual([
+        {
+          file: specialFile,
+          duckdbVersion: "v1.5.0",
+          platform: "wasm_eh",
+          sourceUrl: `https://extensions.duckdb.org/v1.5.0/wasm_eh/${specialFile}`,
+          sha256: nextSha,
         },
       ]);
     });

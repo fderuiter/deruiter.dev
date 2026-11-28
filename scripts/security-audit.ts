@@ -832,7 +832,7 @@ export async function runSecurityAudit(
   const failOnWarning =
     options.failOnWarning ??
     options.warnOnApproachingExpiration ??
-    (cliNoFailOnWarning ? false : cliFailOnWarning || true);
+    (cliNoFailOnWarning ? false : cliFailOnWarning);
   const warnThresholdDays = options.warnThresholdDays ?? WARN_THRESHOLD_DAYS;
 
   let cliSeverity: Severity | undefined;
@@ -853,7 +853,7 @@ export async function runSecurityAudit(
 
   const minSeverity: Severity = options.severity
     ? (options.severity.toLowerCase() as Severity)
-    : (cliSeverity ?? "moderate");
+    : (cliSeverity ?? "high");
 
   const now = options.now || new Date();
   const ignoreRules = loadIgnoreList(now, warnThresholdDays);

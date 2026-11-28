@@ -161,10 +161,10 @@ describe("useProofCanvasDrag: connection cords", () => {
     act(() => result.current.handleHandlePointerDown(pointer(0, 0), "C"));
     expect(result.current.dragConnection).toEqual({
       sourceId: "C",
-      sourceX: 520,
-      sourceY: 245,
-      currentX: 520,
-      currentY: 245,
+      sourceX: 480,
+      sourceY: 175,
+      currentX: 480,
+      currentY: 175,
       hoveredTargetId: null,
       isValid: false,
     });
@@ -201,14 +201,14 @@ describe("useProofCanvasDrag: connection cords", () => {
   it("rejects when dropped on a target that doesn't follow", () => {
     const { result, props } = setup();
     act(() => result.current.handleHandlePointerDown(pointer(0, 0), "D"));
-    act(() => result.current.handleCanvasPointerMove(pointer(130, 140)));
+    act(() => result.current.handleCanvasPointerMove(pointer(120, 80)));
     flushFrames();
     expect(result.current.dragConnection).toMatchObject({
       hoveredTargetId: "A",
       isValid: false,
       ruleBadge: "",
     });
-    act(() => result.current.handleCanvasPointerUp(pointer(130, 140)));
+    act(() => result.current.handleCanvasPointerUp(pointer(120, 80)));
     expect(props.onReject).toHaveBeenCalledWith("D", "A");
     expect(props.onConnect).not.toHaveBeenCalled();
   });
@@ -247,7 +247,7 @@ describe("useProofCanvasDrag: connection cords", () => {
     result.current.canvasWrapperRef.current = null;
     act(() => result.current.handleCanvasPointerMove(pointer(610, 300)));
     flushFrames();
-    expect(result.current.dragConnection?.currentX).toBe(520);
+    expect(result.current.dragConnection?.currentX).toBe(480);
   });
 });
 

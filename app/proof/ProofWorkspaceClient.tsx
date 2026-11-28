@@ -1001,6 +1001,7 @@ export function ProofWorkspaceClient() {
             activeTheorem={activeTheorem}
             edges={session.edges}
             currentFallacy={session.currentFallacy}
+            hasCommittedFallacyEdge={session.hasCommittedFallacyEdge}
             nodeOffsets={drag.nodeOffsets}
             selectedNodeIds={session.selectedNodeIds}
             inspectedNodeId={inspectedNodeId}
@@ -1031,6 +1032,13 @@ export function ProofWorkspaceClient() {
             mobileActiveView={mobileActiveView}
             handleRollback={session.handleRollback}
             onDismissFallacy={() => session.setCurrentFallacy(null)}
+            onInspectFallacy={() => {
+              setActiveTab("fallacy");
+              setMobileActiveView("fallacy");
+            }}
+            onConnectNodes={session.connectByDrag}
+            onRejectConnection={session.rejectDrag}
+            onCommitNodeMove={session.handleMoveSandboxNode}
             ruleMatches={session.ruleMatches}
             onAddSandboxNode={session.handleAddSandboxNode}
             onUpdateSandboxNode={session.handleUpdateSandboxNode}
@@ -1050,6 +1058,7 @@ export function ProofWorkspaceClient() {
             handleDeleteStep={session.handleDeleteStep}
             activeTheorem={activeTheorem}
             currentFallacy={session.currentFallacy}
+            hasCommittedFallacyEdge={session.hasCommittedFallacyEdge}
             setCurrentFallacy={session.setCurrentFallacy}
             handleRollback={session.handleRollback}
           />

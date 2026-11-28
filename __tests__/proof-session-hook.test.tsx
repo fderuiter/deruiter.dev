@@ -228,9 +228,19 @@ describe("useProofSession: applying rules", () => {
     expect(result.current.edges).toEqual(MP.initialEdges);
   });
 
-  it("diagnoses a rule that does not apply, using the lone node as both ends", () => {
+  it("prompts for a second premise when clicking a binary rule with one node selected, and diagnoses non-applicable unary rules", () => {
     const { result, options } = setup();
     act(() => result.current.handleApplyRule("mt", ["A"]));
+    expect(result.current.edges).toEqual(MP.initialEdges);
+    expect(result.current.currentFallacy).toBeNull();
+    expect(options.onFallacy).not.toHaveBeenCalled();
+    expect(options.feedback.toast).toHaveBeenLastCalledWith(
+      expect.stringContaining("requires 2 premises"),
+      "info",
+      { announce: false }
+    );
+
+    act(() => result.current.handleApplyRule("demorgan", ["A"]));
     expect(result.current.edges).toEqual(MP.initialEdges);
     expect(result.current.currentFallacy).toMatchObject({
       sourceId: "A",
@@ -667,23 +677,53 @@ describe("useProofSession: history stack and undo/redo", () => {
     expect(edgePairs(result.current)).toEqual(["AC", "BC", "CE"]);
   });
 
-  it("treats rollback as an undoable mutation that undo can reverse", () => {
+  it("dismisses rejected fallacies without pruning valid edges and treats committed-edge rollback as undoable", () => {
     const { result } = setup();
     act(() => result.current.connectNodes("C", "E"));
-    // Attempt invalid connection to trigger fallacy
+    // Attempt invalid connection to trigger rejected fallacy
     act(() => result.current.connectNodes("A", "E"));
     expect(result.current.currentFallacy).not.toBeNull();
+    expect(result.current.hasCommittedFallacyEdge).toBe(false);
 
-    // Rollback the invalid step
+    // Dismissing the rejected fallacy preserves C -> E non-destructively
     act(() => result.current.handleRollback());
     expect(result.current.currentFallacy).toBeNull();
-    expect(result.current.canUndo).toBe(true);
+    expect(result.current.edges).toEqual([
+      ...MP.initialEdges,
+      { source: "C", target: "E" },
+    ]);
 
-    // Undo should restore the state prior to rollback
+    // When an offending edge actually exists in edges, rollback strips it and is undoable
+    act(() =>
+      result.current.resetGraph([
+        ...MP.initialEdges,
+        { source: "C", target: "E" },
+        { source: "A", target: "E" },
+      ])
+    );
+    act(() =>
+      result.current.setCurrentFallacy({
+        fallacyName: "Non-Sequitur",
+        formalFormula: "A ⊬ E",
+        plainEnglish: "Invalid edge.",
+        softwareAnalogy: "Test",
+        truthTable: [],
+        sourceId: "A",
+        targetId: "E",
+      })
+    );
+    expect(result.current.hasCommittedFallacyEdge).toBe(true);
+
+    act(() => result.current.handleRollback());
+    expect(result.current.currentFallacy).toBeNull();
+    expect(result.current.edges).toEqual(MP.initialEdges);
+
+    // Undo restores the state prior to committed-edge rollback
     act(() => result.current.handleUndo());
     expect(result.current.edges).toEqual([
       ...MP.initialEdges,
       { source: "C", target: "E" },
+      { source: "A", target: "E" },
     ]);
   });
 

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { RefObject } from "react";
-import { motion } from "framer-motion";
 import {
   IconRefresh,
   IconBulb,
@@ -13,24 +12,21 @@ import {
   IconArrowForwardUp,
   IconPlus,
   IconTarget,
-  IconPencil,
   IconTrash,
-  IconCheck,
-  IconUpload,
+  IconX,
 } from "@tabler/icons-react";
 import {
   TheoremDefinition,
   Edge,
   AlignmentGuide,
   INFERENCE_RULES,
-  getCompatibleTargets,
-  evaluateProofStatus,
   FallacyDiagnosis,
-  evaluateAst,
   RuleMatch,
 } from "@/lib/proof";
-import { IconX } from "@tabler/icons-react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { TooltipButton } from "@/components/ui/Tooltip";
+import { ProofFlowCanvas } from "./ProofFlowCanvas";
+import { ProofMobileStackCanvas } from "./ProofMobileStackCanvas";
 
 interface ProofCanvasProps {
   activeTheorem: TheoremDefinition;
@@ -73,8 +69,17 @@ interface ProofCanvasProps {
   svgCanvasRef: RefObject<SVGSVGElement | null>;
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
   currentFallacy?: FallacyDiagnosis | null;
+  hasCommittedFallacyEdge?: boolean;
   handleRollback?: () => void;
   onDismissFallacy?: () => void;
+  onInspectFallacy?: () => void;
+  onConnectNodes?: (
+    sourceId: string,
+    targetId: string,
+    ruleBadge?: string
+  ) => void;
+  onRejectConnection?: (sourceId: string, targetId: string) => void;
+  onCommitNodeMove?: (nodeId: string, x: number, y: number) => void;
   ruleMatches?: RuleMatch[];
   onAddSandboxNode?: (
     role: "premise" | "conclusion",
@@ -106,11 +111,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   handleAutoStep,
   handleResetLayout,
   activeTacticHint,
-  handleNodePointerDown,
-  handleNodePointerMove,
-  handleNodePointerUp,
   handleNodeClick,
-  handleHandlePointerDown,
   handleCanvasPointerMove,
   handleCanvasPointerUp,
   handleApplyRule,
@@ -123,8 +124,13 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   svgCanvasRef,
   mobileActiveView,
   currentFallacy,
+  hasCommittedFallacyEdge = false,
   handleRollback,
   onDismissFallacy,
+  onInspectFallacy,
+  onConnectNodes,
+  onRejectConnection,
+  onCommitNodeMove,
   ruleMatches,
   onAddSandboxNode,
   onUpdateSandboxNode,
@@ -134,12 +140,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   onCheckCountermodel,
   onOpenImportExport,
 }) => {
-  const proofStatus = evaluateProofStatus(edges, activeTheorem);
-  const sandboxProvenSet = React.useMemo(
-    () =>
-      activeTheorem.isSandbox ? new Set(proofStatus.provenNodeIds ?? []) : null,
-    [activeTheorem.isSandbox, proofStatus.provenNodeIds]
-  );
+  const isMobileStack = useMediaQuery("(max-width: 767px)");
   const [containerWidth, setContainerWidth] = React.useState<number>(760);
   const [activePopoverNodeId, setActivePopoverNodeId] = React.useState<
     string | null
@@ -170,24 +171,40 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
     formulaInputRef.current?.focus();
   };
 
-  const beginNodeEdit = (nodeId: string, currentLabel: string) => {
-    setEditingNodeId(nodeId);
-    setEditingFormula(currentLabel);
-    setEditingError(null);
-  };
+  const beginNodeEdit = React.useCallback(
+    (nodeId: string, currentLabel: string) => {
+      setEditingNodeId(nodeId);
+      setEditingFormula(currentLabel);
+      setEditingError(null);
+    },
+    []
+  );
 
-  const submitNodeEdit = (e: React.FormEvent, nodeId: string) => {
-    e.preventDefault();
-    if (!onUpdateSandboxNode) return;
-    const res = onUpdateSandboxNode(nodeId, editingFormula);
-    if (!res.ok) {
-      setEditingError(res.error ?? "Invalid formula.");
-      return;
-    }
-    setEditingNodeId(null);
-    setEditingFormula("");
+  const handleChangeEditingFormula = React.useCallback((value: string) => {
+    setEditingFormula(value);
     setEditingError(null);
-  };
+  }, []);
+
+  const cancelNodeEdit = React.useCallback(() => {
+    setEditingNodeId(null);
+    setEditingError(null);
+  }, []);
+
+  const submitNodeEdit = React.useCallback(
+    (e: React.FormEvent, nodeId: string) => {
+      e.preventDefault();
+      if (!onUpdateSandboxNode) return;
+      const res = onUpdateSandboxNode(nodeId, editingFormula);
+      if (!res.ok) {
+        setEditingError(res.error ?? "Invalid formula.");
+        return;
+      }
+      setEditingNodeId(null);
+      setEditingFormula("");
+      setEditingError(null);
+    },
+    [onUpdateSandboxNode, editingFormula]
+  );
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -253,8 +270,6 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
     }
   }, [canvasWrapperRef]);
 
-  const maxGuideX = containerWidth || 760;
-
   return (
     <div
       className={`lg:col-span-8 flex flex-col gap-4 ${
@@ -265,39 +280,41 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
         {/* Canvas Header */}
         <div className="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-950/40">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500/80 motion-safe:animate-ping" />
-            <span className="text-xs font-semibold text-white">
+            <span className="w-3 h-3 rounded-full bg-emerald-500/80 shrink-0 motion-safe:animate-ping" />
+            <span className="text-xs font-semibold text-white truncate">
               {activeTheorem.ruleName}
             </span>
           </div>
           <div
             role="toolbar"
             aria-label="Proof canvas controls"
-            className="flex items-center gap-2"
+            className="flex flex-wrap items-center gap-2"
           >
-            <TooltipButton
-              onClick={toggleSnapping}
-              className={`px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
-                isSnappingEnabled
-                  ? "bg-brand-cyan/15 border-brand-cyan/50 text-brand-cyan shadow-sm shadow-cyan-500/20"
-                  : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
-              }`}
-              tooltip="Toggle magnetic snapping & alignment guides [Shortcut: G]"
-              aria-pressed={isSnappingEnabled}
-              aria-label={`SNAP G, Magnetic Snapping: ${isSnappingEnabled ? "Enabled" : "Disabled"}. Press G to toggle.`}
-            >
-              <span className="text-[11px] font-bold">SNAP</span>{" "}
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
+            {!isMobileStack && (
+              <TooltipButton
+                onClick={toggleSnapping}
+                className={`px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
                   isSnappingEnabled
-                    ? "bg-emerald-400 motion-safe:animate-pulse"
-                    : "bg-slate-600"
+                    ? "bg-brand-cyan/15 border-brand-cyan/50 text-brand-cyan shadow-sm shadow-cyan-500/20"
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
                 }`}
-              />
-              <kbd className="hidden md:inline text-[9px] px-1 py-0.2 rounded bg-slate-950/70 border border-slate-800 text-slate-400 font-mono">
-                G
-              </kbd>
-            </TooltipButton>
+                tooltip="Toggle magnetic snapping & alignment guides [Shortcut: G]"
+                aria-pressed={isSnappingEnabled}
+                aria-label={`SNAP G, Magnetic Snapping: ${isSnappingEnabled ? "Enabled" : "Disabled"}. Press G to toggle.`}
+              >
+                <span className="text-[11px] font-bold">SNAP</span>{" "}
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isSnappingEnabled
+                      ? "bg-emerald-400 motion-safe:animate-pulse"
+                      : "bg-slate-600"
+                  }`}
+                />
+                <kbd className="hidden md:inline text-[9px] px-1 py-0.2 rounded bg-slate-950/70 border border-slate-800 text-slate-400 font-mono">
+                  G
+                </kbd>
+              </TooltipButton>
+            )}
             <TooltipButton
               onClick={handleUndo}
               disabled={!canUndo}
@@ -347,16 +364,18 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
 
         {/* Tactic Goal Ribbon */}
         <div className="bg-slate-950/60 px-4 py-2 border-b border-slate-800/80 flex items-center justify-between gap-2 text-xs">
-          <div className="flex min-w-0 items-center gap-2 text-slate-300">
-            <IconBulb className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="font-medium text-amber-300/90 shrink-0">
-              {activeTacticHint.title}:
-            </span>
-            <span className="min-w-0 truncate text-slate-400">
-              {activeTacticHint.hint}
-            </span>
+          <div className="flex min-w-0 items-start sm:items-center gap-2 text-slate-300">
+            <IconBulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+            <div className="min-w-0">
+              <span className="font-medium text-amber-300/90 mr-1.5">
+                {activeTacticHint.title}:
+              </span>
+              <span className="text-slate-300 break-words">
+                {activeTacticHint.hint}
+              </span>
+            </div>
           </div>
-          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0">
+          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 shrink-0">
             {activeTheorem.targetNodeId
               ? `Goal: Node ${activeTheorem.targetNodeId}`
               : activeTheorem.isSandbox
@@ -441,14 +460,76 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
 
         <p
           id="proof-node-keyboard-help"
-          className="px-4 py-2 text-xs text-slate-300"
+          className="px-4 py-2 text-xs text-slate-300 border-b border-slate-800/60"
         >
           Tab to a node. Enter or Space selects it; activate another node to
           connect. Hold Shift while activating nodes to select several premises
           for a rule. Connection handles also support Enter or Space. Use Mod+Z
           to undo and Mod+Shift+Z to redo.
         </p>
-        {/* SVG Canvas Area (Responsive scroll wrapper) */}
+
+        {/* Inline Fallacy Diagnostics & Non-Destructive Dismissal Banner */}
+        {currentFallacy && (
+          <div className="px-3 py-2.5 bg-red-950/85 border-b border-red-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-red-200">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <IconAlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-red-100 text-xs">
+                    {currentFallacy.fallacyName}
+                  </span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-red-900/80 text-red-200 rounded border border-red-700/80">
+                    {currentFallacy.sourceId || currentFallacy.targetId
+                      ? "FALLACY DETECTED"
+                      : "COUNTERMODEL"}
+                  </span>
+                </div>
+                <span className="text-[11px] text-red-200/95 font-mono break-words">
+                  {currentFallacy.formalFormula}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {(currentFallacy.sourceId || currentFallacy.targetId) &&
+              handleRollback ? (
+                <button
+                  type="button"
+                  onClick={handleRollback}
+                  className="shrink-0 min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center gap-1.5 shadow-md shadow-red-950/80 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-300"
+                  aria-label={
+                    hasCommittedFallacyEdge
+                      ? "Revert Edge: Strip invalid edge and clear fallacy diagnosis"
+                      : "Dismiss Fallacy: Clear fallacy diagnosis and keep valid proof edges"
+                  }
+                >
+                  {hasCommittedFallacyEdge ? (
+                    <>
+                      <IconRefresh className="w-3.5 h-3.5" />
+                      <span>Revert Edge</span>
+                    </>
+                  ) : (
+                    <>
+                      <IconX className="w-3.5 h-3.5" />
+                      <span>Dismiss Fallacy</span>
+                    </>
+                  )}
+                </button>
+              ) : onDismissFallacy ? (
+                <button
+                  type="button"
+                  onClick={onDismissFallacy}
+                  className="shrink-0 min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer active:scale-[0.98]"
+                  aria-label="Dismiss countermodel banner"
+                >
+                  <IconX className="w-3.5 h-3.5" />
+                  <span>Dismiss</span>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {/* Responsive Proof Workspace Surface: Mobile Topological Stack (< 768px) vs Desktop XYFlow Graph (>= 768px) */}
         <div
           ref={handleRef}
           tabIndex={0}
@@ -456,649 +537,74 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
           aria-label="Proof workspace canvas"
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
-          className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
+          className={
+            isMobileStack
+              ? "relative w-full h-auto bg-[#080c10] select-none overflow-x-hidden"
+              : "relative w-full h-[520px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
+          }
         >
-          {/* Floating Canvas Error Action Banner */}
-          {currentFallacy && (
-            <div className="absolute top-3 left-4 right-4 z-30 pointer-events-none flex justify-center">
-              <div className="pointer-events-auto max-w-xl w-full p-3 rounded-xl border border-red-800/80 bg-red-950/90 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-red-200">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <IconAlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-red-100 text-xs">
-                        {currentFallacy.fallacyName}
-                      </span>
-                      <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold bg-red-900/80 text-red-200 rounded border border-red-700/80">
-                        {currentFallacy.sourceId || currentFallacy.targetId
-                          ? "FALLACY DETECTED"
-                          : "COUNTERMODEL"}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-red-300/90 font-mono truncate">
-                      {currentFallacy.formalFormula}
-                    </span>
-                  </div>
-                </div>
-                {(currentFallacy.sourceId || currentFallacy.targetId) &&
-                handleRollback ? (
-                  <button
-                    type="button"
-                    onClick={handleRollback}
-                    className="shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center gap-1.5 shadow-md shadow-red-950/80 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-300"
-                    aria-label="Revert Edge: Strip invalid edge and clear fallacy diagnosis"
-                  >
-                    <IconRefresh className="w-3.5 h-3.5" />
-                    <span>Revert Edge</span>
-                  </button>
-                ) : onDismissFallacy ? (
-                  <button
-                    type="button"
-                    onClick={onDismissFallacy}
-                    className="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 border border-slate-700 transition cursor-pointer active:scale-[0.98]"
-                    aria-label="Dismiss countermodel banner"
-                  >
-                    <IconX className="w-3.5 h-3.5" />
-                    <span>Dismiss</span>
-                  </button>
-                ) : null}
-              </div>
-            </div>
+          {isMobileStack ? (
+            <ProofMobileStackCanvas
+              activeTheorem={activeTheorem}
+              edges={edges}
+              selectedNodeIds={selectedNodeIds}
+              inspectedNodeId={inspectedNodeId}
+              currentFallacy={currentFallacy}
+              hasCommittedFallacyEdge={hasCommittedFallacyEdge}
+              activePopoverNodeId={activePopoverNodeId}
+              setActivePopoverNodeId={setActivePopoverNodeId}
+              editingNodeId={editingNodeId}
+              editingFormula={editingFormula}
+              editingError={editingError}
+              onBeginEdit={beginNodeEdit}
+              onChangeEditingFormula={handleChangeEditingFormula}
+              onSubmitEdit={submitNodeEdit}
+              onCancelEdit={cancelNodeEdit}
+              onUpdateSandboxNode={onUpdateSandboxNode}
+              onDeleteSandboxNode={onDeleteSandboxNode}
+              onLoadSandboxStarter={onLoadSandboxStarter}
+              onOpenImportExport={onOpenImportExport}
+              handleNodeClick={handleNodeClick}
+              onConnectNodes={onConnectNodes}
+              handleAutoStep={handleAutoStep}
+              handleRollback={handleRollback}
+              onInspectFallacy={onInspectFallacy}
+            />
+          ) : (
+            <ProofFlowCanvas
+              activeTheorem={activeTheorem}
+              edges={edges}
+              nodeOffsets={nodeOffsets}
+              selectedNodeIds={selectedNodeIds}
+              inspectedNodeId={inspectedNodeId}
+              isSnappingEnabled={isSnappingEnabled}
+              activeGuides={activeGuides}
+              dragConnection={dragConnection}
+              containerWidth={containerWidth}
+              svgCanvasRef={svgCanvasRef}
+              currentFallacy={currentFallacy}
+              hasCommittedFallacyEdge={hasCommittedFallacyEdge}
+              activePopoverNodeId={activePopoverNodeId}
+              setActivePopoverNodeId={setActivePopoverNodeId}
+              editingNodeId={editingNodeId}
+              editingFormula={editingFormula}
+              editingError={editingError}
+              onBeginEdit={beginNodeEdit}
+              onChangeEditingFormula={handleChangeEditingFormula}
+              onSubmitEdit={submitNodeEdit}
+              onCancelEdit={cancelNodeEdit}
+              onUpdateSandboxNode={onUpdateSandboxNode}
+              onDeleteSandboxNode={onDeleteSandboxNode}
+              onLoadSandboxStarter={onLoadSandboxStarter}
+              onOpenImportExport={onOpenImportExport}
+              handleNodeClick={handleNodeClick}
+              onConnectNodes={onConnectNodes}
+              onRejectConnection={onRejectConnection}
+              onCommitNodeMove={onCommitNodeMove}
+              handleRollback={handleRollback}
+              onInspectFallacy={onInspectFallacy}
+            />
           )}
-
-          <div className="relative w-full h-full">
-            <svg
-              ref={svgCanvasRef}
-              className="absolute inset-0 w-full h-full pointer-events-none"
-            >
-              <defs>
-                <pattern
-                  id="canvas-grid"
-                  width="20"
-                  height="20"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <circle
-                    cx="2"
-                    cy="2"
-                    r="1"
-                    fill="#334155"
-                    opacity={isSnappingEnabled ? 0.45 : 0.15}
-                  />
-                </pattern>
-                <marker
-                  id="arrow"
-                  viewBox="0 0 10 10"
-                  refX="8"
-                  refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#06b6d4" />
-                </marker>
-                <marker
-                  id="arrow-emerald"
-                  viewBox="0 0 10 10"
-                  refX="8"
-                  refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
-                </marker>
-                <linearGradient
-                  id="edgeGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#10b981" />
-                </linearGradient>
-              </defs>
-
-              {/* Canvas Background Grid */}
-              <rect width="100%" height="100%" fill="url(#canvas-grid)" />
-
-              {/* Snapping Alignment Guides */}
-              {activeGuides.map((guide, idx) => {
-                if (guide.type === "vertical") {
-                  return (
-                    <line
-                      key={`guide-v-${idx}`}
-                      x1={guide.pos}
-                      y1={Math.max(0, guide.start)}
-                      x2={guide.pos}
-                      y2={Math.min(420, guide.end)}
-                      stroke="#06b6d4"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 3"
-                      className="motion-safe:animate-pulse"
-                    />
-                  );
-                }
-                return (
-                  <line
-                    key={`guide-h-${idx}`}
-                    x1={Math.max(0, guide.start)}
-                    y1={guide.pos}
-                    x2={Math.min(maxGuideX, guide.end)}
-                    y2={guide.pos}
-                    stroke="#10b981"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 3"
-                    className="motion-safe:animate-pulse"
-                  />
-                );
-              })}
-
-              {/* Render Bezier Curves for Graph Edges */}
-              {edges.map((edge, idx) => {
-                const sNode = activeTheorem.nodes.find(
-                  (n) => n.id === edge.source
-                );
-                const tNode = activeTheorem.nodes.find(
-                  (n) => n.id === edge.target
-                );
-                if (!sNode || !tNode) return null;
-
-                const sOffset = nodeOffsets[sNode.id] || { x: 0, y: 0 };
-                const tOffset = nodeOffsets[tNode.id] || { x: 0, y: 0 };
-
-                const x1 = sNode.x + sOffset.x + 80;
-                const y1 = sNode.y + sOffset.y + 35;
-                const x2 = tNode.x + tOffset.x;
-                const y2 = tNode.y + tOffset.y + 35;
-
-                const dx = Math.abs(x2 - x1) * 0.5;
-                const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-
-                return (
-                  <g key={`edge-${idx}`}>
-                    <path
-                      d={d}
-                      fill="none"
-                      stroke="url(#edgeGradient)"
-                      strokeWidth="2.5"
-                      strokeDasharray="4 2"
-                      className="motion-safe:animate-pulse"
-                      markerEnd="url(#arrow)"
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Interactive Drag-to-Connect Cord */}
-              {dragConnection &&
-                (() => {
-                  const x1 = dragConnection.sourceX;
-                  const y1 = dragConnection.sourceY;
-                  const x2 = dragConnection.currentX;
-                  const y2 = dragConnection.currentY;
-                  const dx = Math.abs(x2 - x1) * 0.5;
-                  const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-                  const strokeColor = dragConnection.hoveredTargetId
-                    ? dragConnection.isValid
-                      ? "#10b981"
-                      : "#f43f5e"
-                    : "#06b6d4";
-
-                  return (
-                    <g>
-                      <path
-                        d={d}
-                        fill="none"
-                        stroke={strokeColor}
-                        strokeWidth="2.5"
-                        strokeDasharray="3 3"
-                        className="motion-safe:animate-pulse"
-                        markerEnd={
-                          dragConnection.isValid
-                            ? "url(#arrow-emerald)"
-                            : "url(#arrow)"
-                        }
-                      />
-                      <circle
-                        cx={x2}
-                        cy={y2}
-                        r="5"
-                        fill={strokeColor}
-                        className="motion-safe:animate-ping"
-                      />
-                    </g>
-                  );
-                })()}
-            </svg>
-
-            {/* Empty Sandbox Helper Card */}
-            {activeTheorem.isSandbox && activeTheorem.nodes.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-                <div className="pointer-events-auto max-w-md w-full rounded-2xl border border-slate-800 bg-slate-950/90 p-5 text-center shadow-2xl space-y-3">
-                  <div className="text-sm font-bold text-white">
-                    Open Sandbox Proof Canvas
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Enter propositional formulas in the bar above to add premise
-                    and goal cards, then select cards and fire tactics from the
-                    Rule Palette to spawn derived steps dynamically.
-                  </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                    {onLoadSandboxStarter && (
-                      <button
-                        type="button"
-                        onClick={onLoadSandboxStarter}
-                        className="px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-brand-cyan/50 bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan text-xs font-mono font-bold inline-flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
-                      >
-                        <IconSparkles className="w-3.5 h-3.5" />
-                        <span>Load Starter Example</span>
-                      </button>
-                    )}
-                    {onOpenImportExport && (
-                      <button
-                        type="button"
-                        onClick={onOpenImportExport}
-                        className="px-3 py-1.5 pointer-coarse:min-h-11 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-mono font-bold inline-flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
-                      >
-                        <IconUpload className="w-3.5 h-3.5 text-brand-cyan" />
-                        <span>Import .proof.json</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Draggable Logic Nodes */}
-            {activeTheorem.nodes.map((node) => {
-              const offset = nodeOffsets[node.id] || { x: 0, y: 0 };
-              const isSelected = selectedNodeIds.includes(node.id);
-              const isInspected = inspectedNodeId === node.id;
-              const isGivenPremise = node.type === "premise";
-              const isNodeProven = sandboxProvenSet
-                ? sandboxProvenSet.has(node.id)
-                : isGivenPremise ||
-                  (node.id === activeTheorem.intermediateNodeId
-                    ? proofStatus.isC_Proven
-                    : proofStatus.isE_Proven);
-
-              const isDimmed =
-                dragConnection &&
-                dragConnection.sourceId !== node.id &&
-                dragConnection.hoveredTargetId !== node.id &&
-                !dragConnection.isValid;
-
-              const isHoveredInDrag =
-                dragConnection?.hoveredTargetId === node.id;
-
-              const compatibleTargets =
-                selectedNodeIds.length === 1
-                  ? getCompatibleTargets(
-                      selectedNodeIds[0],
-                      activeTheorem,
-                      edges
-                    )
-                  : [];
-              const isCompatible = compatibleTargets.some(
-                (t) => t.targetId === node.id
-              );
-              const compTarget = compatibleTargets.find(
-                (t) => t.targetId === node.id
-              );
-
-              const fallacyTargetId = currentFallacy?.targetId;
-              const isFallacyTargetNode = Boolean(
-                currentFallacy &&
-                (fallacyTargetId
-                  ? node.id === fallacyTargetId
-                  : node.id === activeTheorem.targetNodeId)
-              );
-
-              return (
-                <motion.div
-                  key={node.id}
-                  style={{
-                    position: "absolute",
-                    left: node.x + offset.x,
-                    top: node.y + offset.y,
-                  }}
-                  onPointerDown={(e) => handleNodePointerDown(e, node.id)}
-                  onPointerMove={(e) => handleNodePointerMove(e, node.id)}
-                  onPointerUp={(e) => handleNodePointerUp(e, node.id)}
-                  className={`group w-[160px] p-2.5 rounded-xl border cursor-pointer transition-all shadow-md select-none ${
-                    isDimmed ? "opacity-40" : "opacity-100"
-                  } ${
-                    isFallacyTargetNode
-                      ? "bg-rose-950/50 border-rose-500/80 ring-2 ring-rose-500/60 shadow-rose-500/20"
-                      : isHoveredInDrag
-                        ? dragConnection?.isValid
-                          ? "bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-400/80 shadow-emerald-500/30 scale-105"
-                          : "bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/80 shadow-rose-500/30 scale-105"
-                        : isCompatible
-                          ? "bg-emerald-950/30 border-emerald-500/70 ring-2 ring-emerald-500/50 shadow-emerald-500/20"
-                          : isSelected
-                            ? "bg-brand-cyan/20 border-brand-cyan ring-2 ring-brand-cyan/50 shadow-cyan-500/20"
-                            : isInspected
-                              ? "bg-slate-800 border-slate-600 ring-1 ring-slate-400"
-                              : "bg-slate-900 border-slate-800 hover:border-slate-700"
-                  }`}
-                >
-                  {/* Compatible Rule Floating Badge */}
-                  {isCompatible && compTarget && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-mono text-[9px] font-bold shadow-md shadow-emerald-950/50 flex items-center gap-1 z-30 whitespace-nowrap motion-safe:animate-bounce">
-                      <IconSparkles className="w-2.5 h-2.5 shrink-0" />
-                      <span>{compTarget.badgeLabel}</span>
-                    </div>
-                  )}
-
-                  {/* Fallacy Counterexample Inline Visual Badge Indicator */}
-                  {isFallacyTargetNode && currentFallacy && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActivePopoverNodeId((prev) =>
-                          prev === node.id ? null : node.id
-                        );
-                      }}
-                      className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-mono text-[9px] font-bold shadow-md shadow-rose-950/80 flex items-center gap-1 z-30 whitespace-nowrap cursor-pointer transition active:scale-95"
-                      aria-expanded={activePopoverNodeId === node.id}
-                      aria-label={`Counterexample badge for Node ${node.id}. Click to view variable valuations.`}
-                    >
-                      <IconAlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-300 motion-safe:animate-pulse" />
-                      <span>Counterexample</span>
-                    </button>
-                  )}
-
-                  {/* Invalid Hover Floating Badge */}
-                  {isHoveredInDrag &&
-                    !dragConnection?.isValid &&
-                    !isFallacyTargetNode && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold shadow-md flex items-center gap-1 z-30 whitespace-nowrap">
-                        <IconAlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                        <span>Invalid Inference</span>
-                      </div>
-                    )}
-
-                  {editingNodeId === node.id && activeTheorem.isSandbox ? (
-                    <form
-                      onSubmit={(e) => submitNodeEdit(e, node.id)}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      className="space-y-1.5 pr-2"
-                    >
-                      <div className="text-[10px] font-mono font-bold text-brand-cyan">
-                        Edit Node {node.id}
-                      </div>
-                      <input
-                        type="text"
-                        value={editingFormula}
-                        onChange={(e) => {
-                          setEditingFormula(e.target.value);
-                          if (editingError) setEditingError(null);
-                        }}
-                        aria-label={`Edit formula for Node ${node.id}`}
-                        autoFocus
-                        className="w-full min-w-0 px-2 py-1 rounded bg-slate-950 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-brand-cyan"
-                      />
-                      {editingError && (
-                        <p
-                          role="alert"
-                          className="text-[10px] font-mono text-rose-300"
-                        >
-                          {editingError}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="submit"
-                          aria-label={`Save Node ${node.id}`}
-                          className="px-2 py-1 rounded bg-brand-cyan text-slate-950 text-[10px] font-mono font-bold inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <IconCheck className="w-3 h-3" />
-                          <span>Save</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingNodeId(null);
-                            setEditingError(null);
-                          }}
-                          aria-label={`Cancel editing Node ${node.id}`}
-                          className="px-2 py-1 rounded bg-slate-800 text-slate-300 text-[10px] font-mono cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <button
-                      type="button"
-                      tabIndex={0}
-                      aria-label={`Node ${node.id}, ${isGivenPremise ? "GIVEN" : isNodeProven ? "PROVEN" : "PENDING"}, ${node.label}, ${node.meaning}, ${node.type}, ${isSelected ? "selected" : "not selected"}`}
-                      aria-pressed={isSelected}
-                      aria-describedby="proof-node-keyboard-help"
-                      onClick={(event) =>
-                        handleNodeClick(node.id, event.shiftKey)
-                      }
-                      onKeyDown={(event) => {
-                        if (
-                          event.shiftKey &&
-                          (event.key === "Enter" || event.key === " ")
-                        ) {
-                          event.preventDefault();
-                          handleNodeClick(node.id, true);
-                        }
-                      }}
-                      className="block w-full min-h-11 min-w-0 pr-4 text-left rounded-md cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400"
-                    >
-                      {/* Node Header & Status */}
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">
-                          Node {node.id}
-                        </span>{" "}
-                        <span
-                          className={`text-[9px] font-mono px-1 py-0.5 rounded ${
-                            isGivenPremise
-                              ? "bg-slate-800 text-sky-300 border border-slate-600/40"
-                              : isNodeProven
-                                ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
-                                : "bg-amber-950 text-amber-400 border border-amber-800/40"
-                          }`}
-                        >
-                          {isGivenPremise
-                            ? "GIVEN"
-                            : isNodeProven
-                              ? "PROVEN"
-                              : "PENDING"}
-                        </span>
-                      </div>{" "}
-                      <div className="min-w-0 break-words font-mono text-sm font-bold text-white mb-0.5">
-                        {node.label}
-                      </div>{" "}
-                      <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
-                        {node.meaning}
-                      </div>
-                    </button>
-                  )}
-
-                  {activeTheorem.isSandbox && editingNodeId !== node.id && (
-                    <div
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-1.5 pt-1.5 border-t border-slate-800/80 flex items-center justify-end gap-1 pr-2"
-                    >
-                      {(node.type === "premise" ||
-                        node.type === "conclusion") &&
-                        onUpdateSandboxNode && (
-                          <button
-                            type="button"
-                            onClick={() => beginNodeEdit(node.id, node.label)}
-                            aria-label={`Edit Node ${node.id}`}
-                            className="p-1 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded text-slate-400 hover:text-brand-cyan hover:bg-slate-800 transition cursor-pointer"
-                          >
-                            <IconPencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      {onDeleteSandboxNode && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteSandboxNode(node.id)}
-                          aria-label={`Delete Node ${node.id}`}
-                          className="p-1 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center rounded text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
-                        >
-                          <IconTrash className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Connection Anchor Handle Port (Right Edge) */}
-                  <TooltipButton
-                    type="button"
-                    tabIndex={0}
-                    onPointerDown={(e) => handleHandlePointerDown(e, node.id)}
-                    onClick={() => handleNodeClick(node.id)}
-                    className="absolute -right-6 top-1/2 -translate-y-1/2 w-11 h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 rounded-full bg-slate-950 border-2 border-brand-cyan/80 hover:border-brand-cyan hover:scale-125 hover:bg-brand-cyan transition-all shadow-md shadow-cyan-500/40 flex items-center justify-center cursor-crosshair z-20 group-hover:opacity-100 opacity-80"
-                    tooltip={`Connect Node ${node.id}: drag, or press Enter/Space then activate the target node`}
-                    aria-label={`Drag connection handle from Node ${node.id}, ${node.label}`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan group-hover:bg-slate-950" />
-                  </TooltipButton>
-
-                  {/* Fallacy Counterexample Diagnostics Popover */}
-                  {activePopoverNodeId === node.id && currentFallacy && (
-                    <div
-                      role="dialog"
-                      aria-label={`Counterexample diagnostics popover for Node ${node.id}`}
-                      className="absolute top-12 -left-12 w-[260px] p-3 rounded-xl bg-slate-950/95 border border-rose-500/60 shadow-2xl shadow-rose-950/80 backdrop-blur z-50 text-xs text-slate-200 pointer-events-auto"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-start justify-between border-b border-slate-800 pb-2 mb-2">
-                        <div>
-                          <div className="font-mono font-bold text-rose-400 text-[11px] uppercase tracking-wide flex items-center gap-1">
-                            <IconAlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-300" />
-                            <span>{currentFallacy.fallacyName}</span>
-                          </div>
-                          <div className="font-mono text-[10px] text-slate-400">
-                            {currentFallacy.formalFormula}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActivePopoverNodeId(null);
-                          }}
-                          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-                          aria-label="Close counterexample popover"
-                        >
-                          <IconX className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Counterexample Valuation Assignments */}
-                      {currentFallacy.counterexampleValuation && (
-                        <div className="mb-2">
-                          <div className="text-[10px] font-mono font-semibold text-amber-300 mb-1 uppercase tracking-wider">
-                            Counterexample Valuation:
-                          </div>
-                          <div className="flex flex-wrap gap-1.5 font-mono text-[10px]">
-                            {Object.entries(
-                              currentFallacy.counterexampleValuation
-                            ).map(([varName, val]) => (
-                              <span
-                                key={varName}
-                                className={`px-1.5 py-0.5 rounded border font-bold ${
-                                  val
-                                    ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300"
-                                    : "bg-rose-950/80 border-rose-500/50 text-rose-300"
-                                }`}
-                              >
-                                {varName} = {val ? "TRUE (1)" : "FALSE (0)"}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* AST Sub-Expression Evaluations */}
-                      {currentFallacy.premises &&
-                        currentFallacy.premises.length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-[10px] font-mono font-semibold text-slate-400 mb-1 uppercase tracking-wider">
-                              AST Sub-Expression Evaluations:
-                            </div>
-                            <div className="space-y-1 font-mono text-[10px]">
-                              {currentFallacy.premises.map((p, idx) => {
-                                const evalVal =
-                                  currentFallacy.counterexampleValuation
-                                    ? evaluateAst(
-                                        p.ast,
-                                        currentFallacy.counterexampleValuation
-                                      )
-                                    : true;
-                                return (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center justify-between bg-slate-900/80 p-1 rounded border border-slate-800"
-                                  >
-                                    <span className="text-slate-300 truncate max-w-[170px]">
-                                      {p.label}
-                                    </span>
-                                    <span
-                                      className={`px-1 rounded text-[9px] font-bold ${
-                                        evalVal
-                                          ? "bg-emerald-900/60 text-emerald-300"
-                                          : "bg-rose-900/60 text-rose-300"
-                                      }`}
-                                    >
-                                      {evalVal ? "T" : "F"}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                              {currentFallacy.conclusion &&
-                                (() => {
-                                  const conclEval =
-                                    currentFallacy.counterexampleValuation
-                                      ? evaluateAst(
-                                          currentFallacy.conclusion.ast,
-                                          currentFallacy.counterexampleValuation
-                                        )
-                                      : false;
-                                  return (
-                                    <div className="flex items-center justify-between bg-rose-950/40 p-1 rounded border border-rose-800/50">
-                                      <span className="text-rose-200 truncate max-w-[170px]">
-                                        {currentFallacy.conclusion.label}
-                                      </span>
-                                      <span
-                                        className={`px-1 rounded text-[9px] font-bold ${
-                                          conclEval
-                                            ? "bg-emerald-900/60 text-emerald-300"
-                                            : "bg-rose-900/60 text-rose-300"
-                                        }`}
-                                      >
-                                        {conclEval ? "T" : "F"}
-                                      </span>
-                                    </div>
-                                  );
-                                })()}
-                            </div>
-                          </div>
-                        )}
-
-                      <div className="text-[10px] text-slate-400 line-clamp-2 border-t border-slate-800/80 pt-1.5">
-                        {currentFallacy.plainEnglish}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
         </div>
 
         {/* Floating Rule Palette Dock */}
@@ -1126,10 +632,6 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   tooltip={`${rule.name}: ${match?.explanation || rule.template}`}
                   aria-label={`${rule.name} ${rule.symbol}${isApplicable && match?.resultFormula ? ` ${match.resultFormula}` : ""}: ${isApplicable ? `Applicable deriving ${match?.resultFormula}` : match?.explanation || rule.template}`}
                 >
-                  {/* The name comes first in the DOM and the symbol is moved
-                      in front with CSS order, so the accessible name starts
-                      with the visible text at every width (axe
-                      label-content-name-mismatch). */}
                   <span className="order-2 text-[11px] text-slate-300 hidden sm:inline font-medium">
                     {rule.name}
                   </span>{" "}
@@ -1163,7 +665,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             <button
               onClick={() => handleStartSimulation("normal")}
               disabled={isSimulating}
-              className="min-h-8 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-600/30 text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
+              className="min-h-8 pointer-coarse:min-h-11 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-600/30 text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-[0.98]"
             >
               <IconPlayerPlay className="w-3.5 h-3.5" />
               {isSimulating ? "Simulating..." : "Simulate"}

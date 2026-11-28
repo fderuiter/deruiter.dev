@@ -220,8 +220,8 @@ export function createCustomTheorem(
                 i === 2 || i === 4
                   ? "Derived from submitted premises"
                   : "Submitted premise",
-              x: [120, 120, 430, 430, 730][i],
-              y: [100, 310, 200, 410, 260][i],
+              x: [60, 60, 320, 320, 580][i],
+              y: [40, 260, 140, 360, 240][i],
             })),
             initialEdges: [],
             intermediateNodeId: "C",
@@ -914,7 +914,7 @@ export function encodeGuidedEdgesHash(
     .join(",");
 }
 
-/** Decodes guided theorem edges from the URL hash, returning null when the hash omits an edge override. */
+/** Decodes guided theorem edges from the URL hash, sanitizing against forward validPairs and returning null when the hash omits or fails an edge override. */
 export function decodeGuidedEdgesHash(
   raw: string | null | undefined,
   theorem: TheoremDefinition
@@ -924,13 +924,20 @@ export function decodeGuidedEdgesHash(
   if (raw === "none") return [];
 
   const validIds = new Set(theorem.nodes.map((n) => n.id));
+  const allowedForwardPairs = new Set(
+    theorem.validPairs.map(([s, t]) => `${s}>${t}`)
+  );
   const result: Edge[] = [];
   const seen = new Set<string>();
+  let sawCandidate = false;
   for (const part of raw.split(",")) {
     const trimmed = part.trim();
     if (!trimmed) continue;
+    sawCandidate = true;
     const [pairPart, rulePart] = trimmed.split(":");
-    const [source, target] = (pairPart ?? "").split(">");
+    const [rawSource, rawTarget] = (pairPart ?? "").split(">");
+    const source = rawSource?.trim().toUpperCase();
+    const target = rawTarget?.trim().toUpperCase();
     if (
       !source ||
       !target ||
@@ -941,6 +948,9 @@ export function decodeGuidedEdgesHash(
       return null;
     }
     const key = `${source}>${target}`;
+    if (!allowedForwardPairs.has(key)) {
+      continue;
+    }
     if (seen.has(key)) continue;
     seen.add(key);
     result.push({
@@ -948,6 +958,9 @@ export function decodeGuidedEdgesHash(
       target,
       ...(rulePart ? { ruleApplied: rulePart } : {}),
     });
+  }
+  if (sawCandidate && result.length === 0) {
+    return null;
   }
   return result;
 }

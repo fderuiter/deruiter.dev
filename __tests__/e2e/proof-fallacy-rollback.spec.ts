@@ -19,16 +19,20 @@ test.describe("Dual-surface Inline Fallacy Rollback", () => {
     await input.fill("connect C A");
     await input.press("Enter");
 
-    // Canvas banner should display "FALLACY DETECTED" and "Revert Edge" button
+    // Canvas banner should display "FALLACY DETECTED" and "Dismiss Fallacy" button
     const canvasBannerText = page.getByText("FALLACY DETECTED", {
       exact: true,
     });
     await expect(canvasBannerText).toBeVisible();
 
-    const revertEdgeBtn = page.getByRole("button", { name: /Revert Edge/i });
-    await expect(revertEdgeBtn).toBeVisible();
+    const dismissBannerBtn = page
+      .getByRole("button", {
+        name: /Dismiss Fallacy|Revert Edge/i,
+      })
+      .first();
+    await expect(dismissBannerBtn).toBeVisible();
 
-    // Side drawer Fallacy tab should show "Rollback Step" action button
+    // Side drawer Fallacy tab should show "Dismiss Fallacy" recovery action button
     const fallacyTab = page.getByRole("button", {
       name: "Fallacy",
       exact: true,
@@ -36,20 +40,23 @@ test.describe("Dual-surface Inline Fallacy Rollback", () => {
     await expect(fallacyTab).toBeVisible();
     await fallacyTab.click();
 
-    const rollbackStepBtn = page.getByRole("button", {
-      name: /Rollback Step/i,
-    });
-    await expect(rollbackStepBtn).toBeVisible();
+    const dismissDrawerBtn = page
+      .getByRole("button", {
+        name: /Dismiss Fallacy|Rollback Step/i,
+      })
+      .last();
+    await expect(dismissDrawerBtn).toBeVisible();
 
     // Capture screenshot of active fallacy state with banner & drawer CTA
     await page.screenshot({ path: "/tmp/fallacy-rollback-active.png" });
 
-    // Click "Revert Edge" on canvas banner
-    await revertEdgeBtn.click();
+    // Click "Dismiss Fallacy" on canvas banner and verify initial valid edges remain proven
+    await dismissBannerBtn.click();
 
-    // Verify Fallacy state resets cleanly
+    // Verify Fallacy state resets cleanly while keeping Node C PROVEN and 2 active edges
     await expect(canvasBannerText).toBeHidden();
     await expect(page.getByText("Zero Active Fallacies")).toBeVisible();
+    await expect(page.locator(".react-flow__edge")).toHaveCount(2);
 
     // Capture screenshot after rollback
     await page.screenshot({ path: "/tmp/fallacy-rollback-cleared.png" });

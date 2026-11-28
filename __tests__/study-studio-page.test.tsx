@@ -247,6 +247,36 @@ describe("Clinical Study Studio page", () => {
     ).toBeTruthy();
   });
 
+  it("jumps from Randomization Study metadata stage to Design Inspector when clicking Edit study metadata", async () => {
+    await renderStudio();
+    selectStudioTab(/05.*Randomization/i);
+    const randArea = within(
+      screen.getByRole("region", { name: "Randomization work area" })
+    );
+    fireEvent.click(
+      randArea.getByRole("button", { name: "Add a plan for this design" })
+    );
+    fireEvent.click(randArea.getByRole("checkbox"));
+    const stageNav = within(
+      randArea.getByRole("navigation", { name: "Randomization stages" })
+    );
+    fireEvent.click(
+      stageNav
+        .getAllByRole("button")
+        .find((b) => b.textContent?.endsWith("Study metadata"))!
+    );
+    fireEvent.click(
+      randArea.getByRole("button", { name: "Edit study metadata" })
+    );
+
+    const designTab = screen.getByRole("tab", { name: /01.*Design/i });
+    expect(designTab.getAttribute("aria-selected")).toBe("true");
+    const inspector = screen.getByRole("region", { name: "Study metadata" });
+    expect(
+      within(inspector).getByRole("textbox", { name: "Protocol ID" })
+    ).toBeTruthy();
+  });
+
   it("has no axe violations across all five tabs", async () => {
     const { container } = await renderStudio();
     for (const tabPattern of [

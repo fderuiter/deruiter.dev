@@ -278,7 +278,7 @@ export function SimulationPanel({
             onClick={downloadRunner}
             className="rounded border border-zinc-800 px-3 py-1 text-sm active:scale-[0.98]"
           >
-            Download Monte Carlo request
+            Download Monte Carlo QA request JSON (no schedule rows)
           </button>
         </div>
       </form>
@@ -452,7 +452,8 @@ export function SimulationPanel({
               onClick={downloadRepetition}
               className="rounded border border-zinc-800 px-3 py-1 text-sm active:scale-[0.98] disabled:opacity-50"
             >
-              Download that repetition&apos;s request (single cohort)
+              Download that repetition&apos;s QA request JSON (single cohort, no
+              schedule rows)
             </button>
           </div>
         </div>

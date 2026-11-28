@@ -170,4 +170,66 @@ describe("randomization work area", () => {
       expect(results.violations.map((v) => `${title}: ${v.id}`)).toEqual([]);
     }
   });
+
+  it("renames and removes plans with reversible revisions and valid fallback selection, and links MetadataStage to Inspector", async () => {
+    await opened();
+    fireEvent.click(
+      inArea().getByRole("button", { name: "Add a plan for this design" })
+    );
+    fireEvent.click(
+      inArea().getByRole("button", { name: "Add a plan for this design" })
+    );
+
+    const select = inArea().getByRole("combobox", {
+      name: "Working on",
+    }) as HTMLSelectElement;
+    expect(select.value).toBe("RandomizationPlan_2");
+
+    // Rename RandomizationPlan_2 -> creates reversible revision.
+    fireEvent.click(inArea().getByRole("button", { name: "Rename plan" }));
+    fireEvent.change(inArea().getByRole("textbox", { name: "Plan name" }), {
+      target: { value: "Pivotal valve plan" },
+    });
+    fireEvent.click(inArea().getByRole("button", { name: "Save plan name" }));
+    expect(
+      within(select).getByRole("option", { name: "Pivotal valve plan" })
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(
+      within(select).getByRole("option", { name: "Randomization plan 2" })
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(
+      within(select).getByRole("option", { name: "Pivotal valve plan" })
+    ).toBeTruthy();
+
+    // Removing active plan falls back to the remaining stored plan.
+    fireEvent.click(inArea().getByRole("button", { name: "Remove plan" }));
+    expect(select.value).toBe("RandomizationPlan_1");
+    expect(
+      within(select).queryByRole("option", { name: "Pivotal valve plan" })
+    ).toBeNull();
+
+    // Acknowledge plan 1 and jump from MetadataStage to the Design Inspector.
+    fireEvent.click(inArea().getByRole("checkbox"));
+    fireEvent.click(stageButton("Study metadata"));
+    fireEvent.click(
+      inArea().getByRole("button", { name: "Edit study metadata" })
+    );
+    const metadataInspector = screen.getByRole("region", {
+      name: "Study metadata",
+    });
+    expect(
+      within(metadataInspector).getByRole("textbox", { name: "Protocol ID" })
+    ).toBeTruthy();
+
+    // Removing the last remaining plan falls back to Exploration, and Undo restores it.
+    fireEvent.click(inArea().getByRole("button", { name: "Remove plan" }));
+    expect(select.value).toBe("exploration");
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(
+      within(select).getByRole("option", { name: "Randomization plan 1" })
+    ).toBeTruthy();
+  });
 });

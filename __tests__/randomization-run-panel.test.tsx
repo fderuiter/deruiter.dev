@@ -18,9 +18,13 @@ vi.mock("@/lib/download", () => ({
     downloads.push({ content, name });
   },
 }));
+import { verifyArtifact } from "@/lib/randomization";
 import { StudyDesignGrid } from "@/components/study-workspace/StudyDesignGrid";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  downloads.length = 0;
+});
 
 /** Run, cancel and results in the Randomization work area (#4006 part 3). */
 
@@ -154,5 +158,153 @@ describe("randomization run panel", () => {
       rules: { "color-contrast": { enabled: false } },
     });
     expect(results.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  it("unmasks treatment as Biostatistician or Academic, exports CSV and artifact JSON after disclosure acknowledgment, and verifies the artifact", async () => {
+    await opened();
+    fireEvent.click(area().getByRole("checkbox"));
+    fireEvent.click(stageButton("Review"));
+    fireEvent.click(
+      area().getByRole("button", { name: "Promote to a plan for this study" })
+    );
+    fireEvent.click(stageButton("Mechanics"));
+    commit("Seed", "VerifySeed99");
+    fireEvent.click(stageButton("Review"));
+    fireEvent.click(runArea().getByRole("button", { name: "Run" }));
+    await runArea().findByRole("table");
+
+    // Masked view blocks artifact JSON until treatment is unmasked.
+    const jsonButtonMasked = runArea().getByRole("button", {
+      name: "Download artifact JSON",
+    }) as HTMLButtonElement;
+    expect(jsonButtonMasked.disabled).toBe(true);
+
+    // Switch to Biostatistician -> treatment unmasked -> disclosure checkbox appears, exports gated until checked.
+    fireEvent.change(runArea().getByRole("combobox", { name: "Persona" }), {
+      target: { value: "Biostatistician" },
+    });
+    const disclosureBox = runArea().getByRole("checkbox", {
+      name: "I understand this export reveals or can rebuild every treatment assignment.",
+    }) as HTMLInputElement;
+    expect(disclosureBox.checked).toBe(false);
+    expect(
+      (
+        runArea().getByRole("button", {
+          name: "Download CSV",
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(true);
+    expect(
+      (
+        runArea().getByRole("button", {
+          name: "Download artifact JSON",
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(true);
+
+    fireEvent.click(disclosureBox);
+    expect(disclosureBox.checked).toBe(true);
+
+    fireEvent.click(runArea().getByRole("button", { name: "Download CSV" }));
+    fireEvent.click(
+      runArea().getByRole("button", { name: "Download artifact JSON" })
+    );
+    await waitFor(() => expect(downloads).toHaveLength(2));
+
+    const csvExport = downloads.find((d) => d.name.endsWith("-schedule.csv"))!;
+    expect(csvExport.content).toMatch(/full-disclosure/);
+    expect(csvExport.content).not.toContain("MASKED");
+
+    const artifactExport = downloads.find((d) =>
+      d.name.endsWith("-artifact.json")
+    )!;
+    const directCheck = verifyArtifact(artifactExport.content);
+    expect(directCheck.outcome).toBe("verified");
+
+    // Round-trip through VerificationPanel in the UI by uploading the exported file.
+    const verifyRegion = within(
+      screen.getByRole("region", { name: "Verify an artifact", hidden: true })
+    );
+    fireEvent.change(
+      verifyRegion.getByLabelText("Artifact file (JSON, up to 8 MiB)"),
+      {
+        target: {
+          files: [
+            new File([artifactExport.content], artifactExport.name, {
+              type: "application/json",
+            }),
+          ],
+        },
+      }
+    );
+    const verifyBanner = await verifyRegion.findByText(
+      /Verified\. The digest matches/
+    );
+    expect(verifyBanner.textContent).toContain("Verified.");
+    expect(verifyRegion.queryByText(/missing a field/i)).toBeNull();
+
+    // Switching to TrialManager + Academic resets fullDisclosureAcknowledged, and unmasking Academic shows the checkbox again.
+    fireEvent.change(runArea().getByRole("combobox", { name: "Persona" }), {
+      target: { value: "TrialManager" },
+    });
+    fireEvent.change(
+      runArea().getByRole("combobox", { name: "Organization" }),
+      { target: { value: "Academic" } }
+    );
+    fireEvent.click(
+      runArea().getByRole("checkbox", {
+        name: "Show treatment values",
+      })
+    );
+    const academicDisclosureBox = runArea().getByRole("checkbox", {
+      name: "I understand this export reveals or can rebuild every treatment assignment.",
+    }) as HTMLInputElement;
+    expect(academicDisclosureBox.checked).toBe(false);
+    fireEvent.click(academicDisclosureBox);
+    expect(
+      (
+        runArea().getByRole("button", {
+          name: "Download artifact JSON",
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(false);
+
+    // Rerunning resets fullDisclosureAcknowledged to false.
+    fireEvent.click(runArea().getByRole("button", { name: "Run again" }));
+    await waitFor(() =>
+      expect(
+        (
+          runArea().getByRole("checkbox", {
+            name: "I understand this export reveals or can rebuild every treatment assignment.",
+          }) as HTMLInputElement
+        ).checked
+      ).toBe(false)
+    );
+
+    // Switching plans also resets fullDisclosureAcknowledged to false.
+    fireEvent.click(
+      runArea().getByRole("checkbox", {
+        name: "I understand this export reveals or can rebuild every treatment assignment.",
+      })
+    );
+    fireEvent.click(
+      area().getByRole("button", { name: "Add a plan for this design" })
+    );
+    fireEvent.change(area().getByRole("combobox", { name: "Working on" }), {
+      target: { value: "RandomizationPlan_1" },
+    });
+    fireEvent.click(stageButton("Review"));
+    fireEvent.click(runArea().getByRole("button", { name: "Run" }));
+    await runArea().findByRole("table");
+    fireEvent.change(runArea().getByRole("combobox", { name: "Persona" }), {
+      target: { value: "Biostatistician" },
+    });
+    expect(
+      (
+        runArea().getByRole("checkbox", {
+          name: "I understand this export reveals or can rebuild every treatment assignment.",
+        }) as HTMLInputElement
+      ).checked
+    ).toBe(false);
   });
 });

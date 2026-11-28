@@ -210,4 +210,27 @@ describe("SimulationPanel", () => {
     );
     expect(screen.queryByTestId("randomization-simulation-report")).toBeNull();
   });
+
+  it("labels QA request JSON downloads distinctly from schedule artifacts", async () => {
+    render(<SimulationPanel plan={plan()} workspaceRevision={1} />);
+    const runnerBtn = screen.getByRole("button", {
+      name: "Download Monte Carlo QA request JSON (no schedule rows)",
+    });
+    fireEvent.click(runnerBtn);
+    expect(download.calls).toHaveLength(1);
+    const [runnerJson, runnerName] = download.calls[0] as [string, string];
+    expect(runnerName).toBe("plan-panel-monte-carlo-request.json");
+    const parsedRunner = JSON.parse(runnerJson) as Record<string, unknown>;
+    expect(parsedRunner.rows).toBeUndefined();
+    expect(parsedRunner.digest).toBeUndefined();
+
+    setValue(/Repetitions/, "2");
+    fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
+    await screen.findByTestId("randomization-simulation-report");
+    expect(
+      screen.getByRole("button", {
+        name: "Download that repetition's QA request JSON (single cohort, no schedule rows)",
+      })
+    ).toBeTruthy();
+  });
 });

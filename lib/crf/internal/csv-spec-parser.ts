@@ -1,7 +1,7 @@
 /**
  * CSV Study Specification Parser
  * Converts structured CSV study specification rows into CRF Studio StudyProtocol.
- * Also delegates to REDCap Data Dictionary parser when a REDCap dialect CSV is detected.
+ * Requires explicit REDCap or CDISC header schemas without positional column fallbacks.
  */
 
 import {
@@ -33,6 +33,149 @@ export {
   REQUIRED_REDCAP_HEADERS,
 };
 
+const CDISC_DOMAIN_TOKENS = new Set([
+  "domain",
+  "sdtmdomain",
+  "cdashdomain",
+  "domaincode",
+]);
+
+const CDISC_FORM_TOKENS = new Set([
+  "form",
+  "formname",
+  "crf",
+  "crfform",
+  "activity",
+  "activityname",
+  "dataset",
+]);
+
+const CDISC_VARIABLE_TOKENS = new Set([
+  "variable",
+  "variablecdash",
+  "variablesdtm",
+  "cdashvariable",
+  "sdtmvariable",
+  "variablename",
+  "fieldname",
+  "field",
+  "item",
+  "itemname",
+  "itemoid",
+]);
+
+const CDISC_LABEL_TOKENS = new Set([
+  "label",
+  "fieldlabel",
+  "cdashlabel",
+  "sdtmlabel",
+  "question",
+  "questiontext",
+  "prompt",
+  "description",
+]);
+
+const CDISC_TYPE_TOKENS = new Set([
+  "type",
+  "datatype",
+  "clinicaldatatype",
+  "fieldtype",
+  "odmdatatype",
+]);
+
+const CDISC_CORE_TOKENS = new Set([
+  "core",
+  "cdashcore",
+  "req",
+  "required",
+  "mandatory",
+]);
+
+const CDISC_ACRF_TOKENS = new Set([
+  "acrf",
+  "acrfoverlaytag",
+  "overlay",
+  "overlaytag",
+  "annotation",
+  "sdtmannotation",
+]);
+
+function normalizeHeaderCell(cell: string): string {
+  return (cell || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function resolveCdiscColumns(rawHeader: string[]) {
+  const normalized = rawHeader.map(normalizeHeaderCell);
+
+  const findCol = (allowed: Set<string>): number =>
+    normalized.findIndex(
+      (token, idx) =>
+        rawHeader[idx].trim().length <= 48 &&
+        token.length > 0 &&
+        allowed.has(token)
+    );
+
+  return {
+    domainIdx: findCol(CDISC_DOMAIN_TOKENS),
+    formIdx: findCol(CDISC_FORM_TOKENS),
+    varIdx: findCol(CDISC_VARIABLE_TOKENS),
+    labelIdx: findCol(CDISC_LABEL_TOKENS),
+    typeIdx: findCol(CDISC_TYPE_TOKENS),
+    coreIdx: findCol(CDISC_CORE_TOKENS),
+    acrfIdx: findCol(CDISC_ACRF_TOKENS),
+  };
+}
+
+/**
+ * Checks whether CSV header columns match an explicit CDISC CSV Study Specification schema.
+ * Rejects prose, single-column text, REDCap dictionaries, and arbitrary CSV files.
+ */
+export function isCdiscCsvHeader(header: string[]): boolean {
+  if (!header || !Array.isArray(header) || header.length < 3) {
+    return false;
+  }
+  if (isRedcapHeader(header)) {
+    return false;
+  }
+  const cols = resolveCdiscColumns(header);
+  const hasDomainOrForm = cols.domainIdx !== -1 || cols.formIdx !== -1;
+  const hasVariable = cols.varIdx !== -1;
+  const hasMetadataCol =
+    cols.labelIdx !== -1 || cols.typeIdx !== -1 || cols.coreIdx !== -1;
+  return hasDomainOrForm && hasVariable && hasMetadataCol;
+}
+
+/**
+ * Inspects a raw CSV string to determine whether it carries an explicit CDISC CSV Study Specification header.
+ */
+export function isCdiscSpecCsv(csvContent: string): boolean {
+  if (!csvContent || typeof csvContent !== "string" || !csvContent.trim()) {
+    return false;
+  }
+  const clean = stripBom(csvContent.trim());
+  const rows = parseCsvRows(clean);
+  if (rows.length === 0) return false;
+  return isCdiscCsvHeader(rows[0]);
+}
+
+function deterministicSpecHash(rows: string[][]): string {
+  let h = 0x811c9dc5;
+  for (const row of rows) {
+    for (const cell of row) {
+      for (let i = 0; i < cell.length; i++) {
+        h ^= cell.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      h ^= 0x2c;
+      h = Math.imul(h, 0x01000193);
+    }
+  }
+  return (h >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
+}
+
 function normalizeDataType(rawType: string): ClinicalDataType {
   const t = (rawType || "").toLowerCase();
   if (t.includes("integer") || t === "int") return "integer";
@@ -44,9 +187,9 @@ function normalizeDataType(rawType: string): ClinicalDataType {
   )
     return "number";
   if (t.includes("partial") && t.includes("date")) return "partial_date";
+  if (t.includes("datetime")) return "datetime";
   if (t.includes("date")) return "date";
   if (t.includes("time") && !t.includes("date")) return "time";
-  if (t.includes("datetime")) return "datetime";
   if (t.includes("radio")) return "radio";
   if (t.includes("check")) return "checkbox";
   if (t.includes("select") || t.includes("dropdown") || t.includes("code"))
@@ -55,37 +198,15 @@ function normalizeDataType(rawType: string): ClinicalDataType {
   return "text";
 }
 
-function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
-  const header = rows[0].map((h) => h.toLowerCase());
+export function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
+  if (!isCdiscCsvHeader(rows[0])) {
+    throw new Error(
+      "Invalid CSV specification: Missing explicit CDISC header columns (expected Domain/Form, Variable, and Label/Type)"
+    );
+  }
 
-  let domainIdx = header.findIndex((h) => h.includes("domain"));
-  let formIdx = header.findIndex(
-    (h) => h.includes("form") || h.includes("activity")
-  );
-  let varIdx = header.findIndex(
-    (h) => h.includes("variable") || h.includes("field") || h.includes("item")
-  );
-  let labelIdx = header.findIndex(
-    (h) =>
-      h.includes("label") || h.includes("question") || h.includes("description")
-  );
-  let typeIdx = header.findIndex(
-    (h) => h.includes("type") || h.includes("datatype")
-  );
-  const coreIdx = header.findIndex(
-    (h) => h.includes("core") || h.includes("req") || h.includes("mandatory")
-  );
-  const acrfIdx = header.findIndex(
-    (h) =>
-      h.includes("acrf") || h.includes("overlay") || h.includes("annotation")
-  );
-
-  // Fallback defaults if header matching failed
-  if (domainIdx === -1) domainIdx = 0;
-  if (formIdx === -1) formIdx = 1;
-  if (varIdx === -1) varIdx = 2;
-  if (labelIdx === -1) labelIdx = 3;
-  if (typeIdx === -1) typeIdx = 4;
+  const { domainIdx, formIdx, varIdx, labelIdx, typeIdx, coreIdx, acrfIdx } =
+    resolveCdiscColumns(rows[0]);
 
   const formsMap = new Map<
     string,
@@ -94,15 +215,20 @@ function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
-    if (row.length === 0) continue;
+    if (row.length === 0 || row.every((c) => !c.trim())) continue;
 
-    const domain = (row[domainIdx] || "GENERAL").toUpperCase();
-    const formName = row[formIdx] || `${domain} Form`;
-    const variableName = row[varIdx] || `VAR_${r}`;
-    const label = row[labelIdx] || variableName;
-    const rawType = row[typeIdx] || "text";
-    const coreVal = coreIdx !== -1 ? row[coreIdx] : "O";
-    const acrfTag = acrfIdx !== -1 ? row[acrfIdx] : `${domain}.${variableName}`;
+    const domain = (
+      (domainIdx !== -1 ? row[domainIdx] : "") || "GENERAL"
+    ).toUpperCase();
+    const formName = (formIdx !== -1 ? row[formIdx] : "") || `${domain} Form`;
+    const variableName = (row[varIdx] || `VAR_${r}`).trim();
+    const label = (labelIdx !== -1 ? row[labelIdx] : "") || variableName;
+    const rawType = (typeIdx !== -1 ? row[typeIdx] : "") || "text";
+    const coreVal = coreIdx !== -1 ? row[coreIdx] || "O" : "O";
+    const acrfTag =
+      acrfIdx !== -1 && row[acrfIdx]
+        ? row[acrfIdx]
+        : `${domain}.${variableName}`;
 
     const formKey = `${domain}_${formName.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
     if (!formsMap.has(formKey)) {
@@ -125,7 +251,7 @@ function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
     };
 
     formEntry.fields.push({
-      id: `fld_${variableName.toLowerCase()}_${r}`,
+      id: `fld_${variableName.toLowerCase().replace(/[^a-z0-9_]/g, "_")}_${r}`,
       variableName,
       label,
       dataType: normalizeDataType(rawType),
@@ -133,6 +259,12 @@ function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
       required: isRequired,
       cdashMetadata,
     });
+  }
+
+  if (formsMap.size === 0) {
+    throw new Error(
+      "Invalid CSV specification: No valid data rows found under header"
+    );
   }
 
   const forms: CRFForm[] = Array.from(formsMap.entries()).map(
@@ -179,7 +311,7 @@ function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
     },
   ];
 
-  const protoNum = `CSV-SPEC-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const protoNum = `CSV-SPEC-${deterministicSpecHash(rows)}`;
 
   return {
     id: `study_${protoNum.toLowerCase()}`,
@@ -189,14 +321,13 @@ function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
     sponsor: "Sponsor",
     therapeuticArea: "General",
     version: "1.0",
-    lastModified: new Date().toISOString(),
+    lastModified: "1970-01-01T00:00:00.000Z",
     forms,
     visits,
     codelists: [],
     provenance: {
       sourceFormat: "CSV Study Specification",
       sourceVersion: "1.0",
-      importedAt: new Date().toISOString(),
       importedBy: "Unverified Session",
     },
   };
@@ -204,8 +335,7 @@ function parseCdiscCsvRows(rows: string[][]): StudyProtocol {
 
 /**
  * Imports a StudyProtocol from raw CSV content.
- * Automatically detects whether the CSV matches Vanderbilt REDCap data dictionary
- * format or CDISC CSV study specification format.
+ * Requires an explicit Vanderbilt REDCap data dictionary header or CDISC CSV study specification header.
  */
 export function importStudyFromCsvSpec(csvContent: string): StudyProtocol {
   if (!csvContent || typeof csvContent !== "string" || !csvContent.trim()) {
@@ -224,5 +354,11 @@ export function importStudyFromCsvSpec(csvContent: string): StudyProtocol {
     return parseRedcapCsvRows(rows);
   }
 
-  return parseCdiscCsvRows(rows);
+  if (isCdiscCsvHeader(rows[0])) {
+    return parseCdiscCsvRows(rows);
+  }
+
+  throw new Error(
+    "Invalid CSV specification: Unrecognized CSV header schema (expected REDCap Data Dictionary or CDISC Study Specification headers)"
+  );
 }

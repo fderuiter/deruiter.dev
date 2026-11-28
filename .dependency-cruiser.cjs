@@ -117,6 +117,42 @@ module.exports = {
       },
     },
     {
+      name: "not-to-unresolvable",
+      comment:
+        "Every import must resolve to an existing file, Node built-in module, or installed package.",
+      severity: "error",
+      from: {},
+      to: { couldNotResolve: true },
+    },
+    {
+      name: "not-to-undeclared-dep",
+      comment:
+        "Every third-party import must be declared in package.json (never rely on hoisted transitive installs).",
+      severity: "error",
+      from: {},
+      to: {
+        dependencyTypes: [
+          "npm-no-pkg",
+          "npm-unknown",
+          "npm-optional",
+          "npm-peer",
+        ],
+      },
+    },
+    {
+      name: "not-to-undeclared-dep",
+      comment:
+        "Production roots (app, components, hooks, and shipped lib modules) may import only packages declared in package.json dependencies.",
+      severity: "error",
+      from: {
+        path: "^(app|components|hooks|lib)/",
+        pathNot: `^(${R}/dx/|${R}/[^/]+/tests/)`,
+      },
+      to: {
+        dependencyTypes: ["npm-dev"],
+      },
+    },
+    {
       name: "no-circular",
       comment: "Zero circular dependency cycles allowed across the codebase.",
       severity: "error",
@@ -128,7 +164,21 @@ module.exports = {
     doNotFollow: { path: "node_modules" },
     tsConfig: { fileName: "tsconfig.json" },
     enhancedResolveOptions: {
-      extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".d.ts"],
+      exportsFields: ["exports"],
+      conditionNames: ["import", "require", "node", "default", "types"],
+      mainFields: ["module", "main", "types", "typings"],
+      extensions: [
+        ".ts",
+        ".tsx",
+        ".mts",
+        ".cts",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".cjs",
+        ".json",
+        ".d.ts",
+      ],
     },
     reporterOptions: {
       text: {

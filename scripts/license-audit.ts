@@ -7,8 +7,10 @@
 import fs from "fs";
 import path from "path";
 import {
+  computeShippedLockPaths,
   listNoticedPackages,
   MIN_LICENSE_BODY_CHARS,
+  type LockfileShape,
 } from "../lib/oss-credits";
 
 export interface LicenseException {
@@ -368,6 +370,9 @@ export function runLicenseAudit(options?: {
   const shippedExceptions = shippedCodeExceptions(validExceptions);
 
   const packages: Record<string, PackageLockEntry> = lockJson.packages || {};
+  const shippedPaths = computeShippedLockPaths({
+    packages: packages as LockfileShape["packages"],
+  });
 
   for (const [pkgPath, pkg] of Object.entries(packages)) {
     if (pkgPath === "") continue; // Skip root workspace package
@@ -385,7 +390,7 @@ export function runLicenseAudit(options?: {
       licenseExpr = rawLicense.type || JSON.stringify(rawLicense);
     }
 
-    const shipped = !pkg.dev;
+    const shipped = shippedPaths.has(pkgPath);
     if (shipped) {
       shippedPackages++;
       shippedKeys.add(`${pkgName}@${version}`);

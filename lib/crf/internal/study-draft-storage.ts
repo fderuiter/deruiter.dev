@@ -4,6 +4,7 @@ import {
   safeRawStorage,
   type RawStorage,
 } from "../../safe-storage";
+import { validateCanonicalCrfDocument } from "./codecs/canonical-document";
 
 /**
  * localStorage key holding the author's most recently acknowledged CRF Studio
@@ -39,14 +40,7 @@ export type LoadStudyDraftResult =
   | { status: "corrupt" };
 
 export function isStudyProtocolShape(value: unknown): value is StudyProtocol {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.id === "string" &&
-    Array.isArray(candidate.forms) &&
-    Array.isArray(candidate.visits) &&
-    Array.isArray(candidate.codelists)
-  );
+  return validateCanonicalCrfDocument(value, { mode: "storage" }).valid;
 }
 
 function isStudyDraftEnvelopeShape(

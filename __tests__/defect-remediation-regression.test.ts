@@ -73,6 +73,11 @@ import {
   generateCliCommandForField,
   executeCliString,
   StudyProtocolEngine,
+  DEFAULT_FORMAT_CODEC_REGISTRY,
+  UniversalJsonCodec,
+  StudyAuditor,
+  validateStudyCompliance,
+  isStudyProtocolShape,
 } from "@/lib/crf";
 import { EvaluateFormulaHandler } from "@/lib/services";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
@@ -1386,10 +1391,10 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       );
       expect(xml).toContain('ItemGroupDef OID="IG.DM&amp;LB.sec_&amp;1"');
       expect(xml).toContain(
-        'ItemRef ItemOID="IT.VAR_&amp;1&lt;2&gt;&quot;3&quot;"'
+        'ItemRef ItemOID="IT.f_&amp;1&lt;2&gt;.VAR_&amp;1&lt;2&gt;&quot;3&quot;"'
       );
       expect(xml).toContain(
-        'ItemDef OID="IT.VAR_&amp;1&lt;2&gt;&quot;3&quot;"'
+        'ItemDef OID="IT.f_&amp;1&lt;2&gt;.VAR_&amp;1&lt;2&gt;&quot;3&quot;"'
       );
       expect(xml).toContain('CodeListOID="CL_&amp;1"');
     });
@@ -3594,6 +3599,115 @@ describe("FHIR Questionnaire item recursion depth bound (#4127)", () => {
     ).toThrow(
       "HL7 FHIR R4 Parsing Error: Questionnaire items are nested more than 32 levels deep."
     );
+  });
+});
+
+describe("Canonical CRF codecs and declarative conformance rule-pack regressions", () => {
+  it("isolates invalid Universal CRF JSON from USDM fallback, validates CanonicalCrfDocument on encode, clears invalid date defaults deterministically, and quarantines malformed draft arrays", () => {
+    const invalidNative = JSON.stringify({
+      $schema: "https://deruiter.dev/schemas/crf/v1/universal-crf.schema.json",
+      id: "study_bad_native",
+      protocolNumber: "BAD-01",
+      forms: "invalid",
+    });
+    expect(() =>
+      DEFAULT_FORMAT_CODEC_REGISTRY.decodeAuto({
+        raw: invalidNative,
+        fileName: "bad.crf.json",
+      })
+    ).toThrow();
+    expect(() =>
+      detectAndParseStudyFile(invalidNative, "bad.crf.json")
+    ).toThrow(/Universal CRF validation failed/);
+
+    expect(
+      isStudyProtocolShape({
+        id: "draft_corrupt",
+        forms: ["corrupt_form_entry"],
+        visits: [],
+        codelists: [],
+      })
+    ).toBe(false);
+
+    const studyWithBadDate: StudyProtocol = {
+      id: "study_reg_date",
+      protocolNumber: "REG-DATE-01",
+      studyName: "Regression Date Study",
+      phase: "Phase II",
+      sponsor: "Sponsor",
+      therapeuticArea: "Oncology",
+      version: "1.0",
+      lastModified: "2026-08-15T00:00:00.000Z",
+      codelists: [],
+      visits: [
+        {
+          id: "v1",
+          oid: "SE.V1",
+          name: "Screening",
+          visitType: "Scheduled",
+          targetDay: 0,
+          windowBefore: 0,
+          windowAfter: 0,
+          assignedFormIds: ["f_dm"],
+        },
+      ],
+      forms: [
+        {
+          id: "f_dm",
+          name: "Demographics",
+          domain: "DM",
+          description: "DM",
+          version: "1.0",
+          rules: [],
+          sections: [
+            {
+              id: "s1",
+              title: "Main",
+              fields: [
+                {
+                  id: "fld_dt",
+                  variableName: "ICDAT",
+                  label: "Consent Date",
+                  dataType: "date",
+                  defaultValue: "not-iso-date",
+                  columnSpan: 6,
+                  required: true,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const engineRes = StudyProtocolEngine.validateProtocol(studyWithBadDate);
+    const compRes = validateStudyCompliance(studyWithBadDate);
+    const auditRes = StudyAuditor.audit(studyWithBadDate);
+    expect(engineRes.errors.length).toBe(
+      compRes.filter((v) => v.severity === "error").length
+    );
+    expect(engineRes.errors.length).toBe(auditRes.summary.errors);
+
+    const { updatedStudy } = autoFixAllViolations(studyWithBadDate);
+    expect(updatedStudy.forms[0].sections[0].fields[0].defaultValue).toBe("");
+    expect(() =>
+      UniversalJsonCodec.encode({
+        ...DEFAULT_FORMAT_CODEC_REGISTRY.decodeWith(
+          "json_universal",
+          StudyProtocolEngine.exportProtocol(updatedStudy, "json").output
+        ),
+        metadata: {
+          id: "study_reg_date",
+          protocolNumber: "",
+          studyName: "Broken",
+          phase: "Phase II",
+          sponsor: "Sponsor",
+          therapeuticArea: "Oncology",
+          version: "1.0",
+          lastModified: "2026-08-15T00:00:00.000Z",
+        },
+      })
+    ).toThrow();
   });
 });
 

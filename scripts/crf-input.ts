@@ -2,7 +2,12 @@ import fs from "fs";
 import path from "path";
 import { getOncologyPresetSync } from "../lib/crf/presets";
 import { StudyProtocol } from "../lib/crf/types";
-import { parseUniversalCrf, exportUniversalCrfJson } from "../lib/crf";
+import {
+  UniversalJsonCodec,
+  UniversalYamlCodec,
+  fromCanonicalCrfDocument,
+  toCanonicalCrfDocument,
+} from "../lib/crf";
 
 /**
  * How the CRF CLI reads and writes its study file (#3091). A file named on
@@ -12,6 +17,11 @@ import { parseUniversalCrf, exportUniversalCrfJson } from "../lib/crf";
  */
 
 export const DEFAULT_FILE = "study.crf.json";
+
+function isYamlPath(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return lower.endsWith(".yaml") || lower.endsWith(".yml");
+}
 
 /** A problem with the study file the user should fix; printed without a stack. */
 export class CrfInputError extends Error {
@@ -31,7 +41,7 @@ export interface LoadedProtocol {
 }
 
 /**
- * Loads the study file for a command.
+ * Loads the study file for a command (`.json` or `.yaml`/`.yml`).
  *
  * @param filePath - The file named on the command line, if any.
  * @param options - `allowMissing` lets a command that replaces the whole
@@ -51,8 +61,12 @@ export function loadProtocol(
   if (fs.existsSync(targetPath)) {
     const raw = fs.readFileSync(targetPath, "utf-8");
     try {
+      const codec = isYamlPath(targetPath)
+        ? UniversalYamlCodec
+        : UniversalJsonCodec;
+      const doc = codec.decode(raw);
       return {
-        study: parseUniversalCrf(raw),
+        study: fromCanonicalCrfDocument(doc),
         path: targetPath,
         fromDemo: false,
       };
@@ -75,7 +89,7 @@ export function loadProtocol(
 }
 
 /**
- * Writes a study back to the file it was loaded from.
+ * Writes a study back to the file it was loaded from (`.json` or `.yaml`/`.yml`).
  *
  * @param loaded - What {@link loadProtocol} returned.
  * @param study - The changed study.
@@ -94,5 +108,9 @@ export function saveProtocol(
       `Nothing was saved: there is no study file to change. Run \`crf init\` first, or name an existing file.`
     );
   }
-  fs.writeFileSync(loaded.path, exportUniversalCrfJson(study), "utf-8");
+  const doc = toCanonicalCrfDocument(study, { mode: "strict" });
+  const codec = isYamlPath(loaded.path)
+    ? UniversalYamlCodec
+    : UniversalJsonCodec;
+  fs.writeFileSync(loaded.path, codec.encode(doc), "utf-8");
 }

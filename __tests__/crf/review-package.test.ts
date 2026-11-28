@@ -366,10 +366,10 @@ describe("[#680] review package builder", () => {
     ).rejects.toMatchObject({ name: "ReviewPackageBuildError", aborted: true });
   });
 
-  it("records a native source that does not reopen as a limitation", async () => {
-    // SDTM caps variable names at 8 characters; the schema rejects a 9th.
+  it("reopens 9-character variable names cleanly while throwing ReviewPackageBuildError when UniversalJsonCodec reopen verification fails or drops reviewThreads/testScenarios", async () => {
+    // Structural bounds allow <= 128 chars (separated from regulatory SD0001 <= 8 chars).
     const [first, ...rest] = PK_ESCALATION_PRESET.forms;
-    const tooLong = {
+    const nineCharVarStudy = {
       ...PK_ESCALATION_PRESET,
       forms: [
         {
@@ -388,19 +388,69 @@ describe("[#680] review package builder", () => {
         ...rest,
       ],
     };
-    const result = await buildReviewPackage(
-      createReviewPackageSnapshot(tooLong),
+    const validPkg = await buildReviewPackage(
+      createReviewPackageSnapshot(nineCharVarStudy),
       { generatedAt: GENERATED_AT, exclude: ["forms_pdf"] }
     );
-    expect(result.manifest.nativeSource.reopens).toBe(false);
-    expect(result.manifest.nativeSource.error).toContain("validation failed");
-    expect(
-      result.manifest.limitations.some((l) =>
-        l.includes("did not pass schema validation")
-      )
-    ).toBe(true);
-    expect(textOf(result.artifacts, "readme")).toContain(
-      "did not pass schema validation"
+    expect(validPkg.manifest.nativeSource.reopens).toBe(true);
+    const archive = await zipReviewPackage(validPkg);
+    const reopened = await openReviewPackage(archive);
+    expect(reopened.study.forms[0].sections[0].fields[0].variableName).toBe(
+      "PCTIME_00"
     );
+
+    // Structural bound violation (> 128 chars) blocks review package creation with ReviewPackageBuildError.
+    const structurallyInvalidStudy = {
+      ...PK_ESCALATION_PRESET,
+      forms: [
+        {
+          ...first,
+          sections: first.sections.map((section, i) =>
+            i === 0
+              ? {
+                  ...section,
+                  fields: section.fields.map((field, j) =>
+                    j === 0
+                      ? { ...field, variableName: "X".repeat(130) }
+                      : field
+                  ),
+                }
+              : section
+          ),
+        },
+        ...rest,
+      ],
+    };
+    await expect(
+      buildReviewPackage(
+        createReviewPackageSnapshot(structurallyInvalidStudy),
+        { generatedAt: GENERATED_AT, exclude: ["forms_pdf"] }
+      )
+    ).rejects.toMatchObject({
+      name: "ReviewPackageBuildError",
+    });
+
+    // Tampered reused native_source dropping reviewThreads or testScenarios also throws ReviewPackageBuildError.
+    const richStudy = reviewedStudy();
+    const basePkg = await buildReviewPackage(
+      createReviewPackageSnapshot(richStudy),
+      { generatedAt: GENERATED_AT, exclude: ["forms_pdf"] }
+    );
+    const strippedNativeJson = JSON.stringify({
+      ...JSON.parse(textOf(basePkg.artifacts, "native_source")),
+      reviewThreads: [],
+    });
+    const tamperedArtifacts = basePkg.artifacts.map((art) =>
+      art.id === "native_source" ? { ...art, content: strippedNativeJson } : art
+    );
+    await expect(
+      buildReviewPackage(createReviewPackageSnapshot(richStudy), {
+        generatedAt: GENERATED_AT,
+        exclude: ["forms_pdf"],
+        reuse: tamperedArtifacts,
+      })
+    ).rejects.toMatchObject({
+      name: "ReviewPackageBuildError",
+    });
   });
 });

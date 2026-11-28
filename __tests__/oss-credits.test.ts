@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   buildCreditsDataset,
+  computeShippedLockPaths,
   countByLicense,
   diffFactsAgainstLockfile,
   fillSpdxTemplate,
@@ -23,7 +24,12 @@ import {
 } from "../lib/oss-credits";
 import { CREDITS_DATASET } from "../lib/oss-credits/dataset";
 import { REGISTRY_FACTS } from "../lib/oss-credits/facts";
-import { DIRECT_ANNOTATIONS, GROUP_ORDER } from "../lib/oss-credits/presets";
+import {
+  DIRECT_ANNOTATIONS,
+  GROUP_ORDER,
+  RUNTIME_ANNOTATIONS,
+  TOOLING_ANNOTATIONS,
+} from "../lib/oss-credits/presets";
 import {
   DATASET_PATH,
   FACTS_PATH,
@@ -46,11 +52,23 @@ const readText = (rel: string): string =>
 
 const lockfile: LockfileShape = {
   packages: {
-    "": {},
+    "": {
+      dependencies: {
+        "app-lib": "^1.0.0",
+        "@scope/helper": "^2.0.0",
+        mystery: "^1.0.0",
+      },
+      devDependencies: {
+        "dev-tool": "^3.0.0",
+      },
+    },
     "node_modules/app-lib": {
       version: "1.2.0",
       license: "MIT",
       integrity: "sha512-app",
+      dependencies: {
+        nested: "^0.1.0",
+      },
     },
     "node_modules/@scope/helper": {
       version: "2.0.0",
@@ -165,6 +183,13 @@ describe("buildCreditsDataset", () => {
     const aliased: LockfileShape = {
       packages: {
         ...lockfile.packages,
+        "node_modules/app-lib": {
+          ...lockfile.packages["node_modules/app-lib"],
+          dependencies: {
+            nested: "^0.1.0",
+            "alias-of-nested": "npm:nested@^0.1.0",
+          },
+        },
         "node_modules/app-lib/node_modules/alias-of-nested": {
           name: "nested",
           version: "0.1.0",
@@ -278,10 +303,135 @@ describe("buildCreditsDataset", () => {
 
   it("groups direct runtime dependencies by purpose and counts licenses", () => {
     const dataset = build();
-    expect(groupDirectRuntimeByPurpose(dataset).map((g) => g.group)).toEqual([
-      "Framework and runtime",
-    ]);
+    expect(
+      groupDirectRuntimeByPurpose(dataset, root).map((g) => g.group)
+    ).toEqual(["Framework and runtime"]);
     expect(countByLicense(dataset)[0]).toEqual({ license: "MIT", count: 2 });
+  });
+
+  it("excludes devDependencies from direct runtime groups even when transitively shipped", () => {
+    const sharedLock: LockfileShape = {
+      packages: {
+        "": {
+          dependencies: { "app-lib": "^1.0.0" },
+          devDependencies: { "shared-dom": "^2.0.0" },
+        },
+        "node_modules/app-lib": {
+          version: "1.2.0",
+          license: "MIT",
+          dependencies: { "shared-dom": "^2.0.0" },
+        },
+        "node_modules/shared-dom": {
+          version: "2.0.0",
+          license: "MIT",
+        },
+      },
+    };
+    const sharedRoot: RootPackageShape = {
+      dependencies: { "app-lib": "^1.0.0" },
+      devDependencies: { "shared-dom": "^2.0.0" },
+    };
+    const dataset = buildCreditsDataset({
+      lockfile: sharedLock,
+      root: sharedRoot,
+      annotations: {
+        "app-lib": { group: "Framework and runtime", reason: "Runtime." },
+        "shared-dom": { group: "Testing", reason: "DOM test environment." },
+      },
+      facts: emptyFacts(),
+    });
+    const sharedPkg = dataset.packages.find((p) => p.name === "shared-dom");
+    expect(sharedPkg?.scope).toBe("runtime");
+    expect(sharedPkg?.directScope).toBe("tooling");
+    expect(
+      groupDirectRuntimeByPurpose(dataset, sharedRoot).flatMap((g) =>
+        g.packages.map((p) => p.name)
+      )
+    ).toEqual(["app-lib"]);
+    expect(
+      groupDirectRuntimeByPurpose(dataset).flatMap((g) =>
+        g.packages.map((p) => p.name)
+      )
+    ).toEqual(["app-lib"]);
+  });
+});
+
+function emptyFacts(): FactsStore {
+  return { schemaVersion: 1, packages: {}, texts: {} };
+}
+
+describe("computeShippedLockPaths", () => {
+  it("walks dependencies, optionalDependencies, and required peerDependencies while skipping optional peerDependenciesMeta edges", () => {
+    const graph: LockfileShape = {
+      packages: {
+        "": {
+          dependencies: { "runtime-pkg": "^1.0.0" },
+          devDependencies: {
+            "optional-peer-dev": "^1.0.0",
+            "dev-only": "^1.0.0",
+          },
+        },
+        "node_modules/runtime-pkg": {
+          version: "1.0.0",
+          dependencies: { "transitive-dep": "^1.0.0" },
+          optionalDependencies: { "opt-native": "^1.0.0" },
+          peerDependencies: {
+            "required-peer": "^1.0.0",
+            "optional-peer-dev": "^1.0.0",
+          },
+          peerDependenciesMeta: {
+            "optional-peer-dev": { optional: true },
+          },
+        },
+        "node_modules/transitive-dep": { version: "1.0.0" },
+        "node_modules/opt-native": { version: "1.0.0", optional: true },
+        "node_modules/required-peer": { version: "1.0.0" },
+        "node_modules/optional-peer-dev": {
+          version: "1.0.0",
+          devOptional: true,
+        },
+        "node_modules/dev-only": { version: "1.0.0", dev: true },
+      },
+    };
+
+    expect([...computeShippedLockPaths(graph)].sort()).toEqual([
+      "node_modules/opt-native",
+      "node_modules/required-peer",
+      "node_modules/runtime-pkg",
+      "node_modules/transitive-dep",
+    ]);
+  });
+
+  it("resolves nested node_modules copies before hoisted ones", () => {
+    const graph: LockfileShape = {
+      packages: {
+        "": {
+          dependencies: { parent: "^1.0.0" },
+          devDependencies: { child: "^2.0.0" },
+        },
+        "node_modules/parent": {
+          version: "1.0.0",
+          dependencies: { child: "^1.0.0" },
+        },
+        "node_modules/parent/node_modules/child": {
+          version: "1.0.0",
+          dependencies: { leaf: "^1.0.0" },
+        },
+        "node_modules/child": {
+          version: "2.0.0",
+          dev: true,
+        },
+        "node_modules/leaf": {
+          version: "1.0.0",
+        },
+      },
+    };
+
+    expect([...computeShippedLockPaths(graph)].sort()).toEqual([
+      "node_modules/leaf",
+      "node_modules/parent",
+      "node_modules/parent/node_modules/child",
+    ]);
   });
 });
 
@@ -571,7 +721,13 @@ describe("generated credits match the repository", () => {
     expect(findUnannotatedDirect(CREDITS_DATASET)).toEqual([]);
   });
 
-  it("curated annotations only name real direct dependencies", () => {
+  it("curated annotations have exact key parity with package.json dependencies and devDependencies", () => {
+    expect(Object.keys(RUNTIME_ANNOTATIONS).sort()).toEqual(
+      Object.keys(pkg.dependencies ?? {}).sort()
+    );
+    expect(Object.keys(TOOLING_ANNOTATIONS).sort()).toEqual(
+      Object.keys(pkg.devDependencies ?? {}).sort()
+    );
     const direct = new Set([
       ...Object.keys(pkg.dependencies ?? {}),
       ...Object.keys(pkg.devDependencies ?? {}),
@@ -625,6 +781,63 @@ describe("generated credits match the repository", () => {
         expect(text).not.toMatch(/<(year|owner|copyright holders?)>/i);
       }
     }
+  });
+
+  it("classifies unreachable devOptional entries as tooling while keeping sharp, detect-libc, and transitive jsdom in runtime notices", () => {
+    const shippedPaths = computeShippedLockPaths(lock);
+    const devOptionalEntries = Object.entries(lock.packages).filter(
+      ([lockPath, entry]) => lockPath !== "" && entry.devOptional
+    );
+    expect(devOptionalEntries.length).toBeGreaterThan(100);
+    for (const [lockPath] of devOptionalEntries) {
+      expect(shippedPaths.has(lockPath), lockPath).toBe(false);
+    }
+
+    const byName = (name: string) =>
+      CREDITS_DATASET.packages.filter((p) => p.name === name);
+    for (const toolingPkg of [
+      "prisma",
+      "@playwright/test",
+      "typescript",
+      "effect",
+    ]) {
+      const matches = byName(toolingPkg);
+      expect(matches.length, toolingPkg).toBeGreaterThan(0);
+      for (const match of matches) {
+        expect(match.scope, `${match.name}@${match.version}`).toBe("tooling");
+      }
+    }
+
+    for (const runtimePkg of ["sharp", "detect-libc"]) {
+      const matches = byName(runtimePkg);
+      expect(matches.length, runtimePkg).toBeGreaterThan(0);
+      expect(
+        matches.some((m) => m.scope === "runtime"),
+        runtimePkg
+      ).toBe(true);
+    }
+
+    const notices = readText(NOTICES_PATH);
+    for (const excluded of [
+      "prisma@",
+      "@playwright/test@",
+      "typescript@",
+      "effect@",
+    ]) {
+      expect(notices).not.toContain(`- ${excluded}`);
+    }
+    expect(notices).toContain("- sharp@");
+    expect(notices).toContain("- detect-libc@");
+    expect(notices).toContain("- jsdom@");
+
+    const directRuntimeNames = groupDirectRuntimeByPurpose(
+      CREDITS_DATASET,
+      pkg
+    ).flatMap((g) => g.packages.map((p) => p.name));
+    expect(directRuntimeNames.sort()).toEqual(
+      Object.keys(pkg.dependencies ?? {}).sort()
+    );
+    expect(directRuntimeNames).not.toContain("jsdom");
   });
 });
 

@@ -189,6 +189,13 @@ async function runBuildPipeline() {
   // build's type gate. Since ADR 0072 it runs the TypeScript 7 compiler,
   // which peaked at about 3.0 GB resident here against 3.3 GB for 6.0.
   console.log("\n--- Phase 1.4: Type Checking (Standalone Process) ---");
+  // Clear `.next/types` before `next typegen` so a rebuild over an existing
+  // `.next/` cannot fail on stale route types (such as a downloaded build's
+  // Sentry tunnel stub or a deleted route) that `next typegen` does not prune.
+  fs.rmSync(path.join(buildCwd, ".next", "types"), {
+    recursive: true,
+    force: true,
+  });
   runStep("npm", ["run", "typecheck"]);
 
   // 3. Pre-Build Offline Migration Validation (Phase 1.5)

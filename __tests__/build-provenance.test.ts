@@ -144,6 +144,10 @@ describe("build provenance (#1769)", () => {
   it("clears the record before building and writes it only after next build succeeds", () => {
     const build = fs.readFileSync(path.join(root, "scripts/build.js"), "utf-8");
     const clear = build.indexOf("clearBuildProvenance();");
+    const clearTypes = build.indexOf(
+      'fs.rmSync(path.join(buildCwd, ".next", "types")'
+    );
+    const typecheck = build.indexOf('runStep("npm", ["run", "typecheck"])');
     const nextBuild = build.indexOf(
       'runStep("npx", ["next", "build", "--webpack"])'
     );
@@ -155,7 +159,9 @@ describe("build provenance (#1769)", () => {
     );
     const write = build.indexOf("writeBuildProvenance(sourceBeforeBuild)");
     expect(clear).toBeGreaterThan(-1);
-    expect(nextBuild).toBeGreaterThan(clear);
+    expect(clearTypes).toBeGreaterThan(clear);
+    expect(typecheck).toBeGreaterThan(clearTypes);
+    expect(nextBuild).toBeGreaterThan(typecheck);
     expect(cleanup).toBeGreaterThan(-1);
     expect(standaloneBuild).toBeGreaterThan(nextBuild);
     expect(write).toBeGreaterThan(standaloneBuild);

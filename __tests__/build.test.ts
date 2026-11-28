@@ -24,6 +24,8 @@ describe("build.js script execution", () => {
   let originalEnv: NodeJS.ProcessEnv;
   let exitMock: any;
   let spawnSpy: any;
+  let cwdSpy: any;
+  let tempCwd: string;
 
   it("never invokes optional headroom probing during a production build", async () => {
     setProductionConfig();
@@ -44,6 +46,8 @@ describe("build.js script execution", () => {
     delete require.cache[require.resolve("../scripts/build.js")];
 
     originalEnv = { ...process.env };
+    tempCwd = fs.mkdtempSync(path.join(os.tmpdir(), "build-test-cwd-"));
+    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tempCwd);
     exitMock = vi.spyOn(process, "exit").mockImplementation((code) => {
       throw new Error(`Process exited with code ${code}`);
     });
@@ -62,6 +66,8 @@ describe("build.js script execution", () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    cwdSpy.mockRestore();
+    fs.rmSync(tempCwd, { recursive: true, force: true });
     exitMock.mockRestore();
     spawnSpy.mockRestore();
     vi.unstubAllGlobals();
@@ -181,6 +187,48 @@ describe("build.js script execution", () => {
     expect(typecheckIndex).toBeLessThan(
       calls.findIndex((c: string) => c.includes("next build"))
     );
+  });
+
+  it("clears stale .next/types before running standalone typecheck so rebuilds over an existing .next/ cannot fail on deleted routes", async () => {
+    process.env.VERCEL_ENV = "preview";
+    const staleRouteType = path.join(
+      tempCwd,
+      ".next",
+      "types",
+      "app",
+      "sentry-tunnel",
+      "route.ts"
+    );
+    const preservedCacheFile = path.join(
+      tempCwd,
+      ".next",
+      "cache",
+      "webpack.pack"
+    );
+    fs.mkdirSync(path.dirname(staleRouteType), { recursive: true });
+    fs.writeFileSync(
+      staleRouteType,
+      "import * as entry from '../../../../app/sentry-tunnel/route.js'\n"
+    );
+    fs.mkdirSync(path.dirname(preservedCacheFile), { recursive: true });
+    fs.writeFileSync(preservedCacheFile, "cached\n");
+
+    let typesClearedBeforeTypecheck = false;
+    spawnSpy.mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "npm" && args[0] === "run" && args[1] === "typecheck") {
+        typesClearedBeforeTypecheck = !fs.existsSync(
+          path.join(tempCwd, ".next", "types")
+        );
+      }
+      return { status: 0 } as any;
+    });
+
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+
+    expect(typesClearedBeforeTypecheck).toBe(true);
+    expect(fs.existsSync(preservedCacheFile)).toBe(true);
   });
 
   it("never executes prisma migrate deploy off Vercel, even if VERCEL_ENV is production", async () => {

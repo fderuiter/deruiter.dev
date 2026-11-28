@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 const MAX_SIZE_BYTES = 80 * 1024;
-const outputNames = ["garmin-engine.js", "monkey-c-mayhem.js"] as const;
+const outputNames = ["garmin-engine.js"] as const;
 
 export interface StandaloneBuildOptions {
   rootDir?: string;
@@ -15,7 +15,7 @@ export interface StandaloneBuildOptions {
 /** Builds the standalone engine atomically, keeping callers' output directories clean on failure. */
 export async function buildStandaloneEngine({
   rootDir = path.resolve(__dirname, ".."),
-  outputDir = path.join(rootDir, "public"),
+  outputDir = path.join(rootDir, ".next", "standalone-engine"),
   maxSizeBytes = MAX_SIZE_BYTES,
 }: StandaloneBuildOptions = {}): Promise<
   Readonly<Record<(typeof outputNames)[number], string>>

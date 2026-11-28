@@ -693,26 +693,22 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(data.icons?.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("app/icon.svg and public/favicon.svg exist and contain valid SVG monogram architecture", () => {
+  it("app/icon.svg exists without a duplicate public/favicon.svg and contains valid SVG monogram architecture", () => {
     const appIconPath = path.resolve(process.cwd(), "app/icon.svg");
     const publicFaviconPath = path.resolve(process.cwd(), "public/favicon.svg");
 
     expect(fs.existsSync(appIconPath)).toBe(true);
-    expect(fs.existsSync(publicFaviconPath)).toBe(true);
+    expect(fs.existsSync(publicFaviconPath)).toBe(false);
 
     const appIconContent = fs.readFileSync(appIconPath, "utf-8");
-    const publicFaviconContent = fs.readFileSync(publicFaviconPath, "utf-8");
-
-    for (const content of [appIconContent, publicFaviconContent]) {
-      expect(content).toContain("<svg");
-      expect(content).toContain('id="fd-grad"');
-      expect(content).toContain("glyph-stem");
-      expect(content).toContain("telemetry-dot");
-      expect(content).toContain("</svg>");
-    }
+    expect(appIconContent).toContain("<svg");
+    expect(appIconContent).toContain('id="fd-grad"');
+    expect(appIconContent).toContain("glyph-stem");
+    expect(appIconContent).toContain("telemetry-dot");
+    expect(appIconContent).toContain("</svg>");
   });
 
-  it("custom branded favicon.ico, apple-touch-icon, and PWA icons exist as binary assets", () => {
+  it("custom branded app/favicon.ico, apple-touch-icon, and PWA icons exist without duplicate public/favicon.ico", () => {
     const appFaviconPath = path.resolve(process.cwd(), "app/favicon.ico");
     const publicFaviconPath = path.resolve(process.cwd(), "public/favicon.ico");
     const appleTouchPath = path.resolve(
@@ -721,13 +717,19 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     );
     const icon192Path = path.resolve(process.cwd(), "public/icon-192.png");
     const icon512Path = path.resolve(process.cwd(), "public/icon-512.png");
+    const iconMaskablePath = path.resolve(
+      process.cwd(),
+      "public/icon-maskable-512.png"
+    );
+
+    expect(fs.existsSync(publicFaviconPath)).toBe(false);
 
     for (const filePath of [
       appFaviconPath,
-      publicFaviconPath,
       appleTouchPath,
       icon192Path,
       icon512Path,
+      iconMaskablePath,
     ]) {
       expect(fs.existsSync(filePath)).toBe(true);
       const stat = fs.statSync(filePath);

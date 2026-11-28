@@ -43,7 +43,11 @@ import {
 } from "../lib/dx/setup";
 import { scanDeadCode, printDeadCodeDocument } from "../lib/dx/dead-code";
 import { fetchTrackerData, formatTrackerReport } from "../lib/dx/trackers";
-import { inspectBundleChunks, printBundleReport } from "../lib/dx/bundle-guard";
+import {
+  inspectBundleChunks,
+  inspectStandaloneBundle,
+  printBundleReport,
+} from "../lib/dx/bundle-guard";
 import { runLicenseAudit } from "./license-audit";
 import {
   parseCliArgs,
@@ -711,13 +715,18 @@ export function handleAnalyzeCommand(
 
   const startTime = Date.now();
   const report = inspectBundleChunks(workspaceRoot, { limit, filter, strict });
+  const standaloneReport = inspectStandaloneBundle(workspaceRoot);
+  if (standaloneReport.exists && standaloneReport.violation) {
+    report.violations.push(standaloneReport.violation);
+  }
   const durationMs = Date.now() - startTime;
+  const strictMissingBuild = strict && !report.isBuilt;
 
   if (isJson) {
     printJsonEnvelope(
       createDxEnvelope({
         command: "analyze",
-        success: report.violations.length === 0,
+        success: !strictMissingBuild && report.violations.length === 0,
         durationMs,
         data: report,
         remediations:
@@ -739,7 +748,7 @@ export function handleAnalyzeCommand(
     printBundleReport(report, { limit, filter, strict });
   }
 
-  if (strict && report.violations.length > 0) {
+  if (strict && (!report.isBuilt || report.violations.length > 0)) {
     process.exit(1);
   }
 }

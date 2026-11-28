@@ -2,6 +2,9 @@
 /* eslint-disable */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import child_process from "child_process";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 // Everything the production preflight (scripts/vercel-production-preflight.js)
 // requires, with fake values, so production-path tests reach the steps they
@@ -21,6 +24,8 @@ describe("build.js script execution", () => {
   let originalEnv: NodeJS.ProcessEnv;
   let exitMock: any;
   let spawnSpy: any;
+  let cwdSpy: any;
+  let tempCwd: string;
 
   it("never invokes optional headroom probing during a production build", async () => {
     setProductionConfig();
@@ -41,6 +46,8 @@ describe("build.js script execution", () => {
     delete require.cache[require.resolve("../scripts/build.js")];
 
     originalEnv = { ...process.env };
+    tempCwd = fs.mkdtempSync(path.join(os.tmpdir(), "build-test-cwd-"));
+    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tempCwd);
     exitMock = vi.spyOn(process, "exit").mockImplementation((code) => {
       throw new Error(`Process exited with code ${code}`);
     });
@@ -59,6 +66,8 @@ describe("build.js script execution", () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    cwdSpy.mockRestore();
+    fs.rmSync(tempCwd, { recursive: true, force: true });
     exitMock.mockRestore();
     spawnSpy.mockRestore();
     vi.unstubAllGlobals();
@@ -178,6 +187,48 @@ describe("build.js script execution", () => {
     expect(typecheckIndex).toBeLessThan(
       calls.findIndex((c: string) => c.includes("next build"))
     );
+  });
+
+  it("clears stale .next/types before running standalone typecheck so rebuilds over an existing .next/ cannot fail on deleted routes", async () => {
+    process.env.VERCEL_ENV = "preview";
+    const staleRouteType = path.join(
+      tempCwd,
+      ".next",
+      "types",
+      "app",
+      "sentry-tunnel",
+      "route.ts"
+    );
+    const preservedCacheFile = path.join(
+      tempCwd,
+      ".next",
+      "cache",
+      "webpack.pack"
+    );
+    fs.mkdirSync(path.dirname(staleRouteType), { recursive: true });
+    fs.writeFileSync(
+      staleRouteType,
+      "import * as entry from '../../../../app/sentry-tunnel/route.js'\n"
+    );
+    fs.mkdirSync(path.dirname(preservedCacheFile), { recursive: true });
+    fs.writeFileSync(preservedCacheFile, "cached\n");
+
+    let typesClearedBeforeTypecheck = false;
+    spawnSpy.mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "npm" && args[0] === "run" && args[1] === "typecheck") {
+        typesClearedBeforeTypecheck = !fs.existsSync(
+          path.join(tempCwd, ".next", "types")
+        );
+      }
+      return { status: 0 } as any;
+    });
+
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+
+    expect(typesClearedBeforeTypecheck).toBe(true);
+    expect(fs.existsSync(preservedCacheFile)).toBe(true);
   });
 
   it("never executes prisma migrate deploy off Vercel, even if VERCEL_ENV is production", async () => {
@@ -387,5 +438,93 @@ describe("build.js script execution", () => {
     expect(output).toContain("UPSTASH_REDIS_REST_TOKEN was rejected");
     expect(output).not.toContain("tok-fake");
     errorSpy.mockRestore();
+  });
+
+  it("removes ephemeral app/sentry-tunnel and .next/types/app/sentry-tunnel created during VERCEL=1 next build, even on failure", async () => {
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "build-sentry-tunnel-")
+    );
+    const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tempDir);
+    try {
+      process.env.VERCEL = "1";
+      delete (process.env as any).VERCEL_ENV;
+      process.env.DATABASE_URL =
+        "postgresql://dummy:dummy@127.0.0.1:59999/dummy";
+
+      let sawCleanTreeDuringStandalone = false;
+      spawnSpy.mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === "npx" && args.includes("next") && args.includes("build")) {
+          fs.mkdirSync(path.join(tempDir, "app", "sentry-tunnel"), {
+            recursive: true,
+          });
+          fs.writeFileSync(
+            path.join(tempDir, "app", "sentry-tunnel", "route.js"),
+            "export { POST } from '@sentry/nextjs/tunnel';\n"
+          );
+          fs.mkdirSync(
+            path.join(tempDir, ".next", "types", "app", "sentry-tunnel"),
+            { recursive: true }
+          );
+          fs.writeFileSync(
+            path.join(
+              tempDir,
+              ".next",
+              "types",
+              "app",
+              "sentry-tunnel",
+              "route.ts"
+            ),
+            "import * as entry from '../../../../app/sentry-tunnel/route.js'\n"
+          );
+        }
+        if (
+          cmd === "npx" &&
+          args.includes("scripts/build-standalone-engine.ts")
+        ) {
+          sawCleanTreeDuringStandalone =
+            !fs.existsSync(path.join(tempDir, "app", "sentry-tunnel")) &&
+            !fs.existsSync(
+              path.join(tempDir, ".next", "types", "app", "sentry-tunnel")
+            );
+        }
+        return { status: 0 } as any;
+      });
+
+      await expect(require("../scripts/build.js")).rejects.toThrow(
+        "Process exited with code 0"
+      );
+      expect(sawCleanTreeDuringStandalone).toBe(true);
+
+      // Also cleans up when `next build` exits non-zero after writing the route.
+      delete require.cache[require.resolve("../scripts/build.js")];
+      spawnSpy.mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === "npx" && args.includes("next") && args.includes("build")) {
+          fs.mkdirSync(path.join(tempDir, "app", "sentry-tunnel"), {
+            recursive: true,
+          });
+          fs.mkdirSync(
+            path.join(tempDir, ".next", "types", "app", "sentry-tunnel"),
+            { recursive: true }
+          );
+          return { status: 2 } as any;
+        }
+        return { status: 0 } as any;
+      });
+
+      await expect(require("../scripts/build.js")).rejects.toThrow(
+        "Process exited with code 2"
+      );
+      expect(fs.existsSync(path.join(tempDir, "app", "sentry-tunnel"))).toBe(
+        false
+      );
+      expect(
+        fs.existsSync(
+          path.join(tempDir, ".next", "types", "app", "sentry-tunnel")
+        )
+      ).toBe(false);
+    } finally {
+      cwdSpy.mockRestore();
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

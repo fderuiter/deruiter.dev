@@ -88,21 +88,21 @@ To eliminate hidden asset dependencies and provide zero-friction developer onboa
 
 - **CLI Command:** `npm run build:icons` (or `npm run generate:icons` / `npx tsx scripts/dx.ts build:icons`)
 - **Script Target:** `scripts/generate-brand-icons.ts`
-- **Source Input Location:** Vector SVG artwork at `public/favicon.svg` (or `app/icon.svg`).
+- **Source Input Location:** Vector SVG artwork at `app/icon.svg`.
 - **Build Pipeline & Output Asset Targets:**
-  - **SVG Synchronization:** Reads source vector definitions and synchronizes `app/icon.svg` and `public/favicon.svg`.
-  - **Multi-Resolution ICO Container:** Utilizes `sharp` to rasterize the source vector into 16x16, 32x32, and 48x48 PNG buffers, then constructs a valid binary Windows ICO file container stored at `app/favicon.ico` and `public/favicon.ico`.
+  - **SVG Synchronization:** Reads source vector definitions and writes `app/icon.svg`.
+  - **Multi-Resolution ICO Container:** Utilizes `sharp` to rasterize the source vector into 16x16, 32x32, and 48x48 PNG buffers, then constructs a valid binary Windows ICO file container stored at `app/favicon.ico`.
   - **High-DPI iOS Touch Icon:** Rasterizes 180x180 PNG output targeting `public/apple-touch-icon.png`.
-  - **PWA Web App Manifest Icons:** Rasterizes 192x192 and 512x512 PNG outputs targeting `public/icon-192.png` and `public/icon-512.png`.
+  - **PWA Web App Manifest Icons:** Rasterizes 192x192, 512x512, and maskable 512x512 PNG outputs targeting `public/icon-192.png`, `public/icon-512.png`, and `public/icon-maskable-512.png`.
   - **Validation Contract:** The generator accepts an `outputRoot` (or `--output-root`) so tests can write the complete asset set to a disposable destination. It compares bytes before writing, so unchanged inputs do not create unnecessary writes. A real build uses the repository root as both source and output.
 
 ```mermaid
 flowchart TD
-    A["Vector SVG Source<br/>(public/favicon.svg)"] --> B["Headless Sharp Rasterizer<br/>(scripts/generate-brand-icons.ts)"]
-    B --> C1["Vector SVG Sync<br/>(app/icon.svg & public/favicon.svg)"]
-    B --> C2["Binary ICO Container<br/>16px, 32px, 48px PNG Layers<br/>(app/favicon.ico & public/favicon.ico)"]
+    A["Vector SVG Source<br/>(app/icon.svg)"] --> B["Headless Sharp Rasterizer<br/>(scripts/generate-brand-icons.ts)"]
+    B --> C1["Vector SVG Sync<br/>(app/icon.svg)"]
+    B --> C2["Binary ICO Container<br/>16px, 32px, 48px PNG Layers<br/>(app/favicon.ico)"]
     B --> C3["Apple Touch Icon<br/>180x180 PNG<br/>(public/apple-touch-icon.png)"]
-    B --> C4["PWA Manifest Icons<br/>192x192 & 512x512 PNG<br/>(public/icon-192.png & icon-512.png)"]
+    B --> C4["PWA Manifest Icons<br/>192x192, 512x512 & Maskable PNG<br/>(public/icon-192.png, icon-512.png & icon-maskable-512.png)"]
 ```
 
 ### 2. Design Token Compiler Pipeline

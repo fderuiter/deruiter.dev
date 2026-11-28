@@ -292,7 +292,7 @@ export interface FlashVariable {
 
 export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 
-// This module is also bundled on its own into public/garmin-engine.js
+// This module is also bundled on its own into .next/standalone-engine/garmin-engine.js
 // (scripts/build-standalone-engine.ts), so it guards localStorage directly
 // instead of importing lib/safe-storage, whose logger pulls in Sentry and
 // Next.js server code that a browser IIFE bundle cannot resolve.

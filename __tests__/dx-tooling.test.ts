@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import { spawnSync } from "child_process";
+import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -455,10 +456,197 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(Array.isArray(report.violations)).toBe(true);
     });
 
-    it("passes checkBundleBudgets diagnostic check", () => {
-      const result = bundleGuard.checkBundleBudgets(root);
-      expect(["pass", "warn"]).toContain(result.status);
-      expect(result.id).toBe("bundle-performance-budgets");
+    it("passes checkBundleBudgets diagnostic check when compliant or unbuilt", () => {
+      const emptyDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "dx-bundle-empty-")
+      );
+      try {
+        const result = bundleGuard.checkBundleBudgets(emptyDir);
+        expect(result.status).toBe("pass");
+        expect(result.id).toBe("bundle-performance-budgets");
+      } finally {
+        fs.rmSync(emptyDir, { recursive: true, force: true });
+      }
+    });
+
+    it("measures App Router rootMainFiles and shared HTML chunks and returns fail on breaches", () => {
+      const tempBuildRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), "dx-bundle-app-router-")
+      );
+      try {
+        const chunksDir = path.join(tempBuildRoot, ".next", "static", "chunks");
+        const appHtmlDir = path.join(tempBuildRoot, ".next", "server", "app");
+        fs.mkdirSync(path.join(appHtmlDir, "about"), { recursive: true });
+        fs.mkdirSync(chunksDir, { recursive: true });
+
+        const rootNames = [
+          "webpack-1.js",
+          "root-a.js",
+          "root-b.js",
+          "root-c.js",
+          "root-d.js",
+          "main-app-1.js",
+        ];
+        for (const [idx, name] of rootNames.entries()) {
+          fs.writeFileSync(
+            path.join(chunksDir, name),
+            `console.log("root-${idx}-${"a".repeat(256)}");\n`
+          );
+        }
+        fs.writeFileSync(
+          path.join(chunksDir, "shared-layout.js"),
+          `console.log("shared-${"b".repeat(512)}");\n`
+        );
+        fs.writeFileSync(
+          path.join(chunksDir, "route-only.js"),
+          `console.log("route-only-${"c".repeat(512)}");\n`
+        );
+        fs.writeFileSync(
+          path.join(chunksDir, "polyfills-1.js"),
+          `console.log("polyfill-${"d".repeat(512)}");\n`
+        );
+        // Unused Pages Router chunk must NOT inflate App Router initial shared JS.
+        fs.writeFileSync(
+          path.join(chunksDir, "main-unused-pages.js"),
+          `console.log("unused-pages-${"e".repeat(1024)}");\n`
+        );
+        // Lazy ELK vendor chunk under 500 KB ceiling should pass.
+        fs.writeFileSync(
+          path.join(chunksDir, "elk-lazy.js"),
+          `/* elk.alg.common */ console.log("${"f".repeat(1024)}");\n`
+        );
+
+        fs.writeFileSync(
+          path.join(tempBuildRoot, ".next", "build-manifest.json"),
+          JSON.stringify({
+            polyfillFiles: ["static/chunks/polyfills-1.js"],
+            rootMainFiles: rootNames.map((n) => `static/chunks/${n}`),
+            pages: { "/_app": [] },
+          })
+        );
+
+        const sharedScripts = [...rootNames, "shared-layout.js"]
+          .map(
+            (n) => `<script src="/_next/static/chunks/${n}" async=""></script>`
+          )
+          .join("");
+        fs.writeFileSync(
+          path.join(appHtmlDir, "index.html"),
+          `<html><head><script src="/_next/static/chunks/polyfills-1.js" noModule=""></script>${sharedScripts}<script src="/_next/static/chunks/route-only.js" async=""></script></head></html>`
+        );
+        fs.writeFileSync(
+          path.join(appHtmlDir, "about", "page.html"),
+          `<html><head>${sharedScripts}</head></html>`
+        );
+        fs.writeFileSync(
+          path.join(appHtmlDir, "_not-found.html"),
+          `<html><head></head></html>`
+        );
+
+        const report = bundleGuard.inspectBundleChunks(tempBuildRoot, {
+          filter: ".js",
+          limit: 20,
+        });
+        expect(report.isBuilt).toBe(true);
+        expect(report.violations).toEqual([]);
+        expect(report.rootMainFilesGzipBytes).toBeGreaterThan(0);
+        expect(report.initialSharedGzipBytes).toBeGreaterThan(
+          report.rootMainFilesGzipBytes ?? 0
+        );
+        const initialNames = report.chunks
+          .filter((c) => c.isInitial)
+          .map((c) => c.name)
+          .sort();
+        expect(initialNames).toEqual([...rootNames, "shared-layout.js"].sort());
+        expect(bundleGuard.checkBundleBudgets(tempBuildRoot).status).toBe(
+          "pass"
+        );
+
+        const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+        bundleGuard.printBundleReport(report, { limit: 2 });
+        logSpy.mockRestore();
+
+        // Exceed 220 KB rootMainFiles ceiling and 525 KB shared ceiling with incompressible bytes -> status "fail".
+        fs.writeFileSync(
+          path.join(chunksDir, "root-a.js"),
+          crypto.randomBytes(240 * 1024)
+        );
+        fs.writeFileSync(
+          path.join(chunksDir, "shared-layout.js"),
+          crypto.randomBytes(310 * 1024)
+        );
+
+        const failingCheck = bundleGuard.checkBundleBudgets(tempBuildRoot);
+        expect(failingCheck.status).toBe("fail");
+        expect(failingCheck.details?.join("\n")).toContain(
+          "rootMainFiles bundle"
+        );
+        expect(failingCheck.details?.join("\n")).toContain(
+          "Initial shared bundle"
+        );
+      } finally {
+        fs.rmSync(tempBuildRoot, { recursive: true, force: true });
+      }
+    });
+
+    it("fails handleAnalyzeCommand --strict when .next is missing or standalone bundle exceeds 80KB", () => {
+      const spyInspect = vi
+        .spyOn(bundleGuard, "inspectBundleChunks")
+        .mockReturnValue({
+          isBuilt: false,
+          totalChunks: 0,
+          totalRawBytes: 0,
+          totalGzipBytes: 0,
+          rootMainFilesGzipBytes: 0,
+          initialSharedGzipBytes: 0,
+          chunks: [],
+          violations: [],
+        });
+      const spyExit = vi
+        .spyOn(process, "exit")
+        .mockImplementation((code?: string | number | null | undefined) => {
+          throw new Error(`process.exit(${code})`);
+        });
+      const spyLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      try {
+        expect(() => handleAnalyzeCommand(["--strict"])).toThrow(
+          "process.exit(1)"
+        );
+        expect(() => handleAnalyzeCommand(["--strict", "--json"])).toThrow(
+          "process.exit(1)"
+        );
+
+        spyInspect.mockReturnValue({
+          isBuilt: true,
+          totalChunks: 1,
+          totalRawBytes: 1024,
+          totalGzipBytes: 512,
+          rootMainFilesGzipBytes: 512,
+          initialSharedGzipBytes: 512,
+          chunks: [],
+          violations: [],
+        });
+        const spyStandalone = vi
+          .spyOn(bundleGuard, "inspectStandaloneBundle")
+          .mockReturnValue({
+            exists: true,
+            sizeBytes: 85 * 1024,
+            violation:
+              "Standalone JavaScript asset '.next/standalone-engine/garmin-engine.js' (85.0 kB) exceeds maximum budget of 80.0 kB.",
+          });
+        try {
+          expect(() => handleAnalyzeCommand(["--strict"])).toThrow(
+            "process.exit(1)"
+          );
+        } finally {
+          spyStandalone.mockRestore();
+        }
+      } finally {
+        spyInspect.mockRestore();
+        spyExit.mockRestore();
+        spyLog.mockRestore();
+      }
     });
 
     it("runs handleAnalyzeCommand without strict flag and does not exit on violations", () => {
@@ -702,7 +890,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         );
         fs.writeFileSync(
           path.join(tempDir, ".prettierignore"),
-          "node_modules\n.claude\n.agents\n",
+          "node_modules\n.claude\n.agents\napp/theme.css\npublic/garmin-engine.js\n",
           "utf-8"
         );
 
@@ -715,6 +903,10 @@ describe("Developer Experience (DX) Tooling Suite", () => {
           "ignores '.agents' broadly instead of '.agents/worktrees'"
         );
         expect(failed.details?.join("\n")).toContain("lib/design-manifest.ts");
+        expect(failed.details?.join("\n")).toContain(
+          "public/icon-maskable-512.png"
+        );
+        expect(failed.details?.join("\n")).toContain("app/theme.css");
         expect(failed.details?.join("\n")).toContain("public/garmin-engine.js");
         expect(failed.details?.join("\n")).toContain(
           "public/third-party-notices.txt"
@@ -726,15 +918,17 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         const fixed = checkWorkspaceIdeConfig(tempDir, true);
         expect(fixed.status).toBe("fixed");
         expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
-
         const repairedIgnore = fs.readFileSync(
           path.join(tempDir, ".prettierignore"),
           "utf-8"
         );
         expect(repairedIgnore).toContain(".agents/worktrees");
         expect(repairedIgnore).toContain(".claude/worktrees");
+        expect(repairedIgnore).toContain("public/icon-maskable-512.png");
         expect(repairedIgnore).not.toMatch(/^\.agents$/m);
         expect(repairedIgnore).not.toMatch(/^\.claude$/m);
+        expect(repairedIgnore).not.toContain("app/theme.css");
+        expect(repairedIgnore).not.toContain("public/garmin-engine.js");
       } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
       }

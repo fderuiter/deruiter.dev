@@ -297,12 +297,12 @@ Two commands generate the brand icons and the design tokens:
 ### Brand Icon Generation
 
 - **Command:** `npm run build:icons` (or `npm run generate:icons` / `npx tsx scripts/dx.ts build:icons`)
-- **Input Source Location:** Vector SVG artwork at `public/favicon.svg` (or `app/icon.svg`).
+- **Input Source Location:** Vector SVG artwork at `app/icon.svg`.
 - **Generated Output Asset Targets:**
-  - `app/icon.svg` & `public/favicon.svg`: Vector SVG favicons
-  - `app/favicon.ico` & `public/favicon.ico`: Windows ICO holding 16x16, 32x32 and 48x48 PNGs
+  - `app/icon.svg`: Vector SVG favicon
+  - `app/favicon.ico`: Windows ICO holding 16x16, 32x32 and 48x48 PNGs
   - `public/apple-touch-icon.png`: 180x180 iOS touch icon
-  - `public/icon-192.png` & `public/icon-512.png`: PWA manifest icons
+  - `public/icon-192.png`, `public/icon-512.png` & `public/icon-maskable-512.png`: PWA manifest icons
 
 ### Design System Token Compilation
 

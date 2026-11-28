@@ -1,14 +1,10 @@
 import { execFileSync } from "child_process";
 
 /**
- * Committed build products that `npm run build` rewrites in place. They are
- * derived from tracked source, so a rewrite is not a source change and must
- * not make the working tree count as dirty for benchmark evidence (#1377).
+ * Committed build products that `npm run build` rewrites in place. Empty now
+ * that standalone bundles live under `.next/standalone-engine/`.
  */
-export const GENERATED_BUILD_ARTIFACTS: readonly string[] = [
-  "public/garmin-engine.js",
-  "public/monkey-c-mayhem.js",
-];
+export const GENERATED_BUILD_ARTIFACTS: readonly string[] = [];
 
 export interface SourceState {
   revision: string;
@@ -19,7 +15,10 @@ export interface SourceState {
  * Reads the checked-out revision and whether tracked or untracked source
  * differs from it, ignoring the generated build artifacts.
  */
-export function inspectSourceState(cwd: string = process.cwd()): SourceState {
+export function inspectSourceState(
+  cwd: string = process.cwd(),
+  excludedArtifacts: readonly string[] = GENERATED_BUILD_ARTIFACTS
+): SourceState {
   const run = (args: string[]) =>
     execFileSync("git", args, { cwd, encoding: "utf-8" }).trim();
   const revision = run(["rev-parse", "HEAD"]);
@@ -29,7 +28,7 @@ export function inspectSourceState(cwd: string = process.cwd()): SourceState {
       "--porcelain",
       "--",
       ".",
-      ...GENERATED_BUILD_ARTIFACTS.map((file) => `:(exclude)${file}`),
+      ...excludedArtifacts.map((file) => `:(exclude)${file}`),
     ]).length > 0;
   return { revision, dirty };
 }

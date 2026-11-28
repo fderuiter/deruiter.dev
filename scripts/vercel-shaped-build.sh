@@ -8,31 +8,86 @@
 # and it also fails when its peak anonymous memory passes BUDGET_PERCENT of
 # the limit, so the warning comes while there is still room to fix it.
 # Anonymous memory is what the build itself holds; the cgroup's page cache is
-# reclaimed before the kernel kills anything, so it is reported, not judged.
+# reclaimed before the kernel kills anything, so memory.peak is reported, not
+# judged.
+#
+# Exports VERCEL=1 with VERCEL_ENV unset so scripts/build.js skips TypeDoc just
+# as Vercel builds do while keeping production migrations and preview/prod
+# preflights off in CI.
 #
 # Needs cgroup v2 and passwordless sudo, as on GitHub's Ubuntu runners.
 set -euo pipefail
 
+export VERCEL=1
+unset VERCEL_ENV
+
 LIMIT_BYTES=$((8 * 1024 * 1024 * 1024))
 CPUS="0-1"
 BUDGET_PERCENT=85
-CG=/sys/fs/cgroup/vercel-shaped-build
+CGROUP_ROOT="${CGROUP_ROOT:-/sys/fs/cgroup}"
+CG="${CG:-$CGROUP_ROOT/vercel-shaped-build}"
+
+SAMPLER=""
+BUILD_PID=""
+CG_CREATED=0
 PEAK_FILE="$(mktemp)"
 
-if [ ! -f /sys/fs/cgroup/cgroup.controllers ]; then
-  echo "::error::The Vercel-shaped build needs cgroup v2 (/sys/fs/cgroup/cgroup.controllers is missing)."
+cleanup() {
+  if [ -n "${BUILD_PID:-}" ]; then
+    kill -TERM "$BUILD_PID" 2>/dev/null || true
+    wait "$BUILD_PID" 2>/dev/null || true
+    BUILD_PID=""
+  fi
+  if [ -n "${SAMPLER:-}" ]; then
+    kill "$SAMPLER" 2>/dev/null || true
+    wait "$SAMPLER" 2>/dev/null || true
+    SAMPLER=""
+  fi
+  if [ -n "${PEAK_FILE:-}" ] && [ -e "$PEAK_FILE" ]; then
+    rm -f "$PEAK_FILE"
+  fi
+  if [ "${CG_CREATED:-0}" -eq 1 ] && [ -d "$CG" ]; then
+    if [ -f "$CG/cgroup.kill" ]; then
+      echo 1 | sudo tee "$CG/cgroup.kill" >/dev/null 2>&1 || true
+    fi
+    sudo rmdir "$CG" 2>/dev/null || true
+    CG_CREATED=0
+  fi
+}
+
+handle_signal() {
+  local sig="$1"
+  cleanup
+  trap - "$sig" EXIT
+  kill -s "$sig" "$$"
+}
+
+trap cleanup EXIT
+trap 'handle_signal INT' INT
+trap 'handle_signal TERM' TERM
+
+if [ ! -f "$CGROUP_ROOT/cgroup.controllers" ]; then
+  echo "::error::The Vercel-shaped build needs cgroup v2 ($CGROUP_ROOT/cgroup.controllers is missing)."
   exit 1
 fi
 
 for controller in cpuset memory; do
-  if ! grep -qw "$controller" /sys/fs/cgroup/cgroup.subtree_control; then
-    echo "+$controller" | sudo tee /sys/fs/cgroup/cgroup.subtree_control >/dev/null
+  if ! grep -qw "$controller" "$CGROUP_ROOT/cgroup.subtree_control"; then
+    echo "+$controller" | sudo tee "$CGROUP_ROOT/cgroup.subtree_control" >/dev/null
   fi
 done
 sudo mkdir -p "$CG"
+CG_CREATED=1
 echo "$LIMIT_BYTES" | sudo tee "$CG/memory.max" >/dev/null
 echo 0 | sudo tee "$CG/memory.swap.max" >/dev/null
+
+CPUSET_MEMS="$(cat "$CGROUP_ROOT/cpuset.mems.effective" 2>/dev/null || true)"
+if [ -z "$CPUSET_MEMS" ]; then
+  CPUSET_MEMS="$(cat "$CGROUP_ROOT/cpuset.mems" 2>/dev/null || true)"
+fi
+CPUSET_MEMS="${CPUSET_MEMS:-0}"
 echo "$CPUS" | sudo tee "$CG/cpuset.cpus" >/dev/null
+echo "$CPUSET_MEMS" | sudo tee "$CG/cpuset.mems" >/dev/null
 
 echo 0 >"$PEAK_FILE"
 (
@@ -48,24 +103,31 @@ echo 0 >"$PEAK_FILE"
 ) &
 SAMPLER=$!
 
-echo "Building in $CG: cpus $CPUS, memory.max $LIMIT_BYTES bytes, no swap."
+echo "Building in $CG: cpus $CPUS, mems $CPUSET_MEMS, memory.max $LIMIT_BYTES bytes, no swap."
 set +e
-# The shell moves itself into the cgroup, then becomes the build, so the build
-# and every process it starts run under the limit with the job's environment.
-bash -c 'echo $$ | sudo tee "$1/cgroup.procs" >/dev/null && exec npm run build' _ "$CG"
+# The shell moves itself into the cgroup after cpuset.cpus and cpuset.mems are
+# populated, then becomes the build, so the build and every process it starts
+# run under the limit with VERCEL=1 and VERCEL_ENV unset.
+bash -c 'echo $$ | sudo tee "$1/cgroup.procs" >/dev/null && exec npm run build' _ "$CG" &
+BUILD_PID=$!
+wait "$BUILD_PID"
 status=$?
+BUILD_PID=""
 set -e
 
 kill "$SAMPLER" 2>/dev/null || true
 wait "$SAMPLER" 2>/dev/null || true
+SAMPLER=""
 
 gib() { awk -v b="$1" 'BEGIN { printf "%.2f", b / 1024 / 1024 / 1024 }'; }
-peak_anon=$(cat "$PEAK_FILE")
+peak_anon=$(cat "$PEAK_FILE" 2>/dev/null || echo 0)
+peak_anon="${peak_anon:-0}"
 peak_total=$(cat "$CG/memory.peak" 2>/dev/null || echo 0)
-oom_kills=$(awk '$1 == "oom_kill" { print $2 }' "$CG/memory.events")
+peak_total="${peak_total:-0}"
+oom_kills=$(awk '$1 == "oom_kill" { print $2 }' "$CG/memory.events" 2>/dev/null || echo 0)
 budget=$((LIMIT_BYTES * BUDGET_PERCENT / 100))
 
-report="Vercel-shaped build: peak build memory $(gib "$peak_anon") GiB of 8 GiB (budget $(gib "$budget") GiB, ${BUDGET_PERCENT}%); peak including page cache $(gib "$peak_total") GiB; OOM kills ${oom_kills:-0}; exit ${status}."
+report="Vercel-shaped build: peak build memory $(gib "$peak_anon") GiB of 8 GiB (budget $(gib "$budget") GiB, ${BUDGET_PERCENT}%); memory.peak $(gib "$peak_total") GiB; OOM kills ${oom_kills:-0}; exit ${status}."
 echo "$report"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   echo "$report" >>"$GITHUB_STEP_SUMMARY"

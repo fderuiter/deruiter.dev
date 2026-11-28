@@ -1,5 +1,7 @@
 // @vitest-environment node
+import { spawn, spawnSync } from "child_process";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
@@ -98,12 +100,22 @@ describe("production deploy configuration", () => {
       path.join(process.cwd(), "scripts/vercel-shaped-build.sh"),
       "utf8"
     );
+    expect(wrapper).toMatch(/^export VERCEL=1$/m);
+    expect(wrapper).toMatch(/^unset VERCEL_ENV$/m);
     expect(wrapper).toMatch(
       /^LIMIT_BYTES=\$\(\(8 \* 1024 \* 1024 \* 1024\)\)$/m
     );
     expect(wrapper).toMatch(/^CPUS="0-1"$/m);
     expect(wrapper).toMatch(/^BUDGET_PERCENT=85$/m);
     expect(wrapper).toContain('echo 0 | sudo tee "$CG/memory.swap.max"');
+    expect(wrapper).toContain(
+      'echo "$CPUSET_MEMS" | sudo tee "$CG/cpuset.mems"'
+    );
+    expect(wrapper).toContain("trap cleanup EXIT");
+    expect(wrapper).toContain("trap 'handle_signal INT' INT");
+    expect(wrapper).toContain("trap 'handle_signal TERM' TERM");
+    expect(wrapper).toContain('cat "$CG/memory.peak"');
+    expect(wrapper).toContain('if [ "$peak_anon" -gt "$budget" ]');
     expect(wrapper).toContain("exec npm run build");
     expect(wrapper).toMatch(/oom_kill/);
 
@@ -115,8 +127,189 @@ describe("production deploy configuration", () => {
       expect(workflow, file).toContain(
         "run: bash scripts/vercel-shaped-build.sh"
       );
+      expect(workflow, file).toMatch(/VERCEL:\s*"1"/);
+      expect(workflow, file).not.toMatch(/VERCEL_ENV:/);
+      expect(workflow, file).not.toContain("public/garmin-engine.js");
+      expect(workflow, file).not.toContain("public/monkey-c-mayhem.js");
       // Vercel builds on Node 24.x.
       expect(workflow, file).toMatch(/node-version: 24\b/);
+    }
+  });
+
+  it("enforces VERCEL=1 without VERCEL_ENV, cpuset.mems ordering, peak_anon budget, and trap cleanup at runtime", async () => {
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "vercel-shaped-build-test-")
+    );
+    try {
+      const binDir = path.join(tempDir, "bin");
+      const cgroupRoot = path.join(tempDir, "cgroup");
+      fs.mkdirSync(binDir, { recursive: true });
+      fs.mkdirSync(cgroupRoot, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(cgroupRoot, "cgroup.controllers"),
+        "cpuset memory\n"
+      );
+      fs.writeFileSync(path.join(cgroupRoot, "cgroup.subtree_control"), "");
+      fs.writeFileSync(path.join(cgroupRoot, "cpuset.mems.effective"), "0-1\n");
+
+      const sudoBin = path.join(binDir, "sudo");
+      fs.writeFileSync(sudoBin, '#!/usr/bin/env bash\nexec "$@"\n', {
+        mode: 0o755,
+      });
+
+      const npmBin = path.join(binDir, "npm");
+      const capturedStatePath = path.join(tempDir, "captured-state.json");
+      fs.writeFileSync(
+        npmBin,
+        `#!/usr/bin/env bash
+set -euo pipefail
+cg="$CGROUP_ROOT/vercel-shaped-build"
+node -e '
+  const fs = require("fs");
+  const cg = process.argv[1];
+  const out = process.argv[2];
+  fs.writeFileSync(out, JSON.stringify({
+    vercel: process.env.VERCEL ?? null,
+    vercelEnv: process.env.VERCEL_ENV ?? null,
+    cpusetCpus: fs.readFileSync(cg + "/cpuset.cpus", "utf8").trim(),
+    cpusetMems: fs.readFileSync(cg + "/cpuset.mems", "utf8").trim(),
+    procs: fs.readFileSync(cg + "/cgroup.procs", "utf8").trim(),
+  }));
+' "$cg" "${capturedStatePath}"
+echo "anon \${MOCK_ANON_BYTES:-1048576}" >"$cg/memory.stat"
+echo "\${MOCK_PEAK_BYTES:-1048576}" >"$cg/memory.peak"
+echo "oom_kill \${MOCK_OOM_KILLS:-0}" >"$cg/memory.events"
+if [ -n "\${MOCK_SLEEP_SECONDS:-}" ]; then
+  sleep "\$MOCK_SLEEP_SECONDS"
+fi
+`,
+        { mode: 0o755 }
+      );
+      // Keep metrics readable until wrapper finishes, then let mock sudo rmdir clean up.
+      fs.writeFileSync(
+        sudoBin,
+        `#!/usr/bin/env bash
+if [ "\${1:-}" = "rmdir" ]; then
+  rm -rf "\$2"
+  exit 0
+fi
+exec "$@"
+`,
+        { mode: 0o755 }
+      );
+
+      const baseEnv = {
+        ...process.env,
+        PATH: `${binDir}:${process.env.PATH ?? ""}`,
+        CGROUP_ROOT: cgroupRoot,
+        TMPDIR: tempDir,
+        VERCEL_ENV: "preview",
+      };
+
+      const passRun = spawnSync(
+        "bash",
+        [path.join(root, "scripts/vercel-shaped-build.sh")],
+        { cwd: root, env: baseEnv, encoding: "utf8" }
+      );
+      expect(passRun.status).toBe(0);
+      const captured = JSON.parse(fs.readFileSync(capturedStatePath, "utf8"));
+      expect(captured).toMatchObject({
+        vercel: "1",
+        vercelEnv: null,
+        cpusetCpus: "0-1",
+        cpusetMems: "0-1",
+      });
+      expect(captured.procs).toMatch(/^\d+$/);
+      expect(fs.existsSync(path.join(cgroupRoot, "vercel-shaped-build"))).toBe(
+        false
+      );
+      expect(
+        fs.readdirSync(tempDir).filter((name) => name.startsWith("tmp."))
+      ).toEqual([]);
+
+      // Page cache inflating memory.peak > 85% does not fail when peak_anon stays within budget,
+      // while memory.peak is still reported in the summary output.
+      const overPeakBytes = String(7 * 1024 * 1024 * 1024);
+      const pageCacheRun = spawnSync(
+        "bash",
+        [path.join(root, "scripts/vercel-shaped-build.sh")],
+        {
+          cwd: root,
+          env: {
+            ...baseEnv,
+            MOCK_ANON_BYTES: "1048576",
+            MOCK_PEAK_BYTES: overPeakBytes,
+          },
+          encoding: "utf8",
+        }
+      );
+      expect(pageCacheRun.status).toBe(0);
+      expect(pageCacheRun.stdout).toContain("memory.peak 7.00 GiB");
+      expect(fs.existsSync(path.join(cgroupRoot, "vercel-shaped-build"))).toBe(
+        false
+      );
+
+      // Gate on sampled peak_anon > 85% of 8 GiB while keeping memory.peak in the report line.
+      const anonFailRun = spawnSync(
+        "bash",
+        [path.join(root, "scripts/vercel-shaped-build.sh")],
+        {
+          cwd: root,
+          env: {
+            ...baseEnv,
+            MOCK_ANON_BYTES: overPeakBytes,
+            MOCK_PEAK_BYTES: overPeakBytes,
+            MOCK_SLEEP_SECONDS: "1.2",
+          },
+          encoding: "utf8",
+        }
+      );
+      expect(anonFailRun.status).toBe(1);
+      expect(anonFailRun.stdout).toContain("memory.peak 7.00 GiB");
+      expect(anonFailRun.stdout + anonFailRun.stderr).toContain(
+        "The build peaked at 7.00 GiB, above 85%"
+      );
+      expect(fs.existsSync(path.join(cgroupRoot, "vercel-shaped-build"))).toBe(
+        false
+      );
+
+      // Signal trap cleans up $CG and $PEAK_FILE on SIGTERM.
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(
+          "bash",
+          [path.join(root, "scripts/vercel-shaped-build.sh")],
+          {
+            cwd: root,
+            env: { ...baseEnv, MOCK_SLEEP_SECONDS: "30" },
+          }
+        );
+        const cgDir = path.join(cgroupRoot, "vercel-shaped-build");
+        const poll = setInterval(() => {
+          if (fs.existsSync(path.join(cgDir, "cgroup.procs"))) {
+            clearInterval(poll);
+            child.kill("SIGTERM");
+          }
+        }, 25);
+        child.on("error", (err) => {
+          clearInterval(poll);
+          reject(err);
+        });
+        child.on("exit", () => {
+          clearInterval(poll);
+          try {
+            expect(fs.existsSync(cgDir)).toBe(false);
+            expect(
+              fs.readdirSync(tempDir).filter((name) => name.startsWith("tmp."))
+            ).toEqual([]);
+            resolve();
+          } catch (assertionError) {
+            reject(assertionError);
+          }
+        });
+      });
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 

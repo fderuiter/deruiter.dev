@@ -8,6 +8,7 @@ import {
   renderWarehouseReference,
   type SqlDialect,
 } from "../lib/clinical-platform";
+import { CLINICAL_STAR_SCHEMA_CATALOG_PATH } from "../lib/dx/generated-artifacts";
 
 /**
  * Writes the files generated from the Clinical Data Platform's warehouse
@@ -25,8 +26,7 @@ export const WAREHOUSE_DDL_GOLDENS: Readonly<Record<SqlDialect, string>> = {
 };
 
 /** Star schema reference page, relative to the workspace root. */
-export const WAREHOUSE_REFERENCE_PAGE =
-  "docs/reference/clinical-platform-star-schema.md";
+export const WAREHOUSE_REFERENCE_PAGE = CLINICAL_STAR_SCHEMA_CATALOG_PATH;
 
 /** Every generated file and its expected contents, by relative path. */
 export function warehouseArtifacts(): Record<string, string> {

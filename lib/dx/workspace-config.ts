@@ -1,4 +1,5 @@
 import path from "node:path";
+import { FORMATTING_EXCLUDED_ARTIFACTS } from "./generated-artifacts";
 
 /**
  * Root-relative directory paths that hold duplicate worktrees, mutation
@@ -78,18 +79,8 @@ export const VSCODE_EXTENSION_ID_PATTERN = /^[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/;
  * Baseline generated asset paths synchronized between `lint-staged.config.cjs`
  * and `.prettierignore`.
  */
-export const BASELINE_GENERATED_ARTIFACTS = [
-  "app/icon.svg",
-  "public/favicon.svg",
-  "app/favicon.ico",
-  "public/favicon.ico",
-  "public/apple-touch-icon.png",
-  "public/icon-192.png",
-  "public/icon-512.png",
-  "lib/design-manifest.ts",
-  "public/garmin-engine.js",
-  "public/monkey-c-mayhem.js",
-] as const;
+export const BASELINE_GENERATED_ARTIFACTS: readonly string[] =
+  FORMATTING_EXCLUDED_ARTIFACTS;
 
 /**
  * Duplicate worktree and mutation-sandbox paths required in `.prettierignore`.

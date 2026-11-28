@@ -17,6 +17,7 @@ export interface BundleBudgetReport {
   totalChunks: number;
   totalRawBytes: number;
   totalGzipBytes: number;
+  rootMainFilesGzipBytes?: number;
   initialSharedGzipBytes: number;
   chunks: ChunkInfo[];
   violations: string[];
@@ -29,7 +30,8 @@ export interface BundleBudgetOptions {
 }
 
 export const DEFAULT_BUDGETS = {
-  maxInitialSharedGzip: 400 * 1024, // 400 KB
+  maxRootMainFilesGzip: 220 * 1024, // 220 KB
+  maxInitialSharedGzip: 525 * 1024, // 525 KB
   maxSingleChunkGzip: 350 * 1024, // 350 KB
 };
 
@@ -61,6 +63,87 @@ export function chunkGzipBudget(source: string, isInitial: boolean): number {
   return DEFAULT_BUDGETS.maxSingleChunkGzip;
 }
 
+function normalizeNextRelativePath(relPath: string): string {
+  return relPath.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+function collectPrerenderedAppHtmlFiles(appServerDir: string): string[] {
+  if (!fs.existsSync(appServerDir)) {
+    return [];
+  }
+  const htmlFiles: string[] = [];
+  const walk = (dir: string): void => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (
+        entry.isFile() &&
+        entry.name.endsWith(".html") &&
+        !entry.name.startsWith("_")
+      ) {
+        htmlFiles.push(fullPath);
+      }
+    }
+  };
+  walk(appServerDir);
+  return htmlFiles;
+}
+
+function extractHtmlInitialJsChunks(
+  html: string,
+  polyfillChunks: ReadonlySet<string>
+): Set<string> {
+  const chunks = new Set<string>();
+  const scriptTagPattern = /<script\b([^>]*)>/gi;
+  let tagMatch: RegExpExecArray | null;
+  while ((tagMatch = scriptTagPattern.exec(html)) !== null) {
+    const attrs = tagMatch[1] ?? "";
+    if (/\bnomodule\b/i.test(attrs)) {
+      continue;
+    }
+    const srcMatch =
+      /\bsrc=(?:"\/_next\/(static\/chunks\/[^"?\s>]+\.js)(?:\?[^"]*)?"|'\/_next\/(static\/chunks\/[^'?\s>]+\.js)(?:\?[^']*)?')/i.exec(
+        attrs
+      );
+    const chunkPath = srcMatch?.[1] ?? srcMatch?.[2];
+    if (chunkPath) {
+      const normalized = normalizeNextRelativePath(chunkPath);
+      if (!polyfillChunks.has(normalized)) {
+        chunks.add(normalized);
+      }
+    }
+  }
+  return chunks;
+}
+
+function findSharedAppRouterHtmlChunks(
+  nextDir: string,
+  polyfillChunks: ReadonlySet<string>
+): Set<string> {
+  const appServerDir = path.join(nextDir, "server", "app");
+  const htmlFiles = collectPrerenderedAppHtmlFiles(appServerDir);
+  let shared: Set<string> | null = null;
+  for (const htmlFile of htmlFiles) {
+    const html = fs.readFileSync(htmlFile, "utf-8");
+    const pageChunks = extractHtmlInitialJsChunks(html, polyfillChunks);
+    if (pageChunks.size === 0) {
+      continue;
+    }
+    if (shared === null) {
+      shared = pageChunks;
+    } else {
+      for (const chunk of Array.from(shared)) {
+        if (!pageChunks.has(chunk)) {
+          shared.delete(chunk);
+        }
+      }
+    }
+  }
+  return shared ?? new Set<string>();
+}
+
 /**
  * Inspects .next build output chunks and evaluates gzip sizes and budget limits.
  */
@@ -77,13 +160,18 @@ export function inspectBundleChunks(
       totalChunks: 0,
       totalRawBytes: 0,
       totalGzipBytes: 0,
+      rootMainFilesGzipBytes: 0,
       initialSharedGzipBytes: 0,
       chunks: [],
       violations: [],
     };
   }
 
-  let buildManifest: { pages?: Record<string, string[]> } = {};
+  let buildManifest: {
+    pages?: Record<string, string[]>;
+    rootMainFiles?: string[];
+    polyfillFiles?: string[];
+  } = {};
   try {
     buildManifest = JSON.parse(fs.readFileSync(buildManifestPath, "utf-8"));
   } catch {
@@ -111,23 +199,44 @@ export function inspectBundleChunks(
 
     const chunkFiles = findChunksRecursively(chunksDir);
 
-    // Initial chunks identified from root '/' or app root
-    const rootChunks = new Set(buildManifest.pages?.["/"] || []);
+    const polyfillChunks = new Set(
+      (buildManifest.polyfillFiles ?? []).map(normalizeNextRelativePath)
+    );
+    const rootMainChunks = new Set(
+      (buildManifest.rootMainFiles ?? []).map(normalizeNextRelativePath)
+    );
+    const appHtmlSharedChunks = findSharedAppRouterHtmlChunks(
+      nextDir,
+      polyfillChunks
+    );
+    const legacyPagesRootChunks = new Set(
+      (buildManifest.pages?.["/"] ?? []).map(normalizeNextRelativePath)
+    );
+    const hasAppRouterInitialSources =
+      rootMainChunks.size > 0 || appHtmlSharedChunks.size > 0;
 
+    let rootMainFilesGzip = 0;
     let initialSharedGzip = 0;
     let totalRaw = 0;
     let totalGzip = 0;
 
     for (const file of chunkFiles) {
       const relative = path.relative(nextDir, file);
+      const normalizedRelative = normalizeNextRelativePath(relative);
       const rawContent = fs.readFileSync(file);
       const rawBytes = rawContent.length;
       const gzipBytes = zlib.gzipSync(rawContent).length;
 
-      const isInitial =
-        rootChunks.has(relative) ||
-        relative.includes("webpack-") ||
-        relative.includes("main-");
+      const isRootMain = rootMainChunks.has(normalizedRelative);
+      if (isRootMain) {
+        rootMainFilesGzip += gzipBytes;
+      }
+
+      const isInitial = hasAppRouterInitialSources
+        ? isRootMain || appHtmlSharedChunks.has(normalizedRelative)
+        : legacyPagesRootChunks.has(normalizedRelative) ||
+          normalizedRelative.includes("webpack-") ||
+          normalizedRelative.includes("main-");
 
       if (isInitial) {
         initialSharedGzip += gzipBytes;
@@ -154,6 +263,12 @@ export function inspectBundleChunks(
       chunks.push(chunkInfo);
     }
 
+    if (rootMainFilesGzip > DEFAULT_BUDGETS.maxRootMainFilesGzip) {
+      violations.push(
+        `App Router rootMainFiles bundle (${(rootMainFilesGzip / 1024).toFixed(1)} kB gzip) exceeds maximum rootMainFiles budget of ${(DEFAULT_BUDGETS.maxRootMainFilesGzip / 1024).toFixed(0)} kB.`
+      );
+    }
+
     if (initialSharedGzip > DEFAULT_BUDGETS.maxInitialSharedGzip) {
       violations.push(
         `Initial shared bundle (${(initialSharedGzip / 1024).toFixed(1)} kB gzip) exceeds maximum initial budget of ${(DEFAULT_BUDGETS.maxInitialSharedGzip / 1024).toFixed(0)} kB.`
@@ -178,6 +293,7 @@ export function inspectBundleChunks(
       totalChunks: totalCount,
       totalRawBytes: totalRaw,
       totalGzipBytes: totalGzip,
+      rootMainFilesGzipBytes: rootMainFilesGzip,
       initialSharedGzipBytes: initialSharedGzip,
       chunks,
       violations,
@@ -189,6 +305,7 @@ export function inspectBundleChunks(
     totalChunks: 0,
     totalRawBytes: 0,
     totalGzipBytes: 0,
+    rootMainFilesGzipBytes: 0,
     initialSharedGzipBytes: 0,
     chunks: [],
     violations: [],
@@ -196,14 +313,20 @@ export function inspectBundleChunks(
 }
 
 /**
- * Inspects standalone JavaScript bundle assets in public/ and checks budget limits.
+ * Inspects the standalone Garmin engine bundle under `.next/standalone-engine/`
+ * and enforces its 80 KB size ceiling.
  */
 export function inspectStandaloneBundle(workspaceRoot: string): {
   exists: boolean;
   sizeBytes: number;
   violation?: string;
 } {
-  const targetPath = path.join(workspaceRoot, "public", "garmin-engine.js");
+  const targetPath = path.join(
+    workspaceRoot,
+    ".next",
+    "standalone-engine",
+    "garmin-engine.js"
+  );
   if (!fs.existsSync(targetPath)) {
     return { exists: false, sizeBytes: 0 };
   }
@@ -211,7 +334,7 @@ export function inspectStandaloneBundle(workspaceRoot: string): {
   const maxBytes = 80 * 1024;
   let violation: string | undefined;
   if (stats.size > maxBytes) {
-    violation = `Standalone JavaScript asset 'garmin-engine.js' (${(stats.size / 1024).toFixed(1)} kB) exceeds maximum budget of 80.0 kB.`;
+    violation = `Standalone JavaScript asset '.next/standalone-engine/garmin-engine.js' (${(stats.size / 1024).toFixed(1)} kB) exceeds maximum budget of 80.0 kB.`;
   }
   return { exists: true, sizeBytes: stats.size, violation };
 }
@@ -233,7 +356,7 @@ export function checkBundleBudgets(root: string): DiagnosticCheckResult {
         id: "bundle-performance-budgets",
         name: "Production Bundle & Chunk Performance Budgets",
         category: "quality",
-        status: "warn",
+        status: "fail",
         message: `Standalone JS artifact exceeded defined 80KB size budget.`,
         details: [standaloneReport.violation],
       };
@@ -253,7 +376,7 @@ export function checkBundleBudgets(root: string): DiagnosticCheckResult {
       id: "bundle-performance-budgets",
       name: "Production Bundle & Chunk Performance Budgets",
       category: "quality",
-      status: "warn",
+      status: "fail",
       message: `${report.violations.length} bundle chunk(s) exceeded defined performance budgets.`,
       details: report.violations,
       remediation: {

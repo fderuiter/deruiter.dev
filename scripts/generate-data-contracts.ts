@@ -20,6 +20,7 @@ import {
   type DataContract,
   type DataProduct,
 } from "../lib/clinical-platform";
+import { CLINICAL_DATA_CONTRACTS_CATALOG_PATH } from "../lib/dx/generated-artifacts";
 
 /**
  * Writes the files generated from the Clinical Data Platform's data
@@ -41,8 +42,7 @@ export const CONTRACT_LOCK_FILE =
   "__tests__/fixtures/clinical-platform/data-contracts.lock.json";
 
 /** Data contract catalog page, relative to the workspace root. */
-export const CONTRACT_REFERENCE_PAGE =
-  "docs/reference/clinical-platform-data-contracts.md";
+export const CONTRACT_REFERENCE_PAGE = CLINICAL_DATA_CONTRACTS_CATALOG_PATH;
 
 /** The pipeline run whose metadata the study data contract is read from. */
 export function referenceRun(): PipelineRun {

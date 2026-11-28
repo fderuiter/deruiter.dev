@@ -136,7 +136,7 @@ MIIEowIBAAKCAQEA0G...
       expect(shouldScanFile(".husky/pre-push")).toBe(true);
       expect(shouldScanFile("scripts/deploy.sh")).toBe(true);
       expect(shouldScanFile(".github/workflows/ci.yml")).toBe(true);
-      expect(shouldScanFile("public/favicon.svg")).toBe(true);
+      expect(shouldScanFile("app/icon.svg")).toBe(true);
       expect(shouldScanFile("lib/auth.ts")).toBe(true);
       expect(shouldScanFile("app/dashboard/page.tsx")).toBe(true);
       expect(shouldScanFile("scripts/seed.js")).toBe(true);

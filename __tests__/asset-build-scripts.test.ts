@@ -5,8 +5,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { generateBrandIcons } from "../scripts/generate-brand-icons";
-import { generateTheme } from "../scripts/generate-theme";
+import { generateTheme, renderDesignManifest } from "../scripts/generate-theme";
 import { designManifest } from "../lib/design-manifest";
+import { FORMATTING_EXCLUDED_ARTIFACTS } from "../lib/dx/generated-artifacts";
 
 const workspaceRoot = process.cwd();
 const tsxCli = path.join(workspaceRoot, "node_modules/tsx/dist/cli.mjs");
@@ -14,19 +15,7 @@ const standaloneScript = path.join(
   workspaceRoot,
   "scripts/build-standalone-engine.ts"
 );
-const trackedOutputs = [
-  "app/icon.svg",
-  "app/favicon.ico",
-  "public/favicon.svg",
-  "public/favicon.ico",
-  "public/apple-touch-icon.png",
-  "public/icon-192.png",
-  "public/icon-512.png",
-  "public/icon-maskable-512.png",
-  "lib/design-manifest.ts",
-  "public/garmin-engine.js",
-  "public/monkey-c-mayhem.js",
-];
+const trackedOutputs = [...FORMATTING_EXCLUDED_ARTIFACTS];
 
 describe("asset generation and staging workflow", () => {
   let temporaryRoot: string;
@@ -48,7 +37,7 @@ describe("asset generation and staging workflow", () => {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   });
 
-  it("generates deterministic icon and theme outputs outside the workspace", async () => {
+  it("generates deterministic icon and theme outputs outside the workspace without public duplicates", async () => {
     const iconOutputRoot = path.join(temporaryRoot, "icons");
     const themeOutputPath = path.join(
       temporaryRoot,
@@ -65,7 +54,7 @@ describe("asset generation and staging workflow", () => {
       outputPath: themeOutputPath,
     });
     const firstIcon = fs.readFileSync(
-      path.join(iconOutputRoot, "public/favicon.ico")
+      path.join(iconOutputRoot, "app/favicon.ico")
     );
 
     await generateBrandIcons({
@@ -77,24 +66,25 @@ describe("asset generation and staging workflow", () => {
       outputPath: themeOutputPath,
     });
     const secondIcon = fs.readFileSync(
-      path.join(iconOutputRoot, "public/favicon.ico")
+      path.join(iconOutputRoot, "app/favicon.ico")
     );
 
     expect(firstTheme).toBe(secondTheme);
+    expect(renderDesignManifest(workspaceRoot)).toBe(firstTheme);
     expect(firstIcon.equals(secondIcon)).toBe(true);
+    expect(fs.existsSync(path.join(iconOutputRoot, "app/icon.svg"))).toBe(true);
     expect(
-      fs
-        .readFileSync(path.join(iconOutputRoot, "app/favicon.ico"))
-        .equals(secondIcon)
+      fs.existsSync(path.join(iconOutputRoot, "public/icon-maskable-512.png"))
     ).toBe(true);
-    expect(
-      fs.readFileSync(path.join(iconOutputRoot, "app/icon.svg"), "utf8")
-    ).toBe(
-      fs.readFileSync(path.join(iconOutputRoot, "public/favicon.svg"), "utf8")
+    expect(fs.existsSync(path.join(iconOutputRoot, "public/favicon.svg"))).toBe(
+      false
+    );
+    expect(fs.existsSync(path.join(iconOutputRoot, "public/favicon.ico"))).toBe(
+      false
     );
   });
 
-  it("builds identical standalone aliases in an isolated directory and leaves no failed output", () => {
+  it("builds a single standalone bundle in an isolated directory and leaves no failed output", () => {
     const outputDir = path.join(temporaryRoot, "standalone");
     const build = (directory: string, maxSizeBytes?: number) =>
       execFileSync(
@@ -121,11 +111,9 @@ describe("asset generation and staging workflow", () => {
         .readFileSync(path.join(outputDir, "garmin-engine.js"))
         .equals(firstBuild)
     ).toBe(true);
-    expect(
-      fs
-        .readFileSync(path.join(outputDir, "monkey-c-mayhem.js"))
-        .equals(firstBuild)
-    ).toBe(true);
+    expect(fs.existsSync(path.join(outputDir, "monkey-c-mayhem.js"))).toBe(
+      false
+    );
 
     const rejectedOutputDir = path.join(temporaryRoot, "rejected-standalone");
     expect(() => build(rejectedOutputDir, 1)).toThrow();
@@ -188,7 +176,9 @@ describe("asset generation and staging workflow", () => {
       "/repo/components/Example File.tsx",
       "/repo/vitest.config.mts",
       "/repo/config/custom.cts",
-      "/repo/public/garmin-engine.js",
+      "/repo/public/icon-maskable-512.png",
+      "/repo/lib/design-manifest.ts",
+      "/repo/app/icon.svg",
       "/repo/docs/guide.md",
     ]);
 
@@ -197,11 +187,14 @@ describe("asset generation and staging workflow", () => {
     expect(commands[0]).toContain("Example File.tsx");
     expect(commands[0]).toContain("vitest.config.mts");
     expect(commands[0]).toContain("custom.cts");
-    expect(commands[0]).not.toContain("garmin-engine.js");
+    expect(commands[0]).not.toContain("icon-maskable-512.png");
+    expect(commands[0]).not.toContain("design-manifest.ts");
+    expect(commands[0]).not.toContain("icon.svg");
     expect(commands[1]).toContain("eslint --fix");
     expect(commands[1]).toContain("Example File.tsx");
     expect(commands[1]).toContain("vitest.config.mts");
     expect(commands[1]).toContain("custom.cts");
+    expect(commands[1]).not.toContain("design-manifest.ts");
     expect(commands[1]).not.toContain("guide.md");
   });
 

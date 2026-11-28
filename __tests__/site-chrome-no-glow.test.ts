@@ -47,7 +47,7 @@ describe("site chrome carries no glow (#2312)", () => {
     }
   );
 
-  it.each(["app/icon.svg", "public/favicon.svg"])(
+  it.each(["app/icon.svg"])(
     "%s draws the telemetry dot as a solid inline fill with no filter",
     (file) => {
       const svg = read(file);

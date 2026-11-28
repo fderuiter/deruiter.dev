@@ -40,8 +40,6 @@ describe("build provenance (#1769)", () => {
     git("config", "user.name", "CI");
     git("config", "commit.gpgsign", "false");
     fs.writeFileSync(path.join(dir, ".gitignore"), "/.next/\n");
-    fs.mkdirSync(path.join(dir, "public"));
-    fs.writeFileSync(path.join(dir, "public/garmin-engine.js"), "v1\n");
     fs.writeFileSync(path.join(dir, "app.ts"), "export {};\n");
     git("add", ".");
     git("commit", "-q", "--no-verify", "-m", "init");
@@ -72,6 +70,7 @@ describe("build provenance (#1769)", () => {
       GENERATED_BUILD_ARTIFACTS: string[];
       BUILD_PROVENANCE_FILE: string;
     };
+    expect(GENERATED_BUILD_ARTIFACTS).toEqual([]);
     expect(helpers.GENERATED_BUILD_ARTIFACTS).toEqual([
       ...GENERATED_BUILD_ARTIFACTS,
     ]);
@@ -84,7 +83,7 @@ describe("build provenance (#1769)", () => {
     const dir = fixtureRepo();
     runBuildProvenance(
       dir,
-      "const before = p.captureSourceState(); p.clearBuildProvenance(); require('fs').writeFileSync('public/garmin-engine.js', 'v2\\n'); p.writeBuildProvenance(before);"
+      "const before = p.captureSourceState(); p.clearBuildProvenance(); require('fs').mkdirSync('.next/standalone-engine', { recursive: true }); require('fs').writeFileSync('.next/standalone-engine/garmin-engine.js', 'v2\\n'); p.writeBuildProvenance(before);"
     );
 
     const record = JSON.parse(
@@ -145,12 +144,95 @@ describe("build provenance (#1769)", () => {
   it("clears the record before building and writes it only after next build succeeds", () => {
     const build = fs.readFileSync(path.join(root, "scripts/build.js"), "utf-8");
     const clear = build.indexOf("clearBuildProvenance();");
+    const clearTypes = build.indexOf(
+      'fs.rmSync(path.join(buildCwd, ".next", "types")'
+    );
+    const typecheck = build.indexOf('runStep("npm", ["run", "typecheck"])');
     const nextBuild = build.indexOf(
       'runStep("npx", ["next", "build", "--webpack"])'
     );
+    const cleanup = build.indexOf(
+      "cleanEphemeralSentryTunnel(hadSentryTunnelBeforeBuild, buildCwd)"
+    );
+    const standaloneBuild = build.indexOf(
+      'runStep("npx", ["tsx", "scripts/build-standalone-engine.ts"])'
+    );
     const write = build.indexOf("writeBuildProvenance(sourceBeforeBuild)");
     expect(clear).toBeGreaterThan(-1);
-    expect(nextBuild).toBeGreaterThan(clear);
-    expect(write).toBeGreaterThan(nextBuild);
+    expect(clearTypes).toBeGreaterThan(clear);
+    expect(typecheck).toBeGreaterThan(clearTypes);
+    expect(nextBuild).toBeGreaterThan(typecheck);
+    expect(cleanup).toBeGreaterThan(-1);
+    expect(standaloneBuild).toBeGreaterThan(nextBuild);
+    expect(write).toBeGreaterThan(standaloneBuild);
+  });
+
+  it("cleans ephemeral @sentry/nextjs tunnel source and type stubs so VERCEL=1 builds stay clean", () => {
+    const dir = fixtureRepo();
+    runBuildProvenance(
+      dir,
+      [
+        "const fs = require('fs');",
+        "const before = p.captureSourceState();",
+        "p.clearBuildProvenance();",
+        "fs.mkdirSync('app/sentry-tunnel', { recursive: true });",
+        "fs.writeFileSync('app/sentry-tunnel/route.js', \"export { POST } from '@sentry/nextjs/tunnel';\\n\");",
+        "fs.mkdirSync('.next/types/app/sentry-tunnel', { recursive: true });",
+        "fs.writeFileSync('.next/types/app/sentry-tunnel/route.ts', \"import * as entry from '../../../../app/sentry-tunnel/route.js'\\n\");",
+        "fs.mkdirSync('.next/server/app/sentry-tunnel', { recursive: true });",
+        "fs.writeFileSync('.next/server/app/sentry-tunnel/route.js', 'module.exports = {};\\n');",
+        "p.cleanEphemeralSentryTunnel(false, process.cwd());",
+        "p.writeBuildProvenance(before);",
+      ].join(" ")
+    );
+
+    expect(fs.existsSync(path.join(dir, "app/sentry-tunnel"))).toBe(false);
+    expect(fs.existsSync(path.join(dir, ".next/types/app/sentry-tunnel"))).toBe(
+      false
+    );
+    expect(
+      fs.existsSync(path.join(dir, ".next/server/app/sentry-tunnel/route.js"))
+    ).toBe(true);
+
+    const record = JSON.parse(
+      fs.readFileSync(path.join(dir, BUILD_PROVENANCE_FILE), "utf-8")
+    );
+    expect(record).toMatchObject({
+      sourceDirty: false,
+      sourceDirtyAfterBuild: false,
+      buildId: "fixture-build",
+    });
+    expect(
+      validateBuildProvenance(record, {
+        source: inspectSourceState(dir),
+        buildId: "fixture-build",
+      })
+    ).toEqual({ valid: true, errors: [] });
+  });
+
+  it("preserves app/sentry-tunnel when it already existed before the build", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const helpers = require(provenanceModule) as {
+      cleanEphemeralSentryTunnel: (hadBefore: boolean, cwd: string) => void;
+    };
+    const dir = fixtureRepo();
+    fs.mkdirSync(path.join(dir, "app/sentry-tunnel"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "app/sentry-tunnel/route.js"), "custom\n");
+    fs.mkdirSync(path.join(dir, ".next/types/app/sentry-tunnel"), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(dir, ".next/types/app/sentry-tunnel/route.ts"),
+      "export {};\n"
+    );
+
+    helpers.cleanEphemeralSentryTunnel(true, dir);
+
+    expect(fs.existsSync(path.join(dir, "app/sentry-tunnel/route.js"))).toBe(
+      true
+    );
+    expect(
+      fs.existsSync(path.join(dir, ".next/types/app/sentry-tunnel/route.ts"))
+    ).toBe(true);
   });
 });

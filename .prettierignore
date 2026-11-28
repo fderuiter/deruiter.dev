@@ -20,18 +20,14 @@ __tests__/fixtures/clinical-platform
 .eslintcache
 .prettiercache
 
-# Generated brand icons, design manifest, and minified standalone engine bundles (lint-staged.config.cjs)
+# Generated brand icons and design manifest (lib/dx/generated-artifacts.ts)
 app/icon.svg
-public/favicon.svg
 app/favicon.ico
-public/favicon.ico
 public/apple-touch-icon.png
 public/icon-192.png
 public/icon-512.png
+public/icon-maskable-512.png
 lib/design-manifest.ts
-public/garmin-engine.js
-public/monkey-c-mayhem.js
-app/theme.css
 public/sw.js
 public/sw.js.map
 

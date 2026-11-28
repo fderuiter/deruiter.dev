@@ -136,7 +136,17 @@
         },
         "responses": {
           "201": {
-            "description": "Feedback submitted successfully",
+            "description": "Feedback submitted durably",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackPostResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Feedback accepted into volatile memory fallback (durable=false); clients should retain in offline queue for background replay",
             "content": {
               "application/json": {
                 "schema": {
@@ -260,7 +270,17 @@
         },
         "responses": {
           "200": {
-            "description": "Reaction registered successfully",
+            "description": "Reaction registered durably",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionPostResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Reaction accepted into volatile memory fallback (durable=false); clients should retain in offline queue for background replay",
             "content": {
               "application/json": {
                 "schema": {
@@ -2890,6 +2910,9 @@
           "success": {
             "type": "boolean"
           },
+          "durable": {
+            "type": "boolean"
+          },
           "message": {
             "type": "string"
           },
@@ -2928,6 +2951,7 @@
         },
         "required": [
           "success",
+          "durable",
           "message",
           "feedback"
         ],
@@ -3034,6 +3058,9 @@
           "success": {
             "type": "boolean"
           },
+          "durable": {
+            "type": "boolean"
+          },
           "reactionType": {
             "type": "string",
             "enum": [
@@ -3076,6 +3103,7 @@
         },
         "required": [
           "success",
+          "durable",
           "reactionType",
           "counts",
           "userReactions"

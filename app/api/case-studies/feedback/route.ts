@@ -65,8 +65,10 @@ export const POST = createApiHandler(
         });
       }
 
-      // Non-blocking notification dispatch, once per stored row
-      if (!result.data.replayed) {
+      const durable = result.data.durable !== false;
+
+      // Non-blocking notification dispatch, once per durably stored row
+      if (durable && !result.data.replayed) {
         new SendFeedbackNotificationHandler()
           .execute({
             caseStudySlug: data.caseStudySlug,
@@ -83,10 +85,11 @@ export const POST = createApiHandler(
       return NextResponse.json(
         {
           success: true,
+          durable,
           message: result.data.message,
           feedback: result.data.feedback,
         },
-        { status: 201 }
+        { status: durable ? 201 : 202 }
       );
     } catch (err) {
       logger.error("Failed to process feedback submission:", err);

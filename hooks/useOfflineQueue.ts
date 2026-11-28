@@ -60,6 +60,8 @@ const LEGACY_QUEUE_KEY = "portfolio_offline_queue";
 const LEGACY_DLQ_KEY = "portfolio_offline_dlq";
 /** Event fired on `window` when a request this tab sent is dead-lettered. */
 const DLQ_ERROR_EVENT = "portfolio-offline-queue-error";
+/** Event fired on `window` when a queued request is durably acknowledged. */
+const QUEUE_SYNCED_EVENT = "portfolio-offline-queue-synced";
 /** Channel that tells other tabs to reread the store. */
 const CHANNEL_NAME = "portfolio-offline-queue";
 
@@ -247,7 +249,29 @@ async function sendQueued(
       break;
   }
 
-  if (res.ok) return { kind: "ok" };
+  if (res.ok) {
+    const bodyObj =
+      res.body && typeof res.body === "object"
+        ? (res.body as Record<string, unknown>)
+        : null;
+    const isTelemetry =
+      entry.type === "telemetry" || entry.endpoint === "/api/telemetry";
+    if (!isTelemetry && (res.status === 202 || bodyObj?.durable === false)) {
+      if (bodyObj?.durable === false || res.status === 202) {
+        return {
+          kind: "transient",
+          status: res.status,
+          reason: "Accepted into volatile fallback",
+        };
+      }
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(QUEUE_SYNCED_EVENT, { detail: entry })
+      );
+    }
+    return { kind: "ok" };
+  }
   if (
     res.status >= 400 &&
     res.status < 500 &&

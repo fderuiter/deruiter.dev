@@ -22,6 +22,9 @@ describe("SubmitCaseStudyFeedbackHandler (Logic Test)", () => {
       connectionHash: "conn-1",
     });
     expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.durable).toBe(true);
+    }
 
     const outageHandler = new SubmitCaseStudyFeedbackHandler({
       feedback: {
@@ -39,6 +42,43 @@ describe("SubmitCaseStudyFeedbackHandler (Logic Test)", () => {
     if (!outage.success) {
       expect(outage.error.code).toBe("STORAGE_UNAVAILABLE");
       expect(outage.error.recoverable).toBe(true);
+    }
+  });
+
+  it("returns durable: false when falling back to an injected volatile Map store", async () => {
+    const fallbackStore = new Map();
+    const fallbackHandler = new SubmitCaseStudyFeedbackHandler({
+      feedback: {
+        findFirst: vi.fn().mockRejectedValue(new Error("Postgres unreachable")),
+        create: vi.fn(),
+      },
+      fallbackStore,
+    });
+
+    const first = await fallbackHandler.execute({
+      caseStudySlug: "crf-studio",
+      takeaways: ["Testing"],
+      comments: "Saved in volatile fallback",
+      connectionHash: "conn-volatile",
+      operationKey: "fb_key_1",
+    });
+    expect(first.success).toBe(true);
+    if (first.success) {
+      expect(first.data.durable).toBe(false);
+      expect(first.data.replayed).toBe(false);
+    }
+
+    const replay = await fallbackHandler.execute({
+      caseStudySlug: "crf-studio",
+      takeaways: ["Testing"],
+      comments: "Saved in volatile fallback",
+      connectionHash: "conn-volatile",
+      operationKey: "fb_key_1",
+    });
+    expect(replay.success).toBe(true);
+    if (replay.success) {
+      expect(replay.data.durable).toBe(false);
+      expect(replay.data.replayed).toBe(true);
     }
   });
 });

@@ -13,6 +13,7 @@ export type SubmitCaseStudyReactionInput = z.infer<
 >;
 
 export interface SubmitCaseStudyReactionData {
+  durable: boolean;
   reactionType: string;
   counts: Record<string, number>;
   userReactions: string[];

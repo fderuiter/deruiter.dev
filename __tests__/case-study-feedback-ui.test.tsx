@@ -11,13 +11,20 @@ import {
   CaseStudyFeedbackSection,
   PREDEFINED_TAKEAWAYS,
 } from "@/components/CaseStudyFeedbackSection";
+import {
+  clearDLQ,
+  clearOfflineQueue,
+  getOfflineQueue,
+} from "@/hooks/useOfflineQueue";
 
 describe("CaseStudyFeedbackSection UI Component", () => {
   const slug = "imednet-python-sdk";
 
-  beforeEach(() => {
+  beforeEach(async () => {
     cleanup();
     vi.clearAllMocks();
+    await clearOfflineQueue();
+    await clearDLQ();
     global.fetch = vi
       .fn()
       .mockImplementation((url: string, init?: RequestInit) => {
@@ -234,5 +241,127 @@ describe("CaseStudyFeedbackSection UI Component", () => {
 
     expect(await screen.findByText("Comments are too short.")).toBeDefined();
     expect(screen.queryByText("Feedback Submitted!")).toBeNull();
+  });
+
+  it("displays amber Queued locally banner instead of Feedback Submitted! on HTTP 500", async () => {
+    const baseFetch = global.fetch;
+    global.fetch = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) =>
+        url === "/api/case-studies/feedback" && init?.method === "POST"
+          ? Promise.resolve({
+              ok: false,
+              status: 500,
+              json: () =>
+                Promise.resolve({
+                  error: "Internal server error processing feedback submission",
+                }),
+            })
+          : baseFetch(url, init)
+      );
+
+    render(<CaseStudyFeedbackSection slug={slug} />);
+    fireEvent.click(
+      screen.getByText(PREDEFINED_TAKEAWAYS[0], { exact: false })
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Describe key insights/i), {
+      target: { value: "Thoughtful observations during an HTTP 500 outage." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Submit Learning Feedback/i })
+    );
+
+    expect(await screen.findByText("Queued locally")).toBeDefined();
+    expect(screen.queryByText("Feedback Submitted!")).toBeNull();
+    expect(getOfflineQueue().length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("enqueues HTTP 202 durable: false writes with amber Queued locally banner until background replay succeeds", async () => {
+    const baseFetch = global.fetch;
+    let feedbackPostCount = 0;
+    global.fetch = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) => {
+        if (url === "/api/case-studies/feedback" && init?.method === "POST") {
+          feedbackPostCount += 1;
+          if (feedbackPostCount <= 2) {
+            return Promise.resolve({
+              ok: true,
+              status: 202,
+              json: () =>
+                Promise.resolve({
+                  success: true,
+                  durable: false,
+                  message: "Feedback accepted into volatile fallback",
+                }),
+            });
+          }
+          return Promise.resolve({
+            ok: true,
+            status: 201,
+            json: () =>
+              Promise.resolve({
+                success: true,
+                durable: true,
+                message: "Thank you! Your learning feedback has been recorded.",
+              }),
+          });
+        }
+        if (url === "/api/case-studies/reactions" && init?.method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            status: 202,
+            json: () =>
+              Promise.resolve({
+                success: true,
+                durable: false,
+                reactionType: "thorough",
+                counts: {
+                  insightful: 0,
+                  mind_blowing: 0,
+                  actionable: 0,
+                  thorough: 1,
+                },
+                userReactions: ["thorough"],
+              }),
+          });
+        }
+        return baseFetch(url, init);
+      });
+
+    render(<CaseStudyFeedbackSection slug={slug} />);
+
+    // Volatile 202 reaction is enqueued for durable replay
+    fireEvent.click(
+      screen.getByRole("button", { name: /React with Thorough/i })
+    );
+    await waitFor(() =>
+      expect(
+        getOfflineQueue().some(
+          (item) => item.endpoint === "/api/case-studies/reactions"
+        )
+      ).toBe(true)
+    );
+    await clearOfflineQueue();
+
+    // Volatile 202 feedback shows amber Queued locally + volatile tab-open warning
+    fireEvent.click(
+      screen.getByText(PREDEFINED_TAKEAWAYS[1], { exact: false })
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Describe key insights/i), {
+      target: { value: "Resilience analysis when primary database degrades." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Submit Learning Feedback/i })
+    );
+
+    expect(await screen.findByText("Queued locally")).toBeDefined();
+    expect(screen.getByText(/Keep this page open until then/i)).toBeDefined();
+    expect(screen.queryByText("Feedback Submitted!")).toBeNull();
+    expect(
+      getOfflineQueue().some(
+        (item) => item.endpoint === "/api/case-studies/feedback"
+      )
+    ).toBe(true);
   });
 });

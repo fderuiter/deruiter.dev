@@ -755,6 +755,7 @@ export const FeedbackGetResponseSchema = z.object({
 /** Schema for Feedback POST response */
 export const FeedbackPostResponseSchema = z.object({
   success: z.boolean(),
+  durable: z.boolean(),
   message: z.string(),
   feedback: z.object({
     id: z.string(),
@@ -784,6 +785,7 @@ export const ReactionGetResponseSchema = z.object({
 /** Schema for Reaction POST response */
 export const ReactionPostResponseSchema = z.object({
   success: z.boolean(),
+  durable: z.boolean(),
   reactionType: z.enum(ALLOWED_REACTIONS),
   counts: ReactionCountsSchema,
   userReactions: z.array(z.string()),

@@ -412,7 +412,8 @@ describe("Offline Queue Dead-Letter Queue (DLQ) & Failure Events Suite", () => {
         await vi.advanceTimersByTimeAsync(0);
       });
 
-      expect(screen.getByText("Feedback Submitted!")).toBeDefined();
+      expect(screen.getByText("Queued locally")).toBeDefined();
+      expect(screen.queryByText("Feedback Submitted!")).toBeNull();
       // Without IndexedDB the queue is held in memory, and the copy says so.
       expect(screen.getByText(/Keep this page open until then/)).toBeDefined();
 

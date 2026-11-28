@@ -541,5 +541,84 @@ describe("Case Study Feedback & Reaction API Routes", () => {
       expect(remaining).toHaveLength(1);
       expect(remaining[0]?.retries).toBe(1);
     });
+
+    it("returns HTTP 202 with durable: false on feedback and reaction routes when CaseStudyService falls back to memory", async () => {
+      const services = await import("@/lib/services");
+
+      const fbFallbackHandler = new services.SubmitCaseStudyFeedbackHandler({
+        feedback: {
+          findFirst: vi
+            .fn()
+            .mockRejectedValue(new Error("Neon compute unavailable")),
+          create: vi.fn(),
+        },
+        fallbackStore: new Map(),
+      });
+      const emailSpy = vi
+        .spyOn(services.SendFeedbackNotificationHandler.prototype, "execute")
+        .mockResolvedValue(createSuccess({ id: "sim_mem", simulated: true }));
+      const fbExecSpy = vi
+        .spyOn(services.SubmitCaseStudyFeedbackHandler.prototype, "execute")
+        .mockImplementationOnce((input) => fbFallbackHandler.execute(input));
+
+      const rxFallbackHandler = new services.SubmitCaseStudyReactionHandler({
+        reactions: {
+          createMany: vi
+            .fn()
+            .mockRejectedValue(new Error("Neon compute unavailable")),
+          groupBy: vi.fn(),
+          findMany: vi.fn(),
+        },
+        fallbackStore: new Map(),
+      });
+      const rxExecSpy = vi
+        .spyOn(services.SubmitCaseStudyReactionHandler.prototype, "execute")
+        .mockImplementationOnce((input) => rxFallbackHandler.execute(input));
+
+      try {
+        const fbRes = await feedbackRoute.POST(
+          new NextRequest("http://localhost/api/case-studies/feedback", {
+            method: "POST",
+            headers: {
+              "x-forwarded-for": "10.9.9.42",
+              "user-agent": "volatile-feedback-agent",
+            },
+            body: JSON.stringify({
+              caseStudySlug: "oxidizemath",
+              takeaways: ["Architecture & System Design"],
+              comments: "Submitted while primary storage fell back to memory.",
+            }),
+          })
+        );
+        expect(fbRes.status).toBe(202);
+        const fbJson = await fbRes.json();
+        expect(fbJson.success).toBe(true);
+        expect(fbJson.durable).toBe(false);
+        expect(emailSpy).not.toHaveBeenCalled();
+
+        const rxRes = await reactionPOST(
+          new NextRequest("http://localhost/api/case-studies/reactions", {
+            method: "POST",
+            headers: {
+              "x-forwarded-for": "10.9.9.43",
+              "user-agent": "volatile-rx-agent",
+            },
+            body: JSON.stringify({
+              caseStudySlug: "oxidizemath",
+              reactionType: "thorough",
+            }),
+          })
+        );
+        expect(rxRes.status).toBe(202);
+        const rxJson = await rxRes.json();
+        expect(rxJson.success).toBe(true);
+        expect(rxJson.durable).toBe(false);
+        expect(rxJson.counts.thorough).toBe(1);
+      } finally {
+        fbExecSpy.mockRestore();
+        rxExecSpy.mockRestore();
+        emailSpy.mockRestore();
+      }
+    });
   });
 });

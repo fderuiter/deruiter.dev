@@ -22,6 +22,7 @@ export interface SubmittedCaseStudyFeedbackRecord {
 }
 
 export interface SubmitCaseStudyFeedbackData {
+  durable: boolean;
   replayed: boolean;
   message: string;
   feedback: SubmittedCaseStudyFeedbackRecord;

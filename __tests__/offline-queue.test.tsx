@@ -172,11 +172,14 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
       })[0];
       fireEvent.click(submitBtn);
 
-      // Optimistic success state displayed once the store committed it
-      expect(await screen.findByText("Feedback Submitted!")).toBeDefined();
+      // Queued locally notice is displayed instead of false Feedback Submitted!
+      expect(await screen.findByText("Queued locally")).toBeDefined();
       expect(
-        screen.getByText("Thank you! Your learning feedback has been recorded.")
+        screen.getByText(
+          /Your feedback is queued locally on this device and will sync automatically/i
+        )
       ).toBeDefined();
+      expect(screen.queryByText("Feedback Submitted!")).toBeNull();
 
       // No error banner
       expect(screen.queryByText(/Network error/i)).toBeNull();
@@ -186,6 +189,100 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
       expect(queue.length).toBe(1);
       expect(queue[0].type).toBe("feedback");
       expect(queue[0].endpoint).toBe("/api/case-studies/feedback");
+
+      // Once online and durable 201 succeeds, banner upgrades to Feedback Submitted!
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          success: true,
+          durable: true,
+          message: "Thank you! Your learning feedback has been recorded.",
+        }),
+      }));
+      Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true,
+      });
+      window.dispatchEvent(new Event("online"));
+      await flushOfflineQueue();
+
+      expect(await screen.findByText("Feedback Submitted!")).toBeDefined();
+    });
+
+    it("keeps non-telemetry HTTP 202 durable: false responses queued for retry while acknowledging telemetry 202 drops", async () => {
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
+
+      await enqueueOfflineRequest({
+        id: "fb_202_1",
+        type: "feedback",
+        endpoint: "/api/case-studies/feedback",
+        body: {
+          caseStudySlug: "clinical-trial-chaos",
+          takeaways: ["Architecture & System Design"],
+          comments: "Testing volatile 202 retry.",
+        },
+      });
+      await enqueueOfflineRequest({
+        id: "tel_202_1",
+        type: "telemetry",
+        endpoint: "/api/telemetry",
+        body: { projectSlug: "proof-studio", eventType: "page_view" },
+      });
+
+      Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true,
+      });
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 202,
+        json: async () => ({
+          success: true,
+          durable: false,
+          message: "Feedback accepted into volatile fallback",
+        }),
+      }));
+
+      const firstPass = await flushOfflineQueue();
+      expect(firstPass).toEqual({ processed: 0, failed: 1 });
+      expect(getOfflineQueue().map((i) => i.id)).toEqual([
+        "fb_202_1",
+        "tel_202_1",
+      ]);
+      expect(getOfflineQueue()[0].retries).toBe(1);
+
+      // Verify telemetry 202 durable: false is NOT retried when its turn arrives
+      await clearOfflineQueue();
+      Object.defineProperty(navigator, "onLine", {
+        value: false,
+        configurable: true,
+      });
+      await enqueueOfflineRequest({
+        id: "tel_only_202",
+        type: "telemetry",
+        endpoint: "/api/telemetry",
+        body: { projectSlug: "proof-studio", eventType: "page_view" },
+      });
+      Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true,
+      });
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 202,
+        json: async () => ({
+          success: true,
+          durable: false,
+        }),
+      }));
+      const telPass = await flushOfflineQueue();
+      expect(telPass).toEqual({ processed: 1, failed: 0 });
+      expect(getOfflineQueue()).toHaveLength(0);
     });
   });
 

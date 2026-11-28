@@ -23,6 +23,7 @@ describe("SubmitCaseStudyReactionHandler (Logic Test)", () => {
     });
     expect(ok.success).toBe(true);
     if (ok.success) {
+      expect(ok.data.durable).toBe(true);
       expect(ok.data.counts.insightful).toBe(1);
     }
 
@@ -41,6 +42,30 @@ describe("SubmitCaseStudyReactionHandler (Logic Test)", () => {
     expect(outage.success).toBe(false);
     if (!outage.success) {
       expect(outage.error.code).toBe("STORAGE_UNAVAILABLE");
+    }
+  });
+
+  it("returns durable: false when falling back to an injected volatile Map store", async () => {
+    const fallbackStore = new Map<string, Set<string>>();
+    const fallbackHandler = new SubmitCaseStudyReactionHandler({
+      reactions: {
+        createMany: vi.fn().mockRejectedValue(new Error("DB down")),
+        groupBy: vi.fn(),
+        findMany: vi.fn(),
+      },
+      fallbackStore,
+    });
+
+    const result = await fallbackHandler.execute({
+      caseStudySlug: "crf-studio",
+      reactionType: "thorough",
+      connectionHash: "conn-volatile",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.durable).toBe(false);
+      expect(result.data.counts.thorough).toBe(1);
+      expect(result.data.userReactions).toEqual(["thorough"]);
     }
   });
 });

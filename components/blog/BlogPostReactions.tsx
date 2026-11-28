@@ -19,6 +19,7 @@ interface BlogPostReactionsProps {
 type ReactionType = "insightful" | "mind_blowing" | "actionable" | "thorough";
 
 interface ReactionsPayload {
+  success?: boolean;
   counts?: Record<string, number>;
   userReactions?: unknown;
 }
@@ -83,6 +84,9 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
     setReactionLoading(type);
     setStatusMsg(null);
 
+    const prevCounts = { ...counts };
+    const prevUserReactions = [...userReactions];
+
     // Optimistic UI update
     setUserReactions((prev) => [...prev, type]);
     setCounts((prev) => ({
@@ -94,36 +98,46 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
       blogPostSlug: slug,
       reactionType: type,
     });
-    // A 429 duplicate still carries authoritative counts in its body.
     const payload = (res.body ?? {}) as ReactionsPayload;
+    const hasAuthoritativeDuplicateState =
+      Boolean(
+        payload.counts &&
+        typeof payload.counts === "object" &&
+        Object.keys(payload.counts).length > 0
+      ) && Array.isArray(payload.userReactions);
 
     if (res.networkError) {
+      setCounts(prevCounts);
+      setUserReactions(prevUserReactions);
       setStatusMsg({
         type: "error",
         text: "Network error submitting reaction.",
       });
     } else if (res.status === 429) {
+      if (hasAuthoritativeDuplicateState) {
+        setCounts(payload.counts!);
+        setUserReactions(payload.userReactions as string[]);
+      } else {
+        setCounts(prevCounts);
+        setUserReactions(prevUserReactions);
+      }
       setStatusMsg({
         type: "error",
         text: res.error || "You have already submitted this reaction.",
       });
-      if (payload.counts) {
-        setCounts(payload.counts);
-      }
-      if (Array.isArray(payload.userReactions)) {
-        setUserReactions(payload.userReactions);
-      }
-    } else if (!res.ok) {
+    } else if (!res.ok || payload.success === false) {
+      setCounts(prevCounts);
+      setUserReactions(prevUserReactions);
       setStatusMsg({
         type: "error",
         text: res.error || "Failed to submit reaction.",
       });
     } else {
-      if (payload.counts) {
+      if (payload.counts && Object.keys(payload.counts).length > 0) {
         setCounts(payload.counts);
       }
       if (Array.isArray(payload.userReactions)) {
-        setUserReactions(payload.userReactions);
+        setUserReactions(payload.userReactions as string[]);
       }
       setStatusMsg({
         type: "success",
@@ -200,7 +214,7 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
           role="status"
           aria-live="polite"
           className={`mt-4 flex items-center gap-2 text-xs font-mono ${
-            statusMsg.type === "success" ? "text-accent" : "text-red-400"
+            statusMsg.type === "success" ? "text-emerald-400" : "text-rose-400"
           }`}
         >
           {statusMsg.type === "success" ? (

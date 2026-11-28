@@ -170,7 +170,7 @@ describe("BlogPostReactions UI Component", () => {
     });
   });
 
-  it("reports a network failure when the reaction cannot be sent", async () => {
+  it("reports a network failure, reverts optimistic count, and keeps button enabled", async () => {
     const baseFetch = global.fetch;
     global.fetch = vi
       .fn()
@@ -185,12 +185,119 @@ describe("BlogPostReactions UI Component", () => {
       expect(screen.getByText("4")).toBeDefined();
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /React with Insightful/i })
-    );
+    const thoroughBtn = screen.getByRole("button", {
+      name: /React with Thorough: 0 so far/i,
+    });
+    fireEvent.click(thoroughBtn);
 
     expect(
       await screen.findByText("Network error submitting reaction.")
     ).toBeDefined();
+
+    const revertedBtn = screen.getByRole("button", {
+      name: /React with Thorough: 0 so far/i,
+    }) as HTMLButtonElement;
+    expect(revertedBtn.disabled).toBe(false);
+    expect(revertedBtn.getAttribute("aria-pressed")).toBe("false");
   });
+
+  it.each([
+    {
+      label: "HTTP 500 server failure",
+      status: 500,
+      payload: { error: "Internal server error processing blog post reaction" },
+      expectedText: /Internal server error/i,
+    },
+    {
+      label: "HTTP 503 storage outage",
+      status: 503,
+      payload: {
+        error:
+          "Reaction storage is temporarily unavailable. Your reaction remains queued for retry.",
+      },
+      expectedText: /Reaction storage is temporarily unavailable/i,
+    },
+    {
+      label: "HTTP 429 rate-limit response omitting authoritative counts",
+      status: 429,
+      payload: {
+        error: "Too many submission attempts. Please try again later.",
+      },
+      expectedText: /Too many submission attempts/i,
+    },
+    {
+      label: "HTTP 200 payload with success: false",
+      status: 200,
+      payload: {
+        success: false,
+        error: "Reaction persistence failed",
+      },
+      expectedText: /Reaction persistence failed|Failed to submit reaction/i,
+    },
+  ])(
+    "reverts optimistic count and unlocks the clicked button on $label",
+    async ({ status, payload, expectedText }) => {
+      const baseFetch = global.fetch;
+      let shouldFail = true;
+      global.fetch = vi
+        .fn()
+        .mockImplementation((url: string, init?: RequestInit) => {
+          if (init?.method === "POST" && shouldFail) {
+            return Promise.resolve({
+              ok: status >= 200 && status < 300,
+              status,
+              json: () => Promise.resolve(payload),
+            });
+          }
+          if (init?.method === "POST") {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () =>
+                Promise.resolve({
+                  success: true,
+                  durable: true,
+                  reactionType: "thorough",
+                  counts: {
+                    insightful: 4,
+                    mind_blowing: 2,
+                    actionable: 1,
+                    thorough: 1,
+                  },
+                  userReactions: ["thorough"],
+                }),
+            });
+          }
+          return baseFetch(url, init);
+        });
+
+      render(<BlogPostReactions slug={slug} />);
+      await waitFor(() => {
+        expect(screen.getByText("4")).toBeDefined();
+      });
+
+      const thoroughBtn = screen.getByRole("button", {
+        name: /React with Thorough: 0 so far/i,
+      });
+      fireEvent.click(thoroughBtn);
+
+      expect(await screen.findByText(expectedText)).toBeDefined();
+
+      const revertedBtn = screen.getByRole("button", {
+        name: /React with Thorough: 0 so far/i,
+      }) as HTMLButtonElement;
+      expect(revertedBtn.disabled).toBe(false);
+      expect(revertedBtn.getAttribute("aria-pressed")).toBe("false");
+
+      // Retry succeeds once the outage clears
+      shouldFail = false;
+      fireEvent.click(revertedBtn);
+      expect(await screen.findByText(/Reaction recorded!/i)).toBeDefined();
+      expect(
+        screen
+          .getByRole("button", { name: /React with Thorough: 1 so far/i })
+          .getAttribute("aria-pressed")
+      ).toBe("true");
+    }
+  );
 });

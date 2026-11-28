@@ -106,12 +106,21 @@ export const POST = createApiHandler(
 
         if (result.error.code === "RATE_LIMITED") {
           const duplicateDetails = result.error.details as
-            DuplicateBlogReactionDetails | undefined;
+            Partial<DuplicateBlogReactionDetails> | undefined;
+          const hasAuthoritativeState =
+            Boolean(
+              duplicateDetails?.counts &&
+              typeof duplicateDetails.counts === "object"
+            ) && Array.isArray(duplicateDetails?.userReactions);
           return NextResponse.json(
             {
               error: "Duplicate reaction within the sliding window",
-              counts: duplicateDetails?.counts ?? {},
-              userReactions: duplicateDetails?.userReactions ?? [],
+              ...(hasAuthoritativeState
+                ? {
+                    counts: duplicateDetails!.counts,
+                    userReactions: duplicateDetails!.userReactions,
+                  }
+                : {}),
             },
             { status: 429 }
           );
@@ -127,6 +136,7 @@ export const POST = createApiHandler(
       return NextResponse.json(
         {
           success: true,
+          durable: result.data.durable,
           reactionType: result.data.reactionType,
           counts: result.data.counts,
           userReactions: result.data.userReactions,

@@ -111,9 +111,11 @@ describe("CRF Studio - CDISC ODM-XML v1.3.2 Serializer", () => {
       'ItemGroupDef OID="IG.DM&amp;VS.sec_&amp;1&lt;2&gt;&quot;3&quot;"'
     );
     expect(xml).toContain(
-      'ItemRef ItemOID="IT.VAR&amp;1&lt;2&gt;&quot;3&quot;"'
+      'ItemRef ItemOID="IT.f_&amp;1&lt;2&gt;&quot;3&quot;.VAR&amp;1&lt;2&gt;&quot;3&quot;"'
     );
-    expect(xml).toContain('ItemDef OID="IT.VAR&amp;1&lt;2&gt;&quot;3&quot;"');
+    expect(xml).toContain(
+      'ItemDef OID="IT.f_&amp;1&lt;2&gt;&quot;3&quot;.VAR&amp;1&lt;2&gt;&quot;3&quot;"'
+    );
     expect(xml).toContain('CodeListOID="CL_&amp;1&lt;2&gt;&quot;3&quot;"');
   });
 });

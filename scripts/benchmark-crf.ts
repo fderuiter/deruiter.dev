@@ -52,6 +52,7 @@ import {
   exportUniversalCrfYaml,
   fillSampleValues,
   generateStudyAcrfBookHtml,
+  importStudyFromCdiscOdmXml,
   loadStudyDraft,
   parseUniversalCrf,
   runFormTest,
@@ -492,20 +493,26 @@ async function runEngineWorkload(
   );
 
   // --- Export ------------------------------------------------------------------
+  const odmXmlPayload = exportStudyToCdiscOdmXml(study);
   steps.push(
     await measure("export", "ODM-XML", iterations, () => ({
       bytes: Buffer.byteLength(exportStudyToCdiscOdmXml(study)),
     }))
   );
-  // The ODM parser needs the browser's DOMParser. A jsdom stand-in measured
-  // jsdom rather than the parser (28 s for the typical study), so the
-  // reimport is measured in the browser phase through the studio's importer.
-  steps.push({
-    workflow: "export",
-    step: "ODM-XML reimport",
-    status: "skipped",
-    reason: "needs a browser DOMParser; measured in the browser phase",
-  });
+  steps.push(
+    await measure("export", "ODM-XML reimport", iterations, () => {
+      const reimported = importStudyFromCdiscOdmXml(odmXmlPayload);
+      if (reimported.forms.length !== study.forms.length) {
+        throw new Error(
+          `expected ${study.forms.length} forms on ODM-XML reimport, found ${reimported.forms.length}`
+        );
+      }
+      return {
+        forms: reimported.forms.length,
+        visits: reimported.visits.length,
+      };
+    })
+  );
   steps.push(
     await measure("export", "USDM JSON", iterations, () => ({
       bytes: Buffer.byteLength(exportStudyToUsdm(study)),

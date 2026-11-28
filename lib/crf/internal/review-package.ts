@@ -31,7 +31,11 @@ import type {
 import { cloneDeep } from "@/lib/utils";
 import { deterministicStringify } from "./study-draft-storage";
 import { computeStudyChecksum } from "./study-baselines";
-import { exportUniversalCrfJson, parseUniversalCrf } from "./universal-schema";
+import {
+  UniversalJsonCodec,
+  fromCanonicalCrfDocument,
+  toCanonicalCrfDocument,
+} from "./codecs";
 import {
   describeExpectationResult,
   getScenarioStanding,
@@ -1378,7 +1382,7 @@ function checkNativeSource(
   study: Readonly<StudyProtocol>
 ): ReviewPackageNativeSourceCheck {
   try {
-    const reopened = parseUniversalCrf(text);
+    const reopened = fromCanonicalCrfDocument(UniversalJsonCodec.decode(text));
     return {
       path,
       reopens: true,
@@ -1473,7 +1477,9 @@ export async function buildReviewPackage(
   ): Promise<string | Uint8Array> => {
     switch (entry.id) {
       case "native_source":
-        return exportUniversalCrfJson(study as StudyProtocol);
+        return UniversalJsonCodec.encode(
+          toCanonicalCrfDocument(study as StudyProtocol, { mode: "strict" })
+        );
       case "forms_pdf": {
         const { generateStudyPdf } = await import("../export-pdf");
         const blob = await generateStudyPdf(study as StudyProtocol, {
@@ -1574,6 +1580,23 @@ export async function buildReviewPackage(
     native.content as string,
     study
   );
+  if (
+    !nativeCheck.reopens ||
+    !nativeCheck.reviewThreadsPreserved ||
+    !nativeCheck.testScenariosPreserved
+  ) {
+    const verifyFailureReason = !nativeCheck.reopens
+      ? `The native source did not pass UniversalJsonCodec reopen verification: ${nativeCheck.error}`
+      : !nativeCheck.reviewThreadsPreserved
+        ? "The native source dropped reviewThreads during UniversalJsonCodec reopen verification."
+        : "The native source dropped testScenarios during UniversalJsonCodec reopen verification.";
+    return fail(
+      "verify_native_source",
+      verifyLabel,
+      new Error(verifyFailureReason),
+      false
+    );
+  }
   options.onProgress?.({
     stepId: "verify_native_source",
     label: verifyLabel,
@@ -1592,12 +1615,7 @@ export async function buildReviewPackage(
     status: "running",
   });
 
-  const limitations = nativeCheck.reopens
-    ? preview.limitations
-    : [
-        ...preview.limitations,
-        `The native source did not pass schema validation when reopened, so it cannot be imported as-is: ${nativeCheck.error}`,
-      ];
+  const limitations = preview.limitations;
   const finalPreview = { ...preview, limitations };
 
   const readme: ReviewPackageArtifact = {
@@ -1739,7 +1757,9 @@ export async function openReviewPackage(
       `The native source ${manifest.nativeSource.path} is missing.`
     );
   }
-  const study = parseUniversalCrf(await nativeFile.async("string"));
+  const study = fromCanonicalCrfDocument(
+    UniversalJsonCodec.decode(await nativeFile.async("string"))
+  );
   const paths = Object.values(zip.files)
     .filter((entry) => !entry.dir)
     .map((entry) => entry.name)

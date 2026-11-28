@@ -1,25 +1,20 @@
 /**
  * Multi-Format File Ingestion Layer for CRF Studio
- * Inspects file content signatures, validates file sizes, and delegates parsing to USDM, ODM-XML, or CSV spec parsers.
+ * Delegates format detection and decoding to `DEFAULT_FORMAT_CODEC_REGISTRY`
+ * using disjoint grammar predicates and `CanonicalCrfDocument` validation.
  */
 
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import { StudyProtocol } from "../types";
-import { importStudyFromUsdm } from "./usdm-adapter";
-import { importStudyFromCdiscOdmXml } from "./odm-xml-parser";
-import { importStudyFromCsvSpec, isRedcapCsv } from "./csv-spec-parser";
-import { importStudyFromFhirQuestionnaire } from "./fhir-questionnaire";
-import { isUniversalCrfSchemaUrl } from "./universal-schema";
+import {
+  DEFAULT_FORMAT_CODEC_REGISTRY,
+  FormatCodecId,
+  fromCanonicalCrfDocument,
+  IngestedStudyFormat,
+} from "./codecs";
 
 export interface ParsedStudyFileResult {
   study: StudyProtocol;
-  format:
-    | "json_usdm"
-    | "json_universal"
-    | "json_fhir"
-    | "xml_odm"
-    | "csv_spec"
-    | "csv_redcap";
+  format: IngestedStudyFormat;
   formatLabel: string;
   fileSize: number;
   fileName: string;
@@ -28,8 +23,29 @@ export interface ParsedStudyFileResult {
 /** Largest study file the ingestion layer will parse, in bytes (50MB). */
 export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
+function errorPrefixForCodecId(codecId: FormatCodecId): string {
+  switch (codecId) {
+    case "xml_odm_1_3_2":
+      return "CDISC ODM XML Parsing Error";
+    case "json_fhir_r4":
+      return "HL7 FHIR R4 Parsing Error";
+    case "json_universal":
+    case "json_usdm_v3":
+    case "json_usdm_v4":
+      return "JSON Protocol Parsing Error";
+    case "yaml_universal":
+      return "YAML Protocol Parsing Error";
+    case "csv_redcap":
+      return "REDCap CSV Data Dictionary Parsing Error";
+    case "csv_cdisc_spec":
+      return "CSV Study Specification Parsing Error";
+  }
+}
+
 /**
- * Inspects file extensions and content signatures to parse .json, .xml, and .csv files.
+ * Inspects file content grammars via `DEFAULT_FORMAT_CODEC_REGISTRY` to decode
+ * `.json`, `.yaml`/`.yml`, `.xml`, and `.csv` clinical specifications into a
+ * validated `CanonicalCrfDocument` and project `StudyProtocol`.
  */
 export function detectAndParseStudyFile(
   fileContent: string,
@@ -49,124 +65,48 @@ export function detectAndParseStudyFile(
     throw new Error("Cannot parse empty file content.");
   }
 
-  // 1. Check XML signature or extension
-  if (
-    lowerName.endsWith(".xml") ||
-    trimmed.startsWith("<?xml") ||
-    trimmed.includes("<ODM") ||
-    trimmed.includes("<odm:ODM")
-  ) {
+  // Validate syntactic JSON upfront when payload starts with `{` or `[`
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {
-      const study = importStudyFromCdiscOdmXml(fileContent);
-      return {
-        study,
-        format: "xml_odm",
-        formatLabel: `CDISC ODM-XML v${CLINICAL_STANDARDS_PROFILE.ODM}/v2.0`,
-        fileSize: fileSize || fileContent.length,
-        fileName,
-      };
-    } catch (err: unknown) {
-      throw new Error(`CDISC ODM XML Parsing Error: ${(err as Error).message}`);
-    }
-  }
-
-  // 2. Check JSON signature or extension
-  if (
-    lowerName.endsWith(".json") ||
-    trimmed.startsWith("{") ||
-    trimmed.startsWith("[")
-  ) {
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(fileContent);
+      JSON.parse(fileContent);
     } catch (err: unknown) {
       throw new Error(`JSON Protocol Parsing Error: ${(err as Error).message}`);
     }
+  }
 
-    if (
-      parsedJson &&
-      typeof parsedJson === "object" &&
-      !Array.isArray(parsedJson) &&
-      (parsedJson as Record<string, unknown>).resourceType !== undefined &&
-      (parsedJson as Record<string, unknown>).resourceType !== null
-    ) {
-      try {
-        const study = importStudyFromFhirQuestionnaire(
-          parsedJson as Record<string, unknown>
-        );
-        return {
-          study,
-          format: "json_fhir",
-          formatLabel: "HL7 FHIR R4 Questionnaire",
-          fileSize: fileSize || fileContent.length,
-          fileName,
-        };
-      } catch (err: unknown) {
-        throw new Error(`HL7 FHIR R4 Parsing Error: ${(err as Error).message}`);
-      }
-    }
+  const codec = DEFAULT_FORMAT_CODEC_REGISTRY.resolveCodec({
+    raw: fileContent,
+    fileName,
+  });
 
-    try {
-      const recordJson = parsedJson as Record<string, unknown>;
-      const study = importStudyFromUsdm(recordJson);
-
-      // Native Universal CRF JSON also carries `$schema`, so recognise it by
-      // its own schema identifier before treating `$schema` as a USDM signal.
-      const isNative = isUniversalCrfSchemaUrl(
-        recordJson?.$schema as string | undefined
+  if (!codec) {
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      throw new Error(
+        "JSON Protocol Parsing Error: Unrecognized JSON protocol schema. Expected Universal CRF, CDISC USDM, or HL7 FHIR R4 payload."
       );
-      const isUsdm =
-        !isNative &&
-        Boolean(
-          recordJson?.study || recordJson?.studyDesigns || recordJson?.$schema
-        );
-      const format = isUsdm ? "json_usdm" : "json_universal";
-      const formatLabel = isUsdm
-        ? "CDISC USDM JSON Graph"
-        : "Universal CRF JSON";
-
-      return {
-        study,
-        format,
-        formatLabel,
-        fileSize: fileSize || fileContent.length,
-        fileName,
-      };
-    } catch (err: unknown) {
-      throw new Error(`JSON Protocol Parsing Error: ${(err as Error).message}`);
     }
+    if (lowerName.endsWith(".csv")) {
+      throw new Error(
+        "CSV Study Specification Parsing Error: Missing required REDCap or CDISC study specification header columns."
+      );
+    }
+    throw new Error(
+      "Unsupported file format. Supported formats: .json (USDM/Universal/FHIR), .yaml/.yml (Universal), .xml (CDISC ODM), or .csv (Study Specification)."
+    );
   }
 
-  // 3. Check CSV signature or extension
-  if (
-    lowerName.endsWith(".csv") ||
-    trimmed.includes(",") ||
-    trimmed.toLowerCase().includes("domain") ||
-    trimmed.toLowerCase().includes("form")
-  ) {
-    try {
-      const study = importStudyFromCsvSpec(fileContent);
-      const isRedCap =
-        study.provenance?.sourceFormat === "REDCap CSV Data Dictionary";
-      return {
-        study,
-        format: isRedCap ? "csv_redcap" : "csv_spec",
-        formatLabel: isRedCap
-          ? "REDCap CSV Data Dictionary"
-          : "CSV Study Specification",
-        fileSize: fileSize || fileContent.length,
-        fileName,
-      };
-    } catch (err: unknown) {
-      const isRedCap = isRedcapCsv(fileContent);
-      const prefix = isRedCap
-        ? "REDCap CSV Data Dictionary Parsing Error"
-        : "CSV Study Specification Parsing Error";
-      throw new Error(`${prefix}: ${(err as Error).message}`);
-    }
+  try {
+    const canonicalDoc = codec.decode(fileContent);
+    const study = fromCanonicalCrfDocument(canonicalDoc);
+    return {
+      study,
+      format: codec.ingestionFormat,
+      formatLabel: codec.formatLabel,
+      fileSize: fileSize || fileContent.length,
+      fileName,
+    };
+  } catch (err: unknown) {
+    const prefix = errorPrefixForCodecId(codec.id);
+    throw new Error(`${prefix}: ${(err as Error).message}`);
   }
-
-  throw new Error(
-    "Unsupported file format. Supported formats: .json (USDM/Universal/FHIR), .xml (CDISC ODM), or .csv (Study Specification)."
-  );
 }

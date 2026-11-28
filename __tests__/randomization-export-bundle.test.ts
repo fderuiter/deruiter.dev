@@ -336,4 +336,92 @@ describe("serializeRandomizationExport multi-format bundle", () => {
     expect(parsedManifest.monteCarloQa.masterSeed).toBe("QaMasterSeed99");
     expect(parsedManifest.monteCarloQa.succeededRepetitions).toBe(5);
   });
+
+  it("prevents comment-breakout code injection in executable-code (.mjs) and preserves untrusted plan names in ARTIFACT", async () => {
+    const markerKey = "__rndExportCodeInjectionRan";
+    Reflect.deleteProperty(globalThis, markerKey);
+
+    const adversarialName =
+      `Plan */ globalThis.${markerKey} = true; /* ` +
+      "${process.exit(1)} \n // breakout \u2028\u2029";
+    const adversarialId = "Plan_Adversarial_1";
+    const adversarialRequest = sampleRequest({
+      id: adversarialId,
+      name: adversarialName,
+    });
+    const adversarialSchedule = generateBlockSchedule(adversarialRequest);
+    expect(adversarialSchedule.ok).toBe(true);
+    if (!adversarialSchedule.ok) return;
+
+    const codeExport = serializeRandomizationExport({
+      kind: "executable-code",
+      lifecycle: "promoted",
+      disclosure: "full",
+      fullDisclosureAcknowledged: true,
+      useNoticeAcknowledged: true,
+      request: adversarialRequest,
+      reducedRatios: reduced.ratios,
+      rows: adversarialSchedule.rows,
+      studyMetadata: {
+        protocolId: `PROTO */ globalThis.${markerKey} = true; /*`,
+        studyName: `Study */ globalThis.${markerKey} = true; /*`,
+        phase: "Phase III Trial",
+      },
+      now: fixedNow,
+    });
+    expect(codeExport.ok).toBe(true);
+    if (!codeExport.ok) return;
+
+    const dir = mkdtempSync(join(tmpdir(), "rnd-inject-"));
+    try {
+      const scriptPath = join(dir, codeExport.filename);
+      writeFileSync(scriptPath, codeExport.content, "utf8");
+
+      interface GeneratedReproModule {
+        ARTIFACT: {
+          request: {
+            id: string;
+            name: string;
+          };
+        };
+        verifyEmbeddedSchedule: () => {
+          verified: boolean;
+          rowCount: number;
+          planDigest: string;
+          contentDigest: string;
+          eventProvenanceDigest: string;
+        };
+      }
+
+      const moduleUrl = `data:text/javascript;base64,${Buffer.from(codeExport.content, "utf8").toString("base64")}`;
+      const imported: GeneratedReproModule = await import(
+        /* @vite-ignore */ moduleUrl
+      );
+
+      expect(Reflect.get(globalThis, markerKey)).toBeUndefined();
+      expect(imported.ARTIFACT.request.name).toBe(adversarialName);
+      expect(imported.ARTIFACT.request.id).toBe(adversarialId);
+      expect(imported.verifyEmbeddedSchedule()).toEqual({
+        verified: true,
+        rowCount: adversarialSchedule.rows.length,
+        planDigest: codeExport.planDigest,
+        contentDigest: codeExport.contentDigest,
+        eventProvenanceDigest: codeExport.eventProvenanceDigest,
+      });
+
+      const cliStdout = execFileSync(process.execPath, [scriptPath], {
+        encoding: "utf8",
+      });
+      expect(JSON.parse(cliStdout)).toEqual({
+        verified: true,
+        rowCount: adversarialSchedule.rows.length,
+        planDigest: codeExport.planDigest,
+        contentDigest: codeExport.contentDigest,
+        eventProvenanceDigest: codeExport.eventProvenanceDigest,
+      });
+    } finally {
+      Reflect.deleteProperty(globalThis, markerKey);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

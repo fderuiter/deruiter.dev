@@ -224,6 +224,12 @@ function serializeSeedConfigFormat(
   return `${JSON.stringify(payload, null, 2)}\n`;
 }
 
+function serializeJsJsonLiteral(value: unknown, space?: number): string {
+  return JSON.stringify(value, null, space)
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 function serializeExecutableCodeFormat(
   artifact: RandomizationArtifact,
   planDigest: string,
@@ -243,27 +249,21 @@ function serializeExecutableCodeFormat(
 
   return [
     "#!/usr/bin/env node",
-    "/**",
-    " * Deterministic Clinical Study Studio Randomization Reproduction Script",
-    ` * Plan: ${cleanHeaderLine(artifact.request.name)} (${cleanHeaderLine(artifact.request.id)})`,
-    ` * Algorithm: ${cleanHeaderLine(artifact.request.algorithmId)}`,
-    ` * Disclosure: ${disclosureMetadata.label} (policy v${disclosureMetadata.disclosurePolicyVersion})`,
-    " *",
-    " * Run with Node.js (`node <file>.mjs`) to cryptographically verify the",
-    " * canonical plan digest, SHA-256 content digest, and event provenance digest.",
-    " */",
+    "// Deterministic Clinical Study Studio Randomization Reproduction Script.",
+    "// Run with Node.js (`node <file>.mjs`) to cryptographically verify the",
+    "// canonical plan digest, SHA-256 content digest, and event provenance digest.",
     'import { createHash } from "node:crypto";',
     'import { pathToFileURL } from "node:url";',
     "",
-    `export const STUDY_METADATA = Object.freeze(${JSON.stringify(embeddedStudyMeta, null, 2)});`,
+    `export const STUDY_METADATA = Object.freeze(${serializeJsJsonLiteral(embeddedStudyMeta, 2)});`,
     "",
-    `export const DISCLOSURE_METADATA = Object.freeze(${JSON.stringify(disclosureMetadata, null, 2)});`,
+    `export const DISCLOSURE_METADATA = Object.freeze(${serializeJsJsonLiteral(disclosureMetadata, 2)});`,
     "",
-    `export const EXPECTED_PLAN_DIGEST = ${JSON.stringify(planDigest)};`,
-    `export const EXPECTED_CONTENT_DIGEST = ${JSON.stringify(artifact.digest.hex)};`,
-    `export const EXPECTED_EVENT_PROVENANCE_DIGEST = ${JSON.stringify(eventProvenanceDigest)};`,
+    `export const EXPECTED_PLAN_DIGEST = ${serializeJsJsonLiteral(planDigest)};`,
+    `export const EXPECTED_CONTENT_DIGEST = ${serializeJsJsonLiteral(artifact.digest.hex)};`,
+    `export const EXPECTED_EVENT_PROVENANCE_DIGEST = ${serializeJsJsonLiteral(eventProvenanceDigest)};`,
     "",
-    `export const ARTIFACT = ${JSON.stringify(embeddedArtifact, null, 2)};`,
+    `export const ARTIFACT = ${serializeJsJsonLiteral(embeddedArtifact, 2)};`,
     "",
     "export const REQUEST = ARTIFACT.request;",
     "export const REDUCED_RATIOS = ARTIFACT.reducedRatios;",

@@ -2,14 +2,18 @@ import type {
   StudyDesignCellRef,
   StudyDesignTerm,
   StudyEdit,
+  StudyMetadataChanges,
+  StudyMetadataView,
   StudyPatchOperation,
   StudyWorkspace,
 } from "../types";
 import {
+  CLINICAL_STUDY_SPONSOR,
   DATA_GENERATED_WITHIN_STUDY,
   DATA_ORIGIN_DESCRIPTION,
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
+  STUDY_PHASE_TYPES,
   usdmCode,
 } from "./design-terms";
 import {
@@ -17,6 +21,8 @@ import {
   orderedEpochs,
   recordsOf,
   selectedDesign,
+  termOf,
+  textOf,
   type JsonRecord,
 } from "./design-grid";
 import { applyStudyPatch, createStudyEdit } from "./ops";
@@ -140,6 +146,201 @@ function unusedElements(
 }
 
 // Arms
+
+/** Projects study-level metadata for the selected version and design. */
+export function projectStudyMetadata(
+  workspace: StudyWorkspace
+): StudyMetadataView {
+  const { version, design } = selectedDesign(workspace);
+  const root = workspace.usdm as unknown as JsonRecord;
+  const study =
+    typeof root.study === "object" &&
+    root.study !== null &&
+    !Array.isArray(root.study)
+      ? (root.study as JsonRecord)
+      : null;
+  const identifier = recordsOf(version.studyIdentifiers)[0];
+  const studyPhase =
+    typeof design.studyPhase === "object" &&
+    design.studyPhase !== null &&
+    !Array.isArray(design.studyPhase)
+      ? (design.studyPhase as JsonRecord)
+      : null;
+  return {
+    protocolId: textOf(identifier?.text),
+    studyName: study ? textOf(study.name) : "",
+    phase: studyPhase ? termOf(studyPhase.standardCode) : null,
+  };
+}
+
+/**
+ * Updates protocol identifier, study name, and trial phase on the selected
+ * version and design as a single reversible `StudyEdit`.
+ */
+export function updateStudyMetadata(
+  workspace: StudyWorkspace,
+  changes: StudyMetadataChanges
+): StudyEdit {
+  const { versionPointer, version, pointer, design } =
+    selectedDesign(workspace);
+  const current = projectStudyMetadata(workspace);
+  const nextId = idMaker(workspace);
+  const patch: StudyPatchOperation[] = [];
+
+  if (changes.studyName !== undefined) {
+    const cleanStudyName = cleanName(changes.studyName, "study");
+    if (cleanStudyName !== current.studyName) {
+      patch.push({
+        op: "replace",
+        path: "/study/name",
+        value: cleanStudyName,
+      });
+    }
+  }
+
+  if (changes.protocolId !== undefined) {
+    const cleanProtocol = changes.protocolId.trim();
+    const identifiers = recordsOf(version.studyIdentifiers);
+    if (cleanProtocol.length > 0) {
+      if (identifiers.length > 0) {
+        if (textOf(identifiers[0].text) !== cleanProtocol) {
+          patch.push({
+            op: "replace",
+            path: `${versionPointer}/studyIdentifiers/0/text`,
+            value: cleanProtocol,
+          });
+        }
+      } else {
+        const orgs = recordsOf(version.organizations);
+        let scopeId = orgs[0]?.id ? String(orgs[0].id) : "";
+        if (!scopeId) {
+          scopeId = nextId("Organization");
+          const sponsorOrg = {
+            id: scopeId,
+            name: "Clinical Study Sponsor",
+            label: null,
+            type: usdmCode(nextId("Code"), CLINICAL_STUDY_SPONSOR),
+            identifierScheme: "Sponsor",
+            identifier: cleanProtocol,
+            instanceType: "Organization",
+          };
+          patch.push(
+            Array.isArray(version.organizations)
+              ? {
+                  op: "add",
+                  path: `${versionPointer}/organizations/-`,
+                  value: sponsorOrg,
+                }
+              : {
+                  op: "add",
+                  path: `${versionPointer}/organizations`,
+                  value: [sponsorOrg],
+                }
+          );
+        }
+        const identifier = {
+          id: nextId("StudyIdentifier"),
+          text: cleanProtocol,
+          scopeId,
+          instanceType: "StudyIdentifier",
+        };
+        patch.push(
+          Array.isArray(version.studyIdentifiers)
+            ? {
+                op: "add",
+                path: `${versionPointer}/studyIdentifiers/-`,
+                value: identifier,
+              }
+            : {
+                op: "add",
+                path: `${versionPointer}/studyIdentifiers`,
+                value: [identifier],
+              }
+        );
+      }
+    } else if (identifiers.length > 0) {
+      const removedId =
+        typeof identifiers[0].id === "string" ? identifiers[0].id : "";
+      const candidatePatch: StudyPatchOperation[] = [
+        { op: "remove", path: `${versionPointer}/studyIdentifiers/0` },
+      ];
+      const { usdm: afterRemove } = applyStudyPatch(
+        workspace.usdm,
+        candidatePatch
+      );
+      if (removedId && mentions(afterRemove, removedId)) {
+        if (textOf(identifiers[0].text) !== "") {
+          patch.push({
+            op: "replace",
+            path: `${versionPointer}/studyIdentifiers/0/text`,
+            value: "",
+          });
+        }
+      } else {
+        patch.push(...candidatePatch);
+      }
+    }
+  }
+
+  if (changes.phaseCode !== undefined) {
+    const rawPhase = changes.phaseCode === null ? "" : changes.phaseCode.trim();
+    const existingPhase =
+      typeof design.studyPhase === "object" &&
+      design.studyPhase !== null &&
+      !Array.isArray(design.studyPhase)
+        ? (design.studyPhase as JsonRecord)
+        : null;
+    const existingPhaseTerm = existingPhase
+      ? termOf(existingPhase.standardCode)
+      : null;
+
+    if (rawPhase === "") {
+      if ("studyPhase" in design && design.studyPhase !== null) {
+        patch.push({
+          op: "replace",
+          path: `${pointer}/studyPhase`,
+          value: null,
+        });
+      }
+    } else if (!existingPhaseTerm || existingPhaseTerm.code !== rawPhase) {
+      const phaseTerm = findTerm(STUDY_PHASE_TYPES, rawPhase, "study phase");
+      const aliasId =
+        existingPhase &&
+        typeof existingPhase.id === "string" &&
+        existingPhase.id
+          ? existingPhase.id
+          : nextId("AliasCode");
+      const existingStd =
+        existingPhase &&
+        typeof existingPhase.standardCode === "object" &&
+        existingPhase.standardCode !== null &&
+        !Array.isArray(existingPhase.standardCode)
+          ? (existingPhase.standardCode as JsonRecord)
+          : null;
+      const stdId =
+        existingStd && typeof existingStd.id === "string" && existingStd.id
+          ? existingStd.id
+          : nextId("Code");
+      const aliases =
+        existingPhase && Array.isArray(existingPhase.standardCodeAliases)
+          ? existingPhase.standardCodeAliases
+          : [];
+      const nextPhase = {
+        id: aliasId,
+        standardCode: usdmCode(stdId, phaseTerm),
+        standardCodeAliases: aliases,
+        instanceType: "AliasCode",
+      };
+      patch.push(
+        "studyPhase" in design
+          ? { op: "replace", path: `${pointer}/studyPhase`, value: nextPhase }
+          : { op: "add", path: `${pointer}/studyPhase`, value: nextPhase }
+      );
+    }
+  }
+
+  return createStudyEdit(workspace, patch, "Update study metadata");
+}
 
 /** Adds an arm at the end, with a type from `STUDY_ARM_TYPES`. */
 export function addStudyArm(

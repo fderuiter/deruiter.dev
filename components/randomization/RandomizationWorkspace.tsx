@@ -25,6 +25,8 @@ import {
   addStudyRandomizationPlan,
   bindStudyRandomizationEvidence,
   checkStudyRandomizationEvidence,
+  projectStudyMetadata,
+  removeStudyRandomizationPlan,
   resolveStudyRandomizationPlan,
   updateStudyRandomizationPlan,
   type StudyEdit,
@@ -195,24 +197,11 @@ function studyMetadata(workspace: StudyWorkspace): {
   studyName: string;
   phase: string;
 } {
-  const study = workspace.usdm.study as unknown as Record<string, unknown>;
-  const version = asList<Record<string, unknown>>(study.versions).find(
-    (v) => v.id === workspace.selection.studyVersionId
-  );
-  const design = asList<Record<string, unknown>>(version?.studyDesigns).find(
-    (d) => d.id === workspace.selection.studyDesignId
-  );
-  const identifier = asList<Record<string, unknown>>(
-    version?.studyIdentifiers
-  )[0];
-  const phase = isRecord(design?.studyPhase)
-    ? design.studyPhase.standardCode
-    : undefined;
+  const projected = projectStudyMetadata(workspace);
   return {
-    protocolId: typeof identifier?.text === "string" ? identifier.text : "",
-    studyName: typeof study.name === "string" ? study.name : "",
-    phase:
-      isRecord(phase) && typeof phase.decode === "string" ? phase.decode : "",
+    protocolId: projected.protocolId,
+    studyName: projected.studyName,
+    phase: projected.phase?.decode ?? "",
   };
 }
 
@@ -308,15 +297,19 @@ function newExploration(): Exploration {
 export function RandomizationWorkspace({
   workspace,
   apply,
+  onEditMetadata,
 }: {
   readonly workspace: StudyWorkspace;
   readonly apply: Apply;
+  readonly onEditMetadata?: () => void;
 }) {
   const { announce } = useAnnouncer();
   const plans = workspace.randomizationPlans;
   const [chosen, setChosen] = useState<string>(plans[0]?.id ?? EXPLORATION);
   const [stage, setStage] = useState<StageId>("notice");
   const [exploration, setExploration] = useState<Exploration>(newExploration);
+  const [renamingPlanId, setRenamingPlanId] = useState<string | null>(null);
+  const [planNameDraft, setPlanNameDraft] = useState("");
   const [pending, setPending] = useState<{
     presetId: RandomizationPresetId;
     fields: readonly PresetReplacedField[];
@@ -395,8 +388,52 @@ export function RandomizationWorkspace({
       })
     );
     if (ok) {
+      setRenamingPlanId(null);
       setChosen(`RandomizationPlan_${nextPlanNumber(plans)}`);
       setStage("notice");
+    }
+  };
+
+  const isRenamingPlan = plan !== null && renamingPlanId === plan.id;
+
+  const startRenamePlan = () => {
+    if (!plan) return;
+    if (isRenamingPlan) {
+      setRenamingPlanId(null);
+      return;
+    }
+    setPlanNameDraft(plan.name);
+    setRenamingPlanId(plan.id);
+  };
+
+  const submitRenamePlan = () => {
+    if (!plan) return;
+    const trimmed = planNameDraft.trim();
+    if (!trimmed) return;
+    if (trimmed === plan.name) {
+      setRenamingPlanId(null);
+      return;
+    }
+    const ok = apply((w) =>
+      updateStudyRandomizationPlan(w, plan.id, { name: trimmed })
+    );
+    if (ok) {
+      setRenamingPlanId(null);
+      announce(`Renamed plan to ${trimmed}.`);
+    }
+  };
+
+  const removeActivePlan = () => {
+    if (!plan) return;
+    const removedName = plan.name;
+    const remaining = plans.filter((candidate) => candidate.id !== plan.id);
+    const fallbackId = remaining[0]?.id ?? EXPLORATION;
+    const ok = apply((w) => removeStudyRandomizationPlan(w, plan.id));
+    if (ok) {
+      setRenamingPlanId(null);
+      setChosen(fallbackId);
+      setStage("notice");
+      announce(`Removed ${removedName}.`);
     }
   };
 
@@ -452,32 +489,83 @@ export function RandomizationWorkspace({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
-          Working on
-          <select
-            className={FIELD}
-            value={plan ? plan.id : EXPLORATION}
-            onChange={(event) => {
-              setChosen(event.target.value);
-              setStage("notice");
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+            Working on
+            <select
+              className={FIELD}
+              value={plan ? plan.id : EXPLORATION}
+              onChange={(event) => {
+                setRenamingPlanId(null);
+                setChosen(event.target.value);
+                setStage("notice");
+              }}
+            >
+              <option value={EXPLORATION}>Exploration (synthetic)</option>
+              {plans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {plan && (
+            <>
+              <button
+                type="button"
+                className={`${BUTTON} min-w-12`}
+                aria-expanded={isRenamingPlan}
+                onClick={startRenamePlan}
+              >
+                Rename plan
+              </button>
+              <button
+                type="button"
+                className={`${BUTTON} min-w-12`}
+                onClick={removeActivePlan}
+              >
+                Remove plan
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className={`${BUTTON} min-w-12`}
+            onClick={addPlan}
+          >
+            Add a plan for this design
+          </button>
+        </div>
+
+        {isRenamingPlan && plan && (
+          <form
+            className="flex flex-wrap items-end gap-2 rounded border border-white/[0.08] bg-[#13151a] p-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitRenamePlan();
             }}
           >
-            <option value={EXPLORATION}>Exploration (synthetic)</option>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className={`${BUTTON} min-w-12`}
-          onClick={addPlan}
-        >
-          Add a plan for this design
-        </button>
+            <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm text-slate-300">
+              Plan name
+              <input
+                className={FIELD}
+                value={planNameDraft}
+                onChange={(event) => setPlanNameDraft(event.target.value)}
+              />
+            </label>
+            <button type="submit" className={`${BUTTON} min-w-12`}>
+              Save plan name
+            </button>
+            <button
+              type="button"
+              className={`${BUTTON} min-w-12`}
+              onClick={() => setRenamingPlanId(null)}
+            >
+              Cancel rename
+            </button>
+          </form>
+        )}
       </div>
 
       <fieldset className="min-w-0 space-y-2">
@@ -547,6 +635,7 @@ export function RandomizationWorkspace({
             mode={mode}
             workspace={workspace}
             exploration={exploration}
+            onEditMetadata={onEditMetadata}
             onChange={(fields) =>
               setExploration((current) => ({ ...current, ...fields }))
             }
@@ -727,11 +816,13 @@ function MetadataStage({
   mode,
   workspace,
   exploration,
+  onEditMetadata,
   onChange,
 }: {
   readonly mode: "plan" | "exploration";
   readonly workspace: StudyWorkspace;
   readonly exploration: Exploration;
+  readonly onEditMetadata?: () => void;
   readonly onChange: (fields: Partial<Exploration>) => void;
 }) {
   if (mode === "exploration") {
@@ -763,9 +854,20 @@ function MetadataStage({
   ];
   return (
     <div className="space-y-3 text-sm">
-      <p className="text-slate-400">
-        These come from the study itself. Change them in the study, not here.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-slate-400">
+          These come from the study itself. Change them in the study, not here.
+        </p>
+        {onEditMetadata && (
+          <button
+            type="button"
+            className={`${BUTTON} min-w-12`}
+            onClick={onEditMetadata}
+          >
+            Edit study metadata
+          </button>
+        )}
+      </div>
       <dl className="grid gap-2 @md:grid-cols-3">
         {rows.map(([label, value]) => (
           <div key={label} className="min-w-0">

@@ -7,6 +7,7 @@ import {
 import {
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
+  STUDY_PHASE_TYPES,
   StudyDesignError,
   TAVR_SAVR_USDM,
   addStudyArm,
@@ -15,11 +16,14 @@ import {
   applyStudyEdit,
   createBlankStudyWorkspace,
   emptyStudyEditHistory,
+  exportValidatedStudyUsdm,
   importUsdmStudy,
   moveStudyArm,
   moveStudyElement,
   moveStudyEpoch,
   projectStudyDesignGrid,
+  projectStudyMetadata,
+  redoStudyEdit,
   removeStudyArm,
   removeStudyElement,
   removeStudyEpoch,
@@ -27,6 +31,7 @@ import {
   renameStudyElement,
   renameStudyEpoch,
   undoStudyEdit,
+  updateStudyMetadata,
   type StudyEdit,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
@@ -339,5 +344,84 @@ describe("design grid operations", () => {
     expect(STUDY_EPOCH_TYPES.map((t) => t.code)).toEqual(
       expect.arrayContaining([SCREENING, TREATMENT, FOLLOW_UP])
     );
+    expect(STUDY_PHASE_TYPES.map((t) => t.code)).toEqual([
+      "C15600",
+      "C15693",
+      "C15601",
+      "C15602",
+      "C15603",
+    ]);
+  });
+
+  it("updates study metadata with undo, redo, and valid USDM v4 export on reference and blank studies", async () => {
+    const start = await tavrSavr();
+    expect(projectStudyMetadata(start)).toEqual({
+      protocolId: "DEV-2026-VALVE-RCT",
+      studyName: "DEV-2026-VALVE-RCT",
+      phase: { code: "C15602", decode: "Phase III Trial" },
+    });
+    const beforeJson = canonicalUsdmJson(start.usdm);
+
+    const edited = run(start, (w) =>
+      updateStudyMetadata(w, {
+        protocolId: "VALVE-2027-P2",
+        studyName: "Next-Gen Valve Study",
+        phaseCode: "C15601",
+      })
+    );
+    expect(projectStudyMetadata(edited.workspace)).toEqual({
+      protocolId: "VALVE-2027-P2",
+      studyName: "Next-Gen Valve Study",
+      phase: { code: "C15601", decode: "Phase II Trial" },
+    });
+    const exportedRef = await exportValidatedStudyUsdm(edited.workspace);
+    expect(exportedRef.status).toBe("ok");
+
+    const undone = undoStudyEdit(edited.workspace, edited.history);
+    expect(canonicalUsdmJson(undone.workspace.usdm)).toBe(beforeJson);
+    const redone = redoStudyEdit(undone.workspace, undone.history);
+    expect(projectStudyMetadata(redone.workspace).protocolId).toBe(
+      "VALVE-2027-P2"
+    );
+
+    const blankStart = await blank();
+    expect(projectStudyMetadata(blankStart)).toEqual({
+      protocolId: "",
+      studyName: "Grid study",
+      phase: null,
+    });
+    const blankEdited = run(blankStart, (w) =>
+      updateStudyMetadata(w, {
+        protocolId: "BLANK-001",
+        studyName: "Authored Blank Trial",
+        phaseCode: "C15600",
+      })
+    );
+    expect(projectStudyMetadata(blankEdited.workspace)).toEqual({
+      protocolId: "BLANK-001",
+      studyName: "Authored Blank Trial",
+      phase: { code: "C15600", decode: "Phase I Trial" },
+    });
+    const exportedBlank = await exportValidatedStudyUsdm(blankEdited.workspace);
+    expect(exportedBlank.status).toBe("ok");
+
+    const cleared = run(blankEdited.workspace, (w) =>
+      updateStudyMetadata(w, { protocolId: "", phaseCode: null })
+    );
+    expect(projectStudyMetadata(cleared.workspace)).toEqual({
+      protocolId: "",
+      studyName: "Authored Blank Trial",
+      phase: null,
+    });
+    expect((await exportValidatedStudyUsdm(cleared.workspace)).status).toBe(
+      "ok"
+    );
+
+    expect(() => updateStudyMetadata(blankStart, { studyName: "   " })).toThrow(
+      StudyDesignError
+    );
+    expect(() =>
+      updateStudyMetadata(blankStart, { phaseCode: "C99999" })
+    ).toThrow(/not a study phase term|not an study phase term/);
   });
 });

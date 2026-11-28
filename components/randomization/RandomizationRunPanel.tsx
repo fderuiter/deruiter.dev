@@ -3,9 +3,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   DEFAULT_DISPLAY_PROFILE,
+  buildImmutableArtifact,
   computePlanDigest,
   decideRandomizationExport,
   presentAllocationRows,
+  reduceAllocationRatios,
   resolvePresentation,
   type AllocationRow,
   type DisplayProfile,
@@ -94,6 +96,18 @@ export function RandomizationRunPanel({
   const [profile, setProfile] = useState<DisplayProfile>(
     DEFAULT_DISPLAY_PROFILE
   );
+  const [fullDisclosureAcknowledged, setFullDisclosureAcknowledged] =
+    useState(false);
+  const [activePlanId, setActivePlanId] = useState<string | null>(
+    request?.id ?? null
+  );
+
+  if ((request?.id ?? null) !== activePlanId) {
+    setActivePlanId(request?.id ?? null);
+    if (fullDisclosureAcknowledged) {
+      setFullDisclosureAcknowledged(false);
+    }
+  }
 
   useEffect(() => () => client.dispose(), [client]);
 
@@ -104,8 +118,14 @@ export function RandomizationRunPanel({
     summary && frozen ? checkCurrency(frozen, binding) : null;
   const presentation = resolvePresentation(profile);
 
+  const handleProfileChange = (nextProfile: DisplayProfile) => {
+    setProfile(nextProfile);
+    setFullDisclosureAcknowledged(false);
+  };
+
   const run = () => {
     if (!request) return;
+    setFullDisclosureAcknowledged(false);
     setBinding(bind());
     // The seed is already on the request, so a rerun is reproducible.
     const snapshot = JSON.parse(
@@ -131,21 +151,34 @@ export function RandomizationRunPanel({
       });
   };
 
-  const exportDecision = decideRandomizationExport({
+  const disclosureMode = presentation.maskTreatment ? "masked" : "full";
+  const csvExportDecision = decideRandomizationExport({
     kind: "csv",
     lifecycle,
-    disclosure: presentation.maskTreatment ? "masked" : "full",
-    fullDisclosureAcknowledged: false,
+    disclosure: disclosureMode,
+    fullDisclosureAcknowledged,
+    useNoticeAcknowledged: acknowledged,
+  });
+  const artifactExportDecision = decideRandomizationExport({
+    kind: "allocation-json",
+    lifecycle,
+    disclosure: disclosureMode,
+    fullDisclosureAcknowledged,
     useNoticeAcknowledged: acknowledged,
   });
 
-  const downloadCsv = async () => {
-    if (!summary || !frozen || !exportDecision.allowed) return;
+  const collectAllRows = async (rowCount: number): Promise<AllocationRow[]> => {
     const rows: AllocationRow[] = [];
-    for (let offset = 0; offset < summary.rowCount; offset += 500) {
+    for (let offset = 0; offset < rowCount; offset += 500) {
       const next = await client.page(offset, 500);
       rows.push(...next.rows);
     }
+    return rows;
+  };
+
+  const downloadCsv = async () => {
+    if (!summary || !frozen || !csvExportDecision.allowed) return;
+    const rows = await collectAllRows(summary.rowCount);
     const shown = presentAllocationRows(rows, presentation);
     const header = [
       `# Protocol ID: ${metadata.protocolId || "not stated"}`,
@@ -155,7 +188,7 @@ export function RandomizationRunPanel({
       `# Seed: ${frozen.seed.value} (${frozen.seed.source})`,
       `# Plan digest: ${computePlanDigest(frozen)}`,
       `# Content digest: ${summary.contentDigest}`,
-      `# Disclosure: ${exportDecision.metadata.label}, policy ${exportDecision.metadata.disclosurePolicyVersion}`,
+      `# Disclosure: ${csvExportDecision.metadata.label}, policy ${csvExportDecision.metadata.disclosurePolicyVersion}`,
     ];
     const lines = [
       ...header,
@@ -170,6 +203,41 @@ export function RandomizationRunPanel({
       mimeType: "text/csv",
     });
   };
+
+  const downloadArtifactJson = async () => {
+    if (!summary || !frozen || !artifactExportDecision.allowed) return;
+    const reduced = reduceAllocationRatios(frozen.arms);
+    if (!reduced.ok) return;
+    const rows = await collectAllRows(summary.rowCount);
+    const artifact = buildImmutableArtifact({
+      request: frozen,
+      reducedRatios: reduced.ratios,
+      rows,
+    });
+    const payload = {
+      ...artifact,
+      disclosure: artifactExportDecision.metadata,
+    };
+    downloadFile(
+      JSON.stringify(payload, null, 2),
+      `${frozen.id}-artifact.json`,
+      {
+        mimeType: "application/json",
+      }
+    );
+  };
+
+  const exportNotice = !csvExportDecision.allowed
+    ? csvExportDecision.code === "EXPLORATION_EXPORT_BLOCKED"
+      ? "An exploration cannot be exported. Promote it to a plan for this study first."
+      : csvExportDecision.code === "USE_NOTICE_REQUIRED"
+        ? "Acknowledge the use notice before exporting."
+        : csvExportDecision.code === "FULL_DISCLOSURE_NOT_ACKNOWLEDGED"
+          ? "Acknowledge full treatment disclosure above to download unmasked CSV or artifact JSON."
+          : "Masked export only. Mask the treatment column to download."
+    : !artifactExportDecision.allowed
+      ? "Artifact JSON includes full assignments and seed inputs; unmask treatment and acknowledge full disclosure to export it."
+      : null;
 
   return (
     <div className="space-y-4 border-t border-white/[0.08] pt-4">
@@ -213,7 +281,10 @@ export function RandomizationRunPanel({
 
       {summary && (
         <div className="space-y-4">
-          <DisclosureControls profile={profile} onChange={setProfile} />
+          <DisclosureControls
+            profile={profile}
+            onChange={handleProfileChange}
+          />
           {frozen && (
             <ResultsPanel
               key={state.identity?.operationId ?? 0}
@@ -226,27 +297,45 @@ export function RandomizationRunPanel({
             />
           )}
 
-          <div className="space-y-1">
-            <button
-              type="button"
-              className={`${BUTTON} min-w-12`}
-              disabled={!exportDecision.allowed}
-              onClick={() => void downloadCsv()}
-            >
-              Download CSV
-            </button>
+          <div className="space-y-2">
+            {!presentation.maskTreatment && (
+              <label className="flex min-h-12 items-center gap-2 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5"
+                  checked={fullDisclosureAcknowledged}
+                  onChange={(event) =>
+                    setFullDisclosureAcknowledged(event.target.checked)
+                  }
+                />
+                I understand this export reveals or can rebuild every treatment
+                assignment.
+              </label>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`${BUTTON} min-w-12`}
+                disabled={!csvExportDecision.allowed}
+                onClick={() => void downloadCsv()}
+              >
+                Download CSV
+              </button>
+              <button
+                type="button"
+                className={`${BUTTON} min-w-12`}
+                disabled={!artifactExportDecision.allowed}
+                onClick={() => void downloadArtifactJson()}
+              >
+                Download artifact JSON
+              </button>
+            </div>
             <p className="text-sm text-slate-400">
               The full schedule: all {summary.rowCount} rows in generated order.
               Filters and sorting above don&apos;t apply to it.
             </p>
-            {!exportDecision.allowed && (
-              <p className="text-sm text-slate-400">
-                {exportDecision.code === "EXPLORATION_EXPORT_BLOCKED"
-                  ? "An exploration cannot be exported. Promote it to a plan for this study first."
-                  : exportDecision.code === "USE_NOTICE_REQUIRED"
-                    ? "Acknowledge the use notice before exporting."
-                    : "Masked export only. Mask the treatment column to download."}
-              </p>
+            {exportNotice && (
+              <p className="text-sm text-slate-400">{exportNotice}</p>
             )}
           </div>
         </div>

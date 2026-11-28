@@ -7,12 +7,15 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
   type ReactNode,
 } from "react";
+import { RANDOMIZATION_RESOURCE_LIMITS } from "@/lib/randomization";
 import {
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
+  STUDY_PHASE_TYPES,
   StudyDesignError,
   TAVR_DEVICE_USDM,
   TAVR_SAVR_USDM,
@@ -21,12 +24,16 @@ import {
   addStudyEpoch,
   applyStudyEdit,
   createBlankStudyWorkspace,
+  describeStudyWorkspace,
   emptyStudyEditHistory,
+  exportValidatedStudyUsdm,
   importUsdmStudy,
   moveStudyArm,
   moveStudyElement,
   moveStudyEpoch,
+  openStudyWorkspace,
   projectStudyDesignGrid,
+  projectStudyMetadata,
   redoStudyEdit,
   removeStudyArm,
   removeStudyElement,
@@ -34,16 +41,20 @@ import {
   renameStudyArm,
   renameStudyElement,
   renameStudyEpoch,
+  serializeStudyWorkspace,
   undoStudyEdit,
+  updateStudyMetadata,
   type StudyDesignCellRef,
   type StudyDesignGrid as Grid,
   type StudyEdit,
   type StudyEditHistory,
   type StudyRepositoryRecord,
+  type StudyVersionChoice,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
 import { DEMO_STUDY_ID } from "@/lib/clinical-study-context";
 import { downloadFile } from "@/lib/download";
+import { ModalContainer } from "@/components/ui/ModalContainer";
 import {
   StudyConflictModal,
   StudyRepositoryBar,
@@ -110,6 +121,28 @@ const MONO = "font-[family-name:var(--font-geist-mono)]";
 const sameCell = (a: StudyDesignCellRef, b: StudyDesignCellRef) =>
   a.armId === b.armId && a.epochId === b.epochId;
 
+interface PendingInlineImport {
+  readonly text: string;
+  readonly fileName: string;
+  readonly choices: readonly StudyVersionChoice[];
+  readonly studyVersionId: string;
+  readonly studyDesignId: string;
+}
+
+function fileSlugOf(workspace: StudyWorkspace): string {
+  const meta = describeStudyWorkspace(workspace);
+  const raw = meta.protocolCode || workspace.usdm.study.name || "study";
+  const slug = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "study";
+}
+
+function utf8ByteLength(text: string): number {
+  return new TextEncoder().encode(text).byteLength;
+}
+
 /** Applies a reversible `StudyEdit` to the active workspace session. */
 export type StudyApplyFn = (
   make: (workspace: StudyWorkspace) => StudyEdit
@@ -149,8 +182,12 @@ export function StudyStudioShell({
     useState<QuarantinedStudyWorkspaceDraft | null>(null);
   const [baseWriteId, setBaseWriteId] = useState<string | null>(null);
   const [repoSaveNote, setRepoSaveNote] = useState<string | null>(null);
+  const [exportIssues, setExportIssues] = useState<readonly string[]>([]);
+  const [pendingImport, setPendingImport] =
+    useState<PendingInlineImport | null>(null);
   const [conflictPrompt, setConflictPrompt] =
     useState<StudyConflictPromptState | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const handledRemoteSeq = useRef(0);
 
   const loadRecordIntoSession = useCallback(
@@ -164,6 +201,7 @@ export function StudyStudioShell({
       });
       setResetKey((n) => n + 1);
       setError(null);
+      setExportIssues([]);
       setConflictPrompt(null);
       setRepoSaveNote(null);
       setStatus(announceNote ?? `Opened ${record.workspace.usdm.study.name}.`);
@@ -213,6 +251,7 @@ export function StudyStudioShell({
   const open = (id: string) => {
     setSource(id);
     setRepoSaveNote(null);
+    setExportIssues([]);
     if (id === "blank") {
       if (snapshot.persistence === "indexeddb") {
         void repository.createBlankStudy().then((created) => {
@@ -434,6 +473,7 @@ export function StudyStudioShell({
         expectedRevisionId
       );
       setError(null);
+      setExportIssues([]);
       setStatus(`${edit.note}.`);
       return true;
     } catch (caught) {
@@ -459,6 +499,7 @@ export function StudyStudioShell({
     );
     setResetKey((n) => n + 1);
     setError(null);
+    setExportIssues([]);
     setStatus(`Undid: ${note}.`);
   };
   const redo = () => {
@@ -477,8 +518,184 @@ export function StudyStudioShell({
     );
     setResetKey((n) => n + 1);
     setError(null);
+    setExportIssues([]);
     setStatus(`Redid: ${note}.`);
   };
+
+  const commitImportedWorkspace = async (
+    importedWorkspace: StudyWorkspace,
+    fileName: string
+  ) => {
+    const baseSlug = fileSlugOf(importedWorkspace);
+    const existingIds = new Set([
+      "tavr-savr",
+      "tavr-device",
+      DEMO_STUDY_ID,
+      "blank",
+      ...snapshot.studies.map((item) => item.studyId),
+    ]);
+    let nextStudyId = baseSlug;
+    let suffix = 2;
+    while (existingIds.has(nextStudyId)) {
+      nextStudyId = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+    const saved = await repository.saveWorkspace(
+      nextStudyId,
+      importedWorkspace,
+      {
+        force: true,
+        kind: "imported",
+        pinActive: true,
+      }
+    );
+    if (saved.status === "saved" || saved.status === "unchanged") {
+      loadRecordIntoSession(
+        saved.record,
+        `Imported ${saved.record.workspace.usdm.study.name} from ${fileName}.`
+      );
+      return;
+    }
+    setSource(nextStudyId);
+    setSession({
+      studyId: nextStudyId,
+      baseRevisionId: importedWorkspace.revision.id,
+      workspace: importedWorkspace,
+      history: emptyStudyEditHistory(),
+    });
+    setResetKey((n) => n + 1);
+    setError(null);
+    setExportIssues([]);
+    setStatus(
+      `Imported ${importedWorkspace.usdm.study.name} from ${fileName}.`
+    );
+  };
+
+  const handleImportInput = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const maxBytes = RANDOMIZATION_RESOURCE_LIMITS.maxImportBytes;
+    if (file.size > maxBytes) {
+      setExportIssues([]);
+      setError(
+        `File "${file.name}" exceeds the 8 MiB import limit (${maxBytes.toLocaleString("en-US")} bytes).`
+      );
+      return;
+    }
+
+    const text = await file.text();
+    if (utf8ByteLength(text) > maxBytes) {
+      setExportIssues([]);
+      setError(
+        `File "${file.name}" exceeds the 8 MiB import limit (${maxBytes.toLocaleString("en-US")} bytes).`
+      );
+      return;
+    }
+
+    setError(null);
+    setExportIssues([]);
+
+    const lowerName = file.name.toLowerCase();
+    if (lowerName.endsWith(".study.json")) {
+      const openedWorkspace = openStudyWorkspace(text);
+      if (openedWorkspace.status === "invalid") {
+        setError(
+          `Could not open workspace "${file.name}": ${openedWorkspace.problem}.`
+        );
+        return;
+      }
+      await commitImportedWorkspace(openedWorkspace.workspace, file.name);
+      return;
+    }
+
+    const usdmResult = await importUsdmStudy({ text }, { fileName: file.name });
+    if (usdmResult.status === "ok") {
+      await commitImportedWorkspace(usdmResult.workspace, file.name);
+      return;
+    }
+    if (usdmResult.status === "needs-selection") {
+      const firstVersion = usdmResult.choices[0];
+      const firstDesign = firstVersion?.designs[0];
+      setPendingImport({
+        text,
+        fileName: file.name,
+        choices: usdmResult.choices,
+        studyVersionId: firstVersion?.studyVersionId ?? "",
+        studyDesignId: firstDesign?.id ?? "",
+      });
+      return;
+    }
+
+    const fallbackWorkspace = openStudyWorkspace(text);
+    if (fallbackWorkspace.status === "ok") {
+      await commitImportedWorkspace(fallbackWorkspace.workspace, file.name);
+      return;
+    }
+
+    setError(usdmResult.problems.map((problem) => problem.message).join(" "));
+  };
+
+  const confirmPendingImport = async () => {
+    if (!pendingImport) return;
+    const currentPending = pendingImport;
+    const result = await importUsdmStudy(
+      { text: currentPending.text },
+      {
+        fileName: currentPending.fileName,
+        selection: {
+          studyVersionId: currentPending.studyVersionId,
+          studyDesignId: currentPending.studyDesignId,
+        },
+      }
+    );
+    setPendingImport(null);
+    if (result.status === "ok") {
+      await commitImportedWorkspace(result.workspace, currentPending.fileName);
+      return;
+    }
+    if (result.status === "rejected") {
+      setError(result.problems.map((problem) => problem.message).join(" "));
+    }
+  };
+
+  const handleExportUsdm = async () => {
+    setError(null);
+    const exported = await exportValidatedStudyUsdm(session.workspace);
+    if (exported.status === "invalid") {
+      setExportIssues(exported.issues);
+      setStatus("USDM export blocked by schema validation issues.");
+      return;
+    }
+    setExportIssues([]);
+    const slug = fileSlugOf(session.workspace);
+    downloadFile(`${exported.json}\n`, `${slug}.usdm.json`, {
+      mimeType: "application/json",
+    });
+    setStatus(`Exported ${slug}.usdm.json.`);
+  };
+
+  const handleSaveWorkspace = () => {
+    setError(null);
+    setExportIssues([]);
+    const slug = fileSlugOf(session.workspace);
+    downloadFile(
+      serializeStudyWorkspace(session.workspace),
+      `${slug}.study.json`,
+      { mimeType: "application/json" }
+    );
+    persistWorkspaceRevision(
+      session.studyId,
+      session.workspace,
+      session.baseRevisionId
+    );
+    setStatus(`Saved workspace ${slug}.study.json.`);
+  };
+
+  const activePendingVersion = pendingImport?.choices.find(
+    (choice) => choice.studyVersionId === pendingImport.studyVersionId
+  );
 
   return (
     <div className="@container space-y-6">
@@ -511,6 +728,35 @@ export function StudyStudioShell({
             ))}
           </select>
         </label>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json,.usdm.json,.study.json,application/json"
+          aria-label="Import study file"
+          className="sr-only"
+          onChange={(event) => void handleImportInput(event)}
+        />
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={() => importInputRef.current?.click()}
+        >
+          Import file
+        </button>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={() => void handleExportUsdm()}
+        >
+          Export USDM
+        </button>
+        <button
+          type="button"
+          className={`${BUTTON} min-w-12`}
+          onClick={handleSaveWorkspace}
+        >
+          Save workspace
+        </button>
         <button
           type="button"
           className={BUTTON}
@@ -619,6 +865,105 @@ export function StudyStudioShell({
         onClose={() => setConflictPrompt(null)}
       />
 
+      <ModalContainer
+        isOpen={pendingImport !== null}
+        onClose={() => setPendingImport(null)}
+        titleId="inline-usdm-selection-title"
+        ariaDescribedBy="inline-usdm-selection-body"
+      >
+        {pendingImport && (
+          <form
+            className="space-y-4 p-6 text-[#f4f4f6]"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void confirmPendingImport();
+            }}
+          >
+            <h3
+              id="inline-usdm-selection-title"
+              className="text-lg font-semibold"
+            >
+              Choose study version and design
+            </h3>
+            <p
+              id="inline-usdm-selection-body"
+              className="text-sm text-slate-300"
+            >
+              {pendingImport.fileName} contains multiple study versions or
+              designs. Choose which one to edit; unselected versions, designs,
+              and extension attributes remain preserved on export.
+            </p>
+            <div className="grid gap-3 @md:grid-cols-2">
+              <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+                Study version
+                <select
+                  className={FIELD}
+                  value={pendingImport.studyVersionId}
+                  onChange={(event) => {
+                    const nextVersionId = event.target.value;
+                    const versionChoice = pendingImport.choices.find(
+                      (choice) => choice.studyVersionId === nextVersionId
+                    );
+                    setPendingImport({
+                      ...pendingImport,
+                      studyVersionId: nextVersionId,
+                      studyDesignId: versionChoice?.designs[0]?.id ?? "",
+                    });
+                  }}
+                >
+                  {pendingImport.choices.map((choice) => (
+                    <option
+                      key={choice.studyVersionId}
+                      value={choice.studyVersionId}
+                    >
+                      Version {choice.versionIdentifier} (
+                      {choice.studyVersionId})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+                Study design
+                <select
+                  className={FIELD}
+                  value={pendingImport.studyDesignId}
+                  onChange={(event) =>
+                    setPendingImport({
+                      ...pendingImport,
+                      studyDesignId: event.target.value,
+                    })
+                  }
+                >
+                  {(activePendingVersion?.designs ?? []).map((design) => (
+                    <option key={design.id} value={design.id}>
+                      {design.name} ({design.id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                className={`${BUTTON} min-w-12`}
+                disabled={
+                  !pendingImport.studyVersionId || !pendingImport.studyDesignId
+                }
+              >
+                Open selected design
+              </button>
+              <button
+                type="button"
+                className={`${BUTTON} min-w-12`}
+                onClick={() => setPendingImport(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </ModalContainer>
+
       <p role="status" aria-live="polite" className="sr-only">
         {status}
       </p>
@@ -630,13 +975,31 @@ export function StudyStudioShell({
           {error}
         </p>
       )}
+      {exportIssues.length > 0 && (
+        <div
+          role="alert"
+          className="space-y-1 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
+        >
+          <p className="font-medium">
+            USDM v4 schema validation issues prevented export:
+          </p>
+          <ul className="list-disc pl-5">
+            {exportIssues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {children({
         studyId: session.studyId,
         workspace: session.workspace,
         apply,
         resetKey,
-        clearError: () => setError(null),
+        clearError: () => {
+          setError(null);
+          setExportIssues([]);
+        },
       })}
     </div>
   );
@@ -661,7 +1024,8 @@ export function StudyDesignPanel({
       <div className="grid gap-6 @3xl:grid-cols-[minmax(0,1fr)_20rem]">
         <GridTable grid={grid} selection={selection} onSelect={setSelection} />
         <Inspector
-          key={JSON.stringify(selection)}
+          key={`${workspace.revision.id}:${JSON.stringify(selection)}`}
+          workspace={workspace}
           grid={grid}
           selection={selection}
           onSelect={setSelection}
@@ -694,16 +1058,27 @@ export function StudyDesignGrid({
 }: {
   readonly repository?: StudyRepositoryClient;
 } = {}) {
+  const [metadataFocusTick, setMetadataFocusTick] = useState(0);
+
   return (
     <StudyStudioShell repository={repository}>
       {({ studyId, workspace, apply, resetKey }) => (
         <>
           <StudyDesignPanel
-            key={`${studyId}:${resetKey}`}
+            key={`${studyId}:${resetKey}:${metadataFocusTick}`}
             workspace={workspace}
             apply={apply}
           />
-          <RandomizationWorkspace workspace={workspace} apply={apply} />
+          <RandomizationWorkspace
+            workspace={workspace}
+            apply={apply}
+            onEditMetadata={() => {
+              setMetadataFocusTick((n) => n + 1);
+              requestAnimationFrame(() => {
+                document.getElementById("study-metadata-protocol-id")?.focus();
+              });
+            }}
+          />
         </>
       )}
     </StudyStudioShell>
@@ -1030,12 +1405,112 @@ function NameForm({
   );
 }
 
+function StudyMetadataInspector({
+  workspace,
+  apply,
+  className,
+}: {
+  readonly workspace: StudyWorkspace;
+  readonly apply: Apply;
+  readonly className: string;
+}) {
+  const meta = projectStudyMetadata(workspace);
+  const [protocolId, setProtocolId] = useState(meta.protocolId);
+  const [studyName, setStudyName] = useState(meta.studyName);
+  const [phaseCode, setPhaseCode] = useState(meta.phase?.code ?? "");
+  const nameFieldId = useId();
+  const phaseFieldId = useId();
+
+  const phaseOptions = useMemo(() => {
+    if (
+      meta.phase &&
+      !STUDY_PHASE_TYPES.some((term) => term.code === meta.phase?.code)
+    ) {
+      return [meta.phase, ...STUDY_PHASE_TYPES];
+    }
+    return STUDY_PHASE_TYPES;
+  }, [meta.phase]);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    apply((w) =>
+      updateStudyMetadata(w, {
+        protocolId,
+        studyName,
+        phaseCode: phaseCode || null,
+      })
+    );
+  };
+
+  return (
+    <section aria-label="Study metadata" className={className}>
+      <div className="space-y-1">
+        <h3 className="font-semibold">Study metadata</h3>
+        <p className="text-xs text-slate-400">
+          Select an arm, an epoch, or a cell to inspect it, or edit protocol
+          metadata here.
+        </p>
+      </div>
+      <form onSubmit={submit} className="space-y-3">
+        <label
+          htmlFor="study-metadata-protocol-id"
+          className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
+        >
+          Protocol ID
+          <input
+            id="study-metadata-protocol-id"
+            className={FIELD}
+            value={protocolId}
+            onChange={(event) => setProtocolId(event.target.value)}
+          />
+        </label>
+        <label
+          htmlFor={nameFieldId}
+          className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
+        >
+          Study name
+          <input
+            id={nameFieldId}
+            className={FIELD}
+            value={studyName}
+            onChange={(event) => setStudyName(event.target.value)}
+          />
+        </label>
+        <label
+          htmlFor={phaseFieldId}
+          className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
+        >
+          Phase
+          <select
+            id={phaseFieldId}
+            className={FIELD}
+            value={phaseCode}
+            onChange={(event) => setPhaseCode(event.target.value)}
+          >
+            <option value="">Not specified</option>
+            {phaseOptions.map((term) => (
+              <option key={term.code} value={term.code}>
+                {term.decode} ({term.code})
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" className={`${BUTTON} min-w-12`}>
+          Save metadata
+        </button>
+      </form>
+    </section>
+  );
+}
+
 function Inspector({
+  workspace,
   grid,
   selection,
   onSelect,
   apply,
 }: {
+  readonly workspace: StudyWorkspace;
   readonly grid: Grid;
   readonly selection: Selection | null;
   readonly onSelect: (selection: Selection | null) => void;
@@ -1045,11 +1520,11 @@ function Inspector({
     "min-w-0 space-y-4 rounded-lg border border-white/[0.08] bg-[#13151a] p-4";
   if (!selection) {
     return (
-      <section aria-label="Edit selection" className={panel}>
-        <p className="text-sm text-slate-400">
-          Select an arm, an epoch or a cell to edit it.
-        </p>
-      </section>
+      <StudyMetadataInspector
+        workspace={workspace}
+        apply={apply}
+        className={panel}
+      />
     );
   }
 
@@ -1108,6 +1583,13 @@ function Inspector({
           >
             Remove arm
           </button>
+          <button
+            type="button"
+            className={`${BUTTON} min-w-12`}
+            onClick={() => onSelect(null)}
+          >
+            Study metadata
+          </button>
         </div>
       </section>
     );
@@ -1155,6 +1637,13 @@ function Inspector({
             }}
           >
             Remove epoch
+          </button>
+          <button
+            type="button"
+            className={`${BUTTON} min-w-12`}
+            onClick={() => onSelect(null)}
+          >
+            Study metadata
           </button>
         </div>
       </section>
@@ -1218,6 +1707,13 @@ function Inspector({
         submitLabel="Add element"
         onSubmit={(name) => apply((w) => addStudyElement(w, { ...ref, name }))}
       />
+      <button
+        type="button"
+        className={`${BUTTON} min-w-12`}
+        onClick={() => onSelect(null)}
+      >
+        Study metadata
+      </button>
     </section>
   );
 }

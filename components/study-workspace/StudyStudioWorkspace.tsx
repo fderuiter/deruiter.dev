@@ -53,6 +53,7 @@ export function StudyStudioWorkspace({
   readonly repository?: StudyRepositoryClient;
 } = {}) {
   const [activeTab, setActiveTab] = useState<StudyStudioTabId>("design");
+  const [metadataFocusTick, setMetadataFocusTick] = useState(0);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   return (
@@ -64,6 +65,15 @@ export function StudyStudioWorkspace({
           if (focus) {
             tabRefs.current[id]?.focus();
           }
+        };
+
+        const openMetadataInspector = () => {
+          setActiveTab("design");
+          clearError();
+          setMetadataFocusTick((n) => n + 1);
+          requestAnimationFrame(() => {
+            document.getElementById("study-metadata-protocol-id")?.focus();
+          });
         };
 
         const handleTabKeyDown = (
@@ -158,7 +168,7 @@ export function StudyStudioWorkspace({
 
               {activeTab === "design" && (
                 <StudyDesignPanel
-                  key={`design:${studyId}:${resetKey}`}
+                  key={`design:${studyId}:${resetKey}:${metadataFocusTick}`}
                   workspace={workspace}
                   apply={apply}
                 />
@@ -185,7 +195,11 @@ export function StudyStudioWorkspace({
                 />
               )}
               {activeTab === "randomization" && (
-                <RandomizationWorkspace workspace={workspace} apply={apply} />
+                <RandomizationWorkspace
+                  workspace={workspace}
+                  apply={apply}
+                  onEditMetadata={openMetadataInspector}
+                />
               )}
             </div>
           </div>

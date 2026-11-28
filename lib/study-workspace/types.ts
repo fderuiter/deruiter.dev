@@ -316,6 +316,22 @@ export interface StudyDesignCellRef {
   readonly epochId: string;
 }
 
+/** Study-level metadata projected from the selected version and design. */
+export interface StudyMetadataView {
+  readonly protocolId: string;
+  readonly studyName: string;
+  /** The coded study phase on the selected design, or null when omitted. */
+  readonly phase: StudyDesignTerm | null;
+}
+
+/** Changes accepted by `updateStudyMetadata`. */
+export interface StudyMetadataChanges {
+  readonly protocolId?: string;
+  readonly studyName?: string;
+  /** CDISC Trial Phase code from `STUDY_PHASE_TYPES`, or null to clear. */
+  readonly phaseCode?: string | null;
+}
+
 /** One visit (encounter) column in the schedule of activities view. */
 export interface StudyScheduleVisit {
   readonly id: string;

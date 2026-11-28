@@ -1,6 +1,6 @@
 # Manage Dependency Licenses
 
-Documentation last reconciled: 2026-11-20.
+Documentation last reconciled: 2026-11-28.
 
 This page covers what to do when you add or upgrade a dependency, when the
 license audit fails, and how credits and notices stay current. The reasoning
@@ -42,15 +42,19 @@ itself, run `npm run oss:credits -- --verify-registry`.
 
 ## When a Dependabot PR is red
 
-The credits are generated at install, so Dependabot's npm PRs pass without
-help, except for the `playwright` group. A `@playwright/test` bump arrives with
-CI still pinned to the old Playwright image, and Dependabot cannot run project
-scripts to move it. The pre-push guard only accepts the branch prefixes in
-`validateBranchName()`, so carry that PR on a `chore/` branch instead of
-pushing to `dependabot/*`:
+The credits are generated at install, and `dependabot[bot]` PRs run
+`npm run audit:overrides -- --check --allow-removable` so satisfied overrides do
+not fail CI until a human PR retires them and updates `SECURITY.md`. Three
+isolated groups still require checked-in artifacts that Dependabot cannot move
+on its own: `playwright` (`@playwright/test` CI images), `duckdb-wasm`
+(`@duckdb/duckdb-wasm` `.wasm` extensions and SHA-256 digests), and `docker`
+(`postgres:17` in `infra/docker/postgres/Dockerfile`, mirrored in CI workflows
+and `scripts/migration-replay.ts`). The pre-push guard only accepts the branch
+prefixes in `validateBranchName()`, so carry those PRs on a `chore/` branch
+instead of pushing to `dependabot/*`:
 
 ```bash
-git fetch origin dependabot/npm_and_yarn/<group-branch>
+git fetch origin dependabot/<ecosystem>/<group-branch>
 git checkout -b chore/deps-<date> FETCH_HEAD
 git merge origin/main        # when the branch is behind
 npx npm@10.9.2 ci
@@ -58,36 +62,56 @@ npm run deps:fix
 ```
 
 `deps:fix` moves every `mcr.microsoft.com/playwright` image in
-`.github/workflows/` to the locked `@playwright/test` version, pinned by the
-image index digest from MCR, and then runs `npm run oss:credits`. Commit what
-it changed, push, open a PR that says "Replaces #N", and close Dependabot's PR
-with a link to it. Closing a grouped PR is safe because the next weekly run
-proposes anything newer.
+`.github/workflows/` to the locked `@playwright/test` version, refreshes the
+pinned DuckDB `.wasm` extensions and SHA-256 digests in
+`components/platform/sql/extensions/README.md` to match the locked
+`@duckdb/duckdb-wasm` release, syncs `postgres:17` image digests across
+`.github/workflows/ci.yml`, `.github/workflows/neon-backup.yml`, and
+`scripts/migration-replay.ts` from `infra/docker/postgres/Dockerfile`, checks
+npm overrides, and runs `npm run oss:credits`. Commit what it changed, push,
+open a PR that says "Replaces #N", and close Dependabot's PR with a link to it.
+Closing a grouped PR is safe because the next weekly run proposes anything
+newer.
 
 `npm run deps:fix -- --check` reports the same drift offline without writing.
 
 Dependabot's npm also records the bundled dependencies of
 `@tailwindcss/oxide-wasm32-wasi` as lock entries with no tarball of their own.
-They are dev-only and travel inside their parent, so the credits skip them. A
-bundled entry on a shipped package is not skipped: it stops `oss:credits`, and
-needs a person to decide how it is credited.
+They are dev-only and travel inside their parent, so the credits skip them.
+Verified build-only bundler dependencies pulled by runtime SDKs (such as
+`@sentry/bundler-plugins`, `@rollup/plugin-commonjs`, and `rollup` under
+`@sentry/nextjs` / `@sentry/node`) are excluded in
+`BUILD_ONLY_DEPENDENCY_EDGES` in `lib/oss-credits/internal/facts.ts` so they do
+not enter visitor notices. A bundled entry on a shipped package is not skipped:
+it stops `oss:credits`, and needs a person to decide how it is credited.
 
 ## When `audit:licenses` fails
 
-- **Unapproved license on a dev-only package.** Prefer a different package.
-  If the tool is worth keeping, add a dated exception to
-  `config/license-policy.json` with an owner, a ticket and a rationale that
-  explains how the tool is used. Exceptions last at most 90 days.
-- **Strong copyleft (GPL, AGPL, SSPL and similar) on a shipped package.** No
-  exception is accepted. Remove the package or replace it. A dual license that
-  offers a permissive option (for example `MIT OR GPL-3.0-or-later`) passes.
+- **Unapproved license on a dev-only or isolated build-only package.** Prefer a
+  different package. If the tool is worth keeping, add a dated exception to
+  `config/license-policy.json` conforming to
+  `config/license-policy.schema.json`: `createdAt` (`YYYY-MM-DD`), `expiresAt`
+  (`YYYY-MM-DD`, at most 90 days from both `createdAt` and today), a GitHub
+  handle `riskOwner`, a GitHub issue reference `ticket` (`#NNNN`), and a
+  `rationale` explaining how the tool is used.
+- **Strong copyleft or source-available / non-commercial license (`GPL`, `AGPL`,
+  `SSPL`, `FSL-*`, `BSL-*`, `BUSL-*`, `Elastic-*`, `PolyForm-*`,
+  `Commons-Clause`, and similar) on a shipped package.** No exception is
+  accepted, including in `shippedCodeExceptions`. Remove the package, replace
+  it, or isolate build-only edges from the production closure after verifying
+  `.next` traces. A dual license that offers a permissive option (for example
+  `MIT OR GPL-3.0-or-later`) passes.
 - **LGPL on a shipped package.** Allowed only as an unmodified, dynamically
-  linked library, through an exception that says so.
+  linked library, through a `shippedCodeExceptions` entry that says so.
 - **Shipped package missing from the notices, or listed without a license
-  text.** Run `npm run oss:credits`.
+  text.** Run `npm run oss:credits` (`npm run doctor` also enforces notice
+  completeness via `requireNotices: true`).
 
-The audit prints a warning 30 days before an exception expires. Renew it with
-a fresh review or remove the dependency.
+The audit prints a warning 30 days before an exception expires, and
+`.github/workflows/scheduled-security-audit.yml` runs
+`npm run audit:licenses -- --fail-on-expiring` daily to open or update a
+tracking issue before expiry. Renew with a fresh review or remove the
+dependency.
 
 ## What the page shows
 

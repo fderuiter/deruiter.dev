@@ -41,26 +41,27 @@ npm run audit:security
 npm run audit:secrets
 ```
 
-The first command parses `npm audit --json` and enforces dependency-vulnerability
-policy. The second performs a redacted scan of every reachable Git commit for
-high-confidence credential patterns. Neither command prints matched secret
-values.
+The first command parses `npm audit --package-lock-only --json` (invoked without
+a shell) and enforces dependency-vulnerability policy directly against
+`package-lock.json`. The second performs a redacted scan of every reachable Git
+commit for high-confidence credential patterns. Neither command prints matched
+secret values.
 
 ### Severity Thresholds
 
 The security audit CLI evaluates vulnerability severity levels and enforces the following policy:
 
 - **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `config/security-audit-ignore.json`.
-- **Low & Moderate Severities:** Do not block a local run by default, though developers are encouraged to remediate them during routine maintenance.
-- **CI Security Gate:** CI runs `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window also fail the Security Gate.
+- **Low & Moderate Severities:** Do not block a default `npm run audit:security` run (including `.husky/pre-commit`), where moderate advisories and pre-expiration warnings remain report-only so upstream moderate advisory churn never blocks routine local commits.
+- **Strict Quality & CI Security Gate:** `npm run quality`, `.github/workflows/ci.yml` (`security-gate`), and `.github/workflows/scheduled-security-audit.yml` run `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window fail `quality` and CI.
 - **Withdrawn Advisory Verification:** When `npm audit --json` reports an unhandled blocking advisory with a `GHSA-*` identifier, `scripts/security-audit.ts` (and `scripts/triage-security-issue.ts`) cross-checks `GET /advisories/<GHSA-ID>` in the GitHub Advisory Database. Advisories whose `withdrawn_at` timestamp is set are logged and excluded so npm registry cache lag after a withdrawal cannot cause false-positive failures. Any API, network, or timeout error fails closed and keeps the advisory blocking.
 
 ## CI Pipeline Security Gate Enforcement
 
 Automated security checks are enforced across continuous integration and release workflows:
 
-- **Pre-Commit Hook Gate:** Local commits perform dependency security vulnerability checks via `npm run audit:security` in `.husky/pre-commit` before remote push.
-- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job runs unconditionally on every push to `main` and pull request targeting `main`. Lockfile license verification (`npm run audit:licenses`) and reachable Git-history secret scanning (`npm run audit:secrets`) run on every PR and push. The live npm vulnerability audit (`npm run audit:security`) and override re-audit (`npm run audit:overrides -- --check`) run on every push to `main`, daily in `.github/workflows/scheduled-security-audit.yml` (for `audit:security`), and on pull requests that touch dependencies or security-audit policy/scripts (`package.json`, `package-lock.json`, `SECURITY.md`, `config/security-audit-ignore.json`, `scripts/security-audit.ts`, `scripts/overrides-audit.ts`, `scripts/triage-security-issue.ts`, `scripts/ci-run-policy.mjs`, `.github/workflows/ci.yml`, `.github/workflows/scheduled-security-audit.yml`), or when changed files cannot be determined (fail-safe). This prevents unrelated PRs from freezing on upstream advisory churn while preserving continuous monitoring on `main`.
+- **Pre-Commit Hook Gate:** Local commits run plain `npm run audit:security` in `.husky/pre-commit` before remote push, keeping moderate advisories and pre-expiration warnings report-only while leaving the strict `--fail-on-warning --severity=moderate` gate to `npm run quality` and CI.
+- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job runs unconditionally on every push to `main` and pull request targeting `main`. Lockfile license verification (`npm run audit:licenses`) and reachable Git-history secret scanning (`npm run audit:secrets`) run on every PR and push. The live npm vulnerability audit (`npm run audit:security -- --fail-on-warning --severity=moderate`) and override re-audit (`npm run audit:overrides -- --check` on human PRs/pushes, or `--check --allow-removable` when `github.event.pull_request.user.login == 'dependabot[bot]'`) run on every push to `main`, daily in `.github/workflows/scheduled-security-audit.yml` (alongside `npm run audit:licenses -- --fail-on-expiring` and `pip-audit` against `scripts/study-data-core-constraints.txt`), and on pull requests that touch dependencies or supply-chain policy/scripts (`package.json`, `package-lock.json`, `SECURITY.md`, `.github/dependabot.yml`, `.github/workflows/ci.yml`, `.github/workflows/scheduled-security-audit.yml`, `.github/workflows/overrides-audit.yml`, `.github/workflows/study-data-core.yml`, `.github/workflows/neon-backup.yml`, `infra/docker/postgres/Dockerfile`, `config/security-audit-ignore.json`, `config/license-policy.json`, `config/license-policy.schema.json`, `scripts/security-audit.ts`, `scripts/license-audit.ts`, `scripts/overrides-audit.ts`, `scripts/deps-fix.ts`, `scripts/triage-security-issue.ts`, `scripts/ci-run-policy.mjs`, `scripts/study-data-core-constraints.txt`), or when changed files cannot be determined (fail-safe). This prevents unrelated PRs and required checks from freezing on upstream advisory churn while preserving continuous monitoring across npm, Docker, and Python dependencies.
 - **Production Build Gate:** Vercel’s production build of `main` runs the offline migration integrity checks, applies migrations through the environment-guarded block in `scripts/build.js`, and then compiles the application. Dependency and secret audits remain mandatory CI and pre-commit gates; production database credentials remain confined to Vercel.
 
 ## Vulnerability Override Governance Rules
@@ -93,7 +94,7 @@ During local, CI, or scheduled daily execution, the audit tool validates all act
   - **High Overrides:** Warning triggered when **14 days** or fewer remain.
   - **Moderate Overrides:** Warning triggered when **14 days** or fewer remain.
 - **Categorized Reporting:** CLI console logs and GitHub Step Summaries categorize vulnerabilities and overrides into distinct Critical, High, and Moderate severity reporting tables.
-- **Automated Issue Triage Escalation:** Daily scheduled audit failures in `.github/workflows/scheduled-security-audit.yml` automatically create or update dedicated GitHub issues labeled `security-triage`, deduplicated by advisory identifier.
+- **Automated Issue Triage Escalation:** Daily scheduled audit or license-expiry failures in `.github/workflows/scheduled-security-audit.yml` invoke `scripts/triage-security-issue.ts`. Following `docs/how-to/issue-governance.md`, triage halts immediately without creating or updating public issues if `@chenglou/pretext` is affected, defaults to report-first dry-run unless repository variable `SECURITY_TRIAGE_APPLY` is `true`, applies `type:chore`, `needs-triage`, `area:security`, and `security-triage` labels (never priority heuristics), deduplicates issues and comments via hidden HTML markers, and never auto-closes open issues.
 
 ## npm Package Overrides
 
@@ -105,7 +106,7 @@ The `overrides` block in `package.json` pins transitive dependencies that an ups
 - **Scope the pin to the parent that needs it.** Write `parent > child` (`{ "parent": { "child": range } }`) rather than a global pin, so packages that already resolve a fixed version aren't forced onto one. A scoped pin applies to the parent's whole subtree.
 - **Pin a floor, not an exact version.** A security pin is a range such as `^x.y.z` from the first fixed release. An exact pin needs a stated reason in this section.
 - **Give every pin an exit.** Each row names the upstream change after which the pin goes.
-- **Re-audit when a parent is upgraded, and at least monthly.** `npm run audit:overrides` removes each pin in a scratch copy, regenerates the lockfile with `npm install --package-lock-only`, runs `npm audit --package-lock-only` and compares the result with the committed tree per installed copy, since an advisory already waived for one copy of a package says nothing about a second copy. It reports each pin as needed, to drop, to review, or kept for the reason its row states (a row whose "Effect of removing it" begins "no new advisories"). `npm run audit:overrides -- --check` exits `1` on removable (`no-effect`, `no-new-advisory`) or errored pins and runs in CI's `security-gate` and `npm run deps:fix`; `.github/workflows/overrides-audit.yml` also runs it on the third of each month and opens an issue, or comments on the open one, when an upstream release makes a pin removable between dependency PRs. Drop a pin whose removal adds no vulnerable copy and changes nothing it was kept for, and narrow one whose vulnerable copies sit under a single parent.
+- **Re-audit when a parent is upgraded, and at least monthly.** `npm run audit:overrides` removes each pin in a scratch copy, regenerates the lockfile with `npm install --package-lock-only`, runs `npm audit --package-lock-only` and compares the result with the committed tree per installed copy, since an advisory already waived for one copy of a package says nothing about a second copy. It reports each pin as needed, to drop, to review, or kept for the reason its row states (a row whose "Effect of removing it" begins "no new advisories"). `npm run audit:overrides -- --check` exits `1` on removable (`no-effect`, `no-new-advisory`) or errored pins for human pull requests, pushes to `main`, and `npm run deps:fix`, while `dependabot[bot]` pull requests run `npm run audit:overrides -- --check --allow-removable` so upstream releases that satisfy a pin pass CI until a human PR retires the pin and updates the table below; `.github/workflows/overrides-audit.yml` also runs it on the third of each month and opens an issue, or comments on the open one, when an upstream release makes a pin removable between dependency PRs. Drop a pin whose removal adds no vulnerable copy and changes nothing it was kept for, and narrow one whose vulnerable copies sit under a single parent.
 
 ### Current pins
 

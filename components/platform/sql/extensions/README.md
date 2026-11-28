@@ -16,7 +16,7 @@ Signed DuckDB extension binaries served from the same origin by [`sql-engine.ts`
 
 ## Refresh after upgrading `@duckdb/duckdb-wasm`
 
-Run one command from the repository root to query the installed `@duckdb/duckdb-wasm` engine version, download both `wasm_eh` binaries (`extensions.duckdb.org` serves Brotli-encoded bodies, so `--compressed` is required), and print the version, URLs and SHA-256 digests to record in the table above:
+Run `npm run deps:fix` from the repository root (or `npm run deps:fix -- --check` offline) to query the installed `@duckdb/duckdb-wasm` engine version, download both `wasm_eh` binaries, and rewrite the version, URLs and SHA-256 digests in the table above. Equivalently, by hand (`extensions.duckdb.org` serves Brotli-encoded bodies, so `--compressed` is required with `curl`):
 
 ```bash
 DUCKDB_VERSION=$(node -e 'const path=require("node:path"),{createDuckDB,VoidLogger,NODE_RUNTIME}=require("@duckdb/duckdb-wasm/blocking");(async()=>{const dist=path.dirname(require.resolve("@duckdb/duckdb-wasm/blocking")),db=await createDuckDB({mvp:{mainModule:path.join(dist,"duckdb-mvp.wasm"),mainWorker:""},eh:{mainModule:path.join(dist,"duckdb-eh.wasm"),mainWorker:""}},new VoidLogger(),NODE_RUNTIME);await db.instantiate(()=>{});process.stdout.write(db.getVersion());db.reset()})()') && for ext in json parquet; do url="https://extensions.duckdb.org/${DUCKDB_VERSION}/wasm_eh/${ext}.duckdb_extension.wasm"; curl -fsSL --compressed "$url" -o "components/platform/sql/extensions/${ext}.duckdb_extension.wasm" && printf "%s  %s\n" "$(shasum -a 256 "components/platform/sql/extensions/${ext}.duckdb_extension.wasm" | cut -d" " -f1)" "$url"; done

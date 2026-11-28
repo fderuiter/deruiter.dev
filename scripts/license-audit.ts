@@ -16,6 +16,7 @@ import {
 export interface LicenseException {
   packageName: string;
   license: string;
+  createdAt: string;
   expiresAt: string;
   riskOwner: string;
   ticket: string;
@@ -23,6 +24,7 @@ export interface LicenseException {
 }
 
 export interface LicensePolicy {
+  $schema?: string;
   version?: string;
   allowedLicenses: string[];
   exceptions: LicenseException[];
@@ -72,15 +74,145 @@ export interface LicenseAuditReport {
 /** Warn this many days before an exception expires. */
 export const EXPIRY_WARNING_DAYS = 30;
 
-/** Licenses whose copyleft reaches code shipped to visitors; never waivable. */
-const STRONG_COPYLEFT = /^(A?GPL|SSPL|OSL|EUPL|CPAL|RPL)/i;
+/**
+ * Licenses whose copyleft, source-available, or non-commercial restrictions
+ * reach code shipped to visitors; never waivable on shipped packages.
+ */
+export const STRONG_COPYLEFT =
+  /^(?:(?:A?GPL|SSPL|OSL|EUPL|CPAL|RPL)(?:$|-)|(?:FSL|BSL|BUSL|Elastic|PolyForm)-|Commons-Clause(?:$|-))|\bCommons-Clause\b/i;
+
+const GITHUB_HANDLE_PATTERN =
+  /^@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+const GITHUB_ISSUE_TICKET_PATTERN = /^#[1-9]\d*$/;
+const ALLOWED_POLICY_KEYS = new Set([
+  "$schema",
+  "version",
+  "allowedLicenses",
+  "exceptions",
+]);
+const ALLOWED_EXCEPTION_KEYS = new Set([
+  "packageName",
+  "license",
+  "createdAt",
+  "expiresAt",
+  "riskOwner",
+  "ticket",
+  "rationale",
+]);
 
 /** Where the generated third-party notices live (see scripts/oss-credits.ts). */
 export const NOTICES_FILE = "public/third-party-notices.txt";
 
 /**
+ * Validates config/license-policy.json top-level fields and config/license-policy.schema.json linkage.
+ */
+export function validatePolicySchema(
+  policyJson: unknown,
+  policyPath: string
+): InvalidExceptionPolicy[] {
+  const issues: InvalidExceptionPolicy[] = [];
+  if (
+    !policyJson ||
+    typeof policyJson !== "object" ||
+    Array.isArray(policyJson)
+  ) {
+    return [
+      {
+        packageName: "$policy",
+        reason: "Policy document must be a JSON object.",
+      },
+    ];
+  }
+
+  const record = policyJson as Record<string, unknown>;
+  for (const key of Object.keys(record)) {
+    if (!ALLOWED_POLICY_KEYS.has(key)) {
+      issues.push({
+        packageName: "$policy",
+        reason: `Unknown top-level property '${key}' in license policy.`,
+      });
+    }
+  }
+
+  const localSchemaPath = path.join(
+    path.dirname(policyPath),
+    "license-policy.schema.json"
+  );
+  const hasLocalSchemaFile = fs.existsSync(localSchemaPath);
+
+  if (record.$schema !== undefined || hasLocalSchemaFile) {
+    if (record.$schema !== "./license-policy.schema.json") {
+      issues.push({
+        packageName: "$policy",
+        reason: `Policy '$schema' must be './license-policy.schema.json' (found '${String(record.$schema ?? "missing")}').`,
+      });
+    } else if (!hasLocalSchemaFile) {
+      issues.push({
+        packageName: "$policy",
+        reason: `Referenced schema file not found at ${localSchemaPath}.`,
+      });
+    } else {
+      try {
+        const schemaObj = JSON.parse(
+          fs.readFileSync(localSchemaPath, "utf-8")
+        ) as Record<string, unknown>;
+        if (
+          schemaObj.type !== "object" ||
+          typeof schemaObj.properties !== "object" ||
+          schemaObj.properties === null
+        ) {
+          issues.push({
+            packageName: "$policy",
+            reason:
+              "config/license-policy.schema.json is missing object properties definition.",
+          });
+        }
+      } catch (err) {
+        issues.push({
+          packageName: "$policy",
+          reason: `Failed to parse config/license-policy.schema.json: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    }
+
+    if (
+      hasLocalSchemaFile &&
+      (typeof record.version !== "string" ||
+        !/^\d+\.\d+\.\d+$/.test(record.version))
+    ) {
+      issues.push({
+        packageName: "$policy",
+        reason: `Policy 'version' must follow semver 'X.Y.Z' (found '${String(record.version ?? "missing")}').`,
+      });
+    }
+  }
+
+  if (
+    !Array.isArray(record.allowedLicenses) ||
+    record.allowedLicenses.some(
+      (item) => typeof item !== "string" || !item.trim()
+    )
+  ) {
+    issues.push({
+      packageName: "$policy",
+      reason:
+        "Policy 'allowedLicenses' must be an array of non-empty SPDX identifiers.",
+    });
+  }
+
+  if (!Array.isArray(record.exceptions)) {
+    issues.push({
+      packageName: "$policy",
+      reason: "Policy 'exceptions' must be an array.",
+    });
+  }
+
+  return issues;
+}
+
+/**
  * Validates exception entries in config/license-policy.json.
- * Fails closed if mandatory metadata fields are missing, expired, or exceed the 90-day window.
+ * Fails closed if mandatory metadata fields are missing, malformed, expired, or exceed the 90-day window.
  */
 export function validateExceptions(
   exceptions: LicenseException[],
@@ -92,10 +224,11 @@ export function validateExceptions(
   const validExceptions: LicenseException[] = [];
   const invalidExceptions: InvalidExceptionPolicy[] = [];
 
+  const DAY_MS = 24 * 60 * 60 * 1000;
   const MAX_EXPIRATION_DAYS = 90;
-  // Compute upper bound: current time + 90 days + 1 day margin
+  // Compute upper bound from current time: 90 days + 1 day margin for TZ boundary
   const maxAllowedExpiryTime =
-    now.getTime() + (MAX_EXPIRATION_DAYS + 1) * 24 * 60 * 60 * 1000;
+    now.getTime() + (MAX_EXPIRATION_DAYS + 1) * DAY_MS;
 
   for (let i = 0; i < exceptions.length; i++) {
     const e = exceptions[i];
@@ -104,10 +237,13 @@ export function validateExceptions(
     // Mandatory metadata fields check
     if (
       !e ||
+      typeof e !== "object" ||
       typeof e.packageName !== "string" ||
       !e.packageName.trim() ||
       typeof e.license !== "string" ||
       !e.license.trim() ||
+      typeof e.createdAt !== "string" ||
+      !e.createdAt.trim() ||
       typeof e.expiresAt !== "string" ||
       !e.expiresAt.trim() ||
       typeof e.riskOwner !== "string" ||
@@ -120,14 +256,55 @@ export function validateExceptions(
       invalidExceptions.push({
         packageName: name,
         reason:
-          "Missing mandatory metadata fields (packageName, license, expiresAt, riskOwner, ticket, rationale).",
+          "Missing mandatory metadata fields (packageName, license, createdAt, expiresAt, riskOwner, ticket, rationale).",
+      });
+      continue;
+    }
+
+    const extraKey = Object.keys(e).find((k) => !ALLOWED_EXCEPTION_KEYS.has(k));
+    if (extraKey) {
+      invalidExceptions.push({
+        packageName: name,
+        reason: `Unexpected property '${extraKey}' on exception entry.`,
+      });
+      continue;
+    }
+
+    if (!GITHUB_HANDLE_PATTERN.test(e.riskOwner.trim())) {
+      invalidExceptions.push({
+        packageName: name,
+        reason: `Invalid riskOwner '${e.riskOwner}': expected a GitHub handle (not an email or placeholder).`,
+      });
+      continue;
+    }
+
+    if (!GITHUB_ISSUE_TICKET_PATTERN.test(e.ticket.trim())) {
+      invalidExceptions.push({
+        packageName: name,
+        reason: `Invalid ticket '${e.ticket}': expected a GitHub '#NNNN' issue reference.`,
+      });
+      continue;
+    }
+
+    // Creation date check
+    const createdDate = new Date(e.createdAt);
+    if (
+      !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(e.createdAt.trim()) ||
+      isNaN(createdDate.getTime())
+    ) {
+      invalidExceptions.push({
+        packageName: name,
+        reason: `Invalid ISO date format for createdAt: '${e.createdAt}'.`,
       });
       continue;
     }
 
     // Expiration date check
     const expiryDate = new Date(e.expiresAt);
-    if (isNaN(expiryDate.getTime())) {
+    if (
+      !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(e.expiresAt.trim()) ||
+      isNaN(expiryDate.getTime())
+    ) {
       invalidExceptions.push({
         packageName: name,
         reason: `Invalid ISO date format for expiresAt: '${e.expiresAt}'.`,
@@ -135,9 +312,29 @@ export function validateExceptions(
       continue;
     }
 
-    // Compare with current date (day-granularity comparison)
+    // Compare dates at day granularity
     const todayStr = now.toISOString().split("T")[0];
+    const createdStr = createdDate.toISOString().split("T")[0];
     const expStr = expiryDate.toISOString().split("T")[0];
+
+    if (expStr < createdStr) {
+      invalidExceptions.push({
+        packageName: name,
+        reason: `Exception expiresAt (${expStr}) precedes createdAt (${createdStr}).`,
+      });
+      continue;
+    }
+
+    if (
+      expiryDate.getTime() - createdDate.getTime() >
+      MAX_EXPIRATION_DAYS * DAY_MS
+    ) {
+      invalidExceptions.push({
+        packageName: name,
+        reason: `Exception lifespan (${createdStr} to ${expStr}) exceeds the maximum allowed 90-day window from createdAt.`,
+      });
+      continue;
+    }
 
     if (expStr < todayStr) {
       invalidExceptions.push({
@@ -295,12 +492,15 @@ interface PackageLockEntry {
   dev?: boolean;
 }
 
-/** Exceptions that remain valid for shipped code: no strong-copyleft or wildcard waivers. */
+/** Exceptions that remain valid for shipped code: no strong-copyleft, source-available, or wildcard waivers. */
 export function shippedCodeExceptions(
   exceptions: LicenseException[]
 ): LicenseException[] {
   return exceptions.filter(
-    (e) => e.license !== "*" && !STRONG_COPYLEFT.test(e.license)
+    (e) =>
+      e.license !== "*" &&
+      !STRONG_COPYLEFT.test(e.license) &&
+      !tokenizeSpdx(e.license).some((t) => STRONG_COPYLEFT.test(t))
   );
 }
 
@@ -331,6 +531,8 @@ export function runLicenseAudit(options?: {
   now?: Date;
   /** Fail when the notices file is absent. Defaults to checking it only if it exists. */
   requireNotices?: boolean;
+  /** Fail when any active exception is within EXPIRY_WARNING_DAYS (used in scheduled daily checks). */
+  failOnExpiring?: boolean;
 }): LicenseAuditReport {
   const startTime = Date.now();
   const root = options?.workspaceRoot || path.resolve(__dirname, "..");
@@ -356,11 +558,16 @@ export function runLicenseAudit(options?: {
   const lockJson = JSON.parse(lockRaw);
   const policyJson: LicensePolicy = JSON.parse(policyRaw);
 
-  const allowedLicensesSet = new Set(policyJson.allowedLicenses || []);
-  const { validExceptions, invalidExceptions } = validateExceptions(
-    policyJson.exceptions || [],
-    now
+  const schemaIssues = validatePolicySchema(policyJson, policyPath);
+  const allowedLicensesSet = new Set(
+    Array.isArray(policyJson.allowedLicenses) ? policyJson.allowedLicenses : []
   );
+  const { validExceptions, invalidExceptions: exceptionIssues } =
+    validateExceptions(
+      Array.isArray(policyJson.exceptions) ? policyJson.exceptions : [],
+      now
+    );
+  const invalidExceptions = [...schemaIssues, ...exceptionIssues];
 
   const violations: NonCompliantDependency[] = [];
   let totalPackagesScanned = 0;
@@ -403,7 +610,7 @@ export function runLicenseAudit(options?: {
       validExceptions
     );
 
-    // Shipped code may not lean on an exception for strong copyleft.
+    // Shipped code may not lean on an exception for strong copyleft or source-available licenses.
     const shippedResult = shipped
       ? evaluateSpdxExpression(
           licenseExpr,
@@ -415,7 +622,8 @@ export function runLicenseAudit(options?: {
     const copyleftWaived =
       evalResult.compliant &&
       !shippedResult.compliant &&
-      tokenizeSpdx(licenseExpr).some((t) => STRONG_COPYLEFT.test(t));
+      (STRONG_COPYLEFT.test(licenseExpr) ||
+        tokenizeSpdx(licenseExpr).some((t) => STRONG_COPYLEFT.test(t)));
 
     if (copyleftWaived) {
       violations.push({
@@ -424,7 +632,7 @@ export function runLicenseAudit(options?: {
         version,
         licenseExpression: licenseExpr,
         unapprovedLicenses: shippedResult.unapprovedTokens,
-        reason: `Strong copyleft '${licenseExpr}' ships to visitors and cannot be waived by an exception.`,
+        reason: `Strong copyleft or source-available license '${licenseExpr}' ships to visitors and cannot be waived by an exception.`,
       });
     } else if (evalResult.compliant) {
       totalCompliantPackages++;
@@ -455,11 +663,13 @@ export function runLicenseAudit(options?: {
     noticesMissing = [...shippedKeys].sort();
   }
 
+  const expiringSoon = findExpiringExceptions(validExceptions, now);
   const durationMs = Date.now() - startTime;
   const passed =
     violations.length === 0 &&
     invalidExceptions.length === 0 &&
-    noticesMissing.length === 0;
+    noticesMissing.length === 0 &&
+    (!options?.failOnExpiring || expiringSoon.length === 0);
 
   return {
     timestamp: now.toISOString(),
@@ -470,7 +680,7 @@ export function runLicenseAudit(options?: {
     activeExceptionsCount: validExceptions.length,
     shippedPackages,
     toolingPackages: totalPackagesScanned - shippedPackages,
-    expiringSoon: findExpiringExceptions(validExceptions, now),
+    expiringSoon,
     noticesMissing,
     violations,
     invalidExceptions,
@@ -481,8 +691,9 @@ export function runLicenseAudit(options?: {
 // Standalone CLI execution
 if (typeof process.env.VITEST === "undefined" && require.main === module) {
   const isJson = process.argv.includes("--json") || process.argv.includes("-j");
+  const failOnExpiring = process.argv.includes("--fail-on-expiring");
   try {
-    const report = runLicenseAudit({ requireNotices: true });
+    const report = runLicenseAudit({ requireNotices: true, failOnExpiring });
 
     if (isJson) {
       const envelope = {

@@ -35,9 +35,27 @@ function resolveLockPath(
 }
 
 /**
+ * Verified build-time-only dependency edges declared inside runtime SDK
+ * manifests (`withSentryConfig` bundler plugins and Rollup helpers). These
+ * packages run only during `next build` and never ship in `.next` server or
+ * browser bundles.
+ */
+export const BUILD_ONLY_DEPENDENCY_EDGES: Readonly<
+  Record<string, ReadonlySet<string>>
+> = {
+  "@sentry/nextjs": new Set([
+    "@sentry/bundler-plugins",
+    "@rollup/plugin-commonjs",
+    "rollup",
+  ]),
+  "@sentry/node": new Set(["@sentry/bundler-plugins"]),
+};
+
+/**
  * Lockfile install paths reachable from `packages[""]` by walking
  * `dependencies`, `optionalDependencies`, and required `peerDependencies` with
- * Node module resolution, skipping optional `peerDependenciesMeta` edges.
+ * Node module resolution, skipping optional `peerDependenciesMeta` and verified
+ * `BUILD_ONLY_DEPENDENCY_EDGES` edges.
  */
 export function computeShippedLockPaths(lockfile: LockfileShape): Set<string> {
   const packages = lockfile.packages;
@@ -62,6 +80,14 @@ export function computeShippedLockPaths(lockfile: LockfileShape): Set<string> {
       const entry = packages[currentPath];
       if (!entry) continue;
 
+      const currentName =
+        currentPath === ""
+          ? null
+          : (entry.name ?? packageNameFromLockPath(currentPath));
+      const ignoredEdges = currentName
+        ? BUILD_ONLY_DEPENDENCY_EDGES[currentName]
+        : undefined;
+
       const edges = new Set<string>([
         ...Object.keys(entry.dependencies ?? {}),
         ...Object.keys(entry.optionalDependencies ?? {}),
@@ -75,6 +101,7 @@ export function computeShippedLockPaths(lockfile: LockfileShape): Set<string> {
       }
 
       for (const depName of edges) {
+        if (ignoredEdges?.has(depName)) continue;
         const targetPath = resolveLockPath(packages, currentPath, depName);
         if (!targetPath || shipped.has(targetPath)) continue;
         const target = packages[targetPath];

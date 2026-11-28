@@ -302,4 +302,57 @@ describe("CI Workflow Toolchain Pinning", () => {
       }
     });
   });
+
+  describe("Postgres 17 container digest parity & Dependabot coverage", () => {
+    const postgresDockerfile = fs.readFileSync(
+      path.join(process.cwd(), "infra/docker/postgres/Dockerfile"),
+      "utf8"
+    );
+    const canonicalMatch = postgresDockerfile.match(
+      /^FROM\s+(postgres:17@sha256:[0-9a-f]{64})\s*$/m
+    );
+    const canonicalPin = canonicalMatch?.[1] ?? "";
+    const postgresPinPattern = /postgres:17@sha256:[0-9a-f]{64}/g;
+
+    it("pins postgres:17 by SHA-256 digest in infra/docker/postgres/Dockerfile", () => {
+      expect(canonicalPin).toMatch(/^postgres:17@sha256:[0-9a-f]{64}$/);
+    });
+
+    it.each([
+      ".github/workflows/ci.yml",
+      ".github/workflows/neon-backup.yml",
+      "scripts/migration-replay.ts",
+    ])("enforces postgres:17 digest parity in %s", (relPath) => {
+      const content = fs.readFileSync(
+        path.join(process.cwd(), relPath),
+        "utf8"
+      );
+      const pins = [...content.matchAll(postgresPinPattern)].map((m) => m[0]);
+      expect(pins.length).toBeGreaterThan(0);
+      for (const pin of pins) {
+        expect(pin).toBe(canonicalPin);
+      }
+      expect(content).not.toMatch(/postgres:17(?!@sha256:[0-9a-f]{64})/);
+    });
+
+    it("tracks github-actions, docker, pip, nextjs (@next/env), and duckdb-wasm in .github/dependabot.yml", () => {
+      const dependabot = fs.readFileSync(
+        path.join(process.cwd(), ".github/dependabot.yml"),
+        "utf8"
+      );
+      expect(dependabot).toMatch(/package-ecosystem:\s*"github-actions"/);
+      expect(dependabot).toMatch(
+        /package-ecosystem:\s*"docker"[\s\S]*?directory:\s*"\/infra\/docker\/postgres"/
+      );
+      expect(dependabot).toMatch(
+        /package-ecosystem:\s*"pip"[\s\S]*?directory:\s*"\/scripts"/
+      );
+      expect(dependabot).toMatch(
+        /nextjs:\s*\n\s*patterns:\s*\n\s*-\s*"next"\s*\n\s*-\s*"@next\/env"\s*\n\s*-\s*"eslint-config-next"/
+      );
+      expect(dependabot).toMatch(
+        /duckdb-wasm:\s*\n\s*patterns:\s*\n\s*-\s*"@duckdb\/duckdb-wasm"/
+      );
+    });
+  });
 });

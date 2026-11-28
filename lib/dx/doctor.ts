@@ -4892,14 +4892,17 @@ export function checkSessionDeterminism(root: string): DiagnosticCheckResult {
  */
 export function checkLicenseCompliance(root: string): DiagnosticCheckResult {
   try {
-    const report = runLicenseAudit({ workspaceRoot: root });
+    const report = runLicenseAudit({
+      workspaceRoot: root,
+      requireNotices: true,
+    });
     if (report.passed) {
       return {
         id: "security-license-compliance",
         name: "Lockfile License Compliance Guard",
         category: "security",
         status: "pass",
-        message: `All ${report.totalPackagesScanned} dependencies in package-lock.json satisfy license policy (${report.activeExceptionsCount} active exception(s)).`,
+        message: `All ${report.totalPackagesScanned} dependencies in package-lock.json satisfy license policy and third-party notice requirements (${report.activeExceptionsCount} active exception(s)).`,
       };
     }
 
@@ -4912,13 +4915,18 @@ export function checkLicenseCompliance(root: string): DiagnosticCheckResult {
         `Unapproved license '${v.licenseExpression}' for package '${v.packageName}@${v.version}' (${v.packagePath})`
       );
     }
+    for (const missing of report.noticesMissing) {
+      details.push(
+        `Missing third-party notice text for shipped package '${missing}' in public/third-party-notices.txt`
+      );
+    }
 
     return {
       id: "security-license-compliance",
       name: "Lockfile License Compliance Guard",
       category: "security",
       status: "fail",
-      message: `Detected ${report.totalViolations} license violation(s) and ${report.invalidExceptions.length} invalid exception policy issue(s) in package-lock.json.`,
+      message: `Detected ${report.totalViolations} license violation(s), ${report.invalidExceptions.length} invalid exception policy issue(s), and ${report.noticesMissing.length} missing shipped notice(s) in package-lock.json.`,
       details,
       fixable: false,
     };

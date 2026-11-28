@@ -160,12 +160,22 @@ export const SECURITY_AUDIT_INPUTS = Object.freeze([
   "package-lock.json",
   "SECURITY.md",
   "config/security-audit-ignore.json",
+  "config/license-policy.json",
+  "config/license-policy.schema.json",
+  "infra/docker/postgres/Dockerfile",
   "scripts/security-audit.ts",
   "scripts/overrides-audit.ts",
+  "scripts/license-audit.ts",
+  "scripts/deps-fix.ts",
   "scripts/triage-security-issue.ts",
   "scripts/ci-run-policy.mjs",
+  "scripts/study-data-core-constraints.txt",
+  ".github/dependabot.yml",
   ".github/workflows/ci.yml",
   ".github/workflows/scheduled-security-audit.yml",
+  ".github/workflows/overrides-audit.yml",
+  ".github/workflows/study-data-core.yml",
+  ".github/workflows/neon-backup.yml",
 ]);
 
 /**

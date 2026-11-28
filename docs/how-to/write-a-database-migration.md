@@ -171,7 +171,7 @@ npm run migration:replay
 
 #### Replay execution model & target precedence
 
-1. **Target Precedence**: Replay uses a disposable target from `--url <url>`, `MIGRATION_REPLAY_URL` or `DISPOSABLE_DATABASE_URL`. With none set, it starts a throwaway container (`postgres:17-alpine`) if a local Docker daemon is available.
+1. **Target Precedence**: Replay uses a disposable target from `--url <url>`, `MIGRATION_REPLAY_URL` or `DISPOSABLE_DATABASE_URL`. With none set, it starts a throwaway container (`postgres:17`, pinned to the same digest as CI and `infra/docker/postgres/Dockerfile`) if a local Docker daemon is available.
 2. **Ambient Credential Isolation**: Replay ignores `.env`, `.env.local` and any `DIRECT_URL` / `DATABASE_URL` already in the environment, so it can never replay or drift-check against a live database by accident.
 3. **Target Disposability Guard**: External or production hosts (e.g. `*.neon.tech`, `*.supabase.co`, hosts containing `prod`) are refused by default. To allow an external or staging rehearsal target, set `ALLOW_NON_DISPOSABLE_TARGET=true` or pass `--allow-non-disposable`. Diagnostics redact credentials.
 4. **Zero-Drift Invariant**: Replay applies every committed migration in order (`prisma migrate deploy`), then diffs the result against `prisma/schema.prisma` (`prisma migrate diff`). Any drift or replay error exits with code 1 and says what went wrong.

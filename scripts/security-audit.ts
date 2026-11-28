@@ -741,11 +741,16 @@ export async function filterWithdrawnAdvisories<T>(
 
 /** Read the npm report, or return null when the scan did not complete. */
 export function readNpmAuditReport(): Record<string, VulnerabilityInfo> | null {
-  const auditResult = spawnSync("npm", ["audit", "--json"], {
-    encoding: "utf8",
-    maxBuffer: 20 * 1024 * 1024,
-    shell: true,
-  });
+  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  const auditResult = spawnSync(
+    npmCmd,
+    ["audit", "--package-lock-only", "--json"],
+    {
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024,
+      shell: false,
+    }
+  );
 
   let auditJson: AuditReport | null = null;
   const rawOutput = (auditResult.stdout || "").trim();
@@ -813,6 +818,9 @@ export async function runSecurityAudit(
     typeof process !== "undefined" && Array.isArray(process.argv)
       ? process.argv.slice(2)
       : [];
+  const cliNoFailOnWarning = cliArgs.some((arg) =>
+    ["--no-fail-on-warning", "--noFailOnWarning"].includes(arg)
+  );
   const cliFailOnWarning = cliArgs.some((arg) =>
     [
       "--fail-on-warning",
@@ -824,7 +832,7 @@ export async function runSecurityAudit(
   const failOnWarning =
     options.failOnWarning ??
     options.warnOnApproachingExpiration ??
-    cliFailOnWarning;
+    (cliNoFailOnWarning ? false : cliFailOnWarning);
   const warnThresholdDays = options.warnThresholdDays ?? WARN_THRESHOLD_DAYS;
 
   let cliSeverity: Severity | undefined;

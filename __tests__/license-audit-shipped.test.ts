@@ -16,16 +16,17 @@ import {
   type LockfileShape,
 } from "../lib/oss-credits";
 
-const NOW = new Date("2026-10-03T12:00:00Z");
+const NOW = new Date("2026-11-28T12:00:00Z");
 
 function exception(overrides: Partial<LicenseException>): LicenseException {
   return {
     packageName: "pkg",
     license: "LGPL-3.0-or-later",
-    expiresAt: "2026-12-30",
-    riskOwner: "owner@example.com",
-    ticket: "SEC-1",
-    rationale: "reviewed",
+    createdAt: "2026-11-28",
+    expiresAt: "2027-02-20",
+    riskOwner: "fderuiter",
+    ticket: "#1798",
+    rationale: "Reviewed dynamically linked native binary binding",
     ...overrides,
   };
 }
@@ -86,14 +87,40 @@ afterEach(() => {
 });
 
 describe("license audit: what ships", () => {
-  it("drops wildcard and strong-copyleft waivers for shipped code", () => {
+  it("drops wildcard, strong-copyleft, and source-available waivers for shipped code", () => {
     const kept = shippedCodeExceptions([
       exception({ license: "*" }),
       exception({ license: "AGPL-3.0-only" }),
       exception({ license: "GPL-3.0-or-later" }),
+      exception({ license: "FSL-1.1-Apache-2.0" }),
+      exception({ license: "BSL-1.1" }),
+      exception({ license: "BUSL-1.1" }),
+      exception({ license: "Elastic-2.0" }),
+      exception({ license: "PolyForm-Noncommercial-1.0.0" }),
+      exception({ license: "Commons-Clause" }),
+      exception({ license: "Apache-2.0 WITH Commons-Clause" }),
       exception({ license: "LGPL-3.0-or-later" }),
     ]);
     expect(kept.map((e) => e.license)).toEqual(["LGPL-3.0-or-later"]);
+  });
+
+  it.each([
+    "FSL-1.1-Apache-2.0",
+    "BSL-1.1",
+    "BUSL-1.1",
+    "Elastic-2.0",
+    "PolyForm-Noncommercial-1.0.0",
+    "Commons-Clause",
+  ])("fails a shipped %s package even when an exception names it", (lic) => {
+    const dir = workspace({
+      lock: {
+        "node_modules/src-avail-lib": { version: "1.0.0", license: lic },
+      },
+      exceptions: [exception({ packageName: "src-avail-lib", license: lic })],
+    });
+    const report = runLicenseAudit({ workspaceRoot: dir, now: NOW });
+    expect(report.passed).toBe(false);
+    expect(report.violations[0].reason).toContain("cannot be waived");
   });
 
   it("fails a shipped GPL package even when an exception names it", () => {
@@ -317,9 +344,9 @@ describe("license audit: exception expiry warnings", () => {
   it(`warns within ${EXPIRY_WARNING_DAYS} days, nearest first`, () => {
     const warnings = findExpiringExceptions(
       [
-        exception({ packageName: "late", expiresAt: "2026-12-30" }),
-        exception({ packageName: "soon", expiresAt: "2026-10-20" }),
-        exception({ packageName: "sooner", expiresAt: "2026-10-10" }),
+        exception({ packageName: "late", expiresAt: "2027-02-20" }),
+        exception({ packageName: "soon", expiresAt: "2026-12-15" }),
+        exception({ packageName: "sooner", expiresAt: "2026-12-05" }),
       ],
       NOW
     );
@@ -327,15 +354,23 @@ describe("license audit: exception expiry warnings", () => {
     expect(warnings[0].daysLeft).toBe(7);
   });
 
-  it("reports the warning in the audit without failing it", () => {
+  it("reports the warning in the audit without failing by default, and fails when failOnExpiring is set", () => {
     const dir = workspace({
       lock: {
         "node_modules/x": { version: "1.0.0", license: "LGPL-3.0-or-later" },
       },
-      exceptions: [exception({ packageName: "x", expiresAt: "2026-10-20" })],
+      exceptions: [exception({ packageName: "x", expiresAt: "2026-12-15" })],
     });
     const report = runLicenseAudit({ workspaceRoot: dir, now: NOW });
     expect(report.passed).toBe(true);
     expect(report.expiringSoon).toHaveLength(1);
+
+    const strictReport = runLicenseAudit({
+      workspaceRoot: dir,
+      now: NOW,
+      failOnExpiring: true,
+    });
+    expect(strictReport.passed).toBe(false);
+    expect(strictReport.expiringSoon).toHaveLength(1);
   });
 });

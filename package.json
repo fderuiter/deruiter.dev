@@ -32,7 +32,7 @@
     "bench:pages": "tsx scripts/benchmark-pages.ts",
     "bench:crf": "tsx --expose-gc scripts/benchmark-crf.ts",
     "scaffold": "tsx scripts/dx.ts scaffold",
-    "quality": "npm run check && npm run lint:docs && npm run check-docs-drift && npm run audit:licenses && npm run audit:secrets && npm run audit:a11y && npm run bench:pages -- --assert && npm run verify",
+    "quality": "npm run check && npm run lint:docs && npm run check-docs-drift && npm run audit:licenses && npm run audit:security -- --fail-on-warning --severity=moderate && npm run audit:secrets && npm run audit:a11y && npm run bench:pages -- --assert && npm run verify",
     "predev": "tsx scripts/generate-theme.ts",
     "dev": "concurrently -n \"turbo,tsc\" -c \"cyan,magenta\" \"next dev --turbo\" \"node node_modules/@typescript/native/bin/tsc --noEmit --watch --checkers 2\"",
     "build:icons": "tsx scripts/generate-brand-icons.ts",

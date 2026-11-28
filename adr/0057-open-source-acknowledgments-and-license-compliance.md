@@ -56,22 +56,33 @@ audit of the registry itself.
 **3. "Ships to visitors" is the production closure.** A lockfile entry is
 shipped when it is reachable from `packages[""]` across `dependencies`,
 `optionalDependencies`, and required `peerDependencies` (skipping optional
-`peerDependenciesMeta` edges) via Node module resolution. Unreachable entries,
-including `dev: true` and `devOptional: true` packages that sit only on
-optional peer paths from runtime packages, are tooling. The audit reports both
-counts.
+`peerDependenciesMeta` edges and verified build-only bundler edges declared in
+`BUILD_ONLY_DEPENDENCY_EDGES` in `lib/oss-credits/internal/facts.ts`, such as
+`@sentry/bundler-plugins`, `@rollup/plugin-commonjs`, and `rollup` under
+`@sentry/nextjs` / `@sentry/node`) via Node module resolution. Unreachable
+entries, including `dev: true` and `devOptional: true` packages that sit only on
+optional peer paths or verified build-only bundler edges from runtime packages,
+are tooling and are verified absent from `.next` production traces. The audit
+reports both counts.
 
-**4. Strong copyleft in shipped code cannot be waived.** GPL, AGPL, SSPL,
-OSL, EUPL, CPAL and RPL tokens in a shipped package fail the audit even if an
-exception names them, unless the SPDX expression offers a permissive
-alternative (for example `MIT OR GPL-3.0-or-later`). Dev-only packages keep
-the exception path. LGPL libraries linked dynamically (the libvips binaries
-behind Next.js image optimisation) stay allowed through dated exceptions with
-an owner and ticket.
+**4. Strong copyleft and source-available licenses in shipped code cannot be
+waived.** GPL, AGPL, SSPL, OSL, EUPL, CPAL, RPL, and source-available or
+non-commercial tokens (`FSL-*`, `BSL-*`, `BUSL-*`, `Elastic-*`, `PolyForm-*`,
+`Commons-Clause`) in a shipped package fail the audit even if
+`shippedCodeExceptions` names them, unless the SPDX expression offers a
+permissive alternative (for example `MIT OR GPL-3.0-or-later`). Dev-only and
+isolated build-only packages keep the exception path. LGPL libraries linked
+dynamically (the libvips binaries behind Next.js image optimisation) stay
+allowed through dated exceptions with an owner and ticket.
 
-**5. Exceptions are reviewed before they lapse.** The existing hard fail on
-expiry and 90-day cap stay. The audit now also warns 30 days ahead, naming
-the owner and ticket.
+**5. Exceptions are reviewed before they lapse.** `config/license-policy.json`
+is validated against `config/license-policy.schema.json`: every exception must
+record `createdAt` and `expiresAt` (`YYYY-MM-DD`, capped at 90 days from both
+`createdAt` and the current date), a GitHub handle `riskOwner`, a GitHub issue
+reference `ticket` (`#NNNN`), and a `rationale`. The audit warns 30 days ahead,
+and `.github/workflows/scheduled-security-audit.yml` runs
+`npm run audit:licenses -- --fail-on-expiring` daily so expiring exceptions feed
+governance-compliant triage issues before they block `main`.
 
 **6. Notices ship with the site, with a full text for every package.**
 `public/third-party-notices.txt` carries each shipped package's copyright lines
@@ -129,6 +140,7 @@ them. `.gitignore` lists them. Nothing else in the decision changes:
 
 The cost is that every install needs the npm registry and the SPDX license
 list, which an install already needs, and the fetch retries with backoff.
-`npm run deps:fix` is now only needed to move the Playwright CI images after a
-`@playwright/test` bump, so `.github/dependabot.yml` gives that package its
-own group.
+`npm run deps:fix` syncs the Playwright CI images (`playwright` group), DuckDB
+`.wasm` extensions and SHA-256 digests (`duckdb-wasm` group), and `postgres:17`
+image digests (`docker` ecosystem), so `.github/dependabot.yml` isolates each
+of those groups.

@@ -800,6 +800,9 @@ describe("generated credits match the repository", () => {
       "@playwright/test",
       "typescript",
       "effect",
+      "@sentry/bundler-plugins",
+      "sentry",
+      "rollup",
     ]) {
       const matches = byName(toolingPkg);
       expect(matches.length, toolingPkg).toBeGreaterThan(0);
@@ -808,7 +811,7 @@ describe("generated credits match the repository", () => {
       }
     }
 
-    for (const runtimePkg of ["sharp", "detect-libc"]) {
+    for (const runtimePkg of ["sharp", "detect-libc", "@sentry/nextjs"]) {
       const matches = byName(runtimePkg);
       expect(matches.length, runtimePkg).toBeGreaterThan(0);
       expect(
@@ -823,9 +826,14 @@ describe("generated credits match the repository", () => {
       "@playwright/test@",
       "typescript@",
       "effect@",
+      "@sentry/bundler-plugins@",
+      "sentry@",
+      "rollup@",
     ]) {
       expect(notices).not.toContain(`- ${excluded}`);
     }
+    expect(notices).not.toMatch(/^- .+ \(FSL-/m);
+    expect(notices).not.toContain("Abbreviation: FSL-1.1-Apache-2.0");
     expect(notices).toContain("- sharp@");
     expect(notices).toContain("- detect-libc@");
     expect(notices).toContain("- jsdom@");

@@ -1116,7 +1116,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
         <pre
           data-testid="clinical-csv-preview"
-          className="p-3 rounded-xl studio-surface-card border studio-border-default font-mono text-[11px] studio-fg-secondary overflow-x-auto max-h-44 whitespace-pre"
+          role="region"
+          aria-label="Clinical data CSV preview"
+          tabIndex={0}
+          className="p-3 rounded-xl studio-surface-card border studio-border-default font-mono text-[11px] studio-fg-secondary overflow-x-auto max-h-44 whitespace-pre focus:outline-none focus-visible:ring-2 studio-focus-ring"
         >
           {clinicalCsvPreview}
         </pre>

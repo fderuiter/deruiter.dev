@@ -14,14 +14,43 @@ import {
 } from "./simulation-records";
 import { generateEngineId } from "./precision-date";
 
+const CSV_FORMULA_TRIGGER_RE = /^[=+\-@\t\r]/;
+const STRICT_NUMERIC_CSV_CELL_RE = /^-?\d+(\.\d+)?$/;
+
+function neutralizeCsvFormulaTrigger(raw: string): string {
+  if (
+    raw.length > 0 &&
+    CSV_FORMULA_TRIGGER_RE.test(raw) &&
+    !STRICT_NUMERIC_CSV_CELL_RE.test(raw)
+  ) {
+    return `'${raw}`;
+  }
+  return raw;
+}
+
+function stripCsvFormulaPrefix(cell: string): string {
+  if (
+    cell.length >= 2 &&
+    cell[0] === "'" &&
+    CSV_FORMULA_TRIGGER_RE.test(cell[1])
+  ) {
+    return cell.slice(1);
+  }
+  return cell;
+}
+
 /**
- * Escapes a single cell value according to RFC 4180.
+ * Escapes a single cell value according to RFC 4180 and neutralizes leading
+ * spreadsheet formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) per OWASP
+ * CSV Injection (CWE-1236) guidance while preserving strictly numeric values.
  */
 export function escapeRfc4180Cell(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
-  const str = typeof value === "object" ? JSON.stringify(value) : String(value);
+  const raw = typeof value === "object" ? JSON.stringify(value) : String(value);
+  const str =
+    typeof value === "number" ? raw : neutralizeCsvFormulaTrigger(raw);
   if (/[",\r\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -44,7 +73,8 @@ export function formatRfc4180Csv(
 
 /**
  * Parses an RFC 4180 CSV string (supporting embedded commas, escaped quotes,
- * embedded CRLF/LF newlines, and optional UTF-8 BOM) into string rows.
+ * embedded CRLF/LF newlines, optional UTF-8 BOM, and OWASP single-quote
+ * formula-injection guards) into string rows.
  */
 export function parseRfc4180Csv(csvText: string): string[][] {
   const cleaned = csvText.replace(/^\uFEFF/, "");
@@ -74,18 +104,18 @@ export function parseRfc4180Csv(csvText: string): string[][] {
     } else if (ch === '"') {
       inQuotes = true;
     } else if (ch === ",") {
-      currentRow.push(currentCell);
+      currentRow.push(stripCsvFormulaPrefix(currentCell));
       currentCell = "";
     } else if (ch === "\r") {
       if (cleaned[i + 1] === "\n") {
         i++;
       }
-      currentRow.push(currentCell);
+      currentRow.push(stripCsvFormulaPrefix(currentCell));
       rows.push(currentRow);
       currentRow = [];
       currentCell = "";
     } else if (ch === "\n") {
-      currentRow.push(currentCell);
+      currentRow.push(stripCsvFormulaPrefix(currentCell));
       rows.push(currentRow);
       currentRow = [];
       currentCell = "";
@@ -99,7 +129,7 @@ export function parseRfc4180Csv(csvText: string): string[][] {
   }
 
   if (currentCell.length > 0 || currentRow.length > 0) {
-    currentRow.push(currentCell);
+    currentRow.push(stripCsvFormulaPrefix(currentCell));
     rows.push(currentRow);
   }
 

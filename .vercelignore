@@ -4,31 +4,60 @@
 # exhausts the free tier's 5,000-request daily upload allowance and locks
 # deployments out for 24 hours.
 
-# Local build output. Vercel warns explicitly not to upload this.
+# Local build output and generated runtime clients. Vercel warns explicitly not
+# to upload these; postinstall and build regenerate them on the runner.
 .next
 out
 build
+.vercel
+app/generated/prisma
+docs/reference/api
 
-# Installed dependencies. Reinstalled on the runner from the lockfile.
+# Installed dependencies and local R libraries. Reinstalled from lockfiles.
 node_modules
+scripts/r/renv/library
 
-# Agent worktrees are full second checkouts of this repository, each with its
-# own node_modules and .next. See issue #849 for the matching ESLint problem.
+# Agent worktrees and scratchpads. Worktrees are full second checkouts of this
+# repository, each with its own node_modules and .next (see #849).
 .agents
 .claude
+.jules
+.scratch
+scratch
+tmp
 
-# Test and coverage output.
+# Test, mutation, benchmark, and linter caches/output.
 coverage
 test-results
 playwright-report
 .nyc_output
+.stryker-tmp
+reports
+.vitest
+blob-report
+.benchmark-results
+.eslintcache
+.prettiercache
 
-# Local environment and logs. Secrets must never leave the machine.
-.env.local
-.env*.local
+# Local environment, certificates, databases, state, and logs. Secrets must
+# never leave the machine; .env.example stays included for schema parity.
+.env*
+!.env.example
+*.pem
+.clerk
+.media-storage
+.setup-state.json
+.DS_Store
+*.tsbuildinfo
+*.db
+*.db-journal
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # Version control metadata.
 .git
 .github
+.husky/_

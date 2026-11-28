@@ -132,7 +132,7 @@ export const SECRET_DETECTORS = [
       /UPSTASH_[A-Z0-9_]*TOKEN\s*[:=]\s*(?:['"`][A-Za-z0-9_-]{16,}['"`]|[A-Za-z0-9_-]{16,})/gi,
     gitPattern:
       "UPSTASH_[A-Z0-9_]*TOKEN[[:space:]]*[:=][[:space:]]*(['\"`][A-Za-z0-9_-]{16,}['\"`]|[A-Za-z0-9_-]{16,})",
-    appliesTo: ["contentGuard"],
+    appliesTo: ["contentGuard", "historyAudit"],
   },
   {
     id: "neon-role-password",

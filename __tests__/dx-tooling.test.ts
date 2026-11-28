@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
+import { spawnSync } from "child_process";
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -182,7 +183,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       }
     });
 
-    it("allows standard git merge and release commits", () => {
+    it("allows standard git merge and SemVer release commits while rejecting non-conventional v* prose", () => {
       expect(
         validateCommitMessage("Merge branch 'main' into feat/dx").valid
       ).toBe(true);
@@ -190,6 +191,37 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         validateCommitMessage('Revert "feat: something broken"').valid
       ).toBe(true);
       expect(validateCommitMessage("v1.0.0").valid).toBe(true);
+      expect(validateCommitMessage("v1.2.3").valid).toBe(true);
+      expect(validateCommitMessage("v1.2.3-rc.1+build.4").valid).toBe(true);
+      expect(
+        validateCommitMessage("verify broken non-conventional msg").valid
+      ).toBe(false);
+      expect(validateCommitMessage("v1.2.3 non-conventional prose").valid).toBe(
+        false
+      );
+    });
+
+    it("accepts domain acronyms (CDISC, USDM, README, CI, SQL) while rejecting title-cased subjects", () => {
+      for (const validMsg of [
+        "feat: CDISC SDTM export",
+        "feat: USDM study version",
+        "docs: README quickstart",
+        "ci: CI shard cache",
+        "perf: SQL query plan",
+      ]) {
+        const result = validateCommitMessage(validMsg);
+        expect(result.valid, validMsg).toBe(true);
+        expect(result.errors).toEqual([]);
+      }
+
+      for (const invalidMsg of [
+        "feat: Upper Case Subject",
+        "docs: A single capital letter",
+      ]) {
+        const result = validateCommitMessage(invalidMsg);
+        expect(result.valid, invalidMsg).toBe(false);
+        expect(result.errors.join("\n")).toContain("lowercase");
+      }
     });
 
     it("validates messages containing shell metacharacters such as backticks, subshell syntax, or semicolons", () => {
@@ -262,6 +294,98 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       const result = checkGitHygieneConfig(root, false);
       expect(result.status).toBe("pass");
       expect(result.id).toBe("git-hygiene-config");
+    });
+
+    it("repairs missing hooks, 0o755 modes, and worktree .husky/_ links so an immediate recheck passes", () => {
+      const tempMain = fs.mkdtempSync(
+        path.join(os.tmpdir(), "git-hygiene-main-")
+      );
+      const tempWorktree = path.join(
+        os.tmpdir(),
+        `git-hygiene-wt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      );
+
+      try {
+        const git = (...args: string[]) =>
+          spawnSync("git", args, { cwd: tempMain, encoding: "utf-8" });
+        git("init", "-q");
+        git("config", "user.email", "test@example.com");
+        git("config", "user.name", "Test");
+        git("config", "commit.gpgsign", "false");
+        fs.writeFileSync(path.join(tempMain, "seed.txt"), "seed\n");
+        git("add", "seed.txt");
+        git("commit", "-qm", "chore: seed");
+
+        // Missing hooks on main checkout fail first, repair on fix=true, then pass immediately.
+        expect(checkGitHygieneConfig(tempMain, false).status).toBe("fail");
+        expect(checkGitHygieneConfig(tempMain, true).status).toBe("fixed");
+        expect(checkGitHygieneConfig(tempMain, false).status).toBe("pass");
+
+        // Degrade modes to 0o644 on a Husky hook, Claude hook, and git-guardrail.sh.
+        const extraClaudeHook = path.join(
+          tempMain,
+          ".claude",
+          "hooks",
+          "session-start.sh"
+        );
+        fs.writeFileSync(extraClaudeHook, "#!/usr/bin/env bash\nexit 0\n", {
+          encoding: "utf-8",
+          mode: 0o644,
+        });
+        if (process.platform !== "win32") {
+          fs.chmodSync(path.join(tempMain, ".husky", "pre-push"), 0o644);
+          fs.chmodSync(extraClaudeHook, 0o644);
+          fs.chmodSync(
+            path.join(tempMain, "scripts", "git-guardrail.sh"),
+            0o644
+          );
+
+          const modeFailure = checkGitHygieneConfig(tempMain, false);
+          expect(modeFailure.status).toBe("fail");
+          expect(modeFailure.details?.join("\n")).toContain(".husky/pre-push");
+          expect(modeFailure.details?.join("\n")).toContain(
+            ".claude/hooks/session-start.sh"
+          );
+          expect(modeFailure.details?.join("\n")).toContain(
+            "scripts/git-guardrail.sh"
+          );
+
+          expect(checkGitHygieneConfig(tempMain, true).status).toBe("fixed");
+          expect(checkGitHygieneConfig(tempMain, false).status).toBe("pass");
+          expect(
+            fs.statSync(path.join(tempMain, "scripts", "git-guardrail.sh"))
+              .mode & 0o777
+          ).toBe(0o755);
+        }
+
+        // Create a linked git worktree and verify .husky/_ symlink repair.
+        fs.mkdirSync(path.join(tempMain, ".husky", "_"), { recursive: true });
+        git(
+          "worktree",
+          "add",
+          "-q",
+          "-b",
+          "feat/worktree-hygiene",
+          tempWorktree
+        );
+
+        const wtInitial = checkGitHygieneConfig(tempWorktree, false);
+        expect(wtInitial.status).toBe("fail");
+        expect(wtInitial.details?.join("\n")).toContain(".husky/_");
+
+        const wtFixed = checkGitHygieneConfig(tempWorktree, true);
+        expect(wtFixed.status).toBe("fixed");
+        expect(checkGitHygieneConfig(tempWorktree, false).status).toBe("pass");
+
+        const wtHuskyLink = path.join(tempWorktree, ".husky", "_");
+        expect(fs.lstatSync(wtHuskyLink).isSymbolicLink()).toBe(true);
+        expect(fs.realpathSync(wtHuskyLink)).toBe(
+          fs.realpathSync(path.join(tempMain, ".husky", "_"))
+        );
+      } finally {
+        fs.rmSync(tempWorktree, { recursive: true, force: true });
+        fs.rmSync(tempMain, { recursive: true, force: true });
+      }
     });
   });
 

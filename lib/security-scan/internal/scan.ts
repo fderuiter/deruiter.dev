@@ -35,24 +35,29 @@ function normalizeAllowlistPath(file: string): string {
  * on the returned finding); it may be an absolute path, in which case it is
  * normalized relative to `process.cwd()` before allowlist lookups.
  */
-export function scanText(text: string, file = ""): ScanFinding[] {
+export function scanText(
+  text: string,
+  file = "",
+  detectors: readonly SecretDetector[] = getDetectorsForSurface("contentGuard")
+): ScanFinding[] {
   const findings: ScanFinding[] = [];
   const allowlistFile = normalizeAllowlistPath(file);
-  const detectors = getDetectorsForSurface("contentGuard");
   const lines = text.split(/\r?\n/);
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     for (const detector of detectors) {
       detector.regex.lastIndex = 0;
-      const match = line.match(detector.regex);
-      if (!match) continue;
+      const matches = line.match(detector.regex);
+      if (!matches) continue;
       // A line yields at most one verdict: once any detector matches, stop
       // checking the rest even if this match turns out to be allowlisted.
       // Otherwise a broader detector (e.g. the bare-URL pattern) could
       // re-fire on the same credentialed URL a stricter detector just
       // cleared, since it matches a different substring of the same line.
-      if (!isAllowlistedSecretValue(match[0], allowlistFile)) {
+      if (
+        matches.some((value) => !isAllowlistedSecretValue(value, allowlistFile))
+      ) {
         findings.push({
           detectorId: detector.id,
           category: detector.description,

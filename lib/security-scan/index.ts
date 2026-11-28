@@ -21,6 +21,11 @@ export {
   scanHistorySnapshot,
   scanText,
 } from "./internal/scan";
+export {
+  scanRepositoryFile,
+  scanRepositoryText,
+  shouldScanRepositoryPath,
+} from "./internal/policy";
 
 import { SECRET_DETECTORS } from "./internal/catalog";
 

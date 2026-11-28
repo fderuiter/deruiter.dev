@@ -1,7 +1,21 @@
 // @vitest-environment node
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { scanText, scanFile } from "../lib/security-scan";
+import {
+  scanFile,
+  scanRepositoryFile,
+  scanRepositoryText,
+  scanText,
+  shouldScanRepositoryPath,
+} from "../lib/security-scan";
+import { checkSecretLeaks } from "../lib/dx/doctor";
+import { auditCurrentTree } from "../scripts/audit-secret-history";
 import { shouldScanFile } from "../scripts/validate-commit";
+
+const workspaceRoot = path.resolve(__dirname, "..");
 
 describe("Static Regex Guards - scanText", () => {
   it("detects database connection string pattern with credentials", () => {
@@ -98,34 +112,189 @@ MIIEowIBAAKCAQEA0G...
     expect(matchesNonExistent).toEqual([]);
   });
 
-  describe("Pre-Commit Git Guard - shouldScanFile", () => {
-    it("returns false for ignored extensions", () => {
-      expect(shouldScanFile("image.png")).toBe(false);
-      expect(shouldScanFile("icon.ico")).toBe(false);
-      expect(shouldScanFile("video.mp4")).toBe(false);
-    });
-
-    it("returns false for ignored file names", () => {
+  describe("Pre-Commit Git Guard - shouldScanFile & Unified Repository Policy", () => {
+    it("returns false for lockfiles and vendor/build directories", () => {
       expect(shouldScanFile("package-lock.json")).toBe(false);
       expect(shouldScanFile("bun.lock")).toBe(false);
-    });
-
-    it("returns false for ignored directories", () => {
+      expect(shouldScanFile("bun.lockb")).toBe(false);
+      expect(shouldScanFile("yarn.lock")).toBe(false);
+      expect(shouldScanFile("pnpm-lock.yaml")).toBe(false);
       expect(shouldScanFile("node_modules/lodash/index.js")).toBe(false);
       expect(shouldScanFile("foo/node_modules/bar.js")).toBe(false);
       expect(shouldScanFile(".next/server/page.js")).toBe(false);
-      expect(shouldScanFile("__tests__/validation.test.ts")).toBe(false);
+      expect(shouldScanFile("dist/bundle.js")).toBe(false);
+      expect(shouldScanFile("build/output.js")).toBe(false);
+      expect(shouldScanFile("docs/reference/api/index.md")).toBe(false);
+      expect(shouldScanFile(".claude/worktrees/wt-1/leak.ts")).toBe(false);
+      expect(shouldScanRepositoryPath("coverage/lcov.info")).toBe(false);
     });
 
-    it("returns false for dotenv files", () => {
-      expect(shouldScanFile(".env.example")).toBe(false);
-      expect(shouldScanFile(".env.local")).toBe(false);
-    });
-
-    it("returns true for regular source files", () => {
+    it("keeps .env*, __tests__/, .husky/, shell scripts, workflows, SVGs, and source files in scope", () => {
+      expect(shouldScanFile(".env.example")).toBe(true);
+      expect(shouldScanFile(".env.local")).toBe(true);
+      expect(shouldScanFile("__tests__/validation.test.ts")).toBe(true);
+      expect(shouldScanFile(".husky/pre-push")).toBe(true);
+      expect(shouldScanFile("scripts/deploy.sh")).toBe(true);
+      expect(shouldScanFile(".github/workflows/ci.yml")).toBe(true);
+      expect(shouldScanFile("public/favicon.svg")).toBe(true);
       expect(shouldScanFile("lib/auth.ts")).toBe(true);
       expect(shouldScanFile("app/dashboard/page.tsx")).toBe(true);
       expect(shouldScanFile("scripts/seed.js")).toBe(true);
+      expect(shouldScanFile("")).toBe(false);
+      expect(shouldScanFile(workspaceRoot)).toBe(false);
+      expect(shouldScanFile(path.join(workspaceRoot, "lib/auth.ts"))).toBe(
+        true
+      );
+      expect(shouldScanFile("/external/workspace/src/index.ts")).toBe(true);
+    });
+
+    it("skips NUL-containing binary buffers and files while running surface-appropriate detectors", () => {
+      const token = ["ghp_", "ABCDEFGHIJKLMNOPQRSTUVWXYZ01234"].join("");
+      const binaryBuffer = Buffer.concat([
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00]),
+        Buffer.from(token, "utf-8"),
+      ]);
+      expect(scanRepositoryText(binaryBuffer, "public/image.png")).toEqual([]);
+      expect(scanRepositoryText(`prefix\0${token}`, "public/icon.ico")).toEqual(
+        []
+      );
+      expect(scanRepositoryText(token, "package-lock.json")).toEqual([]);
+      expect(scanRepositoryText(token)).toHaveLength(1);
+      expect(
+        scanRepositoryFile(
+          path.join(workspaceRoot, "package-lock.json"),
+          "package-lock.json"
+        )
+      ).toEqual([]);
+      expect(
+        scanRepositoryFile(
+          path.join(workspaceRoot, "__nonexistent_scan_target__.ts"),
+          "missing.ts"
+        )
+      ).toEqual([]);
+      expect(scanRepositoryFile(workspaceRoot, "scripts")).toEqual([]);
+
+      // Bare URLs and generic assigned strings run outside __tests__/ only.
+      const bareUrl = [
+        "postgresql",
+        "://db.fixture.internal:5432/my_local_db",
+      ].join("");
+      expect(scanRepositoryText(bareUrl, "lib/db.ts")).toHaveLength(1);
+      expect(scanRepositoryText(bareUrl, "__tests__/db.test.ts")).toEqual([]);
+
+      // High-confidence historyAudit detectors run inside __tests__/ too.
+      expect(scanRepositoryText(token, "__tests__/leak.test.ts")).toHaveLength(
+        1
+      );
+    });
+
+    it("fails validate-commit.ts, checkSecretLeaks, and auditCurrentTree on synthetic credentials or UPSTASH_REDIS_REST_TOKEN leaks across formerly skipped paths", () => {
+      const syntheticGhp = ["ghp_", "Zq9Xw8Vu7Ts6Rq5Po4Nm3Lk2Ji1Hg0Fe"].join(
+        ""
+      );
+      const syntheticUpstash = [
+        "UPSTASH_REDIS_REST_TOKEN",
+        '="AX99 syntheticUpstashRestTokenLeak1234"'.replace(" ", "_"),
+      ].join("");
+
+      const targetFiles = [
+        ".env.example",
+        ".env.local",
+        "__tests__/leak.test.ts",
+        ".husky/pre-push",
+        "scripts/deploy.sh",
+        ".github/workflows/ci.yml",
+      ];
+
+      const tsxBin = path.join(
+        workspaceRoot,
+        "node_modules",
+        ".bin",
+        process.platform === "win32" ? "tsx.cmd" : "tsx"
+      );
+
+      for (const payload of [
+        `const leaked = "${syntheticGhp}";\n`,
+        `${syntheticUpstash}\n`,
+      ]) {
+        const tempRepo = fs.mkdtempSync(
+          path.join(os.tmpdir(), "unified-scan-parity-")
+        );
+        try {
+          const git = (...args: string[]) =>
+            spawnSync("git", args, { cwd: tempRepo, encoding: "utf-8" });
+          git("init", "-q");
+          git("config", "user.email", "test@example.com");
+          git("config", "user.name", "Test");
+          git("config", "commit.gpgsign", "false");
+
+          // Verify each file individually fails checkSecretLeaks and auditCurrentTree,
+          // then stage all 6 files together to verify validate-commit.ts flags every one.
+          for (const relFile of targetFiles) {
+            const singleDir = fs.mkdtempSync(
+              path.join(os.tmpdir(), "unified-scan-single-")
+            );
+            try {
+              const singlePath = path.join(singleDir, relFile);
+              fs.mkdirSync(path.dirname(singlePath), { recursive: true });
+              fs.writeFileSync(singlePath, payload, "utf-8");
+              expect(checkSecretLeaks(singleDir).status, relFile).toBe("fail");
+            } finally {
+              fs.rmSync(singleDir, { recursive: true, force: true });
+            }
+
+            const fullPath = path.join(tempRepo, relFile);
+            fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+            fs.writeFileSync(fullPath, payload, "utf-8");
+            git("add", "-f", "--", relFile);
+          }
+
+          const treeFindings = auditCurrentTree(tempRepo);
+          for (const relFile of targetFiles) {
+            expect(
+              treeFindings.some((f) => f.file === relFile),
+              relFile
+            ).toBe(true);
+          }
+
+          const env: NodeJS.ProcessEnv = {
+            ...process.env,
+            GIT_DIR: path.join(tempRepo, ".git"),
+            GIT_WORK_TREE: tempRepo,
+          };
+          delete env.GIT_INDEX_FILE;
+          delete env.GIT_PREFIX;
+          delete env.VITEST;
+
+          const commitResult = spawnSync(
+            tsxBin,
+            [path.join(workspaceRoot, "scripts/validate-commit.ts")],
+            {
+              cwd: workspaceRoot,
+              encoding: "utf-8",
+              shell: process.platform === "win32",
+              env,
+            }
+          );
+          expect(commitResult.status).toBe(1);
+          expect(commitResult.stderr).not.toContain(syntheticGhp);
+          for (const relFile of targetFiles) {
+            expect(commitResult.stderr, relFile).toContain(
+              `staged file: ${relFile}`
+            );
+          }
+        } finally {
+          fs.rmSync(tempRepo, { recursive: true, force: true });
+        }
+      }
+
+      // Canonical .env.example passes cleanly across scanRepositoryFile.
+      expect(
+        scanRepositoryFile(
+          path.join(workspaceRoot, ".env.example"),
+          ".env.example"
+        )
+      ).toEqual([]);
     });
   });
 });

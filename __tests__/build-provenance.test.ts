@@ -40,8 +40,6 @@ describe("build provenance (#1769)", () => {
     git("config", "user.name", "CI");
     git("config", "commit.gpgsign", "false");
     fs.writeFileSync(path.join(dir, ".gitignore"), "/.next/\n");
-    fs.mkdirSync(path.join(dir, "public"));
-    fs.writeFileSync(path.join(dir, "public/garmin-engine.js"), "v1\n");
     fs.writeFileSync(path.join(dir, "app.ts"), "export {};\n");
     git("add", ".");
     git("commit", "-q", "--no-verify", "-m", "init");
@@ -72,6 +70,7 @@ describe("build provenance (#1769)", () => {
       GENERATED_BUILD_ARTIFACTS: string[];
       BUILD_PROVENANCE_FILE: string;
     };
+    expect(GENERATED_BUILD_ARTIFACTS).toEqual([]);
     expect(helpers.GENERATED_BUILD_ARTIFACTS).toEqual([
       ...GENERATED_BUILD_ARTIFACTS,
     ]);
@@ -84,7 +83,7 @@ describe("build provenance (#1769)", () => {
     const dir = fixtureRepo();
     runBuildProvenance(
       dir,
-      "const before = p.captureSourceState(); p.clearBuildProvenance(); require('fs').writeFileSync('public/garmin-engine.js', 'v2\\n'); p.writeBuildProvenance(before);"
+      "const before = p.captureSourceState(); p.clearBuildProvenance(); require('fs').mkdirSync('.next/standalone-engine', { recursive: true }); require('fs').writeFileSync('.next/standalone-engine/garmin-engine.js', 'v2\\n'); p.writeBuildProvenance(before);"
     );
 
     const record = JSON.parse(
@@ -148,9 +147,13 @@ describe("build provenance (#1769)", () => {
     const nextBuild = build.indexOf(
       'runStep("npx", ["next", "build", "--webpack"])'
     );
+    const standaloneBuild = build.indexOf(
+      'runStep("npx", ["tsx", "scripts/build-standalone-engine.ts"])'
+    );
     const write = build.indexOf("writeBuildProvenance(sourceBeforeBuild)");
     expect(clear).toBeGreaterThan(-1);
     expect(nextBuild).toBeGreaterThan(clear);
-    expect(write).toBeGreaterThan(nextBuild);
+    expect(standaloneBuild).toBeGreaterThan(nextBuild);
+    expect(write).toBeGreaterThan(standaloneBuild);
   });
 });

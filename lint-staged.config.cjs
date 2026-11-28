@@ -1,17 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-const GENERATED_ARTIFACTS = new Set([
-  "app/icon.svg",
-  "public/favicon.svg",
-  "app/favicon.ico",
-  "public/favicon.ico",
-  "public/apple-touch-icon.png",
-  "public/icon-192.png",
-  "public/icon-512.png",
-  "lib/design-manifest.ts",
-  "public/garmin-engine.js",
-  "public/monkey-c-mayhem.js",
-]);
+const {
+  FORMATTING_EXCLUDED_ARTIFACTS,
+} = require("./lib/dx/generated-artifacts.ts");
+
+const GENERATED_ARTIFACTS = new Set(FORMATTING_EXCLUDED_ARTIFACTS);
 
 const CODE_FILE = /\.(?:[cm]?js|jsx|tsx?)$/u;
 

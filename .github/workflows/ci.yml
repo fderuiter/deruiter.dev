@@ -562,6 +562,7 @@ jobs:
           # speaks the Postgres wire protocol, gets no HTTP response, and waits
           # forever with no timeout.
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+          VERCEL: "1"
 
       - name: Verify Bundle Performance Budgets
         id: bundle
@@ -580,8 +581,6 @@ jobs:
             !**/.env*
             public/sw.js
             public/sw.js.map
-            public/garmin-engine.js
-            public/monkey-c-mayhem.js
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1

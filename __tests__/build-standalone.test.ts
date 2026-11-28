@@ -1,20 +1,25 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import fs from "fs";
 import { execFileSync } from "child_process";
 import os from "os";
 import path from "path";
 import { inspectStandaloneBundle } from "../lib/dx/bundle-guard";
-import { fromPartial } from "@total-typescript/shoehorn";
+import { buildStandaloneEngine } from "../scripts/build-standalone-engine";
 
 describe("Standalone JavaScript Engine Build & 80KB Size Guard", () => {
   const root = process.cwd();
 
-  it("compiles the engine into standalone Vanilla JS assets under 80KB via build-standalone-engine script", () => {
-    const outputDir = fs.mkdtempSync(
+  it("compiles the engine into .next/standalone-engine/garmin-engine.js under 80KB without public duplicates", async () => {
+    const tempWorkspace = fs.mkdtempSync(
       path.join(os.tmpdir(), "portfolio-standalone-test-")
     );
     const tsxCli = path.join(root, "node_modules", "tsx", "dist", "cli.mjs");
+    const defaultOutDir = path.join(
+      tempWorkspace,
+      ".next",
+      "standalone-engine"
+    );
 
     try {
       const output = execFileSync(
@@ -25,52 +30,85 @@ describe("Standalone JavaScript Engine Build & 80KB Size Guard", () => {
           "--source-root",
           root,
           "--output-dir",
-          outputDir,
+          defaultOutDir,
         ],
         { cwd: root, encoding: "utf-8" }
       );
 
       expect(output).toContain("Standalone Engine Build & Size Check Passed");
-      expect(fs.existsSync(path.join(outputDir, "garmin-engine.js"))).toBe(
+      expect(fs.existsSync(path.join(defaultOutDir, "garmin-engine.js"))).toBe(
         true
       );
-      expect(fs.existsSync(path.join(outputDir, "monkey-c-mayhem.js"))).toBe(
-        true
-      );
+      expect(
+        fs.existsSync(path.join(defaultOutDir, "monkey-c-mayhem.js"))
+      ).toBe(false);
 
-      const garminStats = fs.statSync(path.join(outputDir, "garmin-engine.js"));
-      const monkeyStats = fs.statSync(
-        path.join(outputDir, "monkey-c-mayhem.js")
+      const garminStats = fs.statSync(
+        path.join(defaultOutDir, "garmin-engine.js")
       );
-
       expect(garminStats.size).toBeGreaterThan(0);
       expect(garminStats.size).toBeLessThanOrEqual(80 * 1024);
-      expect(monkeyStats.size).toBeGreaterThan(0);
-      expect(monkeyStats.size).toBeLessThanOrEqual(80 * 1024);
+
+      const report = inspectStandaloneBundle(tempWorkspace);
+      expect(report.exists).toBe(true);
+      expect(report.sizeBytes).toBe(garminStats.size);
+      expect(report.violation).toBeUndefined();
     } finally {
-      fs.rmSync(outputDir, { recursive: true, force: true });
+      fs.rmSync(tempWorkspace, { recursive: true, force: true });
     }
   });
 
-  it("inspects standalone bundle size cleanly via bundle-guard", () => {
-    const report = inspectStandaloneBundle(root);
-    expect(report.exists).toBe(true);
-    expect(report.sizeBytes).toBeGreaterThan(0);
-    expect(report.sizeBytes).toBeLessThanOrEqual(80 * 1024);
-    expect(report.violation).toBeUndefined();
-  });
-
-  it("detects size budget violations when standalone asset exceeds 80KB", () => {
-    const spyStat = vi.spyOn(fs, "statSync").mockReturnValue(
-      fromPartial<fs.Stats>({
-        size: 85 * 1024, // 85KB
-      })
+  it("leaves no tracked standalone bundles under public/ and reports exists=false before build", async () => {
+    expect(fs.existsSync(path.join(root, "public", "garmin-engine.js"))).toBe(
+      false
+    );
+    expect(fs.existsSync(path.join(root, "public", "monkey-c-mayhem.js"))).toBe(
+      false
     );
 
-    const report = inspectStandaloneBundle(root);
-    expect(report.exists).toBe(true);
-    expect(report.violation).toContain("exceeds maximum budget of 80.0 kB");
+    const emptyWorkspace = fs.mkdtempSync(
+      path.join(os.tmpdir(), "portfolio-standalone-empty-")
+    );
+    try {
+      expect(inspectStandaloneBundle(emptyWorkspace)).toEqual({
+        exists: false,
+        sizeBytes: 0,
+      });
 
-    spyStat.mockRestore();
+      const outputs = await buildStandaloneEngine({
+        rootDir: root,
+        outputDir: path.join(emptyWorkspace, ".next", "standalone-engine"),
+      });
+      expect(Object.keys(outputs)).toEqual(["garmin-engine.js"]);
+    } finally {
+      fs.rmSync(emptyWorkspace, { recursive: true, force: true });
+    }
+  });
+
+  it("detects size budget violations when .next/standalone-engine/garmin-engine.js exceeds 80KB", () => {
+    const tempWorkspace = fs.mkdtempSync(
+      path.join(os.tmpdir(), "portfolio-standalone-oversize-")
+    );
+    try {
+      const standaloneDir = path.join(
+        tempWorkspace,
+        ".next",
+        "standalone-engine"
+      );
+      fs.mkdirSync(standaloneDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(standaloneDir, "garmin-engine.js"),
+        Buffer.alloc(85 * 1024, "x")
+      );
+
+      const report = inspectStandaloneBundle(tempWorkspace);
+      expect(report.exists).toBe(true);
+      expect(report.violation).toContain(
+        ".next/standalone-engine/garmin-engine.js"
+      );
+      expect(report.violation).toContain("exceeds maximum budget of 80.0 kB");
+    } finally {
+      fs.rmSync(tempWorkspace, { recursive: true, force: true });
+    }
   });
 });

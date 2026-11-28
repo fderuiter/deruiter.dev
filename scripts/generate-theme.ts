@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { DESIGN_MANIFEST_PATH } from "../lib/dx/generated-artifacts";
 
 export interface ThemeGenerationOptions {
   sourceRoot?: string;
@@ -67,11 +68,8 @@ function annotatedBlock(
     .join("\n");
 }
 
-/** Compiles :root design tokens into the runtime TypeScript manifest. */
-export function generateTheme({
-  sourceRoot = process.cwd(),
-  outputPath = path.resolve(sourceRoot, "lib/design-manifest.ts"),
-}: ThemeGenerationOptions = {}): string {
+/** Renders :root design tokens into the runtime TypeScript manifest string without mutating disk. */
+export function renderDesignManifest(sourceRoot = process.cwd()): string {
   const cssPath = path.resolve(sourceRoot, "app/globals.css");
   const css = fs.readFileSync(cssPath, "utf8");
   const rootMatch = css.match(/:root\s*{([^}]+)}/);
@@ -234,6 +232,16 @@ export function generateTheme({
     "",
   ].join("\n");
 
+  return manifest;
+}
+
+/** Compiles :root design tokens into the runtime TypeScript manifest on disk. */
+export function generateTheme({
+  sourceRoot = process.cwd(),
+  outputPath = path.resolve(sourceRoot, DESIGN_MANIFEST_PATH),
+}: ThemeGenerationOptions = {}): string {
+  const manifest = renderDesignManifest(sourceRoot);
+
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   if (
     !fs.existsSync(outputPath) ||
@@ -262,7 +270,7 @@ if (
       ...(outputPath ? { outputPath: path.resolve(outputPath) } : {}),
     });
     console.log(
-      `Generated TS constants at ${outputPath ?? path.resolve(sourceRoot, "lib/design-manifest.ts")}`
+      `Generated TS constants at ${outputPath ?? path.resolve(sourceRoot, DESIGN_MANIFEST_PATH)}`
     );
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);

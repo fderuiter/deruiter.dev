@@ -18,10 +18,7 @@ const path = require("path");
  * Must equal GENERATED_BUILD_ARTIFACTS in lib/dx/source-state.ts;
  * __tests__/build-provenance.test.ts keeps the two in sync.
  */
-const GENERATED_BUILD_ARTIFACTS = [
-  "public/garmin-engine.js",
-  "public/monkey-c-mayhem.js",
-];
+const GENERATED_BUILD_ARTIFACTS = [];
 
 /** Relative to the workspace root. */
 const BUILD_PROVENANCE_FILE = path.join(".next", "build-provenance.json");

@@ -1,6 +1,19 @@
 /* eslint-disable no-console */
+import fs from "fs";
 import path from "path";
 import { generateOpenApi } from "./generate-openapi";
+import { renderDesignManifest } from "./generate-theme";
+import { warehouseArtifacts } from "./generate-warehouse-artifacts";
+import { metricArtifacts } from "./generate-metric-artifacts";
+import { contractArtifacts } from "./generate-data-contracts";
+import {
+  CLINICAL_DATA_CONTRACTS_CATALOG_PATH,
+  CLINICAL_METRICS_CATALOG_PATH,
+  CLINICAL_PLATFORM_CATALOG_PATHS,
+  CLINICAL_STAR_SCHEMA_CATALOG_PATH,
+  DESIGN_MANIFEST_PATH,
+  GENERATED_FILE_REGISTRY,
+} from "../lib/dx/generated-artifacts";
 import {
   checkDocumentationDrift,
   compileDocumentation,
@@ -20,7 +33,7 @@ import {
   checkDocumentationIndexParity,
 } from "../lib/dx/doctor";
 
-interface DetailCheckResult {
+export interface DetailCheckResult {
   status: "pass" | "fail" | "warn" | "fixed";
   details?: string[];
 }
@@ -29,6 +42,97 @@ interface OpenApiCheckResult {
   missingRoutes: string[];
   securityMismatches?: string[];
   hasDrift: boolean;
+}
+
+function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n/g, "\n");
+}
+
+/**
+ * Verifies `lib/design-manifest.ts` against `app/globals.css` in memory without
+ * mutating tracked files.
+ */
+export function checkDesignManifestDrift(
+  workspaceRoot: string
+): DetailCheckResult {
+  const entries = GENERATED_FILE_REGISTRY.filter(
+    (entry) => entry.driftGroup === "design-manifest"
+  );
+  const details: string[] = [];
+
+  for (const entry of entries) {
+    const targetPath = path.join(workspaceRoot, entry.path);
+    if (!fs.existsSync(targetPath)) {
+      details.push(
+        `${entry.path} is missing (regenerate with \`${entry.generatorCommand}\`).`
+      );
+      continue;
+    }
+    try {
+      const expected = normalizeLineEndings(
+        renderDesignManifest(workspaceRoot)
+      );
+      const actual = normalizeLineEndings(fs.readFileSync(targetPath, "utf8"));
+      if (actual !== expected) {
+        details.push(
+          `${entry.path} is out of sync with app/globals.css (regenerate with \`${entry.generatorCommand}\`).`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      details.push(
+        `Failed to render ${entry.path} from app/globals.css: ${message}`
+      );
+    }
+  }
+
+  return details.length > 0 ? { status: "fail", details } : { status: "pass" };
+}
+
+/**
+ * Verifies the three generated `docs/reference/clinical-platform-*.md` catalogs
+ * in memory without mutating tracked files.
+ */
+export function checkClinicalCatalogsDrift(
+  workspaceRoot: string
+): DetailCheckResult {
+  const entries = GENERATED_FILE_REGISTRY.filter(
+    (entry) => entry.driftGroup === "clinical-catalogs"
+  );
+  const expectedByPath: Record<string, string> = {
+    [CLINICAL_STAR_SCHEMA_CATALOG_PATH]:
+      warehouseArtifacts()[CLINICAL_STAR_SCHEMA_CATALOG_PATH],
+    [CLINICAL_METRICS_CATALOG_PATH]:
+      metricArtifacts()[CLINICAL_METRICS_CATALOG_PATH],
+    [CLINICAL_DATA_CONTRACTS_CATALOG_PATH]:
+      contractArtifacts()[CLINICAL_DATA_CONTRACTS_CATALOG_PATH],
+  };
+
+  const details: string[] = [];
+  for (const entry of entries) {
+    const targetPath = path.join(workspaceRoot, entry.path);
+    const expected = expectedByPath[entry.path];
+    if (expected === undefined) {
+      details.push(
+        `No in-memory generator registered for clinical catalog ${entry.path}.`
+      );
+      continue;
+    }
+    if (!fs.existsSync(targetPath)) {
+      details.push(
+        `${entry.path} is missing (regenerate with \`${entry.generatorCommand}\`).`
+      );
+      continue;
+    }
+    const actual = normalizeLineEndings(fs.readFileSync(targetPath, "utf8"));
+    if (actual !== normalizeLineEndings(expected)) {
+      details.push(
+        `${entry.path} is out of sync with lib/clinical-platform (regenerate with \`${entry.generatorCommand}\`).`
+      );
+    }
+  }
+
+  return details.length > 0 ? { status: "fail", details } : { status: "pass" };
 }
 
 export interface DriftCheckDependencies {
@@ -42,6 +146,8 @@ export interface DriftCheckDependencies {
   checkLlmsManifests?: () => DetailCheckResult;
   checkDocumentationIndex?: () => DetailCheckResult;
   checkDocumentationIndexParity?: () => DetailCheckResult;
+  checkDesignManifest?: () => DetailCheckResult;
+  checkClinicalCatalogs?: () => DetailCheckResult;
 }
 
 function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
@@ -63,6 +169,8 @@ function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
     checkTechnicalGuides: () => checkTechnicalGuideSchemaParity(workspaceRoot),
     checkLlmsManifests: () => checkLlmsManifestsDrift(workspaceRoot),
     checkDocumentationIndex: () => checkDocumentationIndexParity(workspaceRoot),
+    checkDesignManifest: () => checkDesignManifestDrift(workspaceRoot),
+    checkClinicalCatalogs: () => checkClinicalCatalogsDrift(workspaceRoot),
   };
 }
 
@@ -76,7 +184,9 @@ export type DriftCategory =
   | "public-routes"
   | "schema-parity"
   | "llms-manifests"
-  | "docs-index-parity";
+  | "docs-index-parity"
+  | "design-manifest"
+  | "clinical-catalogs";
 
 const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
   openapi: {
@@ -125,6 +235,20 @@ const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
     steps: [
       "# Add inbound links to unindexed guides in docs/README.md or quadrant index files",
       "npm run check-docs-drift",
+    ],
+  },
+  "design-manifest": {
+    title: `Design token manifest drift (${DESIGN_MANIFEST_PATH} is out of sync with app/globals.css)`,
+    steps: ["npm run generate:theme", `git add ${DESIGN_MANIFEST_PATH}`],
+  },
+  "clinical-catalogs": {
+    title:
+      "Clinical Data Platform reference catalog drift (docs/reference/clinical-platform-*.md is stale)",
+    steps: [
+      "npx tsx scripts/generate-warehouse-artifacts.ts",
+      "npx tsx scripts/generate-metric-artifacts.ts",
+      "npx tsx scripts/generate-data-contracts.ts",
+      `git add ${CLINICAL_PLATFORM_CATALOG_PATHS.join(" ")}`,
     ],
   },
 };
@@ -304,6 +428,38 @@ export function checkDrift(
     driftSummary +=
       "• Documentation index parity drift detected:\n" +
       (docsIndexResult.details || [])
+        .map((detail) => `  - ${detail}`)
+        .join("\n") +
+      "\n";
+  }
+
+  console.log("Checking design token manifest synchronization...");
+  const designManifestResult = dependencies.checkDesignManifest
+    ? dependencies.checkDesignManifest()
+    : { status: "pass" as const };
+  if (designManifestResult.status === "fail") {
+    docsDrift = true;
+    categories.push("design-manifest");
+    driftSummary +=
+      "• Design token manifest drift detected:\n" +
+      (designManifestResult.details || [])
+        .map((detail) => `  - ${detail}`)
+        .join("\n") +
+      "\n";
+  }
+
+  console.log(
+    "Checking Clinical Data Platform reference catalog synchronization..."
+  );
+  const clinicalCatalogsResult = dependencies.checkClinicalCatalogs
+    ? dependencies.checkClinicalCatalogs()
+    : { status: "pass" as const };
+  if (clinicalCatalogsResult.status === "fail") {
+    docsDrift = true;
+    categories.push("clinical-catalogs");
+    driftSummary +=
+      "• Clinical Data Platform catalog drift detected:\n" +
+      (clinicalCatalogsResult.details || [])
         .map((detail) => `  - ${detail}`)
         .join("\n") +
       "\n";

@@ -25,6 +25,7 @@ import {
   type Warehouse,
 } from "../lib/clinical-platform";
 import { getGlossaryKeyMap } from "../lib/term-glossary";
+import { CLINICAL_METRICS_CATALOG_PATH } from "../lib/dx/generated-artifacts";
 
 /**
  * Writes the files generated from the Clinical Data Platform's metric
@@ -58,8 +59,7 @@ export const METRIC_LOCK_FILE =
   "__tests__/fixtures/clinical-platform/metric-registry.lock.json";
 
 /** Metric catalog page, relative to the workspace root. */
-export const METRIC_REFERENCE_PAGE =
-  "docs/reference/clinical-platform-metrics.md";
+export const METRIC_REFERENCE_PAGE = CLINICAL_METRICS_CATALOG_PATH;
 
 /** The two queries each metric is golden-filed with: its minimal grouping, then by study and one more dimension. */
 export function goldenQueries(metric: MetricDefinition): MetricDimensionId[][] {

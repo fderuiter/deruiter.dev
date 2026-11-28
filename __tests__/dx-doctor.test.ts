@@ -53,20 +53,53 @@ describe("DX Invariant Doctor Engine", () => {
       ignoreCommand: "node scripts/vercel-ignore-build.js",
     };
 
-    it("passes when all commands are declared", () => {
+    function writeValidVercelFixture(
+      overrides: Record<string, unknown> = {}
+    ): void {
+      fs.mkdirSync(path.join(tempDir, "scripts"), { recursive: true });
+      fs.mkdirSync(path.join(tempDir, "app", "api", "cron", "maintenance"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(tempDir, "package.json"),
+        JSON.stringify({ scripts: { build: "node scripts/build.js" } })
+      );
+      fs.writeFileSync(path.join(tempDir, "scripts", "build.js"), "// build\n");
+      fs.writeFileSync(
+        path.join(tempDir, "scripts", "vercel-ignore-build.js"),
+        "// ignore\n"
+      );
+      fs.writeFileSync(
+        path.join(tempDir, "app", "api", "cron", "maintenance", "route.ts"),
+        "export async function GET() {}\n"
+      );
       fs.writeFileSync(
         path.join(tempDir, "vercel.json"),
-        JSON.stringify(commands)
+        JSON.stringify({
+          framework: "nextjs",
+          ...commands,
+          git: { deploymentEnabled: false },
+          crons: [{ path: "/api/cron/maintenance", schedule: "0 0 * * *" }],
+          ...overrides,
+        })
       );
+    }
+
+    it("passes on the repository root and on a valid workspace fixture", () => {
+      expect(checkVercelBuildCommands(process.cwd()).status).toBe("pass");
+      writeValidVercelFixture();
       expect(checkVercelBuildCommands(tempDir).status).toBe("pass");
     });
 
     it.each(Object.keys(commands))("fails without %s", (key) => {
-      const config = { ...commands };
-      delete config[key];
+      writeValidVercelFixture();
+      const current = JSON.parse(
+        fs.readFileSync(path.join(tempDir, "vercel.json"), "utf8")
+      ) as Record<string, unknown>;
+      delete current[key];
       fs.writeFileSync(
         path.join(tempDir, "vercel.json"),
-        JSON.stringify(config)
+        JSON.stringify(current)
       );
       expect(checkVercelBuildCommands(tempDir)).toMatchObject({
         status: "fail",
@@ -75,10 +108,74 @@ describe("DX Invariant Doctor Engine", () => {
     });
 
     it("fails when a command is blank", () => {
-      fs.writeFileSync(
-        path.join(tempDir, "vercel.json"),
-        JSON.stringify({ ...commands, buildCommand: "  " })
+      writeValidVercelFixture({ buildCommand: "  " });
+      expect(checkVercelBuildCommands(tempDir).status).toBe("fail");
+    });
+
+    it("fails when framework, git.deploymentEnabled, cron schedule, or script targets drift", () => {
+      writeValidVercelFixture({ framework: "vite" });
+      expect(checkVercelBuildCommands(tempDir).status).toBe("fail");
+
+      writeValidVercelFixture({ git: { deploymentEnabled: true } });
+      const gitFail = checkVercelBuildCommands(tempDir);
+      expect(gitFail.status).toBe("fail");
+      expect(gitFail.details?.join("\n")).toContain("git.deploymentEnabled");
+
+      writeValidVercelFixture({
+        crons: [{ path: "/api/cron/maintenance", schedule: "0 */6 * * *" }],
+      });
+      const cronFail = checkVercelBuildCommands(tempDir);
+      expect(cronFail.status).toBe("fail");
+      expect(cronFail.details?.join("\n")).toContain("0 0 * * *");
+
+      writeValidVercelFixture();
+      fs.rmSync(path.join(tempDir, "scripts", "vercel-ignore-build.js"));
+      const scriptFail = checkVercelBuildCommands(tempDir);
+      expect(scriptFail.status).toBe("fail");
+      expect(scriptFail.details?.join("\n")).toContain(
+        "scripts/vercel-ignore-build.js"
       );
+
+      writeValidVercelFixture({
+        installCommand: "npm install",
+        buildCommand: "npx next build",
+        ignoreCommand: "exit 0",
+        crons: [],
+      });
+      const commandMismatch = checkVercelBuildCommands(tempDir);
+      expect(commandMismatch.status).toBe("fail");
+      expect(commandMismatch.details?.join("\n")).toContain("installCommand");
+      expect(commandMismatch.details?.join("\n")).toContain("buildCommand");
+      expect(commandMismatch.details?.join("\n")).toContain("ignoreCommand");
+      expect(commandMismatch.details?.join("\n")).toContain("1 cron entry");
+
+      writeValidVercelFixture({
+        crons: [{ path: "/api/cron/other", schedule: "0 0 * * *" }],
+      });
+      expect(checkVercelBuildCommands(tempDir).details?.join("\n")).toContain(
+        "/api/cron/maintenance"
+      );
+
+      writeValidVercelFixture();
+      fs.rmSync(
+        path.join(tempDir, "app", "api", "cron", "maintenance", "route.ts")
+      );
+      fs.rmSync(path.join(tempDir, "scripts", "build.js"));
+      fs.writeFileSync(
+        path.join(tempDir, "package.json"),
+        JSON.stringify({ scripts: { build: "next build" } })
+      );
+      const missingTargets = checkVercelBuildCommands(tempDir);
+      expect(missingTargets.status).toBe("fail");
+      expect(missingTargets.details?.join("\n")).toContain("scripts.build");
+      expect(missingTargets.details?.join("\n")).toContain("scripts/build.js");
+      expect(missingTargets.details?.join("\n")).toContain(
+        "app/api/cron/maintenance/route.ts"
+      );
+
+      fs.writeFileSync(path.join(tempDir, "vercel.json"), "[]");
+      expect(checkVercelBuildCommands(tempDir).status).toBe("fail");
+      fs.writeFileSync(path.join(tempDir, "vercel.json"), "{broken");
       expect(checkVercelBuildCommands(tempDir).status).toBe("fail");
     });
   });
@@ -133,6 +230,25 @@ describe("DX Invariant Doctor Engine", () => {
       );
       expect(details).toContain("*.png binary");
       expect(details).toContain('"onFailure": "block"');
+    });
+
+    it("rejects stale app/theme.css entries in .gitignore or .vercelignore", () => {
+      fs.copyFileSync(
+        path.join(process.cwd(), ".gitattributes"),
+        path.join(tempDir, ".gitattributes")
+      );
+      fs.copyFileSync(
+        path.join(process.cwd(), ".vercelignore"),
+        path.join(tempDir, ".vercelignore")
+      );
+      fs.writeFileSync(
+        path.join(tempDir, ".gitignore"),
+        `${fs.readFileSync(path.join(process.cwd(), ".gitignore"), "utf8")}\napp/theme.css\n`,
+        "utf8"
+      );
+      const result = checkIgnoreAndAttributesParity(tempDir);
+      expect(result.status).toBe("fail");
+      expect(result.details?.join("\n")).toContain("app/theme.css");
     });
   });
 

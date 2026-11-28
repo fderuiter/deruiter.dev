@@ -111,33 +111,22 @@ export async function generateBrandIcons(
     typeof options === "string"
       ? { sourceRoot: options, outputRoot: options }
       : options;
-  const sourcePublicFaviconSvgPath = path.resolve(
-    sourceRoot,
-    "public/favicon.svg"
-  );
   const sourceAppIconSvgPath = path.resolve(sourceRoot, "app/icon.svg");
-  const publicFaviconSvgPath = path.resolve(outputRoot, "public/favicon.svg");
   const appIconSvgPath = path.resolve(outputRoot, "app/icon.svg");
 
   let svgContent = SVG_BRAND_MARK.trim();
-  if (fs.existsSync(sourcePublicFaviconSvgPath)) {
-    const existing = fs
-      .readFileSync(sourcePublicFaviconSvgPath, "utf-8")
-      .trim();
-    if (existing) svgContent = existing;
-  } else if (fs.existsSync(sourceAppIconSvgPath)) {
+  if (fs.existsSync(sourceAppIconSvgPath)) {
     const existing = fs.readFileSync(sourceAppIconSvgPath, "utf-8").trim();
     if (existing) svgContent = existing;
   }
 
   const svgBuffer = Buffer.from(svgContent);
 
-  // 1. Write SVG icons
+  // 1. Write App Router SVG icon
   writeIfChanged(appIconSvgPath, svgContent + "\n");
-  writeIfChanged(publicFaviconSvgPath, svgContent + "\n");
-  console.log("✓ Generated app/icon.svg & public/favicon.svg");
+  console.log("✓ Generated app/icon.svg");
 
-  // 2. Generate multi-resolution ICO
+  // 2. Generate multi-resolution App Router ICO
   const icoSizes = [16, 32, 48];
   const icoImages: Array<{ width: number; height: number; buffer: Buffer }> =
     [];
@@ -147,10 +136,7 @@ export async function generateBrandIcons(
   }
   const icoBuffer = createIco(icoImages);
   writeIfChanged(path.resolve(outputRoot, "app/favicon.ico"), icoBuffer);
-  writeIfChanged(path.resolve(outputRoot, "public/favicon.ico"), icoBuffer);
-  console.log(
-    "✓ Generated app/favicon.ico & public/favicon.ico (16x16, 32x32, 48x48)"
-  );
+  console.log("✓ Generated app/favicon.ico (16x16, 32x32, 48x48)");
 
   // 3. Generate Apple Touch Icon (180x180)
   const appleTouchBuffer = await sharp(svgBuffer)

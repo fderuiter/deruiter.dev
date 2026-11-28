@@ -22,10 +22,6 @@
       "statements": 51.21,
       "branches": 27.77
     },
-    "lib/dx/bundle-guard.ts": {
-      "statements": 45.45,
-      "branches": 39.34
-    },
     "lib/dx/setup/prompts.ts": {
       "statements": 11.11,
       "branches": 13.33

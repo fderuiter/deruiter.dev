@@ -233,15 +233,17 @@ async function runBuildPipeline() {
     runStep("npm", ["run", "compile-docs"]);
   }
 
-  // 3.8. Standalone Engine Asset Target Compilation & Budget Validation Phase (Phase 1.9)
-  console.log(
-    "\n--- Phase 1.9: Compiling & Verifying Standalone Engine Asset Target ---"
-  );
-  runStep("npx", ["tsx", "scripts/build-standalone-engine.ts"]);
-
   // 4. Application Compilation Phase (Phase 2)
   console.log("\n--- Phase 2: Compiling Frontend Application ---");
   runStep("npx", ["next", "build", "--webpack"]);
+
+  // 4.5. Standalone Engine Asset Target Compilation & Budget Validation Phase (Phase 2.5)
+  // Runs after `next build` because Next's distDir cleanup removes custom
+  // subdirectories under `.next/` before compiling.
+  console.log(
+    "\n--- Phase 2.5: Compiling & Verifying Standalone Engine Asset Target ---"
+  );
+  runStep("npx", ["tsx", "scripts/build-standalone-engine.ts"]);
 
   // 5. Build Provenance (Phase 3, #1769): lets `bench:pages --assert` reuse
   // this build instead of rebuilding, but only when the record proves a clean

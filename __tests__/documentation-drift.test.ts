@@ -10,10 +10,16 @@ import {
 } from "../lib/dx/doctor";
 import { buildLlmsManifests } from "../scripts/generate-llms-txt";
 import {
+  checkClinicalCatalogsDrift,
+  checkDesignManifestDrift,
   checkDrift,
   formatDriftRemedy,
   type DriftCheckDependencies,
 } from "../scripts/check-drift";
+import {
+  CLINICAL_PLATFORM_CATALOG_PATHS,
+  DESIGN_MANIFEST_PATH,
+} from "../lib/dx/generated-artifacts";
 
 const temporaryDirectories: string[] = [];
 
@@ -37,6 +43,8 @@ function passingDependencies(): DriftCheckDependencies {
     checkTechnicalGuides: () => ({ status: "pass", details: [] }),
     checkLlmsManifests: () => ({ status: "pass", details: [] }),
     checkDocumentationIndex: () => ({ status: "pass", details: [] }),
+    checkDesignManifest: () => ({ status: "pass", details: [] }),
+    checkClinicalCatalogs: () => ({ status: "pass", details: [] }),
   };
 }
 
@@ -193,6 +201,57 @@ describe("documentation drift checking", () => {
     expect(error).toHaveBeenCalledWith(
       expect.stringContaining("docs/how-to/new-guide.md")
     );
+    error.mockRestore();
+  });
+
+  it("verifies lib/design-manifest.ts and docs/reference/clinical-platform-*.md without mutating files", () => {
+    const workspaceRoot = process.cwd();
+    expect(checkDesignManifestDrift(workspaceRoot).status).toBe("pass");
+    expect(checkClinicalCatalogsDrift(workspaceRoot).status).toBe("pass");
+
+    const { root } = createFixture();
+    fs.mkdirSync(path.join(root, "app"), { recursive: true });
+    fs.mkdirSync(path.join(root, "lib"), { recursive: true });
+    fs.mkdirSync(path.join(root, "docs", "reference"), { recursive: true });
+    fs.copyFileSync(
+      path.join(workspaceRoot, "app/globals.css"),
+      path.join(root, "app/globals.css")
+    );
+    const driftedManifest = "// stale manifest\n";
+    fs.writeFileSync(
+      path.join(root, DESIGN_MANIFEST_PATH),
+      driftedManifest,
+      "utf8"
+    );
+    for (const catalogPath of CLINICAL_PLATFORM_CATALOG_PATHS) {
+      fs.writeFileSync(
+        path.join(root, catalogPath),
+        "# Drifted catalog\n",
+        "utf8"
+      );
+    }
+
+    const manifestResult = checkDesignManifestDrift(root);
+    expect(manifestResult.status).toBe("fail");
+    expect(manifestResult.details?.join("\n")).toContain(DESIGN_MANIFEST_PATH);
+    expect(fs.readFileSync(path.join(root, DESIGN_MANIFEST_PATH), "utf8")).toBe(
+      driftedManifest
+    );
+
+    const catalogsResult = checkClinicalCatalogsDrift(root);
+    expect(catalogsResult.status).toBe("fail");
+    for (const catalogPath of CLINICAL_PLATFORM_CATALOG_PATHS) {
+      expect(catalogsResult.details?.join("\n")).toContain(catalogPath);
+      expect(fs.readFileSync(path.join(root, catalogPath), "utf8")).toBe(
+        "# Drifted catalog\n"
+      );
+    }
+
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const deps = passingDependencies();
+    deps.checkDesignManifest = () => manifestResult;
+    deps.checkClinicalCatalogs = () => catalogsResult;
+    expect(checkDrift(root, deps)).toBe(1);
     error.mockRestore();
   });
 });
@@ -473,6 +532,14 @@ describe("Drift remedy guidance", () => {
     const remedy = formatDriftRemedy(["docs-index-parity"]);
     expect(remedy).toContain("docs/README.md");
     expect(remedy).toContain("npm run check-docs-drift");
+  });
+
+  it("names the generator commands for design-manifest and clinical-catalogs drift", () => {
+    const remedy = formatDriftRemedy(["design-manifest", "clinical-catalogs"]);
+    expect(remedy).toContain("npm run generate:theme");
+    expect(remedy).toContain("scripts/generate-warehouse-artifacts.ts");
+    expect(remedy).toContain("scripts/generate-metric-artifacts.ts");
+    expect(remedy).toContain("scripts/generate-data-contracts.ts");
   });
 
   it("never offers to regenerate authored documentation", () => {

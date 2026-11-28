@@ -42,6 +42,11 @@ import { getEnv } from "../env";
 import { SETUP_PROFILE_IDS } from "./setup/types";
 import { VERIFICATION_LEVELS } from "./setup/verification";
 import { inspectSourceState } from "./source-state";
+import {
+  FORMATTING_EXCLUDED_ARTIFACTS,
+  STALE_REMOVED_ARTIFACTS,
+} from "./generated-artifacts";
+import { validateVercelConfig } from "./vercel-policy";
 import { FALLBACK_CASE_STUDIES } from "../case-studies-data";
 import { FALLBACK_BLOG_POSTS } from "../fallback-blog-posts";
 import {
@@ -2640,18 +2645,8 @@ const DEPRECATED_VSCODE_EXTENSIONS: Readonly<Record<string, string>> = {
 };
 const VSCODE_EXTENSION_ID_PATTERN = /^[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/;
 
-const BASELINE_GENERATED_ARTIFACTS = [
-  "app/icon.svg",
-  "public/favicon.svg",
-  "app/favicon.ico",
-  "public/favicon.ico",
-  "public/apple-touch-icon.png",
-  "public/icon-192.png",
-  "public/icon-512.png",
-  "lib/design-manifest.ts",
-  "public/garmin-engine.js",
-  "public/monkey-c-mayhem.js",
-] as const;
+const BASELINE_GENERATED_ARTIFACTS: readonly string[] =
+  FORMATTING_EXCLUDED_ARTIFACTS;
 
 const REQUIRED_PRETTIER_DUPLICATE_TREE_IGNORES = [
   ".claude/worktrees",
@@ -2890,6 +2885,7 @@ export function checkWorkspaceIdeConfig(
 
   const prettierIgnorePath = path.join(root, ".prettierignore");
   const missingIgnoreEntries: string[] = [];
+  const staleIgnoreEntries: string[] = [];
   let hasBroadClaudeIgnore = false;
 
   if (fs.existsSync(prettierIgnorePath)) {
@@ -2913,6 +2909,15 @@ export function checkWorkspaceIdeConfig(
       if (!activeIgnores.has(entry)) {
         violations.push(`.prettierignore: missing ignore entry '${entry}'.`);
         missingIgnoreEntries.push(entry);
+      }
+    }
+
+    for (const stale of STALE_REMOVED_ARTIFACTS) {
+      if (activeIgnores.has(stale)) {
+        violations.push(
+          `.prettierignore: contains stale or removed artifact entry '${stale}'.`
+        );
+        staleIgnoreEntries.push(stale);
       }
     }
   }
@@ -2969,11 +2974,17 @@ export function checkWorkspaceIdeConfig(
           "utf-8"
         );
         fixesApplied.push("Created .prettierignore");
-      } else if (hasBroadClaudeIgnore || missingIgnoreEntries.length > 0) {
+      } else if (
+        hasBroadClaudeIgnore ||
+        missingIgnoreEntries.length > 0 ||
+        staleIgnoreEntries.length > 0
+      ) {
         let updatedIgnore = fs.readFileSync(prettierIgnorePath, "utf-8");
-        if (hasBroadClaudeIgnore) {
+        const staleSet = new Set(staleIgnoreEntries);
+        if (hasBroadClaudeIgnore || staleSet.size > 0) {
           updatedIgnore = updatedIgnore
             .split(/\r?\n/)
+            .filter((line) => !staleSet.has(normalizePrettierIgnoreEntry(line)))
             .map((line) => {
               const norm = normalizePrettierIgnoreEntry(line);
               if (
@@ -3209,7 +3220,6 @@ const GITIGNORE_VERCEL_PARITY_EXEMPTIONS = new Set([
   "public/sw.js",
   "public/sw.js.map",
   "next-env.d.ts",
-  "app/theme.css",
   "lib/oss-credits/internal/credits.generated.json",
   "lib/oss-credits/internal/registry-facts.generated.json",
   "public/third-party-notices.txt",
@@ -3315,7 +3325,21 @@ export function checkIgnoreAndAttributesParity(
         .map(normalizeIgnorePattern)
         .filter((entry) => Boolean(entry) && !entry.startsWith("!"));
 
+      for (const stale of STALE_REMOVED_ARTIFACTS) {
+        if (vercelEntries.has(stale)) {
+          violations.push(
+            `.vercelignore: contains stale or removed artifact entry '${stale}'.`
+          );
+        }
+      }
+
       for (const entry of gitEntries) {
+        if (STALE_REMOVED_ARTIFACTS.includes(entry)) {
+          violations.push(
+            `.gitignore: contains stale or removed artifact entry '${entry}'.`
+          );
+          continue;
+        }
         if (GITIGNORE_VERCEL_PARITY_EXEMPTIONS.has(entry)) continue;
         if (vercelEntries.has(entry)) continue;
         const topSegment = entry.split("/")[0];
@@ -3469,36 +3493,34 @@ export function checkVercelBuildCommands(root: string): DiagnosticCheckResult {
     name: "Vercel Build Commands",
     category: "architecture",
   } as const;
-  let config: Record<string, unknown> | null;
-  try {
-    config = JSON.parse(
-      fs.readFileSync(path.join(root, "vercel.json"), "utf8")
-    );
-  } catch {
+  const validation = validateVercelConfig(root);
+  if (validation.parseError) {
     return {
       ...base,
       status: "fail",
-      message: "vercel.json is missing, unreadable or invalid JSON.",
+      message: validation.parseError,
     };
   }
-
-  const missing = ["installCommand", "buildCommand", "ignoreCommand"].filter(
-    (key) => {
-      const command = config?.[key];
-      return typeof command !== "string" || command.trim() === "";
-    }
-  );
-  if (missing.length > 0) {
+  if (validation.missingCommands.length > 0) {
     return {
       ...base,
       status: "fail",
-      message: `Declare nonempty commands in vercel.json for ${missing.join(", ")}.`,
+      message: validation.violations[0],
+    };
+  }
+  if (!validation.ok) {
+    return {
+      ...base,
+      status: "fail",
+      message: `${validation.violations.length} Vercel configuration policy violation(s) detected.`,
+      details: validation.violations,
     };
   }
   return {
     ...base,
     status: "pass",
-    message: "vercel.json declares the install, build and ignore commands.",
+    message:
+      "vercel.json declares valid framework, install/build/ignore command targets, git deployment policy, and daily Hobby cron.",
   };
 }
 

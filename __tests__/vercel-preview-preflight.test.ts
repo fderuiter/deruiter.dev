@@ -3,15 +3,18 @@ import { createRequire } from "module";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-
-const require = createRequire(import.meta.url);
-const {
+import {
+  LEGACY_AWS_INTEGRATION_PREFIXES,
   PRODUCTION_NEON_ENDPOINT,
   PRODUCTION_ONLY,
+  PRODUCTION_POSTGRES_PREFIXES,
   checkVercelPreviewEnv,
-  runVercelPreviewPreflight,
   shouldRunPreviewPreflight,
-} = require("../scripts/vercel-preview-preflight.js");
+} from "../lib/dx/vercel-policy";
+
+const require = createRequire(import.meta.url);
+const cjsPreflight = require("../scripts/vercel-preview-preflight.js");
+const { runVercelPreviewPreflight } = cjsPreflight;
 
 type Env = Record<string, string | undefined>;
 
@@ -49,6 +52,22 @@ function loggedText(logger: ReturnType<typeof silentLogger>): string {
 }
 
 describe("when the preview preflight runs", () => {
+  it("shares the exact policy exports between scripts/vercel-preview-preflight.js and lib/dx/vercel-policy.ts", () => {
+    expect(cjsPreflight.PRODUCTION_NEON_ENDPOINT).toBe(
+      PRODUCTION_NEON_ENDPOINT
+    );
+    expect(cjsPreflight.PRODUCTION_ONLY).toEqual(PRODUCTION_ONLY);
+    expect(cjsPreflight.PRODUCTION_POSTGRES_PREFIXES).toEqual(
+      PRODUCTION_POSTGRES_PREFIXES
+    );
+    expect(cjsPreflight.LEGACY_AWS_INTEGRATION_PREFIXES).toEqual(
+      LEGACY_AWS_INTEGRATION_PREFIXES
+    );
+    expect(
+      cjsPreflight.checkVercelPreviewEnv(previewEnv({ DIRECT_URL: "x" }))
+    ).toEqual(checkVercelPreviewEnv(previewEnv({ DIRECT_URL: "x" })));
+  });
+
   it("runs only for Vercel preview builds", () => {
     expect(
       shouldRunPreviewPreflight({ VERCEL: "1", VERCEL_ENV: "preview" })
@@ -122,7 +141,7 @@ describe("a preview that could reach production", () => {
     expect(names(problems)).toContain(name);
   });
 
-  it("fails on the production AWS integration variables", () => {
+  it("fails on retired legacy AWS integration variables with ADR 0070 guidance", () => {
     const { problems } = checkVercelPreviewEnv(
       previewEnv({
         DSQL_AWS_ROLE_ARN: "arn:aws:iam::000000000000:role/fake",
@@ -133,6 +152,41 @@ describe("a preview that could reach production", () => {
       "DSQL_AWS_ROLE_ARN",
       "DYNAMODB_TABLE_NAME",
     ]);
+    for (const problem of problems) {
+      expect(problem.reason).toContain("retired legacy AWS integration");
+      expect(problem.reason).toContain("ADR 0070");
+    }
+  });
+
+  it("rejects WAREHOUSE_DATABASE_URL, DIRECT_URL, POSTGRES_*, and PG* even without PRODUCTION_NEON_ENDPOINT", () => {
+    const secretMarker = "preview-secret-NEVER-LOG";
+    const logger = silentLogger();
+    const env = previewEnv({
+      WAREHOUSE_DATABASE_URL: `${PG}warehouse:${secretMarker}@ep-preview-only.neon.test/warehouse`,
+      DIRECT_URL: `${PG}direct:${secretMarker}@ep-preview-only.neon.test/db`,
+      POSTGRES_URL: `${PG}pg:${secretMarker}@ep-preview-only.neon.test/db`,
+      POSTGRES_PRISMA_URL: `${PG}prisma:${secretMarker}@ep-preview-only.neon.test/db`,
+      PGHOST: "ep-preview-only.neon.test",
+      PGPASSWORD: secretMarker,
+      PGUSER: "preview_role",
+    });
+
+    const { problems, summary } = checkVercelPreviewEnv(env);
+    expect(names(problems)).toEqual(
+      expect.arrayContaining([
+        "WAREHOUSE_DATABASE_URL",
+        "DIRECT_URL",
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "PGHOST",
+        "PGPASSWORD",
+        "PGUSER",
+      ])
+    );
+    expect(JSON.stringify({ problems, summary })).not.toContain(secretMarker);
+
+    expect(runVercelPreviewPreflight(env, logger)).toBe(false);
+    expect(loggedText(logger)).not.toContain(secretMarker);
   });
 
   it("fails on Clerk production keys", () => {

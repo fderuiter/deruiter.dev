@@ -4,7 +4,10 @@ import { execFileSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { inspectSourceState } from "@/lib/dx/source-state";
+import {
+  GENERATED_BUILD_ARTIFACTS,
+  inspectSourceState,
+} from "@/lib/dx/source-state";
 
 describe("inspectSourceState (#1377)", () => {
   let repo: string;
@@ -16,12 +19,7 @@ describe("inspectSourceState (#1377)", () => {
     git("init", "-q");
     git("config", "user.email", "test@example.com");
     git("config", "user.name", "Test");
-    fs.mkdirSync(path.join(repo, "public"));
-    fs.writeFileSync(path.join(repo, "public", "garmin-engine.js"), "var a=1");
-    fs.writeFileSync(
-      path.join(repo, "public", "monkey-c-mayhem.js"),
-      "var a=1"
-    );
+    fs.writeFileSync(path.join(repo, ".gitignore"), "/.next/\n");
     fs.writeFileSync(path.join(repo, "app.ts"), "export {};\n");
     git("add", "-A");
     git("commit", "-q", "-m", "init");
@@ -31,12 +29,11 @@ describe("inspectSourceState (#1377)", () => {
     fs.rmSync(repo, { recursive: true, force: true });
   });
 
-  it("is clean when only the regenerated engine bundles changed", () => {
-    fs.writeFileSync(path.join(repo, "public", "garmin-engine.js"), "var x=1");
-    fs.writeFileSync(
-      path.join(repo, "public", "monkey-c-mayhem.js"),
-      "var x=1"
-    );
+  it("declares no committed build-artifact carve-outs and stays clean when .next/standalone-engine is written", () => {
+    expect(GENERATED_BUILD_ARTIFACTS).toEqual([]);
+    const engineDir = path.join(repo, ".next", "standalone-engine");
+    fs.mkdirSync(engineDir, { recursive: true });
+    fs.writeFileSync(path.join(engineDir, "garmin-engine.js"), "var x=1");
     const state = inspectSourceState(repo);
     expect(state.dirty).toBe(false);
     expect(state.revision).toMatch(/^[0-9a-f]{40}$/);
@@ -47,9 +44,11 @@ describe("inspectSourceState (#1377)", () => {
     expect(inspectSourceState(repo).dirty).toBe(true);
   });
 
-  it("is dirty when an untracked file appears", () => {
+  it("is dirty when an untracked file appears unless explicitly excluded", () => {
     fs.writeFileSync(path.join(repo, "new.ts"), "export {};\n");
     expect(inspectSourceState(repo).dirty).toBe(true);
+    expect(inspectSourceState(repo, ["new.ts"]).dirty).toBe(false);
+    expect(inspectSourceState().revision).toMatch(/^[0-9a-f]{40}$/);
   });
 });
 

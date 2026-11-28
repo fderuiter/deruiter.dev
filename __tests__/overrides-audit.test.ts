@@ -242,6 +242,31 @@ describe("SECURITY.md and the report", () => {
           },
         ])
       ).toBe(0);
+      // With --check --allow-removable (Dependabot PRs), removable pins exit 0,
+      // while audit errors still exit 1.
+      expect(
+        main(["--check", "--allow-removable"], () => [
+          {
+            pin: pins[2],
+            status: "no-effect",
+            addedAdvisories: [],
+            versionsWith: ["11.0.3"],
+            versionsWithout: ["11.0.3"],
+          },
+        ])
+      ).toBe(0);
+      expect(
+        main(["--check", "--allow-removable"], () => [
+          {
+            pin: pins[0],
+            status: "error",
+            addedAdvisories: [],
+            versionsWith: ["6.16.1"],
+            versionsWithout: [],
+            error: "registry unavailable",
+          },
+        ])
+      ).toBe(1);
     } finally {
       logSpy.mockRestore();
     }

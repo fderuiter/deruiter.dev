@@ -848,6 +848,9 @@ describe("CI Execution Policy", () => {
       );
       expect(block).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
       expect(block).toContain("run: npm run audit:overrides -- --check");
+      expect(block).toContain(
+        "run: npm run audit:overrides -- --check --allow-removable"
+      );
       expect(block).toContain("run: npm run audit:licenses");
       expect(block).toContain("run: npm run audit:secrets");
     });

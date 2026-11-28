@@ -14,7 +14,7 @@ import { checkLicenseCompliance } from "../lib/dx/doctor";
 import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
 describe("Lockfile License Audit Engine", () => {
-  const mockNow = new Date("2026-10-01T12:00:00Z");
+  const mockNow = new Date("2026-11-28T12:00:00Z");
 
   describe("tokenizeSpdx", () => {
     it("tokenizes single license identifiers", () => {
@@ -96,9 +96,10 @@ describe("Lockfile License Audit Engine", () => {
       const exception: LicenseException = {
         packageName: "copyleft-lib",
         license: "LGPL-3.0",
-        expiresAt: "2026-12-30",
-        riskOwner: "devsecops@deruiter.dev",
-        ticket: "SEC-100",
+        createdAt: "2026-11-28",
+        expiresAt: "2027-02-15",
+        riskOwner: "fderuiter",
+        ticket: "#1798",
         rationale: "Approved exception for build tool",
       };
       const res = evaluateSpdxExpression("LGPL-3.0", "copyleft-lib", allowed, [
@@ -115,9 +116,10 @@ describe("Lockfile License Audit Engine", () => {
         {
           packageName: "valid-pkg",
           license: "LGPL-3.0",
-          expiresAt: "2026-12-01",
-          riskOwner: "owner@dev.com",
-          ticket: "SEC-123",
+          createdAt: "2026-11-28",
+          expiresAt: "2027-02-01",
+          riskOwner: "fderuiter",
+          ticket: "#1798",
           rationale: "Legitimate build requirement",
         },
       ];
@@ -130,13 +132,13 @@ describe("Lockfile License Audit Engine", () => {
       expect(invalidExceptions).toHaveLength(0);
     });
 
-    it("rejects exceptions with missing mandatory fields", () => {
+    it("rejects exceptions with missing mandatory fields including createdAt", () => {
       const exceptions = [
         {
           packageName: "incomplete-pkg",
           license: "LGPL-3.0",
-          expiresAt: "2026-12-01",
-          // missing riskOwner, ticket, rationale
+          expiresAt: "2027-02-01",
+          // missing createdAt, riskOwner, ticket, rationale
         } as LicenseException,
       ];
 
@@ -156,9 +158,10 @@ describe("Lockfile License Audit Engine", () => {
         {
           packageName: "expired-pkg",
           license: "GPL-3.0",
+          createdAt: "2024-11-01",
           expiresAt: "2025-01-01",
-          riskOwner: "owner@dev.com",
-          ticket: "SEC-123",
+          riskOwner: "fderuiter",
+          ticket: "#1798",
           rationale: "Past exception",
         },
       ];
@@ -172,15 +175,25 @@ describe("Lockfile License Audit Engine", () => {
       expect(invalidExceptions[0].reason).toContain("expired on 2025-01-01");
     });
 
-    it("rejects exceptions exceeding 90-day window", () => {
+    it("rejects exceptions exceeding 90-day window from createdAt or now", () => {
       const exceptions: LicenseException[] = [
         {
           packageName: "distant-pkg",
           license: "GPL-3.0",
+          createdAt: "2026-11-28",
           expiresAt: "2027-12-31",
-          riskOwner: "owner@dev.com",
-          ticket: "SEC-123",
+          riskOwner: "fderuiter",
+          ticket: "#1798",
           rationale: "Way too far in the future",
+        },
+        {
+          packageName: "backdated-pkg",
+          license: "GPL-3.0",
+          createdAt: "2026-08-01",
+          expiresAt: "2027-01-05",
+          riskOwner: "fderuiter",
+          ticket: "#1798",
+          rationale: "Exceeds 90 days from createdAt",
         },
       ];
 
@@ -189,10 +202,43 @@ describe("Lockfile License Audit Engine", () => {
         mockNow
       );
       expect(validExceptions).toHaveLength(0);
-      expect(invalidExceptions).toHaveLength(1);
-      expect(invalidExceptions[0].reason).toContain(
-        "exceeds the maximum allowed 90-day window"
+      expect(invalidExceptions).toHaveLength(2);
+      expect(invalidExceptions[0].reason).toContain("90-day window");
+      expect(invalidExceptions[1].reason).toContain(
+        "90-day window from createdAt"
       );
+    });
+
+    it("rejects email/placeholder owners and non-GitHub #NNNN tickets", () => {
+      const exceptions: LicenseException[] = [
+        {
+          packageName: "bad-owner-pkg",
+          license: "LGPL-3.0",
+          createdAt: "2026-11-28",
+          expiresAt: "2027-02-01",
+          riskOwner: "devsecops@deruiter.dev",
+          ticket: "#1798",
+          rationale: "Email placeholder owner",
+        },
+        {
+          packageName: "bad-ticket-pkg",
+          license: "LGPL-3.0",
+          createdAt: "2026-11-28",
+          expiresAt: "2027-02-01",
+          riskOwner: "fderuiter",
+          ticket: "SEC-8237",
+          rationale: "Jira placeholder ticket",
+        },
+      ];
+
+      const { validExceptions, invalidExceptions } = validateExceptions(
+        exceptions,
+        mockNow
+      );
+      expect(validExceptions).toHaveLength(0);
+      expect(invalidExceptions).toHaveLength(2);
+      expect(invalidExceptions[0].reason).toContain("Invalid riskOwner");
+      expect(invalidExceptions[1].reason).toContain("Invalid ticket");
     });
   });
 
@@ -391,6 +437,79 @@ describe("Lockfile License Audit Engine", () => {
       expect(result.category).toBe("security");
       expect(result.status).toBe("pass");
       expect(result.message).toContain("satisfy license policy");
+    });
+
+    it("fails closed and surfaces noticesMissing when public/third-party-notices.txt is absent", () => {
+      const mockDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "doctor-missing-notices-")
+      );
+      fs.mkdirSync(path.join(mockDir, "config"), { recursive: true });
+      fs.copyFileSync(
+        path.resolve(__dirname, "..", "config", "license-policy.schema.json"),
+        path.join(mockDir, "config", "license-policy.schema.json")
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "package-lock.json"),
+        JSON.stringify({
+          packages: {
+            "": { dependencies: { "shipped-pkg": "1.0.0" } },
+            "node_modules/shipped-pkg": { version: "1.0.0", license: "MIT" },
+          },
+        })
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "config", "license-policy.json"),
+        JSON.stringify({
+          $schema: "./license-policy.schema.json",
+          version: "1.1.0",
+          allowedLicenses: ["MIT"],
+          exceptions: [],
+        })
+      );
+
+      try {
+        const result = checkLicenseCompliance(mockDir);
+        expect(result.status).toBe("fail");
+        expect(result.message).toContain("1 missing shipped notice(s)");
+        expect(result.details).toEqual(
+          expect.arrayContaining([expect.stringContaining("shipped-pkg@1.0.0")])
+        );
+      } finally {
+        fs.rmSync(mockDir, { recursive: true, force: true });
+      }
+    });
+
+    it("rejects policy files pointing $schema at the Draft-07 meta-schema instead of ./license-policy.schema.json", () => {
+      const mockDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "license-bad-schema-")
+      );
+      fs.mkdirSync(path.join(mockDir, "config"), { recursive: true });
+      fs.writeFileSync(
+        path.join(mockDir, "package-lock.json"),
+        JSON.stringify({ packages: { "": {} } })
+      );
+      fs.writeFileSync(
+        path.join(mockDir, "config", "license-policy.json"),
+        JSON.stringify({
+          $schema: "http://json-schema.org/draft-07/schema#",
+          version: "1.0.0",
+          allowedLicenses: ["MIT"],
+          exceptions: [],
+        })
+      );
+
+      try {
+        const report = runLicenseAudit({
+          workspaceRoot: mockDir,
+          now: mockNow,
+        });
+        expect(report.passed).toBe(false);
+        expect(report.invalidExceptions[0]?.reason).toContain(
+          "must be './license-policy.schema.json'"
+        );
+      } finally {
+        fs.rmSync(mockDir, { recursive: true, force: true });
+      }
     });
   });
 });

@@ -5,11 +5,12 @@ import { spawnSync, type SpawnSyncReturns } from "child_process";
 import fs from "fs";
 import { fromPartial } from "@total-typescript/shoehorn";
 import {
+  TRIAGE_GOVERNANCE_LABELS,
+  buildTriageMarker,
   collectTriageItems,
   triageSecurityIssues,
   sanitizeLogDetails,
   extractIssueNumber,
-  getPriorityForSeverity,
 } from "../scripts/triage-security-issue";
 
 vi.mock("child_process", () => {
@@ -120,6 +121,47 @@ describe("Triage Security Issue Script", () => {
       expect(items[0].pkgName).toBe("unhandled-pkg");
     });
 
+    it("halts triage immediately on @chenglou/pretext alerts without opening public issues", async () => {
+      const fixedNow = new Date("2026-08-19T12:00:00Z");
+      vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              "@chenglou/pretext": {
+                name: "@chenglou/pretext",
+                severity: "high",
+                via: [
+                  {
+                    source: "GHSA-pretext-0001",
+                    title: "Layout DoS",
+                    url: "https://github.com/chenglou/pretext/security",
+                    range: "<1.0.0",
+                  },
+                ],
+              },
+            },
+          }),
+        })
+      );
+
+      expect(() => collectTriageItems(fixedNow)).toThrow(
+        /@chenglou\/pretext alert detected/
+      );
+      await expect(
+        triageSecurityIssues({
+          token: "example_dev_token",
+          repo: "fderuiter/deruiter.dev",
+          now: fixedNow,
+          apply: true,
+        })
+      ).rejects.toThrow(/@chenglou\/pretext alert detected/);
+      expect(globalFetchSpy).not.toHaveBeenCalled();
+    });
+
     it("returns active rules nearing expiration as expiring_rule items within tiered warning window", () => {
       const fixedNow = new Date("2026-11-20T12:00:00Z");
       const rawIgnoreData = [
@@ -165,6 +207,50 @@ describe("Triage Security Issue Script", () => {
       expect(items[0].pkgName).toBe("pkg-soon-1");
       expect(items[0].remainingDays).toBe(5);
       expect(items[0].expiresAt).toBe("2026-11-25T12:00:00Z");
+    });
+
+    it("includes expiring license-policy exceptions when within 30-day warning window", () => {
+      const fixedNow = new Date("2026-12-10T12:00:00Z");
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockImplementation((target: any) => {
+        if (String(target).includes("license-policy.json")) {
+          return JSON.stringify({
+            $schema: "./license-policy.schema.json",
+            version: "1.1.0",
+            allowedLicenses: ["MIT"],
+            exceptions: [
+              {
+                packageName: "khroma",
+                license: "UNKNOWN",
+                createdAt: "2026-10-15",
+                expiresAt: "2026-12-25",
+                riskOwner: "fderuiter",
+                ticket: "#1798",
+                rationale: "Transitive dependency verified MIT upstream.",
+              },
+            ],
+          });
+        }
+        return JSON.stringify([]);
+      });
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      const items = collectTriageItems(fixedNow);
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        type: "expiring_rule",
+        advisoryId: "license-exception:khroma",
+        pkgName: "khroma",
+        followUp: "#1798",
+      });
     });
 
     it("returns unhandled moderate vulnerabilities from npm audit", () => {
@@ -218,12 +304,17 @@ describe("Triage Security Issue Script", () => {
     });
   });
 
-  describe("getPriorityForSeverity", () => {
-    it("maps severity levels to issue governance priority labels", () => {
-      expect(getPriorityForSeverity("critical")).toBe("p1-critical");
-      expect(getPriorityForSeverity("high")).toBe("p2-high");
-      expect(getPriorityForSeverity("moderate")).toBe("p3-medium");
-      expect(getPriorityForSeverity("unknown" as any)).toBe("p2-high");
+  describe("TRIAGE_GOVERNANCE_LABELS", () => {
+    it("matches issue-governance.md and SECURITY.md without automatic priority heuristics", () => {
+      expect(TRIAGE_GOVERNANCE_LABELS).toEqual([
+        "type:chore",
+        "needs-triage",
+        "area:security",
+        "security-triage",
+      ]);
+      for (const label of TRIAGE_GOVERNANCE_LABELS) {
+        expect(label).not.toMatch(/^p[0-4]-/);
+      }
     });
   });
 
@@ -246,7 +337,6 @@ describe("Triage Security Issue Script", () => {
 
   describe("triageSecurityIssues", () => {
     it("logs warning if GH_TOKEN is missing", async () => {
-      // Cloud sessions and CI export a token; the empty option falls back to it.
       vi.stubEnv("GH_TOKEN", "");
       vi.stubEnv("GITHUB_TOKEN", "");
       const result = await triageSecurityIssues({
@@ -272,12 +362,60 @@ describe("Triage Security Issue Script", () => {
         triageSecurityIssues({
           token: "example_dev_token",
           repo: "example/repo",
+          apply: true,
         })
       ).rejects.toThrow("npm audit failed or returned an invalid report");
       expect(globalFetchSpy).not.toHaveBeenCalled();
     });
 
-    it("creates one issue with governance labels and all affected audit entries", async () => {
+    it("defaults to report-first dry-run mode unless SECURITY_TRIAGE_APPLY=true", async () => {
+      vi.stubEnv("SECURITY_TRIAGE_APPLY", "");
+      const fixedNow = new Date("2026-08-19T12:00:00Z");
+      vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              "bad-lib": {
+                name: "bad-lib",
+                severity: "high",
+                via: [
+                  {
+                    source: "GHSA-dryrun-123",
+                    title: "High Flaw",
+                    url: "https://example.com/high",
+                    range: "<2.0.0",
+                  },
+                ],
+              },
+            },
+          }),
+        })
+      );
+
+      globalFetchSpy.mockResolvedValue(
+        fromPartial<Response>({ ok: true, json: async () => [] })
+      );
+
+      const result = await triageSecurityIssues({
+        token: "example_dev_token",
+        repo: "fderuiter/portfolio",
+        now: fixedNow,
+      });
+
+      expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
+      // 4 GET label searches only, zero POST/PATCH mutations
+      expect(globalFetchSpy).toHaveBeenCalledTimes(4);
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Dry run: would create issue")
+      );
+    });
+
+    it("creates one issue with governance labels and HTML marker when SECURITY_TRIAGE_APPLY=true", async () => {
+      vi.stubEnv("SECURITY_TRIAGE_APPLY", "true");
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
@@ -313,7 +451,6 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Mock list existing issues returning empty for each label search ("security", "automated-alert", "security-triage", "area:security")
       globalFetchSpy
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
@@ -327,7 +464,6 @@ describe("Triage Security Issue Script", () => {
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
         )
-        // Mock create issue
         .mockResolvedValueOnce(
           fromPartial<Response>({
             ok: true,
@@ -343,24 +479,28 @@ describe("Triage Security Issue Script", () => {
 
       expect(result).toEqual({ created: 1, updated: 0, closed: 0 });
 
-      // Verify create call was POST to /issues with governance labels
       const createCall = globalFetchSpy.mock.calls[4];
       expect(createCall[0]).toContain("/repos/fderuiter/portfolio/issues");
       const postBody = JSON.parse((createCall[1]?.body as string) || "{}");
-      expect(postBody.labels).toContain("type:security");
-      expect(postBody.labels).toContain("p2-high");
-      expect(postBody.labels).toContain("area:security");
-      expect(postBody.labels).toContain("automated-alert");
+      expect(postBody.labels).toEqual([
+        "type:chore",
+        "needs-triage",
+        "area:security",
+        "security-triage",
+      ]);
       expect(postBody.title).toContain("scheduled-vulnerability-alert");
       expect(postBody.title.toLowerCase()).toContain("ghsa-new-issue-123");
       expect(postBody.title).toContain("(bad-lib)");
+      expect(postBody.body).toContain(
+        "<!-- security-triage:unhandled:ghsa-new-issue-123:bad-lib -->"
+      );
       expect(postBody.body).toContain(
         "Affected audit entries:** bad-lib, tool-a, tool-b"
       );
       expect(postBody.body).toContain("### Acceptance");
     });
 
-    it("posts comment to existing open issue rather than creating duplicate", async () => {
+    it("posts marker-deduplicated comment once to existing open issue and skips on subsequent runs", async () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
@@ -387,7 +527,14 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Mock label fetches
+      const expectedMarker = buildTriageMarker({
+        type: "unhandled",
+        advisoryId: "ghsa-existing-456",
+        pkgName: "bad-lib",
+        severity: "critical",
+      });
+
+      // First run: existing issue has no marker in body or comments -> posts comment
       globalFetchSpy
         .mockResolvedValueOnce(
           fromPartial<Response>({
@@ -399,7 +546,7 @@ describe("Triage Security Issue Script", () => {
                   "[scheduled-vulnerability-alert] CRITICAL Advisory: GHSA-existing-456 (bad-lib)",
                 state: "open",
                 body: "Existing issue details",
-                labels: [{ name: "security" }, { name: "automated-alert" }],
+                labels: [{ name: "security-triage" }],
               },
             ],
           })
@@ -413,7 +560,11 @@ describe("Triage Security Issue Script", () => {
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
         )
-        // Mock post comment
+        // Fetch comments -> empty
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        // POST comment
         .mockResolvedValueOnce(
           fromPartial<Response>({
             ok: true,
@@ -421,24 +572,68 @@ describe("Triage Security Issue Script", () => {
           })
         );
 
-      const result = await triageSecurityIssues({
+      const result1 = await triageSecurityIssues({
         token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
-      expect(result).toEqual({ created: 0, updated: 1, closed: 0 });
-
-      const commentCall = globalFetchSpy.mock.calls[4];
+      expect(result1).toEqual({ created: 0, updated: 1, closed: 0 });
+      const commentCall = globalFetchSpy.mock.calls[5];
       expect(commentCall[0]).toContain("/issues/10/comments");
+      const postedBody = JSON.parse((commentCall[1]?.body as string) || "{}");
+      expect(postedBody.body).toContain(expectedMarker);
+
+      // Second run: comment now contains the HTML marker -> skips duplicate comment
+      globalFetchSpy.mockReset();
+      globalFetchSpy
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [
+              {
+                number: 10,
+                title:
+                  "[scheduled-vulnerability-alert] CRITICAL Advisory: GHSA-existing-456 (bad-lib)",
+                state: "open",
+                body: "Existing issue details",
+                labels: [{ name: "security-triage" }],
+              },
+            ],
+          })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({ ok: true, json: async () => [] })
+        )
+        .mockResolvedValueOnce(
+          fromPartial<Response>({
+            ok: true,
+            json: async () => [{ body: postedBody.body }],
+          })
+        );
+
+      const result2 = await triageSecurityIssues({
+        token: "example_dev_token",
+        repo: "fderuiter/portfolio",
+        now: fixedNow,
+        apply: true,
+      });
+      expect(result2).toEqual({ created: 0, updated: 0, closed: 0 });
+      expect(globalFetchSpy).toHaveBeenCalledTimes(5);
     });
 
-    it("automatically resolves and closes open tracking issues on clean scan", async () => {
+    it("never auto-closes open tracking issues on clean scan", async () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify([]));
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-      // Clean npm audit output (no vulnerabilities)
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -448,7 +643,6 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Mock search issues returning an open security tracking issue
       globalFetchSpy
         .mockResolvedValueOnce(
           fromPartial<Response>({
@@ -460,7 +654,7 @@ describe("Triage Security Issue Script", () => {
                   "[scheduled-vulnerability-alert] [Security Triage] HIGH Advisory: GHSA-resolved-789",
                 state: "open",
                 body: "<!-- tag: scheduled-vulnerability-alert -->\nDetails...",
-                labels: [{ name: "security" }, { name: "automated-alert" }],
+                labels: [{ name: "security-triage" }],
               },
             ],
           })
@@ -473,41 +667,18 @@ describe("Triage Security Issue Script", () => {
         )
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
-        )
-        // Mock post resolution comment
-        .mockResolvedValueOnce(
-          fromPartial<Response>({
-            ok: true,
-            json: async () => ({ id: 200 }),
-          })
-        )
-        // Mock PATCH to close issue
-        .mockResolvedValueOnce(
-          fromPartial<Response>({
-            ok: true,
-            json: async () => ({ number: 15, state: "closed" }),
-          })
         );
 
       const result = await triageSecurityIssues({
         token: "fake-token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
-      expect(result).toEqual({ created: 0, updated: 0, closed: 1 });
-
-      const commentCall = globalFetchSpy.mock.calls[4];
-      expect(commentCall[0]).toContain("/issues/15/comments");
-      const commentBody = JSON.parse((commentCall[1]?.body as string) || "{}");
-      expect(commentBody.body).toContain("Scheduled Security Audit Cleared");
-
-      const patchCall = globalFetchSpy.mock.calls[5];
-      expect(patchCall[0]).toContain("/issues/15");
-      expect(patchCall[1]?.method).toBe("PATCH");
-      const patchBody = JSON.parse((patchCall[1]?.body as string) || "{}");
-      expect(patchBody.state).toBe("closed");
-      expect(patchBody.state_reason).toBe("completed");
+      expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
+      // Only the 4 read-only label queries ran; no POST comment and no PATCH close
+      expect(globalFetchSpy).toHaveBeenCalledTimes(4);
     });
 
     it("handles rate limiting gracefully without throwing", async () => {
@@ -540,6 +711,7 @@ describe("Triage Security Issue Script", () => {
         token: "fake-token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
       expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
@@ -548,7 +720,7 @@ describe("Triage Security Issue Script", () => {
       );
     });
 
-    it("creates an issue explaining approaching override expiration for expiring rules", async () => {
+    it("creates an issue explaining approaching override expiration with governance labels", async () => {
       const fixedNow = new Date("2026-11-20T12:00:00Z");
       const rawIgnoreData = [
         {
@@ -600,6 +772,7 @@ describe("Triage Security Issue Script", () => {
         token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
       expect(result).toEqual({ created: 1, updated: 0, closed: 0 });
@@ -615,10 +788,12 @@ describe("Triage Security Issue Script", () => {
       expect(postBody.body).toContain("Remaining Days:** 5");
       expect(postBody.body).toContain("pre-expiration warning window");
       expect(postBody.body).toContain("2026-11-25T12:00:00Z");
-      expect(postBody.labels).toContain("type:security");
-      expect(postBody.labels).toContain("p3-medium");
-      expect(postBody.labels).toContain("area:security");
-      expect(postBody.labels).toContain("automated-alert");
+      expect(postBody.labels).toEqual([
+        "type:chore",
+        "needs-triage",
+        "area:security",
+        "security-triage",
+      ]);
     });
 
     it("matches existing open issue carrying only area:security and comments once when entering warning window", async () => {
@@ -649,7 +824,6 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Label searches: "security", "automated-alert", "security-triage" return empty, "area:security" returns #3667
       globalFetchSpy
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
@@ -675,14 +849,12 @@ describe("Triage Security Issue Script", () => {
             ],
           })
         )
-        // Fetch comments on issue #3667 returns empty (not warned yet)
         .mockResolvedValueOnce(
           fromPartial<Response>({
             ok: true,
             json: async () => [],
           })
         )
-        // POST comment on #3667
         .mockResolvedValueOnce(
           fromPartial<Response>({
             ok: true,
@@ -694,15 +866,14 @@ describe("Triage Security Issue Script", () => {
         token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
       expect(result).toEqual({ created: 0, updated: 1, closed: 0 });
 
-      // Check comments was called on 3667
       const commentsGetCall = globalFetchSpy.mock.calls[4];
       expect(commentsGetCall[0]).toContain("/issues/3667/comments");
 
-      // Check POST comment was called with marker
       const commentPostCall = globalFetchSpy.mock.calls[5];
       expect(commentPostCall[0]).toContain("/issues/3667/comments");
       const commentPayload = JSON.parse(
@@ -712,11 +883,14 @@ describe("Triage Security Issue Script", () => {
       expect(commentPayload.body).toContain(
         "<!-- marker: expiring-rule-warning -->"
       );
+      expect(commentPayload.body).toContain(
+        "<!-- security-triage:expiring_rule:GHSA-g3hv-75wg-m249:2026-11-30T12:00:00Z -->"
+      );
       expect(commentPayload.body).toContain("GHSA-g3hv-75wg-m249");
     });
 
     it("does not post duplicate comment to existing issue when expiring rule was already warned", async () => {
-      const fixedNow = new Date("2026-11-21T12:00:00Z"); // next day
+      const fixedNow = new Date("2026-11-21T12:00:00Z");
       const rawIgnoreData = [
         {
           advisory: "GHSA-g3hv-75wg-m249",
@@ -743,7 +917,6 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Label searches: "security", "automated-alert", "security-triage" return empty, "area:security" returns #3667
       globalFetchSpy
         .mockResolvedValueOnce(
           fromPartial<Response>({ ok: true, json: async () => [] })
@@ -769,7 +942,6 @@ describe("Triage Security Issue Script", () => {
             ],
           })
         )
-        // Fetch comments on issue #3667 returns previous warning comment
         .mockResolvedValueOnce(
           fromPartial<Response>({
             ok: true,
@@ -785,12 +957,10 @@ describe("Triage Security Issue Script", () => {
         token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
-      // No issue created, no comments posted, none closed
       expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
-
-      // Expect total fetch calls were 5 (4 label searches + 1 comments fetch), no POST comment
       expect(globalFetchSpy).toHaveBeenCalledTimes(5);
     });
 
@@ -822,7 +992,6 @@ describe("Triage Security Issue Script", () => {
         })
       );
 
-      // Search returns existing auto-filed issue with approaching expiration details in its body
       globalFetchSpy
         .mockResolvedValueOnce(
           fromPartial<Response>({
@@ -835,9 +1004,10 @@ describe("Triage Security Issue Script", () => {
                 state: "open",
                 body: "### Approaching Override Expiration Details\n- **Advisory Identifier:** `GHSA-expiring-alert-99`\n<!-- marker: expiring-rule-warning -->",
                 labels: [
-                  { name: "type:security" },
-                  { name: "p3-medium" },
+                  { name: "type:chore" },
+                  { name: "needs-triage" },
                   { name: "area:security" },
+                  { name: "security-triage" },
                 ],
               },
             ],
@@ -857,10 +1027,10 @@ describe("Triage Security Issue Script", () => {
         token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
+        apply: true,
       });
 
       expect(result).toEqual({ created: 0, updated: 0, closed: 0 });
-      // Skips comments without needing to fetch comments API
       expect(globalFetchSpy).toHaveBeenCalledTimes(4);
     });
   });

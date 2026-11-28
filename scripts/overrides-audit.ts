@@ -329,6 +329,7 @@ export function main(
 ): number {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const check = argv.includes("--check");
+  const allowRemovable = argv.includes("--allow-removable");
   const option = (name: string) => {
     const at = argv.indexOf(name);
     return at >= 0 ? argv[at + 1] : undefined;
@@ -342,12 +343,20 @@ export function main(
     fs.writeFileSync(jsonFile, `${JSON.stringify(results, null, 2)}\n`);
   }
   console.log(summary);
-  if (
-    check &&
-    (removable(results).length > 0 ||
-      results.some((result) => result.status === "error"))
-  ) {
-    return 1;
+  if (check) {
+    if (results.some((result) => result.status === "error")) {
+      return 1;
+    }
+    const removablePins = removable(results);
+    if (removablePins.length > 0) {
+      if (allowRemovable) {
+        console.log(
+          `overrides-audit: ${removablePins.length} pin(s) now removable (--allow-removable); drop from package.json and SECURITY.md in a follow-up.`
+        );
+        return 0;
+      }
+      return 1;
+    }
   }
   return 0;
 }

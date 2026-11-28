@@ -244,7 +244,7 @@ export async function runMigrationReplay(
       "POSTGRES_PASSWORD=postgres",
       "-e",
       "POSTGRES_DB=portfolio_replay",
-      "postgres:17-alpine",
+      "postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f",
     ]);
 
     if (runResult.status !== 0) {

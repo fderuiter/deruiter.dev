@@ -21,18 +21,62 @@ updates:
         patterns:
           - "*"
 
+  # Canonical PostgreSQL 17 image pin for CI static-gate, Neon backups, and
+  # disposable local migration replay (`npm run deps:fix` propagates digest
+  # bumps across workflows and scripts; major stays on 17 to match Neon).
+  - package-ecosystem: "docker"
+    directory: "/infra/docker/postgres"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "13:00"
+      timezone: "America/Chicago"
+    commit-message:
+      prefix: "ci"
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+    groups:
+      docker:
+        patterns:
+          - "*"
+
+  # Frozen Python constraints for the CDISC CORE validation workflow
+  # (`scripts/study-data-core-constraints.txt`), audited with `pip-audit`.
+  - package-ecosystem: "pip"
+    directory: "/scripts"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "13:00"
+      timezone: "America/Chicago"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
+    groups:
+      python-study-data-core:
+        patterns:
+          - "*"
+
   # npm updates arrive as one grouped weekly PR for patch and minor releases
   # (#2511). Majors are ignored here and taken one per PR by hand, because
   # each needs its own migration (vitest, eslint, jsdom, framer-motion).
-  # `next` and `eslint-config-next` are exact pins that must move together,
-  # so they get their own group. Security updates skip the cooldown and the
-  # weekly slot, and arrive together in one `npm-security` PR.
+  # `next`, `@next/env`, and `eslint-config-next` are exact pins that must move
+  # together, so they get their own group. Security updates skip the cooldown
+  # and the weekly slot, and arrive together in one `npm-security` PR.
   #
   # The OSS credits and notices are generated at install, not committed (ADR
-  # 0057 amendment), so these PRs pass CI by themselves. The exception is the
-  # `playwright` group: Dependabot cannot run `npm run deps:fix` to move the
-  # Playwright CI images (#2730), so carry that PR on a `chore/` branch; the
-  # recipe is in docs/how-to/manage-dependency-licenses.md.
+  # 0057 amendment), so these PRs pass CI by themselves. The exceptions are the
+  # `playwright` and `duckdb-wasm` groups: Dependabot cannot run
+  # `npm run deps:fix` to move the Playwright CI images (#2730) or refresh the
+  # vendored DuckDB WebAssembly extensions, so carry those PRs on a `chore/`
+  # branch; the recipe is in docs/how-to/manage-dependency-licenses.md.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -70,6 +114,7 @@ updates:
       nextjs:
         patterns:
           - "next"
+          - "@next/env"
           - "eslint-config-next"
       # A new @playwright/test also needs the Playwright CI container images
       # moved (`npm run deps:fix`), which Dependabot cannot do, so it gets a
@@ -77,6 +122,12 @@ updates:
       playwright:
         patterns:
           - "@playwright/test"
+      # A new @duckdb/duckdb-wasm needs vendored wasm_eh extension binaries and
+      # SHA-256 digests refreshed (`npm run deps:fix`), so isolate it from
+      # routine minor/patch bumps.
+      duckdb-wasm:
+        patterns:
+          - "@duckdb/duckdb-wasm"
       npm-minor-and-patch:
         update-types:
           - "minor"

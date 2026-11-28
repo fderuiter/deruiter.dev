@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
-import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
 import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AI_GOVERNANCE_PAGE_COPY } from "@/lib/clinical-ai-governance";
@@ -39,19 +37,13 @@ export default async function ClinicalAiGovernancePage() {
         }}
       />
       <header className="border-b border-white/[0.08] pb-10 sm:pb-14">
-        <Breadcrumbs path="/clinical/ai-governance" className="mb-6" />
-        <JourneyStepLabel
-          path="/clinical/ai-governance"
-          fallback={copy.eyebrow}
-        />
+        <Breadcrumbs path="/clinical/ai-governance" />
+        <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
+          {copy.eyebrow}
+        </p>
         <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           {copy.title}
         </h1>
-        <ClinicalJourneyNav
-          path="/clinical/ai-governance"
-          variant="compact"
-          className="mt-6"
-        />
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
           {copy.intro}
         </p>

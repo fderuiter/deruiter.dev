@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
-import { JourneyStepLabel } from "@/components/clinical-journey/JourneyStepLabel";
 import { PageLayout } from "@/components/PageLayout";
 import { StudyStudioWorkspace } from "@/components/study-workspace/StudyStudioWorkspace";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -42,18 +40,12 @@ export default function StudyStudioPage() {
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
         <Breadcrumbs path="/study-studio" className="mb-6" />
-        <JourneyStepLabel
-          path="/study-studio"
-          fallback="Clinical Study Studio"
-        />
+        <p className="font-[family-name:var(--font-geist-mono)] text-xs uppercase tracking-[0.2em] text-amber-400">
+          USDM Study Workspace
+        </p>
         <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">
           Clinical Study Studio
         </h1>
-        <ClinicalJourneyNav
-          path="/study-studio"
-          variant="compact"
-          className="mt-6"
-        />
         <p className="mt-6 max-w-3xl text-base leading-relaxed text-slate-300 sm:text-lg">
           Open a study defined in USDM and work on its design, schedule,
           narrative, analysis intent and randomization in one place. Every view

@@ -29,10 +29,10 @@ describe("clinical journey navigation", () => {
     const nav = screen.getByRole("navigation", {
       name: "Clinical data journey",
     });
-    expect(within(nav).getByText(/step 4 of 7/)).toBeTruthy();
+    expect(within(nav).getByText(/step 3 of 5/)).toBeTruthy();
     const current = nav.querySelector('[aria-current="step"]');
     expect(current?.textContent).toBe(
-      "4. Tabulate and analyse: Study Data Pipeline"
+      "3. Tabulate and analyse: Study Data Pipeline"
     );
     expect(
       within(nav)
@@ -43,9 +43,9 @@ describe("clinical journey navigation", () => {
     ).toBe("/clinical/pipeline-simulator");
     expect(
       within(nav)
-        .getByRole("link", { name: "Next step: Clinical AI Governance →" })
+        .getByRole("link", { name: "Next step: Clinical Data Platform →" })
         .getAttribute("href")
-    ).toBe("/clinical/ai-governance");
+    ).toBe("/platform");
     expect(within(nav).getByText(/Evidence: Synthetic data\./)).toBeTruthy();
   });
 
@@ -64,10 +64,10 @@ describe("clinical journey navigation", () => {
   });
 
   it("starts with no previous step and ends with no next step", () => {
-    const { unmount } = render(<ClinicalJourneyNav path="/study-studio" />);
+    const { unmount } = render(<ClinicalJourneyNav path="/crf" />);
     expect(screen.queryByText(/Previous step/)).toBeNull();
     expect(
-      screen.getByText(/Next step: Case report form designer \(CRF Studio\)/)
+      screen.getByText(/Next step: Trial Data Pipeline Simulator/)
     ).toBeTruthy();
     unmount();
     render(<ClinicalJourneyNav path="/case-studies/study-data-pipeline" />);
@@ -133,7 +133,7 @@ describe("clinical journey navigation", () => {
       <ClinicalJourneyNav path="/case-studies/clinical-data-mapper" />
     );
     expect(container.querySelector('[aria-current="step"]')).toBeNull();
-    expect(screen.getByText(/related to step 4/)).toBeTruthy();
+    expect(screen.getByText(/related to step 3/)).toBeTruthy();
     expect(screen.getByText(/real code, not the synthetic demo/)).toBeTruthy();
     expect(
       screen
@@ -171,7 +171,7 @@ describe("clinical journey navigation", () => {
     // The step names stay whole for assistive technology.
     const current = document.querySelector('[aria-current="step"]');
     expect(current?.textContent).toBe(
-      "2. Collect: Case report form designer (CRF Studio)"
+      "1. Collect: Case report form designer (CRF Studio)"
     );
     expect(
       screen.getByRole("link", {
@@ -192,7 +192,7 @@ describe("clinical journey navigation", () => {
 });
 
 describe("clinical journey highlight", () => {
-  it("links every step and starts at Clinical Study Studio, at the given heading level", () => {
+  it("links every step and starts at CRF Studio, at the given heading level", () => {
     const { container } = render(<ClinicalJourneyHighlight headingLevel={2} />);
     expect(
       screen.getByRole("heading", {
@@ -202,11 +202,11 @@ describe("clinical journey highlight", () => {
     ).toBeTruthy();
     expect(internalLinks(container)).toEqual([
       ...CLINICAL_JOURNEY.map((step) => step.href),
-      "/study-studio",
+      "/crf",
     ]);
     expect(
       screen.getByRole("link", {
-        name: "Start the journey at Clinical Study Studio",
+        name: "Start the journey at Case report form designer (CRF Studio)",
       })
     ).toBeTruthy();
   });

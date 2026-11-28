@@ -33,13 +33,11 @@ function exists(path: string): boolean {
 }
 
 describe("clinical data journey map", () => {
-  it("runs design, collection, consequences, tabulation, AI governance, portfolio governance, then lessons", () => {
+  it("runs collection, consequences, tabulation, governance, then lessons", () => {
     expect(CLINICAL_JOURNEY.map((step) => step.id)).toEqual([
-      "design",
       "collect",
       "consequences",
       "tabulate",
-      "ai-governance",
       "govern",
       "lessons",
     ]);
@@ -107,20 +105,12 @@ describe("clinical data journey map", () => {
   });
 
   it("places pages on the journey, and leaves other pages off it", () => {
-    expect(journeyPlacement("/study-studio")).toEqual({
-      step: CLINICAL_JOURNEY[0],
-      isStep: true,
-    });
     expect(journeyPlacement("/study-data")).toEqual({
-      step: CLINICAL_JOURNEY[3],
-      isStep: true,
-    });
-    expect(journeyPlacement("/clinical/ai-governance")).toEqual({
-      step: CLINICAL_JOURNEY[4],
+      step: CLINICAL_JOURNEY[2],
       isStep: true,
     });
     expect(journeyPlacement("/case-studies/crf-xl")).toEqual({
-      step: CLINICAL_JOURNEY[1],
+      step: CLINICAL_JOURNEY[0],
       isStep: false,
     });
     expect(journeyPlacement("/neuro")).toBeNull();

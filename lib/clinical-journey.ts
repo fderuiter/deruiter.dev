@@ -27,13 +27,7 @@ export const JOURNEY_EVIDENCE_LABELS: Readonly<
 
 /** Identifier of a step on the main path. */
 export type JourneyStepId =
-  | "design"
-  | "collect"
-  | "consequences"
-  | "tabulate"
-  | "ai-governance"
-  | "govern"
-  | "lessons";
+  "collect" | "consequences" | "tabulate" | "govern" | "lessons";
 
 /** One step on the main path, each a page a visitor can open now. */
 export interface ClinicalJourneyStep {
@@ -82,15 +76,6 @@ export interface RelatedGame {
 /** The main path, in order. */
 export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
   {
-    id: "design",
-    stage: "Design",
-    title: "Clinical Study Studio",
-    href: "/study-studio",
-    purpose:
-      "Define a protocol's arms, epochs, schedule of activities and narrative in one shared workspace so every downstream tool reads the same revision.",
-    evidence: ["synthetic"],
-  },
-  {
     id: "collect",
     stage: "Collect",
     title: "Case report form designer (CRF Studio)",
@@ -115,15 +100,6 @@ export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
     href: "/study-data",
     purpose:
       "Take the active study workspace from its USDM definition through SDTM and ADaM to the tables of a study report, with every number traceable.",
-    evidence: ["synthetic"],
-  },
-  {
-    id: "ai-governance",
-    stage: "Audit AI assistance",
-    title: "Clinical AI Governance",
-    href: "/clinical/ai-governance",
-    purpose:
-      "Audit AI assistance against FDA, EMA and ICH risk controls, deterministic CDISC checks and recorded study revisions.",
     evidence: ["synthetic"],
   },
   {

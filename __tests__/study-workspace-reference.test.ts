@@ -84,15 +84,14 @@ describe("the TAVR device reference study", () => {
     expect(tests(TAVR_DEVICE_USDM)?.length).toBeGreaterThan(0);
   });
 
-  it("reports the device domains as not yet tabulated, and tabulates adjudication (#3417)", () => {
-    const { activities } = prepareStudyHandoff(TAVR_DEVICE_USDM).report;
-    const untabulated = activities
-      .filter((activity) => !activity.tabulated)
-      .map((activity) => activity.domain);
-    expect(untabulated).toEqual(expect.arrayContaining(["DI", "DU", "DE"]));
-    expect(untabulated).not.toContain("CE");
+  it("tabulates adjudication (#3417) and the device domains (#4152)", () => {
+    const { report } = prepareStudyHandoff(TAVR_DEVICE_USDM);
+    expect(report.notTabulatedDomains).toEqual([]);
+    expect(report.tabulatedDomains).toEqual(
+      expect.arrayContaining(["DI", "DU", "DE", "CE"])
+    );
     expect(
-      activities.filter((activity) => activity.domain === "CE")
+      report.activities.filter((activity) => activity.domain === "CE")
     ).not.toHaveLength(0);
   });
 

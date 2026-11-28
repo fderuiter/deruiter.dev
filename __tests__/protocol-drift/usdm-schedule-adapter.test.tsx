@@ -6,7 +6,7 @@ import { CNS_NEURO_PRESET, exportStudyToUsdmObject } from "@/lib/crf";
 import { adaptUsdmScheduleToProtocolDrift } from "@/lib/protocol-drift";
 import { DEMO_301_USDM } from "@/lib/study-data/presets";
 import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
-import { resetMockStorage } from "./helpers/storage-mock";
+import { resetMockStorage } from "../helpers/storage-mock";
 
 describe("Protocol Drift active USDM schedule adapter", () => {
   beforeEach(() => {

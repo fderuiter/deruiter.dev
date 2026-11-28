@@ -167,13 +167,16 @@ export function createBrowserStudyWorkspaceStore(
     remoteEvent?: StudyRepositorySyncEvent
   ): Promise<BrowserStudyWorkspaceSnapshot> => {
     const records = await currentStore.list();
+    if (store !== currentStore) return snapshot;
     let activeStudyId = await currentStore.getActiveStudyId();
+    if (store !== currentStore) return snapshot;
     if (
       activeStudyId !== null &&
       !records.some((entry) => entry.studyId === activeStudyId)
     ) {
       activeStudyId = records[0]?.studyId ?? null;
       await currentStore.setActiveStudyId(activeStudyId);
+      if (store !== currentStore) return snapshot;
     }
     const activeRecord =
       activeStudyId !== null
@@ -209,7 +212,7 @@ export function createBrowserStudyWorkspaceStore(
     });
     unsubscribeSync = sync.subscribe((event) => {
       if (!store) return;
-      void refresh(store, event);
+      void refresh(store, event).catch(() => undefined);
     });
     if (seeds.length > 0) {
       await store.seedIfMissing(seeds);

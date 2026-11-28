@@ -107,13 +107,6 @@ export interface NavGroup {
 const JOURNEY_MENU_STYLE: Partial<
   Record<JourneyStepId, Omit<NavItem, "title" | "href" | "step">>
 > = {
-  design: {
-    id: "study-studio",
-    subtitle: "Define the study design, schedule and narrative in USDM",
-    icon: "clipboard",
-    tone: "amber",
-    badge: "Studio",
-  },
   collect: {
     id: "crf-studio",
     subtitle: "Design the forms and enter data as a site would",
@@ -135,14 +128,6 @@ const JOURNEY_MENU_STYLE: Partial<
     icon: "spreadsheet",
     tone: "amber",
     badge: "Lineage",
-  },
-  "ai-governance": {
-    id: "clinical-ai-governance",
-    subtitle:
-      "Failure modes, guidance references and validation checks for AI in clinical data",
-    icon: "shield",
-    tone: "amber",
-    badge: "AI",
   },
   govern: {
     id: "clinical-platform",
@@ -166,6 +151,18 @@ const JOURNEY_ITEMS: NavItem[] = CLINICAL_JOURNEY.flatMap((step, index) => {
 });
 
 /** Tools that hang off the Clinical Data Platform hub. */
+/** Clinical tools that are being built, listed so visitors can follow them. */
+const CLINICAL_IN_DEVELOPMENT_ITEMS: NavItem[] = [
+  {
+    id: "study-studio",
+    title: "Clinical Study Studio",
+    subtitle: "One USDM study workspace, in development",
+    href: "/study-studio",
+    icon: "clipboard",
+    tone: "amber",
+    badge: "Studio",
+  },
+];
 
 const PLATFORM_TOOL_ITEMS: NavItem[] = [
   {
@@ -233,6 +230,16 @@ const CLINICAL_EVIDENCE_ITEMS: NavItem[] = [
     icon: "shield",
     tone: "amber",
     badge: "CDISC",
+  },
+  {
+    id: "clinical-ai-governance",
+    title: "AI Governance",
+    subtitle:
+      "Failure modes, guidance references and validation checks for AI in clinical data",
+    href: "/clinical/ai-governance",
+    icon: "shield",
+    tone: "amber",
+    badge: "AI",
   },
 ];
 
@@ -542,6 +549,11 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
       },
       { id: "evidence", label: "Evidence", items: CLINICAL_EVIDENCE_ITEMS },
       { id: "practice", label: "Practice", items: CLINICAL_GAME_ITEMS },
+      {
+        id: "in-development",
+        label: "In development",
+        items: CLINICAL_IN_DEVELOPMENT_ITEMS,
+      },
     ],
     activeWhen: {
       exact: [

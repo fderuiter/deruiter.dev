@@ -33,13 +33,7 @@ describe("JourneyStepLabel (#3143)", () => {
 
 describe("clinical page eyebrows (#3143)", () => {
   const root = process.cwd();
-  const dirs = [
-    "app/clinical",
-    "app/study-studio",
-    "app/study-data",
-    "app/platform",
-    "app/crf",
-  ];
+  const dirs = ["app/clinical", "app/study-data", "app/platform", "app/crf"];
   const pages = dirs.flatMap((dir) =>
     fs
       .readdirSync(path.join(root, dir), { recursive: true, encoding: "utf8" })

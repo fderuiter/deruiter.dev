@@ -9,6 +9,7 @@ import {
   ElectronicSignature,
   SubjectFormStatus,
   EdcSimulationState,
+  ClinicalDataCsvKind,
 } from "@/lib/crf/types";
 import {
   evaluateRule,
@@ -19,9 +20,25 @@ import {
   isCdiscNullFlavor,
   validatePrecisionDate,
   CDISC_NULL_FLAVORS,
+  raiseSimulationQuery,
+  answerSimulationQuery,
+  closeSimulationQuery,
+  cancelSimulationQuery,
+  reopenSimulationQuery,
+  getEdcRoleActorLabel,
+  exportStudyToCdiscOdmXml,
+  importStudyFromCdiscOdmXml,
+  exportStudyToSas,
+  exportStudyToR,
+  exportSimulationSubjectsCsv,
+  exportSimulationQueriesCsv,
+  exportSimulationAuditsCsv,
+  detectClinicalCsvKind,
+  importClinicalCsvIntoSimulationState,
 } from "@/lib/crf";
 import { useCrfService } from "@/hooks/useCrfService";
 import { generateId } from "@/lib/utils";
+import { downloadFile } from "@/lib/download";
 import { NoPhiNotice } from "../NoPhiNotice";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import {
@@ -37,6 +54,9 @@ import {
   IconAlertTriangle,
   IconDeviceFloppy,
   IconEyeOff,
+  IconDownload,
+  IconUpload,
+  IconX,
 } from "@tabler/icons-react";
 import { TooltipButton } from "@/components/ui/Tooltip";
 
@@ -150,7 +170,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     () => initialSimState?.signatures ?? []
   );
 
-  const lastEmittedStateRef = React.useRef<EdcSimulationState | null>(null);
+  const emittedStatesRef = React.useRef<WeakSet<EdcSimulationState>>(
+    new WeakSet()
+  );
+  const hadActiveSimStateRef = React.useRef<boolean>(
+    Boolean(simulationState ?? study.simulationState)
+  );
   const prevStudyRef = React.useRef<StudyProtocol>(study);
   const activeSimState = simulationState ?? study.simulationState;
 
@@ -159,28 +184,30 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     const studyChanged = prevStudyRef.current !== study;
     prevStudyRef.current = study;
 
-    if (
-      activeSimState &&
-      (activeSimState !== lastEmittedStateRef.current || studyChanged)
-    ) {
-      if (activeSimState.formValues !== undefined)
-        setFormValues(activeSimState.formValues);
-      if (activeSimState.sdvMap !== undefined) setSdvMap(activeSimState.sdvMap);
-      if (activeSimState.lockedForms !== undefined)
-        setLockedForms(activeSimState.lockedForms);
-      if (activeSimState.queries !== undefined)
-        setQueries(activeSimState.queries);
-      if (activeSimState.auditLog !== undefined)
-        setAuditLog(activeSimState.auditLog);
-      if (activeSimState.signatures !== undefined)
-        setSignatures(activeSimState.signatures);
-      if (activeSimState.availableSubjects !== undefined)
-        setAvailableSubjects(activeSimState.availableSubjects);
+    if (activeSimState) {
+      hadActiveSimStateRef.current = true;
+      if (!emittedStatesRef.current.has(activeSimState)) {
+        if (activeSimState.formValues !== undefined)
+          setFormValues(activeSimState.formValues);
+        if (activeSimState.sdvMap !== undefined)
+          setSdvMap(activeSimState.sdvMap);
+        if (activeSimState.lockedForms !== undefined)
+          setLockedForms(activeSimState.lockedForms);
+        if (activeSimState.queries !== undefined)
+          setQueries(activeSimState.queries);
+        if (activeSimState.auditLog !== undefined)
+          setAuditLog(activeSimState.auditLog);
+        if (activeSimState.signatures !== undefined)
+          setSignatures(activeSimState.signatures);
+        if (activeSimState.availableSubjects !== undefined)
+          setAvailableSubjects(activeSimState.availableSubjects);
+      }
     } else if (
       !activeSimState &&
-      (lastEmittedStateRef.current !== null || studyChanged)
+      (hadActiveSimStateRef.current || studyChanged)
     ) {
-      // Cleanly reset state if incoming study/props have no simulationState
+      // Cleanly reset state if incoming study/props explicitly cleared simulationState
+      hadActiveSimStateRef.current = false;
       setFormValues({});
       setSdvMap({});
       setLockedForms({});
@@ -188,7 +215,6 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       setAuditLog([]);
       setSignatures([]);
       setAvailableSubjects(["001-101", "001-102", "001-103"]);
-      lastEmittedStateRef.current = null;
     }
   }, [activeSimState, study]);
 
@@ -219,7 +245,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         signatures,
         availableSubjects,
       };
-      lastEmittedStateRef.current = nextState;
+      emittedStatesRef.current.add(nextState);
       onUpdateSimulationState(nextState);
     }
   }, [
@@ -247,6 +273,299 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   const [activeQueryToAnswer, setActiveQueryToAnswer] =
     useState<EDCQuery | null>(null);
   const [queryResponseText, setQueryResponseText] = useState("");
+  const [queryResolutionNotes, setQueryResolutionNotes] = useState<
+    Record<string, string>
+  >({});
+
+  // Manual Query Modal State
+  const [isManualQueryModalOpen, setIsManualQueryModalOpen] = useState(false);
+  const [manualQuerySubjectId, setManualQuerySubjectId] = useState(subjectId);
+  const [manualQueryVisitId, setManualQueryVisitId] = useState(activeVisitId);
+  const [manualQueryFormId, setManualQueryFormId] = useState(activeFormId);
+  const [manualQueryFieldId, setManualQueryFieldId] = useState("");
+  const [manualQuerySeverity, setManualQuerySeverity] =
+    useState<EDCQuery["severity"]>("warning");
+  const [manualQueryMessage, setManualQueryMessage] = useState("");
+
+  // CDISC Clinical Data Exchange Panel State
+  const [exchangeFormat, setExchangeFormat] = useState<"odm" | "stat" | "csv">(
+    "odm"
+  );
+  const [statScriptLang, setStatScriptLang] = useState<"sas" | "r">("sas");
+  const [csvDatasetKind, setCsvDatasetKind] =
+    useState<ClinicalDataCsvKind>("subjects");
+  const [exchangeStatus, setExchangeStatus] = useState<string | null>(null);
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
+  const exchangeFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const isMonitorOrDm =
+    currentRole === "CRA Monitor" || currentRole === "Data Manager";
+
+  const currentSimSnapshot = useMemo<EdcSimulationState>(
+    () => ({
+      formValues,
+      sdvMap,
+      lockedForms,
+      queries,
+      auditLog,
+      signatures,
+      availableSubjects,
+    }),
+    [
+      formValues,
+      sdvMap,
+      lockedForms,
+      queries,
+      auditLog,
+      signatures,
+      availableSubjects,
+    ]
+  );
+
+  const manualQueryForm = useMemo(
+    () => study.forms.find((f) => f.id === manualQueryFormId) || study.forms[0],
+    [study.forms, manualQueryFormId]
+  );
+
+  const manualQueryFields = useMemo(
+    () =>
+      manualQueryForm ? manualQueryForm.sections.flatMap((s) => s.fields) : [],
+    [manualQueryForm]
+  );
+
+  const openManualQueryModal = () => {
+    const defaultForm =
+      study.forms.find((f) => f.id === activeFormId) || study.forms[0];
+    const defaultFields = defaultForm
+      ? defaultForm.sections.flatMap((s) => s.fields)
+      : [];
+    setManualQuerySubjectId(subjectId || availableSubjects[0] || "001-101");
+    setManualQueryVisitId(activeVisitId || study.visits[0]?.id || "");
+    setManualQueryFormId(defaultForm?.id || "");
+    setManualQueryFieldId(defaultFields[0]?.id || "");
+    setManualQuerySeverity("warning");
+    setManualQueryMessage("");
+    setIsManualQueryModalOpen(true);
+  };
+
+  const handleRaiseManualQuery = () => {
+    if (!manualQueryMessage.trim()) return;
+    const resolvedFormId = manualQueryForm?.id || activeFormId;
+    const resolvedField =
+      manualQueryFields.find((f) => f.id === manualQueryFieldId) ||
+      manualQueryFields[0];
+    if (!resolvedField) return;
+
+    const nextSim = raiseSimulationQuery(
+      currentSimSnapshot,
+      {
+        id: generateQueryId(),
+        subjectId: manualQuerySubjectId || subjectId,
+        visitId: manualQueryVisitId || activeVisitId,
+        formId: resolvedFormId,
+        fieldId: resolvedField.id,
+        fieldName: resolvedField.variableName || resolvedField.label,
+        severity: manualQuerySeverity,
+        message: manualQueryMessage,
+        actor: getEdcRoleActorLabel(currentRole),
+        userRole: currentRole,
+      },
+      study
+    );
+
+    if (nextSim.availableSubjects)
+      setAvailableSubjects(nextSim.availableSubjects);
+    if (nextSim.queries) setQueries(nextSim.queries);
+    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+    setIsManualQueryModalOpen(false);
+    setManualQueryMessage("");
+    setSubView("queries");
+    announce("Manual discrepancy query raised.", "polite");
+  };
+
+  const handleSubmitQueryAnswer = () => {
+    if (!activeQueryToAnswer || !queryResponseText.trim()) return;
+    const nextSim = answerSimulationQuery(currentSimSnapshot, {
+      queryId: activeQueryToAnswer.id,
+      response: queryResponseText,
+      actor: getEdcRoleActorLabel(currentRole),
+      userRole: currentRole,
+    });
+    if (nextSim.queries) setQueries(nextSim.queries);
+    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+    setActiveQueryToAnswer(null);
+    setQueryResponseText("");
+    announce("Discrepancy query response recorded.", "polite");
+  };
+
+  const handleCloseQuery = (queryId: string) => {
+    const note = queryResolutionNotes[queryId];
+    const nextSim = closeSimulationQuery(currentSimSnapshot, {
+      queryId,
+      actor: getEdcRoleActorLabel(currentRole),
+      userRole: currentRole,
+      resolutionReason: note,
+    });
+    if (nextSim.queries) setQueries(nextSim.queries);
+    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+    setQueryResolutionNotes((prev) => {
+      const copy = { ...prev };
+      delete copy[queryId];
+      return copy;
+    });
+    announce("Discrepancy query closed.", "polite");
+  };
+
+  const handleCancelQuery = (queryId: string) => {
+    const note = queryResolutionNotes[queryId];
+    const nextSim = cancelSimulationQuery(currentSimSnapshot, {
+      queryId,
+      actor: getEdcRoleActorLabel(currentRole),
+      userRole: currentRole,
+      resolutionReason: note,
+    });
+    if (nextSim.queries) setQueries(nextSim.queries);
+    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+    setQueryResolutionNotes((prev) => {
+      const copy = { ...prev };
+      delete copy[queryId];
+      return copy;
+    });
+    announce("Discrepancy query cancelled.", "polite");
+  };
+
+  const handleReopenQuery = (queryId: string) => {
+    const note = queryResolutionNotes[queryId];
+    const nextSim = reopenSimulationQuery(currentSimSnapshot, {
+      queryId,
+      actor: getEdcRoleActorLabel(currentRole),
+      userRole: currentRole,
+      reason: note,
+    });
+    if (nextSim.queries) setQueries(nextSim.queries);
+    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+    setQueryResolutionNotes((prev) => {
+      const copy = { ...prev };
+      delete copy[queryId];
+      return copy;
+    });
+    announce("Discrepancy query reopened.", "polite");
+  };
+
+  const handleExportClinicalData = () => {
+    setExchangeError(null);
+    const studyWithSim: StudyProtocol = {
+      ...study,
+      simulationState: currentSimSnapshot,
+    };
+
+    if (exchangeFormat === "odm") {
+      const xml = exportStudyToCdiscOdmXml(studyWithSim);
+      const filename = `study-${study.protocolNumber}-clinical-odm.xml`;
+      downloadFile(xml, filename, { mimeType: "application/xml" });
+      setExchangeStatus(`Exported ${filename} (ODM 1.3.2 ClinicalData).`);
+      return;
+    }
+
+    if (exchangeFormat === "stat") {
+      if (statScriptLang === "sas") {
+        const sas = exportStudyToSas(studyWithSim);
+        const filename = `study-${study.protocolNumber}-live.sas`;
+        downloadFile(sas, filename, { mimeType: "text/x-sas" });
+        setExchangeStatus(`Exported ${filename} with live simulation rows.`);
+      } else {
+        const rCode = exportStudyToR(studyWithSim);
+        const filename = `study-${study.protocolNumber}-live.R`;
+        downloadFile(rCode, filename, { mimeType: "text/x-r" });
+        setExchangeStatus(`Exported ${filename} with live simulation rows.`);
+      }
+      return;
+    }
+
+    const csvContent =
+      csvDatasetKind === "subjects"
+        ? exportSimulationSubjectsCsv(studyWithSim)
+        : csvDatasetKind === "queries"
+          ? exportSimulationQueriesCsv(studyWithSim)
+          : exportSimulationAuditsCsv(studyWithSim);
+    const filename = `${study.protocolNumber}-${csvDatasetKind}.csv`;
+    downloadFile(csvContent, filename, { mimeType: "text/csv" });
+    setExchangeStatus(`Exported RFC 4180 ${filename}.`);
+  };
+
+  const handleImportClinicalFile = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setExchangeError(null);
+    setExchangeStatus(null);
+
+    try {
+      const text = await file.text();
+      const trimmed = text.trim();
+      const isXml =
+        file.name.toLowerCase().endsWith(".xml") || trimmed.startsWith("<");
+
+      if (isXml) {
+        const importedStudy = importStudyFromCdiscOdmXml(text);
+        const importedSim = importedStudy.simulationState;
+        if (!importedSim) {
+          setExchangeError(
+            "The selected ODM-XML file contains study metadata only (no ClinicalData block)."
+          );
+          return;
+        }
+        if (importedSim.availableSubjects) {
+          setAvailableSubjects(importedSim.availableSubjects);
+          if (
+            importedSim.availableSubjects.length > 0 &&
+            !importedSim.availableSubjects.includes(subjectId)
+          ) {
+            setSubjectId(importedSim.availableSubjects[0]);
+          }
+        }
+        if (importedSim.formValues) setFormValues(importedSim.formValues);
+        if (importedSim.auditLog) setAuditLog(importedSim.auditLog);
+        if (importedSim.signatures) setSignatures(importedSim.signatures);
+        if (importedSim.queries) setQueries(importedSim.queries);
+        if (importedSim.lockedForms) setLockedForms(importedSim.lockedForms);
+        if (importedSim.sdvMap) setSdvMap(importedSim.sdvMap);
+        setExchangeStatus(
+          `Imported ODM 1.3.2 ClinicalData (${importedSim.availableSubjects?.length ?? 0} subjects, ${importedSim.auditLog?.length ?? 0} audits, ${importedSim.signatures?.length ?? 0} simulated signatures).`
+        );
+        announce("ODM ClinicalData imported into simulation.", "polite");
+        return;
+      }
+
+      const detected = detectClinicalCsvKind(text) || csvDatasetKind;
+      const { kind, simulationState: nextSim } =
+        importClinicalCsvIntoSimulationState(
+          text,
+          study,
+          currentSimSnapshot,
+          detected
+        );
+      setCsvDatasetKind(kind);
+      if (nextSim.availableSubjects) {
+        setAvailableSubjects(nextSim.availableSubjects);
+      }
+      if (nextSim.formValues) setFormValues(nextSim.formValues);
+      if (nextSim.sdvMap) setSdvMap(nextSim.sdvMap);
+      if (nextSim.lockedForms) setLockedForms(nextSim.lockedForms);
+      if (nextSim.queries) setQueries(nextSim.queries);
+      if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+      setExchangeStatus(`Imported RFC 4180 ${kind} CSV into simulation.`);
+      announce(`Imported ${kind} CSV into simulation.`, "polite");
+    } catch (err: unknown) {
+      setExchangeError(
+        err instanceof Error
+          ? err.message
+          : "Failed to import ODM-XML or CSV file."
+      );
+    }
+  };
 
   // 3-Tier Missing Data & Validation State
   const [validationErrors, setValidationErrors] = useState<
@@ -425,12 +744,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       fieldName: field.variableName,
       previousValue: oldVal,
       newValue: newVal,
-      changedBy:
-        currentRole === "Principal Investigator"
-          ? "Dr. Jenkins (PI)"
-          : currentRole === "CRA Monitor"
-            ? "CRA Monitor"
-            : "Clinical Coordinator",
+      changedBy: getEdcRoleActorLabel(currentRole),
       userRole: currentRole,
       reasonForChange: reason,
     };
@@ -784,1303 +1098,1808 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       </div>
 
       {/* Sub-View Navigation Tabs */}
-      <div className="flex shrink-0 items-center gap-2 border-b studio-border-default pb-2 overflow-x-auto scrollbar-none">
-        <button
-          onClick={() => setSubView("form_entry")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
-            subView === "form_entry"
-              ? "studio-btn-cyan font-bold"
-              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
-          }`}
-        >
-          <IconFileText className="w-4 h-4" />
-          <span>Patient Form Entry</span>
-        </button>
-        <button
-          onClick={() => setSubView("subject_matrix")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
-            subView === "subject_matrix"
-              ? "studio-btn-cyan font-bold"
-              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
-          }`}
-        >
-          <IconTable className="w-4 h-4" />
-          <span>Subject Status Matrix</span>
-        </button>
-        <button
-          onClick={() => setSubView("queries")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
-            subView === "queries"
-              ? "studio-btn-cyan font-bold"
-              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
-          }`}
-        >
-          <IconMessageCircleQuestion className="w-4 h-4" />
-          <span>
-            Discrepancy Queries (
-            {queries.filter((q) => q.status === "Open").length})
-          </span>
-        </button>
-        <button
-          onClick={() => setSubView("audit_trail")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
-            subView === "audit_trail"
-              ? "studio-btn-cyan font-bold"
-              : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
-          }`}
-        >
-          <IconHistory className="w-4 h-4" />
-          <span>Part 11 Audit Trail ({auditLog.length})</span>
-        </button>
+      <div className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-b studio-border-default pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setSubView("form_entry")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
+              subView === "form_entry"
+                ? "studio-btn-cyan font-bold"
+                : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
+            }`}
+          >
+            <IconFileText className="w-4 h-4" />
+            <span>Patient Form Entry</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubView("subject_matrix")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
+              subView === "subject_matrix"
+                ? "studio-btn-cyan font-bold"
+                : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
+            }`}
+          >
+            <IconTable className="w-4 h-4" />
+            <span>Subject Status Matrix</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubView("queries")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
+              subView === "queries"
+                ? "studio-btn-cyan font-bold"
+                : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
+            }`}
+          >
+            <IconMessageCircleQuestion className="w-4 h-4" />
+            <span>
+              Discrepancy Queries (
+              {queries.filter((q) => q.status === "Open").length})
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubView("audit_trail")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
+              subView === "audit_trail"
+                ? "studio-btn-cyan font-bold"
+                : "studio-surface-card studio-fg-muted studio-hover-fg-primary"
+            }`}
+          >
+            <IconHistory className="w-4 h-4" />
+            <span>Part 11 Audit Trail ({auditLog.length})</span>
+          </button>
+        </div>
+
+        {isMonitorOrDm && (
+          <button
+            type="button"
+            onClick={openManualQueryModal}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold studio-accent-cyan border studio-hover-cyan transition-all shrink-0"
+          >
+            <IconPlus className="w-3.5 h-3.5" />
+            <span>Raise Manual Query</span>
+          </button>
+        )}
       </div>
 
-      {/* VIEW 1: PATIENT FORM ENTRY */}
-      {subView === "form_entry" && activeForm && (
-        <div className="space-y-6">
-          {/* Protocol Navigation Context: Subject, Visit, Form */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl studio-surface-subtle border studio-border-default">
-            {/* Subject ID Selector */}
-            <div>
-              <label
-                htmlFor="edc-active-subject-select"
-                className="block text-[10px] font-mono studio-fg-muted mb-1"
-              >
-                Active Subject / Patient ID
-              </label>
-              {isAddingSubject ? (
-                <div className="flex gap-2">
-                  <input
-                    id="edc-active-subject-select"
-                    type="text"
-                    value={newSubjectInput}
-                    onChange={(e) => setNewSubjectInput(e.target.value)}
-                    placeholder="e.g. 001-104"
-                    className="w-full px-2.5 py-1 studio-surface-subtle border studio-border-strong rounded-lg text-xs studio-fg-primary font-mono"
-                  />
-                  <button
-                    aria-label="Confirm new subject"
-                    onClick={() => {
-                      if (newSubjectInput.trim()) {
-                        setAvailableSubjects([
-                          ...availableSubjects,
-                          newSubjectInput.trim(),
-                        ]);
-                        setSubjectId(newSubjectInput.trim());
-                        setIsAddingSubject(false);
-                        setNewSubjectInput("");
-                      }
-                    }}
-                    className="p-1 rounded studio-btn-cyan"
+      {/* Main Two-Column EDC Workspace + Clinical Data Exchange */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        <div className="xl:col-span-8 min-w-0 space-y-6">
+          {/* VIEW 1: PATIENT FORM ENTRY */}
+          {subView === "form_entry" && activeForm && (
+            <div className="space-y-6">
+              {/* Protocol Navigation Context: Subject, Visit, Form */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl studio-surface-subtle border studio-border-default">
+                {/* Subject ID Selector */}
+                <div>
+                  <label
+                    htmlFor="edc-active-subject-select"
+                    className="block text-[10px] font-mono studio-fg-muted mb-1"
                   >
-                    <IconCheck className="w-4 h-4" />
-                  </button>
+                    Active Subject / Patient ID
+                  </label>
+                  {isAddingSubject ? (
+                    <div className="flex gap-2">
+                      <input
+                        id="edc-active-subject-select"
+                        type="text"
+                        value={newSubjectInput}
+                        onChange={(e) => setNewSubjectInput(e.target.value)}
+                        placeholder="e.g. 001-104"
+                        className="w-full px-2.5 py-1 studio-surface-subtle border studio-border-strong rounded-lg text-xs studio-fg-primary font-mono"
+                      />
+                      <button
+                        aria-label="Confirm new subject"
+                        onClick={() => {
+                          if (newSubjectInput.trim()) {
+                            setAvailableSubjects([
+                              ...availableSubjects,
+                              newSubjectInput.trim(),
+                            ]);
+                            setSubjectId(newSubjectInput.trim());
+                            setIsAddingSubject(false);
+                            setNewSubjectInput("");
+                          }
+                        }}
+                        className="p-1 rounded studio-btn-cyan"
+                      >
+                        <IconCheck className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <select
+                        id="edc-active-subject-select"
+                        value={subjectId}
+                        onChange={(e) => setSubjectId(e.target.value)}
+                        className="flex-1 px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
+                      >
+                        {availableSubjects.map((s) => (
+                          <option key={s} value={s}>
+                            Subject: {s}
+                          </option>
+                        ))}
+                      </select>
+                      <TooltipButton
+                        onClick={() => setIsAddingSubject(true)}
+                        className="px-2.5 py-1 rounded-xl studio-surface-muted studio-hover-active studio-fg-primary text-xs font-mono"
+                        tooltip="Enroll New Simulated Subject"
+                        aria-label="Enroll New Simulated Subject"
+                      >
+                        <IconPlus className="w-3.5 h-3.5" />
+                      </TooltipButton>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <select
-                    id="edc-active-subject-select"
-                    value={subjectId}
-                    onChange={(e) => setSubjectId(e.target.value)}
-                    className="flex-1 px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
+
+                {/* Visit Selector */}
+                <div>
+                  <label
+                    htmlFor="edc-protocol-visit-select"
+                    className="block text-[10px] font-mono studio-fg-muted mb-1"
                   >
-                    {availableSubjects.map((s) => (
-                      <option key={s} value={s}>
-                        Subject: {s}
+                    Protocol Visit
+                  </label>
+                  <select
+                    id="edc-protocol-visit-select"
+                    value={activeVisitId}
+                    onChange={(e) => setActiveVisitId(e.target.value)}
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
+                  >
+                    {study.visits.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} (Day {v.targetDay})
                       </option>
                     ))}
                   </select>
-                  <TooltipButton
-                    onClick={() => setIsAddingSubject(true)}
-                    className="px-2.5 py-1 rounded-xl studio-surface-muted studio-hover-active studio-fg-primary text-xs font-mono"
-                    tooltip="Enroll New Simulated Subject"
-                    aria-label="Enroll New Simulated Subject"
+                </div>
+
+                {/* Form Selector */}
+                <div>
+                  <label
+                    htmlFor="edc-crf-form-select"
+                    className="block text-[10px] font-mono studio-fg-muted mb-1"
                   >
-                    <IconPlus className="w-3.5 h-3.5" />
-                  </TooltipButton>
+                    CRF Form
+                  </label>
+                  <select
+                    id="edc-crf-form-select"
+                    value={activeFormId}
+                    onChange={(e) => setActiveFormId(e.target.value)}
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
+                  >
+                    {study.forms.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        [{f.domain}] {f.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
-
-            {/* Visit Selector */}
-            <div>
-              <label
-                htmlFor="edc-protocol-visit-select"
-                className="block text-[10px] font-mono studio-fg-muted mb-1"
-              >
-                Protocol Visit
-              </label>
-              <select
-                id="edc-protocol-visit-select"
-                value={activeVisitId}
-                onChange={(e) => setActiveVisitId(e.target.value)}
-                className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
-              >
-                {study.visits.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} (Day {v.targetDay})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Form Selector */}
-            <div>
-              <label
-                htmlFor="edc-crf-form-select"
-                className="block text-[10px] font-mono studio-fg-muted mb-1"
-              >
-                CRF Form
-              </label>
-              <select
-                id="edc-crf-form-select"
-                value={activeFormId}
-                onChange={(e) => setActiveFormId(e.target.value)}
-                className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
-              >
-                {study.forms.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    [{f.domain}] {f.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Form Header Card with PI Lock and SDV Actions */}
-          <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-5">
-            <div className="flex items-start justify-between gap-4 border-b studio-border-default pb-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-xs font-mono font-bold studio-accent-cyan-strong border">
-                    {activeForm.domain}
-                  </span>
-                  <h2 className="text-base font-bold studio-fg-primary font-mono">
-                    {activeForm.name}
-                  </h2>
-                  {isCurrentFormLocked && (
-                    <span className="inline-flex items-center gap-1 font-mono text-[10px] studio-accent-sky px-2 py-0.5 rounded border">
-                      <IconLock className="w-3 h-3" />
-                      <span>Locked (PI)</span>
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs studio-fg-muted font-sans">
-                  {activeForm.description}
-                </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <TooltipButton
-                  onClick={handleSaveForm}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
-                  tooltip="Save Form Data and run 3-Tier Missing Data Engine"
-                >
-                  <IconDeviceFloppy className="w-4 h-4" />
-                  <span>Save Form</span>
-                </TooltipButton>
-
-                {currentRole === "Principal Investigator" && (
-                  <button
-                    onClick={handleToggleLockForm}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all shadow-sm ${
-                      isCurrentFormLocked
-                        ? "studio-surface-muted studio-hover-active studio-fg-primary border studio-border-strong"
-                        : "studio-btn-sky"
-                    }`}
-                  >
-                    {isCurrentFormLocked ? (
-                      <>
-                        <IconLockOpen className="w-4 h-4" />
-                        <span>Unlock Form</span>
-                      </>
-                    ) : (
-                      <>
-                        <IconLock className="w-4 h-4" />
-                        <span>Lock &amp; Sign (PI)</span>
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {isFormSigned && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-emerald border font-mono text-xs">
-                    <IconShieldCheck className="w-4 h-4" />
-                    <span>Signed</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Save Status Notification Banner */}
-            {saveStatus && (
-              <div
-                className={`p-3 rounded-xl border flex items-start gap-2.5 font-mono text-xs ${
-                  saveStatus.type === "error"
-                    ? "studio-accent-red"
-                    : "studio-accent-emerald"
-                }`}
-              >
-                {saveStatus.type === "error" ? (
-                  <IconAlertTriangle className="w-4 h-4 studio-fg-red shrink-0 mt-0.5" />
-                ) : (
-                  <IconCheck className="w-4 h-4 studio-fg-emerald shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1 space-y-1">
-                  <div className="font-bold">{saveStatus.message}</div>
-                  {saveStatus.hardStops && saveStatus.hardStops.length > 0 && (
-                    <div className="text-[11px] studio-fg-red font-sans">
-                      Hard-stop blocked fields:{" "}
-                      {saveStatus.hardStops.join(", ")}
+              {/* Form Header Card with PI Lock and SDV Actions */}
+              <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-5">
+                <div className="flex items-start justify-between gap-4 border-b studio-border-default pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded text-xs font-mono font-bold studio-accent-cyan-strong border">
+                        {activeForm.domain}
+                      </span>
+                      <h2 className="text-base font-bold studio-fg-primary font-mono">
+                        {activeForm.name}
+                      </h2>
+                      {isCurrentFormLocked && (
+                        <span className="inline-flex items-center gap-1 font-mono text-[10px] studio-accent-sky px-2 py-0.5 rounded border">
+                          <IconLock className="w-3 h-3" />
+                          <span>Locked (PI)</span>
+                        </span>
+                      )}
                     </div>
-                  )}
-                  {saveStatus.autoQueries &&
-                    saveStatus.autoQueries.length > 0 && (
-                      <div className="text-[11px] studio-fg-amber font-sans">
-                        Auto-generated open queries raised for:{" "}
-                        {saveStatus.autoQueries.join(", ")}
-                      </div>
-                    )}
-                </div>
-              </div>
-            )}
+                    <p className="text-xs studio-fg-muted font-sans">
+                      {activeForm.description}
+                    </p>
+                  </div>
 
-            {/* Form Fields Rendering */}
-            {activeForm.sections.map((section) => (
-              <div key={section.id} className="space-y-3">
-                <h3 className="text-xs font-bold studio-fg-secondary font-mono border-b studio-border-subtle pb-1.5">
-                  {section.title}
-                </h3>
+                  <div className="flex items-center gap-2">
+                    <TooltipButton
+                      onClick={handleSaveForm}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
+                      tooltip="Save Form Data and run 3-Tier Missing Data Engine"
+                    >
+                      <IconDeviceFloppy className="w-4 h-4" />
+                      <span>Save Form</span>
+                    </TooltipButton>
 
-                <div className="grid grid-cols-12 gap-3 sm:gap-4">
-                  {section.fields.map((field) => {
-                    // Conditional visibility (#670): a hidden field is not
-                    // rendered at all, so it is absent from the accessibility
-                    // tree and the tab order rather than merely dimmed.
-                    const fieldState = conditionalState?.fields[field.id];
-                    if (fieldState && !fieldState.visible) return null;
-
-                    const isFieldRequired =
-                      fieldState?.required ?? field.required;
-                    const conditionalExplanation = fieldState
-                      ? describeFieldConditionalState(fieldState)
-                      : null;
-
-                    const key = `${subjectId}_${activeVisitId}_${field.id}`;
-                    const currentVal = formValues[key];
-                    const isSdv = sdvMap[key]?.verified || false;
-                    const fieldQueries = activeFormQueries.filter(
-                      (q) => q.fieldId === field.id && q.status === "Open"
-                    );
-                    const fieldError = validationErrors[field.id];
-                    const hasNullFlavor = isCdiscNullFlavor(currentVal);
-                    const isBlindedForUser =
-                      field.isBlinded &&
-                      currentRole !== "Principal Investigator";
-
-                    const parsedPrecision =
-                      field.dataType === "precision_date"
-                        ? parsePrecisionDate(String(currentVal || ""))
-                        : null;
-
-                    const formDomain = activeForm.domain || activeForm.id;
-                    const fieldKey = field.variableName || field.id;
-                    const inputId = `ecrf-input-${formDomain.toLowerCase()}-${fieldKey.toLowerCase()}`;
-                    const errorId = `ecrf-error-${formDomain.toLowerCase()}-${fieldKey.toLowerCase()}`;
-
-                    return (
-                      <div
-                        key={field.id}
-                        className={`p-3 rounded-xl border transition-all ${
-                          fieldError
-                            ? "studio-bg-red studio-border-red ring-1 ring-red-500/30"
-                            : fieldQueries.length > 0
-                              ? "studio-bg-amber studio-border-amber ring-1 ring-amber-500/20"
-                              : "studio-surface-subtle studio-border-default"
+                    {currentRole === "Principal Investigator" && (
+                      <button
+                        onClick={handleToggleLockForm}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all shadow-sm ${
+                          isCurrentFormLocked
+                            ? "studio-surface-muted studio-hover-active studio-fg-primary border studio-border-strong"
+                            : "studio-btn-sky"
                         }`}
-                        style={{ gridColumn: `span ${field.columnSpan}` }}
                       >
-                        {/* Field Header */}
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div>
-                            <label
-                              htmlFor={inputId}
-                              className="block text-xs font-semibold studio-fg-primary cursor-pointer"
-                            >
-                              {field.label}
-                              {isFieldRequired && (
-                                <span
-                                  className="studio-fg-red ml-0.5"
-                                  title={
-                                    fieldState?.requirednessSource
-                                      ? `Required by rule: ${fieldState.requirednessSource.ruleName}`
-                                      : undefined
-                                  }
-                                >
-                                  *
-                                </span>
-                              )}
-                            </label>
-                            {conditionalExplanation && (
-                              <span className="sr-only">
-                                {conditionalExplanation}
-                              </span>
-                            )}
-                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px] font-mono studio-fg-muted">
-                                {field.variableName}
-                              </span>
-
-                              {/* Requirement Tier Badge */}
-                              <span
-                                className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold border ${
-                                  field.requirementTier === "auto_query"
-                                    ? "studio-accent-amber"
-                                    : field.requirementTier === "hard_stop" ||
-                                        (!field.requirementTier &&
-                                          isFieldRequired)
-                                      ? "studio-accent-red"
-                                      : "studio-surface-card studio-fg-muted studio-border-default"
-                                }`}
-                              >
-                                {field.requirementTier === "auto_query"
-                                  ? "? Auto-Query"
-                                  : field.requirementTier === "hard_stop" ||
-                                      (!field.requirementTier &&
-                                        isFieldRequired)
-                                    ? "* Hard Stop"
-                                    : "Opt"}
-                              </span>
-
-                              {field.requiresSdv && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono studio-accent-emerald border">
-                                  <IconShieldCheck className="w-3 h-3" />
-                                  <span>SDV</span>
-                                </span>
-                              )}
-
-                              {field.isBlinded && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono studio-accent-indigo border">
-                                  <span>Blinded</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            {/* CRA SDV Toggle */}
-                            {currentRole === "CRA Monitor" && (
-                              <TooltipButton
-                                onClick={() =>
-                                  handleToggleSdv(field.id, field.variableName)
-                                }
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border ${
-                                  isSdv
-                                    ? "studio-accent-emerald-strong"
-                                    : "studio-surface-card studio-fg-muted studio-border-default studio-hover-fg-primary"
-                                }`}
-                                tooltip="Source Data Verification"
-                              >
-                                {isSdv ? "✓ SDV Done" : "SDV Verify"}
-                              </TooltipButton>
-                            )}
-
-                            {/* CDISC Null Flavor Toggle Pills */}
-                            {(field.allowNullFlavor || true) && (
-                              <div className="flex items-center gap-0.5 studio-surface-card p-0.5 rounded-lg border studio-border-default">
-                                {(["ND", "NA", "UNK"] as const).map((nf) => {
-                                  const isSelectedNf = currentVal === nf;
-                                  return (
-                                    <TooltipButton
-                                      key={nf}
-                                      type="button"
-                                      onClick={() => {
-                                        if (isSelectedNf) {
-                                          handleFieldChange(field, null);
-                                        } else {
-                                          handleFieldChange(field, nf);
-                                        }
-                                      }}
-                                      disabled={
-                                        isCurrentFormLocked &&
-                                        currentRole !== "Principal Investigator"
-                                      }
-                                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border ${
-                                        isSelectedNf
-                                          ? "studio-btn-cyan font-extrabold"
-                                          : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
-                                      }`}
-                                      tooltip={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
-                                    >
-                                      {nf}
-                                    </TooltipButton>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Field Input Area */}
-                        {isBlindedForUser ? (
-                          <div className="p-2.5 studio-surface-card border studio-border-default rounded-lg studio-fg-muted font-mono text-xs flex items-center gap-2">
-                            <IconEyeOff className="w-4 h-4 studio-fg-indigo shrink-0" />
-                            <span>
-                              [MASKED PROTOCOL DATA: BLINDED TO SPONSOR]
-                            </span>
-                          </div>
-                        ) : hasNullFlavor ? (
-                          <div className="p-2 studio-surface-card border studio-border-cyan rounded-lg studio-fg-cyan font-mono text-xs flex items-center justify-between">
-                            <span className="font-bold">
-                              Null Flavor: {currentVal} (
-                              {
-                                CDISC_NULL_FLAVORS[
-                                  currentVal as keyof typeof CDISC_NULL_FLAVORS
-                                ]
-                              }
-                              )
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleFieldChange(field, null)}
-                              disabled={
-                                isCurrentFormLocked &&
-                                currentRole !== "Principal Investigator"
-                              }
-                              className="text-[10px] studio-fg-muted studio-hover-fg-primary underline font-mono"
-                            >
-                              Clear Null Flavor
-                            </button>
-                          </div>
+                        {isCurrentFormLocked ? (
+                          <>
+                            <IconLockOpen className="w-4 h-4" />
+                            <span>Unlock Form</span>
+                          </>
                         ) : (
                           <>
-                            {/* Precision Date Input */}
-                            {field.dataType === "precision_date" && (
-                              <div className="space-y-1.5">
-                                <div className="grid grid-cols-3 gap-2">
-                                  {/* Day Selector */}
-                                  <div>
-                                    <label
-                                      htmlFor={`${inputId}-day`}
-                                      className="block text-[9px] font-mono studio-fg-muted mb-0.5"
-                                    >
-                                      Day
-                                    </label>
-                                    <select
-                                      id={`${inputId}-day`}
-                                      aria-invalid={
-                                        fieldError ? "true" : undefined
-                                      }
-                                      aria-describedby={
-                                        fieldError ? errorId : undefined
-                                      }
-                                      value={
-                                        parsedPrecision?.day !== null &&
-                                        parsedPrecision?.day !== undefined
-                                          ? String(
-                                              parsedPrecision.day
-                                            ).padStart(2, "0")
-                                          : parsedPrecision?.isPartial &&
-                                              parsedPrecision?.day === null
-                                            ? "UNK"
-                                            : ""
-                                      }
-                                      onChange={(e) => {
-                                        const dVal = e.target.value;
-                                        const yVal =
-                                          parsedPrecision?.year || 2026;
-                                        const mVal =
-                                          parsedPrecision?.month !== null &&
-                                          parsedPrecision?.month !== undefined
-                                            ? parsedPrecision.month
-                                            : field.allowPartial
-                                              ? "UNK"
-                                              : 1;
-                                        const newIso = formatPrecisionDate(
-                                          yVal,
-                                          mVal,
-                                          dVal || null
-                                        );
-                                        handleFieldChange(field, newIso);
-                                      }}
-                                      disabled={
-                                        isCurrentFormLocked &&
-                                        currentRole !== "Principal Investigator"
-                                      }
-                                      className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
-                                    >
-                                      <option value="">-- Day --</option>
-                                      {field.allowPartial && (
-                                        <option value="UNK">
-                                          UNK (Unknown)
-                                        </option>
-                                      )}
-                                      {Array.from({ length: 31 }, (_, i) =>
-                                        String(i + 1).padStart(2, "0")
-                                      ).map((d) => (
-                                        <option key={d} value={d}>
-                                          {d}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
+                            <IconLock className="w-4 h-4" />
+                            <span>Lock &amp; Sign (PI)</span>
+                          </>
+                        )}
+                      </button>
+                    )}
 
-                                  {/* Month Selector */}
-                                  <div>
-                                    <label
-                                      htmlFor={`${inputId}-month`}
-                                      className="block text-[9px] font-mono studio-fg-muted mb-0.5"
-                                    >
-                                      Month
-                                    </label>
-                                    <select
-                                      id={`${inputId}-month`}
-                                      aria-invalid={
-                                        fieldError ? "true" : undefined
-                                      }
-                                      aria-describedby={
-                                        fieldError ? errorId : undefined
-                                      }
-                                      value={
-                                        parsedPrecision?.month !== null &&
-                                        parsedPrecision?.month !== undefined
-                                          ? String(
-                                              parsedPrecision.month
-                                            ).padStart(2, "0")
-                                          : parsedPrecision?.isPartial &&
-                                              parsedPrecision?.month === null
-                                            ? "UNK"
-                                            : ""
-                                      }
-                                      onChange={(e) => {
-                                        const mVal = e.target.value;
-                                        const yVal =
-                                          parsedPrecision?.year || 2026;
-                                        const dVal =
-                                          parsedPrecision?.day !== null &&
-                                          parsedPrecision?.day !== undefined
-                                            ? parsedPrecision.day
-                                            : field.allowPartial
-                                              ? "UNK"
-                                              : null;
-                                        const newIso = formatPrecisionDate(
-                                          yVal,
-                                          mVal || null,
-                                          dVal
-                                        );
-                                        handleFieldChange(field, newIso);
-                                      }}
-                                      disabled={
-                                        isCurrentFormLocked &&
-                                        currentRole !== "Principal Investigator"
-                                      }
-                                      className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
-                                    >
-                                      <option value="">-- Month --</option>
-                                      {field.allowPartial && (
-                                        <option value="UNK">
-                                          UNK (Unknown)
-                                        </option>
-                                      )}
-                                      {[
-                                        "01 (Jan)",
-                                        "02 (Feb)",
-                                        "03 (Mar)",
-                                        "04 (Apr)",
-                                        "05 (May)",
-                                        "06 (Jun)",
-                                        "07 (Jul)",
-                                        "08 (Aug)",
-                                        "09 (Sep)",
-                                        "10 (Oct)",
-                                        "11 (Nov)",
-                                        "12 (Dec)",
-                                      ].map((m, idx) => (
-                                        <option
-                                          key={m}
-                                          value={String(idx + 1).padStart(
-                                            2,
-                                            "0"
-                                          )}
-                                        >
-                                          {m}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
+                    {isFormSigned && (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-emerald border font-mono text-xs">
+                        <IconShieldCheck className="w-4 h-4" />
+                        <span>Signed</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                                  {/* Year Input */}
-                                  <div>
-                                    <label
-                                      htmlFor={inputId}
-                                      className="block text-[9px] font-mono studio-fg-muted mb-0.5"
-                                    >
-                                      Year
-                                    </label>
-                                    <input
-                                      id={inputId}
-                                      type="number"
-                                      min={1900}
-                                      max={2100}
-                                      aria-invalid={
-                                        fieldError ? "true" : undefined
-                                      }
-                                      aria-describedby={
-                                        fieldError ? errorId : undefined
-                                      }
-                                      value={
-                                        parsedPrecision?.year !== null &&
-                                        parsedPrecision?.year !== undefined
-                                          ? parsedPrecision.year
-                                          : ""
-                                      }
-                                      placeholder="YYYY"
-                                      onChange={(e) => {
-                                        const yVal = e.target.value;
-                                        const mVal =
-                                          parsedPrecision?.month !== null &&
-                                          parsedPrecision?.month !== undefined
-                                            ? parsedPrecision.month
-                                            : field.allowPartial
-                                              ? "UNK"
-                                              : null;
-                                        const dVal =
-                                          parsedPrecision?.day !== null &&
-                                          parsedPrecision?.day !== undefined
-                                            ? parsedPrecision.day
-                                            : field.allowPartial
-                                              ? "UNK"
-                                              : null;
-                                        const newIso = formatPrecisionDate(
-                                          yVal,
-                                          mVal,
-                                          dVal
-                                        );
-                                        handleFieldChange(field, newIso);
-                                      }}
-                                      disabled={
-                                        isCurrentFormLocked &&
-                                        currentRole !== "Principal Investigator"
-                                      }
-                                      className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
-                                    />
-                                  </div>
-                                </div>
+                {/* Save Status Notification Banner */}
+                {saveStatus && (
+                  <div
+                    className={`p-3 rounded-xl border flex items-start gap-2.5 font-mono text-xs ${
+                      saveStatus.type === "error"
+                        ? "studio-accent-red"
+                        : "studio-accent-emerald"
+                    }`}
+                  >
+                    {saveStatus.type === "error" ? (
+                      <IconAlertTriangle className="w-4 h-4 studio-fg-red shrink-0 mt-0.5" />
+                    ) : (
+                      <IconCheck className="w-4 h-4 studio-fg-emerald shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1 space-y-1">
+                      <div className="font-bold">{saveStatus.message}</div>
+                      {saveStatus.hardStops &&
+                        saveStatus.hardStops.length > 0 && (
+                          <div className="text-[11px] studio-fg-red font-sans">
+                            Hard-stop blocked fields:{" "}
+                            {saveStatus.hardStops.join(", ")}
+                          </div>
+                        )}
+                      {saveStatus.autoQueries &&
+                        saveStatus.autoQueries.length > 0 && (
+                          <div className="text-[11px] studio-fg-amber font-sans">
+                            Auto-generated open queries raised for:{" "}
+                            {saveStatus.autoQueries.join(", ")}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
 
-                                <div className="flex items-center justify-between text-[10px] font-mono studio-fg-muted pt-0.5">
-                                  <span>
-                                    ISO:{" "}
-                                    <strong className="studio-fg-cyan">
-                                      {String(currentVal || "—")}
-                                    </strong>
+                {/* Form Fields Rendering */}
+                {activeForm.sections.map((section) => (
+                  <div key={section.id} className="space-y-3">
+                    <h3 className="text-xs font-bold studio-fg-secondary font-mono border-b studio-border-subtle pb-1.5">
+                      {section.title}
+                    </h3>
+
+                    <div className="grid grid-cols-12 gap-3 sm:gap-4">
+                      {section.fields.map((field) => {
+                        // Conditional visibility (#670): a hidden field is not
+                        // rendered at all, so it is absent from the accessibility
+                        // tree and the tab order rather than merely dimmed.
+                        const fieldState = conditionalState?.fields[field.id];
+                        if (fieldState && !fieldState.visible) return null;
+
+                        const isFieldRequired =
+                          fieldState?.required ?? field.required;
+                        const conditionalExplanation = fieldState
+                          ? describeFieldConditionalState(fieldState)
+                          : null;
+
+                        const key = `${subjectId}_${activeVisitId}_${field.id}`;
+                        const currentVal = formValues[key];
+                        const isSdv = sdvMap[key]?.verified || false;
+                        const fieldQueries = activeFormQueries.filter(
+                          (q) => q.fieldId === field.id && q.status === "Open"
+                        );
+                        const fieldError = validationErrors[field.id];
+                        const hasNullFlavor = isCdiscNullFlavor(currentVal);
+                        const isBlindedForUser =
+                          field.isBlinded &&
+                          currentRole !== "Principal Investigator";
+
+                        const parsedPrecision =
+                          field.dataType === "precision_date"
+                            ? parsePrecisionDate(String(currentVal || ""))
+                            : null;
+
+                        const formDomain = activeForm.domain || activeForm.id;
+                        const fieldKey = field.variableName || field.id;
+                        const inputId = `ecrf-input-${formDomain.toLowerCase()}-${fieldKey.toLowerCase()}`;
+                        const errorId = `ecrf-error-${formDomain.toLowerCase()}-${fieldKey.toLowerCase()}`;
+
+                        return (
+                          <div
+                            key={field.id}
+                            className={`p-3 rounded-xl border transition-all ${
+                              fieldError
+                                ? "studio-bg-red studio-border-red ring-1 ring-red-500/30"
+                                : fieldQueries.length > 0
+                                  ? "studio-bg-amber studio-border-amber ring-1 ring-amber-500/20"
+                                  : "studio-surface-subtle studio-border-default"
+                            }`}
+                            style={{ gridColumn: `span ${field.columnSpan}` }}
+                          >
+                            {/* Field Header */}
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div>
+                                <label
+                                  htmlFor={inputId}
+                                  className="block text-xs font-semibold studio-fg-primary cursor-pointer"
+                                >
+                                  {field.label}
+                                  {isFieldRequired && (
+                                    <span
+                                      className="studio-fg-red ml-0.5"
+                                      title={
+                                        fieldState?.requirednessSource
+                                          ? `Required by rule: ${fieldState.requirednessSource.ruleName}`
+                                          : undefined
+                                      }
+                                    >
+                                      *
+                                    </span>
+                                  )}
+                                </label>
+                                {conditionalExplanation && (
+                                  <span className="sr-only">
+                                    {conditionalExplanation}
                                   </span>
-                                  {field.preventFutureDate && (
-                                    <span className="studio-fg-amber">
-                                      ≤ Current UTC
+                                )}
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <span className="text-[10px] font-mono studio-fg-muted">
+                                    {field.variableName}
+                                  </span>
+
+                                  {/* Requirement Tier Badge */}
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold border ${
+                                      field.requirementTier === "auto_query"
+                                        ? "studio-accent-amber"
+                                        : field.requirementTier ===
+                                              "hard_stop" ||
+                                            (!field.requirementTier &&
+                                              isFieldRequired)
+                                          ? "studio-accent-red"
+                                          : "studio-surface-card studio-fg-muted studio-border-default"
+                                    }`}
+                                  >
+                                    {field.requirementTier === "auto_query"
+                                      ? "? Auto-Query"
+                                      : field.requirementTier === "hard_stop" ||
+                                          (!field.requirementTier &&
+                                            isFieldRequired)
+                                        ? "* Hard Stop"
+                                        : "Opt"}
+                                  </span>
+
+                                  {field.requiresSdv && (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono studio-accent-emerald border">
+                                      <IconShieldCheck className="w-3 h-3" />
+                                      <span>SDV</span>
+                                    </span>
+                                  )}
+
+                                  {field.isBlinded && (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono studio-accent-indigo border">
+                                      <span>Blinded</span>
                                     </span>
                                   )}
                                 </div>
                               </div>
-                            )}
 
-                            {/* Standard Text Input */}
-                            {field.dataType === "text" && (
-                              <input
-                                id={inputId}
-                                type="text"
-                                aria-invalid={fieldError ? "true" : undefined}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                value={String(currentVal || "")}
-                                onChange={(e) =>
-                                  handleFieldChange(field, e.target.value)
-                                }
-                                disabled={
-                                  isCurrentFormLocked &&
-                                  currentRole !== "Principal Investigator"
-                                }
-                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
-                                placeholder={
-                                  field.placeholder || "Enter value..."
-                                }
-                              />
-                            )}
+                              <div className="flex items-center gap-1 shrink-0">
+                                {/* CRA SDV Toggle */}
+                                {currentRole === "CRA Monitor" && (
+                                  <TooltipButton
+                                    onClick={() =>
+                                      handleToggleSdv(
+                                        field.id,
+                                        field.variableName
+                                      )
+                                    }
+                                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border ${
+                                      isSdv
+                                        ? "studio-accent-emerald-strong"
+                                        : "studio-surface-card studio-fg-muted studio-border-default studio-hover-fg-primary"
+                                    }`}
+                                    tooltip="Source Data Verification"
+                                  >
+                                    {isSdv ? "✓ SDV Done" : "SDV Verify"}
+                                  </TooltipButton>
+                                )}
 
-                            {field.dataType === "textarea" && (
-                              <textarea
-                                id={inputId}
-                                rows={2}
-                                aria-invalid={fieldError ? "true" : undefined}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                value={String(currentVal || "")}
-                                onChange={(e) =>
-                                  handleFieldChange(field, e.target.value)
-                                }
-                                disabled={
-                                  isCurrentFormLocked &&
-                                  currentRole !== "Principal Investigator"
-                                }
-                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none resize-none disabled:opacity-50"
-                                placeholder={
-                                  field.placeholder || "Enter narrative..."
-                                }
-                              />
-                            )}
+                                {/* CDISC Null Flavor Toggle Pills */}
+                                {(field.allowNullFlavor || true) && (
+                                  <div className="flex items-center gap-0.5 studio-surface-card p-0.5 rounded-lg border studio-border-default">
+                                    {(["ND", "NA", "UNK"] as const).map(
+                                      (nf) => {
+                                        const isSelectedNf = currentVal === nf;
+                                        return (
+                                          <TooltipButton
+                                            key={nf}
+                                            type="button"
+                                            onClick={() => {
+                                              if (isSelectedNf) {
+                                                handleFieldChange(field, null);
+                                              } else {
+                                                handleFieldChange(field, nf);
+                                              }
+                                            }}
+                                            disabled={
+                                              isCurrentFormLocked &&
+                                              currentRole !==
+                                                "Principal Investigator"
+                                            }
+                                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border ${
+                                              isSelectedNf
+                                                ? "studio-btn-cyan font-extrabold"
+                                                : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
+                                            }`}
+                                            tooltip={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
+                                          >
+                                            {nf}
+                                          </TooltipButton>
+                                        );
+                                      }
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
 
-                            {(field.dataType === "number" ||
-                              field.dataType === "integer") && (
-                              <div className="relative">
-                                <input
-                                  id={inputId}
-                                  type="number"
-                                  min={field.minValue}
-                                  max={field.maxValue}
-                                  step={
-                                    field.dataType === "integer" ? 1 : "any"
+                            {/* Field Input Area */}
+                            {isBlindedForUser ? (
+                              <div className="p-2.5 studio-surface-card border studio-border-default rounded-lg studio-fg-muted font-mono text-xs flex items-center gap-2">
+                                <IconEyeOff className="w-4 h-4 studio-fg-indigo shrink-0" />
+                                <span>
+                                  [MASKED PROTOCOL DATA: BLINDED TO SPONSOR]
+                                </span>
+                              </div>
+                            ) : hasNullFlavor ? (
+                              <div className="p-2 studio-surface-card border studio-border-cyan rounded-lg studio-fg-cyan font-mono text-xs flex items-center justify-between">
+                                <span className="font-bold">
+                                  Null Flavor: {currentVal} (
+                                  {
+                                    CDISC_NULL_FLAVORS[
+                                      currentVal as keyof typeof CDISC_NULL_FLAVORS
+                                    ]
                                   }
-                                  aria-invalid={fieldError ? "true" : undefined}
-                                  aria-describedby={
-                                    fieldError ? errorId : undefined
-                                  }
-                                  value={
-                                    currentVal !== undefined &&
-                                    currentVal !== null
-                                      ? Number(currentVal)
-                                      : ""
-                                  }
-                                  onChange={(e) =>
-                                    handleFieldChange(
-                                      field,
-                                      e.target.value === ""
-                                        ? null
-                                        : parseFloat(e.target.value)
-                                    )
-                                  }
+                                  )
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleFieldChange(field, null)}
                                   disabled={
                                     isCurrentFormLocked &&
                                     currentRole !== "Principal Investigator"
                                   }
-                                  className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
-                                  placeholder={field.placeholder || "0"}
-                                />
-                                {field.unit && (
-                                  <span className="absolute right-2.5 top-1.5 text-[11px] font-mono studio-fg-muted">
-                                    {field.unit}
-                                  </span>
-                                )}
+                                  className="text-[10px] studio-fg-muted studio-hover-fg-primary underline font-mono"
+                                >
+                                  Clear Null Flavor
+                                </button>
                               </div>
-                            )}
+                            ) : (
+                              <>
+                                {/* Precision Date Input */}
+                                {field.dataType === "precision_date" && (
+                                  <div className="space-y-1.5">
+                                    <div className="grid grid-cols-3 gap-2">
+                                      {/* Day Selector */}
+                                      <div>
+                                        <label
+                                          htmlFor={`${inputId}-day`}
+                                          className="block text-[9px] font-mono studio-fg-muted mb-0.5"
+                                        >
+                                          Day
+                                        </label>
+                                        <select
+                                          id={`${inputId}-day`}
+                                          aria-invalid={
+                                            fieldError ? "true" : undefined
+                                          }
+                                          aria-describedby={
+                                            fieldError ? errorId : undefined
+                                          }
+                                          value={
+                                            parsedPrecision?.day !== null &&
+                                            parsedPrecision?.day !== undefined
+                                              ? String(
+                                                  parsedPrecision.day
+                                                ).padStart(2, "0")
+                                              : parsedPrecision?.isPartial &&
+                                                  parsedPrecision?.day === null
+                                                ? "UNK"
+                                                : ""
+                                          }
+                                          onChange={(e) => {
+                                            const dVal = e.target.value;
+                                            const yVal =
+                                              parsedPrecision?.year || 2026;
+                                            const mVal =
+                                              parsedPrecision?.month !== null &&
+                                              parsedPrecision?.month !==
+                                                undefined
+                                                ? parsedPrecision.month
+                                                : field.allowPartial
+                                                  ? "UNK"
+                                                  : 1;
+                                            const newIso = formatPrecisionDate(
+                                              yVal,
+                                              mVal,
+                                              dVal || null
+                                            );
+                                            handleFieldChange(field, newIso);
+                                          }}
+                                          disabled={
+                                            isCurrentFormLocked &&
+                                            currentRole !==
+                                              "Principal Investigator"
+                                          }
+                                          className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
+                                        >
+                                          <option value="">-- Day --</option>
+                                          {field.allowPartial && (
+                                            <option value="UNK">
+                                              UNK (Unknown)
+                                            </option>
+                                          )}
+                                          {Array.from({ length: 31 }, (_, i) =>
+                                            String(i + 1).padStart(2, "0")
+                                          ).map((d) => (
+                                            <option key={d} value={d}>
+                                              {d}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
 
-                            {(field.dataType === "date" ||
-                              field.dataType === "partial_date" ||
-                              field.dataType === "datetime") && (
-                              <input
-                                id={inputId}
-                                type="text"
-                                aria-invalid={fieldError ? "true" : undefined}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                value={String(currentVal || "")}
-                                onChange={(e) =>
-                                  handleFieldChange(field, e.target.value)
-                                }
-                                disabled={
-                                  isCurrentFormLocked &&
-                                  currentRole !== "Principal Investigator"
-                                }
-                                placeholder={
-                                  field.placeholder ||
-                                  (field.dataType === "partial_date"
-                                    ? "YYYY-MM-DD (e.g. 2026-08-UNK)"
-                                    : "YYYY-MM-DD")
-                                }
-                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
-                              />
-                            )}
+                                      {/* Month Selector */}
+                                      <div>
+                                        <label
+                                          htmlFor={`${inputId}-month`}
+                                          className="block text-[9px] font-mono studio-fg-muted mb-0.5"
+                                        >
+                                          Month
+                                        </label>
+                                        <select
+                                          id={`${inputId}-month`}
+                                          aria-invalid={
+                                            fieldError ? "true" : undefined
+                                          }
+                                          aria-describedby={
+                                            fieldError ? errorId : undefined
+                                          }
+                                          value={
+                                            parsedPrecision?.month !== null &&
+                                            parsedPrecision?.month !== undefined
+                                              ? String(
+                                                  parsedPrecision.month
+                                                ).padStart(2, "0")
+                                              : parsedPrecision?.isPartial &&
+                                                  parsedPrecision?.month ===
+                                                    null
+                                                ? "UNK"
+                                                : ""
+                                          }
+                                          onChange={(e) => {
+                                            const mVal = e.target.value;
+                                            const yVal =
+                                              parsedPrecision?.year || 2026;
+                                            const dVal =
+                                              parsedPrecision?.day !== null &&
+                                              parsedPrecision?.day !== undefined
+                                                ? parsedPrecision.day
+                                                : field.allowPartial
+                                                  ? "UNK"
+                                                  : null;
+                                            const newIso = formatPrecisionDate(
+                                              yVal,
+                                              mVal || null,
+                                              dVal
+                                            );
+                                            handleFieldChange(field, newIso);
+                                          }}
+                                          disabled={
+                                            isCurrentFormLocked &&
+                                            currentRole !==
+                                              "Principal Investigator"
+                                          }
+                                          className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
+                                        >
+                                          <option value="">-- Month --</option>
+                                          {field.allowPartial && (
+                                            <option value="UNK">
+                                              UNK (Unknown)
+                                            </option>
+                                          )}
+                                          {[
+                                            "01 (Jan)",
+                                            "02 (Feb)",
+                                            "03 (Mar)",
+                                            "04 (Apr)",
+                                            "05 (May)",
+                                            "06 (Jun)",
+                                            "07 (Jul)",
+                                            "08 (Aug)",
+                                            "09 (Sep)",
+                                            "10 (Oct)",
+                                            "11 (Nov)",
+                                            "12 (Dec)",
+                                          ].map((m, idx) => (
+                                            <option
+                                              key={m}
+                                              value={String(idx + 1).padStart(
+                                                2,
+                                                "0"
+                                              )}
+                                            >
+                                              {m}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
 
-                            {field.dataType === "radio" && (
-                              <div
-                                id={inputId}
-                                role="radiogroup"
-                                aria-labelledby={inputId}
-                                aria-invalid={fieldError ? "true" : undefined}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                className="space-y-1.5 pt-0.5"
-                              >
-                                {(
-                                  field.customOptions ||
-                                  study.codelists.find(
-                                    (cl) => cl.id === field.codelistId
-                                  )?.options || [
-                                    { code: "Y", label: "Yes", order: 1 },
-                                    { code: "N", label: "No", order: 2 },
-                                  ]
-                                ).map((opt) => (
-                                  <label
-                                    key={opt.code}
-                                    className="flex items-center gap-2 text-xs studio-fg-secondary cursor-pointer"
-                                  >
+                                      {/* Year Input */}
+                                      <div>
+                                        <label
+                                          htmlFor={inputId}
+                                          className="block text-[9px] font-mono studio-fg-muted mb-0.5"
+                                        >
+                                          Year
+                                        </label>
+                                        <input
+                                          id={inputId}
+                                          type="number"
+                                          min={1900}
+                                          max={2100}
+                                          aria-invalid={
+                                            fieldError ? "true" : undefined
+                                          }
+                                          aria-describedby={
+                                            fieldError ? errorId : undefined
+                                          }
+                                          value={
+                                            parsedPrecision?.year !== null &&
+                                            parsedPrecision?.year !== undefined
+                                              ? parsedPrecision.year
+                                              : ""
+                                          }
+                                          placeholder="YYYY"
+                                          onChange={(e) => {
+                                            const yVal = e.target.value;
+                                            const mVal =
+                                              parsedPrecision?.month !== null &&
+                                              parsedPrecision?.month !==
+                                                undefined
+                                                ? parsedPrecision.month
+                                                : field.allowPartial
+                                                  ? "UNK"
+                                                  : null;
+                                            const dVal =
+                                              parsedPrecision?.day !== null &&
+                                              parsedPrecision?.day !== undefined
+                                                ? parsedPrecision.day
+                                                : field.allowPartial
+                                                  ? "UNK"
+                                                  : null;
+                                            const newIso = formatPrecisionDate(
+                                              yVal,
+                                              mVal,
+                                              dVal
+                                            );
+                                            handleFieldChange(field, newIso);
+                                          }}
+                                          disabled={
+                                            isCurrentFormLocked &&
+                                            currentRole !==
+                                              "Principal Investigator"
+                                          }
+                                          className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[10px] font-mono studio-fg-muted pt-0.5">
+                                      <span>
+                                        ISO:{" "}
+                                        <strong className="studio-fg-cyan">
+                                          {String(currentVal || "—")}
+                                        </strong>
+                                      </span>
+                                      {field.preventFutureDate && (
+                                        <span className="studio-fg-amber">
+                                          ≤ Current UTC
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Standard Text Input */}
+                                {field.dataType === "text" && (
+                                  <input
+                                    id={inputId}
+                                    type="text"
+                                    aria-invalid={
+                                      fieldError ? "true" : undefined
+                                    }
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    value={String(currentVal || "")}
+                                    onChange={(e) =>
+                                      handleFieldChange(field, e.target.value)
+                                    }
+                                    disabled={
+                                      isCurrentFormLocked &&
+                                      currentRole !== "Principal Investigator"
+                                    }
+                                    className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
+                                    placeholder={
+                                      field.placeholder || "Enter value..."
+                                    }
+                                  />
+                                )}
+
+                                {field.dataType === "textarea" && (
+                                  <textarea
+                                    id={inputId}
+                                    rows={2}
+                                    aria-invalid={
+                                      fieldError ? "true" : undefined
+                                    }
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    value={String(currentVal || "")}
+                                    onChange={(e) =>
+                                      handleFieldChange(field, e.target.value)
+                                    }
+                                    disabled={
+                                      isCurrentFormLocked &&
+                                      currentRole !== "Principal Investigator"
+                                    }
+                                    className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none resize-none disabled:opacity-50"
+                                    placeholder={
+                                      field.placeholder || "Enter narrative..."
+                                    }
+                                  />
+                                )}
+
+                                {(field.dataType === "number" ||
+                                  field.dataType === "integer") && (
+                                  <div className="relative">
                                     <input
-                                      type="radio"
-                                      name={key}
-                                      value={opt.code}
-                                      checked={currentVal === opt.code}
+                                      id={inputId}
+                                      type="number"
+                                      min={field.minValue}
+                                      max={field.maxValue}
+                                      step={
+                                        field.dataType === "integer" ? 1 : "any"
+                                      }
+                                      aria-invalid={
+                                        fieldError ? "true" : undefined
+                                      }
+                                      aria-describedby={
+                                        fieldError ? errorId : undefined
+                                      }
+                                      value={
+                                        currentVal !== undefined &&
+                                        currentVal !== null
+                                          ? Number(currentVal)
+                                          : ""
+                                      }
                                       onChange={(e) =>
-                                        handleFieldChange(field, e.target.value)
+                                        handleFieldChange(
+                                          field,
+                                          e.target.value === ""
+                                            ? null
+                                            : parseFloat(e.target.value)
+                                        )
                                       }
                                       disabled={
                                         isCurrentFormLocked &&
                                         currentRole !== "Principal Investigator"
                                       }
-                                      className="studio-fg-cyan focus:ring-0"
+                                      className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
+                                      placeholder={field.placeholder || "0"}
                                     />
-                                    <span>{opt.label}</span>
-                                  </label>
-                                ))}
-                              </div>
+                                    {field.unit && (
+                                      <span className="absolute right-2.5 top-1.5 text-[11px] font-mono studio-fg-muted">
+                                        {field.unit}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(field.dataType === "date" ||
+                                  field.dataType === "partial_date" ||
+                                  field.dataType === "datetime") && (
+                                  <input
+                                    id={inputId}
+                                    type="text"
+                                    aria-invalid={
+                                      fieldError ? "true" : undefined
+                                    }
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    value={String(currentVal || "")}
+                                    onChange={(e) =>
+                                      handleFieldChange(field, e.target.value)
+                                    }
+                                    disabled={
+                                      isCurrentFormLocked &&
+                                      currentRole !== "Principal Investigator"
+                                    }
+                                    placeholder={
+                                      field.placeholder ||
+                                      (field.dataType === "partial_date"
+                                        ? "YYYY-MM-DD (e.g. 2026-08-UNK)"
+                                        : "YYYY-MM-DD")
+                                    }
+                                    className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
+                                  />
+                                )}
+
+                                {field.dataType === "radio" && (
+                                  <div
+                                    id={inputId}
+                                    role="radiogroup"
+                                    aria-labelledby={inputId}
+                                    aria-invalid={
+                                      fieldError ? "true" : undefined
+                                    }
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    className="space-y-1.5 pt-0.5"
+                                  >
+                                    {(
+                                      field.customOptions ||
+                                      study.codelists.find(
+                                        (cl) => cl.id === field.codelistId
+                                      )?.options || [
+                                        { code: "Y", label: "Yes", order: 1 },
+                                        { code: "N", label: "No", order: 2 },
+                                      ]
+                                    ).map((opt) => (
+                                      <label
+                                        key={opt.code}
+                                        className="flex items-center gap-2 text-xs studio-fg-secondary cursor-pointer"
+                                      >
+                                        <input
+                                          type="radio"
+                                          name={key}
+                                          value={opt.code}
+                                          checked={currentVal === opt.code}
+                                          onChange={(e) =>
+                                            handleFieldChange(
+                                              field,
+                                              e.target.value
+                                            )
+                                          }
+                                          disabled={
+                                            isCurrentFormLocked &&
+                                            currentRole !==
+                                              "Principal Investigator"
+                                          }
+                                          className="studio-fg-cyan focus:ring-0"
+                                        />
+                                        <span>{opt.label}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {field.dataType === "single_select" && (
+                                  <select
+                                    id={inputId}
+                                    aria-invalid={
+                                      fieldError ? "true" : undefined
+                                    }
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    value={String(currentVal || "")}
+                                    onChange={(e) =>
+                                      handleFieldChange(field, e.target.value)
+                                    }
+                                    disabled={
+                                      isCurrentFormLocked &&
+                                      currentRole !== "Principal Investigator"
+                                    }
+                                    className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
+                                  >
+                                    <option value="">
+                                      -- Select Option --
+                                    </option>
+                                    {(
+                                      field.customOptions ||
+                                      study.codelists.find(
+                                        (cl) => cl.id === field.codelistId
+                                      )?.options ||
+                                      []
+                                    ).map((opt) => (
+                                      <option key={opt.code} value={opt.code}>
+                                        {opt.label} ({opt.code})
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+
+                                {field.dataType === "multi_select" && (
+                                  <div
+                                    id={inputId}
+                                    role="group"
+                                    aria-labelledby={inputId}
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    className="space-y-1.5 pt-0.5"
+                                  >
+                                    {(
+                                      field.customOptions ||
+                                      study.codelists.find(
+                                        (cl) => cl.id === field.codelistId
+                                      )?.options ||
+                                      []
+                                    ).map((opt) => {
+                                      const selectedArray: string[] =
+                                        Array.isArray(currentVal)
+                                          ? currentVal
+                                          : typeof currentVal === "string" &&
+                                              currentVal
+                                            ? currentVal.split(",")
+                                            : [];
+                                      const isChecked = selectedArray.includes(
+                                        opt.code
+                                      );
+
+                                      return (
+                                        <label
+                                          key={opt.code}
+                                          className="flex items-center gap-2 text-xs studio-fg-secondary cursor-pointer"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            aria-invalid={
+                                              fieldError ? "true" : undefined
+                                            }
+                                            aria-describedby={
+                                              fieldError ? errorId : undefined
+                                            }
+                                            onChange={(e) => {
+                                              const updated = e.target.checked
+                                                ? [...selectedArray, opt.code]
+                                                : selectedArray.filter(
+                                                    (c) => c !== opt.code
+                                                  );
+                                              handleFieldChange(
+                                                field,
+                                                updated.join(",")
+                                              );
+                                            }}
+                                            disabled={
+                                              isCurrentFormLocked &&
+                                              currentRole !==
+                                                "Principal Investigator"
+                                            }
+                                            className="studio-fg-cyan rounded studio-border-strong studio-surface-card focus:ring-0"
+                                          />
+                                          <span>{opt.label}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {field.dataType === "calculated" && (
+                                  <div
+                                    id={inputId}
+                                    aria-invalid={
+                                      fieldError ? "true" : undefined
+                                    }
+                                    aria-describedby={
+                                      fieldError ? errorId : undefined
+                                    }
+                                    className="p-2 rounded-lg studio-bg-cyan border studio-border-cyan flex items-center justify-between font-mono min-h-[34px]"
+                                  >
+                                    <span className="text-xs studio-fg-cyan font-bold">
+                                      {currentVal !== undefined &&
+                                      currentVal !== null
+                                        ? String(currentVal)
+                                        : ""}
+                                    </span>
+                                    {field.unit && (
+                                      <span className="text-[10px] studio-fg-muted">
+                                        {field.unit}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </>
                             )}
 
-                            {field.dataType === "single_select" && (
-                              <select
-                                id={inputId}
-                                aria-invalid={fieldError ? "true" : undefined}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                value={String(currentVal || "")}
-                                onChange={(e) =>
-                                  handleFieldChange(field, e.target.value)
-                                }
-                                disabled={
-                                  isCurrentFormLocked &&
-                                  currentRole !== "Principal Investigator"
-                                }
-                                className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
+                            {/* Validation Error Feedback */}
+                            {fieldError && (
+                              <p
+                                id={errorId}
+                                role="alert"
+                                aria-live="polite"
+                                className="text-[10px] studio-fg-red font-mono mt-1.5 flex items-center gap-1"
                               >
-                                <option value="">-- Select Option --</option>
-                                {(
-                                  field.customOptions ||
-                                  study.codelists.find(
-                                    (cl) => cl.id === field.codelistId
-                                  )?.options ||
-                                  []
-                                ).map((opt) => (
-                                  <option key={opt.code} value={opt.code}>
-                                    {opt.label} ({opt.code})
-                                  </option>
-                                ))}
-                              </select>
+                                <IconAlertTriangle className="w-3 h-3 studio-fg-red shrink-0" />
+                                <span>{fieldError}</span>
+                              </p>
                             )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
 
-                            {field.dataType === "multi_select" && (
-                              <div
-                                id={inputId}
-                                role="group"
-                                aria-labelledby={inputId}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                className="space-y-1.5 pt-0.5"
-                              >
-                                {(
-                                  field.customOptions ||
-                                  study.codelists.find(
-                                    (cl) => cl.id === field.codelistId
-                                  )?.options ||
-                                  []
-                                ).map((opt) => {
-                                  const selectedArray: string[] = Array.isArray(
-                                    currentVal
-                                  )
-                                    ? currentVal
-                                    : typeof currentVal === "string" &&
-                                        currentVal
-                                      ? currentVal.split(",")
-                                      : [];
-                                  const isChecked = selectedArray.includes(
-                                    opt.code
+                {/* Bottom Save Action */}
+                <div className="pt-4 border-t studio-border-default flex items-center justify-between">
+                  <div className="text-xs studio-fg-muted font-mono">
+                    Active Form: <strong>{activeForm.name}</strong> (
+                    {activeForm.domain})
+                  </div>
+                  <button
+                    onClick={handleSaveForm}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
+                  >
+                    <IconDeviceFloppy className="w-4 h-4" />
+                    <span>Save &amp; Validate Form Data</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: SUBJECT STATUS MATRIX (Rave / Veeva CDMS Style) */}
+          {subView === "subject_matrix" && (
+            <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold studio-fg-primary font-mono">
+                    Longitudinal Subject vs. Visit Progression Matrix
+                  </h2>
+                  <p className="text-xs studio-fg-muted font-sans mt-0.5">
+                    Click any cell to jump into patient form data entry.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] font-mono">
+                  <span className="flex items-center gap-1 studio-fg-emerald">
+                    <span className="w-2 h-2 rounded-full studio-dot-emerald" />{" "}
+                    Complete
+                  </span>
+                  <span className="flex items-center gap-1 studio-fg-amber">
+                    <span className="w-2 h-2 rounded-full studio-dot-amber" />{" "}
+                    Incomplete
+                  </span>
+                  <span className="flex items-center gap-1 studio-fg-sky">
+                    <span className="w-2 h-2 rounded-full studio-dot-sky" />{" "}
+                    Locked
+                  </span>
+                  <span className="flex items-center gap-1 studio-fg-red">
+                    <span className="w-2 h-2 rounded-full studio-dot-red" />{" "}
+                    Query
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table
+                  className="w-full text-left font-mono text-xs border-collapse"
+                  role="grid"
+                  aria-label="Subject Status Progression Matrix"
+                >
+                  <caption className="sr-only">
+                    Subject Status Progression Matrix
+                  </caption>
+                  <thead>
+                    <tr
+                      className="border-b studio-border-default studio-surface-subtle studio-fg-muted"
+                      role="row"
+                    >
+                      <th scope="col" role="columnheader" className="p-3">
+                        Subject ID
+                      </th>
+                      {study.visits.map((v) => (
+                        <th
+                          key={v.id}
+                          scope="col"
+                          role="columnheader"
+                          className="p-3 text-center"
+                        >
+                          <div>{v.name}</div>
+                          <div className="text-[10px] studio-fg-muted">
+                            Day {v.targetDay}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y studio-divide-default">
+                    {availableSubjects.map((subj) => (
+                      <tr
+                        key={subj}
+                        role="row"
+                        className="studio-hover-surface transition-colors"
+                      >
+                        <th
+                          scope="row"
+                          role="rowheader"
+                          className="p-3 font-bold studio-fg-cyan text-left font-normal"
+                        >
+                          {subj}
+                        </th>
+                        {study.visits.map((v) => {
+                          const formsForVisit = study.forms.filter((f) =>
+                            v.assignedFormIds.includes(f.id)
+                          );
+
+                          return (
+                            <td
+                              key={v.id}
+                              role="gridcell"
+                              className="p-3 text-center align-top"
+                            >
+                              <div className="flex flex-wrap justify-center gap-1.5">
+                                {formsForVisit.map((form) => {
+                                  const status = getSubjectFormStatus(
+                                    subj,
+                                    v.id,
+                                    form.id
                                   );
 
                                   return (
-                                    <label
-                                      key={opt.code}
-                                      className="flex items-center gap-2 text-xs studio-fg-secondary cursor-pointer"
+                                    <TooltipButton
+                                      key={form.id}
+                                      onClick={() => {
+                                        setSubjectId(subj);
+                                        setActiveVisitId(v.id);
+                                        setActiveFormId(form.id);
+                                        setSubView("form_entry");
+                                      }}
+                                      className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all border ${
+                                        status.openQueriesCount > 0
+                                          ? "studio-accent-red-strong motion-safe:animate-pulse"
+                                          : status.isLocked
+                                            ? "studio-accent-sky-strong"
+                                            : status.isComplete
+                                              ? "studio-accent-emerald-strong"
+                                              : "studio-surface-muted studio-fg-muted studio-border-strong studio-hover-fg-primary"
+                                      }`}
+                                      tooltip={`Open ${form.name} for ${subj}`}
                                     >
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        aria-invalid={
-                                          fieldError ? "true" : undefined
-                                        }
-                                        aria-describedby={
-                                          fieldError ? errorId : undefined
-                                        }
-                                        onChange={(e) => {
-                                          const updated = e.target.checked
-                                            ? [...selectedArray, opt.code]
-                                            : selectedArray.filter(
-                                                (c) => c !== opt.code
-                                              );
-                                          handleFieldChange(
-                                            field,
-                                            updated.join(",")
-                                          );
-                                        }}
-                                        disabled={
-                                          isCurrentFormLocked &&
-                                          currentRole !==
-                                            "Principal Investigator"
-                                        }
-                                        className="studio-fg-cyan rounded studio-border-strong studio-surface-card focus:ring-0"
-                                      />
-                                      <span>{opt.label}</span>
-                                    </label>
+                                      <span>{form.domain}</span>
+                                      {status.openQueriesCount > 0 && (
+                                        <span> !</span>
+                                      )}
+                                      {status.isLocked && <span> 🔒</span>}
+                                    </TooltipButton>
                                   );
                                 })}
                               </div>
-                            )}
-
-                            {field.dataType === "calculated" && (
-                              <div
-                                id={inputId}
-                                aria-invalid={fieldError ? "true" : undefined}
-                                aria-describedby={
-                                  fieldError ? errorId : undefined
-                                }
-                                className="p-2 rounded-lg studio-bg-cyan border studio-border-cyan flex items-center justify-between font-mono min-h-[34px]"
-                              >
-                                <span className="text-xs studio-fg-cyan font-bold">
-                                  {currentVal !== undefined &&
-                                  currentVal !== null
-                                    ? String(currentVal)
-                                    : ""}
-                                </span>
-                                {field.unit && (
-                                  <span className="text-[10px] studio-fg-muted">
-                                    {field.unit}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {/* Validation Error Feedback */}
-                        {fieldError && (
-                          <p
-                            id={errorId}
-                            role="alert"
-                            aria-live="polite"
-                            className="text-[10px] studio-fg-red font-mono mt-1.5 flex items-center gap-1"
-                          >
-                            <IconAlertTriangle className="w-3 h-3 studio-fg-red shrink-0" />
-                            <span>{fieldError}</span>
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-
-            {/* Bottom Save Action */}
-            <div className="pt-4 border-t studio-border-default flex items-center justify-between">
-              <div className="text-xs studio-fg-muted font-mono">
-                Active Form: <strong>{activeForm.name}</strong> (
-                {activeForm.domain})
-              </div>
-              <button
-                onClick={handleSaveForm}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
-              >
-                <IconDeviceFloppy className="w-4 h-4" />
-                <span>Save &amp; Validate Form Data</span>
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* VIEW 2: SUBJECT STATUS MATRIX (Rave / Veeva CDMS Style) */}
-      {subView === "subject_matrix" && (
-        <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-bold studio-fg-primary font-mono">
-                Longitudinal Subject vs. Visit Progression Matrix
-              </h2>
-              <p className="text-xs studio-fg-muted font-sans mt-0.5">
-                Click any cell to jump into patient form data entry.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
-              <span className="flex items-center gap-1 studio-fg-emerald">
-                <span className="w-2 h-2 rounded-full studio-dot-emerald" />{" "}
-                Complete
-              </span>
-              <span className="flex items-center gap-1 studio-fg-amber">
-                <span className="w-2 h-2 rounded-full studio-dot-amber" />{" "}
-                Incomplete
-              </span>
-              <span className="flex items-center gap-1 studio-fg-sky">
-                <span className="w-2 h-2 rounded-full studio-dot-sky" /> Locked
-              </span>
-              <span className="flex items-center gap-1 studio-fg-red">
-                <span className="w-2 h-2 rounded-full studio-dot-red" /> Query
-              </span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table
-              className="w-full text-left font-mono text-xs border-collapse"
-              role="grid"
-              aria-label="Subject Status Progression Matrix"
-            >
-              <caption className="sr-only">
-                Subject Status Progression Matrix
-              </caption>
-              <thead>
-                <tr
-                  className="border-b studio-border-default studio-surface-subtle studio-fg-muted"
-                  role="row"
-                >
-                  <th scope="col" role="columnheader" className="p-3">
-                    Subject ID
-                  </th>
-                  {study.visits.map((v) => (
-                    <th
-                      key={v.id}
-                      scope="col"
-                      role="columnheader"
-                      className="p-3 text-center"
-                    >
-                      <div>{v.name}</div>
-                      <div className="text-[10px] studio-fg-muted">
-                        Day {v.targetDay}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y studio-divide-default">
-                {availableSubjects.map((subj) => (
-                  <tr
-                    key={subj}
-                    role="row"
-                    className="studio-hover-surface transition-colors"
-                  >
-                    <th
-                      scope="row"
-                      role="rowheader"
-                      className="p-3 font-bold studio-fg-cyan text-left font-normal"
-                    >
-                      {subj}
-                    </th>
-                    {study.visits.map((v) => {
-                      const formsForVisit = study.forms.filter((f) =>
-                        v.assignedFormIds.includes(f.id)
-                      );
-
-                      return (
-                        <td
-                          key={v.id}
-                          role="gridcell"
-                          className="p-3 text-center align-top"
-                        >
-                          <div className="flex flex-wrap justify-center gap-1.5">
-                            {formsForVisit.map((form) => {
-                              const status = getSubjectFormStatus(
-                                subj,
-                                v.id,
-                                form.id
-                              );
-
-                              return (
-                                <TooltipButton
-                                  key={form.id}
-                                  onClick={() => {
-                                    setSubjectId(subj);
-                                    setActiveVisitId(v.id);
-                                    setActiveFormId(form.id);
-                                    setSubView("form_entry");
-                                  }}
-                                  className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all border ${
-                                    status.openQueriesCount > 0
-                                      ? "studio-accent-red-strong motion-safe:animate-pulse"
-                                      : status.isLocked
-                                        ? "studio-accent-sky-strong"
-                                        : status.isComplete
-                                          ? "studio-accent-emerald-strong"
-                                          : "studio-surface-muted studio-fg-muted studio-border-strong studio-hover-fg-primary"
-                                  }`}
-                                  tooltip={`Open ${form.name} for ${subj}`}
-                                >
-                                  <span>{form.domain}</span>
-                                  {status.openQueriesCount > 0 && (
-                                    <span> !</span>
-                                  )}
-                                  {status.isLocked && <span> 🔒</span>}
-                                </TooltipButton>
-                              );
-                            })}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW 3: QUERIES & DISCREPANCIES */}
-      {subView === "queries" && (
-        <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
-          <h2 className="text-sm font-bold studio-fg-primary font-mono">
-            Clinical Discrepancy &amp; Query Management Ledger
-          </h2>
-
-          {queries.length === 0 ? (
-            <div className="p-8 text-center studio-fg-muted font-mono text-xs border border-dashed studio-border-default rounded-xl">
-              No open queries or validation discrepancies across subjects.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {queries.map((q) => (
-                <div
-                  key={q.id}
-                  className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-2 font-mono text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          q.severity === "error"
-                            ? "studio-accent-red-strong border"
-                            : "studio-accent-amber-strong border"
-                        }`}
-                      >
-                        {q.severity}
-                      </span>
-                      <span className="font-bold studio-fg-primary">
-                        Subject {q.subjectId}
-                      </span>
-                      <span className="studio-fg-muted">
-                        • Variable: {q.fieldName}
-                      </span>
-                    </div>
-                    <span className="text-[10px] studio-fg-muted">
-                      {q.raisedAt.slice(0, 19)}
+          {/* VIEW 3: QUERIES & DISCREPANCIES */}
+          {subView === "queries" && (
+            <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                  <h2 className="text-sm font-bold studio-fg-primary font-mono">
+                    Clinical Discrepancy &amp; Query Management Ledger
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                    <span className="px-2 py-0.5 rounded studio-accent-red-strong border">
+                      {queries.filter((q) => q.status === "Open").length} Open
+                    </span>
+                    <span className="px-2 py-0.5 rounded studio-accent-amber-strong border">
+                      {queries.filter((q) => q.status === "Answered").length}{" "}
+                      Answered
+                    </span>
+                    <span className="px-2 py-0.5 rounded studio-accent-emerald-strong border">
+                      {queries.filter((q) => q.status === "Closed").length}{" "}
+                      Closed
+                    </span>
+                    <span className="px-2 py-0.5 rounded studio-surface-card studio-fg-muted border studio-border-default">
+                      {queries.filter((q) => q.status === "Cancelled").length}{" "}
+                      Cancelled
                     </span>
                   </div>
-
-                  <p className="studio-fg-secondary font-sans text-xs">
-                    {q.message}
-                  </p>
-
-                  {q.response && (
-                    <div className="p-2.5 rounded studio-surface-card border studio-border-default text-[11px] studio-fg-muted font-sans">
-                      <span className="font-bold studio-fg-primary">
-                        Site Response:
-                      </span>{" "}
-                      {q.response}
-                    </div>
-                  )}
-
-                  {q.status === "Open" && (
-                    <div className="pt-2 flex justify-end gap-2">
-                      <button
-                        onClick={() => setActiveQueryToAnswer(q)}
-                        className="px-3 py-1 rounded studio-btn-cyan font-bold text-xs"
-                      >
-                        Respond to Query
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ))}
+
+                {isMonitorOrDm && (
+                  <button
+                    type="button"
+                    onClick={openManualQueryModal}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg studio-btn-cyan font-mono font-bold text-xs"
+                  >
+                    <IconPlus className="w-3.5 h-3.5" />
+                    <span>New Manual Query</span>
+                  </button>
+                )}
+              </div>
+
+              {queries.length === 0 ? (
+                <div className="p-8 text-center studio-fg-muted font-mono text-xs border border-dashed studio-border-default rounded-xl">
+                  No open queries or validation discrepancies across subjects.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {queries.map((q) => (
+                    <div
+                      key={q.id}
+                      data-testid={`edc-query-card-${q.id}`}
+                      className="p-4 rounded-xl studio-surface-card border studio-border-default space-y-2.5 font-mono text-xs"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                              q.status === "Open"
+                                ? "studio-accent-red-strong"
+                                : q.status === "Answered"
+                                  ? "studio-accent-amber-strong"
+                                  : q.status === "Closed"
+                                    ? "studio-accent-emerald-strong"
+                                    : "studio-surface-muted studio-fg-muted studio-border-default"
+                            }`}
+                          >
+                            {q.status}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                              q.severity === "error"
+                                ? "studio-accent-red-strong"
+                                : "studio-accent-amber-strong"
+                            }`}
+                          >
+                            {q.severity}
+                          </span>
+                          <span className="font-bold studio-fg-primary">
+                            Subject {q.subjectId}
+                          </span>
+                          <span className="studio-fg-muted">
+                            • Variable: {q.fieldName}
+                          </span>
+                          <span className="text-[10px] studio-fg-muted">
+                            (
+                            {q.ruleId
+                              ? `Rule ${q.ruleId}`
+                              : `Raised by ${q.raisedBy}`}
+                            )
+                          </span>
+                        </div>
+                        <span className="text-[10px] studio-fg-muted">
+                          {q.raisedAt.slice(0, 19)}
+                        </span>
+                      </div>
+
+                      <p className="studio-fg-secondary font-sans text-xs">
+                        {q.message}
+                      </p>
+
+                      {q.response && (
+                        <div className="p-2.5 rounded-lg studio-surface-subtle border studio-border-default text-[11px] studio-fg-muted font-sans space-y-0.5">
+                          <div>
+                            <span className="font-bold studio-fg-primary">
+                              Site Response:
+                            </span>{" "}
+                            {q.response}
+                          </div>
+                          {q.respondedBy && (
+                            <div className="text-[10px] font-mono studio-fg-muted">
+                              Responded by {q.respondedBy}
+                              {q.respondedAt
+                                ? ` · ${q.respondedAt.slice(0, 19)}`
+                                : ""}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {(q.status === "Closed" || q.status === "Cancelled") &&
+                        (q.resolvedBy || q.resolutionReason) && (
+                          <div className="p-2.5 rounded-lg studio-surface-subtle border studio-border-default text-[11px] studio-fg-muted font-sans space-y-0.5">
+                            <div>
+                              <span className="font-bold studio-fg-primary">
+                                {q.status} Resolution:
+                              </span>{" "}
+                              {q.resolutionReason || "Completed"}
+                            </div>
+                            {q.resolvedBy && (
+                              <div className="text-[10px] font-mono studio-fg-muted">
+                                {q.status} by {q.resolvedBy}
+                                {q.resolvedAt
+                                  ? ` · ${q.resolvedAt.slice(0, 19)}`
+                                  : ""}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                      <div className="pt-2 border-t studio-border-default flex flex-wrap items-center justify-between gap-2">
+                        {isMonitorOrDm ? (
+                          <input
+                            type="text"
+                            aria-label={`Resolution note for query ${q.id}`}
+                            value={queryResolutionNotes[q.id] || ""}
+                            onChange={(e) =>
+                              setQueryResolutionNotes((prev) => ({
+                                ...prev,
+                                [q.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Optional resolution / transition note..."
+                            className="flex-1 min-w-[180px] px-2.5 py-1 rounded-lg studio-surface-subtle border studio-border-default text-xs font-sans studio-fg-primary focus:outline-none studio-focus-input"
+                          />
+                        ) : (
+                          <span className="text-[11px] font-sans studio-fg-muted">
+                            {q.status === "Answered"
+                              ? "Awaiting CRA Monitor / Data Manager review"
+                              : ""}
+                          </span>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+                          {q.status === "Open" &&
+                            (currentRole === "Site Coordinator" ||
+                              currentRole === "Principal Investigator") && (
+                              <button
+                                type="button"
+                                onClick={() => setActiveQueryToAnswer(q)}
+                                className="px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs"
+                              >
+                                Respond to Query
+                              </button>
+                            )}
+
+                          {q.status === "Open" && isMonitorOrDm && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelQuery(q.id)}
+                              className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-secondary studio-hover-fg-primary text-xs font-bold"
+                            >
+                              Cancel Query
+                            </button>
+                          )}
+
+                          {q.status === "Answered" && isMonitorOrDm && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleReopenQuery(q.id)}
+                                className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-primary studio-hover-border text-xs font-bold"
+                              >
+                                Reopen Query
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCloseQuery(q.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs"
+                              >
+                                <IconCheck className="w-3.5 h-3.5" />
+                                <span>Close Query</span>
+                              </button>
+                            </>
+                          )}
+
+                          {(q.status === "Closed" ||
+                            q.status === "Cancelled") &&
+                            isMonitorOrDm && (
+                              <button
+                                type="button"
+                                onClick={() => handleReopenQuery(q.id)}
+                                className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-primary studio-hover-border text-xs font-bold"
+                              >
+                                Reopen Query
+                              </button>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 4: PART 11 AUDIT TRAIL */}
+          {subView === "audit_trail" && (
+            <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
+              <h2 className="text-sm font-bold studio-fg-primary font-mono">
+                Part 11-style audit trail (simulation)
+              </h2>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs border-collapse">
+                  <caption className="sr-only">
+                    Part 11-style audit trail (simulation)
+                  </caption>
+                  <thead>
+                    <tr className="border-b studio-border-default studio-surface-subtle studio-fg-muted">
+                      <th scope="col" className="p-2.5">
+                        Timestamp
+                      </th>
+                      <th scope="col" className="p-2.5">
+                        Subject
+                      </th>
+                      <th scope="col" className="p-2.5">
+                        Variable
+                      </th>
+                      <th scope="col" className="p-2.5">
+                        Previous Value
+                      </th>
+                      <th scope="col" className="p-2.5">
+                        New Value
+                      </th>
+                      <th scope="col" className="p-2.5">
+                        User Role
+                      </th>
+                      <th scope="col" className="p-2.5">
+                        Justification Reason
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y studio-divide-default">
+                    {auditLog.map((entry) => (
+                      <tr key={entry.id} className="studio-hover-surface">
+                        <td className="p-2.5 studio-fg-muted whitespace-nowrap">
+                          {entry.timestamp.slice(0, 19)}
+                        </td>
+                        <td className="p-2.5 studio-fg-cyan font-bold">
+                          {entry.subjectId}
+                        </td>
+                        <td className="p-2.5 studio-fg-primary">
+                          {entry.fieldName}
+                        </td>
+                        <td className="p-2.5 studio-fg-muted">
+                          {String(entry.previousValue ?? "—")}
+                        </td>
+                        <td className="p-2.5 studio-fg-emerald font-bold">
+                          {String(entry.newValue ?? "—")}
+                        </td>
+                        <td className="p-2.5 studio-fg-secondary">
+                          {entry.userRole}
+                        </td>
+                        <td className="p-2.5 studio-fg-muted font-sans text-xs">
+                          {entry.reasonForChange}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
-      )}
 
-      {/* VIEW 4: PART 11 AUDIT TRAIL */}
-      {subView === "audit_trail" && (
-        <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
-          <h2 className="text-sm font-bold studio-fg-primary font-mono">
-            Part 11-style audit trail (simulation)
-          </h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left font-mono text-xs border-collapse">
-              <caption className="sr-only">
-                Part 11-style audit trail (simulation)
-              </caption>
-              <thead>
-                <tr className="border-b studio-border-default studio-surface-subtle studio-fg-muted">
-                  <th scope="col" className="p-2.5">
-                    Timestamp
-                  </th>
-                  <th scope="col" className="p-2.5">
-                    Subject
-                  </th>
-                  <th scope="col" className="p-2.5">
-                    Variable
-                  </th>
-                  <th scope="col" className="p-2.5">
-                    Previous Value
-                  </th>
-                  <th scope="col" className="p-2.5">
-                    New Value
-                  </th>
-                  <th scope="col" className="p-2.5">
-                    User Role
-                  </th>
-                  <th scope="col" className="p-2.5">
-                    Justification Reason
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y studio-divide-default">
-                {auditLog.map((entry) => (
-                  <tr key={entry.id} className="studio-hover-surface">
-                    <td className="p-2.5 studio-fg-muted whitespace-nowrap">
-                      {entry.timestamp.slice(0, 19)}
-                    </td>
-                    <td className="p-2.5 studio-fg-cyan font-bold">
-                      {entry.subjectId}
-                    </td>
-                    <td className="p-2.5 studio-fg-primary">
-                      {entry.fieldName}
-                    </td>
-                    <td className="p-2.5 studio-fg-muted">
-                      {String(entry.previousValue ?? "—")}
-                    </td>
-                    <td className="p-2.5 studio-fg-emerald font-bold">
-                      {String(entry.newValue ?? "—")}
-                    </td>
-                    <td className="p-2.5 studio-fg-secondary">
-                      {entry.userRole}
-                    </td>
-                    <td className="p-2.5 studio-fg-muted font-sans text-xs">
-                      {entry.reasonForChange}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* RIGHT SIDEBAR: CDISC CLINICAL DATA EXCHANGE */}
+        <aside
+          aria-label="CDISC Clinical Data Exchange"
+          className="xl:col-span-4 min-w-0 p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold studio-fg-primary font-mono">
+                CDISC Clinical Data Exchange
+              </h2>
+              <p className="text-xs studio-fg-muted font-sans mt-0.5">
+                Bidirectional ODM 1.3.2 ClinicalData, live statistical rows, and
+                RFC 4180 CSV datasets.
+              </p>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold studio-accent-cyan border shrink-0">
+              ODM 1.3.2
+            </span>
           </div>
-        </div>
-      )}
+
+          {/* Exchange Format Selector */}
+          <div
+            role="group"
+            aria-label="Clinical exchange format"
+            className="grid grid-cols-3 gap-1.5 p-1 rounded-xl studio-surface-card border studio-border-default"
+          >
+            <button
+              type="button"
+              aria-pressed={exchangeFormat === "odm"}
+              onClick={() => {
+                setExchangeFormat("odm");
+                setExchangeError(null);
+              }}
+              className={`px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
+                exchangeFormat === "odm"
+                  ? "studio-btn-cyan font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
+              }`}
+            >
+              ODM 1.3.2 XML
+            </button>
+            <button
+              type="button"
+              aria-pressed={exchangeFormat === "stat"}
+              onClick={() => {
+                setExchangeFormat("stat");
+                setExchangeError(null);
+              }}
+              className={`px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
+                exchangeFormat === "stat"
+                  ? "studio-btn-cyan font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
+              }`}
+            >
+              SAS / R Script
+            </button>
+            <button
+              type="button"
+              aria-pressed={exchangeFormat === "csv"}
+              onClick={() => {
+                setExchangeFormat("csv");
+                setExchangeError(null);
+              }}
+              className={`px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
+                exchangeFormat === "csv"
+                  ? "studio-btn-cyan font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
+              }`}
+            >
+              RFC 4180 CSV
+            </button>
+          </div>
+
+          {/* Live Simulation State Payload Summary */}
+          <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-2">
+            <div className="text-[10px] font-mono uppercase tracking-wider studio-fg-muted font-bold">
+              Live Simulation State Payload
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
+                <div className="text-[10px] studio-fg-muted truncate">
+                  SubjectData
+                </div>
+                <div className="font-bold studio-fg-cyan">
+                  {availableSubjects.length} subjects
+                </div>
+              </div>
+              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
+                <div className="text-[10px] studio-fg-muted truncate">
+                  AuditRecords
+                </div>
+                <div className="font-bold studio-fg-primary">
+                  {auditLog.length} entries
+                </div>
+              </div>
+              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
+                <div className="text-[10px] studio-fg-muted truncate">
+                  Signatures (sim)
+                </div>
+                <div className="font-bold studio-fg-emerald">
+                  {signatures.length} records
+                </div>
+              </div>
+              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
+                <div className="text-[10px] studio-fg-muted truncate">
+                  Annotations
+                </div>
+                <div className="font-bold studio-fg-amber">
+                  {queries.length} queries
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] studio-fg-muted font-sans leading-relaxed">
+              Simulated signature tokens (not a validated system) serialize into
+              plain ODM 1.3.2{" "}
+              <code className="font-mono studio-fg-secondary">
+                &lt;Signatures&gt;
+              </code>{" "}
+              and{" "}
+              <code className="font-mono studio-fg-secondary">
+                &lt;AdminData&gt;
+              </code>
+              .
+            </p>
+          </div>
+
+          {/* Format-Specific Options */}
+          {exchangeFormat === "odm" && (
+            <div className="p-3 rounded-xl studio-surface-card border studio-border-default text-xs studio-fg-muted font-sans space-y-1">
+              <div className="font-mono font-bold studio-fg-primary text-[11px]">
+                ODM 1.3.2 AdminData + ClinicalData
+              </div>
+              <p className="leading-relaxed">
+                Emits study metadata plus captured subject items, audit trail
+                records, simulated signatures, and discrepancy query
+                annotations.
+              </p>
+            </div>
+          )}
+
+          {exchangeFormat === "stat" && (
+            <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-2.5">
+              <div className="text-[11px] font-mono font-bold studio-fg-primary">
+                Statistical Analysis Script Target
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  aria-pressed={statScriptLang === "sas"}
+                  onClick={() => setStatScriptLang("sas")}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono border transition-all ${
+                    statScriptLang === "sas"
+                      ? "studio-accent-cyan font-bold"
+                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
+                  }`}
+                >
+                  SAS (CARDS;)
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={statScriptLang === "r"}
+                  onClick={() => setStatScriptLang("r")}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono border transition-all ${
+                    statScriptLang === "r"
+                      ? "studio-accent-cyan font-bold"
+                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
+                  }`}
+                >
+                  R (tibble)
+                </button>
+              </div>
+              <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
+                Serializes captured subject values from active simulation rows
+                before falling back to synthetic template data.
+              </p>
+            </div>
+          )}
+
+          {exchangeFormat === "csv" && (
+            <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-2.5">
+              <div className="text-[11px] font-mono font-bold studio-fg-primary">
+                RFC 4180 CSV Dataset
+              </div>
+              <div
+                role="group"
+                aria-label="EDC CSV dataset type"
+                className="grid grid-cols-3 gap-1.5"
+              >
+                <button
+                  type="button"
+                  aria-pressed={csvDatasetKind === "subjects"}
+                  onClick={() => setCsvDatasetKind("subjects")}
+                  className={`px-2 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
+                    csvDatasetKind === "subjects"
+                      ? "studio-accent-cyan font-bold"
+                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
+                  }`}
+                >
+                  Subjects CSV
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={csvDatasetKind === "queries"}
+                  onClick={() => setCsvDatasetKind("queries")}
+                  className={`px-2 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
+                    csvDatasetKind === "queries"
+                      ? "studio-accent-cyan font-bold"
+                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
+                  }`}
+                >
+                  Queries CSV
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={csvDatasetKind === "audits"}
+                  onClick={() => setCsvDatasetKind("audits")}
+                  className={`px-2 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
+                    csvDatasetKind === "audits"
+                      ? "studio-accent-cyan font-bold"
+                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
+                  }`}
+                >
+                  Audits CSV
+                </button>
+              </div>
+              <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
+                Quoted CRLF flat files for clinical data review, discrepancy
+                tracking, and audit inspection.
+              </p>
+            </div>
+          )}
+
+          {/* Primary Export Action */}
+          <button
+            type="button"
+            onClick={handleExportClinicalData}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl studio-btn-cyan font-mono font-bold text-xs transition-all"
+          >
+            <IconDownload className="w-4 h-4 shrink-0" />
+            <span>
+              {exchangeFormat === "odm"
+                ? "Export ODM 1.3.2 + ClinicalData"
+                : exchangeFormat === "stat"
+                  ? statScriptLang === "sas"
+                    ? "Export Live SAS Script"
+                    : "Export Live R Script"
+                  : csvDatasetKind === "subjects"
+                    ? "Export Subjects CSV"
+                    : csvDatasetKind === "queries"
+                      ? "Export Queries CSV"
+                      : "Export Audits CSV"}
+            </span>
+          </button>
+
+          {/* Bidirectional Import Control */}
+          <div className="pt-3 border-t studio-border-default space-y-2">
+            <div className="text-[11px] font-mono font-bold studio-fg-secondary">
+              Restore Simulation State (ODM-XML or CSV)
+            </div>
+            <input
+              ref={exchangeFileInputRef}
+              type="file"
+              aria-label="Import ODM-XML or RFC 4180 CSV file"
+              accept=".xml,.csv,application/xml,text/xml,text/csv"
+              onChange={handleImportClinicalFile}
+              className="sr-only"
+            />
+            <button
+              type="button"
+              onClick={() => exchangeFileInputRef.current?.click()}
+              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl studio-surface-card border studio-border-strong studio-fg-primary studio-hover-border text-xs font-mono font-bold transition-all"
+            >
+              <IconUpload className="w-4 h-4 studio-fg-cyan shrink-0" />
+              <span>Import ODM-XML / RFC 4180 CSV</span>
+            </button>
+          </div>
+
+          {exchangeStatus && (
+            <div
+              role="status"
+              className="p-2.5 rounded-xl studio-accent-emerald border text-xs font-sans"
+            >
+              {exchangeStatus}
+            </div>
+          )}
+
+          {exchangeError && (
+            <div
+              role="alert"
+              className="p-2.5 rounded-xl studio-accent-rose border text-xs font-sans"
+            >
+              {exchangeError}
+            </div>
+          )}
+        </aside>
+      </div>
 
       {/* MODAL: 21 CFR Part 11 Reason for Change Prompt */}
       {pendingChange && (
@@ -2180,26 +2999,200 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setQueries((prev) =>
-                    prev.map((q) =>
-                      q.id === activeQueryToAnswer.id
-                        ? {
-                            ...q,
-                            status: "Answered",
-                            response: queryResponseText,
-                            respondedBy: "Site Coordinator",
-                            respondedAt: new Date().toISOString(),
-                          }
-                        : q
-                    )
-                  );
-                  setActiveQueryToAnswer(null);
-                  setQueryResponseText("");
-                }}
+                type="button"
+                onClick={handleSubmitQueryAnswer}
                 className="px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs font-mono"
               >
                 Submit Response
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Raise Manual Query */}
+      {isManualQueryModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="manual-query-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-sm"
+        >
+          <div className="studio-surface-elevated border studio-border-strong rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between gap-2">
+              <h3
+                id="manual-query-dialog-title"
+                className="text-sm font-bold studio-fg-primary font-mono"
+              >
+                Raise Manual Discrepancy Query
+              </h3>
+              <button
+                type="button"
+                aria-label="Close manual query dialog"
+                onClick={() => setIsManualQueryModalOpen(false)}
+                className="p-1 rounded-lg studio-fg-muted studio-hover-fg-primary"
+              >
+                <IconX className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs studio-fg-muted font-sans">
+              Raising manual query as{" "}
+              <span className="font-semibold studio-fg-primary">
+                {currentRole}
+              </span>{" "}
+              · {getEdcRoleActorLabel(currentRole)}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+              <div>
+                <label
+                  htmlFor="manual-query-subject"
+                  className="block text-[10px] studio-fg-muted mb-1"
+                >
+                  Subject ID
+                </label>
+                <select
+                  id="manual-query-subject"
+                  value={manualQuerySubjectId}
+                  onChange={(e) => setManualQuerySubjectId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
+                >
+                  {availableSubjects.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="manual-query-visit"
+                  className="block text-[10px] studio-fg-muted mb-1"
+                >
+                  Visit
+                </label>
+                <select
+                  id="manual-query-visit"
+                  value={manualQueryVisitId}
+                  onChange={(e) => setManualQueryVisitId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
+                >
+                  {study.visits.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="manual-query-form"
+                  className="block text-[10px] studio-fg-muted mb-1"
+                >
+                  CRF Form
+                </label>
+                <select
+                  id="manual-query-form"
+                  value={manualQueryFormId}
+                  onChange={(e) => {
+                    const nextFormId = e.target.value;
+                    setManualQueryFormId(nextFormId);
+                    const nextForm = study.forms.find(
+                      (f) => f.id === nextFormId
+                    );
+                    const firstField = nextForm?.sections.flatMap(
+                      (s) => s.fields
+                    )[0];
+                    setManualQueryFieldId(firstField?.id || "");
+                  }}
+                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
+                >
+                  {study.forms.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name} ({f.domain})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="manual-query-field"
+                  className="block text-[10px] studio-fg-muted mb-1"
+                >
+                  Target Variable
+                </label>
+                <select
+                  id="manual-query-field"
+                  value={manualQueryFieldId}
+                  onChange={(e) => setManualQueryFieldId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
+                >
+                  {manualQueryFields.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.variableName} — {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="manual-query-severity"
+                className="block text-[10px] font-mono studio-fg-muted mb-1"
+              >
+                Severity
+              </label>
+              <select
+                id="manual-query-severity"
+                value={manualQuerySeverity}
+                onChange={(e) =>
+                  setManualQuerySeverity(e.target.value as EDCQuery["severity"])
+                }
+                className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs font-mono"
+              >
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="info">Info</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="manual-query-message"
+                className="block text-[10px] font-mono studio-fg-muted mb-1"
+              >
+                Discrepancy Query Message
+              </label>
+              <textarea
+                id="manual-query-message"
+                rows={3}
+                value={manualQueryMessage}
+                onChange={(e) => setManualQueryMessage(e.target.value)}
+                placeholder="Describe source discrepancy or missing clarification needed from site..."
+                className="w-full px-3 py-2 text-xs studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsManualQueryModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-fg-secondary text-xs font-mono"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!manualQueryMessage.trim()}
+                onClick={handleRaiseManualQuery}
+                className="px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs font-mono disabled:opacity-40"
+              >
+                Submit Manual Query
               </button>
             </div>
           </div>

@@ -546,6 +546,9 @@ export const EDCQuerySchema = z.object({
   response: z.string().optional(),
   respondedBy: z.string().optional(),
   respondedAt: z.string().optional(),
+  resolvedBy: z.string().optional(),
+  resolvedAt: z.string().optional(),
+  resolutionReason: z.string().optional(),
 });
 
 export const EdcSimulationStateSchema = z.object({

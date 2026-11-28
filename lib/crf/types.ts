@@ -561,6 +561,64 @@ export interface EDCQuery {
   response?: string;
   respondedBy?: string;
   respondedAt?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  resolutionReason?: string;
+}
+
+export interface RaiseEdcQueryInput {
+  id?: string;
+  subjectId: string;
+  visitId: string;
+  formId: string;
+  fieldId: string;
+  fieldName?: string;
+  ruleId?: string;
+  severity?: EDCQuery["severity"];
+  message: string;
+  actor: string;
+  userRole: NonNullable<AuditTrailEntry["userRole"]>;
+  timestamp?: string;
+  reasonForChange?: string;
+}
+
+export interface AnswerEdcQueryInput {
+  queryId: string;
+  response: string;
+  actor: string;
+  userRole: NonNullable<AuditTrailEntry["userRole"]>;
+  timestamp?: string;
+  reasonForChange?: string;
+}
+
+export interface CloseEdcQueryInput {
+  queryId: string;
+  actor: string;
+  userRole: NonNullable<AuditTrailEntry["userRole"]>;
+  resolutionReason?: string;
+  timestamp?: string;
+}
+
+export interface CancelEdcQueryInput {
+  queryId: string;
+  actor: string;
+  userRole: NonNullable<AuditTrailEntry["userRole"]>;
+  resolutionReason?: string;
+  timestamp?: string;
+}
+
+export interface ReopenEdcQueryInput {
+  queryId: string;
+  actor: string;
+  userRole: NonNullable<AuditTrailEntry["userRole"]>;
+  reason?: string;
+  timestamp?: string;
+}
+
+export type ClinicalDataCsvKind = "subjects" | "queries" | "audits";
+
+export interface ExportClinicalCsvOptions {
+  selectedFormId?: string;
 }
 
 export interface AuditTrailEntry {

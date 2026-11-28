@@ -26,6 +26,12 @@ import {
   StudyReviewTarget,
   StudyReviewThread,
   AuditTrailEntry,
+  RaiseEdcQueryInput,
+  AnswerEdcQueryInput,
+  CloseEdcQueryInput,
+  CancelEdcQueryInput,
+  ReopenEdcQueryInput,
+  ExportClinicalCsvOptions,
 } from "../types";
 import {
   saveStudyBaseline,
@@ -79,6 +85,21 @@ import {
   exportUniversalCrfYaml,
   diffUniversalCrfStudies,
 } from "./universal-schema";
+import {
+  raiseSimulationQuery,
+  answerSimulationQuery,
+  closeSimulationQuery,
+  cancelSimulationQuery,
+  reopenSimulationQuery,
+} from "./edc-query-lifecycle";
+import {
+  exportSimulationSubjectsCsv,
+  exportSimulationQueriesCsv,
+  exportSimulationAuditsCsv,
+  importSimulationSubjectsCsv,
+  importSimulationQueriesCsv,
+  importSimulationAuditsCsv,
+} from "./clinical-data-csv";
 
 export interface ValidationIssue {
   form: string;
@@ -3556,6 +3577,148 @@ export class StudyProtocolEngine {
         error: err instanceof Error ? err.message : String(err),
       };
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EDC Discrepancy Query Lifecycle & Clinical CSV Exchange
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Raises a discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static raiseQuery(
+    study: StudyProtocol,
+    input: RaiseEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = raiseSimulationQuery(
+      next.simulationState,
+      input,
+      next
+    );
+    return next;
+  }
+
+  /**
+   * Answers an open discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static answerQuery(
+    study: StudyProtocol,
+    input: AnswerEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = answerSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Closes an answered or open discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static closeQuery(
+    study: StudyProtocol,
+    input: CloseEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = closeSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Cancels an open discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static cancelQuery(
+    study: StudyProtocol,
+    input: CancelEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = cancelSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Reopens an answered, closed, or cancelled discrepancy query in `study.simulationState`
+   * and records an `AuditTrailEntry`.
+   */
+  static reopenQuery(
+    study: StudyProtocol,
+    input: ReopenEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = reopenSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Exports simulated subjects and captured values to RFC 4180 CSV.
+   */
+  static exportSubjectsCsv(
+    study: StudyProtocol,
+    options?: ExportClinicalCsvOptions
+  ): string {
+    return exportSimulationSubjectsCsv(study, options);
+  }
+
+  /**
+   * Exports simulated discrepancy queries to RFC 4180 CSV.
+   */
+  static exportQueriesCsv(
+    study: StudyProtocol,
+    options?: ExportClinicalCsvOptions
+  ): string {
+    return exportSimulationQueriesCsv(study, options);
+  }
+
+  /**
+   * Exports simulated EDC audit trail entries to RFC 4180 CSV.
+   */
+  static exportAuditsCsv(
+    study: StudyProtocol,
+    options?: ExportClinicalCsvOptions
+  ): string {
+    return exportSimulationAuditsCsv(study, options);
+  }
+
+  /**
+   * Imports simulated subjects and captured values from RFC 4180 CSV into a cloned `StudyProtocol`.
+   */
+  static importSubjectsCsv(
+    study: StudyProtocol,
+    csvText: string
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = importSimulationSubjectsCsv(
+      csvText,
+      next,
+      next.simulationState
+    );
+    return next;
+  }
+
+  /**
+   * Imports simulated discrepancy queries from RFC 4180 CSV into a cloned `StudyProtocol`.
+   */
+  static importQueriesCsv(
+    study: StudyProtocol,
+    csvText: string
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = importSimulationQueriesCsv(
+      csvText,
+      next.simulationState
+    );
+    return next;
+  }
+
+  /**
+   * Imports simulated EDC audit entries from RFC 4180 CSV into a cloned `StudyProtocol`.
+   */
+  static importAuditsCsv(study: StudyProtocol, csvText: string): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = importSimulationAuditsCsv(
+      csvText,
+      next.simulationState
+    );
+    return next;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

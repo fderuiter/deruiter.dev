@@ -13,6 +13,9 @@ import {
   CodelistOption,
   AuditTrailEntry,
   ClinicalDataType,
+  EDCQuery,
+  EdcSimulationState,
+  ElectronicSignature,
 } from "../types";
 
 /**
@@ -80,6 +83,63 @@ function nciCodeOf(el: Element): string | undefined {
     el.getAttribute("NCICode") ||
     undefined
   );
+}
+
+function aliasNameOf(el: Element, context: string): string | undefined {
+  const alias = Array.from(el.children).find(
+    (child) =>
+      child.localName === "Alias" && child.getAttribute("Context") === context
+  );
+  return alias?.getAttribute("Name") || undefined;
+}
+
+function getDirectChildrenByLocalName(
+  parent: Element,
+  localName: string
+): Element[] {
+  const target = localName.toLowerCase();
+  return Array.from(parent.children).filter(
+    (child) => child.localName.toLowerCase() === target
+  );
+}
+
+function coerceClinicalItemValue(
+  raw: string,
+  isNull: boolean,
+  field?: CRFField
+): string | number | boolean | null {
+  if (isNull) return null;
+  if (!field) return raw;
+  if (
+    field.dataType === "integer" ||
+    field.dataType === "number" ||
+    field.dataType === "calculated" ||
+    field.dataType === "vas_scale" ||
+    field.dataType === "nrs_scale"
+  ) {
+    if (raw !== "") {
+      const num = Number(raw);
+      if (Number.isFinite(num)) return num;
+    }
+  }
+  if (field.dataType === "checkbox" && (raw === "true" || raw === "false")) {
+    return raw === "true";
+  }
+  return raw;
+}
+
+function normalizeSignatureMeaning(
+  raw: string | undefined
+): ElectronicSignature["meaning"] {
+  if (
+    raw === "Author" ||
+    raw === "Investigator Approval" ||
+    raw === "Data Lock" ||
+    raw === "Monitor Verification"
+  ) {
+    return raw;
+  }
+  return "Investigator Approval";
 }
 
 function getChildTextContent(parent: Element, localName: string): string {
@@ -223,14 +283,27 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     const dataType = mapOdmDataTypeToClinical(odmDataType);
 
     const cleanVarName = name || itemOid.replace(/^IT\./, "");
+    const aliasedFieldId = aliasNameOf(itemEl, "crf-studio:fieldId");
+    const sdtmAnnotation = aliasNameOf(itemEl, "SDTM");
     const field: CRFField = {
-      id: itemOid.replace(/^IT\./, "fld_"),
+      id: aliasedFieldId || itemOid.replace(/^IT\./, "fld_"),
       variableName: cleanVarName,
       label: label || cleanVarName,
       dataType,
       columnSpan: 6,
       required: false,
       codelistId: codelistOid,
+      ...(sdtmAnnotation
+        ? {
+            cdashMetadata: {
+              domain: sdtmAnnotation.split(".")[0] || "CRF",
+              sdtmVariable: sdtmAnnotation.split(".")[1] || cleanVarName,
+              cdashLabel: label || cleanVarName,
+              core: "O" as const,
+              acrfAnnotation: sdtmAnnotation,
+            },
+          }
+        : {}),
     };
 
     itemDefMap.set(itemOid, { field, codelistId: codelistOid });
@@ -274,9 +347,10 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
       }
     });
 
-    const cleanSecId = igOid
-      .replace(/^IG\.[^.]+\./, "sec_")
-      .replace(/^IG\./, "sec_");
+    const aliasedSecId = aliasNameOf(igEl, "crf-studio:sectionId");
+    const cleanSecId =
+      aliasedSecId ||
+      igOid.replace(/^IG\.[^.]+\./, "sec_").replace(/^IG\./, "sec_");
     sectionMap.set(igOid, {
       id: cleanSecId,
       title,
@@ -353,7 +427,9 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
       }
     });
 
-    const cleanVisitId = seOid.replace(/^SE\./, "").toLowerCase();
+    const aliasedVisitId = aliasNameOf(seEl, "crf-studio:visitId");
+    const cleanVisitId =
+      aliasedVisitId || seOid.replace(/^SE\./, "").toLowerCase();
     visitMap.set(seOid, {
       id: cleanVisitId || `vis_${idx + 1}`,
       oid: seOid,
@@ -385,7 +461,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     ];
   }
 
-  // 6. Audit Trail
+  // 6. Design-Change Audit Trail (inside MetaDataVersion)
   const auditTrail: AuditTrailEntry[] = [];
   const auditRecordEls = getElementsByLocalName(metaVerEl, "AuditRecord");
 
@@ -428,6 +504,362 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     });
   });
 
+  // 7. AdminData (Users & SignatureDefs)
+  const adminUsers = new Map<
+    string,
+    { displayName: string; userRole?: string }
+  >();
+  const adminSigDefs = new Map<string, string>();
+  const adminDataEls = getDirectChildrenByLocalName(odmEl, "AdminData");
+
+  adminDataEls.forEach((adminEl) => {
+    getDirectChildrenByLocalName(adminEl, "User").forEach((userEl) => {
+      const uOid = userEl.getAttribute("OID");
+      if (!uOid) return;
+      const displayName =
+        getChildTextContent(userEl, "DisplayName") ||
+        getChildTextContent(userEl, "FullName") ||
+        getChildTextContent(userEl, "LoginName") ||
+        uOid;
+      const org = getChildTextContent(userEl, "Organization") || undefined;
+      adminUsers.set(uOid, { displayName, userRole: org });
+    });
+
+    getDirectChildrenByLocalName(adminEl, "SignatureDef").forEach((sdEl) => {
+      const sdOid = sdEl.getAttribute("OID");
+      if (!sdOid) return;
+      const meaning =
+        getChildTextContent(sdEl, "Meaning") || "Investigator Approval";
+      adminSigDefs.set(sdOid, meaning);
+    });
+  });
+
+  // 8. ClinicalData -> study.simulationState
+  let simulationState: EdcSimulationState | undefined;
+  const clinicalDataEls = getDirectChildrenByLocalName(odmEl, "ClinicalData");
+
+  if (clinicalDataEls.length > 0) {
+    const availableSubjects: string[] = [];
+    const seenSubjects = new Set<string>();
+    const formValues: Record<string, string | number | boolean | null> = {};
+    const auditLog: AuditTrailEntry[] = [];
+    const signatures: ElectronicSignature[] = [];
+    const queries: EDCQuery[] = [];
+    let lockedForms: NonNullable<EdcSimulationState["lockedForms"]> = {};
+    let sdvMap: NonNullable<EdcSimulationState["sdvMap"]> = {};
+
+    const addSubject = (subj?: string) => {
+      const trimmed = subj?.trim();
+      if (trimmed && !seenSubjects.has(trimmed)) {
+        seenSubjects.add(trimmed);
+        availableSubjects.push(trimmed);
+      }
+    };
+
+    const parseSignatureEl = (
+      sigEl: Element,
+      idx: number,
+      fallbackCtx?: { subjectId?: string; visitId?: string; formId?: string }
+    ) => {
+      const rawId = sigEl.getAttribute("ID") || `sig_${idx + 1}`;
+      const userOid =
+        getElementsByLocalName(sigEl, "UserRef")[0]?.getAttribute("UserOID") ||
+        "";
+      const sigDefOid =
+        getElementsByLocalName(sigEl, "SignatureRef")[0]?.getAttribute(
+          "SignatureOID"
+        ) || "";
+      const userInfo = adminUsers.get(userOid);
+      const meaning = normalizeSignatureMeaning(
+        adminSigDefs.get(sigDefOid) || sigDefOid || undefined
+      );
+      const ts =
+        getChildTextContent(sigEl, "DateTimeStamp") || creationDateTime;
+      const manifest = getChildTextContent(sigEl, "CryptoBindingManifest");
+
+      const prefix = "urn:crf-studio:simulated-signature:";
+      if (manifest.startsWith(prefix)) {
+        try {
+          const parsed = JSON.parse(
+            manifest.slice(prefix.length)
+          ) as Partial<ElectronicSignature>;
+          const subj = parsed.subjectId || fallbackCtx?.subjectId || "001-101";
+          addSubject(subj);
+          signatures.push({
+            id: parsed.id || rawId,
+            subjectId: subj,
+            visitId:
+              parsed.visitId ||
+              fallbackCtx?.visitId ||
+              visits[0]?.id ||
+              "vis_1",
+            formId:
+              parsed.formId || fallbackCtx?.formId || forms[0]?.id || "form_1",
+            signedBy: userInfo?.displayName || userOid || "Investigator",
+            userRole: userInfo?.userRole || "Principal Investigator",
+            timestamp: ts,
+            meaning,
+            digest: parsed.digest || `sim_${idx + 1}`,
+          });
+          return;
+        } catch {
+          // Fall through to plain ODM signature handling
+        }
+      }
+
+      const subj = fallbackCtx?.subjectId || availableSubjects[0] || "001-101";
+      addSubject(subj);
+      signatures.push({
+        id: rawId,
+        subjectId: subj,
+        visitId: fallbackCtx?.visitId || visits[0]?.id || "vis_1",
+        formId: fallbackCtx?.formId || forms[0]?.id || "form_1",
+        signedBy: userInfo?.displayName || userOid || "Investigator",
+        userRole: userInfo?.userRole || "Principal Investigator",
+        timestamp: ts,
+        meaning,
+        digest: manifest || `sim_${idx + 1}`,
+      });
+    };
+
+    const parseAuditEl = (
+      recEl: Element,
+      idx: number,
+      fallbackCtx?: {
+        subjectId?: string;
+        formId?: string;
+        fieldId?: string;
+        fieldName?: string;
+      }
+    ) => {
+      const rawId = recEl.getAttribute("ID") || `aud_${idx + 1}`;
+      const userOid =
+        getElementsByLocalName(recEl, "UserRef")[0]?.getAttribute("UserOID") ||
+        "";
+      const userInfo = adminUsers.get(userOid);
+      const ts =
+        getChildTextContent(recEl, "DateTimeStamp") || creationDateTime;
+      const reason = getChildTextContent(recEl, "ReasonForChange") || undefined;
+      const sourceId = getChildTextContent(recEl, "SourceID");
+
+      const prefix = "urn:crf-studio:audit:";
+      if (sourceId.startsWith(prefix)) {
+        try {
+          const parsed = JSON.parse(
+            sourceId.slice(prefix.length)
+          ) as Partial<AuditTrailEntry>;
+          if (parsed.subjectId) addSubject(parsed.subjectId);
+          auditLog.push({
+            id: parsed.id || rawId,
+            timestamp: ts,
+            changedBy: userInfo?.displayName || userOid || "System",
+            userRole: userInfo?.userRole,
+            subjectId: parsed.subjectId || fallbackCtx?.subjectId,
+            formId: parsed.formId || fallbackCtx?.formId,
+            fieldId: parsed.fieldId || fallbackCtx?.fieldId,
+            fieldName: parsed.fieldName || fallbackCtx?.fieldName,
+            previousValue:
+              parsed.previousValue === undefined ? null : parsed.previousValue,
+            newValue: parsed.newValue === undefined ? null : parsed.newValue,
+            actionType: parsed.actionType,
+            targetId: parsed.targetId,
+            targetType: parsed.targetType,
+            reasonForChange: reason,
+          });
+          return;
+        } catch {
+          // Fall through to plain ODM AuditRecord handling
+        }
+      }
+
+      if (fallbackCtx?.subjectId) addSubject(fallbackCtx.subjectId);
+      auditLog.push({
+        id: rawId,
+        timestamp: ts,
+        changedBy: userInfo?.displayName || userOid || "System",
+        userRole: userInfo?.userRole,
+        subjectId: fallbackCtx?.subjectId,
+        formId: fallbackCtx?.formId,
+        fieldId: fallbackCtx?.fieldId,
+        fieldName: fallbackCtx?.fieldName,
+        previousValue: null,
+        newValue: sourceId || null,
+        reasonForChange: reason,
+      });
+    };
+
+    clinicalDataEls.forEach((cdEl) => {
+      // SubjectData
+      getDirectChildrenByLocalName(cdEl, "SubjectData").forEach((subjEl) => {
+        const subjectKey = subjEl.getAttribute("SubjectKey");
+        if (!subjectKey) return;
+        addSubject(subjectKey);
+
+        getDirectChildrenByLocalName(subjEl, "StudyEventData").forEach(
+          (seDataEl) => {
+            const seOid = seDataEl.getAttribute("StudyEventOID") || "";
+            const visit =
+              visitMap.get(seOid) ||
+              visits.find((v) => v.oid === seOid || v.id === seOid);
+            const visitId =
+              visit?.id ||
+              seOid.replace(/^SE\./, "").toLowerCase() ||
+              visits[0]?.id ||
+              "vis_1";
+
+            getDirectChildrenByLocalName(seDataEl, "FormData").forEach(
+              (fDataEl) => {
+                const fOid = fDataEl.getAttribute("FormOID") || "";
+                const form =
+                  formMap.get(fOid) ||
+                  forms.find((f) => `FORM.${f.id}` === fOid || f.id === fOid);
+                const formId = form?.id || fOid.replace(/^FORM\./, "");
+
+                // Support inline FormData <Signature> in external ODM files
+                getDirectChildrenByLocalName(fDataEl, "Signature").forEach(
+                  (inlineSigEl, sIdx) => {
+                    parseSignatureEl(inlineSigEl, signatures.length + sIdx, {
+                      subjectId: subjectKey,
+                      visitId,
+                      formId,
+                    });
+                  }
+                );
+
+                getDirectChildrenByLocalName(fDataEl, "ItemGroupData").forEach(
+                  (igDataEl) => {
+                    const igOid = igDataEl.getAttribute("ItemGroupOID") || "";
+                    const secFromMap = sectionMap.get(igOid);
+
+                    Array.from(igDataEl.children).forEach((itemDataEl) => {
+                      const localLower = itemDataEl.localName.toLowerCase();
+                      if (!localLower.startsWith("itemdata")) return;
+                      const itemOid = itemDataEl.getAttribute("ItemOID");
+                      if (!itemOid) return;
+
+                      const defEntry = itemDefMap.get(itemOid);
+                      const varCandidate = itemOid.replace(/^IT\./, "");
+                      const fieldInSection = secFromMap?.fields.find(
+                        (f) =>
+                          f.id === defEntry?.field.id ||
+                          f.variableName === varCandidate
+                      );
+                      const fieldInForm = form?.sections
+                        .flatMap((s) => s.fields)
+                        .find(
+                          (f) =>
+                            f.id === defEntry?.field.id ||
+                            f.variableName === varCandidate
+                        );
+                      const matchedField =
+                        fieldInSection || fieldInForm || defEntry?.field;
+                      const fieldId =
+                        matchedField?.id || itemOid.replace(/^IT\./, "fld_");
+
+                      const isNull =
+                        itemDataEl.getAttribute("IsNull") === "Yes";
+                      const rawVal = itemDataEl.hasAttribute("Value")
+                        ? itemDataEl.getAttribute("Value") || ""
+                        : (itemDataEl.textContent || "").trim();
+
+                      formValues[`${subjectKey}_${visitId}_${fieldId}`] =
+                        coerceClinicalItemValue(rawVal, isNull, matchedField);
+
+                      // Support inline ItemData <AuditRecord> in external ODM files
+                      getDirectChildrenByLocalName(
+                        itemDataEl,
+                        "AuditRecord"
+                      ).forEach((inlineAud, aIdx) => {
+                        parseAuditEl(inlineAud, auditLog.length + aIdx, {
+                          subjectId: subjectKey,
+                          formId,
+                          fieldId,
+                          fieldName: matchedField?.variableName || fieldId,
+                        });
+                      });
+                    });
+                  }
+                );
+              }
+            );
+          }
+        );
+      });
+
+      // AuditRecords container
+      getDirectChildrenByLocalName(cdEl, "AuditRecords").forEach((arGroup) => {
+        getDirectChildrenByLocalName(arGroup, "AuditRecord").forEach(
+          (recEl, idx) => {
+            parseAuditEl(recEl, idx);
+          }
+        );
+      });
+
+      // Signatures container
+      getDirectChildrenByLocalName(cdEl, "Signatures").forEach((sigGroup) => {
+        getDirectChildrenByLocalName(sigGroup, "Signature").forEach(
+          (sigEl, idx) => {
+            parseSignatureEl(sigEl, idx);
+          }
+        );
+      });
+
+      // Annotations container (Queries + Locked/SDV state)
+      getDirectChildrenByLocalName(cdEl, "Annotations").forEach((annGroup) => {
+        getDirectChildrenByLocalName(annGroup, "Annotation").forEach(
+          (annEl) => {
+            const comment = getChildTextContent(annEl, "Comment");
+            const queryPrefix = "urn:crf-studio:query:";
+            const statePrefix = "urn:crf-studio:state:";
+            if (comment.startsWith(queryPrefix)) {
+              try {
+                const parsedQuery = JSON.parse(
+                  comment.slice(queryPrefix.length)
+                ) as EDCQuery;
+                if (parsedQuery && parsedQuery.id) {
+                  addSubject(parsedQuery.subjectId);
+                  queries.push(parsedQuery);
+                }
+              } catch {
+                // Ignore non-JSON comments
+              }
+            } else if (comment.startsWith(statePrefix)) {
+              try {
+                const parsedState = JSON.parse(
+                  comment.slice(statePrefix.length)
+                ) as Pick<EdcSimulationState, "lockedForms" | "sdvMap">;
+                if (
+                  parsedState.lockedForms &&
+                  typeof parsedState.lockedForms === "object"
+                ) {
+                  lockedForms = { ...lockedForms, ...parsedState.lockedForms };
+                }
+                if (
+                  parsedState.sdvMap &&
+                  typeof parsedState.sdvMap === "object"
+                ) {
+                  sdvMap = { ...sdvMap, ...parsedState.sdvMap };
+                }
+              } catch {
+                // Ignore non-JSON state comments
+              }
+            }
+          }
+        );
+      });
+    });
+
+    simulationState = {
+      availableSubjects,
+      formValues,
+      auditLog,
+      signatures,
+      queries,
+      lockedForms,
+      sdvMap,
+    };
+  }
+
   return {
     id: `study_${protocolNumber.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
     protocolNumber,
@@ -441,6 +873,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     visits,
     codelists,
     auditTrail,
+    ...(simulationState ? { simulationState } : {}),
     provenance: {
       sourceFormat: "CDISC ODM XML",
       sourceVersion: version,

@@ -518,7 +518,7 @@ export const STANDARDS_BOM_SPECS: readonly StandardBomSpec[] = [
       validate: { status: "yes" },
     },
     coverage:
-      "CRF Studio forms, items, codelists and study events as ODM metadata at the pinned version. No clinical data.",
+      "CRF Studio forms, items, codelists and study events as ODM metadata at the pinned version, plus simulated SubjectData, AuditRecords, Signatures, and Annotations in ClinicalData and AdminData.",
     name: "Operational Data Model",
     source: `${SITE}/data-exchange/odm`,
     feed: site("data-exchange/odm", "ODM"),

@@ -8,6 +8,8 @@ import type {
   CRFForm,
   StudyProtocol,
   ComplianceViolation,
+  ClinicalDataCsvKind,
+  EdcSimulationState,
 } from "@/lib/crf/types";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { downloadFile } from "@/lib/download";
@@ -30,16 +32,27 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 
-import { exportUniversalCrfJson, type ParsedStudyFileResult } from "@/lib/crf";
+import {
+  exportUniversalCrfJson,
+  exportSimulationSubjectsCsv,
+  exportSimulationQueriesCsv,
+  exportSimulationAuditsCsv,
+  detectClinicalCsvKind,
+  importClinicalCsvIntoSimulationState,
+  discoverSimulationSubjects,
+  type ParsedStudyFileResult,
+} from "@/lib/crf";
 import {
   STUDY_DATA_HANDOFF_PATH,
   storeStudyHandoff,
 } from "@/components/study-data/handoff-storage";
 import { ImportDropzone } from "../ImportDropzone";
+import { NoPhiNotice } from "../NoPhiNotice";
 
 interface ExportImportModalProps {
   study: StudyProtocol;
   onImportStudy: (importedStudy: StudyProtocol) => void;
+  onUpdateSimulationState?: (nextState: EdcSimulationState) => void;
   onOpenExportDocument?: () => void;
   onOpenBranding?: () => void;
   /** Opens the one-revision review package flow (#680). */
@@ -98,6 +111,7 @@ const EXPORT_TABS: ExportTab[] = [
 export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   study,
   onImportStudy,
+  onUpdateSimulationState,
   onOpenExportDocument,
   onOpenBranding,
   onOpenReviewPackage,
@@ -114,6 +128,13 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     ComplianceViolation[]
   >([]);
   const [pendingStudy, setPendingStudy] = useState<StudyProtocol | null>(null);
+  const [clinicalCsvKind, setClinicalCsvKind] =
+    useState<ClinicalDataCsvKind>("subjects");
+  const [clinicalCsvStatus, setClinicalCsvStatus] = useState<string | null>(
+    null
+  );
+  const [clinicalCsvError, setClinicalCsvError] = useState<string | null>(null);
+  const clinicalCsvInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const tabRefs = React.useRef<Record<ExportTab, HTMLButtonElement | null>>({
     universal: null,
@@ -357,11 +378,117 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     }
   };
 
+  const clinicalScopeFormId =
+    selectedFormId === "all" ? undefined : selectedFormId;
+
+  const clinicalCsvPreview = useMemo(() => {
+    if (clinicalCsvKind === "subjects") {
+      return exportSimulationSubjectsCsv(study, {
+        selectedFormId: clinicalScopeFormId,
+      });
+    }
+    if (clinicalCsvKind === "queries") {
+      return exportSimulationQueriesCsv(study, {
+        selectedFormId: clinicalScopeFormId,
+      });
+    }
+    return exportSimulationAuditsCsv(study, {
+      selectedFormId: clinicalScopeFormId,
+    });
+  }, [study, clinicalCsvKind, clinicalScopeFormId]);
+
+  const applyImportedSimulationState = (
+    nextSimState: EdcSimulationState,
+    importedKind: ClinicalDataCsvKind
+  ) => {
+    if (onUpdateSimulationState) {
+      onUpdateSimulationState(nextSimState);
+    } else {
+      onImportStudy({
+        ...study,
+        simulationState: nextSimState,
+      });
+    }
+    const label =
+      importedKind === "subjects"
+        ? `${nextSimState.availableSubjects?.length ?? 0} simulated subject(s)`
+        : importedKind === "queries"
+          ? `${nextSimState.queries?.length ?? 0} discrepancy querie(s)`
+          : `${nextSimState.auditLog?.length ?? 0} audit log row(s)`;
+    setClinicalCsvError(null);
+    setClinicalCsvStatus(`Imported ${importedKind} CSV (${label}).`);
+  };
+
+  const handleExportClinicalCsv = (kind: ClinicalDataCsvKind) => {
+    recordEvent("crf", "project_click");
+    const domainPart =
+      clinicalScopeFormId &&
+      study.forms.find((f) => f.id === clinicalScopeFormId)
+        ? `-${study.forms.find((f) => f.id === clinicalScopeFormId)?.domain || clinicalScopeFormId}`
+        : "";
+    const content =
+      kind === "subjects"
+        ? exportSimulationSubjectsCsv(study, {
+            selectedFormId: clinicalScopeFormId,
+          })
+        : kind === "queries"
+          ? exportSimulationQueriesCsv(study, {
+              selectedFormId: clinicalScopeFormId,
+            })
+          : exportSimulationAuditsCsv(study, {
+              selectedFormId: clinicalScopeFormId,
+            });
+    const filename = `${study.protocolNumber}${domainPart}-${kind}.csv`;
+    downloadFile(content, filename, { mimeType: "text/csv" });
+  };
+
+  const handleClinicalCsvFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setClinicalCsvError(null);
+    setClinicalCsvStatus(null);
+    try {
+      const text = await file.text();
+      const detected = detectClinicalCsvKind(text) || clinicalCsvKind;
+      const { kind, simulationState: nextSim } =
+        importClinicalCsvIntoSimulationState(
+          text,
+          study,
+          study.simulationState,
+          detected
+        );
+      setClinicalCsvKind(kind);
+      applyImportedSimulationState(nextSim, kind);
+    } catch (err: unknown) {
+      setClinicalCsvError(
+        err instanceof Error ? err.message : "Failed to parse clinical CSV file"
+      );
+    }
+  };
+
   const handlePerformImport = async () => {
     setImportError(null);
     setPreflightViolations([]);
     setPendingStudy(null);
     try {
+      const detectedClinicalCsv = detectClinicalCsvKind(importJsonText);
+      if (detectedClinicalCsv) {
+        const { kind, simulationState: nextSim } =
+          importClinicalCsvIntoSimulationState(
+            importJsonText,
+            study,
+            study.simulationState,
+            detectedClinicalCsv
+          );
+        setClinicalCsvKind(kind);
+        applyImportedSimulationState(nextSim, kind);
+        setImportJsonText("");
+        return;
+      }
+
       const { detectAndParseStudyFile } = await import("@/lib/crf");
       const result = detectAndParseStudyFile(
         importJsonText,
@@ -880,6 +1007,138 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           </div>
         );
       })}
+
+      {/* Simulated Clinical Data CSV Exchange (Subjects, Queries, Audits) */}
+      <div
+        data-testid="clinical-csv-exchange-card"
+        className="shrink-0 min-w-0 p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <IconFileSpreadsheet className="w-4 h-4 studio-fg-cyan shrink-0" />
+              <h2 className="text-xs font-bold studio-fg-primary font-mono uppercase">
+                Simulated Clinical Data CSV Exchange (RFC 4180)
+              </h2>
+            </div>
+            <p className="text-xs studio-fg-secondary font-sans">
+              Export or re-import simulated EDC subjects, discrepancy queries,
+              and Part 11-style audit records as RFC 4180 CSV tables in browser
+              memory (not a validated system).
+            </p>
+            <NoPhiNotice className="mt-1" />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono studio-fg-muted">
+            <span>
+              {discoverSimulationSubjects(study, study.simulationState).length}{" "}
+              Subjects
+            </span>
+            <span>·</span>
+            <span>{(study.simulationState?.queries || []).length} Queries</span>
+            <span>·</span>
+            <span>{(study.simulationState?.auditLog || []).length} Audits</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div
+            role="group"
+            aria-label="Select simulated clinical CSV dataset"
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            {(
+              [
+                ["subjects", "Subjects CSV"],
+                ["queries", "Queries CSV"],
+                ["audits", "Audit Log CSV"],
+              ] as const
+            ).map(([kind, label]) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={clinicalCsvKind === kind}
+                onClick={() => setClinicalCsvKind(kind)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border ${
+                  clinicalCsvKind === kind
+                    ? "studio-btn-cyan font-bold border-transparent"
+                    : "studio-surface-card studio-border-default studio-fg-muted studio-hover-fg-primary"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleExportClinicalCsv("subjects")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg studio-surface-card border studio-border-strong text-xs font-mono studio-fg-primary studio-hover-border"
+            >
+              <IconDownload className="w-3.5 h-3.5 studio-fg-cyan" />
+              <span>Export Subjects CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExportClinicalCsv("queries")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg studio-surface-card border studio-border-strong text-xs font-mono studio-fg-primary studio-hover-border"
+            >
+              <IconDownload className="w-3.5 h-3.5 studio-fg-cyan" />
+              <span>Export Queries CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExportClinicalCsv("audits")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg studio-surface-card border studio-border-strong text-xs font-mono studio-fg-primary studio-hover-border"
+            >
+              <IconDownload className="w-3.5 h-3.5 studio-fg-cyan" />
+              <span>Export Audits CSV</span>
+            </button>
+            <input
+              ref={clinicalCsvInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              aria-label="Import Clinical Data CSV file"
+              onChange={handleClinicalCsvFileUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => clinicalCsvInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg studio-btn-cyan text-xs font-mono font-bold"
+            >
+              <IconUpload className="w-3.5 h-3.5" />
+              <span>Import Clinical CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <pre
+          data-testid="clinical-csv-preview"
+          className="p-3 rounded-xl studio-surface-card border studio-border-default font-mono text-[11px] studio-fg-secondary overflow-x-auto max-h-44 whitespace-pre"
+        >
+          {clinicalCsvPreview}
+        </pre>
+
+        {clinicalCsvStatus && (
+          <div
+            role="status"
+            className="p-2.5 rounded-lg studio-accent-emerald border text-xs font-mono"
+          >
+            {clinicalCsvStatus}
+          </div>
+        )}
+
+        {clinicalCsvError && (
+          <div
+            role="alert"
+            className="p-2.5 rounded-lg studio-accent-red border text-xs font-mono"
+          >
+            {clinicalCsvError}
+          </div>
+        )}
+      </div>
 
       {/* Import Section */}
       <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">

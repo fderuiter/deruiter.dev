@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: "Diagnosis loop for hard bugs and performance regressions. Use when the user says \"diagnose\"/\"debug this\", or reports something broken/throwing/failing/slow."
+description: 'Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow.'
 license: MIT
 metadata:
   author: Matt Pocock
@@ -95,8 +95,11 @@ Generate **3–5 ranked hypotheses** before testing any of them. Single-hypothes
 
 Each hypothesis must be **falsifiable**: state the prediction it makes.
 
-<!-- markdownlint-disable-next-line MD033 -->
+<!-- markdownlint-disable MD033 -->
+
 > Format: "If <X> is the cause, then <changing Y> will make the bug disappear / <changing Z> will make it worse."
+
+<!-- markdownlint-enable MD033 -->
 
 If you cannot state the prediction, the hypothesis is a vibe: discard or sharpen it.
 

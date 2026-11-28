@@ -12,7 +12,10 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vitest", "run", "${relativeFile}"],
+      "runtimeArgs": ["--no-install", "vitest", "run", "${relativeFile}"],
+      "env": {
+        "DATABASE_URL": "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+      },
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
@@ -23,11 +26,16 @@
       "request": "launch",
       "runtimeExecutable": "npx",
       "runtimeArgs": [
+        "--no-install",
         "playwright",
         "test",
         "__tests__/e2e/synthetic-probes.spec.ts",
+        "--project=chromium",
         "--debug"
       ],
+      "env": {
+        "DATABASE_URL": "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+      },
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
     },
@@ -35,7 +43,10 @@
       "name": "DX: Run Doctor Diagnostics",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npm run dx doctor"
+      "command": "npm run dx doctor",
+      "env": {
+        "DATABASE_URL": "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+      }
     }
   ]
 }

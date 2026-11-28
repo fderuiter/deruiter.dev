@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { DiagnosticCheckResult } from "../doctor";
+import { shouldSkipWorkspaceDirectory } from "../workspace-config";
 
 /**
  * The most `react-hooks/set-state-in-effect` suppressions allowed across
@@ -11,14 +12,15 @@ import type { DiagnosticCheckResult } from "../doctor";
 export const SET_STATE_IN_EFFECT_CEILING = 46;
 
 const SCANNED_DIRS = ["app", "components", "hooks", "lib"];
-const IGNORED_DIRS = new Set(["node_modules", ".next", "generated"]);
 
-function sourceFiles(dir: string): string[] {
+function sourceFiles(root: string, dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      return IGNORED_DIRS.has(entry.name) ? [] : sourceFiles(full);
+      return shouldSkipWorkspaceDirectory(root, full)
+        ? []
+        : sourceFiles(root, full);
     }
     return /\.(ts|tsx)$/.test(entry.name) ? [full] : [];
   });
@@ -34,7 +36,7 @@ function sourceFiles(dir: string): string[] {
  */
 export function findSetStateInEffectSuppressions(root: string): string[] {
   return SCANNED_DIRS.flatMap((dir) =>
-    sourceFiles(path.join(root, dir))
+    sourceFiles(root, path.join(root, dir))
   ).flatMap((file) =>
     fs
       .readFileSync(file, "utf-8")

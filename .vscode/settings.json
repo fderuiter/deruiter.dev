@@ -22,15 +22,24 @@
     "**/Thumbs.db": true,
     "**/.next": true,
     "**/coverage": true,
-    "**/.turbo": true
+    "**/.turbo": true,
+    ".agents/worktrees": true,
+    ".claude/worktrees": true,
+    ".stryker-tmp": true,
+    "docs/reference/api": true,
+    "app/generated/prisma": true
   },
   "search.exclude": {
     "**/node_modules": true,
     "**/bower_components": true,
     "**/.next": true,
     "**/coverage": true,
-    "**/.agents": true,
     "**/scratch": true,
-    "**/tmp": true
+    "**/tmp": true,
+    ".agents/worktrees": true,
+    ".claude/worktrees": true,
+    ".stryker-tmp": true,
+    "docs/reference/api": true,
+    "app/generated/prisma": true
   }
 }

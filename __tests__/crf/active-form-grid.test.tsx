@@ -743,9 +743,10 @@ describe("ActiveFormGrid - Integration, Atomicity, Validation & Accessibility", 
       expect(event2?.nextLabel).toBe("Label 2 New");
       expect(event2?.author.name).toBe("Batch Builder");
 
-      // Verify protocol validation passes
+      // Verify pasted 8-char identifiers pass length/AST/SoA checks while unified SD0002 flags renamed DM core field ICDAT
       const valResult = StudyProtocolEngine.validateProtocol(updatedStudy);
-      expect(valResult.isCompliant).toBe(true);
+      expect(valResult.errors.filter((e) => e.rule !== "SD0002")).toEqual([]);
+      expect(valResult.errors.map((e) => e.field)).toEqual(["ICDAT"]);
     });
   });
 });

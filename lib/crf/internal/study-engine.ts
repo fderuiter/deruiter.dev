@@ -54,7 +54,8 @@ import {
 } from "./precision-date";
 import { cloneDeep } from "../../utils";
 import { clamp } from "../../game-utils";
-import { lintForm } from "./ast-evaluator";
+import { evaluateStudyConformance } from "./conformance/engine";
+import type { ConformanceFinding } from "./conformance/types";
 import {
   instantiateSmartBlock,
   instantiateAtomicField,
@@ -3414,68 +3415,23 @@ export class StudyProtocolEngine {
   }
 
   /**
-   * 4-Tier Regulatory & Logic Conformance Validation
+   * 4-Tier Regulatory & Logic Conformance Validation projected from the
+   * declarative AST, formula, SoA, and CDASHIG 2.2 rule packs.
    */
   static validateProtocol(study: StudyProtocol): ProtocolValidationResult {
-    const issues: ValidationIssue[] = [];
-
-    // Tier 1: Variable Name Length & Core CDASH Rules
-    for (const form of study.forms) {
-      for (const sec of form.sections) {
-        for (const fld of sec.fields) {
-          if (fld.variableName.length > 8) {
-            issues.push({
-              form: form.domain,
-              field: fld.variableName,
-              rule: "CDASH-VAR-LEN",
-              message: `Variable '${fld.variableName}' exceeds CDISC 8-character limit (${fld.variableName.length} chars)`,
-              severity: "error",
-            });
-          }
-        }
-      }
-
-      // Tier 2: AST Formula & Edit Check Syntax Linting
-      const formErrors = lintForm(form);
-      for (const err of formErrors) {
-        issues.push({
-          form: form.domain,
-          rule: "AST-LINT",
-          message: err.message,
-          severity: "warning",
-        });
-      }
-    }
-
-    // Tier 3: Schedule of Activities (SoA) Matrix Consistency
-    const formIdsInStudy = new Set(study.forms.map((f) => f.id));
-    const assignedFormIds = new Set(
-      study.visits.flatMap((v) => v.assignedFormIds)
-    );
-
-    for (const form of study.forms) {
-      if (!form.isLogForm && !assignedFormIds.has(form.id)) {
-        issues.push({
-          form: form.domain,
-          rule: "SOA-ORPHAN",
-          message: `Form '${form.name}' (${form.domain}) is not assigned to any visit in the Visit Matrix`,
-          severity: "warning",
-        });
-      }
-    }
-
-    for (const visit of study.visits) {
-      for (const fId of visit.assignedFormIds) {
-        if (!formIdsInStudy.has(fId)) {
-          issues.push({
-            form: "SOA",
-            rule: "SOA-MISSING-FORM",
-            message: `Visit '${visit.name}' references non-existent form ID '${fId}'`,
-            severity: "error",
-          });
-        }
-      }
-    }
+    const result = evaluateStudyConformance(study);
+    const issues: ValidationIssue[] = result.findings
+      .filter(
+        (f): f is ConformanceFinding & { severity: "error" | "warning" } =>
+          f.severity === "error" || f.severity === "warning"
+      )
+      .map((f) => ({
+        form: f.formDomain || f.formName || f.formId,
+        ...(f.variableName ? { field: f.variableName } : {}),
+        rule: f.legacyEngineRule,
+        message: f.message,
+        severity: f.severity,
+      }));
 
     const errors = issues.filter((i) => i.severity === "error");
     const warnings = issues.filter((i) => i.severity === "warning");

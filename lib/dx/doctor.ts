@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import { scanFile } from "../security-scan";
+import { scanRepositoryFile, shouldScanRepositoryPath } from "../security-scan";
 import { colors, badge, formatHeader } from "./utils";
 import {
   checkClientEnvironmentReads,
@@ -108,6 +108,7 @@ export const AGENTS_SECTION_BY_CHECK: Readonly<Record<string, number>> = {
   "env-client-reads": 15,
   "git-hygiene-config": 15,
   "workspace-ide-config": 15,
+  "ignore-attributes-parity": 15,
   "vercel-build-commands": 22,
   "alternative-lockfiles": 15,
   "dead-code-review": 15,
@@ -860,46 +861,55 @@ export function checkTestFixtureHygiene(root: string): DiagnosticCheckResult {
   };
 }
 
+function collectRepositoryCandidateFiles(root: string): string[] {
+  if (!fs.existsSync(root)) return [];
+  const results: string[] = [];
+
+  const walk = (currentDir: string) => {
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      const relativePath = path
+        .relative(root, fullPath)
+        .split(path.sep)
+        .join("/");
+
+      if (entry.isSymbolicLink()) {
+        try {
+          if (!fs.statSync(fullPath).isFile()) continue;
+        } catch {
+          continue;
+        }
+        if (shouldScanRepositoryPath(relativePath)) {
+          results.push(fullPath);
+        }
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        if (shouldScanRepositoryPath(`${relativePath}/`)) {
+          walk(fullPath);
+        }
+      } else if (entry.isFile() && shouldScanRepositoryPath(relativePath)) {
+        results.push(fullPath);
+      }
+    }
+  };
+
+  walk(root);
+  return results;
+}
+
 /**
  * Secret & Credential Leak Scanner
  */
 export function checkSecretLeaks(root: string): DiagnosticCheckResult {
-  const candidateFiles = findFiles(
-    root,
-    /\.(ts|tsx|js|mjs|json|yml|yaml|md)$/,
-    [
-      "node_modules",
-      ".git",
-      ".next",
-      ".vercel",
-      "dist",
-      "coverage",
-      "__tests__",
-      ".husky",
-      ...DUPLICATE_TREE_DIRS,
-    ]
-  );
-
-  const ignoredFiles = [
-    "package-lock.json",
-    "bun.lock",
-    "yarn.lock",
-    "pnpm-lock.yaml",
-    "ci.yml",
-    "synthetic-probes.yml",
-    ".env.example",
-    "env-guard.ts",
-  ];
-
+  const candidateFiles = collectRepositoryCandidateFiles(root);
   const leaks: { file: string; line: number; category: string }[] = [];
 
   for (const file of candidateFiles) {
-    const baseName = path.basename(file);
     const relativeFile = path.relative(root, file).split(path.sep).join("/");
-    if (ignoredFiles.includes(baseName) || baseName.startsWith(".env")) {
-      continue;
-    }
-    const findings = scanFile(file, relativeFile);
+    const findings = scanRepositoryFile(file, relativeFile);
     for (const finding of findings) {
       leaks.push({
         file: finding.file,
@@ -3165,6 +3175,294 @@ export function checkPackageLockfile(root: string): DiagnosticCheckResult {
  * @param root - Workspace root to inspect.
  * @returns The diagnostic result for the project's Vercel configuration.
  */
+const REQUIRED_VERCELIGNORE_ENTRIES = [
+  ".env*",
+  "!.env.example",
+  "*.pem",
+  ".clerk",
+  "docs/reference/api",
+  ".stryker-tmp",
+  "reports",
+  ".vitest",
+  "blob-report",
+  ".eslintcache",
+  ".prettiercache",
+  ".benchmark-results",
+  ".vercel",
+  "app/generated/prisma",
+  ".scratch",
+  "scratch",
+  ".jules",
+  "tmp",
+  ".media-storage",
+  "scripts/r/renv/library",
+] as const;
+
+const GITIGNORE_VERCEL_PARITY_EXEMPTIONS = new Set([
+  ".pnp",
+  ".pnp.*",
+  ".yarn/*",
+  ".husky/_",
+  ".env*.local",
+  ".claude/worktrees",
+  ".agents/worktrees",
+  "public/sw.js",
+  "public/sw.js.map",
+  "next-env.d.ts",
+  "app/theme.css",
+  "lib/oss-credits/internal/credits.generated.json",
+  "lib/oss-credits/internal/registry-facts.generated.json",
+  "public/third-party-notices.txt",
+]);
+
+const REQUIRED_GITATTRIBUTES_BINARY_PATTERNS = [
+  "*.png",
+  "*.jpg",
+  "*.webp",
+  "*.ico",
+  "*.woff",
+  "*.woff2",
+  "*.wasm",
+  "*.glb",
+  "*.pdf",
+  "*.zip",
+  "*.mp4",
+  "*.webm",
+  "*.psd",
+  "*.ai",
+  "*.eps",
+] as const;
+
+function normalizeIgnorePattern(rawLine: string): string {
+  const trimmed = rawLine.trim();
+  if (!trimmed || trimmed.startsWith("#")) return "";
+  const negated = trimmed.startsWith("!");
+  const body = (negated ? trimmed.slice(1) : trimmed)
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^(?:\.\/|\/)+/, "")
+    .replace(/\/+$/, "");
+  if (!body) return "";
+  return negated ? `!${body}` : body;
+}
+
+function gitattributesCoversNoText(
+  noTextPatterns: readonly string[],
+  relFile: string
+): boolean {
+  for (const pattern of noTextPatterns) {
+    if (pattern === relFile) return true;
+    if (pattern.endsWith("/**")) {
+      const prefix = pattern.slice(0, -2);
+      if (relFile.startsWith(prefix)) return true;
+    } else if (pattern.includes("/*")) {
+      const dir = path.posix.dirname(pattern);
+      const ext = pattern.slice(pattern.lastIndexOf("*.") + 1);
+      if (
+        path.posix.dirname(relFile) === dir &&
+        ext.startsWith(".") &&
+        relFile.endsWith(ext)
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Checks `.vercelignore` parity with `.gitignore` (secrets, TypeDoc output, and
+ * local build/test/scratch directories), `.gitattributes` `-text` and `binary`
+ * rules for vendored fixtures and binary assets, and fail-closed Claude Code
+ * `PreToolUse` hook settings.
+ */
+export function checkIgnoreAndAttributesParity(
+  root: string
+): DiagnosticCheckResult {
+  const base = {
+    id: "ignore-attributes-parity",
+    name: "Ignore, Gitattributes & Claude Hook Parity",
+    category: "quality",
+  } as const;
+
+  const violations: string[] = [];
+  const vercelIgnorePath = path.join(root, ".vercelignore");
+  const gitIgnorePath = path.join(root, ".gitignore");
+  const gitAttributesPath = path.join(root, ".gitattributes");
+  const claudeSettingsPath = path.join(root, ".claude", "settings.json");
+
+  if (!fs.existsSync(vercelIgnorePath)) {
+    violations.push(".vercelignore is missing.");
+  } else {
+    const vercelEntries = new Set(
+      fs
+        .readFileSync(vercelIgnorePath, "utf-8")
+        .split(/\r?\n/)
+        .map(normalizeIgnorePattern)
+        .filter(Boolean)
+    );
+
+    for (const required of REQUIRED_VERCELIGNORE_ENTRIES) {
+      if (!vercelEntries.has(required)) {
+        violations.push(`.vercelignore: missing required rule '${required}'.`);
+      }
+    }
+
+    if (fs.existsSync(gitIgnorePath)) {
+      const gitEntries = fs
+        .readFileSync(gitIgnorePath, "utf-8")
+        .split(/\r?\n/)
+        .map(normalizeIgnorePattern)
+        .filter((entry) => Boolean(entry) && !entry.startsWith("!"));
+
+      for (const entry of gitEntries) {
+        if (GITIGNORE_VERCEL_PARITY_EXEMPTIONS.has(entry)) continue;
+        if (vercelEntries.has(entry)) continue;
+        const topSegment = entry.split("/")[0];
+        if (topSegment && vercelEntries.has(topSegment)) continue;
+        violations.push(
+          `.vercelignore: missing '.gitignore' entry '${entry}' (local artifact/secret drift).`
+        );
+      }
+    }
+  }
+
+  if (!fs.existsSync(gitAttributesPath)) {
+    violations.push(".gitattributes is missing.");
+  } else {
+    const attrLines = fs
+      .readFileSync(gitAttributesPath, "utf-8")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => Boolean(line) && !line.startsWith("#"));
+
+    const hasLfDefault = attrLines.some(
+      (line) =>
+        /^\*\s+/.test(line) &&
+        /\btext=auto\b/.test(line) &&
+        /\beol=lf\b/.test(line)
+    );
+    if (!hasLfDefault) {
+      violations.push(
+        ".gitattributes: missing '* text=auto eol=lf' repository line-ending baseline."
+      );
+    }
+
+    const noTextPatterns: string[] = [];
+    const binaryPatterns = new Set<string>();
+    for (const line of attrLines) {
+      const tokens = line.split(/\s+/);
+      const pattern = tokens[0];
+      const attrs = tokens.slice(1);
+      if (!pattern) continue;
+      if (attrs.includes("-text")) {
+        noTextPatterns.push(pattern);
+      }
+      if (attrs.includes("binary")) {
+        binaryPatterns.add(pattern);
+      }
+    }
+
+    if (
+      !gitattributesCoversNoText(
+        noTextPatterns,
+        "__tests__/fixtures/schemas/dataset-json-1.1/LICENSE"
+      )
+    ) {
+      violations.push(
+        ".gitattributes: missing '-text' rule for '__tests__/fixtures/schemas/dataset-json-1.1/LICENSE'."
+      );
+    }
+
+    const schemasRoot = path.join(root, "__tests__", "fixtures", "schemas");
+    if (fs.existsSync(schemasRoot) && fs.statSync(schemasRoot).isDirectory()) {
+      for (const dirEntry of fs.readdirSync(schemasRoot, {
+        withFileTypes: true,
+      })) {
+        if (!dirEntry.isDirectory()) continue;
+        const subDir = path.join(schemasRoot, dirEntry.name);
+        if (!fs.existsSync(path.join(subDir, "SOURCE.md"))) continue;
+        for (const fileEntry of fs.readdirSync(subDir, {
+          withFileTypes: true,
+        })) {
+          if (!fileEntry.isFile() || fileEntry.name === "SOURCE.md") continue;
+          const relFile = path.posix.join(
+            "__tests__/fixtures/schemas",
+            dirEntry.name,
+            fileEntry.name
+          );
+          if (!gitattributesCoversNoText(noTextPatterns, relFile)) {
+            violations.push(
+              `.gitattributes: vendored fixture '${relFile}' in SOURCE.md directory lacks '-text'.`
+            );
+          }
+        }
+      }
+    }
+
+    for (const pattern of REQUIRED_GITATTRIBUTES_BINARY_PATTERNS) {
+      if (!binaryPatterns.has(pattern)) {
+        violations.push(
+          `.gitattributes: missing '${pattern} binary' asset protection rule.`
+        );
+      }
+    }
+  }
+
+  if (fs.existsSync(claudeSettingsPath)) {
+    try {
+      const settings = JSON.parse(
+        fs.readFileSync(claudeSettingsPath, "utf-8")
+      ) as {
+        hooks?: {
+          PreToolUse?: Array<{
+            matcher?: string;
+            hooks?: Array<{
+              type?: string;
+              command?: string;
+              onFailure?: string;
+            }>;
+          }>;
+        };
+      };
+      const bashMatcher = settings.hooks?.PreToolUse?.find(
+        (entry) => entry.matcher === "Bash"
+      );
+      const guardrailHook = bashMatcher?.hooks?.find((hook) =>
+        hook.command?.includes("block-dangerous-git.sh")
+      );
+      if (!guardrailHook) {
+        violations.push(
+          ".claude/settings.json: missing PreToolUse Bash hook referencing block-dangerous-git.sh."
+        );
+      } else if (guardrailHook.onFailure !== "block") {
+        violations.push(
+          `.claude/settings.json: PreToolUse Bash hook must set "onFailure": "block" (found ${JSON.stringify(guardrailHook.onFailure)}).`
+        );
+      }
+    } catch {
+      violations.push(".claude/settings.json is not valid JSON.");
+    }
+  }
+
+  if (violations.length > 0) {
+    return {
+      ...base,
+      status: "fail",
+      message: `${violations.length} ignore, gitattributes, or Claude hook parity issue(s) detected.`,
+      details: Array.from(new Set(violations)),
+      fixable: false,
+    };
+  }
+
+  return {
+    ...base,
+    status: "pass",
+    message:
+      ".vercelignore, .gitattributes, and .claude/settings.json fail-closed parity invariants are synchronized.",
+  };
+}
+
 export function checkVercelBuildCommands(root: string): DiagnosticCheckResult {
   const base = {
     id: "vercel-build-commands",
@@ -3493,7 +3791,16 @@ export function checkModuleBoundaries(root: string): DiagnosticCheckResult {
   }
 
   try {
-    execSync("npx depcruise lib app components __tests__ hooks scripts", {
+    const boundaryDirs = [
+      "lib",
+      "app",
+      "components",
+      "__tests__",
+      "hooks",
+      "scripts",
+      "config",
+    ].filter((dir) => fs.existsSync(path.join(root, dir)));
+    execSync(`npx depcruise ${boundaryDirs.join(" ")}`, {
       cwd: root,
       stdio: "pipe",
       encoding: "utf-8",
@@ -4046,6 +4353,7 @@ export async function runDiagnostics(
     checkClientEnvironmentReads(root),
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),
+    checkIgnoreAndAttributesParity(root),
     checkVercelBuildCommands(root),
     checkPackageLockfile(root),
     checkSeoSocialIntegrity(root),

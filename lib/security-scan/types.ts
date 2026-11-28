@@ -5,15 +5,18 @@
 /**
  * Which scanning surfaces a detector is safe/intended to run under.
  *
- * - `contentGuard`: DX Doctor's repository scan and the pre-commit staged-file
- *   guard. Runs once against the current working tree, human-reviewed before
- *   a commit lands, so lower-confidence heuristics are acceptable here.
- * - `historyAudit`: the reachable-history audit (current tree plus every
- *   commit). Runs unattended in CI across the entire repository with no
- *   directory exclusions, so only high-confidence, low-false-positive
- *   detectors should opt in.
+ * - `contentGuard`: repository working-tree and pre-commit staged-file scans
+ *   outside `__tests__/`. Includes every `historyAudit` detector plus broader
+ *   assignment and bare-connection heuristics (`database-url-bare` and
+ *   `generic-assigned-secret`).
+ * - `historyAudit`: high-confidence, low-false-positive detectors run across
+ *   every eligible non-binary repository file (including `__tests__/`) and
+ *   across reachable Git history via pickaxe search.
  */
 export type ScannerSurface = "contentGuard" | "historyAudit";
+
+/** Raw text or byte buffer accepted by repository-policy scanners. */
+export type RepositoryScanContent = string | Uint8Array;
 
 /**
  * A single secret detector: its identity, its live-text regex, and its

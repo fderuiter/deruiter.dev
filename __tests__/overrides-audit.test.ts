@@ -1,12 +1,13 @@
 // @vitest-environment node
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   advisories,
   classifyPin,
   documentedPins,
   listPins,
+  main,
   placements,
   removable,
   renderSummary,
@@ -169,5 +170,80 @@ describe("SECURITY.md and the report", () => {
       "| `markdownlint-cli > minimatch` | `^11.0.1` | **drop: no effect** | 11.0.3 | none |"
     );
     expect(summary).toContain("kept: reason in SECURITY.md");
+  });
+
+  it("exits 1 under --check on removable or errored pins and 0 on clean pins", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const pins = listPins(OVERRIDES);
+    const neededAndDocumented: PinResult[] = [
+      {
+        pin: pins[0],
+        status: "needed",
+        addedAdvisories: ["GHSA-x moderate at node_modules/qs"],
+        versionsWith: ["6.16.1"],
+        versionsWithout: ["6.15.1"],
+      },
+      {
+        pin: pins[3],
+        status: "documented",
+        addedAdvisories: [],
+        versionsWith: ["4.6.7"],
+        versionsWithout: ["4.6.5"],
+      },
+    ];
+    try {
+      expect(main(["--check"], () => neededAndDocumented)).toBe(0);
+      expect(
+        main(["--check"], () => [
+          ...neededAndDocumented,
+          {
+            pin: pins[2],
+            status: "no-effect",
+            addedAdvisories: [],
+            versionsWith: ["11.0.3"],
+            versionsWithout: ["11.0.3"],
+          },
+        ])
+      ).toBe(1);
+      expect(
+        main(["--check"], () => [
+          ...neededAndDocumented,
+          {
+            pin: pins[1],
+            status: "no-new-advisory",
+            addedAdvisories: [],
+            versionsWith: ["5.4.3"],
+            versionsWithout: ["5.4.4"],
+          },
+        ])
+      ).toBe(1);
+      expect(
+        main(["--check"], () => [
+          ...neededAndDocumented,
+          {
+            pin: pins[1],
+            status: "error",
+            addedAdvisories: [],
+            versionsWith: ["5.4.3"],
+            versionsWithout: [],
+            error: "registry timeout",
+          },
+        ])
+      ).toBe(1);
+      // Without --check, monthly reporting exits 0 even when a pin can go.
+      expect(
+        main([], () => [
+          {
+            pin: pins[2],
+            status: "no-effect",
+            addedAdvisories: [],
+            versionsWith: ["11.0.3"],
+            versionsWithout: ["11.0.3"],
+          },
+        ])
+      ).toBe(0);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

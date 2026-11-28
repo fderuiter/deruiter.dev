@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process";
-import fs from "node:fs";
+import path from "node:path";
 import {
   formatFinding,
   getDetectorsForSurface,
   scanHistorySnapshot,
+  scanRepositoryFile,
+  shouldScanRepositoryPath,
   type HistoryFinding,
   type SecretDetector,
 } from "../lib/security-scan";
@@ -13,9 +15,9 @@ interface Candidate {
   file: string;
 }
 
-function git(args: string[]): string {
+function git(args: string[], cwd = process.cwd()): string {
   return execFileSync("git", args, {
-    cwd: process.cwd(),
+    cwd,
     encoding: "utf8",
     maxBuffer: 128 * 1024 * 1024,
     stdio: ["ignore", "pipe", "ignore"],
@@ -98,28 +100,22 @@ export function auditSecretHistory(): HistoryFinding[] {
   return dedupe(findings);
 }
 
-export function auditCurrentTree(): HistoryFinding[] {
+export function auditCurrentTree(cwd = process.cwd()): HistoryFinding[] {
   const findings: HistoryFinding[] = [];
-  const files = git([
-    "ls-files",
-    "-z",
-    "--cached",
-    "--others",
-    "--exclude-standard",
-  ])
+  const files = git(
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+    cwd
+  )
     .split("\0")
     .filter(Boolean);
 
   for (const file of files) {
-    try {
-      const buffer = fs.readFileSync(file);
-      if (buffer.includes(0)) continue;
-      const content = buffer.toString("utf8");
-      findings.push(
-        ...scanHistorySnapshot(content, { commit: "WORKTREE", file })
-      );
-    } catch {
-      // Files may disappear between the Git listing and the filesystem read.
+    if (!shouldScanRepositoryPath(file)) continue;
+    for (const finding of scanRepositoryFile(path.join(cwd, file), file)) {
+      findings.push({
+        ...finding,
+        commit: "WORKTREE",
+      });
     }
   }
 

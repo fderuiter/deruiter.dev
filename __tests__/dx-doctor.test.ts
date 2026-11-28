@@ -31,6 +31,7 @@ import {
   findSetStateInEffectSuppressions,
   SET_STATE_IN_EFFECT_CEILING,
   checkVercelBuildCommands,
+  checkIgnoreAndAttributesParity,
 } from "@/lib/dx/doctor";
 import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
@@ -79,6 +80,59 @@ describe("DX Invariant Doctor Engine", () => {
         JSON.stringify({ ...commands, buildCommand: "  " })
       );
       expect(checkVercelBuildCommands(tempDir).status).toBe("fail");
+    });
+  });
+
+  describe("checkIgnoreAndAttributesParity", () => {
+    it("passes on the repository root", () => {
+      expect(checkIgnoreAndAttributesParity(process.cwd()).status).toBe("pass");
+    });
+
+    it("detects missing .vercelignore exclusions, missing .gitattributes rules, and missing Claude hook onFailure block", () => {
+      fs.writeFileSync(
+        path.join(tempDir, ".gitignore"),
+        ".prettiercache\n.custom-local-cache\n",
+        "utf-8"
+      );
+      fs.writeFileSync(path.join(tempDir, ".vercelignore"), ".next\n", "utf-8");
+      fs.writeFileSync(
+        path.join(tempDir, ".gitattributes"),
+        "* text=auto eol=lf\n__tests__/fixtures/schemas/dataset-json-1.1/dataset.schema.json -text\n",
+        "utf-8"
+      );
+      fs.mkdirSync(path.join(tempDir, ".claude"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, ".claude", "settings.json"),
+        JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                matcher: "Bash",
+                hooks: [
+                  {
+                    type: "command",
+                    command:
+                      '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-git.sh',
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+        "utf-8"
+      );
+
+      const result = checkIgnoreAndAttributesParity(tempDir);
+      expect(result.status).toBe("fail");
+      const details = result.details?.join("\n") ?? "";
+      expect(details).toContain("docs/reference/api");
+      expect(details).toContain(".env*");
+      expect(details).toContain(".custom-local-cache");
+      expect(details).toContain(
+        "__tests__/fixtures/schemas/dataset-json-1.1/LICENSE"
+      );
+      expect(details).toContain("*.png binary");
+      expect(details).toContain('"onFailure": "block"');
     });
   });
 

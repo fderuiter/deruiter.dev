@@ -94,7 +94,7 @@ function projectUrl(pkg: CreditPackage): string {
 function groupTooling(): { group: string; packages: CreditPackage[] }[] {
   const groups = new Map<string, CreditPackage[]>();
   for (const pkg of CREDITS_DATASET.packages) {
-    if (!pkg.direct || pkg.scope !== "tooling") continue;
+    if (!pkg.direct || (pkg.directScope ?? pkg.scope) !== "tooling") continue;
     const key = pkg.group ?? "Other";
     groups.set(key, [...(groups.get(key) ?? []), pkg]);
   }

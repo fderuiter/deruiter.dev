@@ -163,9 +163,15 @@ describe("IBM floating point", () => {
 });
 
 describe("Dataset-JSON 1.1", () => {
-  it("vendors the schema byte for byte", () => {
+  it("vendors the schema and MIT license byte for byte", () => {
     expect(sha256(readDatasetJsonSchemaBytes())).toBe(
       "dd7190ff3782edf31f7de42a3d68c2328e6194e62f9dfbdc2e776edfea2eb09c"
+    );
+    const licenseBytes = readFileSync(
+      resolve(__dirname, "fixtures", "schemas", "dataset-json-1.1", "LICENSE")
+    );
+    expect(sha256(licenseBytes)).toBe(
+      "5098baf900774d3f6ec6e20f0916a8e2e72f7cf987fb7e72337b783c65f1d4f6"
     );
   });
 

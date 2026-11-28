@@ -18,9 +18,10 @@ visitors.
 | Licence           | MIT, Copyright (c) 2022 cdisc. Full text in `LICENSE`, from the same tag.                      |
 | `LICENSE` SHA-256 | `5098baf900774d3f6ec6e20f0916a8e2e72f7cf987fb7e72337b783c65f1d4f6`                             |
 
-The upstream file uses CRLF line endings. The folder is listed in
-`.prettierignore` and the schema is marked `-text` in `.gitattributes`, so
-neither formatting nor line-ending normalisation changes the vendored bytes;
-a test checks the SHA-256 above. To update, fetch the file
-from a new tag, replace both files, and update this table and the hash in
+The upstream files use CRLF line endings. The folder is listed in
+`.prettierignore` and both `dataset.schema.json` and `LICENSE` are marked
+`-text` in `.gitattributes`, so neither formatting nor line-ending
+normalisation changes the vendored bytes; `__tests__/study-data-export.test.ts`
+checks both SHA-256 digests above. To update, fetch the files
+from a new tag, replace both files, and update this table and the hashes in
 the test.

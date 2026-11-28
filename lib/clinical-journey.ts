@@ -99,7 +99,7 @@ export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
     title: "Study Data Pipeline",
     href: "/study-data",
     purpose:
-      "Take DEMO-301, one fictional study, from its USDM definition through SDTM and ADaM to the tables of a study report, with every number traceable.",
+      "Take the active study workspace from its USDM definition through SDTM and ADaM to the tables of a study report, with every number traceable.",
     evidence: ["synthetic"],
   },
   {

@@ -54,6 +54,22 @@ export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
       by: "EGTESTCD",
       variables: ["EGORRES", "EGORRESU", "EGSTRESC", "EGSTRESN", "EGSTRESU"],
     },
+    TR: {
+      by: "TRTESTCD",
+      variables: ["TRORRES", "TRORRESU", "TRSTRESC", "TRSTRESN", "TRSTRESU"],
+    },
+    PC: {
+      by: "PCTESTCD",
+      variables: ["PCORRES", "PCORRESU", "PCSTRESC", "PCSTRESN", "PCSTRESU"],
+    },
+    DU: {
+      by: "DUTESTCD",
+      variables: ["DUORRES", "DUORRESU", "DUSTRESC", "DUSTRESN", "DUSTRESU"],
+    },
+    DI: {
+      by: "DIPARMCD",
+      variables: ["DIVAL"],
+    },
     ADVS: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
     ADLB: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
     ADQS: { by: "PARAMCD", variables: ["AVAL"] },

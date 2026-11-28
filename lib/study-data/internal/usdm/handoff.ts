@@ -38,17 +38,23 @@ export const HANDOFF_GENERATED_DOMAINS = Object.freeze([
   "DM",
   "SV",
   "EX",
+  "CM",
   "VS",
   "LB",
   "EG",
+  "TR",
+  "PC",
   "AE",
   "DS",
   "CE",
   "QS",
+  "DI",
+  "DU",
+  "DE",
 ] as const);
 
 /** Domains whose assessments are generated per test code. */
-const TESTED_DOMAINS = new Set(["VS", "LB", "EG", "QS"]);
+const TESTED_DOMAINS = new Set(["VS", "LB", "EG", "QS", "TR", "PC", "DU"]);
 
 /**
  * Extension URL CRF Studio uses to carry a field's full concept definition,
@@ -140,14 +146,228 @@ export interface StudyHandoff {
   readonly report: HandoffReport;
 }
 
-const MODELLED_TESTS: ReadonlyMap<string, AssessmentDefinition> = new Map(
-  DEMO_301_STUDY.design.activities.flatMap((activity) =>
-    activity.assessments.map((assessment) => [
-      `${activity.domain}:${assessment.testCode}`,
-      assessment,
-    ])
-  )
-);
+/** Tests and scores the synthetic generator models across tested SDTM domains. */
+export const MODELLED_TESTS: ReadonlyMap<string, AssessmentDefinition> =
+  new Map([
+    ...DEMO_301_STUDY.design.activities.flatMap((activity) =>
+      activity.assessments.map(
+        (assessment) =>
+          [`${activity.domain}:${assessment.testCode}`, assessment] as const
+      )
+    ),
+    [
+      "VS:HEIGHT",
+      {
+        conceptId: "bc_vs_height",
+        nciCode: "",
+        testCode: "HEIGHT",
+        testName: "Height",
+        unit: "cm",
+      },
+    ],
+    [
+      "VS:BMI",
+      {
+        conceptId: "bc_vs_bmi",
+        nciCode: "",
+        testCode: "BMI",
+        testName: "Body Mass Index",
+        unit: "kg/m2",
+      },
+    ],
+    [
+      "VS:TEMP",
+      {
+        conceptId: "bc_vs_temp",
+        nciCode: "",
+        testCode: "TEMP",
+        testName: "Temperature",
+        unit: "C",
+      },
+    ],
+    [
+      "VS:RESP",
+      {
+        conceptId: "bc_vs_resp",
+        nciCode: "",
+        testCode: "RESP",
+        testName: "Respiratory Rate",
+        unit: "breaths/min",
+      },
+    ],
+    [
+      "LB:NEUT",
+      {
+        conceptId: "bc_lb_neut",
+        nciCode: "",
+        testCode: "NEUT",
+        testName: "Neutrophils",
+        unit: "10^9/L",
+      },
+    ],
+    [
+      "EG:QTc",
+      {
+        conceptId: "bc_eg_qtc",
+        nciCode: "",
+        testCode: "QTc",
+        testName: "QTc Interval",
+        unit: "ms",
+      },
+    ],
+    [
+      "EG:QTC",
+      {
+        conceptId: "bc_eg_qtc_upper",
+        nciCode: "",
+        testCode: "QTC",
+        testName: "QTc Interval",
+        unit: "ms",
+      },
+    ],
+    [
+      "EG:QTCBAG",
+      {
+        conceptId: "bc_eg_qtcb",
+        nciCode: "",
+        testCode: "QTCBAG",
+        testName: "QTcB Interval, Aggregate",
+        unit: "ms",
+      },
+    ],
+    ...Object.entries(QUESTIONNAIRE_SCORES).map(
+      ([testCode, score]) =>
+        [
+          `QS:${testCode}`,
+          {
+            conceptId: `bc_qs_${testCode.toLowerCase()}`,
+            nciCode: "",
+            testCode,
+            testName: score.testName,
+            category: score.category,
+          },
+        ] as const
+    ),
+    [
+      "TR:LDIAM",
+      {
+        conceptId: "bc_tr_ldiam",
+        nciCode: "",
+        testCode: "LDIAM",
+        testName: "Longest Diameter",
+        unit: "mm",
+      },
+    ],
+    [
+      "TR:SUMDIAM",
+      {
+        conceptId: "bc_tr_sumdiam",
+        nciCode: "",
+        testCode: "SUMDIAM",
+        testName: "Sum of Diameters",
+        unit: "mm",
+      },
+    ],
+    [
+      "TR:TUMSTATE",
+      {
+        conceptId: "bc_tr_tumstate",
+        nciCode: "",
+        testCode: "TUMSTATE",
+        testName: "Tumor State",
+      },
+    ],
+    [
+      "PC:DRUGX",
+      {
+        conceptId: "bc_pc_drugx",
+        nciCode: "",
+        testCode: "DRUGX",
+        testName: "Analyte Plasma Concentration",
+        unit: "ng/mL",
+      },
+    ],
+    [
+      "DU:PROCDUR",
+      {
+        conceptId: "bc_du_procdur",
+        nciCode: "",
+        testCode: "PROCDUR",
+        testName: "Procedure Duration",
+        unit: "min",
+      },
+    ],
+    [
+      "DU:DEPOUT",
+      {
+        conceptId: "bc_du_depout",
+        nciCode: "",
+        testCode: "DEPOUT",
+        testName: "Acute Deployment Outcome",
+      },
+    ],
+  ]);
+
+const CONCEPT_TEST_CODE_FALLBACKS: Readonly<Record<string, string>> = {
+  "QS:QSEVAL1": "PHQ0101",
+  "QS:QSEVAL2": "PHQ0102",
+  "QS:QSEVAL3": "PHQ0103",
+  "QS:QSEVAL4": "PHQ0104",
+  "QS:QSSTRESN": "PHQ-9",
+  "QS:bc_qs_qseval1": "PHQ0101",
+  "QS:bc_qs_qseval2": "PHQ0102",
+  "QS:bc_qs_qseval3": "PHQ0103",
+  "QS:bc_qs_qseval4": "PHQ0104",
+  "QS:bc_qs_qsstresn": "PHQ-9",
+  "QS:QS_ORNT": "MMSEORNT",
+  "QS:QS_REG": "MMSEREG",
+  "QS:QS_ATTN": "MMSEATTN",
+  "QS:QS_REC": "MMSEREC",
+  "QS:QS_LANG": "MMSELANG",
+  "QS:QS_TOTAL": "MMSE",
+  "QS:bc_qs_qs_ornt": "MMSEORNT",
+  "QS:bc_qs_qs_reg": "MMSEREG",
+  "QS:bc_qs_qs_attn": "MMSEATTN",
+  "QS:bc_qs_qs_rec": "MMSEREC",
+  "QS:bc_qs_qs_lang": "MMSELANG",
+  "QS:bc_qs_qs_total": "MMSE",
+  "EG:EGHR": "EGHRMN",
+  "EG:EGQT": "QTAG",
+  "EG:EGRR": "RRAG",
+  "EG:EGQTCB": "QTc",
+  "EG:bc_eg_eghr": "EGHRMN",
+  "EG:bc_eg_egqt": "QTAG",
+  "EG:bc_eg_egrr": "RRAG",
+  "EG:bc_eg_egqtcb": "QTc",
+  "TR:TRL1": "LDIAM",
+  "TR:TRL2": "LDIAM",
+  "TR:TRSLDBAS": "SUMDIAM",
+  "TR:TRSLDCUR": "SUMDIAM",
+  "TR:TRRESP": "TUMSTATE",
+  "TR:bc_tr_trl1": "LDIAM",
+  "TR:bc_tr_trl2": "LDIAM",
+  "TR:bc_tr_trsldbas": "SUMDIAM",
+  "TR:bc_tr_trsldcur": "SUMDIAM",
+  "TR:bc_tr_trresp": "TUMSTATE",
+  "PC:PCTIME00": "DRUGX",
+  "PC:PCTIME05": "DRUGX",
+  "PC:PCTIME_1": "DRUGX",
+  "PC:PCTIME_2": "DRUGX",
+  "PC:PCTIME_4": "DRUGX",
+  "PC:PCTIME_8": "DRUGX",
+  "PC:PCTIME24": "DRUGX",
+  "PC:bc_pc_pctime00": "DRUGX",
+  "PC:bc_pc_pctime05": "DRUGX",
+  "PC:bc_pc_pctime_1": "DRUGX",
+  "PC:bc_pc_pctime_2": "DRUGX",
+  "PC:bc_pc_pctime_4": "DRUGX",
+  "PC:bc_pc_pctime_8": "DRUGX",
+  "PC:bc_pc_pctime24": "DRUGX",
+  "DU:DUDUR": "PROCDUR",
+  "DU:DUORRES": "DEPOUT",
+  "DU:bc_du_dudur": "PROCDUR",
+  "DU:bc_du_duorres": "DEPOUT",
+};
 
 const SYNTHETIC_ARM_ID = "handoff_arm_trt";
 const SCREENING_EPOCH_ID = "handoff_epoch_screening";
@@ -176,6 +396,7 @@ function list<T>(value: readonly T[] | undefined | null): readonly T[] {
 function crfConcept(concept: UsdmV4BiomedicalConcept): {
   annotation?: string;
   unit?: string;
+  variableName?: string;
 } {
   const raw = getUsdmV4ExtensionString(
     concept,
@@ -184,16 +405,25 @@ function crfConcept(concept: UsdmV4BiomedicalConcept): {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw) as {
+      variableName?: unknown;
+      unit?: unknown;
       properties?: {
         unit?: unknown;
         cdashMetadata?: { acrfAnnotation?: unknown };
       };
     };
     const annotation = parsed.properties?.cdashMetadata?.acrfAnnotation;
-    const unit = parsed.properties?.unit;
+    const unit =
+      typeof parsed.properties?.unit === "string"
+        ? parsed.properties.unit
+        : typeof parsed.unit === "string"
+          ? parsed.unit
+          : undefined;
+    const variableName = parsed.variableName;
     return {
       ...(typeof annotation === "string" ? { annotation } : {}),
       ...(typeof unit === "string" ? { unit } : {}),
+      ...(typeof variableName === "string" ? { variableName } : {}),
     };
   } catch {
     return {};
@@ -202,7 +432,8 @@ function crfConcept(concept: UsdmV4BiomedicalConcept): {
 
 /**
  * The SDTM test short name of a concept: the SDTM test code extension when
- * present, otherwise the `--TESTCD` value in CRF Studio's aCRF annotation.
+ * present, otherwise the `--TESTCD` value in CRF Studio's aCRF annotation or
+ * known CRF/USDM field mapping.
  */
 function testCodeOf(
   concept: UsdmV4BiomedicalConcept,
@@ -213,11 +444,16 @@ function testCodeOf(
     USDM_SDTM_TESTCD_EXTENSION_URL
   );
   if (explicit) return explicit;
-  const { annotation } = crfConcept(concept);
+  const { annotation, variableName } = crfConcept(concept);
   const match = annotation?.match(
-    new RegExp(`\\[${domain}TESTCD=([A-Z][A-Z0-9]{0,7})\\]`)
+    new RegExp(`\\[${domain}TESTCD=([A-Za-z][A-Za-z0-9-]{0,7})\\]`)
   );
-  return match?.[1];
+  if (match?.[1]) return match[1];
+  if (variableName) {
+    const byVar = CONCEPT_TEST_CODE_FALLBACKS[`${domain}:${variableName}`];
+    if (byVar) return byVar;
+  }
+  return CONCEPT_TEST_CODE_FALLBACKS[`${domain}:${concept.id}`];
 }
 
 function planActivity(
@@ -263,12 +499,13 @@ function planActivity(
       });
       continue;
     }
-    // A questionnaire score is modelled without a unit; every other test
-    // needs one.
+    // Questionnaire scores and categorical findings are modelled without a unit.
     const score = domain === "QS" ? QUESTIONNAIRE_SCORES[testCode] : undefined;
     const model = MODELLED_TESTS.get(`${domain}:${testCode}`);
     const modelled =
-      domain === "QS" ? score !== undefined : Boolean(model?.unit);
+      domain === "QS"
+        ? score !== undefined || model !== undefined
+        : model !== undefined;
     if (!modelled || seen.has(testCode)) {
       if (!modelled) {
         skippedConcepts.push({
@@ -284,22 +521,27 @@ function planActivity(
     const sourceUnit =
       getUsdmV4ExtensionString(concept, USDM_SDTM_STRESU_EXTENSION_URL) ??
       crfConcept(concept).unit;
-    if (score) {
+    if (score || (domain === "QS" && model)) {
       tests.push({
         conceptId,
         testCode,
         category:
           getUsdmV4ExtensionString(concept, USDM_SDTM_CAT_EXTENSION_URL) ??
-          score.category,
+          score?.category ??
+          model?.category,
       });
       continue;
     }
-    const unit = model!.unit!;
+    const unit = model!.unit;
     tests.push({
       conceptId,
       testCode,
-      unit,
-      ...(sourceUnit && sourceUnit !== unit ? { sourceUnit } : {}),
+      ...(unit === undefined
+        ? {}
+        : {
+            unit,
+            ...(sourceUnit && sourceUnit !== unit ? { sourceUnit } : {}),
+          }),
     });
   }
   if (tests.length === 0) {

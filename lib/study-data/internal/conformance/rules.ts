@@ -248,14 +248,16 @@ function unique(
       const seen = new Set<string>();
       const issues: RuleIssue[] = [];
       for (let row = 0; row < dataset.rowCount; row += 1) {
-        const subject = string(at(dataset, "USUBJID", row));
+        const subject =
+          string(at(dataset, "USUBJID", row)) ??
+          string(at(dataset, "SPDEVID", row));
         const sequence = at(dataset, variable, row);
         const key = `${subject}|${sequence}`;
         if (subject === null || sequence === null || seen.has(key))
           issues.push({
             row,
             variable,
-            message: `Missing or repeated ${variable} within USUBJID.`,
+            message: `Missing or repeated ${variable} within parent identifier.`,
           });
         seen.add(key);
       }
@@ -1169,6 +1171,63 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   sourceLineageRule("SD-088", "CO"),
   sourceLineageRule("SD-089", "CE"),
   sourceLineageRule("SD-090", "QS"),
+  required("SD-091", "DI", [
+    "STUDYID",
+    "DOMAIN",
+    "SPDEVID",
+    "DISEQ",
+    "DIPARMCD",
+    "DIPARM",
+    "DIVAL",
+  ]),
+  unique("SD-092", "DI", "DISEQ"),
+  sourceLineageRule("SD-093", "DI"),
+  required("SD-094", "DU", [
+    "STUDYID",
+    "USUBJID",
+    "DUSEQ",
+    "DUTESTCD",
+    "DUORRES",
+  ]),
+  unique("SD-095", "DU", "DUSEQ"),
+  dateRule("SD-096", "DU", "DUDTC"),
+  studyDay("SD-097", "DU", "DUDTC", "DUDY"),
+  sourceLineageRule("SD-098", "DU"),
+  required("SD-099", "DE", [
+    "STUDYID",
+    "USUBJID",
+    "DESEQ",
+    "DETERM",
+    "DESTDTC",
+  ]),
+  unique("SD-100", "DE", "DESEQ"),
+  dateRule("SD-101", "DE", "DESTDTC"),
+  dateRule("SD-102", "DE", "DEENDTC"),
+  studyDay("SD-103", "DE", "DESTDTC", "DESTDY"),
+  studyDay("SD-104", "DE", "DEENDTC", "DEENDY"),
+  sourceLineageRule("SD-105", "DE"),
+  required("SD-106", "TR", [
+    "STUDYID",
+    "USUBJID",
+    "TRSEQ",
+    "TRTESTCD",
+    "TRORRES",
+  ]),
+  unique("SD-107", "TR", "TRSEQ"),
+  dateRule("SD-108", "TR", "TRDTC"),
+  studyDay("SD-109", "TR", "TRDTC", "TRDY"),
+  sourceLineageRule("SD-110", "TR"),
+  required("SD-111", "PC", [
+    "STUDYID",
+    "USUBJID",
+    "PCSEQ",
+    "PCTESTCD",
+    "PCORRES",
+  ]),
+  unique("SD-112", "PC", "PCSEQ"),
+  dateRule("SD-113", "PC", "PCDTC"),
+  studyDay("SD-114", "PC", "PCDTC", "PCDY"),
+  sourceLineageRule("SD-115", "PC"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

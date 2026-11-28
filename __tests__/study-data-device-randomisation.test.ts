@@ -122,7 +122,7 @@ describe("allocating the device study", () => {
     }).datasets.filter((dataset) => dataset.layer === "collected");
     expect(
       createHash("sha256").update(JSON.stringify(datasets)).digest("hex")
-    ).toBe("7659e8d333cf8700e8f415e1732ebc9b8328299209b1a598a11680698b57168a");
+    ).toBe("cf6f4f708099ef60180e7449937e7335392fcc3b0265720301eca44826dc7019");
   });
 
   const { datasets, rand } = allocation(device, 240);

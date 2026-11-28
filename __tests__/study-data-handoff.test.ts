@@ -125,7 +125,14 @@ describe("CRF Studio to study-data handoff (contract C2)", () => {
         .filter((activity) => activity.domain === domain)
         .flatMap((activity) => activity.tests.map((test) => test.testCode));
     expect(tested("VS")).toEqual(expect.arrayContaining(["SYSBP", "DIABP"]));
-    expect(tested("LB")).toEqual(["ALT", "AST", "BILI", "CREAT", "PLAT"]);
+    expect(tested("LB")).toEqual([
+      "ALT",
+      "AST",
+      "BILI",
+      "CREAT",
+      "NEUT",
+      "PLAT",
+    ]);
     expect(report.tabulatedDomains).toContain("LB");
     const skipped = report.activities.flatMap(
       (activity) => activity.skippedConcepts
@@ -134,10 +141,14 @@ describe("CRF Studio to study-data handoff (contract C2)", () => {
       skipped
         .filter((concept) => concept.reason === "no-test-code")
         .map((concept) => concept.conceptId)
-    ).toEqual(["bc_vs_vsdat", "bc_lb_lbdat", "bc_lb_lbfast"]);
-    expect(skipped).toContainEqual(
-      expect.objectContaining({ conceptId: "bc_lb_anc", testCode: "NEUT" })
-    );
+    ).toEqual([
+      "bc_vs_vsdat",
+      "bc_tr_trdat",
+      "bc_tr_trmethod",
+      "bc_tr_trpctchg",
+      "bc_lb_lbdat",
+      "bc_lb_lbfast",
+    ]);
   });
 
   it("lists every exported activity once, tabulated or with a reason", () => {
@@ -185,18 +196,18 @@ describe("prepareStudyHandoff", () => {
         {
           id: "act_vs_domain",
           url: USDM_SDTM_DOMAIN_EXTENSION_URL,
-          valueString: "DI",
+          valueString: "FA",
           instanceType: "ExtensionAttribute",
         },
       ];
     });
     const { definition, report } = prepareStudyHandoff(doc);
     expect(report.activities.find((a) => a.id === "act_vs")).toMatchObject({
-      domain: "DI",
+      domain: "FA",
       tabulated: false,
       reason: "domain-not-generated",
     });
-    expect(report.notTabulatedDomains).toEqual(["DI"]);
+    expect(report.notTabulatedDomains).toEqual(["FA"]);
     expect(report.tabulatedDomains).not.toContain("VS");
     expect(definition.design.activities.map((a) => a.id)).not.toContain(
       "act_vs"
@@ -237,7 +248,7 @@ describe("prepareStudyHandoff", () => {
         {
           id: "bc_diabp_testcd",
           url: USDM_SDTM_TESTCD_EXTENSION_URL,
-          valueString: "TEMP",
+          valueString: "VO2",
           instanceType: "ExtensionAttribute",
         },
         {
@@ -264,7 +275,7 @@ describe("prepareStudyHandoff", () => {
         conceptId: "bc_diabp",
         name: "Diastolic Blood Pressure",
         reason: "test-not-modelled",
-        testCode: "TEMP",
+        testCode: "VO2",
       },
       { conceptId: "bc_pulse", name: "Pulse Rate", reason: "no-test-code" },
     ]);

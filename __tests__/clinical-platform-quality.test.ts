@@ -287,15 +287,25 @@ describe("scorecards", () => {
     );
     expect(baseline.byDimension.map((s) => s.key)).toEqual(DQ_DIMENSIONS);
     // A rule whose dataset the run lacks checks nothing and is not scored:
-    // DEMO-301 collects no adjudicated events or questionnaires, so SD-089
-    // (CE lineage, #3417) and SD-090 (QS lineage, #3418) do not apply.
+    // DEMO-301 collects no adjudicated events, questionnaires, device
+    // domains, tumor assessments or pharmacokinetics, so SD-089 (CE, #3417),
+    // SD-090 (QS, #3418), SD-091..SD-093 (DI, #4152), SD-094..SD-098 (DU,
+    // #4152), SD-099..SD-105 (DE, #4152), SD-106..SD-110 (TR, #4152) and
+    // SD-111..SD-115 (PC, #4152) do not apply.
     const checked = (ids: readonly string[]) =>
       ids.filter(
         (id) => baseline.results.find((r) => r.ruleId === id)?.passRate !== null
       );
     expect(
       baseline.results.filter((r) => r.passRate === null).map((r) => r.ruleId)
-    ).toEqual(["SD-089", "SD-090"]);
+    ).toEqual([
+      "SD-089",
+      "SD-090",
+      ...Array.from(
+        { length: 25 },
+        (_, i) => `SD-${String(91 + i).padStart(3, "0")}`
+      ),
+    ]);
     for (const score of baseline.byDimension) {
       const ids = DATA_QUALITY_RULES.filter(
         (r) => r.dimension === score.key

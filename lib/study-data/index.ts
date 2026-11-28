@@ -28,6 +28,7 @@ export {
 export {
   prepareStudyHandoff,
   HANDOFF_GENERATED_DOMAINS,
+  MODELLED_TESTS,
 } from "./internal/usdm/handoff";
 export type {
   HandoffActivity,

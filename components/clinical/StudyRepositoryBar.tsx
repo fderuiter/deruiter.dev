@@ -7,8 +7,10 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
+import { PIPELINE_SIMULATOR_PATH } from "@/lib/clinical-tools/pipeline-simulator";
 import { downloadFile } from "@/lib/download";
 import { DEMO_STUDY_ID } from "@/lib/clinical-study-context";
 import {
@@ -57,10 +59,22 @@ export interface StudyConflictPromptState {
   readonly localWorkspace?: StudyWorkspace;
 }
 
+const STUDIO_LINKS: readonly {
+  readonly href: string;
+  readonly label: string;
+}[] = [
+  { href: "/study-studio", label: "Study Studio" },
+  { href: "/crf", label: "CRF Studio" },
+  { href: PIPELINE_SIMULATOR_PATH, label: "Pipeline Simulator" },
+  { href: "/study-data", label: "Study Data" },
+  { href: "/clinical/ai-governance", label: "AI Governance" },
+];
+
 interface StudyConflictModalProps {
   readonly conflict: StudyConflictPromptState | null;
   readonly onLoadLatest: (latest: StudyRepositoryRecord | null) => void;
   readonly onForceKeepLocal: () => void;
+  readonly onSaveAsBranch?: () => void;
   readonly onClose: () => void;
 }
 
@@ -72,6 +86,7 @@ export function StudyConflictModal({
   conflict,
   onLoadLatest,
   onForceKeepLocal,
+  onSaveAsBranch,
   onClose,
 }: StudyConflictModalProps) {
   const titleId = useId();
@@ -126,8 +141,8 @@ export function StudyConflictModal({
                 <span className="font-mono text-[var(--studio-accent-amber-fg,#fcd34d)]">
                   {conflict.currentRevisionId}
                 </span>
-                . Load the newer revision or overwrite it with this tab&apos;s
-                edits.
+                . Save this tab&apos;s edits as a separate branch, load the
+                newer revision, or overwrite it with this tab&apos;s edits.
               </>
             )}
           </p>
@@ -139,6 +154,16 @@ export function StudyConflictModal({
                 className={`${BTN_BASE} min-h-11`}
               >
                 Download local (.study.json)
+              </button>
+            ) : null}
+            {conflict.localWorkspace && onSaveAsBranch ? (
+              <button
+                type="button"
+                data-testid="study-conflict-branch-btn"
+                onClick={onSaveAsBranch}
+                className={`${BTN_AMBER} min-h-11`}
+              >
+                Save as branch
               </button>
             ) : null}
             <button
@@ -657,14 +682,23 @@ export function StudyRepositoryBar({
           </div>
         ) : null}
 
-        {activeSummary ? (
+        {!showStudySelect ? (
           <span
-            data-testid="study-repository-revision"
-            className="min-w-0 rounded border border-[var(--studio-accent-emerald-border,rgba(16,185,129,0.3))] bg-[var(--studio-accent-emerald-bg,rgba(16,185,129,0.1))] px-2 py-1 font-mono text-[11px] text-[var(--studio-accent-emerald-fg,#6ee7b7)]"
+            data-testid="study-repository-study-id"
+            className="min-w-0 rounded border border-[var(--studio-border-default,rgba(255,255,255,0.12))] bg-[var(--studio-surface-card,#0d0e11)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--studio-fg-primary,#f4f4f6)]"
           >
-            {activeSummary.revisionId} · {activeSummary.sha256.slice(0, 8)}
+            {activeSummary?.protocolCode ?? effectiveStudyId}
           </span>
         ) : null}
+
+        <span
+          data-testid="study-repository-revision"
+          className="min-w-0 rounded border border-[var(--studio-accent-emerald-border,rgba(16,185,129,0.3))] bg-[var(--studio-accent-emerald-bg,rgba(16,185,129,0.1))] px-2 py-1 font-mono text-[11px] text-[var(--studio-accent-emerald-fg,#6ee7b7)]"
+        >
+          {activeSummary
+            ? `${activeSummary.revisionId} · ${activeSummary.sha256.slice(0, 8)}`
+            : (currentRevisionId ?? "R1")}
+        </span>
 
         <input
           ref={fileInputRef}
@@ -719,6 +753,22 @@ export function StudyRepositoryBar({
             Repository ({snapshot.studies.length || 3})
           </button>
         </div>
+
+        <nav
+          aria-label="Workspace studios"
+          data-testid="study-repository-links"
+          className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--studio-border-subtle,rgba(255,255,255,0.08))] pt-1.5 text-[11px] font-mono sm:ml-auto sm:border-t-0 sm:pt-0"
+        >
+          {STUDIO_LINKS.map((link) => (
+            <IntentLink
+              key={link.href}
+              href={link.href}
+              className="inline-flex min-h-9 items-center text-[var(--studio-fg-secondary,#cbd5e1)] underline decoration-zinc-600 underline-offset-4 hover:text-[var(--studio-fg-primary,#f4f4f6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring,#fbbf24)]"
+            >
+              {link.label}
+            </IntentLink>
+          ))}
+        </nav>
       </div>
 
       {snapshot.isHydrated && snapshot.persistence === "memory" ? (

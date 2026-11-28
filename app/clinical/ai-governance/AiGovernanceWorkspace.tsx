@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { StudyRepositoryBar } from "@/components/clinical/StudyRepositoryBar";
 import { IntentLink } from "@/components/ui/IntentLink";
 import {
   AI_GOVERNANCE_PAGE_COPY,
@@ -149,6 +150,7 @@ export function AiGovernanceWorkspace({
 
   return (
     <div>
+      <StudyRepositoryBar compact allowCreateBlank={false} className="mb-8" />
       {/* ================================================================= */}
       {/* Section 1: Failure modes and mitigations                          */}
       {/* ================================================================= */}

@@ -19,6 +19,7 @@ const LAB_REFERENCES: Readonly<Record<string, LabReference>> = {
   GLUC: { category: "CHEMISTRY", low: 3.9, high: 7.8 },
   HGB: { category: "HEMATOLOGY", low: 120, high: 170 },
   WBC: { category: "HEMATOLOGY", low: 4, high: 10 },
+  NEUT: { category: "HEMATOLOGY", low: 1.8, high: 6 },
   PLAT: { category: "HEMATOLOGY", low: 150, high: 400 },
 };
 

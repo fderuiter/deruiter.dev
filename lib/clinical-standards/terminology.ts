@@ -65,6 +65,11 @@ export const DECODE_VARIABLES: Readonly<Record<string, string>> = Object.freeze(
     VSTESTCD: "VSTEST",
     LBTESTCD: "LBTEST",
     EGTESTCD: "EGTEST",
+    QSTESTCD: "QSTEST",
+    TRTESTCD: "TRTEST",
+    PCTESTCD: "PCTEST",
+    DUTESTCD: "DUTEST",
+    DIPARMCD: "DIPARM",
   }
 );
 
@@ -102,6 +107,11 @@ export type CodelistId =
   | "VSTESTCD"
   | "LBTESTCD"
   | "EGTESTCD"
+  | "QSTESTCD"
+  | "TRTESTCD"
+  | "PCTESTCD"
+  | "DUTESTCD"
+  | "DIPARMCD"
   | "VSRESU"
   | "UNIT"
   | "FRM"
@@ -300,6 +310,21 @@ const CODELISTS = [
       fromData: true,
     })
   ),
+  ...(
+    [
+      ["QSTESTCD", "Questionnaire Test Code"],
+      ["TRTESTCD", "Tumor Identification Test Code"],
+      ["PCTESTCD", "Pharmacokinetic Test Code"],
+      ["DUTESTCD", "Device-In-Use Test Code"],
+      ["DIPARMCD", "Device Identifier Parameter Code"],
+    ] as const
+  ).map(([id, name]): TerminologyCodelist & { readonly id: typeof id } => ({
+    id,
+    name,
+    extensible: false,
+    terms: [],
+    fromData: true,
+  })),
 ] satisfies readonly (TerminologyCodelist & { readonly id: CodelistId })[];
 
 /**

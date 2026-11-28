@@ -178,7 +178,7 @@ describe("asset generation and staging workflow", () => {
     expect(designManifest.motion.springs).toBeDefined();
   });
 
-  it("runs formatting before linting and skips generated artifacts", () => {
+  it("runs formatting before linting, covers .mts and .cts files, and skips generated artifacts", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const lintStagedConfig = require("../lint-staged.config.cjs") as Record<
       string,
@@ -186,6 +186,8 @@ describe("asset generation and staging workflow", () => {
     >;
     const commands = lintStagedConfig["*"]([
       "/repo/components/Example File.tsx",
+      "/repo/vitest.config.mts",
+      "/repo/config/custom.cts",
       "/repo/public/garmin-engine.js",
       "/repo/docs/guide.md",
     ]);
@@ -193,9 +195,14 @@ describe("asset generation and staging workflow", () => {
     expect(commands).toHaveLength(2);
     expect(commands[0]).toContain("prettier");
     expect(commands[0]).toContain("Example File.tsx");
+    expect(commands[0]).toContain("vitest.config.mts");
+    expect(commands[0]).toContain("custom.cts");
     expect(commands[0]).not.toContain("garmin-engine.js");
-    expect(commands[1]).toContain("eslint");
+    expect(commands[1]).toContain("eslint --fix");
     expect(commands[1]).toContain("Example File.tsx");
+    expect(commands[1]).toContain("vitest.config.mts");
+    expect(commands[1]).toContain("custom.cts");
+    expect(commands[1]).not.toContain("guide.md");
   });
 
   it("keeps test setup non-mutating", () => {

@@ -88,6 +88,24 @@ describe("Proxy Clerk Scope", () => {
       expect(await call("/api/case-studies", method)).toEqual([
         "/api/case-studies",
       ]);
+      expect(await call("/api/case-studies/", method)).toEqual([
+        "/api/case-studies/",
+      ]);
+    }
+  );
+
+  const PUBLIC_CASE_STUDY_SUBROUTES = [
+    "/api/case-studies/feedback",
+    "/api/case-studies/reactions",
+    "/api/case-studies/feedback/",
+    "/api/case-studies/reactions/",
+  ];
+
+  it.each(PUBLIC_CASE_STUDY_SUBROUTES)(
+    "public case-study subroute %s bypasses Clerk middleware on POST and GET",
+    async (route) => {
+      expect(await call(route, "POST")).toEqual([]);
+      expect(await call(route, "GET")).toEqual([]);
     }
   );
 

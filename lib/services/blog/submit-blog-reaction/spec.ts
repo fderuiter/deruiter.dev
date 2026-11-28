@@ -13,6 +13,7 @@ export type SubmitBlogReactionInput = z.infer<
 >;
 
 export interface SubmitBlogReactionData {
+  durable: boolean;
   reactionType: string;
   counts: Record<string, number>;
   userReactions: string[];

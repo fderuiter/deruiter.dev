@@ -139,6 +139,7 @@ export class SubmitBlogReactionHandler implements SubmitBlogReactionSpec {
       }
 
       return createSuccess({
+        durable: true,
         reactionType,
         counts,
         userReactions: userReactionsList.map((ur) => ur.reactionType),
@@ -303,6 +304,7 @@ export class SubmitBlogReactionHandler implements SubmitBlogReactionSpec {
       }
 
       return createSuccess({
+        durable: true,
         reactionType,
         counts,
         userReactions,

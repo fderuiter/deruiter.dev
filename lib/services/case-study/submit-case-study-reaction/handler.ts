@@ -39,6 +39,7 @@ export interface SubmitCaseStudyReactionPrismaPort {
 export interface SubmitCaseStudyReactionDeps {
   reactions?: SubmitCaseStudyReactionPrismaPort;
   getBaseCounts?: (slug: string) => Promise<Record<string, number>>;
+  fallbackStore?: Map<string, Set<string>>;
 }
 
 export class SubmitCaseStudyReactionHandler implements SubmitCaseStudyReactionSpec {
@@ -46,12 +47,48 @@ export class SubmitCaseStudyReactionHandler implements SubmitCaseStudyReactionSp
   private readonly getBaseCounts: (
     slug: string
   ) => Promise<Record<string, number>>;
+  private readonly fallbackStore?: Map<string, Set<string>>;
 
   constructor(deps: SubmitCaseStudyReactionDeps = {}) {
     this.reactions =
       deps.reactions ??
       (prisma.caseStudyReaction as unknown as SubmitCaseStudyReactionPrismaPort);
     this.getBaseCounts = deps.getBaseCounts ?? getBaseCaseStudyReactionCounts;
+    this.fallbackStore = deps.fallbackStore;
+  }
+
+  private submitToVolatileFallback(
+    caseStudySlug: string,
+    reactionType: string,
+    connectionHash: string
+  ): SubmitCaseStudyReactionResult | null {
+    if (!this.fallbackStore) {
+      return null;
+    }
+
+    const bucketKey = `${caseStudySlug}:${reactionType}`;
+    const existingSet = this.fallbackStore.get(bucketKey) ?? new Set<string>();
+    existingSet.add(connectionHash);
+    this.fallbackStore.set(bucketKey, existingSet);
+
+    const counts = getDefaultCaseStudyReactionCounts();
+    const userReactions: string[] = [];
+    for (const type of Object.keys(counts)) {
+      const bucket = this.fallbackStore.get(`${caseStudySlug}:${type}`);
+      if (bucket) {
+        counts[type] = bucket.size;
+        if (bucket.has(connectionHash)) {
+          userReactions.push(type);
+        }
+      }
+    }
+
+    return createSuccess({
+      durable: false,
+      reactionType,
+      counts,
+      userReactions,
+    });
   }
 
   private async submitDirectToPostgres(
@@ -90,11 +127,18 @@ export class SubmitCaseStudyReactionHandler implements SubmitCaseStudyReactionSp
       }
 
       return createSuccess({
+        durable: true,
         reactionType,
         counts,
         userReactions: userReactionsList.map((ur) => ur.reactionType),
       });
     } catch (dbErr) {
+      const fallbackResult = this.submitToVolatileFallback(
+        caseStudySlug,
+        reactionType,
+        connectionHash
+      );
+      if (fallbackResult) return fallbackResult;
       return createFailure(
         "STORAGE_UNAVAILABLE",
         "Case study reaction storage is temporarily unavailable.",
@@ -205,6 +249,7 @@ export class SubmitCaseStudyReactionHandler implements SubmitCaseStudyReactionSp
       }
 
       return createSuccess({
+        durable: true,
         reactionType,
         counts,
         userReactions,

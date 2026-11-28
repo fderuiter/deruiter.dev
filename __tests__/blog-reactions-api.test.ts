@@ -253,4 +253,73 @@ describe("Blog Post Reactions API (/api/blog/reactions)", () => {
     expect(remaining).toHaveLength(1);
     expect(remaining[0]?.retries).toBe(1);
   });
+
+  it("returns HTTP 503 with an error envelope when SubmitBlogReactionHandler reports success: false", async () => {
+    const services = await import("@/lib/services");
+    const spy = vi
+      .spyOn(services.SubmitBlogReactionHandler.prototype, "execute")
+      .mockResolvedValueOnce(
+        services.createFailure(
+          "STORAGE_UNAVAILABLE",
+          "Reaction service temporarily unavailable. Please try again.",
+          { recoverable: true }
+        )
+      );
+
+    try {
+      const req = new NextRequest("http://localhost/api/blog/reactions", {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "10.0.0.55",
+          "user-agent": "redis-buffer-fail-agent",
+        },
+        body: JSON.stringify({
+          blogPostSlug: "cdisc-crf-compiler-architecture",
+          reactionType: "thorough",
+        }),
+      });
+
+      const res = await blogReactionPOST(req);
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error).toContain("temporarily unavailable");
+      expect(json.success).toBeUndefined();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("omits counts and userReactions on 429 RATE_LIMITED when duplicateDetails are absent", async () => {
+    const services = await import("@/lib/services");
+    const spy = vi
+      .spyOn(services.SubmitBlogReactionHandler.prototype, "execute")
+      .mockResolvedValueOnce(
+        services.createFailure("RATE_LIMITED", "Sliding window exceeded", {
+          recoverable: true,
+        })
+      );
+
+    try {
+      const req = new NextRequest("http://localhost/api/blog/reactions", {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "10.0.0.56",
+          "user-agent": "rate-limit-no-details-agent",
+        },
+        body: JSON.stringify({
+          blogPostSlug: "cdisc-crf-compiler-architecture",
+          reactionType: "thorough",
+        }),
+      });
+
+      const res = await blogReactionPOST(req);
+      expect(res.status).toBe(429);
+      const json = await res.json();
+      expect(json.error).toBeDefined();
+      expect(json.counts).toBeUndefined();
+      expect(json.userReactions).toBeUndefined();
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

@@ -3869,3 +3869,72 @@ describe("Proof Studio directed validation, consensus worker, and legacy edge no
     ]);
   });
 });
+
+describe("Editorial widget degraded write states & Clerk subroute scoping regression", () => {
+  it("scopes isClerkRoute to exact /api/case-studies mutations while bypassing public feedback and reaction subroutes", async () => {
+    const { isClerkRoute } = await import("@/proxy");
+
+    expect(
+      isClerkRoute(
+        new NextRequest("http://localhost:3000/api/case-studies", {
+          method: "POST",
+        })
+      )
+    ).toBe(true);
+    expect(
+      isClerkRoute(
+        new NextRequest("http://localhost:3000/api/case-studies/feedback", {
+          method: "POST",
+        })
+      )
+    ).toBe(false);
+    expect(
+      isClerkRoute(
+        new NextRequest("http://localhost:3000/api/case-studies/reactions", {
+          method: "POST",
+        })
+      )
+    ).toBe(false);
+  });
+
+  it("marks volatile Map fallback writes with durable: false across case-study feedback and reaction handlers", async () => {
+    const { SubmitCaseStudyFeedbackHandler, SubmitCaseStudyReactionHandler } =
+      await import("@/lib/services");
+
+    const fbResult = await new SubmitCaseStudyFeedbackHandler({
+      feedback: {
+        findFirst: vi.fn().mockRejectedValue(new Error("DB offline")),
+        create: vi.fn(),
+      },
+      fallbackStore: new Map(),
+    }).execute({
+      caseStudySlug: "oxidizemath",
+      takeaways: ["Architecture & System Design"],
+      comments: "Constructive resilience observation.",
+      connectionHash: "reg-hash-1",
+    });
+
+    expect(fbResult.success).toBe(true);
+    if (fbResult.success) {
+      expect(fbResult.data.durable).toBe(false);
+    }
+
+    const rxResult = await new SubmitCaseStudyReactionHandler({
+      reactions: {
+        createMany: vi.fn().mockRejectedValue(new Error("DB offline")),
+        groupBy: vi.fn(),
+        findMany: vi.fn(),
+      },
+      fallbackStore: new Map(),
+    }).execute({
+      caseStudySlug: "oxidizemath",
+      reactionType: "thorough",
+      connectionHash: "reg-hash-1",
+    });
+
+    expect(rxResult.success).toBe(true);
+    if (rxResult.success) {
+      expect(rxResult.data.durable).toBe(false);
+    }
+  });
+});

@@ -15,6 +15,12 @@ export interface CaseStudyFeedbackStoredRow {
   createdAt: Date | string;
 }
 
+export interface VolatileCaseStudyFeedbackEntry extends CaseStudyFeedbackStoredRow {
+  takeaways: string[];
+  connectionHash: string;
+  operationKey?: string;
+}
+
 export interface SubmitCaseStudyFeedbackPrismaPort {
   findFirst(args: {
     where:
@@ -38,15 +44,99 @@ export interface SubmitCaseStudyFeedbackPrismaPort {
 
 export interface SubmitCaseStudyFeedbackDeps {
   feedback?: SubmitCaseStudyFeedbackPrismaPort;
+  fallbackStore?: Map<string, VolatileCaseStudyFeedbackEntry[]>;
 }
 
 export class SubmitCaseStudyFeedbackHandler implements SubmitCaseStudyFeedbackSpec {
   private readonly feedback: SubmitCaseStudyFeedbackPrismaPort;
+  private readonly fallbackStore?: Map<
+    string,
+    VolatileCaseStudyFeedbackEntry[]
+  >;
 
   constructor(deps: SubmitCaseStudyFeedbackDeps = {}) {
     this.feedback =
       deps.feedback ??
       (prisma.caseStudyFeedback as unknown as SubmitCaseStudyFeedbackPrismaPort);
+    this.fallbackStore = deps.fallbackStore;
+  }
+
+  private submitToVolatileFallback(input: {
+    caseStudySlug: string;
+    takeaways: string[];
+    comments: string;
+    connectionHash: string;
+    operationKey?: string;
+  }): SubmitCaseStudyFeedbackResult | null {
+    if (!this.fallbackStore) {
+      return null;
+    }
+
+    const { caseStudySlug, takeaways, comments, connectionHash, operationKey } =
+      input;
+    const entries = this.fallbackStore.get(caseStudySlug) ?? [];
+
+    if (operationKey) {
+      for (const bucket of this.fallbackStore.values()) {
+        const replayedEntry = bucket.find(
+          (item) =>
+            item.connectionHash === connectionHash &&
+            item.operationKey === operationKey
+        );
+        if (replayedEntry) {
+          return createSuccess({
+            durable: false,
+            replayed: true,
+            message: "Feedback accepted into volatile fallback",
+            feedback: {
+              id: replayedEntry.id,
+              caseStudySlug: replayedEntry.caseStudySlug,
+              takeaways: replayedEntry.takeaways,
+              comments: replayedEntry.comments,
+              createdAt: replayedEntry.createdAt,
+            },
+          });
+        }
+      }
+    }
+
+    const oneHourAgoMs = Date.now() - 60 * 60 * 1000;
+    const duplicate = entries.find(
+      (item) =>
+        item.connectionHash === connectionHash &&
+        new Date(item.createdAt).getTime() >= oneHourAgoMs
+    );
+    if (duplicate) {
+      return createFailure(
+        "RATE_LIMITED",
+        "Feedback already submitted for this case study. Please try again later.",
+        { recoverable: true }
+      );
+    }
+
+    const volatileRow: VolatileCaseStudyFeedbackEntry = {
+      id: `mem_fb_${crypto.randomUUID()}`,
+      caseStudySlug,
+      takeaways,
+      comments,
+      connectionHash,
+      ...(operationKey ? { operationKey } : {}),
+      createdAt: new Date().toISOString(),
+    };
+    this.fallbackStore.set(caseStudySlug, [...entries, volatileRow]);
+
+    return createSuccess({
+      durable: false,
+      replayed: false,
+      message: "Feedback accepted into volatile fallback",
+      feedback: {
+        id: volatileRow.id,
+        caseStudySlug: volatileRow.caseStudySlug,
+        takeaways: volatileRow.takeaways,
+        comments: volatileRow.comments,
+        createdAt: volatileRow.createdAt,
+      },
+    });
   }
 
   async execute(
@@ -69,6 +159,7 @@ export class SubmitCaseStudyFeedbackHandler implements SubmitCaseStudyFeedbackSp
       replayed: boolean
     ): SubmitCaseStudyFeedbackResult =>
       createSuccess({
+        durable: true,
         replayed,
         message: "Feedback submitted successfully",
         feedback: {
@@ -124,6 +215,14 @@ export class SubmitCaseStudyFeedbackHandler implements SubmitCaseStudyFeedbackSp
           const winner = await findReplay();
           if (winner) return accepted(winner, true);
         }
+        const fallbackResult = this.submitToVolatileFallback({
+          caseStudySlug,
+          takeaways,
+          comments,
+          connectionHash,
+          operationKey,
+        });
+        if (fallbackResult) return fallbackResult;
         return createFailure(
           "STORAGE_UNAVAILABLE",
           "Case study feedback storage is temporarily unavailable.",
@@ -131,6 +230,14 @@ export class SubmitCaseStudyFeedbackHandler implements SubmitCaseStudyFeedbackSp
         );
       }
     } catch (dbErr) {
+      const fallbackResult = this.submitToVolatileFallback({
+        caseStudySlug,
+        takeaways,
+        comments,
+        connectionHash,
+        operationKey,
+      });
+      if (fallbackResult) return fallbackResult;
       return createFailure(
         "STORAGE_UNAVAILABLE",
         "Case study feedback storage is temporarily unavailable.",

@@ -210,7 +210,18 @@ export const openApiSpec = {
         },
         responses: {
           201: {
-            description: "Feedback submitted successfully",
+            description: "Feedback submitted durably",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/FeedbackPostResponse",
+                },
+              },
+            },
+          },
+          202: {
+            description:
+              "Feedback accepted into volatile memory fallback (durable=false); clients should retain in offline queue for background replay",
             content: {
               "application/json": {
                 schema: {
@@ -336,7 +347,18 @@ export const openApiSpec = {
         },
         responses: {
           200: {
-            description: "Reaction registered successfully",
+            description: "Reaction registered durably",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ReactionPostResponse",
+                },
+              },
+            },
+          },
+          202: {
+            description:
+              "Reaction accepted into volatile memory fallback (durable=false); clients should retain in offline queue for background replay",
             content: {
               "application/json": {
                 schema: {

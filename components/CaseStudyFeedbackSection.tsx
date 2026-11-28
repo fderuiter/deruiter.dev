@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   IconBulb,
   IconFlame,
   IconTarget,
   IconSearch,
   IconCheck,
+  IconClock,
   IconMessageCode,
   IconSend,
   IconAlertCircle,
@@ -41,13 +42,17 @@ export const PREDEFINED_TAKEAWAYS = [
 type ReactionType = "insightful" | "mind_blowing" | "actionable" | "thorough";
 
 interface ReactionsResponse {
+  durable?: boolean;
   counts?: Record<string, number>;
   userReactions?: string[];
 }
 
 interface FeedbackSubmitResponse {
+  durable?: boolean;
   message?: string;
 }
+
+type FeedbackSubmissionState = "idle" | "queued" | "submitted";
 
 interface ReactionConfig {
   type: ReactionType;
@@ -65,7 +70,7 @@ const REACTIONS: ReactionConfig[] = [
 export function CaseStudyFeedbackSection({
   slug,
 }: CaseStudyFeedbackSectionProps) {
-  const { enqueue, dlqQueue } = useOfflineQueue();
+  const { queue, enqueue, dlqQueue, persistence, isOnline } = useOfflineQueue();
 
   // Reactions state
   const [counts, setCounts] = useState<Record<string, number>>({
@@ -83,10 +88,11 @@ export function CaseStudyFeedbackSection({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [hasSubmittedFeedback, setHasSubmittedFeedback] =
-    useState<boolean>(false);
+  const [submissionState, setSubmissionState] =
+    useState<FeedbackSubmissionState>("idle");
+  const trackedFeedbackIdRef = useRef<string | null>(null);
 
-  // Listen for DLQ failure events
+  // Listen for DLQ failure and durable sync events
   useEffect(() => {
     const handleDLQError = (e: Event) => {
       const customEvent = e as CustomEvent<DeadLetterItem>;
@@ -99,21 +105,55 @@ export function CaseStudyFeedbackSection({
             item.endpoint === "/api/case-studies/feedback" ||
             item.type === "feedback"
           ) {
-            setHasSubmittedFeedback(false);
+            trackedFeedbackIdRef.current = null;
+            setSubmissionState("idle");
             setSuccessMsg(null);
           }
         }
       }
     };
 
+    const handleQueueSynced = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        id?: string;
+        endpoint?: string;
+        type?: string;
+        body?: unknown;
+      }>;
+      const item = customEvent.detail;
+      if (
+        item &&
+        (item.endpoint === "/api/case-studies/feedback" ||
+          item.type === "feedback") &&
+        item.body &&
+        typeof item.body === "object"
+      ) {
+        const body = item.body as { caseStudySlug?: string };
+        if (body.caseStudySlug === slug) {
+          trackedFeedbackIdRef.current = null;
+          setErrorMsg(null);
+          setSubmissionState("submitted");
+          setSuccessMsg("Thank you! Your learning feedback has been recorded.");
+        }
+      }
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("portfolio-offline-queue-error", handleDLQError);
+      window.addEventListener(
+        "portfolio-offline-queue-synced",
+        handleQueueSynced
+      );
     }
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener(
           "portfolio-offline-queue-error",
           handleDLQError
+        );
+        window.removeEventListener(
+          "portfolio-offline-queue-synced",
+          handleQueueSynced
         );
       }
     };
@@ -136,12 +176,37 @@ export function CaseStudyFeedbackSection({
           item.endpoint === "/api/case-studies/feedback" ||
           item.type === "feedback"
         ) {
-          setHasSubmittedFeedback(false);
+          trackedFeedbackIdRef.current = null;
+          setSubmissionState("idle");
           setSuccessMsg(null);
         }
       });
     }
   }, [dlqQueue, slug]);
+
+  // Promote queued state to submitted if another tab durably flushed our tracked item
+  useEffect(() => {
+    if (
+      submissionState !== "queued" ||
+      !isOnline ||
+      !trackedFeedbackIdRef.current
+    ) {
+      return;
+    }
+    const trackedId = trackedFeedbackIdRef.current;
+    const stillQueued = queue.some((item) => item.id === trackedId);
+    if (stillQueued) {
+      return;
+    }
+    const deadLettered = dlqQueue.some((item) => item.id === trackedId);
+    if (!deadLettered) {
+      trackedFeedbackIdRef.current = null;
+      queueMicrotask(() => {
+        setSubmissionState("submitted");
+        setSuccessMsg("Thank you! Your learning feedback has been recorded.");
+      });
+    }
+  }, [queue, dlqQueue, isOnline, submissionState]);
 
   // Initial fetch for reaction counts. Whether this visitor already sent
   // feedback comes from the local submit queue below, not from a GET that
@@ -195,10 +260,8 @@ export function CaseStudyFeedbackSection({
             ) {
               const body = item.body as { caseStudySlug?: string };
               if (body.caseStudySlug === slug) {
-                setHasSubmittedFeedback(true);
-                setSuccessMsg(
-                  "Thank you! Your learning feedback has been recorded."
-                );
+                trackedFeedbackIdRef.current = item.id;
+                setSubmissionState("queued");
               }
             }
           }
@@ -217,11 +280,10 @@ export function CaseStudyFeedbackSection({
   // and only a durable queue survives a reload, so the message says which.
   const queueWrite = async (request: OfflineRequestInput) => {
     try {
-      await enqueue(request);
-      return true;
+      return await enqueue(request);
     } catch (error) {
       logger.warn("Could not queue the request for retry.", { error });
-      return false;
+      return null;
     }
   };
 
@@ -234,7 +296,7 @@ export function CaseStudyFeedbackSection({
   };
 
   const queueFeedback = async (payload: unknown, idempotencyKey: string) => {
-    const queued = await queueWrite({
+    const queuedEntry = await queueWrite({
       type: "feedback",
       headers: {
         "Content-Type": "application/json",
@@ -243,18 +305,13 @@ export function CaseStudyFeedbackSection({
       endpoint: "/api/case-studies/feedback",
       body: payload,
     });
-    if (!queued) {
+    if (!queuedEntry) {
       setErrorMsg("Your feedback could not be saved. Please try again.");
-      setHasSubmittedFeedback(false);
+      setSubmissionState("idle");
       return;
     }
-    setHasSubmittedFeedback(true);
-    // Read after the write, since the store may have opened during it.
-    setSuccessMsg(
-      getOfflineQueuePersistence() === "volatile"
-        ? "Thank you! Your feedback will be sent when you are back online. Keep this page open until then."
-        : "Thank you! Your learning feedback has been recorded."
-    );
+    trackedFeedbackIdRef.current = queuedEntry.id;
+    setSubmissionState((prev) => (prev === "submitted" ? prev : "queued"));
     setSelectedTakeaways([]);
     setComments("");
   };
@@ -289,6 +346,9 @@ export function CaseStudyFeedbackSection({
       }
       if (res.data?.userReactions) {
         setUserReactions(res.data.userReactions);
+      }
+      if (res.status === 202 || res.data?.durable === false) {
+        await queueReaction(type);
       }
     } else {
       await queueReaction(type);
@@ -343,19 +403,22 @@ export function CaseStudyFeedbackSection({
       { headers: { "Idempotency-Key": idempotencyKey } }
     );
 
-    if (res.ok) {
-      setHasSubmittedFeedback(true);
+    if (res.ok && res.status !== 202 && res.data?.durable !== false) {
+      trackedFeedbackIdRef.current = null;
+      setSubmissionState("submitted");
       setSuccessMsg(
         res.data?.message ||
           "Thank you! Your learning feedback has been recorded."
       );
       setSelectedTakeaways([]);
       setComments("");
+    } else if (res.ok && (res.status === 202 || res.data?.durable === false)) {
+      await queueFeedback(payload, idempotencyKey);
     } else if (res.status >= 400 && res.status < 500) {
       const detailMsg =
         res.details[0]?.message || res.error || "Submission rejected.";
       setErrorMsg(detailMsg);
-      setHasSubmittedFeedback(false);
+      setSubmissionState("idle");
       setSuccessMsg(null);
     } else {
       // Network failure or 5xx: queue for background retry.
@@ -363,6 +426,12 @@ export function CaseStudyFeedbackSection({
     }
     setSubmitting(false);
   };
+
+  const isVolatileQueue =
+    persistence === "volatile" || getOfflineQueuePersistence() === "volatile";
+  const queuedStatusCopy = isVolatileQueue
+    ? "Your feedback is queued in memory and will sync once durable storage recovers. Keep this page open until then."
+    : "Your feedback is queued locally on this device and will sync automatically once durable storage is reachable.";
 
   return (
     <section
@@ -437,9 +506,10 @@ export function CaseStudyFeedbackSection({
             Structured Learning Takeaways
           </p>
 
-          {hasSubmittedFeedback && successMsg ? (
+          {submissionState === "submitted" && successMsg ? (
             <div
-              role="alert"
+              role="status"
+              aria-live="polite"
               className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-sm flex items-start gap-3 my-2"
             >
               <IconCheck className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
@@ -449,6 +519,22 @@ export function CaseStudyFeedbackSection({
                 </p>
                 <p className="text-xs font-mono text-emerald-300/90 mt-1">
                   {successMsg}
+                </p>
+              </div>
+            </div>
+          ) : submissionState === "queued" ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="p-4 rounded-xl bg-amber-950/30 border border-amber-800/50 text-amber-200 text-sm flex items-start gap-3 my-2"
+            >
+              <IconClock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold font-sans text-amber-200">
+                  Queued locally
+                </p>
+                <p className="text-xs font-mono text-amber-200/90 mt-1">
+                  {queuedStatusCopy}
                 </p>
               </div>
             </div>

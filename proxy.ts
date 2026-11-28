@@ -22,8 +22,9 @@ export function isClerkRoute(req: NextRequest): boolean {
   if (isAdminRoute(req)) {
     return true;
   }
+  const normalizedPathname = req.nextUrl.pathname.replace(/\/+$/, "") || "/";
   if (
-    req.nextUrl.pathname.startsWith("/api/case-studies") &&
+    normalizedPathname === "/api/case-studies" &&
     req.method !== "GET" &&
     req.method !== "HEAD" &&
     req.method !== "OPTIONS"

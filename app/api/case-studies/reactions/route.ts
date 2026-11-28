@@ -60,14 +60,17 @@ export const POST = createApiHandler(
         });
       }
 
+      const durable = result.data.durable !== false;
+
       return NextResponse.json(
         {
           success: true,
+          durable,
           reactionType: result.data.reactionType,
           counts: result.data.counts,
           userReactions: result.data.userReactions,
         },
-        { status: 200 }
+        { status: durable ? 200 : 202 }
       );
     } catch (err) {
       logger.error("Failed to process reaction submission:", err);

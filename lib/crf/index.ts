@@ -62,5 +62,8 @@ export * from "./internal/library-upgrade";
 export * from "./internal/rule-wires";
 export * from "./internal/study-baselines";
 export * from "./internal/study-omnibar";
+export * from "./internal/simulation-records";
+export * from "./internal/edc-query-lifecycle";
+export * from "./internal/clinical-data-csv";
 export * from "./internal/codecs";
 export * from "./internal/conformance";

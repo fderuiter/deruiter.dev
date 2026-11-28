@@ -12,12 +12,15 @@ import {
   type ShiftState,
 } from "@/lib/patty-drive-thru";
 import {
+  escapeRfc4180Cell,
   exportStudyToCdiscOdmXml,
   exportStudyToUsdm,
+  formatRfc4180Csv,
   importStudyFromUsdm,
   extractCodelistFromUsdmObject,
   diffUniversalCrfStudies,
   compareStudyToBaseline,
+  parseRfc4180Csv,
   OdmXml132Codec,
   UniversalYamlCodec,
   CodecValidationError,
@@ -3002,6 +3005,68 @@ describe("CRF XML & YAML parser and codec properties (#4154)", () => {
         }
       ),
       { seed: CODEC_PROPERTY_SEED, numRuns: 40 }
+    );
+  });
+});
+
+describe("clinical RFC 4180 CSV formula guard & round-trip bijection (#4147)", () => {
+  const csvCellTokenArb = fc.oneof(
+    fc.string({ maxLength: 32 }),
+    fc
+      .array(
+        fc.constantFrom(
+          "=",
+          "+",
+          "-",
+          "@",
+          "\t",
+          "\r",
+          "\n",
+          "'",
+          '"',
+          ",",
+          "1",
+          ".",
+          "5",
+          "x"
+        ),
+        { maxLength: 16 }
+      )
+      .map((chars) => chars.join(""))
+  );
+
+  it("neutralizes non-numeric leading formula triggers and round-trips arbitrary non-empty rows losslessly", () => {
+    const strictNumericRe = /^-?\d+(\.\d+)?$/;
+    const rawTriggerRe = /^[=+\-@\t\r]/;
+
+    fc.assert(
+      fc.property(
+        fc.array(csvCellTokenArb, { minLength: 1, maxLength: 8 }),
+        (cells) => {
+          for (const cell of cells) {
+            const escaped = escapeRfc4180Cell(cell);
+            const unquoted =
+              escaped.startsWith('"') && escaped.endsWith('"')
+                ? escaped.slice(1, -1).replace(/""/g, '"')
+                : escaped;
+            if (rawTriggerRe.test(cell) && !strictNumericRe.test(cell)) {
+              expect(unquoted.startsWith("'")).toBe(true);
+            }
+            if (strictNumericRe.test(cell)) {
+              expect(unquoted).toBe(cell);
+            }
+          }
+
+          // Ensure at least one non-empty cell in the data row so RFC 4180 blank-line filtering retains the row
+          const row = cells.some((c) => c.length > 0)
+            ? cells
+            : ["non-empty", ...cells.slice(1)];
+          const headers = row.map((_, i) => `COL_${i}`);
+          const serialized = formatRfc4180Csv(headers, [row]);
+          expect(parseRfc4180Csv(serialized)).toEqual([headers, row]);
+        }
+      ),
+      { seed: 4147, numRuns: 200 }
     );
   });
 });

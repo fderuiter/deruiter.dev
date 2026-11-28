@@ -1,14 +1,20 @@
 import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import {
   AstCondition,
+  AuditTrailEntry,
   CodelistDefinition,
   CRFField,
   EditCheckRule,
+  ElectronicSignature,
   StudyProtocol,
   StudyVisit,
 } from "../types";
 import { escapeXml } from "../../utils";
 import { consultationUrl } from "./export-annotations";
+import {
+  discoverSimulationSubjects,
+  parseSimulationFormValues,
+} from "./simulation-records";
 
 const VALID_ODM_VISIT_TYPES = new Set<StudyVisit["visitType"]>([
   "Scheduled",
@@ -51,7 +57,10 @@ function mapDataTypeToOdm(type: string): string {
  * Normalizes a timestamp into a deterministic `xs:dateTime` value without
  * consulting the system wall clock.
  */
-function normalizeOdmDateTime(value: string | undefined): string {
+function normalizeOdmDateTime(
+  value: string | undefined,
+  fallback = "1970-01-01T00:00:00Z"
+): string {
   const trimmed = (value || "").trim();
   if (
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
@@ -75,7 +84,47 @@ function normalizeOdmDateTime(value: string | undefined): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return `${trimmed}T00:00:00Z`;
   }
-  return "1970-01-01T00:00:00Z";
+  return fallback;
+}
+
+function allocateXmlNcNameId(
+  prefix: string,
+  rawId: string | undefined,
+  usedIds: Set<string>
+): string {
+  const cleaned = (rawId || "")
+    .replace(/[^A-Za-z0-9._-]/g, "_")
+    .replace(/^[^A-Za-z_]+/, "");
+  const base = cleaned
+    ? cleaned.toUpperCase().startsWith(`${prefix}_`)
+      ? cleaned
+      : `${prefix}_${cleaned}`
+    : `${prefix}_1`;
+  let candidate = base;
+  let seq = 2;
+  while (usedIds.has(candidate)) {
+    candidate = `${base}_${seq++}`;
+  }
+  usedIds.add(candidate);
+  return candidate;
+}
+
+function mapRoleToOdmUserType(
+  role?: string
+): "Sponsor" | "Investigator" | "Lab" | "Other" {
+  switch (role) {
+    case "Principal Investigator":
+    case "Site Coordinator":
+      return "Investigator";
+    case "CRA Monitor":
+    case "Data Manager":
+    case "Biostatistician":
+    case "Medical Monitor":
+    case "Clinical Reviewer":
+      return "Sponsor";
+    default:
+      return "Other";
+  }
 }
 
 function formatAstCondition(cond: AstCondition): string {
@@ -137,9 +186,11 @@ export const CRF_STUDIO_ODM_NAMESPACE = "https://deruiter.dev/ns/crf-studio/v1";
 export const NCI_ALIAS_CONTEXT = "nci:ExtCodeID";
 
 /**
- * Serializes a StudyProtocol into CDISC ODM-XML v1.3.2. The output validates
- * against the ODM 1.3.2 schema; with an audit trail, against that schema
- * extended by the CRF Studio namespace.
+ * Serializes a StudyProtocol into CDISC ODM-XML v1.3.2, emitting `AdminData`
+ * and `ClinicalData` with form-scoped `ItemData ItemOID` values (`IT.<formId>.<NAME>`)
+ * when `study.simulationState` holds simulated records.
+ * The output validates against the plain ODM 1.3.2 schema; with a design-change
+ * `study.auditTrail`, against that schema extended by the CRF Studio namespace.
  */
 export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   const safeStudy =
@@ -171,6 +222,51 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
       );
     }
   }
+
+  // Inspect simulationState upfront so we know whether <AdminData>/<ClinicalData> will be emitted
+  const sim = safeStudy.simulationState;
+  const simSubjects =
+    sim && typeof sim === "object"
+      ? discoverSimulationSubjects(safeStudy, sim)
+      : [];
+  const parsedCells =
+    sim && typeof sim === "object"
+      ? parseSimulationFormValues(safeStudy, sim)
+      : [];
+  const simAudits: AuditTrailEntry[] =
+    sim && typeof sim === "object" && Array.isArray(sim.auditLog)
+      ? sim.auditLog
+      : [];
+  const simSignatures: ElectronicSignature[] =
+    sim && typeof sim === "object" && Array.isArray(sim.signatures)
+      ? sim.signatures
+      : [];
+  const simQueries =
+    sim && typeof sim === "object" && Array.isArray(sim.queries)
+      ? sim.queries
+      : [];
+  const simLockedForms =
+    sim &&
+    typeof sim === "object" &&
+    sim.lockedForms &&
+    typeof sim.lockedForms === "object"
+      ? sim.lockedForms
+      : {};
+  const simSdvMap =
+    sim &&
+    typeof sim === "object" &&
+    sim.sdvMap &&
+    typeof sim.sdvMap === "object"
+      ? sim.sdvMap
+      : {};
+  const hasClinicalPayload =
+    simSubjects.length > 0 ||
+    parsedCells.length > 0 ||
+    simAudits.length > 0 ||
+    simSignatures.length > 0 ||
+    simQueries.length > 0 ||
+    Object.keys(simLockedForms).length > 0 ||
+    Object.keys(simSdvMap).length > 0;
 
   // Collect MeasurementUnits across all fields for <BasicDefinitions>
   const unitToOid = new Map<string, string>();
@@ -475,7 +571,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   if (safeStudy.testScenarios) {
     studyMetaPayload.testScenarios = safeStudy.testScenarios;
   }
-  if (safeStudy.simulationState) {
+  if (safeStudy.simulationState && !hasClinicalPayload) {
     studyMetaPayload.simulationState = safeStudy.simulationState;
   }
   if (Object.keys(studyMetaPayload).length > 0) {
@@ -642,8 +738,9 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         if (field.placeholder !== undefined) {
           fieldMeta.placeholder = field.placeholder;
         }
-        if (field.description !== undefined)
+        if (field.description !== undefined) {
           fieldMeta.description = field.description;
+        }
         if (field.defaultValue !== undefined) {
           fieldMeta.defaultValue = field.defaultValue;
         }
@@ -736,10 +833,12 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
     });
   }
 
+  const usedXmlIds = new Set<string>();
   if (auditTrail.length > 0) {
     xml += `\n      <crfs:AuditTrail>\n`;
     auditTrail.forEach((entry) => {
       if (!entry || typeof entry !== "object") return;
+      if (entry.id) usedXmlIds.add(entry.id);
       xml += `        <crfs:AuditRecord ID="${escapeXml(entry.id)}">\n`;
       xml += `          <crfs:UserRef UserOID="${escapeXml(entry.changedBy)}"/>\n`;
       if (entry.userRole) {
@@ -806,8 +905,273 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   }
 
   xml += `    </MetaDataVersion>
-  </Study>
-</ODM>`;
+  </Study>\n`;
+
+  // Plain ODM 1.3.2 AdminData & ClinicalData from study.simulationState
+  if (hasClinicalPayload) {
+    const adminUsers = new Map<
+      string,
+      {
+        oid: string;
+        displayName: string;
+        role: string;
+        userType: "Sponsor" | "Investigator" | "Lab" | "Other";
+      }
+    >();
+    const ensureAdminUser = (name: string, role?: string): string => {
+      const displayName = (name || "Clinical User").trim() || "Clinical User";
+      const cleanRole = (role || "System").trim() || "System";
+      const key = `${displayName}|||${cleanRole}`;
+      const existing = adminUsers.get(key);
+      if (existing) return existing.oid;
+      const oid = `USR.${adminUsers.size + 1}`;
+      adminUsers.set(key, {
+        oid,
+        displayName,
+        role: cleanRole,
+        userType: mapRoleToOdmUserType(cleanRole),
+      });
+      return oid;
+    };
+
+    const sigDefs = new Map<string, string>();
+    const ensureSigDef = (meaning: string): string => {
+      const cleanMeaning =
+        (meaning || "Investigator Approval").trim() || "Investigator Approval";
+      const existing = sigDefs.get(cleanMeaning);
+      if (existing) return existing;
+      const oid = `SIGDEF.${sigDefs.size + 1}`;
+      sigDefs.set(cleanMeaning, oid);
+      return oid;
+    };
+
+    simAudits.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      ensureAdminUser(entry.changedBy || "System", entry.userRole);
+    });
+    simSignatures.forEach((sig) => {
+      if (!sig || typeof sig !== "object") return;
+      ensureAdminUser(sig.signedBy || "Investigator", sig.userRole);
+      ensureSigDef(sig.meaning);
+    });
+    simQueries.forEach((q) => {
+      if (!q || typeof q !== "object") return;
+      if (q.raisedBy) ensureAdminUser(q.raisedBy, "System");
+      if (q.respondedBy) ensureAdminUser(q.respondedBy, "Site Coordinator");
+      if (q.resolvedBy) ensureAdminUser(q.resolvedBy, "CRA Monitor");
+    });
+
+    const locationOid = "LOC.SITE_001";
+    const effectiveDate = creationDateTime.slice(0, 10);
+
+    // 1. <AdminData> (sequence: User*, Location*, SignatureDef*)
+    xml += `  <AdminData StudyOID="${escapeXml(studyOid)}">\n`;
+    adminUsers.forEach((u) => {
+      xml += `    <User OID="${escapeXml(u.oid)}" UserType="${u.userType}">\n`;
+      xml += `      <DisplayName>${escapeXml(u.displayName)}</DisplayName>\n`;
+      xml += `      <FullName>${escapeXml(u.displayName)}</FullName>\n`;
+      xml += `      <Organization>${escapeXml(u.role)}</Organization>\n`;
+      xml += `    </User>\n`;
+    });
+    xml += `    <Location OID="${locationOid}" Name="Simulated Clinical Site 001" LocationType="Site">\n`;
+    xml += `      <MetaDataVersionRef StudyOID="${escapeXml(studyOid)}" MetaDataVersionOID="${escapeXml(metaOid)}" EffectiveDate="${escapeXml(effectiveDate)}"/>\n`;
+    xml += `    </Location>\n`;
+    sigDefs.forEach((oid, meaning) => {
+      xml += `    <SignatureDef OID="${escapeXml(oid)}" Methodology="Electronic">\n`;
+      xml += `      <Meaning>${escapeXml(meaning)}</Meaning>\n`;
+      xml += `      <LegalReason>Simulated electronic signature reference in CRF Studio (not a validated system)</LegalReason>\n`;
+      xml += `    </SignatureDef>\n`;
+    });
+    xml += `  </AdminData>\n`;
+
+    // Index captured values by `${subjectId}:::${visitId}:::${fieldId}`
+    const cellValueMap = new Map<string, string | number | boolean | null>();
+    parsedCells.forEach((c) => {
+      cellValueMap.set(`${c.subjectId}:::${c.visitId}:::${c.fieldId}`, c.value);
+    });
+
+    // Count how many forms declare each field.id so shared field IDs prefer forms scheduled at the visit
+    const fieldIdFormCount = new Map<string, number>();
+    formEntries.forEach(({ sections }) => {
+      sections.forEach(({ fields }) => {
+        fields.forEach(({ field }) => {
+          fieldIdFormCount.set(
+            field.id,
+            (fieldIdFormCount.get(field.id) ?? 0) + 1
+          );
+        });
+      });
+    });
+
+    // 2. <ClinicalData> (sequence: SubjectData*, AuditRecords*, Signatures*, Annotations*)
+    xml += `  <ClinicalData StudyOID="${escapeXml(studyOid)}" MetaDataVersionOID="${escapeXml(metaOid)}">\n`;
+
+    simSubjects.forEach((subjectId) => {
+      xml += `    <SubjectData SubjectKey="${escapeXml(subjectId)}">\n`;
+      xml += `      <SiteRef LocationOID="${locationOid}"/>\n`;
+
+      visitEntries.forEach(({ visit, oid: visitOid }) => {
+        let studyEventXml = "";
+        const scheduledFormIds = new Set<string>(
+          Array.isArray(visit.assignedFormIds) ? visit.assignedFormIds : []
+        );
+        if (
+          visit.armFormAssignments &&
+          typeof visit.armFormAssignments === "object"
+        ) {
+          Object.values(visit.armFormAssignments).forEach((armForms) => {
+            if (Array.isArray(armForms)) {
+              armForms.forEach((fId) => scheduledFormIds.add(fId));
+            }
+          });
+        }
+
+        formEntries.forEach(({ form, formOid, sections }) => {
+          let formDataXml = "";
+
+          sections.forEach(({ igOid, fields }) => {
+            let itemGroupXml = "";
+
+            fields.forEach(({ field, itemOid }) => {
+              if (
+                (fieldIdFormCount.get(field.id) ?? 0) > 1 &&
+                scheduledFormIds.size > 0 &&
+                !scheduledFormIds.has(form.id)
+              ) {
+                return;
+              }
+              const mapKey = `${subjectId}:::${visit.id}:::${field.id}`;
+              if (!cellValueMap.has(mapKey)) return;
+              const val = cellValueMap.get(mapKey);
+
+              if (val === null || val === "") {
+                itemGroupXml += `            <ItemData ItemOID="${escapeXml(itemOid)}" IsNull="Yes"/>\n`;
+              } else {
+                const strVal =
+                  typeof val === "object" ? JSON.stringify(val) : String(val);
+                itemGroupXml += `            <ItemData ItemOID="${escapeXml(itemOid)}" Value="${escapeXml(strVal)}"/>\n`;
+              }
+            });
+
+            if (itemGroupXml) {
+              formDataXml += `          <ItemGroupData ItemGroupOID="${escapeXml(igOid)}">\n${itemGroupXml}          </ItemGroupData>\n`;
+            }
+          });
+
+          if (formDataXml) {
+            studyEventXml += `        <FormData FormOID="${escapeXml(formOid)}">\n${formDataXml}        </FormData>\n`;
+          }
+        });
+
+        if (studyEventXml) {
+          xml += `      <StudyEventData StudyEventOID="${escapeXml(visitOid)}">\n${studyEventXml}      </StudyEventData>\n`;
+        }
+      });
+
+      xml += `    </SubjectData>\n`;
+    });
+
+    if (simAudits.length > 0) {
+      xml += `    <AuditRecords>\n`;
+      simAudits.forEach((entry) => {
+        if (!entry || typeof entry !== "object") return;
+        const audXmlId = allocateXmlNcNameId("AUD", entry.id, usedXmlIds);
+        const userOid = ensureAdminUser(
+          entry.changedBy || "System",
+          entry.userRole
+        );
+        const isoTs = normalizeOdmDateTime(entry.timestamp, creationDateTime);
+        const sourcePayload = `urn:crf-studio:audit:${JSON.stringify({
+          id: entry.id,
+          subjectId: entry.subjectId,
+          formId: entry.formId,
+          fieldId: entry.fieldId,
+          fieldName: entry.fieldName,
+          previousValue:
+            entry.previousValue === undefined ? null : entry.previousValue,
+          newValue: entry.newValue === undefined ? null : entry.newValue,
+          actionType: entry.actionType,
+          targetId: entry.targetId,
+          targetType: entry.targetType,
+        })}`;
+        xml += `      <AuditRecord ID="${escapeXml(audXmlId)}" EditPoint="DataManagement">\n`;
+        xml += `        <UserRef UserOID="${escapeXml(userOid)}"/>\n`;
+        xml += `        <LocationRef LocationOID="${locationOid}"/>\n`;
+        xml += `        <DateTimeStamp>${escapeXml(isoTs)}</DateTimeStamp>\n`;
+        xml += `        <ReasonForChange>${escapeXml(entry.reasonForChange || "Recorded in EDC simulation")}</ReasonForChange>\n`;
+        xml += `        <SourceID>${escapeXml(sourcePayload)}</SourceID>\n`;
+        xml += `      </AuditRecord>\n`;
+      });
+      xml += `    </AuditRecords>\n`;
+    }
+
+    if (simSignatures.length > 0) {
+      xml += `    <Signatures>\n`;
+      simSignatures.forEach((sig) => {
+        if (!sig || typeof sig !== "object") return;
+        const sigXmlId = allocateXmlNcNameId("SIG", sig.id, usedXmlIds);
+        const userOid = ensureAdminUser(
+          sig.signedBy || "Investigator",
+          sig.userRole
+        );
+        const sigDefOid = ensureSigDef(sig.meaning);
+        const isoTs = normalizeOdmDateTime(sig.timestamp, creationDateTime);
+        const manifestPayload = `urn:crf-studio:simulated-signature:${JSON.stringify(
+          {
+            id: sig.id,
+            subjectId: sig.subjectId,
+            visitId: sig.visitId,
+            formId: sig.formId,
+            digest: sig.digest,
+            note: "Simulated signature reference token (not a validated system)",
+          }
+        )}`;
+        xml += `      <Signature ID="${escapeXml(sigXmlId)}">\n`;
+        xml += `        <UserRef UserOID="${escapeXml(userOid)}"/>\n`;
+        xml += `        <LocationRef LocationOID="${locationOid}"/>\n`;
+        xml += `        <SignatureRef SignatureOID="${escapeXml(sigDefOid)}"/>\n`;
+        xml += `        <DateTimeStamp>${escapeXml(isoTs)}</DateTimeStamp>\n`;
+        xml += `        <CryptoBindingManifest>${escapeXml(manifestPayload)}</CryptoBindingManifest>\n`;
+        xml += `      </Signature>\n`;
+      });
+      xml += `    </Signatures>\n`;
+    }
+
+    const hasExtraState =
+      simQueries.length > 0 ||
+      Object.keys(simLockedForms).length > 0 ||
+      Object.keys(simSdvMap).length > 0;
+    if (hasExtraState) {
+      xml += `    <Annotations>\n`;
+      let seqNum = 1;
+      simQueries.forEach((q) => {
+        if (!q || typeof q !== "object") return;
+        const annId = allocateXmlNcNameId("ANN", q.id, usedXmlIds);
+        const commentPayload = `urn:crf-studio:query:${JSON.stringify(q)}`;
+        xml += `      <Annotation SeqNum="${seqNum++}" ID="${escapeXml(annId)}">\n`;
+        xml += `        <Comment SponsorOrSite="Sponsor">${escapeXml(commentPayload)}</Comment>\n`;
+        xml += `      </Annotation>\n`;
+      });
+      if (
+        Object.keys(simLockedForms).length > 0 ||
+        Object.keys(simSdvMap).length > 0
+      ) {
+        const stateAnnId = allocateXmlNcNameId("ANN", "STATE_1", usedXmlIds);
+        const statePayload = `urn:crf-studio:state:${JSON.stringify({
+          lockedForms: simLockedForms,
+          sdvMap: simSdvMap,
+        })}`;
+        xml += `      <Annotation SeqNum="${seqNum++}" ID="${escapeXml(stateAnnId)}">\n`;
+        xml += `        <Comment SponsorOrSite="Site">${escapeXml(statePayload)}</Comment>\n`;
+        xml += `      </Annotation>\n`;
+      }
+      xml += `    </Annotations>\n`;
+    }
+
+    xml += `  </ClinicalData>\n`;
+  }
+
+  xml += `</ODM>`;
 
   return xml;
 }

@@ -25,6 +25,12 @@ import {
   resolveFieldOptions,
   resolveStudyCodelist,
 } from "./export-common";
+import {
+  type CapturedFormRow,
+  extractCapturedFormRows,
+  hasSimulationRecords,
+  parseMultiSelectValue,
+} from "./simulation-records";
 
 /**
  * Sanitizes a string into a valid R variable name.
@@ -324,6 +330,169 @@ function getRSampleColumnCode(
   }
 }
 
+function getRLiveColumnCode(
+  item: ExpandedRField,
+  rows: CapturedFormRow[],
+  context: PreparedExportContext
+): string {
+  const { field, optionCode } = item;
+  const codelist = resolveStudyCodelist(context, field);
+  const hasCodelist = !!codelist && codelist.options.length > 0;
+
+  if (rows.length === 0) {
+    if (field.dataType === "multi_select" || field.dataType === "checkbox") {
+      if (optionCode) {
+        return `factor(character(0), levels = cl_cl_ny_levels, labels = cl_cl_ny_labels)`;
+      }
+      return `character(0)`;
+    }
+    switch (field.dataType) {
+      case "integer":
+        return `integer(0)`;
+      case "number":
+      case "calculated":
+      case "vas_scale":
+      case "nrs_scale":
+        return `numeric(0)`;
+      case "date":
+      case "partial_date":
+      case "precision_date":
+        return `as.Date(character(0))`;
+      case "datetime":
+        return `as.POSIXct(character(0), tz = "UTC")`;
+      case "single_select":
+      case "radio":
+        if (hasCodelist) {
+          const safeName = sanitizeRName(
+            codelist!.id || codelist!.name
+          ).toLowerCase();
+          return `factor(character(0), levels = cl_${safeName}_levels, labels = cl_${safeName}_labels)`;
+        }
+        return `character(0)`;
+      default:
+        return `character(0)`;
+    }
+  }
+
+  const rawValues = rows.map((r) => r.values[field.id]);
+
+  if (field.dataType === "multi_select" || field.dataType === "checkbox") {
+    if (optionCode) {
+      const encoded = rawValues
+        .map((raw) =>
+          raw === null || raw === undefined || raw === ""
+            ? "NA_character_"
+            : `"${escapeRString(parseMultiSelectValue(String(raw), optionCode))}"`
+        )
+        .join(", ");
+      return `factor(c(${encoded}), levels = cl_cl_ny_levels, labels = cl_cl_ny_labels)`;
+    }
+    const encoded = rawValues
+      .map((raw) => {
+        if (raw === null || raw === undefined || raw === "") {
+          return "NA_character_";
+        }
+        if (raw === true || raw === "true" || raw === "Y") return `"Y"`;
+        if (raw === false || raw === "false" || raw === "N") return `"N"`;
+        return `"${escapeRString(String(raw))}"`;
+      })
+      .join(", ");
+    return `c(${encoded})`;
+  }
+
+  switch (field.dataType) {
+    case "integer": {
+      const encoded = rawValues
+        .map((raw) => {
+          if (raw === null || raw === undefined || raw === "") {
+            return "NA_integer_";
+          }
+          const num = Number(raw);
+          return Number.isFinite(num) ? String(Math.trunc(num)) : "NA_integer_";
+        })
+        .join(", ");
+      return `as.integer(c(${encoded}))`;
+    }
+
+    case "number":
+    case "calculated":
+    case "vas_scale":
+    case "nrs_scale": {
+      const encoded = rawValues
+        .map((raw) => {
+          if (raw === null || raw === undefined || raw === "") {
+            return "NA_real_";
+          }
+          const num = Number(raw);
+          return Number.isFinite(num) ? String(num) : "NA_real_";
+        })
+        .join(", ");
+      return `c(${encoded})`;
+    }
+
+    case "date":
+    case "partial_date":
+    case "precision_date": {
+      const presentStrings = rawValues
+        .filter((raw) => raw !== null && raw !== undefined && raw !== "")
+        .map((raw) => String(raw));
+      const allFullIso = presentStrings.every((s) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(s)
+      );
+      const encoded = rawValues
+        .map((raw) =>
+          raw === null || raw === undefined || raw === ""
+            ? "NA_character_"
+            : `"${escapeRString(String(raw))}"`
+        )
+        .join(", ");
+      return allFullIso ? `as.Date(c(${encoded}))` : `c(${encoded})`;
+    }
+
+    case "datetime": {
+      const encoded = rawValues
+        .map((raw) => {
+          if (raw === null || raw === undefined || raw === "") {
+            return "NA_character_";
+          }
+          const normalized = String(raw).replace("T", " ").replace(/Z$/, "");
+          return `"${escapeRString(normalized)}"`;
+        })
+        .join(", ");
+      return `as.POSIXct(c(${encoded}), tz = "UTC")`;
+    }
+
+    case "single_select":
+    case "radio": {
+      const encoded = rawValues
+        .map((raw) =>
+          raw === null || raw === undefined || raw === ""
+            ? "NA_character_"
+            : `"${escapeRString(String(raw))}"`
+        )
+        .join(", ");
+      if (hasCodelist) {
+        const safeName = sanitizeRName(
+          codelist!.id || codelist!.name
+        ).toLowerCase();
+        return `factor(c(${encoded}), levels = cl_${safeName}_levels, labels = cl_${safeName}_labels)`;
+      }
+      return `c(${encoded})`;
+    }
+
+    default: {
+      const encoded = rawValues
+        .map((raw) =>
+          raw === null || raw === undefined || raw === ""
+            ? "NA_character_"
+            : `"${escapeRString(typeof raw === "object" ? JSON.stringify(raw) : String(raw))}"`
+        )
+        .join(", ");
+      return `c(${encoded})`;
+    }
+  }
+}
+
 function renderRDataStepForForm(
   form: CRFForm,
   context: PreparedExportContext,
@@ -363,6 +532,11 @@ function renderRDataStepForForm(
 # DESCRIPTION:  CDASH Tibble Scaffolding with Variable Labels & Factor Levels
 #------------------------------------------------------------------------------\n`;
 
+  const useLiveSimulation = hasSimulationRecords(study);
+  const liveRows = useLiveSimulation
+    ? extractCapturedFormRows(form, study)
+    : [];
+
   const visitNames =
     study.visits && study.visits.length > 0
       ? study.visits.map((v) => `"${escapeRString(v.name)}"`)
@@ -370,22 +544,54 @@ function renderRDataStepForForm(
 
   code += `${tibbleName} <- tibble::tibble(\n`;
   code += `  # Standard Clinical Trial Identifiers\n`;
-  code += `  STUDYID   = rep("${escapeRString(study.protocolNumber)}", 3),\n`;
-  code += `  DOMAIN    = rep("${domain.toUpperCase()}", 3),\n`;
-  code += `  USUBJID   = c("101-1001", "101-1002", "101-1003"),\n`;
-  code += `  VISIT     = c(${visitNames.slice(0, 3).join(", ")}),\n`;
-  code += `  VISITNUM  = c(1, 2, 3),\n`;
-  code += `  DTC_INIT  = as.Date(c("2026-03-01", "2026-03-02", "2026-03-03")),\n`;
+
+  if (useLiveSimulation) {
+    if (!includeSample || liveRows.length === 0) {
+      code += `  STUDYID   = character(0),\n`;
+      code += `  DOMAIN    = character(0),\n`;
+      code += `  USUBJID   = character(0),\n`;
+      code += `  VISIT     = character(0),\n`;
+      code += `  VISITNUM  = integer(0),\n`;
+      code += `  DTC_INIT  = as.Date(character(0)),\n`;
+    } else {
+      const n = liveRows.length;
+      const usubjids = liveRows
+        .map((r) => `"${escapeRString(r.subjectId)}"`)
+        .join(", ");
+      const visitsVec = liveRows
+        .map((r) => `"${escapeRString(r.visitName)}"`)
+        .join(", ");
+      const visitNums = liveRows.map((r) => r.visitNum).join(", ");
+      const dtcs = liveRows
+        .map((r) => `"${escapeRString(r.dtcInit)}"`)
+        .join(", ");
+      code += `  STUDYID   = rep("${escapeRString(study.protocolNumber)}", ${n}),\n`;
+      code += `  DOMAIN    = rep("${domain.toUpperCase()}", ${n}),\n`;
+      code += `  USUBJID   = c(${usubjids}),\n`;
+      code += `  VISIT     = c(${visitsVec}),\n`;
+      code += `  VISITNUM  = as.integer(c(${visitNums})),\n`;
+      code += `  DTC_INIT  = as.Date(c(${dtcs})),\n`;
+    }
+  } else {
+    code += `  STUDYID   = rep("${escapeRString(study.protocolNumber)}", 3),\n`;
+    code += `  DOMAIN    = rep("${domain.toUpperCase()}", 3),\n`;
+    code += `  USUBJID   = c("101-1001", "101-1002", "101-1003"),\n`;
+    code += `  VISIT     = c(${visitNames.slice(0, 3).join(", ")}),\n`;
+    code += `  VISITNUM  = c(1, 2, 3),\n`;
+    code += `  DTC_INIT  = as.Date(c("2026-03-01", "2026-03-02", "2026-03-03")),\n`;
+  }
 
   if (expandedFields.length > 0) {
     code += `\n  # Form Specific CDASH Fields\n`;
     expandedFields.forEach((item, fIdx) => {
-      const colCode = includeSample
-        ? item.field.dataType === "multi_select" ||
-          item.field.dataType === "checkbox"
-          ? getRSubVarSampleCode(item.optionCode, 3)
-          : getRSampleColumnCode(item.field, context, 3)
-        : "character(0)";
+      const colCode = !includeSample
+        ? "character(0)"
+        : useLiveSimulation
+          ? getRLiveColumnCode(item, liveRows, context)
+          : item.field.dataType === "multi_select" ||
+              item.field.dataType === "checkbox"
+            ? getRSubVarSampleCode(item.optionCode, 3)
+            : getRSampleColumnCode(item.field, context, 3);
       const isLast = fIdx === expandedFields.length - 1;
       code += `  ${item.varName.padEnd(10)} = ${colCode}${isLast ? "" : ",\n"}`;
     });

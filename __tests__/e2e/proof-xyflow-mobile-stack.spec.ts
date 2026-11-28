@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForVisualSettle } from "./helpers/settle";
 
 test.describe("XYFlow Desktop Graph & Mobile Topological Stack", () => {
   test("renders all five nodes in vertical rank order on /m/proof at 390x844 with zero horizontal overflow", async ({
@@ -32,6 +33,51 @@ test.describe("XYFlow Desktop Graph & Mobile Topological Stack", () => {
     );
     expect(noHorizontalOverflow).toBe(true);
   });
+
+  for (const width of [320, 375]) {
+    test(`skips XYFlow assets and keeps CLS below 0.1 on mobile at ${width}px`, async ({
+      page,
+    }) => {
+      const requestedAssets: string[] = [];
+      page.on("request", (req) => {
+        requestedAssets.push(req.url());
+      });
+
+      await page.addInitScript(() => {
+        (window as unknown as { __proofCls: number }).__proofCls = 0;
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries() as (PerformanceEntry & {
+            value?: number;
+            hadRecentInput?: boolean;
+          })[]) {
+            if (!entry.hadRecentInput && typeof entry.value === "number") {
+              (window as unknown as { __proofCls: number }).__proofCls +=
+                entry.value;
+            }
+          }
+        }).observe({ type: "layout-shift", buffered: true });
+      });
+
+      await page.setViewportSize({ width, height: 812 });
+      await page.goto("/proof");
+
+      await expect(
+        page.getByTestId("proof-mobile-topological-stack")
+      ).toBeVisible({ timeout: 15000 });
+      await waitForVisualSettle(page);
+
+      await expect(page.locator(".react-flow")).toHaveCount(0);
+      const xyflowRequests = requestedAssets.filter((url) =>
+        /xyflow|ProofFlowCanvas/i.test(url)
+      );
+      expect(xyflowRequests).toEqual([]);
+
+      const cls = await page.evaluate(
+        () => (window as unknown as { __proofCls: number }).__proofCls
+      );
+      expect(cls).toBeLessThan(0.1);
+    });
+  }
 
   test("frames Custom Studio nodes A-E inside desktop XYFlow viewport at 1280x800 and preserves valid edges on fallacy dismissal", async ({
     page,
@@ -68,7 +114,7 @@ test.describe("XYFlow Desktop Graph & Mobile Topological Stack", () => {
 
     for (const id of ["A", "B", "C", "D", "E"]) {
       const nodeBtn = canvas.getByRole("button", {
-        name: new RegExp(`^Node ${id},`),
+        name: new RegExp(`^Node ${id} `),
       });
       const handleBtn = canvas.getByRole("button", {
         name: new RegExp(`^Drag connection handle from Node ${id},`),
@@ -94,7 +140,7 @@ test.describe("XYFlow Desktop Graph & Mobile Topological Stack", () => {
     await page.getByRole("button", { name: "Auto-Step", exact: true }).click();
     await expect(canvas.locator(".react-flow__edge")).toHaveCount(2);
     await expect(
-      canvas.getByRole("button", { name: /^Node C, PROVEN,/ })
+      canvas.getByRole("button", { name: /^Node C PROVEN / })
     ).toBeVisible();
 
     // Attempt invalid move D -> C and dismiss fallacy non-destructively
@@ -115,7 +161,7 @@ test.describe("XYFlow Desktop Graph & Mobile Topological Stack", () => {
     ).toBeHidden();
     await expect(canvas.locator(".react-flow__edge")).toHaveCount(2);
     await expect(
-      canvas.getByRole("button", { name: /^Node C, PROVEN,/ })
+      canvas.getByRole("button", { name: /^Node C PROVEN / })
     ).toBeVisible();
 
     // Connecting reverse edges E -> C and E -> D must fail validation and never trigger GRAPH COMPLETE

@@ -1,5 +1,13 @@
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   act,
   cleanup,
@@ -16,6 +24,18 @@ import { ProofWorkspaceClient } from "@/app/proof/ProofWorkspaceClient";
  */
 
 const workers: { postMessage: ReturnType<typeof vi.fn> }[] = [];
+
+beforeAll(async () => {
+  globalThis.Worker = class {
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    onmessage = null;
+  } as unknown as typeof Worker;
+  const { unmount } = render(<ProofWorkspaceClient />);
+  await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+  unmount();
+  cleanup();
+});
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/proof");
@@ -46,7 +66,7 @@ function runCommand(command: string) {
 
 const hashParams = () => new URLSearchParams(window.location.hash.slice(1));
 const provenConclusion = () =>
-  screen.queryByRole("button", { name: /^Node E, PROVEN, R, .*, conclusion,/ });
+  screen.queryByRole("button", { name: /^Node E PROVEN R .* conclusion$/ });
 const postedTypes = () =>
   workers.flatMap((w) => w.postMessage.mock.calls.map((c) => c[0].type));
 
@@ -63,9 +83,7 @@ describe("Proof Studio custom theorems", () => {
 
     expect(screen.getByRole("alert").textContent).not.toBe("");
     expect(hashParams().get("theorem")).toBeNull();
-    expect(
-      screen.getByRole("button", { name: /^Node A, \w+, P, / })
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Node A \w+ P / })).toBeTruthy();
   });
 
   it("loads valid formulas into the workspace and the share link", () => {

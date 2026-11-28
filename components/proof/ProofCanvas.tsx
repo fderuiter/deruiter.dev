@@ -1,6 +1,7 @@
 "use client";
 
-import React, { RefObject } from "react";
+import React, { RefObject, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import {
   IconRefresh,
   IconBulb,
@@ -25,8 +26,31 @@ import {
 } from "@/lib/proof";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { TooltipButton } from "@/components/ui/Tooltip";
-import { ProofFlowCanvas } from "./ProofFlowCanvas";
 import { ProofMobileStackCanvas } from "./ProofMobileStackCanvas";
+
+const emptySubscribe = () => () => {};
+
+function ProofCanvasSurfaceSkeleton() {
+  return (
+    <div
+      data-testid="proof-canvas-surface-skeleton"
+      className="relative w-full h-full min-h-[760px] md:min-h-[520px] flex items-center justify-center"
+    >
+      <div className="text-slate-400 font-mono text-xs flex flex-col items-center gap-2">
+        <div className="w-6 h-6 border-2 border-slate-800 border-t-brand-cyan rounded-full motion-safe:animate-spin" />
+        <span>Preparing Proof Canvas...</span>
+      </div>
+    </div>
+  );
+}
+
+const DynamicProofFlowCanvas = dynamic(
+  () => import("./ProofFlowCanvas").then((mod) => mod.ProofFlowCanvas),
+  {
+    ssr: false,
+    loading: () => <ProofCanvasSurfaceSkeleton />,
+  }
+);
 
 interface ProofCanvasProps {
   activeTheorem: TheoremDefinition;
@@ -140,11 +164,19 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   onCheckCountermodel,
   onOpenImportExport,
 }) => {
+  const isHydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
   const isMobileStack = useMediaQuery("(max-width: 767px)");
   const [containerWidth, setContainerWidth] = React.useState<number>(760);
   const [activePopoverNodeId, setActivePopoverNodeId] = React.useState<
     string | null
   >(null);
+  const counterexampleToggleRefs = React.useRef<Map<string, HTMLButtonElement>>(
+    new Map()
+  );
   const [draftFormula, setDraftFormula] = React.useState("");
   const [draftError, setDraftError] = React.useState<string | null>(null);
   const [editingNodeId, setEditingNodeId] = React.useState<string | null>(null);
@@ -206,15 +238,59 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
     [onUpdateSandboxNode, editingFormula]
   );
 
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setActivePopoverNodeId(null);
+  const registerPopoverToggle = React.useCallback(
+    (nodeId: string, element: HTMLButtonElement | null) => {
+      if (element) {
+        counterexampleToggleRefs.current.set(nodeId, element);
+      } else {
+        counterexampleToggleRefs.current.delete(nodeId);
       }
+    },
+    []
+  );
+
+  const restorePopoverToggleFocus = React.useCallback((nodeId: string) => {
+    const toggle = counterexampleToggleRefs.current.get(nodeId);
+    if (!toggle) return;
+    toggle.focus();
+    queueMicrotask(() => {
+      if (toggle.isConnected && document.activeElement !== toggle) {
+        toggle.focus();
+      }
+    });
+  }, []);
+
+  const handleTogglePopover = React.useCallback((nodeId: string) => {
+    setActivePopoverNodeId((prev) => (prev === nodeId ? null : nodeId));
+  }, []);
+
+  const handleClosePopover = React.useCallback(
+    (nodeId: string, restoreFocus = true) => {
+      setActivePopoverNodeId(null);
+      if (restoreFocus) {
+        restorePopoverToggleFocus(nodeId);
+      }
+    },
+    [restorePopoverToggleFocus]
+  );
+
+  React.useEffect(() => {
+    if (!activePopoverNodeId) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      const targetNodeId = activePopoverNodeId;
+      setActivePopoverNodeId(null);
+      restorePopoverToggleFocus(targetNodeId);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [activePopoverNodeId, restorePopoverToggleFocus]);
 
   const handleRef = React.useCallback(
     (node: HTMLDivElement | null) => {
@@ -290,10 +366,10 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             aria-label="Proof canvas controls"
             className="flex flex-wrap items-center gap-2"
           >
-            {!isMobileStack && (
+            {(!isHydrated || !isMobileStack) && (
               <TooltipButton
                 onClick={toggleSnapping}
-                className={`px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
+                className={`hidden md:flex px-2.5 py-1.5 pointer-coarse:min-h-11 rounded-lg border text-xs font-mono items-center gap-1.5 transition cursor-pointer active:scale-[0.98] ${
                   isSnappingEnabled
                     ? "bg-brand-cyan/15 border-brand-cyan/50 text-brand-cyan shadow-sm shadow-cyan-500/20"
                     : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
@@ -538,12 +614,16 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
           className={
-            isMobileStack
-              ? "relative w-full h-auto bg-[#080c10] select-none overflow-x-hidden"
-              : "relative w-full h-[520px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
+            !isHydrated
+              ? "relative w-full min-h-[760px] md:min-h-[520px] md:h-[520px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
+              : isMobileStack
+                ? "relative w-full min-h-[520px] h-auto bg-[#080c10] select-none overflow-x-hidden"
+                : "relative w-full h-[520px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
           }
         >
-          {isMobileStack ? (
+          {!isHydrated ? (
+            <ProofCanvasSurfaceSkeleton />
+          ) : isMobileStack ? (
             <ProofMobileStackCanvas
               activeTheorem={activeTheorem}
               edges={edges}
@@ -552,7 +632,9 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               currentFallacy={currentFallacy}
               hasCommittedFallacyEdge={hasCommittedFallacyEdge}
               activePopoverNodeId={activePopoverNodeId}
-              setActivePopoverNodeId={setActivePopoverNodeId}
+              onTogglePopover={handleTogglePopover}
+              onClosePopover={handleClosePopover}
+              onRegisterPopoverToggle={registerPopoverToggle}
               editingNodeId={editingNodeId}
               editingFormula={editingFormula}
               editingError={editingError}
@@ -571,7 +653,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               onInspectFallacy={onInspectFallacy}
             />
           ) : (
-            <ProofFlowCanvas
+            <DynamicProofFlowCanvas
               activeTheorem={activeTheorem}
               edges={edges}
               nodeOffsets={nodeOffsets}
@@ -581,11 +663,12 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               activeGuides={activeGuides}
               dragConnection={dragConnection}
               containerWidth={containerWidth}
-              svgCanvasRef={svgCanvasRef}
               currentFallacy={currentFallacy}
               hasCommittedFallacyEdge={hasCommittedFallacyEdge}
               activePopoverNodeId={activePopoverNodeId}
-              setActivePopoverNodeId={setActivePopoverNodeId}
+              onTogglePopover={handleTogglePopover}
+              onClosePopover={handleClosePopover}
+              onRegisterPopoverToggle={registerPopoverToggle}
               editingNodeId={editingNodeId}
               editingFormula={editingFormula}
               editingError={editingError}
@@ -604,6 +687,72 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               handleRollback={handleRollback}
               onInspectFallacy={onInspectFallacy}
             />
+          )}
+
+          {/* External Snapping Alignment Crosshairs & Fallback Drag Cord Overlay */}
+          {(!isHydrated || !isMobileStack) && (
+            <svg
+              ref={svgCanvasRef}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 w-full h-full z-20"
+            >
+              {activeGuides.map((guide, idx) => {
+                if (guide.type === "vertical") {
+                  return (
+                    <line
+                      key={`guide-v-${idx}`}
+                      x1={guide.pos}
+                      y1={Math.max(0, guide.start)}
+                      x2={guide.pos}
+                      y2={Math.min(520, guide.end)}
+                      stroke="#06b6d4"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                    />
+                  );
+                }
+                return (
+                  <line
+                    key={`guide-h-${idx}`}
+                    x1={Math.max(0, guide.start)}
+                    y1={guide.pos}
+                    x2={Math.min(containerWidth || 760, guide.end)}
+                    y2={guide.pos}
+                    stroke="#10b981"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 3"
+                  />
+                );
+              })}
+
+              {dragConnection &&
+                (() => {
+                  const x1 = dragConnection.sourceX;
+                  const y1 = dragConnection.sourceY;
+                  const x2 = dragConnection.currentX;
+                  const y2 = dragConnection.currentY;
+                  const dx = Math.abs(x2 - x1) * 0.5;
+                  const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+                  const strokeColor = dragConnection.hoveredTargetId
+                    ? dragConnection.isValid
+                      ? "#10b981"
+                      : "#f43f5e"
+                    : "#06b6d4";
+
+                  return (
+                    <g>
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth="2.5"
+                        strokeDasharray="3 3"
+                      />
+                      <circle cx={x2} cy={y2} r="5" fill={strokeColor} />
+                    </g>
+                  );
+                })()}
+            </svg>
           )}
         </div>
 

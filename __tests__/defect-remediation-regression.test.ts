@@ -3717,10 +3717,13 @@ import {
   evaluateProofStatus as evaluateDirectedProofStatus,
   type TheoremId as ProofTheoremKey,
 } from "@/lib/proof";
-import { decodeGuidedEdgesHash } from "@/lib/proof-custom";
+import {
+  decodeGuidedEdgesHash,
+  parseProofWorkspaceJson,
+} from "@/lib/proof-custom";
 import { resolveWorkerSimulationSteps } from "@/app/proof/proof-worker";
 
-describe("Proof Studio directed validation, consensus worker, and hash sanitization regression", () => {
+describe("Proof Studio directed validation, consensus worker, and legacy edge normalization regression", () => {
   it("rejects reverse edges E -> C, E -> D, C -> A, and C -> B across all 12 theorems and never marks E proven on reverse edges", () => {
     for (const id of Object.keys(PROOF_THEOREMS) as ProofTheoremKey[]) {
       const th = PROOF_THEOREMS[id];
@@ -3747,18 +3750,46 @@ describe("Proof Studio directed validation, consensus worker, and hash sanitizat
     }
   });
 
-  it("emits consensus theorem steps from proof-worker and strips reverse pairs when decoding URL hash edges", () => {
+  it("emits consensus theorem steps from proof-worker and normalizes legacy reversed pairs in URL hashes and guided .proof.json snapshots", () => {
     for (const id of ["paxos-synod", "paxos-phase2b", "bft-quorum"] as const) {
       const steps = resolveWorkerSimulationSteps(id);
       expect(steps).toEqual(PROOF_THEOREMS[id].simulationSteps);
       expect(steps.length).toBeGreaterThan(0);
     }
 
-    expect(
-      decodeGuidedEdgesHash("A>C,B>C,E>C,C>A", PROOF_THEOREMS["modus-ponens"])
-    ).toEqual([
-      { source: "A", target: "C" },
-      { source: "B", target: "C" },
+    const mp = PROOF_THEOREMS["modus-ponens"];
+
+    expect(decodeGuidedEdgesHash("C>A:MP,C>B:MP,E>C:MP,E>D:MP", mp)).toEqual([
+      { source: "A", target: "C", ruleApplied: "MP" },
+      { source: "B", target: "C", ruleApplied: "MP" },
+      { source: "C", target: "E", ruleApplied: "MP" },
+      { source: "D", target: "E", ruleApplied: "MP" },
+    ]);
+
+    expect(decodeGuidedEdgesHash("A>C:MP,C>B:MP,E>C,A>E", mp)).toEqual([
+      { source: "A", target: "C", ruleApplied: "MP" },
+      { source: "B", target: "C", ruleApplied: "MP" },
+      { source: "C", target: "E" },
+    ]);
+
+    expect(decodeGuidedEdgesHash("A>E,B>D", mp)).toBeNull();
+
+    const parsedGuided = parseProofWorkspaceJson(
+      JSON.stringify({
+        version: 1,
+        mode: "guided",
+        theoremId: "modus-ponens",
+        nodes: mp.nodes,
+        edges: [
+          { source: "C", target: "A", ruleApplied: "MP" },
+          { source: "E", target: "C", ruleApplied: "MP" },
+          { source: "A", target: "E", ruleApplied: "MP" },
+        ],
+      })
+    );
+    expect(parsedGuided.edges).toEqual([
+      { source: "A", target: "C", ruleApplied: "MP" },
+      { source: "C", target: "E", ruleApplied: "MP" },
     ]);
   });
 });

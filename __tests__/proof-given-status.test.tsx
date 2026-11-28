@@ -1,8 +1,29 @@
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { ProofWorkspaceClient } from "@/app/proof/ProofWorkspaceClient";
 import { THEOREMS, getDeductionLedger, getStepStatusLabel } from "@/lib/proof";
+
+beforeAll(async () => {
+  globalThis.Worker = class {
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    addEventListener = vi.fn();
+    removeEventListener = vi.fn();
+  } as unknown as typeof Worker;
+  const { unmount } = render(<ProofWorkspaceClient />);
+  await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+  unmount();
+  cleanup();
+});
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/proof");
@@ -50,7 +71,7 @@ describe("Given premises vs pending deductions (#1229)", () => {
   it("shows GIVEN on canvas and ledger, never PENDING for premises", () => {
     render(<ProofWorkspaceClient />);
     const premise = screen.getByRole("button", {
-      name: /^Node D, GIVEN, Q → R, .*, premise,/,
+      name: /^Node D GIVEN Q → R .* premise$/,
     });
     expect(premise.textContent).toContain("GIVEN");
     expect(premise.textContent).not.toContain("PENDING");

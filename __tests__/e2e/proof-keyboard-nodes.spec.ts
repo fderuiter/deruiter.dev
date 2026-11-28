@@ -27,7 +27,7 @@ for (const layout of [
       });
     const canvas = page.getByRole("region", { name: "Proof workspace canvas" });
     const node = (id: string) =>
-      canvas.getByRole("button", { name: new RegExp(`^Node ${id},`) });
+      canvas.getByRole("button", { name: new RegExp(`^Node ${id} `) });
     await expect(async () => {
       await expect(node("A")).toBeVisible();
       await tabToNode(page, canvas, node("A"));
@@ -43,7 +43,7 @@ for (const layout of [
     await tabToNode(page, canvas, node("E"));
     await page.keyboard.press("Space");
     await expect(node("E")).toHaveAccessibleName(
-      /^Node E, PENDING,.*, conclusion,/
+      /^Node E PENDING .* conclusion$/
     );
     await tabToNode(
       page,
@@ -56,7 +56,7 @@ for (const layout of [
     await tabToNode(page, canvas, node("E"));
     await page.keyboard.press("Enter");
     await expect(node("E")).toHaveAccessibleName(
-      /^Node E, PROVEN,.*, conclusion,/
+      /^Node E PROVEN .* conclusion$/
     );
     await tabToNode(page, canvas, node("E"));
     await page.keyboard.press("Enter");
@@ -67,6 +67,31 @@ for (const layout of [
         .locator('[aria-live="assertive"]')
         .filter({ hasText: /Connection rejected:/ })
     ).toContainText("Connection rejected:");
+    const counterexampleToggle = canvas.getByRole("button", {
+      name: /^Counterexample.*badge for Node A/i,
+    });
+    await expect(counterexampleToggle).toBeVisible();
+    await expect(counterexampleToggle).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    const controlledPanelId =
+      await counterexampleToggle.getAttribute("aria-controls");
+    expect(controlledPanelId).toBeTruthy();
+    await counterexampleToggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(counterexampleToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(canvas.getByRole("dialog")).toHaveCount(0);
+    const counterexamplePanel = page.locator(`[id="${controlledPanelId}"]`);
+    await expect(counterexamplePanel).toBeVisible();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Escape");
+    await expect(counterexampleToggle).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(counterexamplePanel).toHaveCount(0);
+    await expect(counterexampleToggle).toBeFocused();
     const reset = page.getByRole("button", {
       name: "Reset node positions and connections",
     });
@@ -82,7 +107,7 @@ for (const layout of [
     await mp.focus();
     await page.keyboard.press("Enter");
     await expect(node("E")).toHaveAccessibleName(
-      /^Node E, PROVEN,.*, conclusion,/
+      /^Node E PROVEN .* conclusion$/
     );
     for (const handle of await canvas
       .getByRole("button", { name: /^Drag connection handle/ })
@@ -96,11 +121,7 @@ for (const layout of [
       for (const other of await canvas
         .getByRole("button", { name: /^Node / })
         .all()) {
-        if (
-          (await other.getAttribute("aria-label"))?.startsWith(
-            `Node ${sourceId},`
-          )
-        )
+        if ((await other.getAttribute("data-proof-node-id")) === sourceId)
           continue;
         const otherBounds = await other.boundingBox();
         expect(
@@ -116,7 +137,7 @@ for (const layout of [
     const violations = (
       await new AxeBuilder({ page })
         .include('[aria-label="Proof workspace canvas"]')
-        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze()
     ).violations.filter((item) =>
       ["critical", "serious", "moderate"].includes(item.impact ?? "")

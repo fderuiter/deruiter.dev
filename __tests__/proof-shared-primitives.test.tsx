@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   act,
   cleanup,
@@ -77,6 +85,24 @@ function ledgerTab(label: "Ledger" | "Systems" | "Fallacy") {
 
 const isActiveTab = (label: "Ledger" | "Systems" | "Fallacy") =>
   ledgerTab(label).className.includes("text-brand-cyan");
+
+beforeAll(async () => {
+  globalThis.Worker = class {
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    addEventListener = vi.fn();
+    removeEventListener = vi.fn();
+    onmessage = null;
+  } as unknown as typeof Worker;
+  const { unmount } = render(
+    <ToastProvider>
+      <ProofWorkspaceClient />
+    </ToastProvider>
+  );
+  await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+  unmount();
+  cleanup();
+});
 
 function snappingEnabled(): boolean {
   return (
@@ -157,7 +183,7 @@ describe("Proof hash-derived startup state", () => {
     }
     expect(
       screen.getByRole("button", {
-        name: /^Node E, PROVEN, R, .*, conclusion,/,
+        name: /^Node E PROVEN R .* conclusion$/,
       })
     ).toBeTruthy();
 
@@ -165,7 +191,7 @@ describe("Proof hash-derived startup state", () => {
     navigateHistory("");
     expect(
       screen.queryByRole("button", {
-        name: /^Node E, PROVEN, R, .*, conclusion,/,
+        name: /^Node E PROVEN R .* conclusion$/,
       })
     ).toBeNull();
   });
@@ -344,19 +370,25 @@ describe("Proof toasts through the shared ToastProvider", () => {
     });
     expect(badge).toBeTruthy();
 
-    // Click badge to toggle popover showing variable assignments and sub-expressions
+    // Click badge to toggle disclosure showing variable assignments and sub-expressions
+    const panelId = badge.getAttribute("aria-controls");
+    expect(panelId).toBeTruthy();
     fireEvent.click(badge);
 
-    expect(
-      screen.getByRole("dialog", {
-        name: /Counterexample diagnostics popover for Node A/i,
-      })
-    ).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const panel = screen.getByRole("region", {
+      name: /Counterexample diagnostics for Node A/i,
+    });
+    expect(panel.id).toBe(panelId);
     expect(
       screen.getAllByText(/Fallacy of Affirming the Consequent/i).length
     ).toBeGreaterThan(0);
     expect(screen.getAllByText(/P = FALSE/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Q = TRUE/i).length).toBeGreaterThan(0);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(badge.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(badge);
   });
 
   it("announces a toast exactly once when nothing else speaks it", () => {

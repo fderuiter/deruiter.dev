@@ -2,19 +2,12 @@
 
 import React, { useMemo } from "react";
 import {
-  IconAlertTriangle,
   IconArrowDown,
-  IconCheck,
   IconLink,
-  IconPencil,
-  IconRefresh,
   IconSparkles,
-  IconTrash,
   IconUpload,
-  IconX,
 } from "@tabler/icons-react";
 import {
-  evaluateAst,
   evaluateProofStatus,
   getCompatibleTargets,
   type Edge,
@@ -23,6 +16,7 @@ import {
   type TheoremDefinition,
 } from "@/lib/proof";
 import { TooltipButton } from "@/components/ui/Tooltip";
+import { ProofNodeBody } from "./ProofNodeBody";
 
 interface ProofMobileStackCanvasProps {
   activeTheorem: TheoremDefinition;
@@ -32,7 +26,12 @@ interface ProofMobileStackCanvasProps {
   currentFallacy?: FallacyDiagnosis | null;
   hasCommittedFallacyEdge?: boolean;
   activePopoverNodeId: string | null;
-  setActivePopoverNodeId: React.Dispatch<React.SetStateAction<string | null>>;
+  onTogglePopover: (nodeId: string) => void;
+  onClosePopover: (nodeId: string, restoreFocus?: boolean) => void;
+  onRegisterPopoverToggle: (
+    nodeId: string,
+    element: HTMLButtonElement | null
+  ) => void;
   editingNodeId: string | null;
   editingFormula: string;
   editingError: string | null;
@@ -112,7 +111,9 @@ export function ProofMobileStackCanvas({
   currentFallacy,
   hasCommittedFallacyEdge = false,
   activePopoverNodeId,
-  setActivePopoverNodeId,
+  onTogglePopover,
+  onClosePopover,
+  onRegisterPopoverToggle,
   editingNodeId,
   editingFormula,
   editingError,
@@ -264,12 +265,6 @@ export function ProofMobileStackCanvas({
           ? proofStatus.isC_Proven
           : proofStatus.isE_Proven);
 
-    const statusText = isGivenPremise
-      ? "GIVEN"
-      : isNodeProven
-        ? "PROVEN"
-        : "PENDING";
-
     const compTarget = compatibleTargets.find((t) => t.targetId === node.id);
     const fallacyTargetId = currentFallacy?.targetId;
     const isFallacyTargetNode = Boolean(
@@ -300,111 +295,36 @@ export function ProofMobileStackCanvas({
                       : "bg-[#151c24] border border-[#232f3e]"
         }`}
       >
-        {editingNodeId === node.id && activeTheorem.isSandbox ? (
-          <form
-            onSubmit={(e) => onSubmitEdit(e, node.id)}
-            className="space-y-2"
-          >
-            <div className="text-xs font-mono font-bold text-brand-cyan">
-              Edit Node {node.id}
-            </div>
-            <input
-              type="text"
-              value={editingFormula}
-              onChange={(e) => onChangeEditingFormula(e.target.value)}
-              aria-label={`Edit formula for Node ${node.id}`}
-              autoFocus
-              className="w-full min-w-0 min-h-11 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-brand-cyan"
-            />
-            {editingError && (
-              <p role="alert" className="text-xs font-mono text-rose-300">
-                {editingError}
-              </p>
-            )}
-            <div className="flex items-center gap-2">
-              <button
-                type="submit"
-                aria-label={`Save Node ${node.id}`}
-                className="min-h-11 px-3 py-2 rounded-lg bg-brand-cyan text-slate-950 text-xs font-mono font-bold inline-flex items-center gap-1 cursor-pointer"
-              >
-                <IconCheck className="w-3.5 h-3.5" />
-                <span>Save</span>
-              </button>
-              <button
-                type="button"
-                onClick={onCancelEdit}
-                aria-label={`Cancel editing Node ${node.id}`}
-                className="min-h-11 px-3 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-mono cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="flex items-start justify-between gap-2.5 min-w-0">
-            <button
-              type="button"
-              tabIndex={0}
-              aria-label={`Node ${node.id}, ${statusText}, ${node.label}, ${node.meaning}, ${node.type}, ${isSelected ? "selected" : "not selected"}`}
-              aria-pressed={isSelected}
-              aria-describedby="proof-node-keyboard-help"
-              onClick={(event) => handleNodeClick(node.id, event.shiftKey)}
-              onKeyDown={(event) => {
-                if (
-                  event.shiftKey &&
-                  (event.key === "Enter" || event.key === " ")
-                ) {
-                  event.preventDefault();
-                  handleNodeClick(node.id, true);
-                }
-              }}
-              className="flex-1 min-w-0 min-h-11 text-left rounded-lg cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-            >
-              <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                <span
-                  className={`text-xs font-mono font-bold ${
-                    isConclusion && !isNodeProven
-                      ? "text-amber-300"
-                      : isNodeProven && !isGivenPremise
-                        ? "text-emerald-300"
-                        : "text-slate-200"
-                  }`}
-                >
-                  Node {node.id}
-                </span>
-                <span
-                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-                    isGivenPremise
-                      ? "bg-slate-800 text-sky-300 border-slate-700"
-                      : isNodeProven
-                        ? "bg-emerald-950 text-emerald-300 border-emerald-500/40"
-                        : "bg-amber-950 text-amber-300 border-amber-500/40"
-                  }`}
-                >
-                  {statusText}
-                </span>
-                {isConclusion && (
-                  <span className="text-[10px] font-mono text-amber-300">
-                    Proof Target
-                  </span>
-                )}
-              </div>
-              <div
-                className={`w-full min-w-0 break-words font-mono text-base font-extrabold tracking-wide ${
-                  isConclusion && !isNodeProven
-                    ? "text-amber-300"
-                    : isNodeProven && !isGivenPremise
-                      ? "text-emerald-300"
-                      : "text-cyan-300"
-                }`}
-              >
-                {node.label}
-              </div>
-              <p className="text-xs text-slate-300 leading-snug mt-1 break-words">
-                {node.meaning}
-              </p>
-            </button>
-
+        <ProofNodeBody
+          variant="stack"
+          node={node}
+          isSelected={isSelected}
+          isGivenPremise={isGivenPremise}
+          isNodeProven={isNodeProven}
+          isFallacyTargetNode={isFallacyTargetNode}
+          currentFallacy={currentFallacy ?? null}
+          hasCommittedFallacyEdge={hasCommittedFallacyEdge}
+          isPopoverOpen={isDrawerOpen}
+          isSandbox={Boolean(activeTheorem.isSandbox)}
+          isEditing={editingNodeId === node.id}
+          editingFormula={editingNodeId === node.id ? editingFormula : ""}
+          editingError={editingNodeId === node.id ? editingError : null}
+          canEditSandboxNode={Boolean(
+            (node.type === "premise" || node.type === "conclusion") &&
+            onUpdateSandboxNode
+          )}
+          onNodeClick={handleNodeClick}
+          onTogglePopover={onTogglePopover}
+          onClosePopover={onClosePopover}
+          onRegisterPopoverToggle={onRegisterPopoverToggle}
+          onBeginEdit={onBeginEdit}
+          onChangeEditingFormula={onChangeEditingFormula}
+          onSubmitEdit={onSubmitEdit}
+          onCancelEdit={onCancelEdit}
+          onDeleteSandboxNode={onDeleteSandboxNode}
+          onRollback={handleRollback}
+          onInspectFallacy={onInspectFallacy}
+          trailingAction={
             <TooltipButton
               type="button"
               tabIndex={0}
@@ -421,192 +341,25 @@ export function ProofMobileStackCanvas({
             >
               <IconLink className="w-4 h-4" />
             </TooltipButton>
-          </div>
-        )}
-
-        {/* Tap-to-Connect Compatible Target Action */}
-        {compTarget && selectedNodeIds.length === 1 && (
-          <div className="mt-2.5 pt-2 border-t border-emerald-500/30">
-            <button
-              type="button"
-              onClick={() => handleNodeClick(node.id)}
-              className="w-full min-h-11 px-3 py-2 rounded-lg bg-emerald-950/90 hover:bg-emerald-900/80 border border-emerald-400/70 text-emerald-200 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-            >
-              <IconSparkles className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-              <span className="min-w-0 break-words">
-                Tap to Connect Node {selectedNodeIds[0]} → Node {node.id} (
-                {compTarget.badgeLabel})
-              </span>
-            </button>
-          </div>
-        )}
-
-        {/* Counterexample Disclosure Toggle + Drawer */}
-        {isFallacyTargetNode && currentFallacy && (
-          <div className="mt-2.5 pt-2 border-t border-rose-500/40 space-y-2">
-            <button
-              type="button"
-              onClick={() =>
-                setActivePopoverNodeId((prev) =>
-                  prev === node.id ? null : node.id
-                )
-              }
-              aria-expanded={isDrawerOpen}
-              aria-label={`Counterexample badge for Node ${node.id}. Click to view variable valuations.`}
-              className="w-full min-h-11 px-3 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-mono text-xs font-bold flex items-center justify-between gap-2 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-            >
-              <span className="inline-flex items-center gap-1.5 min-w-0">
-                <IconAlertTriangle className="w-4 h-4 shrink-0 text-amber-300" />
-                <span className="truncate">Counterexample Valuation</span>
-              </span>
-              <span className="text-[10px] uppercase tracking-wider text-rose-100 shrink-0">
-                {isDrawerOpen ? "Hide" : "Inspect"}
-              </span>
-            </button>
-
-            {isDrawerOpen && (
-              <div
-                role="dialog"
-                aria-label={`Counterexample diagnostics popover for Node ${node.id}`}
-                className="w-full p-3 rounded-xl bg-slate-950/95 border border-rose-500/60 text-xs text-slate-200 space-y-2"
-              >
-                <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
-                  <div className="min-w-0">
-                    <div className="font-mono font-bold text-rose-300 text-xs break-words">
-                      {currentFallacy.fallacyName}
-                    </div>
-                    <div className="font-mono text-[11px] text-slate-300 break-words">
-                      {currentFallacy.formalFormula}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActivePopoverNodeId(null)}
-                    aria-label="Close counterexample popover"
-                    className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer shrink-0"
-                  >
-                    <IconX className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {currentFallacy.counterexampleValuation && (
-                  <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
-                    {Object.entries(currentFallacy.counterexampleValuation).map(
-                      ([varName, val]) => (
-                        <span
-                          key={varName}
-                          className={`px-2 py-0.5 rounded border font-bold ${
-                            val
-                              ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300"
-                              : "bg-rose-950/80 border-rose-500/50 text-rose-300"
-                          }`}
-                        >
-                          {varName} = {val ? "TRUE (1)" : "FALSE (0)"}
-                        </span>
-                      )
-                    )}
-                  </div>
-                )}
-
-                {currentFallacy.premises &&
-                  currentFallacy.premises.length > 0 && (
-                    <div className="space-y-1 font-mono text-[11px]">
-                      {currentFallacy.premises.map((p, idx) => {
-                        const evalVal = currentFallacy.counterexampleValuation
-                          ? evaluateAst(
-                              p.ast,
-                              currentFallacy.counterexampleValuation
-                            )
-                          : true;
-                        return (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between gap-2 bg-slate-900/80 p-1.5 rounded border border-slate-800 min-w-0"
-                          >
-                            <span className="text-slate-200 break-words min-w-0">
-                              {p.label}
-                            </span>
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                                evalVal
-                                  ? "bg-emerald-900/60 text-emerald-300"
-                                  : "bg-rose-900/60 text-rose-300"
-                              }`}
-                            >
-                              {evalVal ? "T" : "F"}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  {currentFallacy.plainEnglish}
-                </p>
-
-                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-                  {onInspectFallacy && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActivePopoverNodeId(null);
-                        onInspectFallacy();
-                      }}
-                      className="min-h-11 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs cursor-pointer"
-                    >
-                      Open Truth Table
-                    </button>
-                  )}
-                  {handleRollback && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActivePopoverNodeId(null);
-                        handleRollback();
-                      }}
-                      className="min-h-11 px-3 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-mono font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <IconRefresh className="w-3.5 h-3.5" />
-                      <span>
-                        {hasCommittedFallacyEdge
-                          ? "Revert Edge"
-                          : "Dismiss Fallacy"}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Sandbox Node Inline Controls */}
-        {activeTheorem.isSandbox && editingNodeId !== node.id && (
-          <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-end gap-2">
-            {(node.type === "premise" || node.type === "conclusion") &&
-              onUpdateSandboxNode && (
+          }
+          afterMainContent={
+            compTarget && selectedNodeIds.length === 1 ? (
+              <div className="mt-2.5 pt-2 border-t border-emerald-500/30">
                 <button
                   type="button"
-                  onClick={() => onBeginEdit(node.id, node.label)}
-                  aria-label={`Edit Node ${node.id}`}
-                  className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-brand-cyan hover:bg-slate-800 transition cursor-pointer"
+                  onClick={() => handleNodeClick(node.id)}
+                  className="w-full min-h-11 px-3 py-2 rounded-lg bg-emerald-950/90 hover:bg-emerald-900/80 border border-emerald-400/70 text-emerald-200 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                 >
-                  <IconPencil className="w-4 h-4" />
+                  <IconSparkles className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                  <span className="min-w-0 break-words">
+                    Tap to Connect Node {selectedNodeIds[0]} → Node {node.id} (
+                    {compTarget.badgeLabel})
+                  </span>
                 </button>
-              )}
-            {onDeleteSandboxNode && (
-              <button
-                type="button"
-                onClick={() => onDeleteSandboxNode(node.id)}
-                aria-label={`Delete Node ${node.id}`}
-                className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
-              >
-                <IconTrash className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
+              </div>
+            ) : null
+          }
+        />
       </div>
     );
   };

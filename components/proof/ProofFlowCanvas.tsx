@@ -1,7 +1,6 @@
 "use client";
 
 import React, {
-  RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -61,11 +60,15 @@ interface ProofFlowCanvasProps {
     ruleBadge?: string;
   } | null;
   containerWidth: number;
-  svgCanvasRef: RefObject<SVGSVGElement | null>;
   currentFallacy?: FallacyDiagnosis | null;
   hasCommittedFallacyEdge?: boolean;
   activePopoverNodeId: string | null;
-  setActivePopoverNodeId: React.Dispatch<React.SetStateAction<string | null>>;
+  onTogglePopover: (nodeId: string) => void;
+  onClosePopover: (nodeId: string, restoreFocus?: boolean) => void;
+  onRegisterPopoverToggle: (
+    nodeId: string,
+    element: HTMLButtonElement | null
+  ) => void;
   editingNodeId: string | null;
   editingFormula: string;
   editingError: string | null;
@@ -102,11 +105,12 @@ function ProofFlowCanvasInner({
   activeGuides,
   dragConnection,
   containerWidth,
-  svgCanvasRef,
   currentFallacy,
   hasCommittedFallacyEdge = false,
   activePopoverNodeId,
-  setActivePopoverNodeId,
+  onTogglePopover,
+  onClosePopover,
+  onRegisterPopoverToggle,
   editingNodeId,
   editingFormula,
   editingError,
@@ -222,17 +226,6 @@ function ProofFlowCanvasInner({
     [selectedNodeIds, activeTheorem, edges]
   );
 
-  const handleTogglePopover = useCallback(
-    (nodeId: string) => {
-      setActivePopoverNodeId((prev) => (prev === nodeId ? null : nodeId));
-    },
-    [setActivePopoverNodeId]
-  );
-
-  const handleClosePopover = useCallback(() => {
-    setActivePopoverNodeId(null);
-  }, [setActivePopoverNodeId]);
-
   const flowNodes = useMemo<ProofFlowNode[]>(() => {
     return activeTheorem.nodes.map((node) => {
       const extOffset = nodeOffsets[node.id] || { x: 0, y: 0 };
@@ -297,8 +290,9 @@ function ProofFlowCanvasInner({
             onUpdateSandboxNode
           ),
           onNodeClick: handleNodeClick,
-          onTogglePopover: handleTogglePopover,
-          onClosePopover: handleClosePopover,
+          onTogglePopover,
+          onClosePopover,
+          onRegisterPopoverToggle,
           onBeginEdit,
           onChangeEditingFormula,
           onSubmitEdit,
@@ -328,8 +322,9 @@ function ProofFlowCanvasInner({
     editingError,
     onUpdateSandboxNode,
     handleNodeClick,
-    handleTogglePopover,
-    handleClosePopover,
+    onTogglePopover,
+    onClosePopover,
+    onRegisterPopoverToggle,
     onBeginEdit,
     onChangeEditingFormula,
     onSubmitEdit,
@@ -469,7 +464,6 @@ function ProofFlowCanvasInner({
     [edges, activeTheorem, onConnectNodes, onRejectConnection]
   );
 
-  const combinedGuides = activeGuides.length > 0 ? activeGuides : flowGuides;
   const maxGuideX = containerWidth || 760;
 
   return (
@@ -515,69 +509,42 @@ function ProofFlowCanvasInner({
         />
       </ReactFlow>
 
-      {/* Snapping Alignment Crosshairs & Fallback Drag Cord Overlay */}
-      <svg
-        ref={svgCanvasRef}
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 w-full h-full z-20"
-      >
-        {combinedGuides.map((guide, idx) => {
-          if (guide.type === "vertical") {
+      {/* Internal XYFlow Drag Alignment Guides */}
+      {activeGuides.length === 0 && flowGuides.length > 0 && (
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 w-full h-full z-20"
+        >
+          {flowGuides.map((guide, idx) => {
+            if (guide.type === "vertical") {
+              return (
+                <line
+                  key={`guide-v-${idx}`}
+                  x1={guide.pos}
+                  y1={Math.max(0, guide.start)}
+                  x2={guide.pos}
+                  y2={Math.min(520, guide.end)}
+                  stroke="#06b6d4"
+                  strokeWidth="1.5"
+                  strokeDasharray="4 3"
+                />
+              );
+            }
             return (
               <line
-                key={`guide-v-${idx}`}
-                x1={guide.pos}
-                y1={Math.max(0, guide.start)}
-                x2={guide.pos}
-                y2={Math.min(520, guide.end)}
-                stroke="#06b6d4"
+                key={`guide-h-${idx}`}
+                x1={Math.max(0, guide.start)}
+                y1={guide.pos}
+                x2={Math.min(maxGuideX, guide.end)}
+                y2={guide.pos}
+                stroke="#10b981"
                 strokeWidth="1.5"
                 strokeDasharray="4 3"
               />
             );
-          }
-          return (
-            <line
-              key={`guide-h-${idx}`}
-              x1={Math.max(0, guide.start)}
-              y1={guide.pos}
-              x2={Math.min(maxGuideX, guide.end)}
-              y2={guide.pos}
-              stroke="#10b981"
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
-            />
-          );
-        })}
-
-        {dragConnection &&
-          (() => {
-            const x1 = dragConnection.sourceX;
-            const y1 = dragConnection.sourceY;
-            const x2 = dragConnection.currentX;
-            const y2 = dragConnection.currentY;
-            const dx = Math.abs(x2 - x1) * 0.5;
-            const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-            const strokeColor = dragConnection.hoveredTargetId
-              ? dragConnection.isValid
-                ? "#10b981"
-                : "#f43f5e"
-              : "#06b6d4";
-
-            return (
-              <g>
-                <path
-                  d={d}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth="2.5"
-                  strokeDasharray="3 3"
-                />
-                <circle cx={x2} cy={y2} r="5" fill={strokeColor} />
-              </g>
-            );
-          })()}
-      </svg>
+          })}
+        </svg>
+      )}
 
       {/* Empty Sandbox Helper Card */}
       {activeTheorem.isSandbox && activeTheorem.nodes.length === 0 && (

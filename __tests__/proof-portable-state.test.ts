@@ -528,6 +528,51 @@ describe("URL hash serialization and 2048-character ceiling", () => {
     expect(decodedGuided).toEqual(guidedEdges);
   });
 
+  it("normalizes legacy reversed pairs in decodeGuidedEdgesHash and guided .proof.json snapshots while dropping invalid pairs", () => {
+    const mp = THEOREMS["modus-ponens"];
+
+    // Legacy reversed hash: every pair flips to its forward form and keeps its rule label
+    expect(decodeGuidedEdgesHash("C>A:MP,C>B:MP,E>C:MP,E>D:MP", mp)).toEqual([
+      { source: "A", target: "C", ruleApplied: "MP" },
+      { source: "B", target: "C", ruleApplied: "MP" },
+      { source: "C", target: "E", ruleApplied: "MP" },
+      { source: "D", target: "E", ruleApplied: "MP" },
+    ]);
+
+    // Mixed hash: forward pairs stay forward, reversed valid pairs flip, and pairs invalid in both directions are dropped
+    expect(
+      decodeGuidedEdgesHash("A>C:MP,C>B:MP,E>C,C>A:Reit,A>E,B>D", mp)
+    ).toEqual([
+      { source: "A", target: "C", ruleApplied: "MP" },
+      { source: "B", target: "C", ruleApplied: "MP" },
+      { source: "C", target: "E" },
+    ]);
+
+    // Hash containing only pairs invalid in both directions returns null
+    expect(decodeGuidedEdgesHash("A>E,B>D", mp)).toBeNull();
+
+    // Guided .proof.json snapshot with legacy reversed pairs normalizes them and drops invalid pairs
+    const legacyGuidedSnapshot = JSON.stringify({
+      version: 1,
+      mode: "guided",
+      theoremId: "modus-ponens",
+      nodes: mp.nodes,
+      edges: [
+        { source: "C", target: "A", ruleApplied: "MP" },
+        { source: "B", target: "C", ruleApplied: "MP" },
+        { source: "E", target: "C", ruleApplied: "MP" },
+        { source: "A", target: "E", ruleApplied: "MP" },
+      ],
+    });
+    const parsedGuided = parseProofWorkspaceJson(legacyGuidedSnapshot);
+    expect(parsedGuided.mode).toBe("guided");
+    expect(parsedGuided.edges).toEqual([
+      { source: "A", target: "C", ruleApplied: "MP" },
+      { source: "B", target: "C", ruleApplied: "MP" },
+      { source: "C", target: "E", ruleApplied: "MP" },
+    ]);
+  });
+
   it("flags URL hashes exceeding MAX_PROOF_HASH_LENGTH (2048 characters)", () => {
     const manyNodes = Array.from({ length: 35 }, (_, idx) =>
       buildSandboxNode({

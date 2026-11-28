@@ -1,7 +1,28 @@
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { ProofWorkspaceClient } from "@/app/proof/ProofWorkspaceClient";
+
+beforeAll(async () => {
+  globalThis.Worker = class {
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    addEventListener = vi.fn();
+    removeEventListener = vi.fn();
+  } as unknown as typeof Worker;
+  const { unmount } = render(<ProofWorkspaceClient />);
+  await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+  unmount();
+  cleanup();
+});
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/proof");
@@ -33,19 +54,19 @@ describe("Proof terminal connect uses its parsed arguments (#1226)", () => {
     runCommand("connect D E");
     expect(
       screen.getByRole("button", {
-        name: /^Node E, PROVEN, R, .*, conclusion,/,
+        name: /^Node E PROVEN R .* conclusion$/,
       })
     ).toBeTruthy();
   });
 
   it("does not depend on a prior canvas selection", () => {
     render(<ProofWorkspaceClient />);
-    fireEvent.click(screen.getByRole("button", { name: /^Node A, / }));
+    fireEvent.click(screen.getByRole("button", { name: /^Node A / }));
     runCommand("connect C E");
     runCommand("connect D E");
     expect(
       screen.getByRole("button", {
-        name: /^Node E, PROVEN, R, .*, conclusion,/,
+        name: /^Node E PROVEN R .* conclusion$/,
       })
     ).toBeTruthy();
   });
@@ -55,7 +76,7 @@ describe("Proof terminal connect uses its parsed arguments (#1226)", () => {
     runCommand("connect A E");
     expect(
       screen.queryByRole("button", {
-        name: /^Node E, PROVEN, R, .*, conclusion,/,
+        name: /^Node E PROVEN R .* conclusion$/,
       })
     ).toBeNull();
     expect(screen.getAllByText(/FALLACY DETECTED/).length).toBeGreaterThan(0);

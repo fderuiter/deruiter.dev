@@ -348,6 +348,9 @@ describe("CI Workflow Toolchain Pinning", () => {
         /package-ecosystem:\s*"pip"[\s\S]*?directory:\s*"\/scripts"/
       );
       expect(dependabot).toMatch(
+        /package-ecosystem:\s*"pip"\s*\n\s*directory:\s*"\/scripts"\s*\n\s*open-pull-requests-limit:\s*0/
+      );
+      expect(dependabot).toMatch(
         /nextjs:\s*\n\s*patterns:\s*\n\s*-\s*"next"\s*\n\s*-\s*"@next\/env"\s*\n\s*-\s*"eslint-config-next"/
       );
       expect(dependabot).toMatch(

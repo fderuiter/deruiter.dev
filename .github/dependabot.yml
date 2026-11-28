@@ -45,8 +45,13 @@ updates:
 
   # Frozen Python constraints for the CDISC CORE validation workflow
   # (`scripts/study-data-core-constraints.txt`), audited with `pip-audit`.
+  # The pins must match what the pinned cdisc-rules-engine release resolves,
+  # so routine version bumps break the CORE install (#4171). Version-update
+  # PRs are off (`open-pull-requests-limit: 0`); security updates still open
+  # PRs, and the constraints move with each CORE upgrade.
   - package-ecosystem: "pip"
     directory: "/scripts"
+    open-pull-requests-limit: 0
     schedule:
       interval: "weekly"
       day: "monday"

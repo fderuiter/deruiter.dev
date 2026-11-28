@@ -3493,7 +3493,16 @@ export function checkModuleBoundaries(root: string): DiagnosticCheckResult {
   }
 
   try {
-    execSync("npx depcruise lib app components __tests__ hooks scripts", {
+    const boundaryDirs = [
+      "lib",
+      "app",
+      "components",
+      "__tests__",
+      "hooks",
+      "scripts",
+      "config",
+    ].filter((dir) => fs.existsSync(path.join(root, dir)));
+    execSync(`npx depcruise ${boundaryDirs.join(" ")}`, {
       cwd: root,
       stdio: "pipe",
       encoding: "utf-8",

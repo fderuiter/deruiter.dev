@@ -10,6 +10,8 @@ export interface CreditPackage {
   scope: CreditScope;
   /** True when listed in package.json dependencies or devDependencies. */
   direct: boolean;
+  /** Manifest section when direct: "runtime" for dependencies, "tooling" for devDependencies. */
+  directScope?: CreditScope;
   homepage: string | null;
   repository: string | null;
   /** Purpose group; set for direct dependencies only. */
@@ -38,7 +40,14 @@ export interface LockfileEntry {
   version?: string;
   license?: string;
   dev?: boolean;
+  devOptional?: boolean;
+  optional?: boolean;
   link?: boolean;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   /**
    * Set when the package ships inside its parent's tarball and has no
    * registry tarball of its own. Newer npm releases (the one Dependabot runs)

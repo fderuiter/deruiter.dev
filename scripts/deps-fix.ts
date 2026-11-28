@@ -7,6 +7,7 @@
  *      the locked @playwright/test version, pinned by the image index digest
  *      (__tests__/ci-toolchain-pinning.test.ts).
  *   2. `npm run oss:credits` regenerates the credits and notices.
+ *   3. `npm run audit:overrides -- --check` verifies npm overrides are still needed.
  *
  *   npm run deps:fix            rewrite what is stale
  *   npm run deps:fix -- --check offline; exit 1 if anything is stale
@@ -103,6 +104,9 @@ async function main(): Promise<void> {
     }
   }
   execFileSync("npm", ["run", "--silent", "oss:credits"], { stdio: "inherit" });
+  execFileSync("npm", ["run", "--silent", "audit:overrides", "--", "--check"], {
+    stdio: "inherit",
+  });
 }
 
 if (process.argv[1] && /deps-fix\.ts$/.test(process.argv[1])) {

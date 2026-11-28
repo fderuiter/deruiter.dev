@@ -2,6 +2,7 @@ import type {
   FactsDrift,
   FactsStore,
   LockedPackage,
+  LockfileEntry,
   LockfileShape,
   NoticeSource,
   PackageFacts,
@@ -14,24 +15,108 @@ export function packageNameFromLockPath(lockPath: string): string | null {
   return index === -1 ? null : lockPath.slice(index + NODE_MODULES.length);
 }
 
+function resolveLockPath(
+  packages: Record<string, LockfileEntry>,
+  fromPath: string,
+  depName: string
+): string | null {
+  let cursor = fromPath;
+  for (;;) {
+    const candidate = cursor
+      ? `${cursor}/${NODE_MODULES}${depName}`
+      : `${NODE_MODULES}${depName}`;
+    if (Object.prototype.hasOwnProperty.call(packages, candidate)) {
+      return candidate;
+    }
+    if (!cursor) return null;
+    const parentIndex = cursor.lastIndexOf(`/${NODE_MODULES}`);
+    cursor = parentIndex === -1 ? "" : cursor.slice(0, parentIndex);
+  }
+}
+
+/**
+ * Lockfile install paths reachable from `packages[""]` by walking
+ * `dependencies`, `optionalDependencies`, and required `peerDependencies` with
+ * Node module resolution, skipping optional `peerDependenciesMeta` edges.
+ */
+export function computeShippedLockPaths(lockfile: LockfileShape): Set<string> {
+  const packages = lockfile.packages;
+  const shipped = new Set<string>();
+  if (!Object.prototype.hasOwnProperty.call(packages, "")) {
+    return shipped;
+  }
+
+  const bundledPaths = Object.entries(packages)
+    .filter(
+      ([lockPath, entry]) => lockPath !== "" && !entry.link && entry.inBundle
+    )
+    .map(([lockPath]) => lockPath)
+    .sort((a, b) => a.length - b.length);
+
+  const queue: string[] = [""];
+  let head = 0;
+
+  while (head < queue.length) {
+    while (head < queue.length) {
+      const currentPath = queue[head++];
+      const entry = packages[currentPath];
+      if (!entry) continue;
+
+      const edges = new Set<string>([
+        ...Object.keys(entry.dependencies ?? {}),
+        ...Object.keys(entry.optionalDependencies ?? {}),
+      ]);
+      if (entry.peerDependencies) {
+        for (const peer of Object.keys(entry.peerDependencies)) {
+          if (!entry.peerDependenciesMeta?.[peer]?.optional) {
+            edges.add(peer);
+          }
+        }
+      }
+
+      for (const depName of edges) {
+        const targetPath = resolveLockPath(packages, currentPath, depName);
+        if (!targetPath || shipped.has(targetPath)) continue;
+        const target = packages[targetPath];
+        if (!target || target.link) continue;
+        shipped.add(targetPath);
+        queue.push(targetPath);
+      }
+    }
+
+    for (const lockPath of bundledPaths) {
+      if (shipped.has(lockPath)) continue;
+      const parentIndex = lockPath.lastIndexOf(`/${NODE_MODULES}`);
+      if (parentIndex !== -1 && shipped.has(lockPath.slice(0, parentIndex))) {
+        shipped.add(lockPath);
+        queue.push(lockPath);
+      }
+    }
+  }
+
+  return shipped;
+}
+
 /**
  * Every distinct name@version in the lockfile, shipped when any install of it
  * is shipped. The first resolved URL and integrity hash win; installs of one
  * version share both.
  */
 export function listLockedPackages(lockfile: LockfileShape): LockedPackage[] {
+  const shipped = computeShippedLockPaths(lockfile);
   const byKey = new Map<string, LockedPackage>();
   for (const [lockPath, entry] of Object.entries(lockfile.packages)) {
     if (lockPath === "" || entry.link) continue;
-    // A dev-only bundled dependency ships inside its parent's tarball, has no
+    const isShipped = shipped.has(lockPath);
+    // An unshipped bundled dependency ships inside its parent's tarball, has no
     // registry tarball of its own and never reaches visitors. A shipped one
     // still needs its own notice, so it falls through and fails loudly.
-    if (entry.inBundle && entry.dev) continue;
+    if (entry.inBundle && !isShipped) continue;
     // An npm alias installs under another name; credit what was published.
     const name = entry.name ?? packageNameFromLockPath(lockPath);
     if (!name || !entry.version) continue;
     const key = `${name}@${entry.version}`;
-    const scope = entry.dev ? "tooling" : "runtime";
+    const scope = isShipped ? "runtime" : "tooling";
     const prior = byKey.get(key);
     if (prior) {
       if (scope === "runtime") prior.scope = "runtime";

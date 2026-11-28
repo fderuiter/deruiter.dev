@@ -56,11 +56,6 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
     reason:
       "Measures and lays out text without DOM reflow, for zero layout shift.",
   },
-  "@fontsource/opendyslexic": {
-    group: "Interface and motion",
-    reason:
-      "Self-hosted OpenDyslexic font for the reading accessibility option.",
-  },
   "@xyflow/react": {
     group: "Interface and motion",
     reason:
@@ -69,10 +64,6 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
   three: {
     group: "Visualization and 3D",
     reason: "WebGL engine for the neuroimaging viewer and 3D scenes.",
-  },
-  "@types/three": {
-    group: "Visualization and 3D",
-    reason: "Type definitions for three.",
   },
   "@react-three/fiber": {
     group: "Visualization and 3D",
@@ -93,11 +84,6 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
   "@neondatabase/serverless": {
     group: "Data and storage",
     reason: "Serverless Postgres driver for Neon.",
-  },
-  pg: {
-    group: "Data and storage",
-    reason:
-      "PostgreSQL client that loads and reads Aurora DSQL from CI and builds.",
   },
   "@duckdb/duckdb-wasm": {
     group: "Data and storage",
@@ -148,9 +134,14 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Offline and PWA",
     reason: "Builds the service worker that makes the site work offline.",
   },
-  "@serwist/sw": {
+  serwist: {
     group: "Offline and PWA",
     reason: "Service worker runtime and caching strategies.",
+  },
+  sharp: {
+    group: "Documents and export",
+    reason:
+      "Rasterizes and compresses OpenGraph preview cards and optimizes images.",
   },
   docx: {
     group: "Documents and export",
@@ -224,6 +215,10 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     reason:
       "Renders the Patty's Drive-Thru booth scene in tests without WebGL.",
   },
+  "@stryker-mutator/api": {
+    group: "Testing",
+    reason: "Configuration types for the Stryker mutation runner.",
+  },
   "@stryker-mutator/core": {
     group: "Testing",
     reason: "Mutation testing that checks the tests catch bugs.",
@@ -231,6 +226,15 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
   "@stryker-mutator/vitest-runner": {
     group: "Testing",
     reason: "Runs Vitest under Stryker.",
+  },
+  "@next/env": {
+    group: "Testing",
+    reason:
+      "Next.js environment loader, checked against the setup writer in unit tests.",
+  },
+  "@tailwindcss/node": {
+    group: "Testing",
+    reason: "Compiles global CSS in layout and scroll-padding unit tests.",
   },
   ajv: {
     group: "Testing",
@@ -244,6 +248,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
   "@total-typescript/shoehorn": {
     group: "Testing",
     reason: "Type-safe partial mocks in tests.",
+  },
+  yaml: {
+    group: "Testing",
+    reason:
+      "Parses GitHub Actions workflow and Dependabot YAML in CI pinning tests.",
   },
   "@typescript/native": {
     group: "Build and types",
@@ -286,6 +295,10 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
   "@types/react-dom": {
     group: "Build and types",
     reason: "React DOM type definitions.",
+  },
+  "@types/three": {
+    group: "Build and types",
+    reason: "Type definitions for three.",
   },
   "@types/jsdom": {
     group: "Build and types",
@@ -337,6 +350,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
   dotenv: {
     group: "Developer workflow",
     reason: "Reads environment files in the setup tooling.",
+  },
+  pg: {
+    group: "Developer workflow",
+    reason:
+      "PostgreSQL client that loads and reads Aurora DSQL from CI and builds.",
   },
 };
 

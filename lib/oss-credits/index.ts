@@ -21,6 +21,7 @@ export {
   groupDirectRuntimeByPurpose,
 } from "./internal/build";
 export {
+  computeShippedLockPaths,
   diffFactsAgainstLockfile,
   fillSpdxTemplate,
   isFactsDriftFree,

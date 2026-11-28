@@ -76,13 +76,8 @@ describe("/study-data with a study handed over from CRF Studio", () => {
       RUN_TIMEOUT
     );
     expect(storage.getItem(STUDY_DATA_HANDOFF_KEY)).toBeNull();
-    expect(panel.textContent).toMatch(/Tabulated\s*DM, EX, VS, AE/);
-    expect(panel.textContent).toMatch(/Not tabulated\s*CM, QS/);
-    expect(panel.textContent).toMatch(
-      // QS is generated (#3418), but not the MMSE: its concepts carry no
-      // test the generator models.
-      /Mini-Mental State Examination \(MMSE\) \(QS\) is not tabulated: none of its tests is one the generator models/
-    );
+    expect(panel.textContent).toMatch(/Tabulated\s*DM, EX, CM, VS, AE, QS/);
+    expect(panel.textContent).toMatch(/Not tabulated\s*none/);
     // The preset names its arms, so nothing is assumed about them.
     expect(panel.textContent).not.toMatch(/one arm, Study treatment/);
     // The way back to change the study, which CRF Studio keeps as a draft.

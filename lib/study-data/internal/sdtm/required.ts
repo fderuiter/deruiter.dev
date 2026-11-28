@@ -59,6 +59,19 @@ const REQUIRED: Readonly<Record<string, ReadonlySet<string>>> = {
   VS: new Set(["STUDYID", "DOMAIN", "USUBJID", "VSSEQ", "VSTESTCD", "VSTEST"]),
   LB: new Set(["STUDYID", "DOMAIN", "USUBJID", "LBSEQ", "LBTESTCD", "LBTEST"]),
   EG: new Set(["STUDYID", "DOMAIN", "USUBJID", "EGSEQ", "EGTESTCD", "EGTEST"]),
+  TR: new Set(["STUDYID", "DOMAIN", "USUBJID", "TRSEQ", "TRTESTCD", "TRTEST"]),
+  PC: new Set(["STUDYID", "DOMAIN", "USUBJID", "PCSEQ", "PCTESTCD", "PCTEST"]),
+  DI: new Set([
+    "STUDYID",
+    "DOMAIN",
+    "SPDEVID",
+    "DISEQ",
+    "DIPARMCD",
+    "DIPARM",
+    "DIVAL",
+  ]),
+  DU: new Set(["STUDYID", "DOMAIN", "USUBJID", "DUSEQ", "DUTESTCD", "DUTEST"]),
+  DE: new Set(["STUDYID", "DOMAIN", "USUBJID", "DESEQ", "DETERM"]),
   DS: new Set(["STUDYID", "DOMAIN", "USUBJID", "DSSEQ", "DSTERM", "DSDECOD"]),
 };
 

@@ -29,7 +29,12 @@ type Domain =
   | "DS"
   | "CO"
   | "CE"
-  | "QS";
+  | "QS"
+  | "TR"
+  | "PC"
+  | "DI"
+  | "DU"
+  | "DE";
 
 const BASE_DATE = "2030-01-01";
 
@@ -440,7 +445,114 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("QSCAT", "Questionnaire"),
     NUM("QSORRES", "Score"),
   ],
+  TR: [
+    SRC,
+    SUBJ,
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("TRDTC", "Tumor assessment date"),
+    TEXT("TRGRPID", "Tumor group identifier"),
+    TEXT("TRLNKID", "Lesion link identifier"),
+    TEXT("TRTESTCD", "Tumor assessment test code"),
+    TEXT("TRORRES", "Original result"),
+    TEXT("TRORRESU", "Original result unit"),
+    TEXT("TRMETHOD", "Imaging method"),
+  ],
+  PC: [
+    SRC,
+    SUBJ,
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("PCDTC", "Specimen collection date"),
+    TEXT("PCTESTCD", "Pharmacokinetic test code"),
+    NUM("PCORRES", "Original concentration"),
+    TEXT("PCORRESU", "Original concentration unit"),
+    TEXT("PCSPEC", "Specimen material type"),
+    NUM("PCLLOQ", "Lower limit of quantitation"),
+    TEXT("PCTPT", "Planned time point name"),
+    NUM("PCTPTNUM", "Planned time point number"),
+  ],
+  DI: [
+    SRC,
+    TEXT("SPDEVID", "Sponsor device identifier"),
+    TEXT("DIPARMCD", "Device identifier parameter code"),
+    TEXT("DIVAL", "Device identifier value"),
+  ],
+  DU: [
+    SRC,
+    SUBJ,
+    TEXT("SPDEVID", "Sponsor device identifier"),
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("DUDTC", "Device-in-use collection date"),
+    TEXT("DUTESTCD", "Device-in-use test code"),
+    TEXT("DUORRES", "Original result"),
+    TEXT("DUORRESU", "Original result unit"),
+  ],
+  DE: [
+    SRC,
+    SUBJ,
+    TEXT("SPDEVID", "Sponsor device identifier"),
+    TEXT("DETERM", "Reported device event term"),
+    TEXT("DEDECOD", "Standardized device event term"),
+    TEXT("DECAT", "Device event category"),
+    TEXT("DESEV", "Device event severity"),
+    DATE("DESTDTC", "Device event start date"),
+    DATE("DEENDTC", "Device event end date"),
+  ],
 };
+
+const STUDY_DEVICES = [
+  {
+    spdevid: "DEV-VALVE-23",
+    type: "Transcatheter Heart Valve",
+    manuf: "Synthetic MedTech Labs",
+    model: "AortaFlow-23",
+    udi: "(01)00899900023001",
+  },
+  {
+    spdevid: "DEV-VALVE-26",
+    type: "Transcatheter Heart Valve",
+    manuf: "Synthetic MedTech Labs",
+    model: "AortaFlow-26",
+    udi: "(01)00899900026008",
+  },
+  {
+    spdevid: "DEV-VALVE-29",
+    type: "Transcatheter Heart Valve",
+    manuf: "Synthetic MedTech Labs",
+    model: "AortaFlow-29",
+    udi: "(01)00899900029009",
+  },
+] as const;
+
+const DEVICE_EVENTS = [
+  {
+    term: "Delivery catheter positioning resistance",
+    decod: "DEVICE POSITIONING DIFFICULTY",
+    sev: "MILD",
+  },
+  {
+    term: "Transient paravalvular leak during deployment",
+    decod: "PARAVALVULAR LEAK",
+    sev: "MODERATE",
+  },
+  {
+    term: "Temporary pacing threshold shift",
+    decod: "SENSING THRESHOLD SHIFT",
+    sev: "MILD",
+  },
+] as const;
+
+const PK_TIMEPOINTS = [
+  { tpt: "PREDOSE", num: 0, conc: 0 },
+  { tpt: "0.5H POST-DOSE", num: 0.5, conc: 42 },
+  { tpt: "1H POST-DOSE", num: 1, conc: 88 },
+  { tpt: "2H POST-DOSE", num: 2, conc: 112 },
+  { tpt: "4H POST-DOSE", num: 4, conc: 76 },
+  { tpt: "8H POST-DOSE", num: 8, conc: 38 },
+  { tpt: "24H POST-DOSE", num: 24, conc: 9.5 },
+] as const;
 
 function dataset(
   domain: Domain,
@@ -457,7 +569,7 @@ function dataset(
     label: `Synthetic collected ${domain} source data`,
     layer: "collected",
     class: "Collected",
-    keys: ["USUBJID", "SRCID"],
+    keys: domain === "DI" ? ["SPDEVID", "SRCID"] : ["USUBJID", "SRCID"],
     variables,
     columns,
     rowCount: rows.length,
@@ -489,6 +601,14 @@ function measuredValue(
       return round(72 + noise * 6);
     case "WEIGHT":
       return round(78 - fraction + noise * 1.5);
+    case "HEIGHT":
+      return round(170 + (baseline - 142) * 0.4);
+    case "BMI":
+      return round(26.8 - fraction * 0.4 + noise * 0.6);
+    case "TEMP":
+      return round(36.7 + noise * 0.3);
+    case "RESP":
+      return Math.round(16 + noise * 2);
     case "ALT":
       return round(24 + armIndex * fraction * 2 + noise * 3);
     case "AST":
@@ -503,6 +623,8 @@ function measuredValue(
       return round(142 + noise * 4);
     case "WBC":
       return round(6.5 + noise * 0.9);
+    case "NEUT":
+      return round(4.2 + noise * 0.8);
     case "PLAT":
       return round(245 + noise * 20);
     default:
@@ -526,12 +648,17 @@ function ecgValues(
   const heartRate = Math.round(66 + noise("hr") * 8);
   const rr = Math.round(60000 / heartRate);
   const qtc = qtcBaseline + [0, 2, 5][armIndex] * fraction + noise("qt") * 6;
+  const qt = Math.round(qtc * Math.cbrt(rr / 1000));
+  const qtcb = Math.round(qt / Math.sqrt(rr / 1000));
   return {
     EGHRMN: heartRate,
     RRAG: rr,
     PRAG: Math.round(158 + noise("pr") * 14),
     QRSAG: Math.round(92 + noise("qrs") * 7),
-    QTAG: Math.round(qtc * Math.cbrt(rr / 1000)),
+    QTAG: qt,
+    QTc: qtcb,
+    QTC: qtcb,
+    QTCBAG: qtcb,
   };
 }
 
@@ -603,6 +730,11 @@ export function generateCollectedData(
     CO: [],
     CE: [],
     QS: [],
+    TR: [],
+    PC: [],
+    DI: [],
+    DU: [],
+    DE: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
   const firstDay = Math.min(...design.visits.map((visit) => visit.targetDay));
@@ -624,6 +756,38 @@ export function generateCollectedData(
   const collectsQs = design.schedule.some(
     (cell) => activityById.get(cell.activityId)?.domain === "QS"
   );
+  const collectsTr = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "TR"
+  );
+  const collectsPc = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "PC"
+  );
+  const collectsDi = design.activities.some(
+    (activity) => activity.domain === "DI"
+  );
+  const collectsDu = design.schedule.some(
+    (cell) => activityById.get(cell.activityId)?.domain === "DU"
+  );
+  const collectsDe = design.activities.some(
+    (activity) => activity.domain === "DE"
+  );
+  if (collectsDi) {
+    for (const device of STUDY_DEVICES) {
+      for (const [parmcd, val] of [
+        ["TYPE", device.type],
+        ["MANUF", device.manuf],
+        ["MODEL", device.model],
+        ["UDI", device.udi],
+      ] as const) {
+        rows.DI.push({
+          SRCID: `${studyId}:DI:${device.spdevid}:${parmcd}`,
+          SPDEVID: device.spdevid,
+          DIPARMCD: parmcd,
+          DIVAL: val,
+        });
+      }
+    }
+  }
   const activityIdsByVisit = new Map<string, string[]>();
   for (const cell of design.schedule) {
     const ids = activityIdsByVisit.get(cell.visitId) ?? [];
@@ -808,6 +972,10 @@ export function generateCollectedData(
         ? 144 + pick("VS", "baseline-sbp") * 11
         : 142 + (pick("VS", "baseline-sbp") - 0.5) * 12;
     const qtcBaseline = 405 + (pick("EG", "baseline-qtc") - 0.5) * 30;
+    const subjectDevice =
+      STUDY_DEVICES[Math.floor(pick("DU", "device") * STUDY_DEVICES.length)]
+        .spdevid;
+    const baselineLdiam = 24 + pick("TR", "baseline-ldiam") * 28;
     let screeningDate = addDays(baselineDate, offset(firstDay));
     for (const visit of design.visits) {
       if (screenFailure && visit.targetDay > 0) continue;
@@ -934,6 +1102,112 @@ export function generateCollectedData(
                 score.min,
                 score.max
               ),
+            });
+          }
+          continue;
+        }
+        if (activity.domain === "TR") {
+          const responseShift =
+            1 -
+            ([0.05, 0.28, 0.35][clamp(armIndex, 0, 2)] ?? 0.2) * fraction +
+            (pick("TR", `${visitKey}:noise`) - 0.5) * 0.16;
+          for (const assessment of activity.assessments) {
+            const key = `${visitKey}:${assessment.testCode}`;
+            const code = assessment.testCode;
+            const resultText =
+              code === "TUMSTATE"
+                ? visit.targetDay <= 1
+                  ? "PRESENT"
+                  : responseShift <= 0.7
+                    ? "PR"
+                    : responseShift >= 1.2
+                      ? "PD"
+                      : "SD"
+                : code === "SUMDIAM"
+                  ? String(
+                      round(Math.max(10, baselineLdiam * 1.85 * responseShift))
+                    )
+                  : String(round(Math.max(5, baselineLdiam * responseShift)));
+            rows.TR.push({
+              SRCID: sourceId(studyId, "TR", number, key),
+              USUBJID: subject,
+              VISITNUM: visit.visitNum,
+              VISIT: visit.name,
+              TRDTC: visitDate,
+              TRGRPID: code === "TUMSTATE" ? "OVERALL" : "TARGET",
+              TRLNKID:
+                code === "TUMSTATE"
+                  ? "TSTATE"
+                  : code === "SUMDIAM"
+                    ? "TSUM"
+                    : "T01",
+              TRTESTCD: code,
+              TRORRES: resultText,
+              TRORRESU: assessment.unit ?? null,
+              TRMETHOD: "CT SCAN",
+            });
+          }
+          continue;
+        }
+        if (activity.domain === "PC") {
+          for (const assessment of activity.assessments) {
+            for (const tp of PK_TIMEPOINTS) {
+              const key = `${visitKey}:${assessment.testCode}:${tp.num}`;
+              const doseTier = armIndex > 0 ? armIndex : 0;
+              const conc =
+                tp.num === 0
+                  ? 0
+                  : round(
+                      Math.max(
+                        0.5,
+                        tp.conc *
+                          (0.85 + pick("PC", `${key}:conc`) * 0.3) *
+                          (1 + doseTier * 0.25)
+                      ),
+                      2
+                    );
+              rows.PC.push({
+                SRCID: sourceId(studyId, "PC", number, key),
+                USUBJID: subject,
+                VISITNUM: visit.visitNum,
+                VISIT: visit.name,
+                PCDTC: visitDate,
+                PCTESTCD: assessment.testCode,
+                PCORRES: conc,
+                PCORRESU: assessment.unit ?? "ng/mL",
+                PCSPEC: "PLASMA",
+                PCLLOQ: 0.5,
+                PCTPT: tp.tpt,
+                PCTPTNUM: tp.num,
+              });
+            }
+          }
+          continue;
+        }
+        if (activity.domain === "DU") {
+          for (const assessment of activity.assessments) {
+            const key = `${visitKey}:${assessment.testCode}`;
+            const code = assessment.testCode;
+            const resultText =
+              code === "DEPOUT"
+                ? pick("DU", `${key}:outcome`) < 0.9
+                  ? "SUCCESS"
+                  : "REPOSITIONED"
+                : assessment.unit
+                  ? String(
+                      Math.round(58 + (pick("DU", `${key}:val`) - 0.5) * 28)
+                    )
+                  : "COMPLETED";
+            rows.DU.push({
+              SRCID: sourceId(studyId, "DU", number, key),
+              USUBJID: subject,
+              SPDEVID: subjectDevice,
+              VISITNUM: visit.visitNum,
+              VISIT: visit.name,
+              DUDTC: visitDate,
+              DUTESTCD: code,
+              DUORRES: resultText,
+              DUORRESU: assessment.unit ?? null,
             });
           }
           continue;
@@ -1113,6 +1387,36 @@ export function generateCollectedData(
           });
       }
 
+      if (collectsDe && pick("DE", "event") < 0.22) {
+        const entry =
+          DEVICE_EVENTS[Math.floor(pick("DE", "term") * DEVICE_EVENTS.length)];
+        const deWindow = clamp(stopDay, 1, 30);
+        const deDay = clamp(
+          1 + Math.floor(pick("DE", "onset-day") * deWindow),
+          1,
+          Math.max(1, stopDay)
+        );
+        const deStart = addDays(baselineDate, offset(deDay));
+        const candidateEnd = addDays(deStart, 1);
+        const deEnd =
+          deathDate !== null && candidateEnd > deathDate
+            ? deathDate
+            : candidateEnd > stopDate
+              ? stopDate
+              : candidateEnd;
+        rows.DE.push({
+          SRCID: sourceId(studyId, "DE", number, "1"),
+          USUBJID: subject,
+          SPDEVID: subjectDevice,
+          DETERM: entry.term,
+          DEDECOD: entry.decod,
+          DECAT: "DEVICE EVENT",
+          DESEV: entry.sev,
+          DESTDTC: deStart,
+          DEENDTC: deEnd,
+        });
+      }
+
       // Medications are keyed by their own draws, so adding them leaves
       // every other domain as it was generated.
       const medication = (key: string, regimen: Regimen, fields: Row) =>
@@ -1254,9 +1558,14 @@ export function generateCollectedData(
       "MH",
       "IE",
       "CO",
-      // Collected only in a study that adjudicates outcomes.
+      // Collected only in a study that adjudicates outcomes or schedules the domain.
       ...(adjudicated ? (["CE"] as const) : []),
       ...(collectsQs ? (["QS"] as const) : []),
+      ...(collectsTr ? (["TR"] as const) : []),
+      ...(collectsPc ? (["PC"] as const) : []),
+      ...(collectsDi ? (["DI"] as const) : []),
+      ...(collectsDu ? (["DU"] as const) : []),
+      ...(collectsDe ? (["DE"] as const) : []),
     ] as const
   ).map((domain) =>
     dataset(

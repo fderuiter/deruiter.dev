@@ -63,17 +63,16 @@ export function StudyPicker({
           (entry) => entry.studyId === targetId
         );
         if (summary) {
-          setViewedBinding((prev) =>
-            prev?.studyId === targetId
-              ? prev
-              : { studyId: targetId, revisionId: summary.revisionId }
-          );
+          setViewedBinding({
+            studyId: targetId,
+            revisionId: summary.revisionId,
+          });
         }
       });
     return () => {
       live = false;
     };
-  }, [repository, selectedId]);
+  }, [repository, selectedId, snapshot.activeStudyId, snapshot.remoteEventSeq]);
 
   const activeRepoSummary = snapshot.isHydrated
     ? (snapshot.studies.find((entry) => entry.studyId === selectedId) ?? null)

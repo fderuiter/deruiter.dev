@@ -12,6 +12,7 @@ import {
   type Dataset,
   type VariableMeta,
 } from "@/lib/study-data";
+import { STUDY_PRESETS, exportStudyToUsdmObject } from "@/lib/crf";
 import { TAVR_SAVR_USDM } from "@/lib/study-workspace";
 
 const datasets = runPipeline(DEMO_301_STUDY, {
@@ -24,6 +25,23 @@ const deviceDatasets = runPipeline(
   prepareStudyHandoff(TAVR_SAVR_USDM).definition,
   { seed: 3417, nSubjects: 120 }
 ).datasets;
+const oncologyDatasets = runPipeline(
+  prepareStudyHandoff(
+    exportStudyToUsdmObject(
+      STUDY_PRESETS.find((preset) => preset.id === "oncology_recist")!.study
+    )
+  ).definition,
+  { seed: 2595, nSubjects: 24 }
+).datasets;
+const pkDatasets = runPipeline(
+  prepareStudyHandoff(
+    exportStudyToUsdmObject(
+      STUDY_PRESETS.find((preset) => preset.id === "pk_escalation")!.study
+    )
+  ).definition,
+  { seed: 2595, nSubjects: 24 }
+).datasets;
+const sdtmPools = [datasets, deviceDatasets, oncologyDatasets, pkDatasets];
 function mini(
   name: string,
   layer: "sdtm" | "adam",
@@ -69,7 +87,7 @@ function baseFor(rule: ConformanceRule): {
   context: readonly Dataset[];
 } {
   if (rule.kind === "lineage") {
-    for (const pool of [datasets, deviceDatasets]) {
+    for (const pool of sdtmPools) {
       const good = pool.find(
         (item) =>
           item.layer === rule.scope.layer && item.name === rule.scope.domain
@@ -79,7 +97,13 @@ function baseFor(rule: ConformanceRule): {
     throw new Error(`No ${rule.scope.domain} dataset to check ${rule.id}.`);
   }
   if (rule.scope.layer === "sdtm") {
-    const domain = datasets.find(
+    const pool =
+      sdtmPools.find((candidate) =>
+        candidate.some(
+          (item) => item.layer === "sdtm" && item.name === rule.scope.domain
+        )
+      ) ?? datasets;
+    const domain = pool.find(
       (item) => item.layer === "sdtm" && item.name === rule.scope.domain
     )!;
     if (rule.kind === "exception") {
@@ -127,7 +151,7 @@ function baseFor(rule: ConformanceRule): {
         context: datasets,
       };
     }
-    return { good: domain, context: datasets };
+    return { good: domain, context: pool };
   }
   if (rule.scope.domain === "ADSL") {
     const good = mini("ADSL", "adam", {
@@ -201,8 +225,7 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
     case "study-day": {
       const date = rule.variable!.replace(/DY$/, "DTC");
       const row = good.columns[date].findIndex(
-        (value) =>
-          typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+        (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)
       );
       return set(good, rule.variable!, row, 0);
     }

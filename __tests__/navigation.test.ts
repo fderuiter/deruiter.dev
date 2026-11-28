@@ -65,16 +65,13 @@ describe("navigation structure (#1842, #2952)", () => {
     expect(journey.items.map((i) => i.title)).toEqual(
       pages.map((s) => s.title)
     );
-    expect(journey.items.map((i) => i.step)).toEqual([1, 2, 3, 4]);
+    expect(journey.items.map((i) => i.step)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(tools.label).toBe("Platform tools");
     expect(tools.items.every((i) => i.href.startsWith("/platform/"))).toBe(
       true
     );
     expect(evidence.label).toBe("Evidence");
-    expect(evidence.items.map((i) => i.href)).toEqual([
-      "/clinical/standards",
-      "/clinical/ai-governance",
-    ]);
+    expect(evidence.items.map((i) => i.href)).toEqual(["/clinical/standards"]);
   });
 
   it("lists Clinical Trial Chaos under Clinical only (#3153)", () => {

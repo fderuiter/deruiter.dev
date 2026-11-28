@@ -24,14 +24,32 @@ export const CRF_STUDIO_USDM_EXTENSION_URL_PREFIX =
 
 /** The tools that send or receive a USDM hand-off. */
 export type ClinicalTool =
-  "study-studio" | "crf-studio" | "study-data" | "clinical";
+  | "study-studio"
+  | "crf-studio"
+  | "pipeline-simulator"
+  | "study-data"
+  | "ai-governance"
+  | "clinical";
 
-const CLINICAL_TOOLS: readonly ClinicalTool[] = [
+/** All clinical tools participating in shared USDM study hand-off. */
+export const CLINICAL_TOOLS: readonly ClinicalTool[] = [
   "study-studio",
   "crf-studio",
+  "pipeline-simulator",
   "study-data",
+  "ai-governance",
   "clinical",
 ];
+
+/** Canonical route path for each clinical tool in the shared USDM workspace. */
+export const CLINICAL_TOOL_PATHS: Readonly<Record<ClinicalTool, string>> = {
+  "study-studio": "/study-studio",
+  "crf-studio": "/crf",
+  "pipeline-simulator": "/clinical/pipeline-simulator",
+  "study-data": "/study-data",
+  "ai-governance": "/clinical/ai-governance",
+  clinical: "/clinical",
+};
 
 /** What the envelope says about the study it carries. */
 export interface UsdmHandoffStudy {

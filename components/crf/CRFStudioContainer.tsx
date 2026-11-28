@@ -518,6 +518,39 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
     () => setIsMobileWidgetDrawerOpen(false),
     []
   );
+  const handleStudyReplaced = useCallback(
+    (nextStudy: StudyProtocol) => {
+      if (reconcileTimerRef.current !== null) {
+        clearTimeout(reconcileTimerRef.current);
+        reconcileTimerRef.current = null;
+      }
+      lastSyncedStudyRef.current = nextStudy;
+      latestStudyRef.current = nextStudy;
+      repoBindingRef.current = null;
+      setRepoBinding(null);
+      setConflictPrompt(null);
+      const preferredId =
+        nextStudy.protocolNumber || nextStudy.id || "crf-study";
+      const exported = exportStudyToUsdmObject(nextStudy);
+      void repository
+        .activateOrImportUsdm(preferredId, exported, {
+          note: `Selected ${preferredId} in CRF Studio`,
+          kind: "authored",
+        })
+        .then((record) => {
+          const nextBinding = {
+            studyId: record.studyId,
+            baseRevisionId: record.workspace.revision.id,
+          };
+          repoBindingRef.current = nextBinding;
+          if (isMountedRef.current) {
+            setRepoBinding(nextBinding);
+          }
+        });
+    },
+    [repository]
+  );
+
   const editor = useStudyEditor({
     history: studyHistory,
     navigation,
@@ -525,6 +558,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
     closeWidgetDrawer,
     playSuccess,
     toast,
+    onStudyReplaced: handleStudyReplaced,
   });
   const {
     activeForm,
@@ -1851,6 +1885,20 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
         }}
         onForceKeepLocal={() => {
           void flushStudyToRepository({ force: true });
+        }}
+        onSaveAsBranch={() => {
+          if (!conflictPrompt?.localWorkspace) return;
+          void repository
+            .branchConflictToNewStudy(
+              conflictPrompt.studyId,
+              conflictPrompt.localWorkspace,
+              {
+                note: `Branched in CRF Studio from ${conflictPrompt.expectedRevisionId}`,
+              }
+            )
+            .then((branchedRecord) => {
+              openRepositoryRecord(branchedRecord);
+            });
         }}
         onClose={() => setConflictPrompt(null)}
       />

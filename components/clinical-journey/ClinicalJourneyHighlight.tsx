@@ -35,7 +35,7 @@ export function ClinicalJourneyHighlight({
         and the sponsor&apos;s vendors are fictional; the case studies of my own
         projects are real code.
       </p>
-      <ol className="mt-4 grid min-w-0 gap-2 @lg:grid-cols-5">
+      <ol className="mt-4 grid min-w-0 gap-2 @md:grid-cols-2 @xl:grid-cols-4">
         {CLINICAL_JOURNEY.map((step, index) => (
           <li key={step.id} className="min-w-0">
             <IntentLink

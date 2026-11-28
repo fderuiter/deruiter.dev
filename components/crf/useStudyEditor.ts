@@ -74,6 +74,8 @@ interface StudyEditorOptions {
   closeWidgetDrawer: () => void;
   playSuccess: () => void;
   toast: Pick<ToastApi, "success" | "error">;
+  /** Fired when a preset or whole-study replacement replaces the open study. */
+  onStudyReplaced?: (nextStudy: StudyProtocol) => void;
 }
 
 /**
@@ -88,6 +90,7 @@ export function useStudyEditor({
   closeWidgetDrawer,
   playSuccess,
   toast,
+  onStudyReplaced,
 }: StudyEditorOptions) {
   const { study, baselineStudy, commit, setStudy, replace, reset } = history;
   const {
@@ -222,9 +225,10 @@ export function useStudyEditor({
       } else {
         replace(targetStudy);
         showFirstFormOf(targetStudy);
+        onStudyReplaced?.(targetStudy);
       }
     },
-    [study, baselineStudy, replace, showFirstFormOf]
+    [study, baselineStudy, replace, showFirstFormOf, onStudyReplaced]
   );
 
   const cancelStudyReplacement = useCallback(() => {
@@ -246,8 +250,9 @@ export function useStudyEditor({
       replace(target);
       showFirstFormOf(target);
       setPendingStudyReplacement(null);
+      onStudyReplaced?.(target);
     },
-    [pendingStudyReplacement, study, replace, showFirstFormOf]
+    [pendingStudyReplacement, study, replace, showFirstFormOf, onStudyReplaced]
   );
 
   const selectPreset = useCallback(

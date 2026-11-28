@@ -331,25 +331,32 @@ export function StudyStudioShell({
     const remote = snapshot.lastRemoteEvent;
     if (!remote) return;
     if (
-      remote.type === "active-study-changed" &&
-      remote.studyId &&
+      (remote.type === "active-study-changed" ||
+        remote.type === "study-imported" ||
+        remote.type === "study-deleted") &&
       session &&
-      remote.studyId !== session.studyId &&
       session.history.undo.length === 0
     ) {
-      void repository.getRecord(remote.studyId).then((record) => {
-        if (record) {
-          loadRecordIntoSession(
-            record,
-            `Switched to ${record.workspace.usdm.study.name} from another tab.`
-          );
-        }
-      });
+      const targetId =
+        remote.type === "study-deleted"
+          ? (remote.nextActiveStudyId ?? snapshot.activeStudyId)
+          : remote.studyId;
+      if (targetId && targetId !== session.studyId) {
+        void repository.getRecord(targetId).then((record) => {
+          if (record) {
+            loadRecordIntoSession(
+              record,
+              `Switched to ${record.workspace.usdm.study.name} from another tab.`
+            );
+          }
+        });
+      }
     }
   }, [
     loadRecordIntoSession,
     repository,
     session,
+    snapshot.activeStudyId,
     snapshot.lastRemoteEvent,
     snapshot.remoteEventSeq,
   ]);
@@ -584,6 +591,28 @@ export function StudyStudioShell({
                 );
                 setConflictPrompt(null);
                 setRepoSaveNote("Draft saved in this browser.");
+              }
+            });
+        }}
+        onSaveAsBranch={() => {
+          if (!conflictPrompt?.localWorkspace) return;
+          void repository
+            .branchConflictToNewStudy(
+              conflictPrompt.studyId,
+              conflictPrompt.localWorkspace,
+              {
+                note: `Branched in Study Studio from ${conflictPrompt.expectedRevisionId}`,
+              }
+            )
+            .then((branchedRecord) => {
+              loadRecordIntoSession(
+                branchedRecord,
+                `Saved edits as branch ${branchedRecord.protocolCode} (${branchedRecord.workspace.revision.id}).`
+              );
+              if (repository.getSnapshot().persistence === "indexeddb") {
+                setRepoSaveNote(
+                  `Branched to ${branchedRecord.protocolCode} (${branchedRecord.workspace.revision.id}).`
+                );
               }
             });
         }}

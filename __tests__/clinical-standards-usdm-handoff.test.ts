@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
+  CLINICAL_TOOLS,
+  CLINICAL_TOOL_PATHS,
   USDM_HANDOFF_ENVELOPE_VERSION,
   canonicalUsdmJson,
   createUsdmHandoff,
@@ -96,6 +98,31 @@ describe("readUsdmHandoff", () => {
       "study-data"
     );
     expect(read).toEqual({ status: "ok", envelope });
+  });
+
+  it("supports handoff across study-studio, crf-studio, pipeline-simulator, study-data, ai-governance, and clinical", () => {
+    expect(CLINICAL_TOOLS).toEqual([
+      "study-studio",
+      "crf-studio",
+      "pipeline-simulator",
+      "study-data",
+      "ai-governance",
+      "clinical",
+    ]);
+    expect(CLINICAL_TOOL_PATHS["study-studio"]).toBe("/study-studio");
+    expect(CLINICAL_TOOL_PATHS["pipeline-simulator"]).toBe(
+      "/clinical/pipeline-simulator"
+    );
+    expect(CLINICAL_TOOL_PATHS["ai-governance"]).toBe(
+      "/clinical/ai-governance"
+    );
+    for (const target of CLINICAL_TOOLS) {
+      const envelope = createUsdmHandoff(DEMO_301_USDM, {
+        source: "study-studio",
+        target,
+      });
+      expect(readUsdmHandoff(envelope, target).status).toBe("ok");
+    }
   });
 
   it("recomputes the study summary instead of trusting it", () => {

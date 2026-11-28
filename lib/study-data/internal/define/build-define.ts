@@ -502,10 +502,11 @@ export function buildDefine(
         throw new RangeError(`${dataset.name} key ${key} is not a variable.`);
       }
     }
-    const trialDesign = dataset.class === "Trial Design";
-    const subjectLevel = dataset.keys.every(
-      (key) => key === "STUDYID" || key === "USUBJID"
-    );
+    const referenceData =
+      dataset.class === "Trial Design" || dataset.class === "Study Reference";
+    const subjectLevel =
+      !referenceData &&
+      dataset.keys.every((key) => key === "STUDYID" || key === "USUBJID");
     itemGroups.push({
       oid: itemGroupOid(dataset.name),
       name: dataset.name,
@@ -514,8 +515,8 @@ export function buildDefine(
       ...(dataset.subClass ? { subClassName: dataset.subClass } : {}),
       structure: dataset.structure,
       purpose: layer === "sdtm" ? "Tabulation" : "Analysis",
-      repeating: !trialDesign && !subjectLevel,
-      isReferenceData: trialDesign,
+      repeating: !referenceData && !subjectLevel,
+      isReferenceData: referenceData,
       ...(layer === "sdtm" ? { domain: tabulationDomain(dataset.name) } : {}),
       standardOid: guideOid,
       leaf: {

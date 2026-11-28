@@ -3,15 +3,18 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  OdmXml132Codec,
   StudyProtocolEngine,
   UniversalStudyProtocolSchema,
   exportStudyToCdiscOdmXml,
+  fromCanonicalCrfDocument,
   importStudyFromCdiscOdmXml,
   exportStudyToSas,
   exportStudyToR,
   formatRfc4180Csv,
   parseRfc4180Csv,
   detectClinicalCsvKind,
+  toCanonicalCrfDocument,
 } from "@/lib/crf";
 import { STUDY_PRESETS } from "@/lib/crf/presets";
 import type { EdcSimulationState, StudyProtocol } from "@/lib/crf/types";
@@ -262,6 +265,42 @@ describe("Bidirectional ODM 1.3.2 ClinicalData, EDC query lifecycle, live SAS/R,
         resolutionReason: "Source document matches recorded value",
       });
     }
+  });
+
+  it("encodes and decodes AdminData and ClinicalData through OdmXml132Codec with form-scoped IT.<formId>.<NAME> ItemData ItemOIDs", async () => {
+    const preset = STUDY_PRESETS[0]!.study;
+    const sim = buildPopulatedSimulationState(preset);
+    const visit = preset.visits[0]!;
+    const form =
+      preset.forms.find((f) => visit.assignedFormIds.includes(f.id)) ??
+      preset.forms[0]!;
+    const firstField = form.sections.flatMap((s) => s.fields)[0]!;
+    const expectedItemOid = `IT.${form.id}.${firstField.variableName || firstField.id}`;
+
+    const canonicalInput = toCanonicalCrfDocument({
+      ...preset,
+      auditTrail: [],
+      simulationState: sim,
+    });
+    const encodedXml = OdmXml132Codec.encode(canonicalInput);
+
+    expect(encodedXml).toContain(`<ItemDef OID="${expectedItemOid}"`);
+    expect(encodedXml).toContain(`<ItemData ItemOID="${expectedItemOid}"`);
+
+    const xsdErrors = await validateOdmXml({ encodedXml }, "odm-1.3.2");
+    expect(xsdErrors.encodedXml).toEqual([]);
+
+    const decodedDoc = OdmXml132Codec.decode(encodedXml);
+    const decodedStudy = fromCanonicalCrfDocument(decodedDoc);
+    expect(decodedStudy.simulationState?.availableSubjects).toEqual(
+      sim.availableSubjects
+    );
+    expect(decodedStudy.simulationState?.formValues).toEqual(sim.formValues);
+    expect(decodedStudy.simulationState?.queries?.length).toBe(2);
+    expect(decodedStudy.simulationState?.signatures?.length).toBe(1);
+    expect(decodedStudy.simulationState?.auditLog?.length).toBe(
+      sim.auditLog?.length
+    );
   });
 
   it("imports external plain ODM 1.3.2 ClinicalData and AdminData without CRF Studio aliases", async () => {

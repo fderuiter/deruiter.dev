@@ -20,7 +20,7 @@ import type { EdcSimulationState } from "@/lib/crf/types";
 /**
  * CodeQL js/xss-through-dom regression boundary for ODM-XML uploads across
  * ExportImportModal, ImportDropzone, and LiveEdcSimulator. ODM-XML is parsed by
- * a pure zero-DOM scanner (`lib/crf/internal/xml-tree.ts`) with single-pass
+ * a pure zero-DOM scanner (`lib/crf/internal/codecs/xml-parser.ts`) with single-pass
  * entity decoding rather than `DOMParser`, ensuring uploaded XML never enters
  * an HTML/DOM reinterpretation sink and markup-looking payloads stay plain text.
  */

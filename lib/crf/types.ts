@@ -425,6 +425,261 @@ export interface StudyProtocol {
   auditLog?: AuditTrailEntry[];
 }
 
+/**
+ * Deterministic ordered symbol table indexing canonical CRF entities by stable ID.
+ */
+export interface CanonicalCrfSymbolTable<T> {
+  readonly order: readonly string[];
+  readonly byId: Readonly<Record<string, T>>;
+}
+
+/**
+ * Canonical form record retaining section order and symbol references.
+ */
+export interface CanonicalFormNode {
+  readonly form: CRFForm;
+  readonly fieldIds: readonly string[];
+  readonly ruleIds: readonly string[];
+}
+
+/**
+ * Canonical field record retaining form, section, and parent repeating-table lineage.
+ */
+export interface CanonicalFieldNode {
+  readonly key: string;
+  readonly formId: string;
+  readonly formDomain: string;
+  readonly formName: string;
+  readonly sectionId: string;
+  readonly sectionTitle: string;
+  readonly parentFieldId?: string;
+  readonly field: CRFField;
+}
+
+/**
+ * Canonical rule record retaining either form-scoped or study-scoped ownership.
+ */
+export interface CanonicalRuleNode {
+  readonly key: string;
+  readonly scope: "form" | "study";
+  readonly formId?: string;
+  readonly formDomain?: string;
+  readonly formName?: string;
+  readonly rule: EditCheckRule;
+}
+
+/**
+ * Root protocol metadata preserved losslessly on a {@link CanonicalCrfDocument}.
+ */
+export interface CanonicalCrfMetadata {
+  readonly $schema?: string;
+  readonly schemaVersion?: string;
+  readonly id: string;
+  readonly protocolNumber: string;
+  readonly protocolId?: string;
+  readonly studyName: string;
+  readonly title?: string;
+  readonly phase: StudyProtocol["phase"];
+  readonly sponsor: string;
+  readonly therapeuticArea: string;
+  readonly version: string;
+  readonly lastModified: string;
+  readonly branding?: StudyBranding;
+  readonly arms?: StudyArm[];
+  readonly epochs?: StudyEpoch[];
+  readonly cohorts?: StudyCohort[];
+  readonly population?: StudyPopulationPlan;
+  readonly eligibilityCriteria?: StudyEligibilityCriterion[];
+  readonly objectives?: StudyObjective[];
+  readonly interventions?: StudyInterventionPlan[];
+  readonly biomedicalConcepts?: BiomedicalConcept[];
+  readonly provenance?: StudyProvenance;
+  readonly testScenarios?: TestScenario[];
+  readonly reviewThreads?: StudyReviewThread[];
+  readonly simulationState?: EdcSimulationState;
+  readonly auditTrail?: AuditTrailEntry[];
+  readonly libraryUses?: StudyLibraryUse[];
+  readonly auditLog?: AuditTrailEntry[];
+}
+
+/**
+ * Secondary lookup indexes over a {@link CanonicalCrfDocument}.
+ */
+export interface CanonicalCrfIndexes {
+  readonly visitIdByOid: Readonly<Record<string, string>>;
+  /** Maps `${formId}::${UPPER_VAR}` to canonical field symbol keys in that form. */
+  readonly fieldKeysByFormVariable: Readonly<Record<string, readonly string[]>>;
+  /** Maps `${formId}::${fieldId}` to canonical field symbol keys in that form. */
+  readonly fieldKeysByFormFieldId: Readonly<Record<string, readonly string[]>>;
+  /** Maps uppercase domain code to form IDs carrying that domain. */
+  readonly formIdsByDomain: Readonly<Record<string, readonly string[]>>;
+  /** Maps form ID to visit IDs assigning that form in the Schedule of Activities. */
+  readonly visitIdsByFormId: Readonly<Record<string, readonly string[]>>;
+}
+
+/**
+ * Identifiers for built-in clinical specification format codecs.
+ */
+export type FormatCodecId =
+  | "json_universal"
+  | "yaml_universal"
+  | "json_usdm_v4"
+  | "json_usdm_v3"
+  | "json_fhir_r4"
+  | "xml_odm_1_3_2"
+  | "csv_redcap"
+  | "csv_cdisc_spec";
+
+/**
+ * Ingestion format tags exposed by `detectAndParseStudyFile`.
+ */
+export type IngestedStudyFormat =
+  | "json_usdm"
+  | "json_universal"
+  | "yaml_universal"
+  | "json_fhir"
+  | "xml_odm"
+  | "csv_spec"
+  | "csv_redcap";
+
+/**
+ * Compiler-grade canonical intermediate representation of a clinical study protocol.
+ * Routes format codecs, storage checks, and conformance rule packs through indexed symbol tables.
+ */
+export interface CanonicalCrfDocument {
+  readonly kind: "CanonicalCrfDocument";
+  readonly irVersion: "1.0.0";
+  readonly metadata: CanonicalCrfMetadata;
+  readonly forms: CanonicalCrfSymbolTable<CanonicalFormNode>;
+  readonly fields: CanonicalCrfSymbolTable<CanonicalFieldNode>;
+  readonly visits: CanonicalCrfSymbolTable<StudyVisit>;
+  readonly codelists: CanonicalCrfSymbolTable<CodelistDefinition>;
+  readonly rules: CanonicalCrfSymbolTable<CanonicalRuleNode>;
+  readonly indexes: CanonicalCrfIndexes;
+}
+
+/** HL7 FHIR R4 Coding element. */
+export interface FhirCoding {
+  system?: string;
+  version?: string;
+  code?: string;
+  display?: string;
+}
+
+/** HL7 FHIR R4 CodeableConcept element. */
+export interface FhirCodeableConcept {
+  coding?: FhirCoding[];
+  text?: string;
+}
+
+/** HL7 FHIR R4 Identifier element. */
+export interface FhirIdentifier {
+  system?: string;
+  value?: string;
+}
+
+/** HL7 FHIR R4 Extension element used on Questionnaire items. */
+export interface FhirExtension {
+  url: string;
+  valueCoding?: FhirCoding;
+  valueCodeableConcept?: FhirCodeableConcept;
+  valueString?: string;
+  valueCode?: string;
+  valueInteger?: number;
+  valueDecimal?: number;
+  valueBoolean?: boolean;
+}
+
+/** HL7 FHIR R4 Questionnaire.item.answerOption element. */
+export interface FhirAnswerOption {
+  valueCoding?: FhirCoding;
+  valueString?: string;
+  valueInteger?: number;
+  valueDate?: string;
+  valueTime?: string;
+}
+
+/** HL7 FHIR R4 ValueSet resource subset supported in contained/bundled terminology. */
+export interface FhirValueSet {
+  resourceType: "ValueSet";
+  id?: string;
+  url?: string;
+  name?: string;
+  title?: string;
+  status?: "draft" | "active" | "retired" | "unknown";
+  expansion?: {
+    contains?: FhirCoding[];
+  };
+  compose?: {
+    include?: Array<{
+      system?: string;
+      concept?: Array<{ code: string; display?: string }>;
+    }>;
+  };
+}
+
+/** HL7 FHIR R4 Questionnaire.item element. */
+export interface FhirQuestionnaireItem {
+  linkId: string;
+  text?: string;
+  type:
+    | "group"
+    | "display"
+    | "boolean"
+    | "decimal"
+    | "integer"
+    | "date"
+    | "dateTime"
+    | "time"
+    | "string"
+    | "text"
+    | "url"
+    | "choice"
+    | "open-choice"
+    | "attachment"
+    | "reference"
+    | "quantity";
+  required?: boolean;
+  repeats?: boolean;
+  readOnly?: boolean;
+  maxLength?: number;
+  answerValueSet?: string;
+  answerOption?: FhirAnswerOption[];
+  extension?: FhirExtension[];
+  item?: FhirQuestionnaireItem[];
+}
+
+/** HL7 FHIR R4 Questionnaire resource emitted and consumed by `FhirR4QuestionnaireCodec`. */
+export interface FhirQuestionnaire {
+  resourceType: "Questionnaire";
+  id: string;
+  url?: string;
+  identifier?: FhirIdentifier[];
+  version?: string;
+  name?: string;
+  title?: string;
+  status: "draft" | "active" | "retired" | "unknown";
+  date?: string;
+  publisher?: string;
+  description?: string;
+  contained?: FhirValueSet[];
+  item: FhirQuestionnaireItem[];
+}
+
+/** HL7 FHIR R4 Bundle.entry element carrying a Questionnaire or ValueSet resource. */
+export interface FhirBundleEntry {
+  fullUrl?: string;
+  resource: FhirQuestionnaire | FhirValueSet;
+}
+
+/** HL7 FHIR R4 Bundle resource emitted and consumed by `FhirR4QuestionnaireCodec`. */
+export interface FhirBundle {
+  resourceType: "Bundle";
+  id: string;
+  type: "collection";
+  entry: FhirBundleEntry[];
+}
+
 /** Local authoring-review roles, unrelated to EDC permissions or audit roles. */
 export type StudyReviewRole =
   "Data Manager" | "Medical Monitor" | "Biostatistician" | "Clinical Reviewer";

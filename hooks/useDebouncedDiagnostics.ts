@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, startTransition } from "react";
 import { StudyProtocol } from "@/lib/crf/types";
-import { lintForm } from "@/lib/crf";
+import { evaluateStudyConformance } from "@/lib/crf";
 
 export interface UseDebouncedDiagnosticsOptions {
   debounceMs?: number;
@@ -32,7 +32,7 @@ export function useDebouncedDiagnostics(
 
   // Initial issue count calculation on mount
   const [totalIssues, setTotalIssues] = useState<number>(() => {
-    return study.forms.reduce((acc, f) => acc + lintForm(f).length, 0);
+    return evaluateStudyConformance(study).findings.length;
   });
   const [isPending, setIsPending] = useState(false);
 
@@ -57,10 +57,7 @@ export function useDebouncedDiagnostics(
 
   const recalculateImmediately = (): number => {
     cancelPending();
-    const count = studyRef.current.forms.reduce(
-      (acc, f) => acc + lintForm(f).length,
-      0
-    );
+    const count = evaluateStudyConformance(studyRef.current).findings.length;
     setTotalIssues(count);
     setIsPending(false);
     return count;
@@ -92,10 +89,7 @@ export function useDebouncedDiagnostics(
         if (!isMountedRef.current) return;
         const currentStudy = studyRef.current;
         // Requirement 4: Preserve object reference identity without worker message cloning
-        const count = currentStudy.forms.reduce(
-          (acc, f) => acc + lintForm(f).length,
-          0
-        );
+        const count = evaluateStudyConformance(currentStudy).findings.length;
 
         // Requirement 2: Schedule diagnostic badge updates using non-blocking transition wrappers
         startTransition(() => {

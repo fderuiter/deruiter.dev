@@ -1,6 +1,10 @@
 import { execFileSync } from "child_process";
 import path from "path";
-import { formatFinding, scanText } from "../lib/security-scan";
+import {
+  formatFinding,
+  scanRepositoryText,
+  shouldScanRepositoryPath,
+} from "../lib/security-scan";
 
 export function getStagedFiles(): string[] {
   const output = execFileSync(
@@ -11,70 +15,21 @@ export function getStagedFiles(): string[] {
   return output.split("\0").filter((f) => f.length > 0);
 }
 
-export function getStagedFileContent(filePath: string): string {
+function getStagedFileBuffer(filePath: string): Buffer {
   // Explicit stage zero prevents a pathname such as 0:config.ts from
   // selecting the unrelated config.ts index entry.
   return execFileSync("git", ["show", `:0:${filePath}`], {
-    encoding: "utf-8",
     maxBuffer: 10 * 1024 * 1024,
     stdio: ["ignore", "pipe", "pipe"],
   });
 }
 
+export function getStagedFileContent(filePath: string): string {
+  return getStagedFileBuffer(filePath).toString("utf-8");
+}
+
 export function shouldScanFile(filePath: string): boolean {
-  // Exclude node_modules, package locks, binary files, configurations that are meant to hold env configs, etc.
-  const ignoredExtensions = [
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".svg",
-    ".ico",
-    ".woff",
-    ".woff2",
-    ".ttf",
-    ".eot",
-    ".db",
-    ".zip",
-    ".tar",
-    ".gz",
-    ".pdf",
-    ".mp4",
-    ".mov",
-  ];
-  const ignoredFiles = [
-    "package-lock.json",
-    "bun.lock",
-    "yarn.lock",
-    "pnpm-lock.yaml",
-  ];
-  const ignoredDirectories = [
-    "node_modules/",
-    ".git/",
-    ".next/",
-    "dist/",
-    "build/",
-    "__tests__/",
-  ];
-
-  const baseName = path.basename(filePath);
-  const ext = path.extname(filePath).toLowerCase();
-
-  if (
-    ignoredExtensions.includes(ext) ||
-    ignoredFiles.includes(baseName) ||
-    baseName.startsWith(".env")
-  ) {
-    return false;
-  }
-
-  for (const dir of ignoredDirectories) {
-    if (filePath.startsWith(dir) || filePath.includes("/" + dir)) {
-      return false;
-    }
-  }
-
-  return true;
+  return shouldScanRepositoryPath(filePath);
 }
 
 function main() {
@@ -116,9 +71,9 @@ function main() {
       continue;
     }
 
-    let stagedContent: string;
+    let stagedBuffer: Buffer;
     try {
-      stagedContent = getStagedFileContent(file);
+      stagedBuffer = getStagedFileBuffer(file);
     } catch {
       // Child-process errors can contain raw indexed stdout. Never print
       // the error object or captured streams before redacted scanning.
@@ -129,7 +84,7 @@ function main() {
       break;
     }
 
-    const findings = scanText(stagedContent, file);
+    const findings = scanRepositoryText(stagedBuffer, file);
 
     if (findings.length > 0) {
       hasViolation = true;

@@ -53,9 +53,13 @@ comparison, and `npm run oss:credits -- --verify-registry` refetches every
 package and compares with the committed facts, for a periodic or pre-release
 audit of the registry itself.
 
-**3. "Ships to visitors" is the production closure.** A lockfile entry
-without `dev: true` is shipped. Everything else is tooling. The audit
-reports both counts.
+**3. "Ships to visitors" is the production closure.** A lockfile entry is
+shipped when it is reachable from `packages[""]` across `dependencies`,
+`optionalDependencies`, and required `peerDependencies` (skipping optional
+`peerDependenciesMeta` edges) via Node module resolution. Unreachable entries,
+including `dev: true` and `devOptional: true` packages that sit only on
+optional peer paths from runtime packages, are tooling. The audit reports both
+counts.
 
 **4. Strong copyleft in shipped code cannot be waived.** GPL, AGPL, SSPL,
 OSL, EUPL, CPAL and RPL tokens in a shipped package fail the audit even if an

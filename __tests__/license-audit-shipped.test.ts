@@ -10,7 +10,11 @@ import {
   shippedCodeExceptions,
   type LicenseException,
 } from "../scripts/license-audit";
-import { renderThirdPartyNotices } from "../lib/oss-credits";
+import {
+  computeShippedLockPaths,
+  renderThirdPartyNotices,
+  type LockfileShape,
+} from "../lib/oss-credits";
 
 const NOW = new Date("2026-10-03T12:00:00Z");
 
@@ -28,15 +32,35 @@ function exception(overrides: Partial<LicenseException>): LicenseException {
 
 const dirs: string[] = [];
 function workspace(opts: {
-  lock: Record<string, unknown>;
+  lock: Record<string, Record<string, unknown>>;
+  root?: Record<string, unknown>;
   exceptions?: LicenseException[];
   notices?: string;
 }): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "license-shipped-"));
   dirs.push(dir);
+  const inferredDeps = Object.fromEntries(
+    Object.entries(opts.lock)
+      .filter(
+        ([lockPath, entry]) =>
+          lockPath.startsWith("node_modules/") &&
+          !lockPath.slice("node_modules/".length).includes("node_modules/") &&
+          !entry.dev &&
+          !entry.devOptional
+      )
+      .map(([lockPath, entry]) => [
+        lockPath.slice("node_modules/".length),
+        String(entry.version ?? "*"),
+      ])
+  );
   fs.writeFileSync(
     path.join(dir, "package-lock.json"),
-    JSON.stringify({ packages: { "": {}, ...opts.lock } })
+    JSON.stringify({
+      packages: {
+        "": opts.root ?? { dependencies: inferredDeps },
+        ...opts.lock,
+      },
+    })
   );
   fs.mkdirSync(path.join(dir, "config"), { recursive: true });
   fs.writeFileSync(
@@ -128,6 +152,75 @@ describe("license audit: what ships", () => {
       exceptions: [exception({ packageName: "lib-binary" })],
     });
     expect(runLicenseAudit({ workspaceRoot: dir, now: NOW }).passed).toBe(true);
+  });
+
+  it("treats unreachable devOptional entries as tooling while keeping sharp and detect-libc in runtime", () => {
+    const dir = workspace({
+      root: {
+        dependencies: { sharp: "^0.35.5" },
+        devDependencies: { prisma: "^7.10.1", typescript: "^6.0.2" },
+      },
+      lock: {
+        "node_modules/sharp": {
+          version: "0.35.5",
+          license: "Apache-2.0",
+          dependencies: { "detect-libc": "^2.1.2" },
+          peerDependencies: { typescript: ">=5.0.0" },
+          peerDependenciesMeta: { typescript: { optional: true } },
+        },
+        "node_modules/detect-libc": {
+          version: "2.1.2",
+          license: "Apache-2.0",
+        },
+        "node_modules/prisma": {
+          version: "7.10.1",
+          license: "GPL-3.0-only",
+          devOptional: true,
+        },
+        "node_modules/typescript": {
+          version: "6.0.3",
+          license: "GPL-3.0-only",
+          devOptional: true,
+        },
+      },
+      exceptions: [
+        exception({ packageName: "prisma", license: "GPL-3.0-only" }),
+        exception({ packageName: "typescript", license: "GPL-3.0-only" }),
+      ],
+    });
+    // Allowed licenses in workspace() are MIT/ISC, so add Apache-2.0 for sharp/detect-libc.
+    fs.writeFileSync(
+      path.join(dir, "config", "license-policy.json"),
+      JSON.stringify({
+        allowedLicenses: ["MIT", "ISC", "Apache-2.0"],
+        exceptions: [
+          exception({ packageName: "prisma", license: "GPL-3.0-only" }),
+          exception({ packageName: "typescript", license: "GPL-3.0-only" }),
+        ],
+      })
+    );
+    const report = runLicenseAudit({ workspaceRoot: dir, now: NOW });
+    expect(report.passed).toBe(true);
+    expect(report.shippedPackages).toBe(2);
+    expect(report.toolingPackages).toBe(2);
+
+    const repoLock = JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, "..", "package-lock.json"),
+        "utf8"
+      )
+    ) as LockfileShape;
+    const shippedPaths = computeShippedLockPaths(repoLock);
+    expect(shippedPaths.has("node_modules/sharp")).toBe(true);
+    expect(shippedPaths.has("node_modules/detect-libc")).toBe(true);
+    for (const devOpt of [
+      "node_modules/prisma",
+      "node_modules/@playwright/test",
+      "node_modules/typescript",
+      "node_modules/effect",
+    ]) {
+      expect(shippedPaths.has(devOpt), devOpt).toBe(false);
+    }
   });
 });
 

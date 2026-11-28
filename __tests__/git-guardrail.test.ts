@@ -1,9 +1,17 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "child_process";
+import fs from "fs";
+import os from "os";
 import path from "path";
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const claudeHookScript = path.join(
+  workspaceRoot,
+  ".claude",
+  "hooks",
+  "block-dangerous-git.sh"
+);
 const guardrailScript = path.join(workspaceRoot, "scripts", "git-guardrail.sh");
 
 function runGuardrail(
@@ -12,7 +20,7 @@ function runGuardrail(
   useStdin = true
 ): { exitCode: number | null; stdout: string; stderr: string } {
   if (useStdin) {
-    const result = spawnSync("bash", [guardrailScript], {
+    const result = spawnSync(claudeHookScript, [], {
       input: commandOrJson,
       encoding: "utf-8",
       env: { ...process.env, ALLOW_DANGEROUS_GIT: "0", CI: "", ...env },
@@ -24,14 +32,10 @@ function runGuardrail(
     };
   }
 
-  const result = spawnSync(
-    "bash",
-    [guardrailScript, ...commandOrJson.split(" ")],
-    {
-      encoding: "utf-8",
-      env: { ...process.env, ALLOW_DANGEROUS_GIT: "0", CI: "", ...env },
-    }
-  );
+  const result = spawnSync(claudeHookScript, commandOrJson.split(" "), {
+    encoding: "utf-8",
+    env: { ...process.env, ALLOW_DANGEROUS_GIT: "0", CI: "", ...env },
+  });
   return {
     exitCode: result.status,
     stdout: result.stdout || "",
@@ -267,6 +271,99 @@ describe("Git Safety Guardrail Interceptor (scripts/git-guardrail.sh)", () => {
         ALLOW_DANGEROUS_GIT: "1",
       });
       expect(result.exitCode).toBe(0);
+    });
+  });
+
+  describe("Claude Code PreToolUse Hook Modes & Fail-Closed Wiring", () => {
+    it("tracks 100755 executable modes on .claude/hooks/*.sh and scripts/git-guardrail.sh", () => {
+      const hooksDir = path.join(workspaceRoot, ".claude", "hooks");
+      const hookScripts = fs
+        .readdirSync(hooksDir)
+        .filter((name) => name.endsWith(".sh"))
+        .map((name) => path.posix.join(".claude/hooks", name));
+      expect(hookScripts.length).toBeGreaterThan(0);
+
+      const targets = [...hookScripts, "scripts/git-guardrail.sh"];
+      for (const relPath of targets) {
+        const fullPath = path.join(workspaceRoot, relPath);
+        if (process.platform !== "win32") {
+          expect(fs.statSync(fullPath).mode & 0o777).toBe(0o755);
+        }
+        const lsFiles = spawnSync("git", ["ls-files", "-s", "--", relPath], {
+          cwd: workspaceRoot,
+          encoding: "utf-8",
+        });
+        if (lsFiles.status === 0 && lsFiles.stdout.trim()) {
+          expect(lsFiles.stdout.trim().startsWith("100755 ")).toBe(true);
+        }
+      }
+    });
+
+    it('configures "onFailure": "block" on the PreToolUse Bash hook in .claude/settings.json', () => {
+      const settingsPath = path.join(workspaceRoot, ".claude", "settings.json");
+      const settings = JSON.parse(fs.readFileSync(settingsPath, "utf-8")) as {
+        hooks?: {
+          PreToolUse?: Array<{
+            matcher?: string;
+            hooks?: Array<{ command?: string; onFailure?: string }>;
+          }>;
+        };
+      };
+      const bashEntry = settings.hooks?.PreToolUse?.find(
+        (entry) => entry.matcher === "Bash"
+      );
+      const hook = bashEntry?.hooks?.find((h) =>
+        h.command?.includes("block-dangerous-git.sh")
+      );
+      expect(hook).toBeDefined();
+      expect(hook?.onFailure).toBe("block");
+    });
+
+    it("executes block-dangerous-git.sh directly without bash and returns exit code 2 on git reset --hard HEAD and npx vercel deploy --prod", () => {
+      for (const cmd of ["git reset --hard HEAD", "npx vercel deploy --prod"]) {
+        const direct = spawnSync(claudeHookScript, [], {
+          input: JSON.stringify({ tool_input: { command: cmd } }),
+          encoding: "utf-8",
+          env: { ...process.env, ALLOW_DANGEROUS_GIT: "0", CI: "" },
+        });
+        expect(direct.status).toBe(2);
+      }
+      expect(fs.existsSync(guardrailScript)).toBe(true);
+    });
+
+    it("fails closed with exit code 2 when scripts/git-guardrail.sh is missing or exits non-zero", () => {
+      const tempRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), "guardrail-wrapper-")
+      );
+      try {
+        const tempHookDir = path.join(tempRoot, ".claude", "hooks");
+        fs.mkdirSync(tempHookDir, { recursive: true });
+        const tempHook = path.join(tempHookDir, "block-dangerous-git.sh");
+        fs.copyFileSync(claudeHookScript, tempHook);
+        fs.chmodSync(tempHook, 0o755);
+
+        const missingResult = spawnSync(tempHook, ["git", "status"], {
+          encoding: "utf-8",
+        });
+        expect(missingResult.status).toBe(2);
+        expect(missingResult.stderr).toContain("not found");
+
+        const tempScriptsDir = path.join(tempRoot, "scripts");
+        fs.mkdirSync(tempScriptsDir, { recursive: true });
+        const brokenGuardrail = path.join(tempScriptsDir, "git-guardrail.sh");
+        fs.writeFileSync(brokenGuardrail, "#!/usr/bin/env bash\nexit 1\n", {
+          encoding: "utf-8",
+          mode: 0o644,
+        });
+        fs.chmodSync(brokenGuardrail, 0o644);
+
+        const failedResult = spawnSync(tempHook, ["git", "status"], {
+          encoding: "utf-8",
+        });
+        expect(failedResult.status).toBe(2);
+      } finally {
+        fs.rmSync(tempRoot, { recursive: true, force: true });
+      }
     });
   });
 });

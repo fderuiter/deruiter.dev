@@ -1,11 +1,13 @@
 import type {
   CreditPackage,
+  CreditScope,
   CreditsDataset,
   DirectAnnotation,
   FactsStore,
   LockfileShape,
   RootPackageShape,
 } from "../types";
+import { computeShippedLockPaths } from "./facts";
 import { normalizeProjectUrl } from "./urls";
 
 const NODE_MODULES = "node_modules/";
@@ -26,19 +28,20 @@ export function buildCreditsDataset(input: {
   annotations: Record<string, DirectAnnotation>;
   facts: FactsStore;
 }): CreditsDataset {
-  const direct = new Set([
-    ...Object.keys(input.root.dependencies ?? {}),
-    ...Object.keys(input.root.devDependencies ?? {}),
-  ]);
+  const directRuntime = new Set(Object.keys(input.root.dependencies ?? {}));
+  const directTooling = new Set(Object.keys(input.root.devDependencies ?? {}));
+  const direct = new Set([...directRuntime, ...directTooling]);
+  const shipped = computeShippedLockPaths(input.lockfile);
   const seen = new Set<string>();
   const packages: CreditPackage[] = [];
 
   for (const [lockPath, entry] of Object.entries(input.lockfile.packages)) {
     if (lockPath === "" || entry.link) continue;
-    // A dev-only bundled dependency ships inside its parent's tarball, has no
+    const isShipped = shipped.has(lockPath);
+    // An unshipped bundled dependency ships inside its parent's tarball, has no
     // registry tarball of its own and never reaches visitors. A shipped one
     // still needs its own notice, so it falls through and fails loudly.
-    if (entry.inBundle && entry.dev) continue;
+    if (entry.inBundle && !isShipped) continue;
     const installedName = packageNameFromPath(lockPath);
     if (!installedName || !entry.version) continue;
     // An npm alias installs under another name; credit what was published.
@@ -47,24 +50,39 @@ export function buildCreditsDataset(input: {
     const isTopLevel = lockPath === `${NODE_MODULES}${installedName}`;
     // A direct dependency is always the top-level install of that name.
     const isDirect = isTopLevel && direct.has(installedName);
+    const directScope: CreditScope | undefined = isDirect
+      ? directRuntime.has(installedName)
+        ? "runtime"
+        : "tooling"
+      : undefined;
+    const annotation = isDirect ? input.annotations[installedName] : undefined;
     const facts = input.facts.packages[`${name}@${entry.version}`];
-    const scope = entry.dev ? "tooling" : "runtime";
+    const scope: CreditScope = isShipped ? "runtime" : "tooling";
     const existing = packages.find((p) => `${p.name}@${p.version}` === key);
     if (existing) {
       // Same version installed twice: shipped wins, direct wins.
       if (scope === "runtime") existing.scope = "runtime";
-      if (isDirect) existing.direct = true;
+      if (isDirect) {
+        existing.direct = true;
+        if (directScope === "runtime" || !existing.directScope) {
+          existing.directScope = directScope;
+        }
+        if (annotation) {
+          existing.group = annotation.group;
+          existing.reason = annotation.reason;
+        }
+      }
       continue;
     }
     if (seen.has(key)) continue;
     seen.add(key);
-    const annotation = isDirect ? input.annotations[installedName] : undefined;
     packages.push({
       name,
       version: entry.version,
       license: entry.license?.trim() || "UNKNOWN",
       scope,
       direct: isDirect,
+      ...(directScope ? { directScope } : {}),
       homepage: normalizeProjectUrl(facts?.homepage ?? undefined),
       repository: normalizeProjectUrl(facts?.repository ?? undefined),
       ...(annotation
@@ -99,11 +117,19 @@ export function findUnannotatedDirect(dataset: CreditsDataset): string[] {
 
 /** Group the direct runtime dependencies by purpose, in a stable order. */
 export function groupDirectRuntimeByPurpose(
-  dataset: CreditsDataset
+  dataset: CreditsDataset,
+  root?: RootPackageShape
 ): { group: string; packages: CreditPackage[] }[] {
+  const runtimeNames = root
+    ? new Set(Object.keys(root.dependencies ?? {}))
+    : null;
   const groups = new Map<string, CreditPackage[]>();
   for (const pkg of dataset.packages) {
     if (!pkg.direct || pkg.scope !== "runtime" || !pkg.group) continue;
+    const isDirectRuntime = runtimeNames
+      ? runtimeNames.has(pkg.name)
+      : (pkg.directScope ?? pkg.scope) === "runtime";
+    if (!isDirectRuntime) continue;
     groups.set(pkg.group, [...(groups.get(pkg.group) ?? []), pkg]);
   }
   return [...groups.entries()]

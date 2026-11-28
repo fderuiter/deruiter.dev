@@ -482,6 +482,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run audit:security -- --fail-on-warning --severity=moderate
 
+      - name: Verify npm Package Overrides
+        if: github.event_name != 'pull_request' || needs.changes.outputs.run_security_audit == 'true'
+        run: npm run audit:overrides -- --check
+
       - name: Note Skipped Dependency Vulnerability Audit
         if: github.event_name == 'pull_request' && needs.changes.outputs.run_security_audit != 'true'
         run: |

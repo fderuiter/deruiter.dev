@@ -240,7 +240,7 @@ describe("Interactive Studios Domain Integration Suite", () => {
       const odmXml = exportStudyToCdiscOdmXml(study);
       expect(odmXml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
       expect(odmXml).toContain('ODMVersion="1.3.2"');
-      expect(odmXml).toContain("IT.WEIGHT");
+      expect(odmXml).toContain("IT.form-screening.WEIGHT");
 
       // 5. SAS Code Generation
       const sasCode = exportStudyToSas(study);

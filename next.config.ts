@@ -19,7 +19,11 @@ const withSerwist = withSerwistInit({
   // The SQL workbench's engine (#2633) is a 34 MB binary and its worker,
   // fetched only when a visitor starts it, so they are not precached either.
   // The first two patterns are Serwist's defaults, which this list replaces.
-  exclude: [/\.map$/, /^manifest.*\.js$/, /^static\/media\/duckdb-/],
+  exclude: [
+    /\.map$/,
+    /^manifest.*\.js$/,
+    /^static\/media\/(?:duckdb-|(?:parquet|json)\.duckdb_extension\.)/,
+  ],
 });
 
 /** Route globs (picomatch, so bracketed segments match via wildcards) for every metadata image route. */

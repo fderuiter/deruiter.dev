@@ -33,8 +33,14 @@ describe("Acknowledgments page", () => {
     expect(screen.getByText(/libvips binaries/)).toBeTruthy();
   });
 
-  it("credits the clinical schemas and NCI EVS terminology (ADR 0065)", () => {
+  it("credits the clinical schemas, DuckDB extensions and NCI EVS terminology (ADR 0065)", () => {
     render(<AcknowledgmentsView />);
+    expect(
+      screen.getByText("DuckDB WebAssembly extensions (parquet, json)")
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/components\/platform\/sql\/extensions\//)
+    ).toBeTruthy();
     expect(screen.getByText(/CDISC USDM .* API schema/)).toBeTruthy();
     expect(
       screen.getByText("NCI EVS CDISC Controlled Terminology")

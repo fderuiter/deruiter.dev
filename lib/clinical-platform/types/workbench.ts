@@ -122,3 +122,155 @@ export interface WorkbenchLoad {
   /** Settings applied last, from `WORKBENCH_ENGINE_SETTINGS`. */
   readonly settings: readonly string[];
 }
+
+/** File formats a query result in the SQL notebook exports to. */
+export type WorkbenchExportFormat = "csv" | "json" | "parquet";
+
+/** Local file formats the SQL notebook's dataset manager ingests. */
+export type WorkbenchDatasetFormat = "csv" | "json" | "parquet";
+
+/** DuckDB SQL type reported by `DESCRIBE` for an uploaded column (for example `BIGINT`, `VARCHAR` or `STRUCT(...)`). */
+export type WorkbenchDatasetColumnType = string;
+
+/** One column of an uploaded local dataset in `uploads`, populated from `DESCRIBE`. */
+export interface WorkbenchDatasetColumn {
+  readonly name: string;
+  readonly type: WorkbenchDatasetColumnType;
+  readonly nullable: boolean;
+}
+
+/** A validated local dataset stored in browser IndexedDB and hydrated into `uploads`. */
+export interface WorkbenchUploadedDataset {
+  /** Stable identifier in the workspace store. */
+  readonly id: string;
+  /** Unqualified table name under the `uploads` schema, for example `site_roster`. */
+  readonly tableName: string;
+  /** Qualified name in SQL queries, for example `uploads.site_roster`. */
+  readonly qualifiedName: string;
+  /** Original uploaded file name. */
+  readonly fileName: string;
+  readonly format: WorkbenchDatasetFormat;
+  /** Row count from `SELECT count(*)` once hydrated in DuckDB, or `null` before hydration. */
+  readonly rowCount: number | null;
+  readonly byteLength: number;
+  readonly uploadedAt: string;
+  /** Columns from `DESCRIBE` once hydrated in DuckDB; empty before hydration. */
+  readonly columns: readonly WorkbenchDatasetColumn[];
+  /** Raw uploaded file bytes kept in IndexedDB under the 50 MB workspace cap. */
+  readonly bytes: Uint8Array;
+}
+
+/** Statements and original file buffer that hydrate one uploaded dataset into `uploads` via DuckDB's readers. */
+export interface WorkbenchDatasetLoad {
+  /** Qualified table name, for example `uploads.site_roster`. */
+  readonly table: string;
+  /** Format of the uploaded file (`csv`, `json` or `parquet`), selecting any required engine extension. */
+  readonly format: WorkbenchDatasetFormat;
+  /** Name registered in DuckDB's virtual file system under its real extension (for example `uploads-site_roster.parquet`). */
+  readonly fileName: string;
+  /** Original uploaded file bytes registered through `registerFileBuffer`. */
+  readonly buffer: Uint8Array;
+  /** Statement creating `uploads."<name>"` from `read_parquet`, `read_csv` or `read_json`. */
+  readonly create: string;
+  /** `DESCRIBE` query returning `column_name`, `column_type` and `null` for the created table. */
+  readonly describe: string;
+  /** `SELECT count(*)` query returning the row count of the created table. */
+  readonly count: string;
+}
+
+/** Schema and row count read back from DuckDB after hydrating an `uploads.*` table. */
+export interface WorkbenchHydratedDataset {
+  /** Qualified table name, for example `uploads.site_roster`. */
+  readonly table: string;
+  /** Row count read from `SELECT count(*)`. */
+  readonly rowCount: number;
+  /** Columns in table order read from `DESCRIBE`. */
+  readonly columns: readonly WorkbenchDatasetColumn[];
+}
+
+/** Result of parsing and validating an uploaded local dataset file. */
+export type WorkbenchDatasetParseResult =
+  | { readonly ok: true; readonly dataset: WorkbenchUploadedDataset }
+  | { readonly ok: false; readonly error: string };
+
+/** One open SQL editor tab in the notebook workspace. */
+export interface WorkbenchNotebookTab {
+  readonly id: string;
+  readonly title: string;
+  readonly sql: string;
+  /** Identifier of the selected preset or saved query, or empty when edited. */
+  readonly selectedQueryId: string;
+  /** Whether the visitor has unsaved edits in this tab. */
+  readonly edited: boolean;
+  readonly updatedAt: string;
+}
+
+/** A named query saved by the visitor in the browser's query library. */
+export interface WorkbenchNamedQuery {
+  readonly id: string;
+  readonly title: string;
+  readonly sql: string;
+  readonly savedAt: string;
+}
+
+/** Status recorded for one query execution in the notebook's run log. */
+export type WorkbenchExecutionStatus =
+  "ok" | "error" | "refused" | "timeout" | "cancelled" | "stopped";
+
+/** One timestamped entry in the SQL notebook's execution log. */
+export interface WorkbenchExecutionLogEntry {
+  readonly id: string;
+  readonly ranAt: string;
+  readonly tabId: string;
+  readonly tabTitle: string;
+  readonly mode: "run" | "explain";
+  readonly sql: string;
+  readonly status: WorkbenchExecutionStatus;
+  readonly rowCount: number | null;
+  readonly elapsedMs: number;
+  readonly message: string | null;
+}
+
+/** One tab inside a portable `.sql.json` notebook bundle. */
+export interface WorkbenchNotebookBundleTab {
+  readonly id: string;
+  readonly title: string;
+  readonly sql: string;
+  readonly selectedQueryId: string;
+  readonly updatedAt: string;
+}
+
+/** Portable `.sql.json` notebook bundle shared between browsers. */
+export interface WorkbenchNotebookBundle {
+  readonly format: "deruiter.clinical-sql-notebook";
+  readonly version: 1;
+  readonly exportedAt: string;
+  readonly activeTabId: string;
+  readonly tabs: readonly WorkbenchNotebookBundleTab[];
+  readonly namedQueries: readonly WorkbenchNamedQuery[];
+}
+
+/** Result of serializing a `.sql.json` notebook bundle. */
+export type WorkbenchNotebookSerializeResult =
+  | {
+      readonly ok: true;
+      readonly json: string;
+      readonly bundle: WorkbenchNotebookBundle;
+    }
+  | { readonly ok: false; readonly error: string };
+
+/** Result of validating and importing a `.sql.json` notebook bundle. */
+export type WorkbenchNotebookParseResult =
+  | { readonly ok: true; readonly bundle: WorkbenchNotebookBundle }
+  | { readonly ok: false; readonly error: string };
+
+/** Shareable `#sql=...` active-tab permalink payload. */
+export interface WorkbenchPermalink {
+  readonly sql: string;
+  readonly title: string | null;
+}
+
+/** Result of encoding or decoding a `#sql=...` URL hash permalink. */
+export type WorkbenchPermalinkDecoding =
+  | { readonly ok: true; readonly permalink: WorkbenchPermalink }
+  | { readonly ok: false; readonly error: string };

@@ -11,6 +11,7 @@ import { tableFromArrays } from "apache-arrow";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   WORKBENCH_ENGINE_SETTINGS,
+  type WorkbenchDatasetLoad,
   type WorkbenchLoad,
 } from "@/lib/clinical-platform";
 
@@ -42,6 +43,9 @@ vi.mock("@duckdb/duckdb-wasm", () => {
     },
     send: (sql: string) => duck.send(sql),
     cancelSent: () => duck.cancelSent(),
+    close: async () => {
+      duck.calls.push("close-conn");
+    },
   };
   return {
     VoidLogger: class {},
@@ -66,8 +70,17 @@ vi.mock("@duckdb/duckdb-wasm", () => {
       async registerFileText(name: string) {
         duck.calls.push(`register ${name}`);
       }
+      async registerFileBuffer(name: string, buf: Uint8Array) {
+        duck.calls.push(`registerBuffer ${name} (${buf.byteLength})`);
+        if (buf.buffer instanceof ArrayBuffer) {
+          structuredClone(buf.buffer, { transfer: [buf.buffer] });
+        }
+      }
       async dropFile(name: string) {
         duck.calls.push(`drop ${name}`);
+      }
+      async reset() {
+        duck.calls.push("reset-db");
       }
       async getVersion() {
         return "v1.4.3";
@@ -378,5 +391,142 @@ describe("engineMessage", () => {
     ).toBe("only the words");
     expect(engineMessage(new Error("{not json"))).toBe("{not json");
     expect(engineMessage(new Error('{"other":1}'))).toBe('{"other":1}');
+  });
+});
+
+describe("hydrating and reloading uploads.* datasets", () => {
+  const CSV_UPLOAD: WorkbenchDatasetLoad = {
+    table: "uploads.site_audit",
+    format: "csv",
+    fileName: "uploads-site_audit.csv",
+    create:
+      'CREATE SCHEMA IF NOT EXISTS "uploads"; DROP TABLE IF EXISTS "uploads"."site_audit"; CREATE TABLE "uploads"."site_audit" AS SELECT * FROM read_csv(\'uploads-site_audit.csv\', header = true, delim = \',\', quote = \'"\', escape = \'"\', allow_quoted_nulls = false, strict_mode = true);',
+    describe: 'DESCRIBE "uploads"."site_audit"',
+    count: 'SELECT count(*) AS n FROM "uploads"."site_audit"',
+    buffer: new TextEncoder().encode("site_id\r\nSITE-01\r\n"),
+  };
+
+  const PARQUET_UPLOAD: WorkbenchDatasetLoad = {
+    table: "uploads.zstd_flags",
+    format: "parquet",
+    fileName: "uploads-zstd_flags.parquet",
+    create:
+      'CREATE SCHEMA IF NOT EXISTS "uploads"; DROP TABLE IF EXISTS "uploads"."zstd_flags"; CREATE TABLE "uploads"."zstd_flags" AS SELECT * FROM read_parquet(\'uploads-zstd_flags.parquet\');',
+    describe: 'DESCRIBE "uploads"."zstd_flags"',
+    count: 'SELECT count(*) AS n FROM "uploads"."zstd_flags"',
+    buffer: new TextEncoder().encode("PAR1payloadPAR1"),
+  };
+
+  async function* metadataStream(sql: string): Batches {
+    if (sql.startsWith("DESCRIBE ")) {
+      yield* tableFromArrays({
+        column_name: ["site_id", "tier"],
+        column_type: ["VARCHAR", "INTEGER"],
+        null: ["YES", "NO"],
+      }).batches;
+      return;
+    }
+    if (sql.startsWith("SELECT count(*)")) {
+      yield* tableFromArrays({ n: Int32Array.from([5]) }).batches;
+      return;
+    }
+    yield* batches([1]);
+  }
+
+  it("loads local reader extensions when needed, reads DESCRIBE + count(*), and locks settings last", async () => {
+    duck.send = async (sql) => {
+      duck.calls.push(`send ${sql}`);
+      return metadataStream(sql);
+    };
+    const engine = await startSqlEngine(LOAD, undefined, [PARQUET_UPLOAD]);
+    expect(engine.version).toBe("v1.4.3");
+    expect(engine.datasets).toEqual([
+      {
+        table: "uploads.zstd_flags",
+        rowCount: 5,
+        columns: [
+          { name: "site_id", type: "VARCHAR", nullable: true },
+          { name: "tier", type: "INTEGER", nullable: false },
+        ],
+      },
+    ]);
+    const loadExtAt = duck.calls.findIndex((c) =>
+      c.includes("parquet.duckdb_extension.wasm")
+    );
+    const registerAt = duck.calls.indexOf(
+      `registerBuffer ${PARQUET_UPLOAD.fileName} (${PARQUET_UPLOAD.buffer.byteLength})`
+    );
+    const lockAt = duck.calls.indexOf(`query ${WORKBENCH_ENGINE_SETTINGS[0]}`);
+    expect(loadExtAt).toBeGreaterThan(0);
+    expect(registerAt).toBeGreaterThan(loadExtAt);
+    expect(lockAt).toBeGreaterThan(registerAt);
+    expect(duck.calls).toContain(`drop ${PARQUET_UPLOAD.fileName}`);
+  });
+
+  it("resets the database, reloads gold + uploads tables, reads DESCRIBE + count(*) and re-locks on reloadDatasets", async () => {
+    duck.send = async (sql) => {
+      duck.calls.push(`send ${sql}`);
+      return metadataStream(sql);
+    };
+    const engine = await startSqlEngine(LOAD);
+    duck.calls = [];
+    const hydrated = await engine.reloadDatasets([CSV_UPLOAD]);
+    expect(hydrated).toEqual([
+      {
+        table: "uploads.site_audit",
+        rowCount: 5,
+        columns: [
+          { name: "site_id", type: "VARCHAR", nullable: true },
+          { name: "tier", type: "INTEGER", nullable: false },
+        ],
+      },
+    ]);
+    expect(duck.calls).toEqual([
+      "close-conn",
+      "reset-db",
+      "query CREATE SCHEMA gold;",
+      "register gold-a.csv",
+      "query COPY a",
+      "drop gold-a.csv",
+      "register gold-b.csv",
+      "query COPY b",
+      "drop gold-b.csv",
+      `registerBuffer ${CSV_UPLOAD.fileName} (${CSV_UPLOAD.buffer.byteLength})`,
+      `query ${CSV_UPLOAD.create}`,
+      `drop ${CSV_UPLOAD.fileName}`,
+      `send ${CSV_UPLOAD.describe}`,
+      `send ${CSV_UPLOAD.count}`,
+      ...WORKBENCH_ENGINE_SETTINGS.map((s) => `query ${s}`),
+    ]);
+  });
+
+  it("recovers previous tables when a dataset fails to load, and shuts down if recovery itself fails", async () => {
+    const { stream, release } = held();
+    duck.send = async () => stream();
+    const engine = await startSqlEngine(LOAD);
+    const inFlight = engine.run("SELECT 1").catch((e) => e);
+    await Promise.resolve();
+    const busy = await engine.reloadDatasets([CSV_UPLOAD]).catch((e) => e);
+    expect(busy.failure).toBe("refused");
+    release();
+    await inFlight;
+
+    // A bad dataset fails with DuckDB's message while recovering the engine's prior gold tables.
+    duck.send = async (sql) => metadataStream(sql);
+    duck.failQuery = 'CREATE SCHEMA IF NOT EXISTS "uploads"';
+    const badDataset = await engine
+      .reloadDatasets([CSV_UPLOAD])
+      .catch((e) => e);
+    expect(badDataset.failure).toBe("error");
+    expect(badDataset.message).toBe(
+      'Parser Error: syntax error at or near "x"'
+    );
+    expect(duck.terminate).toEqual([]);
+
+    // If re-hydrating the baseline warehouse itself fails, the engine shuts down.
+    duck.failQuery = "CREATE SCHEMA gold;";
+    const broken = await engine.reloadDatasets([CSV_UPLOAD]).catch((e) => e);
+    expect(broken.failure).toBe("stopped");
+    expect(duck.terminate).toEqual(["worker"]);
   });
 });

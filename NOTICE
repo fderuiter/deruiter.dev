@@ -39,4 +39,6 @@ is built on are credited at https://deruiter.dev/acknowledgments, and their
 copyright notices and license texts are in public/third-party-notices.txt
 (regenerate with `npm run oss:credits`). Fonts bundled for social images in
 assets/og-fonts/ are under the SIL Open Font License 1.1; their license files
-sit beside them.
+sit beside them. Signed DuckDB WebAssembly extensions (parquet, json) vendored
+in components/platform/sql/extensions/ from https://github.com/duckdb/duckdb are
+under the MIT License; their license file and SHA-256 pins sit beside them.

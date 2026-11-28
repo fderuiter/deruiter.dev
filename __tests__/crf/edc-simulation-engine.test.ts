@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_EDC_SUBJECTS,
@@ -14,9 +16,14 @@ import {
   reduceEdcSimulationState,
   scaffoldCdashDomain,
   seedEdcSimulationState,
+  stampEdcSimulationAction,
   validateEdcFormSubmission,
 } from "@/lib/crf";
-import type { EdcUserRole, StudyProtocol } from "@/lib/crf/types";
+import type {
+  EdcSimulationAction,
+  EdcUserRole,
+  StudyProtocol,
+} from "@/lib/crf/types";
 
 describe("Pure Part 11 EDC Simulation Engine", () => {
   it("seeds stamped protocol fields (f_brthyr_1, f_age_2, f_sex_3, VS vitals) and computes rounded BMI = 24.6", () => {
@@ -201,6 +208,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         value: 155,
         role: readOnlyRole,
         reasonForChange: "Attempted unauthorized edit",
+        timestamp: "2026-08-15T10:00:00Z",
       });
       expect(blocked.formValues?.[fieldKey]).toBe(baselineVal);
     }
@@ -215,6 +223,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       value: 128,
       role: "Site Coordinator",
       reasonForChange: "Triage cuff reading verified",
+      timestamp: "2026-08-15T10:01:00Z",
     });
     expect(state.formValues?.[fieldKey]).toBe(128);
     expect(state.auditLog?.[0]?.changedBy).toBe(
@@ -231,6 +240,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       value: 126,
       role: "Principal Investigator",
       reasonForChange: "Repeat seated BP confirmed by PI",
+      timestamp: "2026-08-15T10:02:00Z",
     });
     expect(state.formValues?.[fieldKey]).toBe(126);
     expect(state.auditLog?.[0]?.changedBy).toBe(
@@ -251,6 +261,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         fieldId: sysbp.id,
         fieldName: "SYSBP",
         role: nonCraRole,
+        timestamp: "2026-08-15T10:03:00Z",
       });
       expect(unchanged.sdvMap?.[fieldKey]).toBeUndefined();
     }
@@ -263,6 +274,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       fieldId: sysbp.id,
       fieldName: "SYSBP",
       role: "CRA Monitor",
+      timestamp: "2026-08-15T10:04:00Z",
     });
     expect(state.sdvMap?.[fieldKey]?.verified).toBe(true);
     expect(state.auditLog?.[0]?.actionType).toBe("SDV_VERIFY");
@@ -278,6 +290,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       fieldId: sysbp.id,
       fieldName: "SYSBP",
       role: "CRA Monitor",
+      timestamp: "2026-08-15T10:05:00Z",
     });
     expect(state.sdvMap?.[fieldKey]?.verified).toBe(false);
     expect(state.auditLog?.[0]?.actionType).toBe("SDV_REVOKE");
@@ -305,6 +318,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         visitId,
         formId: vsForm.id,
         role: nonPiRole,
+        timestamp: "2026-08-15T11:20:00Z",
       });
       expect(
         getFormSignatureStatus(denied, "001-101", visitId, vsForm.id).isLocked
@@ -349,6 +363,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       value: 82,
       role: "Principal Investigator",
       reasonForChange: "Attempt while locked",
+      timestamp: "2026-08-15T11:25:00Z",
     });
     expect(whileLocked.formValues?.[weightKey]).toBe(78);
 
@@ -360,6 +375,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       formId: vsForm.id,
       role: "Principal Investigator",
       reasonForChange: "   ",
+      timestamp: "2026-08-15T11:26:00Z",
     });
     expect(
       getFormSignatureStatus(emptyReasonUnlock, "001-101", visitId, vsForm.id)
@@ -373,6 +389,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       formId: vsForm.id,
       role: "Site Coordinator",
       reasonForChange: "Coordinator attempted unlock",
+      timestamp: "2026-08-15T11:27:00Z",
     });
     expect(
       getFormSignatureStatus(nonPiUnlock, "001-101", visitId, vsForm.id)
@@ -438,7 +455,8 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       vsForm,
       "001-101",
       visitId,
-      seeded.formValues || {}
+      seeded.formValues || {},
+      "2026-08-15T12:00:00Z"
     );
     expect(missingVsdatResult.isValid).toBe(false);
     expect(missingVsdatResult.hardStops).toContain("VSDAT");
@@ -452,7 +470,8 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       {
         ...(seeded.formValues || {}),
         [`001-101_${visitId}_${vsdat.id}`]: "UNK",
-      }
+      },
+      "2026-08-15T12:01:00Z"
     );
     expect(disallowedNfResult.isValid).toBe(false);
     expect(disallowedNfResult.hardStops).toContain("VSDAT");
@@ -467,7 +486,8 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       {
         ...(seeded.formValues || {}),
         [`001-101_${visitId}_${vsdat.id}`]: "2026-08-15",
-      }
+      },
+      "2026-08-15T12:02:00Z"
     );
     expect(validResult.isValid).toBe(true);
     expect(validResult.hardStops).toEqual([]);
@@ -499,6 +519,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
     expect(state.availableSubjects).toEqual([...DEFAULT_EDC_SUBJECTS]);
     const reseeded = reduceEdcSimulationState(study, state, {
       type: "SEED_SIMULATION",
+      timestamp: "2026-08-15T08:05:00Z",
     });
     expect(reseeded.auditLog).toEqual(state.auditLog);
 
@@ -528,6 +549,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
       fieldId: vsdat.id,
       value: "2026-08-15",
       role: "Site Coordinator",
+      timestamp: "2026-08-15T08:50:00Z",
     });
     if (resp && resp.maxValue !== undefined) {
       state = reduceEdcSimulationState(study, state, {
@@ -538,6 +560,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         fieldId: resp.id,
         value: resp.maxValue + 50,
         role: "Site Coordinator",
+        timestamp: "2026-08-15T08:55:00Z",
       });
     }
 
@@ -576,6 +599,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         message: "Confirm sitting position",
         actor: "",
         userRole: "Site Coordinator",
+        timestamp: "2026-08-15T09:10:00Z",
       },
     });
     expect(
@@ -595,6 +619,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         message: "Confirm sitting position",
         actor: "",
         userRole: "CRA Monitor",
+        timestamp: "2026-08-15T09:11:00Z",
       },
     });
     expect(state.queries?.find((q) => q.id === "qry_manual_1")?.status).toBe(
@@ -609,6 +634,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         response: "Unauthorized answer",
         actor: "",
         userRole: "CRA Monitor",
+        timestamp: "2026-08-15T09:12:00Z",
       },
     });
     expect(
@@ -623,6 +649,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         response: "Confirmed seated 5 minutes",
         actor: "",
         userRole: "Site Coordinator",
+        timestamp: "2026-08-15T09:13:00Z",
       },
     });
     expect(state.queries?.find((q) => q.id === "qry_manual_1")?.status).toBe(
@@ -636,6 +663,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         queryId: "qry_manual_1",
         actor: "",
         userRole: "Principal Investigator",
+        timestamp: "2026-08-15T09:14:00Z",
       },
     });
     expect(
@@ -649,6 +677,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         actor: "",
         userRole: "Data Manager",
         resolutionReason: "Verified against chart",
+        timestamp: "2026-08-15T09:15:00Z",
       },
     });
     expect(state.queries?.find((q) => q.id === "qry_manual_1")?.status).toBe(
@@ -661,6 +690,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         queryId: "qry_manual_1",
         actor: "",
         userRole: "Site Coordinator",
+        timestamp: "2026-08-15T09:16:00Z",
       },
     });
     expect(
@@ -674,6 +704,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         actor: "",
         userRole: "CRA Monitor",
         reason: "Follow-up cuff check",
+        timestamp: "2026-08-15T09:17:00Z",
       },
     });
     expect(state.queries?.find((q) => q.id === "qry_manual_1")?.status).toBe(
@@ -686,6 +717,7 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         queryId: "qry_manual_1",
         actor: "",
         userRole: "Site Coordinator",
+        timestamp: "2026-08-15T09:18:00Z",
       },
     });
     expect(
@@ -699,10 +731,242 @@ describe("Pure Part 11 EDC Simulation Engine", () => {
         actor: "",
         userRole: "Data Manager",
         resolutionReason: "Duplicate check",
+        timestamp: "2026-08-15T09:19:00Z",
       },
     });
     expect(state.queries?.find((q) => q.id === "qry_manual_1")?.status).toBe(
       "Cancelled"
     );
+  });
+
+  it("is clock-free and deterministic: reducing the same action twice yields deep-equal results across every action type", () => {
+    const engineSource = fs.readFileSync(
+      path.resolve(
+        __dirname,
+        "../../lib/crf/internal/edc-simulation-engine.ts"
+      ),
+      "utf-8"
+    );
+    expect(engineSource).not.toMatch(/\bnew\s+Date\b/);
+    expect(engineSource).not.toMatch(/\bDate\.now\b/);
+    expect(engineSource).not.toMatch(/\brandomUUID\b/);
+    expect(engineSource).not.toMatch(/\bMath\.random\b/);
+    expect(engineSource).not.toMatch(/\bgenerateId\b/);
+
+    const study = getOncologyPresetSync();
+    const visitId = study.visits[0]!.id;
+    const vsForm = study.forms.find((f) => f.domain === "VS")!;
+    const vsFields = vsForm.sections.flatMap((s) => s.fields);
+    const sysbp = vsFields.find((f) => f.variableName === "SYSBP")!;
+    const resp = vsFields.find((f) => f.variableName === "RESP")!;
+
+    const reduceTwiceAndAssertEqual = (
+      currentState: StudyProtocol["simulationState"],
+      action: EdcSimulationAction
+    ) => {
+      const first = reduceEdcSimulationState(study, currentState, action);
+      const second = reduceEdcSimulationState(study, currentState, action);
+      expect(first).toEqual(second);
+      return first;
+    };
+
+    let state = reduceTwiceAndAssertEqual(undefined, {
+      type: "SEED_SIMULATION",
+      timestamp: "2026-08-15T08:30:00Z",
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "UPDATE_FIELD_VALUE",
+      subjectId: "001-101",
+      visitId,
+      formId: vsForm.id,
+      fieldId: sysbp.id,
+      value: 210,
+      role: "Site Coordinator",
+      reasonForChange: "Elevated reading confirmed",
+      timestamp: "2026-08-15T09:00:00Z",
+    });
+
+    if (resp && resp.maxValue !== undefined) {
+      state = reduceTwiceAndAssertEqual(state, {
+        type: "UPDATE_FIELD_VALUE",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        fieldId: resp.id,
+        value: resp.maxValue + 20,
+        role: "Site Coordinator",
+        timestamp: "2026-08-15T09:01:00Z",
+      });
+    }
+
+    const valFirst = validateEdcFormSubmission(
+      study,
+      vsForm,
+      "001-101",
+      visitId,
+      state.formValues || {},
+      "2026-08-15T09:02:00Z"
+    );
+    const valSecond = validateEdcFormSubmission(
+      study,
+      vsForm,
+      "001-101",
+      visitId,
+      state.formValues || {},
+      "2026-08-15T09:02:00Z"
+    );
+    expect(valFirst).toEqual(valSecond);
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "SAVE_FORM",
+      subjectId: "001-101",
+      visitId,
+      formId: vsForm.id,
+      role: "Site Coordinator",
+      timestamp: "2026-08-15T09:02:00Z",
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "TOGGLE_SDV",
+      subjectId: "001-101",
+      visitId,
+      formId: vsForm.id,
+      fieldId: sysbp.id,
+      fieldName: "SYSBP",
+      role: "CRA Monitor",
+      timestamp: "2026-08-15T09:05:00Z",
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "LOCK_FORM",
+      subjectId: "001-101",
+      visitId,
+      formId: vsForm.id,
+      role: "Principal Investigator",
+      timestamp: "2026-08-15T09:10:00Z",
+    });
+    expect(state.signatures?.[0]?.digest).toMatch(/^sim_[0-9a-f]{12}$/);
+    expect(state.signatures?.[0]?.digest).not.toMatch(/sha/i);
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "UNLOCK_FORM",
+      subjectId: "001-101",
+      visitId,
+      formId: vsForm.id,
+      role: "Principal Investigator",
+      reasonForChange: "Amend post-reconciliation vitals",
+      timestamp: "2026-08-15T09:15:00Z",
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "RAISE_QUERY",
+      input: {
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        fieldId: sysbp.id,
+        fieldName: "SYSBP",
+        severity: "warning",
+        message: "Verify supine vs seated measurement",
+        actor: "",
+        userRole: "CRA Monitor",
+        timestamp: "2026-08-15T09:20:00Z",
+      },
+    });
+    const raisedQueryId = state.queries?.[0]?.id;
+    expect(raisedQueryId).toMatch(/^q_man_[0-9a-f]{12}$/);
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "ANSWER_QUERY",
+      input: {
+        queryId: raisedQueryId!,
+        response: "Seated measurement after 5 min rest",
+        actor: "",
+        userRole: "Site Coordinator",
+        timestamp: "2026-08-15T09:25:00Z",
+      },
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "CLOSE_QUERY",
+      input: {
+        queryId: raisedQueryId!,
+        actor: "",
+        userRole: "Data Manager",
+        resolutionReason: "Confirmed",
+        timestamp: "2026-08-15T09:30:00Z",
+      },
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "REOPEN_QUERY",
+      input: {
+        queryId: raisedQueryId!,
+        actor: "",
+        userRole: "CRA Monitor",
+        reason: "Need arm cuff size",
+        timestamp: "2026-08-15T09:35:00Z",
+      },
+    });
+
+    state = reduceTwiceAndAssertEqual(state, {
+      type: "CANCEL_QUERY",
+      input: {
+        queryId: raisedQueryId!,
+        actor: "",
+        userRole: "Data Manager",
+        resolutionReason: "Resolved in separate note",
+        timestamp: "2026-08-15T09:40:00Z",
+      },
+    });
+
+    // Ensure every audit entry ID in the accumulated log is unique
+    const auditIds = (state.auditLog || []).map((a) => a.id);
+    expect(new Set(auditIds).size).toBe(auditIds.length);
+
+    // Verify stampEdcSimulationAction and StudyProtocolEngine.dispatchSimulationAction stamp once
+    const stamped = stampEdcSimulationAction(
+      {
+        type: "LOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        role: "Principal Investigator",
+      },
+      "2026-08-15T10:00:00Z"
+    );
+    expect(stamped).toEqual({
+      type: "LOCK_FORM",
+      subjectId: "001-101",
+      visitId,
+      formId: vsForm.id,
+      role: "Principal Investigator",
+      timestamp: "2026-08-15T10:00:00Z",
+    });
+
+    const d1 = StudyProtocolEngine.dispatchSimulationAction(
+      study,
+      {
+        type: "LOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        role: "Principal Investigator",
+      },
+      "2026-08-15T10:00:00Z"
+    );
+    const d2 = StudyProtocolEngine.dispatchSimulationAction(
+      study,
+      {
+        type: "LOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        role: "Principal Investigator",
+      },
+      "2026-08-15T10:00:00Z"
+    );
+    expect(d1.simulationState).toEqual(d2.simulationState);
   });
 });

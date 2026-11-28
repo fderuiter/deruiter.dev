@@ -50,7 +50,13 @@ function resolveFieldDisplayName(
   return fieldId;
 }
 
+export interface SimulationQueryLifecycleIdOptions {
+  auditId?: string;
+  defaultQueryId?: string;
+}
+
 function buildQueryAuditEntry(params: {
+  auditId?: string;
   timestamp: string;
   subjectId: string;
   formId: string;
@@ -65,7 +71,7 @@ function buildQueryAuditEntry(params: {
   queryId: string;
 }): AuditTrailEntry {
   return {
-    id: generateEngineId("aud_q"),
+    id: params.auditId || generateEngineId("aud_q"),
     timestamp: params.timestamp,
     subjectId: params.subjectId,
     formId: params.formId,
@@ -89,7 +95,8 @@ function buildQueryAuditEntry(params: {
 export function raiseSimulationQuery(
   state: EdcSimulationState | undefined,
   input: RaiseEdcQueryInput,
-  study?: StudyProtocol
+  study?: StudyProtocol,
+  idOptions?: SimulationQueryLifecycleIdOptions
 ): EdcSimulationState {
   const message = input.message.trim();
   if (!message) {
@@ -97,7 +104,8 @@ export function raiseSimulationQuery(
   }
 
   const ts = input.timestamp || new Date().toISOString();
-  const queryId = input.id || generateEngineId("q_man");
+  const queryId =
+    input.id || idOptions?.defaultQueryId || generateEngineId("q_man");
   const fieldName = resolveFieldDisplayName(
     study,
     input.formId,
@@ -122,6 +130,7 @@ export function raiseSimulationQuery(
   };
 
   const auditEntry = buildQueryAuditEntry({
+    auditId: idOptions?.auditId,
     timestamp: ts,
     subjectId: input.subjectId,
     formId: input.formId,
@@ -156,7 +165,8 @@ export function raiseSimulationQuery(
  */
 export function answerSimulationQuery(
   state: EdcSimulationState | undefined,
-  input: AnswerEdcQueryInput
+  input: AnswerEdcQueryInput,
+  idOptions?: SimulationQueryLifecycleIdOptions
 ): EdcSimulationState {
   const response = input.response.trim();
   if (!response) {
@@ -182,6 +192,7 @@ export function answerSimulationQuery(
   };
 
   const auditEntry = buildQueryAuditEntry({
+    auditId: idOptions?.auditId,
     timestamp: ts,
     subjectId: target.subjectId,
     formId: target.formId,
@@ -210,7 +221,8 @@ export function answerSimulationQuery(
  */
 export function closeSimulationQuery(
   state: EdcSimulationState | undefined,
-  input: CloseEdcQueryInput
+  input: CloseEdcQueryInput,
+  idOptions?: SimulationQueryLifecycleIdOptions
 ): EdcSimulationState {
   const queries = state?.queries || [];
   const target = queries.find((q) => q.id === input.queryId);
@@ -233,6 +245,7 @@ export function closeSimulationQuery(
   };
 
   const auditEntry = buildQueryAuditEntry({
+    auditId: idOptions?.auditId,
     timestamp: ts,
     subjectId: target.subjectId,
     formId: target.formId,
@@ -260,7 +273,8 @@ export function closeSimulationQuery(
  */
 export function cancelSimulationQuery(
   state: EdcSimulationState | undefined,
-  input: CancelEdcQueryInput
+  input: CancelEdcQueryInput,
+  idOptions?: SimulationQueryLifecycleIdOptions
 ): EdcSimulationState {
   const queries = state?.queries || [];
   const target = queries.find((q) => q.id === input.queryId);
@@ -283,6 +297,7 @@ export function cancelSimulationQuery(
   };
 
   const auditEntry = buildQueryAuditEntry({
+    auditId: idOptions?.auditId,
     timestamp: ts,
     subjectId: target.subjectId,
     formId: target.formId,
@@ -310,7 +325,8 @@ export function cancelSimulationQuery(
  */
 export function reopenSimulationQuery(
   state: EdcSimulationState | undefined,
-  input: ReopenEdcQueryInput
+  input: ReopenEdcQueryInput,
+  idOptions?: SimulationQueryLifecycleIdOptions
 ): EdcSimulationState {
   const queries = state?.queries || [];
   const target = queries.find((q) => q.id === input.queryId);
@@ -333,6 +349,7 @@ export function reopenSimulationQuery(
   };
 
   const auditEntry = buildQueryAuditEntry({
+    auditId: idOptions?.auditId,
     timestamp: ts,
     subjectId: target.subjectId,
     formId: target.formId,

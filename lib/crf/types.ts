@@ -1003,8 +1003,99 @@ export interface EdcFormValidationResult {
 
 /**
  * Pure reducer actions driving all {@link EdcSimulationState} transitions.
+ * Every action that writes to the audit trail, signatures, SDV map, lock map,
+ * or discrepancy queries carries an explicit caller-supplied ISO `timestamp`
+ * so `reduceEdcSimulationState` remains clock-free and deterministic.
  */
 export type EdcSimulationAction =
+  | {
+      type: "SEED_SIMULATION";
+      timestamp: string;
+    }
+  | {
+      type: "UPDATE_FIELD_VALUE";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      fieldId: string;
+      value: string | number | boolean | null;
+      role: EdcUserRole;
+      reasonForChange?: string;
+      timestamp: string;
+    }
+  | {
+      type: "TOGGLE_SDV";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      fieldId: string;
+      fieldName?: string;
+      role: EdcUserRole;
+      timestamp: string;
+    }
+  | {
+      type: "SAVE_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      timestamp: string;
+    }
+  | {
+      type: "ENROLL_SUBJECT";
+      subjectId: string;
+      role?: EdcUserRole;
+    }
+  | {
+      type: "LOCK_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      timestamp: string;
+      signatureId?: string;
+      digest?: string;
+    }
+  | {
+      type: "UNLOCK_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      reasonForChange: string;
+      timestamp: string;
+    }
+  | {
+      type: "RAISE_QUERY";
+      input: RaiseEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "ANSWER_QUERY";
+      input: AnswerEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "CLOSE_QUERY";
+      input: CloseEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "CANCEL_QUERY";
+      input: CancelEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "REOPEN_QUERY";
+      input: ReopenEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "REPLACE_SIMULATION_STATE";
+      simulationState: EdcSimulationState;
+    };
+
+/**
+ * Caller-facing simulation dispatch input accepted at the UI/engine boundary
+ * (`StudyProtocolEngine.dispatchSimulationAction` and `useStudyEditor.dispatchSimulationAction`),
+ * where omitted `timestamp` fields are stamped once before entering `reduceEdcSimulationState`.
+ */
+export type EdcSimulationActionInput =
   | {
       type: "SEED_SIMULATION";
       timestamp?: string;
@@ -1042,7 +1133,6 @@ export type EdcSimulationAction =
       type: "ENROLL_SUBJECT";
       subjectId: string;
       role?: EdcUserRole;
-      timestamp?: string;
     }
   | {
       type: "LOCK_FORM";

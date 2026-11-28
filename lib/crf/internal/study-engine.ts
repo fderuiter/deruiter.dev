@@ -34,6 +34,7 @@ import {
   ExportClinicalCsvOptions,
   EdcSimulationState,
   EdcSimulationAction,
+  EdcSimulationActionInput,
   EdcUserRole,
   EdcRolePermissions,
   EdcFormSignatureStatus,
@@ -118,6 +119,7 @@ import {
   getSubjectFormStatus,
   reduceEdcSimulationState,
   seedEdcSimulationState,
+  stampEdcSimulationAction,
   validateEdcFormSubmission,
 } from "./edc-simulation-engine";
 
@@ -3624,17 +3626,22 @@ export class StudyProtocolEngine {
   }
 
   /**
-   * Dispatches a pure Part 11-style `EdcSimulationAction` against `study.simulationState`
-   * and returns an updated `StudyProtocol` snapshot.
+   * Dispatches a pure Part 11-style `EdcSimulationActionInput` against `study.simulationState`,
+   * stamping caller `timestamp` once at the dispatch boundary when omitted, and returns an updated `StudyProtocol`.
    */
   static dispatchSimulationAction(
     study: StudyProtocol,
-    action: EdcSimulationAction
+    action: EdcSimulationActionInput,
+    nowIso = new Date().toISOString()
   ): StudyProtocol {
+    const stampedAction: EdcSimulationAction = stampEdcSimulationAction(
+      action,
+      nowIso
+    );
     const nextSim = reduceEdcSimulationState(
       study,
       study.simulationState,
-      action
+      stampedAction
     );
     if (study.simulationState === nextSim) return study;
     return {
@@ -3707,7 +3714,7 @@ export class StudyProtocolEngine {
     subjectId: string,
     visitId: string,
     formValues: Record<string, string | number | boolean | null>,
-    timestamp?: string
+    timestamp: string
   ): EdcFormValidationResult {
     return validateEdcFormSubmission(
       study,
@@ -3887,5 +3894,6 @@ export {
   getSubjectFormStatus,
   reduceEdcSimulationState,
   seedEdcSimulationState,
+  stampEdcSimulationAction,
   validateEdcFormSubmission,
 };

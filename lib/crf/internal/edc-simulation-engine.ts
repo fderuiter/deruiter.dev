@@ -14,13 +14,14 @@ import {
   EdcFormValidationResult,
   EdcRolePermissions,
   EdcSimulationAction,
+  EdcSimulationActionInput,
   EdcSimulationState,
   EdcUserRole,
   ElectronicSignature,
   StudyProtocol,
   SubjectFormStatus,
 } from "../types";
-import { cloneDeep, generateId } from "../../utils";
+import { cloneDeep } from "../../utils";
 import { resolveFormConditionalState } from "./conditional-logic";
 import {
   answerSimulationQuery,
@@ -70,6 +71,100 @@ function isLogOrContinuousForm(form: CRFForm): boolean {
   return (
     Boolean(form.isLogForm) || upperDomain === "AE" || upperDomain === "CM"
   );
+}
+
+/**
+ * Pure 64-bit deterministic token generator producing lowercase hex suffixes (`[0-9a-f]{12}`).
+ * Ensures reducing the same `(study, state, action)` twice produces deep-equal audit,
+ * query, and `sim_` Data Lock signature records without wall-clock or PRNG entropy.
+ */
+function deterministicSimId(prefix: string, material: string): string {
+  let h1 = 0xdeadbeef ^ material.length;
+  let h2 = 0x41c6ce57 ^ material.length;
+  for (let i = 0; i < material.length; i++) {
+    const ch = material.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 =
+    Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
+    Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 =
+    Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
+    Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  const hex =
+    (h2 >>> 0).toString(16).padStart(8, "0") +
+    (h1 >>> 0).toString(16).padStart(8, "0");
+  return `${prefix}${hex.slice(0, 12)}`;
+}
+
+function stateSequenceKey(state: EdcSimulationState): string {
+  return `a${state.auditLog?.length ?? 0}:s${state.signatures?.length ?? 0}:q${state.queries?.length ?? 0}`;
+}
+
+/**
+ * Stamps a caller-supplied ISO `timestamp` once onto an {@link EdcSimulationActionInput}
+ * when omitted by UI callers, returning a strictly-typed {@link EdcSimulationAction}.
+ */
+export function stampEdcSimulationAction(
+  action: EdcSimulationActionInput,
+  timestamp: string
+): EdcSimulationAction {
+  switch (action.type) {
+    case "ENROLL_SUBJECT":
+    case "REPLACE_SIMULATION_STATE":
+      return action;
+    case "SEED_SIMULATION":
+    case "UPDATE_FIELD_VALUE":
+    case "TOGGLE_SDV":
+    case "SAVE_FORM":
+    case "LOCK_FORM":
+    case "UNLOCK_FORM":
+      return {
+        ...action,
+        timestamp: action.timestamp || timestamp,
+      };
+    case "RAISE_QUERY":
+      return {
+        type: "RAISE_QUERY",
+        input: {
+          ...action.input,
+          timestamp: action.input.timestamp || timestamp,
+        },
+      };
+    case "ANSWER_QUERY":
+      return {
+        type: "ANSWER_QUERY",
+        input: {
+          ...action.input,
+          timestamp: action.input.timestamp || timestamp,
+        },
+      };
+    case "CLOSE_QUERY":
+      return {
+        type: "CLOSE_QUERY",
+        input: {
+          ...action.input,
+          timestamp: action.input.timestamp || timestamp,
+        },
+      };
+    case "CANCEL_QUERY":
+      return {
+        type: "CANCEL_QUERY",
+        input: {
+          ...action.input,
+          timestamp: action.input.timestamp || timestamp,
+        },
+      };
+    case "REOPEN_QUERY":
+      return {
+        type: "REOPEN_QUERY",
+        input: {
+          ...action.input,
+          timestamp: action.input.timestamp || timestamp,
+        },
+      };
+  }
 }
 
 /**
@@ -373,7 +468,7 @@ export function validateEdcFormSubmission(
   subjectId: string,
   visitId: string,
   formValues: Record<string, string | number | boolean | null>,
-  timestamp = new Date().toISOString()
+  timestamp: string
 ): EdcFormValidationResult {
   if (!form) {
     return {
@@ -442,7 +537,10 @@ export function validateEdcFormSubmission(
       } else if (isAutoQuery) {
         autoQueries.push(field.variableName);
         queriesToRaise.push({
-          id: generateId("qry_"),
+          id: deterministicSimId(
+            "qry_",
+            `auto_missing|${form.id}|${subjectId}|${visitId}|${field.id}|${timestamp}`
+          ),
           fieldId: field.id,
           fieldName: field.variableName,
           ruleId: `rule_auto_query_${field.id}`,
@@ -480,7 +578,10 @@ export function validateEdcFormSubmission(
         } else {
           autoQueries.push(field.variableName);
           queriesToRaise.push({
-            id: generateId("qry_"),
+            id: deterministicSimId(
+              "qry_",
+              `auto_range|${form.id}|${subjectId}|${visitId}|${field.id}|${String(val)}|${timestamp}`
+            ),
             fieldId: field.id,
             fieldName: field.variableName,
             ruleId: `rule_range_${field.id}`,
@@ -626,7 +727,10 @@ function collectTriggeredRuleQueries(
 
     const targetField = fields.find((f) => f.id === rule.targetFieldId);
     nextQueries.push({
-      id: generateId("qry_"),
+      id: deterministicSimId(
+        "qry_",
+        `rule|${nextQueries.length}|${form.id}|${subjectId}|${visitId}|${rule.id}|${timestamp}`
+      ),
       fieldId: rule.targetFieldId,
       fieldName: targetField?.variableName || "FIELD",
       ruleId: rule.id,
@@ -690,7 +794,7 @@ export function reduceEdcSimulationState(
         return base;
       }
 
-      const ts = action.timestamp || new Date().toISOString();
+      const ts = action.timestamp;
       const updatedValues = evaluateDerivedFormValues(
         form,
         action.subjectId,
@@ -723,7 +827,10 @@ export function reduceEdcSimulationState(
           : "Initial Entry");
 
       const auditEntry: AuditTrailEntry = {
-        id: generateId("aud_"),
+        id: deterministicSimId(
+          "aud_",
+          `${stateSequenceKey(base)}|FIELD_UPDATE|${action.subjectId}|${action.visitId}|${action.formId}|${action.fieldId}|${String(action.value)}|${ts}`
+        ),
         timestamp: ts,
         actionType: "FIELD_UPDATE",
         subjectId: action.subjectId,
@@ -774,10 +881,13 @@ export function reduceEdcSimulationState(
       const key = `${action.subjectId}_${action.visitId}_${action.fieldId}`;
       const isAlreadyVerified = Boolean(base.sdvMap?.[key]?.verified);
       const newVerified = !isAlreadyVerified;
-      const ts = action.timestamp || new Date().toISOString();
+      const ts = action.timestamp;
 
       const auditEntry: AuditTrailEntry = {
-        id: generateId("aud_"),
+        id: deterministicSimId(
+          "aud_",
+          `${stateSequenceKey(base)}|TOGGLE_SDV|${action.subjectId}|${action.visitId}|${action.formId}|${action.fieldId}|${newVerified}|${ts}`
+        ),
         timestamp: ts,
         actionType: newVerified ? "SDV_VERIFY" : "SDV_REVOKE",
         subjectId: action.subjectId,
@@ -810,7 +920,7 @@ export function reduceEdcSimulationState(
     case "SAVE_FORM": {
       const form = (study.forms || []).find((f) => f.id === action.formId);
       if (!form) return base;
-      const ts = action.timestamp || new Date().toISOString();
+      const ts = action.timestamp;
       const validation = validateEdcFormSubmission(
         study,
         form,
@@ -885,13 +995,18 @@ export function reduceEdcSimulationState(
         return base;
       }
 
-      const ts = action.timestamp || new Date().toISOString();
+      const ts = action.timestamp;
+      const seqKey = stateSequenceKey(base);
       const lockKey = `${action.subjectId}_${action.visitId}_${action.formId}`;
       const form = (study.forms || []).find((f) => f.id === action.formId);
-      const digest = action.digest || generateId("sim_");
+      const digest =
+        action.digest ||
+        deterministicSimId("sim_", `${seqKey}|DIGEST|${lockKey}|${ts}`);
 
       const signature: ElectronicSignature = {
-        id: action.signatureId || generateId("sig_"),
+        id:
+          action.signatureId ||
+          deterministicSimId("sig_", `${seqKey}|SIG|${lockKey}|${ts}`),
         subjectId: action.subjectId,
         formId: action.formId,
         visitId: action.visitId,
@@ -903,7 +1018,7 @@ export function reduceEdcSimulationState(
       };
 
       const auditEntry: AuditTrailEntry = {
-        id: generateId("aud_"),
+        id: deterministicSimId("aud_", `${seqKey}|FORM_LOCK|${lockKey}|${ts}`),
         timestamp: ts,
         actionType: "FORM_LOCK",
         targetId: action.formId,
@@ -953,7 +1068,7 @@ export function reduceEdcSimulationState(
         return base;
       }
 
-      const ts = action.timestamp || new Date().toISOString();
+      const ts = action.timestamp;
       const lockKey = `${action.subjectId}_${action.visitId}_${action.formId}`;
       const form = (study.forms || []).find((f) => f.id === action.formId);
       const revokedToken = sigStatus.activeDataLockSignature?.digest;
@@ -970,7 +1085,10 @@ export function reduceEdcSimulationState(
       );
 
       const auditEntry: AuditTrailEntry = {
-        id: generateId("aud_"),
+        id: deterministicSimId(
+          "aud_",
+          `${stateSequenceKey(base)}|FORM_UNLOCK|${lockKey}|${reason}|${ts}`
+        ),
         timestamp: ts,
         actionType: "FORM_UNLOCK",
         targetId: action.formId,
@@ -1008,13 +1126,19 @@ export function reduceEdcSimulationState(
       if (!getEdcRolePermissions(role).canManageQueries) {
         return base;
       }
+      const seqKey = stateSequenceKey(base);
+      const seedBase = `${seqKey}|RAISE_QUERY|${action.input.subjectId}|${action.input.visitId}|${action.input.formId}|${action.input.fieldId}|${action.input.message}|${action.input.timestamp}`;
       return raiseSimulationQuery(
         base,
         {
           ...action.input,
           actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
         },
-        study
+        study,
+        {
+          defaultQueryId: deterministicSimId("q_man_", seedBase),
+          auditId: deterministicSimId("aud_q_", seedBase),
+        }
       );
     }
 
@@ -1023,10 +1147,18 @@ export function reduceEdcSimulationState(
       if (!getEdcRolePermissions(role).canRespondToQueries) {
         return base;
       }
-      return answerSimulationQuery(base, {
-        ...action.input,
-        actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
-      });
+      const auditId = deterministicSimId(
+        "aud_q_",
+        `${stateSequenceKey(base)}|ANSWER_QUERY|${action.input.queryId}|${action.input.response}|${action.input.timestamp}`
+      );
+      return answerSimulationQuery(
+        base,
+        {
+          ...action.input,
+          actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
+        },
+        { auditId }
+      );
     }
 
     case "CLOSE_QUERY": {
@@ -1034,10 +1166,18 @@ export function reduceEdcSimulationState(
       if (!getEdcRolePermissions(role).canManageQueries) {
         return base;
       }
-      return closeSimulationQuery(base, {
-        ...action.input,
-        actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
-      });
+      const auditId = deterministicSimId(
+        "aud_q_",
+        `${stateSequenceKey(base)}|CLOSE_QUERY|${action.input.queryId}|${action.input.resolutionReason ?? ""}|${action.input.timestamp}`
+      );
+      return closeSimulationQuery(
+        base,
+        {
+          ...action.input,
+          actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
+        },
+        { auditId }
+      );
     }
 
     case "CANCEL_QUERY": {
@@ -1045,10 +1185,18 @@ export function reduceEdcSimulationState(
       if (!getEdcRolePermissions(role).canManageQueries) {
         return base;
       }
-      return cancelSimulationQuery(base, {
-        ...action.input,
-        actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
-      });
+      const auditId = deterministicSimId(
+        "aud_q_",
+        `${stateSequenceKey(base)}|CANCEL_QUERY|${action.input.queryId}|${action.input.resolutionReason ?? ""}|${action.input.timestamp}`
+      );
+      return cancelSimulationQuery(
+        base,
+        {
+          ...action.input,
+          actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
+        },
+        { auditId }
+      );
     }
 
     case "REOPEN_QUERY": {
@@ -1056,10 +1204,18 @@ export function reduceEdcSimulationState(
       if (!getEdcRolePermissions(role).canManageQueries) {
         return base;
       }
-      return reopenSimulationQuery(base, {
-        ...action.input,
-        actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
-      });
+      const auditId = deterministicSimId(
+        "aud_q_",
+        `${stateSequenceKey(base)}|REOPEN_QUERY|${action.input.queryId}|${action.input.reason ?? ""}|${action.input.timestamp}`
+      );
+      return reopenSimulationQuery(
+        base,
+        {
+          ...action.input,
+          actor: action.input.actor?.trim() || getEdcRoleActorLabel(role),
+        },
+        { auditId }
+      );
     }
 
     default:

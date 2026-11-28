@@ -3868,61 +3868,90 @@ describe("Proof Studio directed validation, consensus worker, and legacy edge no
       { source: "C", target: "E", ruleApplied: "MP" },
     ]);
   });
+});
 
-  describe("Pure Part 11 EDC simulation reducer & effect-free LiveEdcSimulator", () => {
-    it("eliminates useEffect and window.alert in LiveEdcSimulator and revokes Data Lock signatures on FORM_UNLOCK", () => {
-      const liveEdcSource = fs.readFileSync(
-        path.resolve(__dirname, "../components/crf/Modes/LiveEdcSimulator.tsx"),
-        "utf-8"
-      );
-      expect(liveEdcSource).not.toMatch(/\buseEffect\b/);
-      expect(liveEdcSource).not.toMatch(/\b(?:window\.)?alert\s*\(/);
+describe("Pure Part 11 EDC simulation reducer & effect-free LiveEdcSimulator (#4173)", () => {
+  it("eliminates useEffect and window.alert in LiveEdcSimulator, builds EdcUnlockRevocationModal on ModalContainer, and deterministically revokes Data Lock signatures on FORM_UNLOCK", () => {
+    const liveEdcSource = fs.readFileSync(
+      path.resolve(__dirname, "../components/crf/Modes/LiveEdcSimulator.tsx"),
+      "utf-8"
+    );
+    expect(liveEdcSource).not.toMatch(/\buseEffect\b/);
+    expect(liveEdcSource).not.toMatch(/\b(?:window\.)?alert\s*\(/);
 
-      const visitId = ONCOLOGY_RECIST_PRESET.visits[0]!.id;
-      const vsForm = ONCOLOGY_RECIST_PRESET.forms.find(
-        (f) => f.domain === "VS"
-      )!;
-      const lockedStudy = StudyProtocolEngine.dispatchSimulationAction(
-        ONCOLOGY_RECIST_PRESET,
-        {
-          type: "LOCK_FORM",
-          subjectId: "001-101",
-          visitId,
-          formId: vsForm.id,
-          role: "Principal Investigator",
-        }
-      );
-      expect(
-        StudyProtocolEngine.getFormSignatureStatus(
-          lockedStudy.simulationState,
-          "001-101",
-          visitId,
-          vsForm.id
-        ).isSigned
-      ).toBe(true);
+    const unlockModalSource = fs.readFileSync(
+      path.resolve(
+        __dirname,
+        "../components/crf/Modes/EdcUnlockRevocationModal.tsx"
+      ),
+      "utf-8"
+    );
+    expect(unlockModalSource).toContain("ModalContainer");
 
-      const unlockedStudy = StudyProtocolEngine.dispatchSimulationAction(
-        lockedStudy,
-        {
-          type: "UNLOCK_FORM",
-          subjectId: "001-101",
-          visitId,
-          formId: vsForm.id,
-          role: "Principal Investigator",
-          reasonForChange: "Amend vital signs after source chart check",
-        }
-      );
-      const afterUnlock = StudyProtocolEngine.getFormSignatureStatus(
-        unlockedStudy.simulationState,
+    const engineSource = fs.readFileSync(
+      path.resolve(__dirname, "../lib/crf/internal/edc-simulation-engine.ts"),
+      "utf-8"
+    );
+    expect(engineSource).not.toMatch(/\bnew\s+Date\b/);
+
+    const visitId = ONCOLOGY_RECIST_PRESET.visits[0]!.id;
+    const vsForm = ONCOLOGY_RECIST_PRESET.forms.find((f) => f.domain === "VS")!;
+    const lockedStudy = StudyProtocolEngine.dispatchSimulationAction(
+      ONCOLOGY_RECIST_PRESET,
+      {
+        type: "LOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        role: "Principal Investigator",
+      },
+      "2026-08-15T11:00:00Z"
+    );
+    const lockedStudyRepeat = StudyProtocolEngine.dispatchSimulationAction(
+      ONCOLOGY_RECIST_PRESET,
+      {
+        type: "LOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        role: "Principal Investigator",
+      },
+      "2026-08-15T11:00:00Z"
+    );
+    expect(lockedStudy.simulationState).toEqual(
+      lockedStudyRepeat.simulationState
+    );
+    expect(
+      StudyProtocolEngine.getFormSignatureStatus(
+        lockedStudy.simulationState,
         "001-101",
         visitId,
         vsForm.id
-      );
-      expect(afterUnlock.isLocked).toBe(false);
-      expect(afterUnlock.isSigned).toBe(false);
-      expect(unlockedStudy.simulationState?.auditLog?.[0]?.actionType).toBe(
-        "FORM_UNLOCK"
-      );
-    });
+      ).isSigned
+    ).toBe(true);
+
+    const unlockedStudy = StudyProtocolEngine.dispatchSimulationAction(
+      lockedStudy,
+      {
+        type: "UNLOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId: vsForm.id,
+        role: "Principal Investigator",
+        reasonForChange: "Amend vital signs after source chart check",
+      },
+      "2026-08-15T11:05:00Z"
+    );
+    const afterUnlock = StudyProtocolEngine.getFormSignatureStatus(
+      unlockedStudy.simulationState,
+      "001-101",
+      visitId,
+      vsForm.id
+    );
+    expect(afterUnlock.isLocked).toBe(false);
+    expect(afterUnlock.isSigned).toBe(false);
+    expect(unlockedStudy.simulationState?.auditLog?.[0]?.actionType).toBe(
+      "FORM_UNLOCK"
+    );
   });
 });

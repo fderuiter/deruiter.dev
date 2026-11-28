@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import {
   CRFField,
   EDCQuery,
-  EdcSimulationAction,
+  EdcSimulationActionInput,
   EdcSimulationState,
   EdcUserRole,
   StudyProtocol,
@@ -12,6 +12,7 @@ import {
 import {
   CDISC_NULL_FLAVORS,
   DEFAULT_EDC_SUBJECTS,
+  StudyProtocolEngine,
   buildSubjectFieldValues,
   describeFieldConditionalState,
   evaluateDerivedFormValues,
@@ -23,12 +24,10 @@ import {
   getSubjectFormStatus,
   isCdiscNullFlavor,
   parsePrecisionDate,
-  reduceEdcSimulationState,
   resolveFormConditionalState,
   seedEdcSimulationState,
   validateEdcFormSubmission,
 } from "@/lib/crf";
-import { generateId } from "@/lib/utils";
 import { NoPhiNotice } from "../NoPhiNotice";
 import { EdcClinicalDataExchangePanel } from "./EdcClinicalDataExchangePanel";
 import { EdcManualQueryModal } from "./EdcManualQueryModal";
@@ -51,14 +50,10 @@ import {
 } from "@tabler/icons-react";
 import { TooltipButton } from "@/components/ui/Tooltip";
 
-function generateQueryId(): string {
-  return generateId("qry_");
-}
-
 interface LiveEdcSimulatorProps {
   study: StudyProtocol;
   simulationState?: EdcSimulationState;
-  onDispatchSimulationAction?: (action: EdcSimulationAction) => void;
+  onDispatchSimulationAction?: (action: EdcSimulationActionInput) => void;
   onUpdateSimulationState?: (nextState: EdcSimulationState) => void;
 }
 
@@ -106,12 +101,17 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     [study, rawSimState]
   );
 
-  const dispatchAction = (action: EdcSimulationAction) => {
+  const dispatchAction = (action: EdcSimulationActionInput) => {
     if (onDispatchSimulationAction) {
       onDispatchSimulationAction(action);
       return;
     }
-    const nextState = reduceEdcSimulationState(study, rawSimState, action);
+    const nextStudy = StudyProtocolEngine.dispatchSimulationAction(
+      { ...study, simulationState: rawSimState },
+      action
+    );
+    const nextState =
+      nextStudy.simulationState ?? seedEdcSimulationState(study, rawSimState);
     setUncontrolledEntry({ study, state: nextState });
     onUpdateSimulationState?.(nextState);
   };
@@ -256,7 +256,6 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     dispatchAction({
       type: "RAISE_QUERY",
       input: {
-        id: generateQueryId(),
         subjectId: submission.subjectId,
         visitId: submission.visitId,
         formId: submission.formId,
@@ -493,12 +492,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   const handleSaveForm = () => {
     if (!activeForm) return;
 
+    const saveTimestamp = new Date().toISOString();
     const validation = validateEdcFormSubmission(
       study,
       activeForm,
       effectiveSubjectId,
       effectiveVisitId,
-      effectiveFormValues
+      effectiveFormValues,
+      saveTimestamp
     );
 
     setValidationErrors(validation.errors);
@@ -509,6 +510,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       visitId: effectiveVisitId,
       formId: activeForm.id,
       role: currentRole,
+      timestamp: saveTimestamp,
     });
 
     if (!validation.isValid) {

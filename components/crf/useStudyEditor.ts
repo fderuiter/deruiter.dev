@@ -11,7 +11,7 @@ import {
   type CRFForm,
   type CRFSection,
   type CodelistDefinition,
-  type EdcSimulationAction,
+  type EdcSimulationActionInput,
   type EdcSimulationState,
   type EditCheckRule,
   type FieldImpactPreview,
@@ -131,9 +131,10 @@ export function useStudyEditor({
   );
 
   const dispatchSimulationAction = useCallback(
-    (action: EdcSimulationAction) => {
+    (action: EdcSimulationActionInput) => {
+      const nowIso = new Date().toISOString();
       setStudy((prev) =>
-        StudyProtocolEngine.dispatchSimulationAction(prev, action)
+        StudyProtocolEngine.dispatchSimulationAction(prev, action, nowIso)
       );
     },
     [setStudy]

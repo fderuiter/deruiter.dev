@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { StudyPicker } from "@/components/clinical/StudyPicker";
 import { IntentLink } from "@/components/ui/IntentLink";
 import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { PageLayout } from "@/components/PageLayout";
@@ -87,15 +86,22 @@ export default function StudyDataPage() {
           conformance checks, <GlossaryTerm term="adam" />,{" "}
           <GlossaryTerm term="define-xml" /> and the tables and figures of a
           study report. Select any number to see the records it came from and
-          the protocol activity that scheduled them. To run a study of your own,
-          design it in{" "}
+          the protocol activity that scheduled them. To design or edit a study
+          of your own, open it in{" "}
+          <IntentLink
+            href="/study-studio"
+            className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          >
+            Clinical Study Studio
+          </IntentLink>{" "}
+          or{" "}
           <IntentLink
             href="/crf"
             className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             CRF Studio
           </IntentLink>{" "}
-          and, in its Verify and ship stage, press Run the pipeline.
+          — the active workspace revision opens here automatically.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 font-mono text-xs">
           <span className="border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-amber-300">
@@ -108,13 +114,7 @@ export default function StudyDataPage() {
             REPRODUCIBLE BY SEED
           </span>
         </div>
-        <p className="mt-6 max-w-3xl border-l-2 border-amber-500 pl-4 text-sm leading-relaxed text-amber-100">
-          {SYNTHETIC_DATA_NOTICE} {DEMO_301_STUDY.studyId} and its sponsor are
-          fictional, and every subject is generated from a seed.
-        </p>
       </header>
-
-      <StudyPicker className="mt-10" />
 
       <StudyDataWorkbench
         design={toScheduleDesign(DEMO_301_STUDY)}

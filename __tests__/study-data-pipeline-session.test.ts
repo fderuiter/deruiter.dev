@@ -244,7 +244,15 @@ describe("study data pipeline session with a CRF Studio study", () => {
     })) as PreparedStudy;
     if (!prepared.ok) throw new Error(prepared.issues.join("; "));
     expect(prepared.report.studyId).toBe("NEURO-2026-401");
-    expect(prepared.report.notTabulatedDomains).toEqual(["CM", "QS"]);
+    expect(prepared.report.notTabulatedDomains).toEqual([]);
+    expect(prepared.report.tabulatedDomains).toEqual([
+      "DM",
+      "EX",
+      "CM",
+      "VS",
+      "AE",
+      "QS",
+    ]);
     expect(prepared.design.studyId).toBe("NEURO-2026-401");
     expect(prepared.design.arms.map((arm) => arm.name)).toEqual([
       "CBX-210 10 mg/kg",

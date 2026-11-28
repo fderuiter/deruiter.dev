@@ -15,6 +15,7 @@ import {
   StudyWorkspaceConflictError,
   TAVR_DEVICE_USDM,
   TAVR_SAVR_USDM,
+  branchStudyWorkspace,
   createBlankStudyWorkspace,
   createMemoryStudyRepositoryStore,
   describeStudyWorkspace,
@@ -211,6 +212,19 @@ export interface StudyRepositoryClient {
       readonly requireExisting?: boolean;
     }
   ): Promise<SaveStudyRepositoryOutcome>;
+  branchConflictToNewStudy(
+    studyId: string,
+    localWorkspace: StudyWorkspace,
+    options?: { readonly note?: string }
+  ): Promise<StudyRepositoryRecord>;
+  activateOrImportUsdm(
+    preferredStudyId: string,
+    incomingUsdm: UsdmV4Document,
+    options?: {
+      readonly note?: string;
+      readonly kind?: StudyRepositoryKind;
+    }
+  ): Promise<StudyRepositoryRecord>;
   deleteStudy(studyId: string): Promise<void>;
   exportCheckedUsdm(studyId: string): Promise<
     | {
@@ -769,6 +783,116 @@ export function createStudyRepositoryClient(
           force: reconcileOptions.force,
           pinActive: true,
         });
+      });
+    },
+
+    branchConflictToNewStudy(
+      studyId: string,
+      localWorkspace: StudyWorkspace,
+      branchOptions = {}
+    ): Promise<StudyRepositoryRecord> {
+      return trackMutation(async () => {
+        const currentStore = await ensureStore();
+        const existing = await currentStore.list();
+        const existingIds = new Set(existing.map((entry) => entry.studyId));
+        const branchId = chooseUniqueStudyId(`${studyId}-branch`, existingIds);
+        const branchedWorkspace = branchStudyWorkspace(localWorkspace, {
+          protocolCode: branchId.toUpperCase(),
+          note: branchOptions.note,
+        });
+        const meta = describeStudyWorkspace(branchedWorkspace);
+        const stamp = now();
+        const saved = await currentStore.put(
+          {
+            studyId: branchId,
+            kind: "authored",
+            title: meta.title,
+            protocolCode: meta.protocolCode,
+            workspace: branchedWorkspace,
+            createdAt: stamp,
+            updatedAt: stamp,
+          },
+          { force: true }
+        );
+        await currentStore.setActiveStudyId(branchId);
+        await refreshFromStore(currentStore);
+        sync?.publish({
+          type: "study-imported",
+          studyId: branchId,
+          revisionId: saved.workspace.revision.id,
+          updatedAt: stamp,
+        });
+        return saved;
+      });
+    },
+
+    activateOrImportUsdm(
+      preferredStudyId: string,
+      incomingUsdm: UsdmV4Document,
+      activateOptions = {}
+    ): Promise<StudyRepositoryRecord> {
+      return trackMutation(async () => {
+        const currentStore = await ensureStore();
+        const targetId = REFERENCE_IDS.has(preferredStudyId)
+          ? preferredStudyId
+          : sanitizeSlug(preferredStudyId);
+        const existing = await currentStore.get(targetId);
+        if (existing) {
+          const nextWorkspace = reconcileUsdmStudyRevision(
+            existing.workspace,
+            incomingUsdm,
+            {
+              expectedRevisionId: existing.workspace.revision.id,
+              note: activateOptions.note ?? "Selected study in studio",
+              skipIfUnchanged: true,
+            }
+          );
+          if (nextWorkspace === existing.workspace) {
+            const stamp = now();
+            await currentStore.setActiveStudyId(targetId);
+            const refreshed = (await currentStore.get(targetId)) ?? existing;
+            await refreshFromStore(currentStore);
+            sync?.publish({
+              type: "active-study-changed",
+              studyId: targetId,
+              updatedAt: stamp,
+            });
+            return refreshed;
+          }
+          const savedOutcome = await this.saveWorkspace(
+            targetId,
+            nextWorkspace,
+            {
+              expectedRevisionId: existing.workspace.revision.id,
+              force: true,
+              pinActive: true,
+            }
+          );
+          if (savedOutcome.status !== "saved") {
+            return existing;
+          }
+          return savedOutcome.record;
+        }
+
+        const imported = await importUsdmStudy({ document: incomingUsdm });
+        if (imported.status !== "ok") {
+          throw new Error(
+            `Study ${targetId} could not be imported: ${imported.status}.`
+          );
+        }
+        const savedOutcome = await this.saveWorkspace(
+          targetId,
+          imported.workspace,
+          {
+            force: true,
+            kind: activateOptions.kind ?? "authored",
+            pinActive: true,
+          }
+        );
+        if (savedOutcome.status !== "saved") {
+          throw new Error(`Study ${targetId} could not be saved.`);
+        }
+        return savedOutcome.record;
       });
     },
 

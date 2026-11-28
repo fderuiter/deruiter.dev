@@ -150,3 +150,11 @@ export {
   restoreProtocolDriftEngine,
   serializeSave,
 } from "./internal/save";
+
+export {
+  adaptUsdmScheduleToProtocolDrift,
+  type AdaptedProtocolDriftSchedule,
+  type ProtocolDriftScheduleSource,
+  type UsdmProtocolDriftVisit,
+  type UsdmProtocolDriftWave,
+} from "./internal/usdm-schedule-adapter";

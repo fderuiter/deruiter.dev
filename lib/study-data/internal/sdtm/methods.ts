@@ -77,6 +77,12 @@ export const SDTM_METHODS = {
     "The start of the subject's next element, so that elements leave no gap; for the subject's last element, the end of participation (RFPENDTC).",
   COMMENT_TARGET:
     "The record the site attached the comment to, named on the comments form by its collected source ID: RDOMAIN is that record's domain, IDVAR its --SEQ, or VISITNUM for a visit in SV, and IDVARVAL the value. A comment whose record was not tabulated is not written.",
+  DI_PARAMETER_NAME:
+    "Full name of the device identifier parameter (DIPARMCD): Device Type for TYPE, Manufacturer for MANUF, Model Number for MODEL and Unique Device Identifier for UDI.",
+  FINDINGS_STANDARD_RESULT:
+    "Collected result standardized into --STRESC (text) and, for numeric measurements collected in the test's standard unit, --STRESN (number); categorical findings leave --STRESN missing.",
+  PK_PREDOSE_FLAG:
+    "Y on the subject's pre-dose pharmacokinetic specimen (PCTPTNUM <= 0) collected on or before first exposure; missing on post-dose specimens.",
 } as const;
 
 /** The id of an SDTM derivation method. */

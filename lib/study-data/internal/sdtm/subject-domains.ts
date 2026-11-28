@@ -38,7 +38,12 @@ type SubjectDomain =
   | "SE"
   | "CO"
   | "CE"
-  | "QS";
+  | "QS"
+  | "TR"
+  | "PC"
+  | "DI"
+  | "DU"
+  | "DE";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -1095,6 +1100,367 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       collected("COVAL", "Comment", "CO.COVAL", "Topic"),
     ],
   },
+  TR: {
+    label: "Tumor/Lesion Results",
+    class: "Findings",
+    structure:
+      "One record per tumor measurement per assessment per visit per subject",
+    keys: ["STUDYID", "USUBJID", "TRSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("TR"),
+      collected("TRGRPID", "Group ID", "TR.TRGRPID", "Identifier"),
+      collected("TRLNKID", "Link ID", "TR.TRLNKID", "Identifier"),
+      collected(
+        "TRTESTCD",
+        "Tumor Assessment Short Name",
+        "TR.TRTESTCD",
+        "Topic"
+      ),
+      derived(
+        "TRTEST",
+        "Tumor Assessment Test Name",
+        "USDM_ASSESSMENT",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "TRORRES",
+        "Result or Finding in Original Units",
+        "TR.TRORRES",
+        "Result Qualifier"
+      ),
+      collected(
+        "TRORRESU",
+        "Original Units",
+        "TR.TRORRESU",
+        "Variable Qualifier"
+      ),
+      derived(
+        "TRSTRESC",
+        "Character Result/Finding in Std Format",
+        "FINDINGS_STANDARD_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "TRSTRESN",
+        "Numeric Result/Finding in Standard Units",
+        "FINDINGS_STANDARD_RESULT",
+        "Result Qualifier",
+        "float"
+      ),
+      derived(
+        "TRSTRESU",
+        "Standard Units",
+        "USDM_ASSESSMENT",
+        "Variable Qualifier"
+      ),
+      collected(
+        "TRMETHOD",
+        "Method used to Identify the Tumor",
+        "TR.TRMETHOD",
+        "Variable Qualifier"
+      ),
+      assigned("TREVAL", "Evaluator", "Record Qualifier"),
+      derived(
+        "TRLOBXFL",
+        "Last Observation Before Exposure Flag",
+        "LAST_PRE_DOSE",
+        "Record Qualifier"
+      ),
+      VISITNUM,
+      VISIT,
+      EPOCH,
+      collected(
+        "TRDTC",
+        "Date/Time of Tumor Measurement",
+        "TR.TRDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "TRDY",
+        "Study Day of Tumor Measurement",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+    ],
+  },
+  PC: {
+    label: "Pharmacokinetics Concentrations",
+    class: "Findings",
+    structure:
+      "One record per analyte per planned time point per visit per subject",
+    keys: ["STUDYID", "USUBJID", "PCSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("PC"),
+      collected(
+        "PCTESTCD",
+        "Pharmacokinetic Test Short Name",
+        "PC.PCTESTCD",
+        "Topic"
+      ),
+      derived(
+        "PCTEST",
+        "Pharmacokinetic Test Name",
+        "USDM_ASSESSMENT",
+        "Synonym Qualifier"
+      ),
+      derived(
+        "PCORRES",
+        "Result or Finding in Original Units",
+        "TEXT_RESULT",
+        "Result Qualifier"
+      ),
+      collected(
+        "PCORRESU",
+        "Original Units",
+        "PC.PCORRESU",
+        "Variable Qualifier"
+      ),
+      derived(
+        "PCSTRESC",
+        "Character Result/Finding in Std Format",
+        "STANDARD_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "PCSTRESN",
+        "Numeric Result/Finding in Standard Units",
+        "STANDARD_RESULT",
+        "Result Qualifier",
+        "float"
+      ),
+      derived(
+        "PCSTRESU",
+        "Standard Units",
+        "USDM_ASSESSMENT",
+        "Variable Qualifier"
+      ),
+      collected(
+        "PCSPEC",
+        "Specimen Material Type",
+        "PC.PCSPEC",
+        "Variable Qualifier"
+      ),
+      collected(
+        "PCLLOQ",
+        "Lower Limit of Quantitation",
+        "PC.PCLLOQ",
+        "Variable Qualifier",
+        "float"
+      ),
+      derived(
+        "PCLOBXFL",
+        "Last Observation Before Exposure Flag",
+        "PK_PREDOSE_FLAG",
+        "Record Qualifier"
+      ),
+      VISITNUM,
+      VISIT,
+      EPOCH,
+      collected(
+        "PCDTC",
+        "Date/Time of Specimen Collection",
+        "PC.PCDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "PCDY",
+        "Actual Study Day of Specimen Collection",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      collected("PCTPT", "Planned Time Point Name", "PC.PCTPT", "Timing"),
+      collected(
+        "PCTPTNUM",
+        "Planned Time Point Number",
+        "PC.PCTPTNUM",
+        "Timing",
+        "float"
+      ),
+    ],
+  },
+  DI: {
+    label: "Device Identifiers",
+    class: "Study Reference",
+    structure: "One record per device identifier per device",
+    keys: ["STUDYID", "SPDEVID", "DISEQ"],
+    columns: [
+      assigned("STUDYID", "Study Identifier"),
+      assigned("DOMAIN", "Domain Abbreviation"),
+      collected(
+        "SPDEVID",
+        "Sponsor Device Identifier",
+        "DI.SPDEVID",
+        "Identifier"
+      ),
+      SEQ("DI"),
+      collected(
+        "DIPARMCD",
+        "Device Identifier Short Name",
+        "DI.DIPARMCD",
+        "Topic"
+      ),
+      derived(
+        "DIPARM",
+        "Device Identifier",
+        "DI_PARAMETER_NAME",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "DIVAL",
+        "Device Identifier Value",
+        "DI.DIVAL",
+        "Result Qualifier"
+      ),
+    ],
+  },
+  DU: {
+    label: "Device-In-Use",
+    class: "Findings",
+    structure: "One record per device-in-use property per visit per subject",
+    keys: ["STUDYID", "USUBJID", "DUSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("DU"),
+      collected(
+        "SPDEVID",
+        "Sponsor Device Identifier",
+        "DU.SPDEVID",
+        "Identifier"
+      ),
+      collected("DUTESTCD", "Device-In-Use Short Name", "DU.DUTESTCD", "Topic"),
+      derived(
+        "DUTEST",
+        "Device-In-Use Test Name",
+        "USDM_ASSESSMENT",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "DUORRES",
+        "Result or Finding in Original Units",
+        "DU.DUORRES",
+        "Result Qualifier"
+      ),
+      collected(
+        "DUORRESU",
+        "Original Units",
+        "DU.DUORRESU",
+        "Variable Qualifier"
+      ),
+      derived(
+        "DUSTRESC",
+        "Character Result/Finding in Std Format",
+        "FINDINGS_STANDARD_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "DUSTRESN",
+        "Numeric Result/Finding in Standard Units",
+        "FINDINGS_STANDARD_RESULT",
+        "Result Qualifier",
+        "float"
+      ),
+      derived(
+        "DUSTRESU",
+        "Standard Units",
+        "USDM_ASSESSMENT",
+        "Variable Qualifier"
+      ),
+      VISITNUM,
+      VISIT,
+      EPOCH,
+      collected(
+        "DUDTC",
+        "Date/Time of Collection",
+        "DU.DUDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "DUDY",
+        "Study Day of Visit/Collection/Exam",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+    ],
+  },
+  DE: {
+    label: "Device Events",
+    class: "Events",
+    structure: "One record per device event per subject",
+    keys: ["STUDYID", "USUBJID", "DESEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("DE"),
+      collected(
+        "SPDEVID",
+        "Sponsor Device Identifier",
+        "DE.SPDEVID",
+        "Identifier"
+      ),
+      collected(
+        "DETERM",
+        "Reported Term for the Device Event",
+        "DE.DETERM",
+        "Topic"
+      ),
+      collected(
+        "DEDECOD",
+        "Dictionary-Derived Term",
+        "DE.DEDECOD",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "DECAT",
+        "Category for Device Event",
+        "DE.DECAT",
+        "Grouping Qualifier"
+      ),
+      collected("DESEV", "Severity/Intensity", "DE.DESEV", "Record Qualifier"),
+      EPOCH,
+      collected(
+        "DESTDTC",
+        "Start Date/Time of Device Event",
+        "DE.DESTDTC",
+        "Timing",
+        "date"
+      ),
+      collected(
+        "DEENDTC",
+        "End Date/Time of Device Event",
+        "DE.DEENDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "DESTDY",
+        "Study Day of Start of Device Event",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "DEENDY",
+        "Study Day of End of Device Event",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+    ],
+  },
+};
+
+const DI_PARAMETER_NAMES: Readonly<Record<string, string>> = {
+  TYPE: "Device Type",
+  MANUF: "Manufacturer",
+  MODEL: "Model Number",
+  UDI: "Unique Device Identifier",
 };
 
 function rows(dataset: Dataset): Row[] {
@@ -1178,7 +1544,7 @@ function numbered(
   return table(
     name,
     entries.map(({ row, sourceIds }) => {
-      const subject = text(row.USUBJID) ?? "";
+      const subject = text(row.USUBJID) ?? text(row.SPDEVID) ?? "";
       const next = (counters.get(subject) ?? 0) + 1;
       counters.set(subject, next);
       return { row: { ...row, [`${name}SEQ`]: next }, sourceIds };
@@ -1726,6 +2092,164 @@ export function deriveSubjectDomains(
       exposure
     );
   });
+  const parseNumericResult = (
+    raw: CellValue,
+    originalUnit: string | null,
+    standardUnit: string | null
+  ): { stresc: string | null; stresn: number | null } => {
+    const rawText = text(raw);
+    if (rawText === null) return { stresc: null, stresn: null };
+    if (standardUnit === null) return { stresc: rawText, stresn: null };
+    const parsed = Number(rawText);
+    if (!Number.isFinite(parsed) || originalUnit !== standardUnit) {
+      return { stresc: rawText, stresn: null };
+    }
+    return { stresc: String(parsed), stresn: parsed };
+  };
+  const trRecords = get("TR");
+  const trBaseline = lastBeforeExposure(trRecords, "TRDTC", "TRTESTCD");
+  const tr = trRecords.map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    const code = text(record.TRTESTCD) ?? "";
+    const assessment = assessmentByCode.get(code);
+    const standardUnit = assessment?.unit ?? text(record.TRORRESU);
+    const { stresc, stresn } = parseNumericResult(
+      record.TRORRES,
+      text(record.TRORRESU),
+      standardUnit
+    );
+    const key = `${record.USUBJID}|${record.TRTESTCD}`;
+    return item(
+      {
+        ...common(record.USUBJID, "TR"),
+        TRGRPID: record.TRGRPID,
+        TRLNKID: record.TRLNKID,
+        TRTESTCD: record.TRTESTCD,
+        TRTEST: assessment?.testName ?? code,
+        TRORRES: record.TRORRES,
+        TRORRESU: record.TRORRESU,
+        TRSTRESC: stresc,
+        TRSTRESN: stresn,
+        TRSTRESU: standardUnit,
+        TRMETHOD: record.TRMETHOD,
+        TREVAL: "INVESTIGATOR",
+        TRLOBXFL:
+          trBaseline.get(key)?.source === text(record.SRCID) ? "Y" : null,
+        ...visit(record),
+        EPOCH: epochAt(record.TRDTC, exposure),
+        TRDTC: record.TRDTC,
+        TRDY: day(record.TRDTC, exposure?.EXSTDTC ?? null),
+      },
+      record,
+      exposure
+    );
+  });
+  const pcRecords = get("PC");
+  const pc = pcRecords.map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    const code = text(record.PCTESTCD) ?? "";
+    const assessment = assessmentByCode.get(code);
+    const result = num(record.PCORRES);
+    const standardUnit = assessment?.unit ?? text(record.PCORRESU);
+    const standard =
+      result === null
+        ? null
+        : toStandardUnit(code, result, text(record.PCORRESU), standardUnit);
+    const observed = isoDate(record.PCDTC);
+    const firstDose = isoDate(exposure?.EXSTDTC ?? null);
+    const isPredose =
+      observed !== null &&
+      firstDose !== null &&
+      observed <= firstDose &&
+      (num(record.PCTPTNUM) ?? 1) <= 0;
+    return item(
+      {
+        ...common(record.USUBJID, "PC"),
+        PCTESTCD: record.PCTESTCD,
+        PCTEST: assessment?.testName ?? code,
+        PCORRES: result === null ? null : String(result),
+        PCORRESU: record.PCORRESU,
+        PCSTRESC: standard === null ? null : String(standard),
+        PCSTRESN: standard,
+        PCSTRESU: standardUnit,
+        PCSPEC: record.PCSPEC,
+        PCLLOQ: record.PCLLOQ,
+        PCLOBXFL: isPredose ? "Y" : null,
+        ...visit(record),
+        EPOCH: epochAt(record.PCDTC, exposure),
+        PCDTC: record.PCDTC,
+        PCDY: day(record.PCDTC, exposure?.EXSTDTC ?? null),
+        PCTPT: record.PCTPT,
+        PCTPTNUM: record.PCTPTNUM,
+      },
+      record,
+      exposure
+    );
+  });
+  const di = get("DI").map((record) => {
+    const parmcd = text(record.DIPARMCD) ?? "";
+    return item(
+      {
+        STUDYID: definition.studyId,
+        DOMAIN: "DI",
+        SPDEVID: record.SPDEVID,
+        DIPARMCD: record.DIPARMCD,
+        DIPARM: DI_PARAMETER_NAMES[parmcd] ?? parmcd,
+        DIVAL: record.DIVAL,
+      },
+      record
+    );
+  });
+  const du = get("DU").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    const code = text(record.DUTESTCD) ?? "";
+    const assessment = assessmentByCode.get(code);
+    const standardUnit = assessment?.unit ?? text(record.DUORRESU);
+    const { stresc, stresn } = parseNumericResult(
+      record.DUORRES,
+      text(record.DUORRESU),
+      standardUnit
+    );
+    return item(
+      {
+        ...common(record.USUBJID, "DU"),
+        SPDEVID: record.SPDEVID,
+        DUTESTCD: record.DUTESTCD,
+        DUTEST: assessment?.testName ?? code,
+        DUORRES: record.DUORRES,
+        DUORRESU: record.DUORRESU,
+        DUSTRESC: stresc,
+        DUSTRESN: stresn,
+        DUSTRESU: standardUnit,
+        ...visit(record),
+        EPOCH: epochAt(record.DUDTC, exposure),
+        DUDTC: record.DUDTC,
+        DUDY: day(record.DUDTC, exposure?.EXSTDTC ?? null),
+      },
+      record,
+      exposure
+    );
+  });
+  const de = get("DE").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    return item(
+      {
+        ...common(record.USUBJID, "DE"),
+        SPDEVID: record.SPDEVID,
+        DETERM: record.DETERM,
+        DEDECOD: record.DEDECOD,
+        DECAT: record.DECAT,
+        DESEV: record.DESEV,
+        EPOCH: epochAt(record.DESTDTC, exposure),
+        DESTDTC: record.DESTDTC,
+        DEENDTC: record.DEENDTC,
+        DESTDY: day(record.DESTDTC, exposure?.EXSTDTC ?? null),
+        DEENDY: day(record.DEENDTC, exposure?.EXSTDTC ?? null),
+      },
+      record,
+      exposure
+    );
+  });
   return [
     table("DM", dm),
     svDataset,
@@ -1761,6 +2285,11 @@ export function deriveSubjectDomains(
     ),
     ...(source.has("CE") ? [numbered("CE", ce)] : []),
     ...(source.has("QS") ? [numbered("QS", qs)] : []),
+    ...(source.has("TR") ? [numbered("TR", tr)] : []),
+    ...(source.has("PC") ? [numbered("PC", pc)] : []),
+    ...(source.has("DI") ? [numbered("DI", di)] : []),
+    ...(source.has("DU") ? [numbered("DU", du)] : []),
+    ...(source.has("DE") ? [numbered("DE", de)] : []),
   ];
 }
 

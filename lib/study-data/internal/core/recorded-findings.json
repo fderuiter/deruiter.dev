@@ -5526,6 +5526,96 @@
         "CORE-000206",
         "CORE-000953"
       ]
+    },
+    "SD-091": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-094": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-095": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-097": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-099": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000355"
+      ]
+    },
+    "SD-100": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-101": {
+      "coverage": "related",
+      "core": [
+        "CORE-000138"
+      ]
+    },
+    "SD-103": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000552"
+      ]
+    },
+    "SD-104": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000553"
+      ]
+    },
+    "SD-106": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-107": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-109": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
+    },
+    "SD-111": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000334"
+      ]
+    },
+    "SD-112": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000544"
+      ]
+    },
+    "SD-114": {
+      "coverage": "same-defect",
+      "core": [
+        "CORE-000529"
+      ]
     }
   },
   "views": {

@@ -570,6 +570,176 @@
       "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
     },
     {
+      "ruleId": "SD-091",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Drop DI.DIPARM.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by reading CORE-000355 in the v0.17.1 cache; not yet planted for DI."
+    },
+    {
+      "ruleId": "SD-092",
+      "core": [],
+      "coverage": "none",
+      "planted": "Give a second DI record of one device the same DISEQ.",
+      "reason": "DI is an SDTMIG-MD Study Reference domain keyed by SPDEVID rather than USUBJID; CORE v0.17.1 checks --SEQ uniqueness within USUBJID only, so the local DISEQ check stays."
+    },
+    {
+      "ruleId": "SD-093",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-094",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Drop DU.DUORRES.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by reading CORE-000334 in the v0.17.1 cache; not yet planted for DU."
+    },
+    {
+      "ruleId": "SD-095",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second DU record of one subject the same DUSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading CORE-000544 in the v0.17.1 cache; not yet planted for DU."
+    },
+    {
+      "ruleId": "SD-096",
+      "core": [],
+      "coverage": "none",
+      "planted": "Set DU.DUDTC to 2030-13-45 on one record.",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks."
+    },
+    {
+      "ruleId": "SD-097",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to DUDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm. Paired by reading CORE-000529 in the v0.17.1 cache; not yet planted for DU."
+    },
+    {
+      "ruleId": "SD-098",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-099",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Drop DE.DETERM.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by reading CORE-000355 in the v0.17.1 cache; not yet planted for DE."
+    },
+    {
+      "ruleId": "SD-100",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second DE record of one subject the same DESEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading CORE-000544 in the v0.17.1 cache; not yet planted for DE."
+    },
+    {
+      "ruleId": "SD-101",
+      "core": ["CORE-000138"],
+      "coverage": "related",
+      "planted": "Set DE.DESTDTC to 2030-13-45 on one record.",
+      "reason": "CORE does not check the date's format; it reports the consequence, a study day beside an incomplete date (CG0221)."
+    },
+    {
+      "ruleId": "SD-102",
+      "core": [],
+      "coverage": "none",
+      "planted": "Set DE.DEENDTC to 2030-13-45 on one record.",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks."
+    },
+    {
+      "ruleId": "SD-103",
+      "core": ["CORE-000552"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to DESTDY on one record with a full date.",
+      "reason": "CG0220: --STDY is not calculated per the study day algorithm. Paired by reading CORE-000552 in the v0.17.1 cache; not yet planted for DE."
+    },
+    {
+      "ruleId": "SD-104",
+      "core": ["CORE-000553"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to DEENDY on one record with a full date.",
+      "reason": "CG0222: --ENDY is not calculated per the study day algorithm. Paired by reading CORE-000553 in the v0.17.1 cache; not yet planted for DE."
+    },
+    {
+      "ruleId": "SD-105",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-106",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Drop TR.TRORRES.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by reading CORE-000334 in the v0.17.1 cache; not yet planted for TR."
+    },
+    {
+      "ruleId": "SD-107",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second TR record of one subject the same TRSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading CORE-000544 in the v0.17.1 cache; not yet planted for TR."
+    },
+    {
+      "ruleId": "SD-108",
+      "core": [],
+      "coverage": "none",
+      "planted": "Set TR.TRDTC to 2030-13-45 on one record.",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks."
+    },
+    {
+      "ruleId": "SD-109",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to TRDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm. Paired by reading CORE-000529 in the v0.17.1 cache; not yet planted for TR."
+    },
+    {
+      "ruleId": "SD-110",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-111",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Drop PC.PCORRES.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by reading CORE-000334 in the v0.17.1 cache; not yet planted for PC."
+    },
+    {
+      "ruleId": "SD-112",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second PC record of one subject the same PCSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading CORE-000544 in the v0.17.1 cache; not yet planted for PC."
+    },
+    {
+      "ruleId": "SD-113",
+      "core": [],
+      "coverage": "none",
+      "planted": "Set PC.PCDTC to 2030-13-45 on one record.",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks."
+    },
+    {
+      "ruleId": "SD-114",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to PCDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm. Paired by reading CORE-000529 in the v0.17.1 cache; not yet planted for PC."
+    },
+    {
+      "ruleId": "SD-115",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
       "ruleId": "AD-001",
       "core": [],
       "coverage": "none",

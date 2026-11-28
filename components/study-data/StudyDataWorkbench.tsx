@@ -22,6 +22,7 @@ import {
   CONFORMANCE_RULES_VERSION,
   MESSY_DATA_SCENARIOS,
   PACKAGE_FORMAT_VERSION,
+  SYNTHETIC_DATA_NOTICE,
   coreViewReport,
   isEmptyRunDiff,
   loadRecordedCoreFindings,
@@ -566,7 +567,10 @@ export function StudyDataWorkbench({
           }
           return;
         }
-        if (prev.studyId !== activeRecord.studyId) {
+        if (
+          prev.studyId !== activeRecord.studyId ||
+          prev.revisionId !== activeRecord.workspace.revision.id
+        ) {
           loadRepositoryStudy(activeRecord, true);
         }
       });
@@ -834,6 +838,19 @@ export function StudyDataWorkbench({
               ? `Run ${summary.runId}: ${summary.nSubjects.toLocaleString("en-US")} subjects, seed ${summary.seed}, ${(summary.elapsedMs / 1000).toFixed(1)} s ${mode === "worker" ? "in a Web Worker" : "on the main thread"}.`
               : "";
 
+  const activeWorkspaceCode =
+    handoff?.prepared.report.studyId ??
+    repoSnapshot.activeRecord?.protocolCode ??
+    loadedRepoBinding?.studyId ??
+    design.studyId;
+  const activeWorkspaceTitle =
+    handoff?.prepared.report.title ??
+    repoSnapshot.activeRecord?.title ??
+    design.title;
+  const activeWorkspaceRevision = repoSnapshot.activeRecord
+    ? `${repoSnapshot.activeRecord.workspace.revision.id} · ${repoSnapshot.activeRecord.workspace.revision.sha256.slice(0, 8)}`
+    : (loadedRepoBinding?.revisionId ?? "R1");
+
   return (
     <>
       <section
@@ -849,28 +866,41 @@ export function StudyDataWorkbench({
           to a server. The same seed and subject count always give the same
           datasets, tables and figures.
         </p>
-        {repoSnapshot.isHydrated ? (
-          <StudyRepositoryBar
-            repository={repository}
-            currentStudyId={
-              loadedRepoBinding?.studyId ??
-              handoff?.prepared.report.studyId ??
-              "DEMO-301"
-            }
-            currentRevisionId={loadedRepoBinding?.revisionId}
-            onSelectStudy={(record) => {
-              explicitHandoffRef.current = false;
-              loadRepositoryStudy(record, true);
-            }}
-            onReloadLatest={(record) => {
-              explicitHandoffRef.current = false;
-              loadRepositoryStudy(record, true);
-            }}
-            allowCreateBlank={false}
-            compact
-            className="mt-6"
-          />
-        ) : null}
+        <StudyRepositoryBar
+          repository={repository}
+          currentStudyId={
+            loadedRepoBinding?.studyId ??
+            repoSnapshot.activeStudyId ??
+            handoff?.prepared.report.studyId ??
+            design.studyId
+          }
+          currentRevisionId={
+            loadedRepoBinding?.revisionId ??
+            repoSnapshot.activeRecord?.workspace.revision.id ??
+            "R1"
+          }
+          onSelectStudy={(record) => {
+            explicitHandoffRef.current = false;
+            loadRepositoryStudy(record, true);
+          }}
+          onReloadLatest={(record) => {
+            explicitHandoffRef.current = false;
+            loadRepositoryStudy(record, true);
+          }}
+          allowCreateBlank={false}
+          compact
+          className="mt-6"
+        />
+        <p
+          data-testid="study-data-workspace-notice"
+          className="mt-4 max-w-3xl break-words border-l-2 border-amber-500 pl-4 text-xs leading-relaxed text-amber-100"
+        >
+          {SYNTHETIC_DATA_NOTICE} Active workspace:{" "}
+          <span className="font-mono font-semibold">{activeWorkspaceCode}</span>{" "}
+          (<span className="font-mono">{activeWorkspaceRevision}</span>) —{" "}
+          {activeWorkspaceTitle}. Every subject is generated deterministically
+          from a seed.
+        </p>
         {handoffMessage ? (
           <p className="mt-4 max-w-3xl break-words border-l-2 border-amber-500 pl-4 text-xs leading-relaxed text-amber-100">
             {handoffMessage}

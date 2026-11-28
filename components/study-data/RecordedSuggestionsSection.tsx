@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useStudyRepository } from "@/components/clinical/useStudyRepository";
 import {
   DEMO_STUDY_ID,
   readSelectedStudy,
@@ -36,11 +37,16 @@ function SyntheticBadge({ compact = false }: { readonly compact?: boolean }) {
  * static fixtures via `lib/study-data` with no model or network calls.
  */
 export function RecordedSuggestionsSection() {
-  const selectedStudy = useSyncExternalStore(
+  const tabSelectedStudy = useSyncExternalStore(
     subscribeSelectedStudy,
     readSelectedStudy,
     getServerSnapshot
   );
+  const { snapshot } = useStudyRepository();
+  const selectedStudy =
+    snapshot.isHydrated && snapshot.activeRecord
+      ? snapshot.activeRecord.protocolCode
+      : tabSelectedStudy;
   const suggestionSet = loadRecordedSdtmSuggestions(selectedStudy);
 
   return (

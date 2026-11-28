@@ -561,6 +561,14 @@ describe("CRF Studio modes", () => {
     press("LiveEdcSimulator.onUpdateSimulationState", [state]);
     expect(study().simulationState).toBe(state);
 
+    press("LiveEdcSimulator.onDispatchSimulationAction", [
+      {
+        type: "ENROLL_SUBJECT",
+        subjectId: "001-999",
+      },
+    ]);
+    expect(study().simulationState?.availableSubjects).toContain("001-999");
+
     press("StudioHeader.onChangeMode", ["matrix"]);
     press("VisitMatrixEditor.onUpdateVisits", [study().visits.slice(0, 1)]);
     expect(study().visits).toHaveLength(1);

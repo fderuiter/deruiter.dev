@@ -8,6 +8,8 @@ import {
   afterEach,
   vi,
 } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import React from "react";
 import {
   render,
@@ -73,7 +75,11 @@ describe("EDC Simulation State Integration", () => {
 
   it("1. Retains all audit trail entries when navigating between EDC Simulator and other studio modes", async () => {
     window.location.hash = "#mode=edc";
-    render(<CRFStudioContainer />);
+    render(
+      <React.StrictMode>
+        <CRFStudioContainer />
+      </React.StrictMode>
+    );
 
     // Switch to Part 11 Audit Trail tab inside EDC Simulator
     const auditTabBtn = await screen.findByRole("button", {
@@ -110,7 +116,11 @@ describe("EDC Simulation State Integration", () => {
 
   it("2. Form locking generates electronic signature record that survives tab navigation and draft reload", async () => {
     window.location.hash = "#mode=edc";
-    render(<CRFStudioContainer />);
+    render(
+      <React.StrictMode>
+        <CRFStudioContainer />
+      </React.StrictMode>
+    );
 
     // Switch role to Principal Investigator
     const piRoleBtn = await screen.findByRole("button", {
@@ -355,7 +365,7 @@ describe("EDC Simulation State Integration", () => {
     const draftAfterPreset = loadStudyDraft();
     if (draftAfterPreset.status === "recovered") {
       expect(
-        draftAfterPreset.study.simulationState?.availableSubjects
+        draftAfterPreset.study.simulationState?.availableSubjects ?? []
       ).not.toContain("001-CUSTOM-999");
     }
 
@@ -424,7 +434,7 @@ describe("EDC Simulation State Integration", () => {
       const draftAfterSameId = loadStudyDraft();
       if (draftAfterSameId.status === "recovered") {
         expect(
-          draftAfterSameId.study.simulationState?.availableSubjects
+          draftAfterSameId.study.simulationState?.availableSubjects ?? []
         ).not.toContain("001-SAME-ID-CUSTOM");
       }
     }
@@ -671,5 +681,55 @@ describe("EDC Simulation State Integration", () => {
 
     // Verify remounted studio UI still reflects locked state
     expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
+  });
+
+  it("8. Renders under React.StrictMode with zero useEffect hooks in LiveEdcSimulator, zero idle autosave writes, and one write per user action", async () => {
+    const simulatorSource = fs.readFileSync(
+      path.resolve(
+        __dirname,
+        "../../components/crf/Modes/LiveEdcSimulator.tsx"
+      ),
+      "utf-8"
+    );
+    expect(simulatorSource).not.toMatch(/\buseEffect\b/);
+
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
+
+    window.location.hash = "#mode=edc";
+    render(
+      <React.StrictMode>
+        <CRFStudioContainer />
+      </React.StrictMode>
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /Live EDC data entry/i })
+    ).toBeDefined();
+
+    // Advance well past the 800ms autosave debounce while idle: zero draft writes occur
+    setItemSpy.mockClear();
+    await advanceClock(2000);
+    const idleDraftWrites = setItemSpy.mock.calls.filter(([key]) =>
+      key.includes("draft")
+    );
+    expect(idleDraftWrites).toHaveLength(0);
+
+    // Trigger one user-initiated simulation action (PI Lock & Sign)
+    const piRoleBtn = await screen.findByRole("button", {
+      name: "Principal Investigator",
+    });
+    fireEvent.click(piRoleBtn);
+
+    setItemSpy.mockClear();
+    const lockBtn = await screen.findByRole("button", {
+      name: /Lock & Sign/i,
+    });
+    fireEvent.click(lockBtn);
+
+    await advanceClock(1000);
+    const actionDraftWrites = setItemSpy.mock.calls.filter(([key]) =>
+      key.includes("draft")
+    );
+    expect(actionDraftWrites).toHaveLength(1);
   });
 });

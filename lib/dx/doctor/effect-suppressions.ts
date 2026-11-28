@@ -9,7 +9,7 @@ import { shouldSkipWorkspaceDirectory } from "../workspace-config";
  * after the mount-state cleanup (#3478, #3481) and may only go down: lower it
  * when you remove a suppression, never raise it to fit a new one.
  */
-export const SET_STATE_IN_EFFECT_CEILING = 46;
+export const SET_STATE_IN_EFFECT_CEILING = 44;
 
 const SCANNED_DIRS = ["app", "components", "hooks", "lib"];
 

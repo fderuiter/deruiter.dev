@@ -32,6 +32,14 @@ import {
   CancelEdcQueryInput,
   ReopenEdcQueryInput,
   ExportClinicalCsvOptions,
+  EdcSimulationState,
+  EdcSimulationAction,
+  EdcSimulationActionInput,
+  EdcUserRole,
+  EdcRolePermissions,
+  EdcFormSignatureStatus,
+  EdcFormValidationResult,
+  SubjectFormStatus,
 } from "../types";
 import {
   saveStudyBaseline,
@@ -101,6 +109,19 @@ import {
   importSimulationQueriesCsv,
   importSimulationAuditsCsv,
 } from "./clinical-data-csv";
+import {
+  DEFAULT_EDC_SUBJECTS,
+  buildSubjectFieldValues,
+  evaluateDerivedFormValues,
+  getEdcRolePermissions,
+  getFormSignatureStatus,
+  getScheduledFormsForVisit,
+  getSubjectFormStatus,
+  reduceEdcSimulationState,
+  seedEdcSimulationState,
+  stampEdcSimulationAction,
+  validateEdcFormSubmission,
+} from "./edc-simulation-engine";
 
 export interface ValidationIssue {
   form: string;
@@ -3605,6 +3626,120 @@ export class StudyProtocolEngine {
   }
 
   /**
+   * Dispatches a pure Part 11-style `EdcSimulationActionInput` against `study.simulationState`,
+   * stamping caller `timestamp` once at the dispatch boundary when omitted, and returns an updated `StudyProtocol`.
+   */
+  static dispatchSimulationAction(
+    study: StudyProtocol,
+    action: EdcSimulationActionInput,
+    nowIso = new Date().toISOString()
+  ): StudyProtocol {
+    const stampedAction: EdcSimulationAction = stampEdcSimulationAction(
+      action,
+      nowIso
+    );
+    const nextSim = reduceEdcSimulationState(
+      study,
+      study.simulationState,
+      stampedAction
+    );
+    if (study.simulationState === nextSim) return study;
+    return {
+      ...study,
+      simulationState: nextSim,
+    };
+  }
+
+  /**
+   * Deterministically seeds or normalizes `EdcSimulationState` against `study` field IDs.
+   */
+  static seedSimulationState(
+    study: StudyProtocol,
+    existingState?: EdcSimulationState,
+    timestamp?: string
+  ): EdcSimulationState {
+    return seedEdcSimulationState(study, existingState, timestamp);
+  }
+
+  /**
+   * Returns forms scheduled for `visitId` plus continuous `AE` and `CM` log forms.
+   */
+  static getScheduledFormsForVisit(
+    study: StudyProtocol,
+    visitId: string
+  ): CRFForm[] {
+    return getScheduledFormsForVisit(study, visitId);
+  }
+
+  /**
+   * Resolves the Part 11 role capability matrix and inline read-only banner for `role`.
+   */
+  static getEdcRolePermissions(
+    role: EdcUserRole,
+    options?: { isLocked?: boolean }
+  ): EdcRolePermissions {
+    return getEdcRolePermissions(role, options);
+  }
+
+  /**
+   * Resolves lock and `Data Lock` electronic signature status for `(subjectId, visitId, formId)`.
+   */
+  static getFormSignatureStatus(
+    state: EdcSimulationState | undefined,
+    subjectId: string,
+    visitId: string,
+    formId: string
+  ): EdcFormSignatureStatus {
+    return getFormSignatureStatus(state, subjectId, visitId, formId);
+  }
+
+  /**
+   * Evaluates derived `calculated` field formulas on `form` for `(subjectId, visitId)`.
+   */
+  static evaluateDerivedFormValues(
+    form: CRFForm | undefined,
+    subjectId: string,
+    visitId: string,
+    formValues: Record<string, string | number | boolean | null>
+  ): Record<string, string | number | boolean | null> {
+    return evaluateDerivedFormValues(form, subjectId, visitId, formValues);
+  }
+
+  /**
+   * Runs 3-tier form submission validation (Hard Stop, Auto-Query, range, date, and null-flavor gates).
+   */
+  static validateEdcFormSubmission(
+    study: StudyProtocol,
+    form: CRFForm | undefined,
+    subjectId: string,
+    visitId: string,
+    formValues: Record<string, string | number | boolean | null>,
+    timestamp: string
+  ): EdcFormValidationResult {
+    return validateEdcFormSubmission(
+      study,
+      form,
+      subjectId,
+      visitId,
+      formValues,
+      timestamp
+    );
+  }
+
+  /**
+   * Computes longitudinal completion, lock, SDV, and open query counts for `(subjectId, visitId, formId)`.
+   */
+  static getSubjectFormStatus(
+    study: StudyProtocol,
+    state: EdcSimulationState | undefined,
+    subjectId: string,
+    visitId: string,
+    formId: string
+  ): SubjectFormStatus {
+    return getSubjectFormStatus(study, state, subjectId, visitId, formId);
+  }
+
+  /**
    * Exports simulated subjects and captured values to RFC 4180 CSV.
    */
   static exportSubjectsCsv(
@@ -3750,4 +3885,15 @@ export {
   type StudyBaseline,
   type StudyBaselineActor,
   type StudyProvenance,
+  DEFAULT_EDC_SUBJECTS,
+  buildSubjectFieldValues,
+  evaluateDerivedFormValues,
+  getEdcRolePermissions,
+  getFormSignatureStatus,
+  getScheduledFormsForVisit,
+  getSubjectFormStatus,
+  reduceEdcSimulationState,
+  seedEdcSimulationState,
+  stampEdcSimulationAction,
+  validateEdcFormSubmission,
 };

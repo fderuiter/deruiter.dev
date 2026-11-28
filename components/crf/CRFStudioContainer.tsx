@@ -1399,6 +1399,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             key={study.id}
             study={study}
             simulationState={study.simulationState}
+            onDispatchSimulationAction={editor.dispatchSimulationAction}
             onUpdateSimulationState={editor.updateSimulationState}
           />
         )}

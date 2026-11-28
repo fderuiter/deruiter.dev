@@ -64,6 +64,7 @@ export * from "./internal/study-baselines";
 export * from "./internal/study-omnibar";
 export * from "./internal/simulation-records";
 export * from "./internal/edc-query-lifecycle";
+export * from "./internal/edc-simulation-engine";
 export * from "./internal/clinical-data-csv";
 export * from "./internal/codecs";
 export * from "./internal/conformance";

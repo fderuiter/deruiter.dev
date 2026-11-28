@@ -953,6 +953,231 @@ export interface EdcSimulationState {
   availableSubjects?: string[];
 }
 
+/**
+ * Clinical roles simulated in the Part 11-style EDC workspace.
+ */
+export type EdcUserRole =
+  | "Site Coordinator"
+  | "Principal Investigator"
+  | "CRA Monitor"
+  | "Data Manager";
+
+/**
+ * Capability matrix and inline permission guidance for an active {@link EdcUserRole}.
+ */
+export interface EdcRolePermissions {
+  role: EdcUserRole;
+  actorLabel: string;
+  canEditUnlockedFields: boolean;
+  canEditActiveForm: boolean;
+  canToggleSdv: boolean;
+  canLockAndSign: boolean;
+  canUnlockForm: boolean;
+  canManageQueries: boolean;
+  canRespondToQueries: boolean;
+  readOnlyBanner: string | null;
+}
+
+/**
+ * Resolved lock and electronic signature state for a `(subjectId, visitId, formId)` record.
+ */
+export interface EdcFormSignatureStatus {
+  isLocked: boolean;
+  lockedBy?: string;
+  lockedAt?: string;
+  isSigned: boolean;
+  activeDataLockSignature?: ElectronicSignature;
+  signatures: ElectronicSignature[];
+}
+
+/**
+ * Pure validation outcome for 3-tier missing data, null-flavor, range, and precision-date checks.
+ */
+export interface EdcFormValidationResult {
+  isValid: boolean;
+  errors: Record<string, string>;
+  hardStops: string[];
+  autoQueries: string[];
+  queriesToRaise: EDCQuery[];
+}
+
+/**
+ * Pure reducer actions driving all {@link EdcSimulationState} transitions.
+ * Every action that writes to the audit trail, signatures, SDV map, lock map,
+ * or discrepancy queries carries an explicit caller-supplied ISO `timestamp`
+ * so `reduceEdcSimulationState` remains clock-free and deterministic.
+ */
+export type EdcSimulationAction =
+  | {
+      type: "SEED_SIMULATION";
+      timestamp: string;
+    }
+  | {
+      type: "UPDATE_FIELD_VALUE";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      fieldId: string;
+      value: string | number | boolean | null;
+      role: EdcUserRole;
+      reasonForChange?: string;
+      timestamp: string;
+    }
+  | {
+      type: "TOGGLE_SDV";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      fieldId: string;
+      fieldName?: string;
+      role: EdcUserRole;
+      timestamp: string;
+    }
+  | {
+      type: "SAVE_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      timestamp: string;
+    }
+  | {
+      type: "ENROLL_SUBJECT";
+      subjectId: string;
+      role?: EdcUserRole;
+    }
+  | {
+      type: "LOCK_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      timestamp: string;
+      signatureId?: string;
+      digest?: string;
+    }
+  | {
+      type: "UNLOCK_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      reasonForChange: string;
+      timestamp: string;
+    }
+  | {
+      type: "RAISE_QUERY";
+      input: RaiseEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "ANSWER_QUERY";
+      input: AnswerEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "CLOSE_QUERY";
+      input: CloseEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "CANCEL_QUERY";
+      input: CancelEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "REOPEN_QUERY";
+      input: ReopenEdcQueryInput & { timestamp: string };
+    }
+  | {
+      type: "REPLACE_SIMULATION_STATE";
+      simulationState: EdcSimulationState;
+    };
+
+/**
+ * Caller-facing simulation dispatch input accepted at the UI/engine boundary
+ * (`StudyProtocolEngine.dispatchSimulationAction` and `useStudyEditor.dispatchSimulationAction`),
+ * where omitted `timestamp` fields are stamped once before entering `reduceEdcSimulationState`.
+ */
+export type EdcSimulationActionInput =
+  | {
+      type: "SEED_SIMULATION";
+      timestamp?: string;
+    }
+  | {
+      type: "UPDATE_FIELD_VALUE";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      fieldId: string;
+      value: string | number | boolean | null;
+      role: EdcUserRole;
+      reasonForChange?: string;
+      timestamp?: string;
+    }
+  | {
+      type: "TOGGLE_SDV";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      fieldId: string;
+      fieldName?: string;
+      role: EdcUserRole;
+      timestamp?: string;
+    }
+  | {
+      type: "SAVE_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      timestamp?: string;
+    }
+  | {
+      type: "ENROLL_SUBJECT";
+      subjectId: string;
+      role?: EdcUserRole;
+    }
+  | {
+      type: "LOCK_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      timestamp?: string;
+      signatureId?: string;
+      digest?: string;
+    }
+  | {
+      type: "UNLOCK_FORM";
+      subjectId: string;
+      visitId: string;
+      formId: string;
+      role: EdcUserRole;
+      reasonForChange: string;
+      timestamp?: string;
+    }
+  | {
+      type: "RAISE_QUERY";
+      input: RaiseEdcQueryInput;
+    }
+  | {
+      type: "ANSWER_QUERY";
+      input: AnswerEdcQueryInput;
+    }
+  | {
+      type: "CLOSE_QUERY";
+      input: CloseEdcQueryInput;
+    }
+  | {
+      type: "CANCEL_QUERY";
+      input: CancelEdcQueryInput;
+    }
+  | {
+      type: "REOPEN_QUERY";
+      input: ReopenEdcQueryInput;
+    }
+  | {
+      type: "REPLACE_SIMULATION_STATE";
+      simulationState: EdcSimulationState;
+    };
+
 export type ComplianceSeverity = "error" | "warning" | "notice";
 
 export interface ComplianceViolation {

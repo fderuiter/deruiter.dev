@@ -11,6 +11,7 @@ import {
   type CRFForm,
   type CRFSection,
   type CodelistDefinition,
+  type EdcSimulationActionInput,
   type EdcSimulationState,
   type EditCheckRule,
   type FieldImpactPreview,
@@ -125,6 +126,16 @@ export function useStudyEditor({
           simulationState: nextSimulationState,
         };
       });
+    },
+    [setStudy]
+  );
+
+  const dispatchSimulationAction = useCallback(
+    (action: EdcSimulationActionInput) => {
+      const nowIso = new Date().toISOString();
+      setStudy((prev) =>
+        StudyProtocolEngine.dispatchSimulationAction(prev, action, nowIso)
+      );
     },
     [setStudy]
   );
@@ -800,6 +811,7 @@ export function useStudyEditor({
     reviewAuthor,
     setReviewAuthor,
     updateSimulationState,
+    dispatchSimulationAction,
     addReviewComment,
     setReviewThreadStatus,
     commitReviewTargetChange,

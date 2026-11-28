@@ -1077,7 +1077,8 @@ export function scaffoldCdashDomain(
                 required: false,
                 readOnly: true,
                 unit: "kg/m²",
-                calculationFormula: "weight / ((height/100) * (height/100))",
+                calculationFormula:
+                  "round(weight / ((height / 100) * (height / 100)), 1)",
                 cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
                   (v) => v.sdtmVariable === "BMI"
                 ),

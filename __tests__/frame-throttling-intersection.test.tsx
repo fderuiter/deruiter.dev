@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import React from "react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import {
   render,
   screen,
@@ -16,6 +24,21 @@ describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
     entries: IntersectionObserverEntry[]
   ) => void)[] = [];
   let observedElements: Element[] = [];
+
+  beforeAll(async () => {
+    globalThis.Worker = class MockWorker {
+      postMessage = vi.fn();
+      terminate = vi.fn();
+      addEventListener = vi.fn();
+      removeEventListener = vi.fn();
+      onmessage = null;
+      onerror = null;
+    } as unknown as typeof Worker;
+    const { unmount } = render(<ProofWorkspacePage />);
+    await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+    unmount();
+    cleanup();
+  });
 
   beforeEach(() => {
     intersectionCallbacks = [];

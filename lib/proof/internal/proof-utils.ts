@@ -778,8 +778,8 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
         description: "Premise P: The test suite executes on every commit.",
         meaning:
           "All automated regression tests are actively running in the pipeline.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "P" },
       },
       {
@@ -790,8 +790,8 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
           "Premise P → Q: If tests run on every commit, regression bugs will be caught.",
         meaning:
           "High coverage test suites reliably intercept regressions before production.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: {
           type: "implies",
           left: { type: "var", name: "P" },
@@ -805,8 +805,8 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
         description:
           "Intermediate Conclusion Q: Regression bugs will be caught.",
         meaning: "Derived fact: The pipeline successfully detects defects.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "Q" },
       },
       {
@@ -817,7 +817,7 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
           "Premise Q → R: If bugs are caught, production reliability is guaranteed.",
         meaning:
           "Intercepting defects prevents outages and guarantees system uptime.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -832,8 +832,8 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
         description: "Conclusion R: Production reliability is guaranteed.",
         meaning:
           "The target proposition in this teaching graph; it does not certify a deployment.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "R" },
       },
     ],
@@ -843,13 +843,9 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Modus Ponens Tactic Engine...",
@@ -904,8 +900,8 @@ theorem modus_ponens_pipeline (P Q R : Prop)
           "Premise P → Q: If buffer allocation is unbounded (P), heap overflow occurs (Q).",
         meaning:
           "Unchecked pointer arithmetic inevitably triggers heap corruptions.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: {
           type: "implies",
           left: { type: "var", name: "P" },
@@ -920,8 +916,8 @@ theorem modus_ponens_pipeline (P Q R : Prop)
           "Premise ¬Q: assume heap overflow did not occur in this example.",
         meaning:
           "AddressSanitizer proves the absence of heap corruption across all executions.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: { type: "not", operand: { type: "var", name: "Q" } },
       },
       {
@@ -932,8 +928,8 @@ theorem modus_ponens_pipeline (P Q R : Prop)
           "Intermediate Conclusion ¬P: Buffer allocation is bounded and memory-safe.",
         meaning:
           "Derived fact: Unbounded memory allocation is impossible in this runtime.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "not", operand: { type: "var", name: "P" } },
       },
       {
@@ -944,7 +940,7 @@ theorem modus_ponens_pipeline (P Q R : Prop)
           "Premise ¬P → R: If buffer is bounded, remote code execution exploit (R) is impossible.",
         meaning:
           "Bounded buffers eliminate stack/heap smashing attack vectors.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -960,8 +956,8 @@ theorem modus_ponens_pipeline (P Q R : Prop)
           "Conclusion R: Remote code execution exploit is impossible.",
         meaning:
           "The target theorem: 100% formal memory safety guarantee achieved.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "R" },
       },
     ],
@@ -971,13 +967,9 @@ theorem modus_ponens_pipeline (P Q R : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Modus Tollens Tactic Engine...",
@@ -1031,8 +1023,8 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
         description:
           "Premise P → Q: If Auth API latency < 50ms (P), cache hits exceed 98% (Q).",
         meaning: "Fast token validation maintains warm Redis cache tiers.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: {
           type: "implies",
           left: { type: "var", name: "P" },
@@ -1047,8 +1039,8 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
           "Premise Q → R: If cache hits exceed 98% (Q), database IOPS stay nominal (R).",
         meaning:
           "High cache hit ratio prevents database connection pool exhaustion.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: {
           type: "implies",
           left: { type: "var", name: "Q" },
@@ -1063,8 +1055,8 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
           "Intermediate Conclusion P → R: If Auth latency < 50ms, database IOPS stay nominal.",
         meaning:
           "Derived transitive chain across the distributed service topology.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: {
           type: "implies",
           left: { type: "var", name: "P" },
@@ -1079,7 +1071,7 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
           "Premise (P → R) → S: If nominal DB IOPS is bounded by Auth, Global SLA is met (S).",
         meaning:
           "System-wide architectural contract ensures 99.99% availability.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1099,8 +1091,8 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
           "Conclusion S: the example graph derives an SLA proposition.",
         meaning:
           "The example target proposition; no live SLA or bottleneck was measured.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "S" },
       },
     ],
@@ -1110,13 +1102,9 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Hypothetical Syllogism Tactic Engine...",
@@ -1169,8 +1157,8 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
         description:
           "Premise P ∨ Q: Primary node maintains lease (P) OR Standby replica takes leader quorum (Q).",
         meaning: "At least one consensus coordinator is active at any epoch.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: {
           type: "or",
           left: { type: "var", name: "P" },
@@ -1185,8 +1173,8 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
           "Premise ¬P: Primary node heartbeat expired and failed lease renewal (¬P).",
         meaning:
           "Split-brain detector confirms the primary node is unreachable.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: { type: "not", operand: { type: "var", name: "P" } },
       },
       {
@@ -1196,8 +1184,8 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
         description:
           "Intermediate Conclusion Q: Standby replica successfully takes leader quorum.",
         meaning: "Derived fact: Failover quorum is triggered immediately.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "Q" },
       },
       {
@@ -1208,7 +1196,7 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
           "Premise Q → R: If standby replica takes quorum, zero downtime (R) is maintained.",
         meaning:
           "Fast failover replication guarantees uninterrupted client writes.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1224,8 +1212,8 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
           "Conclusion R: Zero downtime consensus invariant is maintained.",
         meaning:
           "The target theorem: 100% formal resilience against primary node failure.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "R" },
       },
     ],
@@ -1235,13 +1223,9 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Disjunctive Syllogism Tactic Engine...",
@@ -1296,8 +1280,8 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
           "Premise P ∨ Q: Transaction lock acquired (P) OR Tx enqueued in wait-graph (Q).",
         meaning:
           "Concurrency control invariant: lock is held or request is queued.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: {
           type: "or",
           left: { type: "var", name: "P" },
@@ -1311,8 +1295,8 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
         description:
           "Premise ¬P ∨ R: Transaction lock revoked (¬P) OR Deadlock detector triggers rollback (R).",
         meaning: "If lock is not held, deadlock resolution policy is active.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: {
           type: "or",
           left: { type: "not", operand: { type: "var", name: "P" } },
@@ -1327,8 +1311,8 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
           "Intermediate Conclusion Q ∨ R: Tx is enqueued (Q) OR Deadlock resolver triggers rollback (R).",
         meaning:
           "Derived resolvent clause removing the complementary literal P and ¬P.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: {
           type: "or",
           left: { type: "var", name: "Q" },
@@ -1343,7 +1327,7 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
           "Premise ¬Q: Wait queue is empty (Tx cannot wait further due to lock timeout).",
         meaning:
           "Queue boundary condition: Transaction cannot remain in wait state.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: { type: "not", operand: { type: "var", name: "Q" } },
       },
@@ -1355,8 +1339,8 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
           "Conclusion R: Deadlock resolver triggers safe transaction rollback.",
         meaning:
           "The target theorem: Deadlock resolved without data corruption or orphan locks.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "R" },
       },
     ],
@@ -1366,13 +1350,9 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Resolution Refutation Tactic Engine...",
@@ -1431,8 +1411,8 @@ theorem resolution_deadlock_safety (P Q R : Prop)
         type: "premise",
         description: "Premise PrepA: Shard A voted PREPARED and wrote WAL log.",
         meaning: "Partition A guarantees persistence of transaction changes.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "PrepA" },
       },
       {
@@ -1441,8 +1421,8 @@ theorem resolution_deadlock_safety (P Q R : Prop)
         type: "premise",
         description: "Premise PrepB: Shard B voted PREPARED and wrote WAL log.",
         meaning: "Partition B guarantees persistence of transaction changes.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: { type: "var", name: "PrepB" },
       },
       {
@@ -1452,8 +1432,8 @@ theorem resolution_deadlock_safety (P Q R : Prop)
         description:
           "Intermediate Conclusion: All participating shards confirmed readiness.",
         meaning: "Unanimous preparation milestone reached across the cluster.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: {
           type: "and",
           left: { type: "var", name: "PrepA" },
@@ -1468,7 +1448,7 @@ theorem resolution_deadlock_safety (P Q R : Prop)
           "Premise Protocol: Unanimous prepare triggers Global Commit directive.",
         meaning:
           "2PC protocol rule ensures zero dirty reads or partial writes.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1487,8 +1467,8 @@ theorem resolution_deadlock_safety (P Q R : Prop)
         description:
           "Conclusion Commit: Atomic multi-shard transaction formally committed.",
         meaning: "ACID consistency guaranteed across distributed partitions.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "Commit" },
       },
     ],
@@ -1498,13 +1478,9 @@ theorem resolution_deadlock_safety (P Q R : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Two-Phase Commit Verification...",
@@ -1559,8 +1535,8 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
           "Premise MajA: Leader A collected a strict majority quorum of votes (N/2 + 1).",
         meaning:
           "Majority partition assumed for Candidate A in this example term.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "MajA" },
       },
       {
@@ -1570,8 +1546,8 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
         description:
           "Premise MajB: Candidate B claims a strict majority quorum in the same term T.",
         meaning: "Hypothetical competing election attempt.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: { type: "var", name: "MajB" },
       },
       {
@@ -1582,8 +1558,8 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
           "Intermediate Conclusion: Quorums MajA and MajB share at least one common voter node.",
         meaning:
           "Pigeonhole principle: Any two majorities of size (N/2 + 1) must intersect.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "Overlap" },
       },
       {
@@ -1593,7 +1569,7 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
         description:
           "Premise Invariant: Intersecting node cannot vote twice in term T, forcing single leader.",
         meaning: "Vote idempotency prevents dual election split-brain.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1608,8 +1584,8 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
         description:
           "Conclusion SingleLeader: Exactly one legitimate leader elected per term.",
         meaning: "Split-brain exclusion derived inside the example graph.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "SingleLeader" },
       },
     ],
@@ -1619,13 +1595,9 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Quorum Intersection Verification...",
@@ -1679,8 +1651,8 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
         description:
           "Premise Write: Primary database successfully committed write update.",
         meaning: "Source of truth has new record state.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "Write" },
       },
       {
@@ -1690,8 +1662,8 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
         description:
           "Premise: Database commit automatically dispatches cache eviction event.",
         meaning: "Change Data Capture (CDC) stream evicts cached key.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: {
           type: "implies",
           left: { type: "var", name: "Write" },
@@ -1705,8 +1677,8 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
         description:
           "Intermediate Conclusion: Cache key evicted across all edge clusters.",
         meaning: "Stale data purged from L1/L2 cache tiers.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "Invalidate" },
       },
       {
@@ -1716,7 +1688,7 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
         description:
           "Premise: Cache miss triggers synchronous fetch of canonical primary record.",
         meaning: "Subsequent queries are routed to updated database record.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1731,8 +1703,8 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
         description:
           "Conclusion FreshRead: Guaranteed zero stale data read anomalies.",
         meaning: "Sequential cache consistency derived in the example graph.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "FreshRead" },
       },
     ],
@@ -1742,13 +1714,9 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Cache Coherence Verification...",
@@ -1801,8 +1769,8 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
           "Premise MajQ1: Leader gathered a majority promise quorum Q1 in ballot B.",
         meaning:
           "Majority of acceptors in Q1 promised not to accept ballots older than B.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "MajQ1" },
       },
       {
@@ -1813,8 +1781,8 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
           "Premise: Quorum intersection forces proposer to adopt value V of highest-numbered ballot.",
         meaning:
           "If Q1 intersects with previously chosen quorum, highest ballot value V is reported.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: {
           type: "implies",
           left: { type: "var", name: "MajQ1" },
@@ -1829,8 +1797,8 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
           "Intermediate Conclusion MaxVal: Proposer binds proposal in ballot B to canonical value V.",
         meaning:
           "Derived invariant: Proposer cannot propose any competing value V' ≠ V.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "MaxVal" },
       },
       {
@@ -1841,7 +1809,7 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
           "Premise: Invariant preservation ensures all subsequent ballots only choose value V.",
         meaning:
           "Inductive step: If all proposals inherit V, no split-decision value can ever be chosen.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1857,8 +1825,8 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
           "Conclusion SynodAgreement: Single-Decree Paxos consistency holds with mathematical certainty.",
         meaning:
           "The target theorem: 100% formal safety guarantee against split-brain decisions.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "SynodAgreement" },
       },
     ],
@@ -1868,13 +1836,9 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Paxos Synod Invariant Verification Engine...",
@@ -1930,8 +1894,8 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
           "Premise PromiseB: Acceptors promised ballot B and have seen no higher proposal.",
         meaning:
           "Acceptor local promise invariant is active for ballot epoch B.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "PromiseB" },
       },
       {
@@ -1942,8 +1906,8 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
           "Premise AcceptReqB: Leader transmits Phase 2a Accept(B, V) message matching ballot B.",
         meaning:
           "Phase 2a message carries valid ballot number B and candidate value V.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: { type: "var", name: "AcceptReqB" },
       },
       {
@@ -1954,8 +1918,8 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
           "Intermediate Conclusion: ballot compatibility derived in the example, triggering Phase 2b Accepted(B, V).",
         meaning:
           "Acceptors register accept vote and emit Phase 2b acknowledgement.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: {
           type: "and",
           left: { type: "var", name: "PromiseB" },
@@ -1969,7 +1933,7 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
         description:
           "Premise: Gathering majority Phase 2b accept votes permanently chooses value V.",
         meaning: "Commit threshold reached: Value V is irreversibly decided.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -1989,8 +1953,8 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
           "Conclusion ValueChosen: Value V is committed across the distributed state machine.",
         meaning:
           "The target theorem: 100% formal verification of Phase 2b consensus commitment.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "ValueChosen" },
       },
     ],
@@ -2000,13 +1964,9 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Paxos Phase 2B Verification Engine...",
@@ -2061,8 +2021,8 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
         description:
           "Premise Quorum1: Primary quorum Q1 of 2f+1 nodes signed prepare certificate for value V1.",
         meaning: "Certificate Q1 meets 2/3 supermajority threshold in view v.",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "Quorum1" },
       },
       {
@@ -2073,8 +2033,8 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
           "Premise Quorum2: Conflicting quorum Q2 of 2f+1 nodes attempts prepare certificate for V2.",
         meaning:
           "Adversary attempts to create split-brain commit with competing quorum Q2.",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: { type: "var", name: "Quorum2" },
       },
       {
@@ -2085,8 +2045,8 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
           "Intermediate Conclusion HonestOverlap: Q1 and Q2 intersect in at least f+1 nodes (at least 1 honest node).",
         meaning:
           "Pigeonhole bound: 2(2f+1) - (3f+1) = f+1; subtracting at most f faulty nodes leaves ≥ 1 honest node.",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "HonestOverlap" },
       },
       {
@@ -2097,7 +2057,7 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
           "Premise: Honest node strictly rejects double-signing conflicting values in view v.",
         meaning:
           "Byzantine equivocation refutation: Honest validator refuses to sign two different values.",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -2113,8 +2073,8 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
           "Conclusion ByzantineSafety: Byzantine agreement guaranteed, preventing blockchain forks.",
         meaning:
           "The target theorem: 100% formal resilience against up to f Byzantine malicious nodes.",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "ByzantineSafety" },
       },
     ],
@@ -2124,13 +2084,9 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Initializing Byzantine Fault Tolerance Quorum Verification Engine...",
@@ -2184,8 +2140,8 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
         type: "premise",
         description: "Custom Premise 1",
         meaning: "User-defined starting hypothesis",
-        x: 120,
-        y: 130,
+        x: 60,
+        y: 40,
         ast: { type: "var", name: "P" },
       },
       {
@@ -2194,8 +2150,8 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
         type: "premise",
         description: "Custom Premise 2",
         meaning: "User-defined implication",
-        x: 120,
-        y: 290,
+        x: 60,
+        y: 260,
         ast: {
           type: "implies",
           left: { type: "var", name: "P" },
@@ -2208,8 +2164,8 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
         type: "intermediate",
         description: "Derived Lemma",
         meaning: "Derived intermediate step",
-        x: 360,
-        y: 210,
+        x: 320,
+        y: 140,
         ast: { type: "var", name: "Q" },
       },
       {
@@ -2218,7 +2174,7 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
         type: "premise",
         description: "Custom Premise 3",
         meaning: "User-defined target bridge",
-        x: 360,
+        x: 320,
         y: 360,
         ast: {
           type: "implies",
@@ -2232,8 +2188,8 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
         type: "conclusion",
         description: "Custom Goal",
         meaning: "Target assertion to be proven",
-        x: 600,
-        y: 285,
+        x: 580,
+        y: 240,
         ast: { type: "var", name: "R" },
       },
     ],
@@ -2243,13 +2199,9 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
     ],
     validPairs: [
       ["A", "C"],
-      ["C", "A"],
       ["B", "C"],
-      ["C", "B"],
       ["C", "E"],
-      ["E", "C"],
       ["D", "E"],
-      ["E", "D"],
     ],
     simulationSteps: [
       "Parsing custom proposition AST...",
@@ -2724,27 +2676,19 @@ export function evaluateProofStatus(
 
   const [req1, req2] = th.intermediateRequires;
   const hasReq1ToInter = edges.some(
-    (e) =>
-      (e.source === req1 && e.target === th.intermediateNodeId) ||
-      (e.source === th.intermediateNodeId && e.target === req1)
+    (e) => e.source === req1 && e.target === th.intermediateNodeId
   );
   const hasReq2ToInter = edges.some(
-    (e) =>
-      (e.source === req2 && e.target === th.intermediateNodeId) ||
-      (e.source === th.intermediateNodeId && e.target === req2)
+    (e) => e.source === req2 && e.target === th.intermediateNodeId
   );
   const isC_Proven = hasReq1ToInter && hasReq2ToInter;
 
   const [cReq1, cReq2] = th.conclusionRequires;
   const hasCReq1ToConcl = edges.some(
-    (e) =>
-      (e.source === cReq1 && e.target === th.targetNodeId) ||
-      (e.source === th.targetNodeId && e.target === cReq1)
+    (e) => e.source === cReq1 && e.target === th.targetNodeId
   );
   const hasCReq2ToConcl = edges.some(
-    (e) =>
-      (e.source === cReq2 && e.target === th.targetNodeId) ||
-      (e.source === th.targetNodeId && e.target === cReq2)
+    (e) => e.source === cReq2 && e.target === th.targetNodeId
   );
   const isE_Proven = isC_Proven && hasCReq1ToConcl && hasCReq2ToConcl;
 
@@ -3166,14 +3110,10 @@ export function getNextTacticHint(
 
   const [req1, req2] = th.intermediateRequires;
   const hasReq1 = edges.some(
-    (e) =>
-      (e.source === req1 && e.target === th.intermediateNodeId) ||
-      (e.source === th.intermediateNodeId && e.target === req1)
+    (e) => e.source === req1 && e.target === th.intermediateNodeId
   );
   const hasReq2 = edges.some(
-    (e) =>
-      (e.source === req2 && e.target === th.intermediateNodeId) ||
-      (e.source === th.intermediateNodeId && e.target === req2)
+    (e) => e.source === req2 && e.target === th.intermediateNodeId
   );
 
   const node1 = th.nodes.find((n) => n.id === req1);
@@ -3206,14 +3146,10 @@ export function getNextTacticHint(
 
   const [cReq1, cReq2] = th.conclusionRequires;
   const hasCReq1 = edges.some(
-    (e) =>
-      (e.source === cReq1 && e.target === th.targetNodeId) ||
-      (e.source === th.targetNodeId && e.target === cReq1)
+    (e) => e.source === cReq1 && e.target === th.targetNodeId
   );
   const hasCReq2 = edges.some(
-    (e) =>
-      (e.source === cReq2 && e.target === th.targetNodeId) ||
-      (e.source === th.targetNodeId && e.target === cReq2)
+    (e) => e.source === cReq2 && e.target === th.targetNodeId
   );
 
   const cNode1 = th.nodes.find((n) => n.id === cReq1);

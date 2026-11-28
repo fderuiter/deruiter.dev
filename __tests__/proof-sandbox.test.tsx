@@ -1,5 +1,13 @@
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   cleanup,
   fireEvent,
@@ -15,6 +23,18 @@ import {
   encodeSandboxHash,
   serializeProofWorkspaceJson,
 } from "@/lib/proof-custom";
+
+beforeAll(async () => {
+  globalThis.Worker = class {
+    postMessage = vi.fn();
+    terminate = vi.fn();
+    onmessage = null;
+  } as unknown as typeof Worker;
+  const { unmount } = render(<ProofWorkspaceClient />);
+  await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+  unmount();
+  cleanup();
+});
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/proof");
@@ -60,48 +80,44 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
     addSandboxFormula("S", "Goal");
 
     expect(
-      screen.getByRole("button", { name: /^Node P1, GIVEN, P ∧ R,/ })
+      screen.getByRole("button", { name: /^Node P1 GIVEN P ∧ R / })
     ).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: /^Node G1, PENDING, S,/ })
+      screen.getByRole("button", { name: /^Node G1 PENDING S / })
     ).toBeTruthy();
 
     // Select P1 (P ∧ R) and apply unary ∧-Elim to spawn intermediate node S1 (P)
     fireEvent.click(
-      screen.getByRole("button", { name: /^Node P1, GIVEN, P ∧ R,/ })
+      screen.getByRole("button", { name: /^Node P1 GIVEN P ∧ R / })
     );
     fireEvent.click(
       screen.getByRole("button", { name: /^Conjunction Elimination ∧-Elim/i })
     );
 
     expect(
-      screen.getByRole("button", { name: /^Node S1, PROVEN, P,/ })
+      screen.getByRole("button", { name: /^Node S1 PROVEN P / })
     ).toBeTruthy();
 
     // Select S1 (P) and P2 (P → Q) and apply binary Modus Ponens to spawn S2 (Q)
+    fireEvent.click(screen.getByRole("button", { name: /^Node S1 PROVEN P / }));
     fireEvent.click(
-      screen.getByRole("button", { name: /^Node S1, PROVEN, P,/ })
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: /^Node P2, GIVEN, P → Q,/ })
+      screen.getByRole("button", { name: /^Node P2 GIVEN P → Q / })
     );
     fireEvent.click(screen.getByRole("button", { name: /^Modus Ponens MP/i }));
 
     expect(
-      screen.getByRole("button", { name: /^Node S2, PROVEN, Q,/ })
+      screen.getByRole("button", { name: /^Node S2 PROVEN Q / })
     ).toBeTruthy();
 
     // Select S2 (Q) and P3 (Q → S) and apply Modus Ponens to discharge Goal G1 (S)
+    fireEvent.click(screen.getByRole("button", { name: /^Node S2 PROVEN Q / }));
     fireEvent.click(
-      screen.getByRole("button", { name: /^Node S2, PROVEN, Q,/ })
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: /^Node P3, GIVEN, Q → S,/ })
+      screen.getByRole("button", { name: /^Node P3 GIVEN Q → S / })
     );
     fireEvent.click(screen.getByRole("button", { name: /^Modus Ponens MP/i }));
 
     expect(
-      screen.getByRole("button", { name: /^Node G1, PROVEN, S,/ })
+      screen.getByRole("button", { name: /^Node G1 PROVEN S / })
     ).toBeTruthy();
     expect(screen.getByText(/GRAPH COMPLETE/i)).toBeTruthy();
 
@@ -109,11 +125,11 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
     const undoBtn = screen.getByRole("button", { name: "Undo proof step" });
     fireEvent.click(undoBtn);
     expect(
-      screen.getByRole("button", { name: /^Node G1, PENDING, S,/ })
+      screen.getByRole("button", { name: /^Node G1 PENDING S / })
     ).toBeTruthy();
     fireEvent.click(undoBtn);
     expect(
-      screen.queryByRole("button", { name: /^Node S2, PROVEN, Q,/ })
+      screen.queryByRole("button", { name: /^Node S2 PROVEN Q / })
     ).toBeNull();
 
     // Redo twice restores S2 and re-discharges G1
@@ -121,10 +137,10 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
     fireEvent.click(redoBtn);
     fireEvent.click(redoBtn);
     expect(
-      screen.getByRole("button", { name: /^Node S2, PROVEN, Q,/ })
+      screen.getByRole("button", { name: /^Node S2 PROVEN Q / })
     ).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: /^Node G1, PROVEN, S,/ })
+      screen.getByRole("button", { name: /^Node G1 PROVEN S / })
     ).toBeTruthy();
 
     // Edit Node G1 inline to check inline editing, then undo back to S
@@ -133,19 +149,19 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
     fireEvent.change(editInput, { target: { value: "R" } });
     fireEvent.click(screen.getByRole("button", { name: "Save Node G1" }));
     expect(
-      screen.getByRole("button", { name: /^Node G1, PENDING, R,/ })
+      screen.getByRole("button", { name: /^Node G1 PENDING R / })
     ).toBeTruthy();
     fireEvent.click(undoBtn);
     expect(
-      screen.getByRole("button", { name: /^Node G1, PROVEN, S,/ })
+      screen.getByRole("button", { name: /^Node G1 PROVEN S / })
     ).toBeTruthy();
 
     // Delete upstream Node S1 -> cascade-deletes S1 and dependent S2 and reverts G1 to PENDING
     fireEvent.click(screen.getByRole("button", { name: "Delete Node S1" }));
-    expect(screen.queryByRole("button", { name: /^Node S1,/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Node S2,/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Node S1 / })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Node S2 / })).toBeNull();
     expect(
-      screen.getByRole("button", { name: /^Node G1, PENDING, S,/ })
+      screen.getByRole("button", { name: /^Node G1 PENDING S / })
     ).toBeTruthy();
   });
 
@@ -188,7 +204,7 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
     );
     const { unmount } = render(<ProofWorkspaceClient />);
     expect(
-      screen.getByRole("button", { name: /^Node E, PROVEN, R,/ })
+      screen.getByRole("button", { name: /^Node E PROVEN R / })
     ).toBeTruthy();
     unmount();
 
@@ -229,7 +245,7 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
 
     render(<ProofWorkspaceClient />);
     expect(
-      screen.getByRole("button", { name: /^Node G1, PROVEN, B,/ })
+      screen.getByRole("button", { name: /^Node G1 PROVEN B / })
     ).toBeTruthy();
   });
 
@@ -275,7 +291,9 @@ describe("ProofWorkspaceClient: Open Sandbox Mode & Portable State", () => {
       ).toBeNull()
     );
     expect(
-      screen.getByRole("button", { name: /^Node G1, PENDING, GoalAtom_0,/ })
+      screen.getByRole("button", {
+        name: /^Node G1 PENDING GoalAtom_0 /,
+      })
     ).toBeTruthy();
 
     // Clicking Share on the >2048-char graph opens the Export modal on proof.json with the limit notice

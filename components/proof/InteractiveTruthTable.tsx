@@ -22,6 +22,7 @@ interface InteractiveTruthTableProps {
   diagnosis: FallacyDiagnosis;
   onClear?: () => void;
   onRollback?: () => void;
+  hasCommittedEdge?: boolean;
 }
 
 /**
@@ -86,6 +87,7 @@ export function InteractiveTruthTable({
   diagnosis,
   onClear,
   onRollback,
+  hasCommittedEdge = false,
 }: InteractiveTruthTableProps) {
   // Extract all distinct variables involved in the fallacy (defaulting to P and Q)
   const variables = useMemo(() => {
@@ -283,11 +285,17 @@ export function InteractiveTruthTable({
             <button
               type="button"
               onClick={onRollback}
-              className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-400"
-              aria-label="Rollback Step: Remove invalid edge and reset fallacy"
+              className="w-full min-h-9 pointer-coarse:min-h-11 py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-400"
+              aria-label={
+                hasCommittedEdge
+                  ? "Rollback Step: Remove invalid edge and reset fallacy"
+                  : "Dismiss Fallacy: Clear fallacy diagnosis and keep valid proof edges"
+              }
             >
               <IconRefresh className="w-4 h-4" />
-              <span>Rollback Step</span>
+              <span>
+                {hasCommittedEdge ? "Rollback Step" : "Dismiss Fallacy"}
+              </span>
             </button>
           </div>
         ) : onClear ? (
@@ -295,7 +303,7 @@ export function InteractiveTruthTable({
             <button
               type="button"
               onClick={onClear}
-              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-mono font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="w-full min-h-9 pointer-coarse:min-h-11 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-mono font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-400"
               aria-label="Dismiss Countermodel diagnosis"
             >
               <span>Dismiss Countermodel</span>

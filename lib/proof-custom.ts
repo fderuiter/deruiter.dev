@@ -220,8 +220,8 @@ export function createCustomTheorem(
                 i === 2 || i === 4
                   ? "Derived from submitted premises"
                   : "Submitted premise",
-              x: [120, 120, 430, 430, 730][i],
-              y: [100, 310, 200, 410, 260][i],
+              x: [60, 60, 320, 320, 580][i],
+              y: [40, 260, 140, 360, 240][i],
             })),
             initialEdges: [],
             intermediateNodeId: "C",
@@ -599,6 +599,22 @@ function validateImportedGraph(nodes: ProofNode[], edges: Edge[]): void {
   for (const node of nodes) visit(node.id);
 }
 
+function normalizeGuidedEdgePair(
+  source: string,
+  target: string,
+  allowedForwardPairs: ReadonlySet<string>
+): { source: string; target: string; key: string } | null {
+  const forwardKey = `${source}>${target}`;
+  if (allowedForwardPairs.has(forwardKey)) {
+    return { source, target, key: forwardKey };
+  }
+  const reversedKey = `${target}>${source}`;
+  if (allowedForwardPairs.has(reversedKey)) {
+    return { source: target, target: source, key: reversedKey };
+  }
+  return null;
+}
+
 /** Parses and validates a `.proof.json` payload, including its dependency graph. */
 export function parseProofWorkspaceJson(
   rawInput: string | Uint8Array
@@ -720,40 +736,6 @@ export function parseProofWorkspaceJson(
     };
   });
 
-  const edgeKeys = new Set<string>();
-  const edges: Edge[] = [];
-  for (let i = 0; i < record.edges.length; i++) {
-    const rawEdge = record.edges[i];
-    if (!rawEdge || typeof rawEdge !== "object") {
-      throw new Error(`Edge at index ${i} must be an object.`);
-    }
-    const e = rawEdge as unknown as Record<string, unknown>;
-    const source = typeof e.source === "string" ? e.source.trim() : "";
-    const target = typeof e.target === "string" ? e.target.trim() : "";
-    if (!seenNodeIds.has(source) || !seenNodeIds.has(target)) {
-      throw new Error(
-        `Edge at index ${i} references unknown node '${!seenNodeIds.has(source) ? source : target}'.`
-      );
-    }
-    if (source === target) {
-      throw new Error(
-        `Edge at index ${i} cannot connect node '${source}' to itself.`
-      );
-    }
-    const key = `${source}->${target}`;
-    if (edgeKeys.has(key)) continue;
-    edgeKeys.add(key);
-    const ruleApplied =
-      typeof e.ruleApplied === "string" && e.ruleApplied.trim()
-        ? e.ruleApplied.trim().slice(0, 32)
-        : undefined;
-    edges.push({
-      source,
-      target,
-      ...(ruleApplied ? { ruleApplied } : {}),
-    });
-  }
-
   const mode = record.mode === "guided" ? "guided" : "sandbox";
   const rawThId =
     typeof record.theoremId === "string" ? record.theoremId : "custom";
@@ -764,6 +746,74 @@ export function parseProofWorkspaceJson(
     typeof record.title === "string" && record.title.trim()
       ? record.title.trim().slice(0, 120)
       : "Sandbox Proof";
+
+  const guidedAllowedPairs =
+    mode === "guided"
+      ? new Set(
+          (THEOREMS[theoremId]?.validPairs ?? []).map(
+            ([s, t]) => `${s.toUpperCase()}>${t.toUpperCase()}`
+          )
+        )
+      : null;
+  const canonicalIdByUpper = new Map(
+    nodes.map((node) => [node.id.toUpperCase(), node.id])
+  );
+
+  const edgeIndexByKey = new Map<string, number>();
+  const edges: Edge[] = [];
+  for (let i = 0; i < record.edges.length; i++) {
+    const rawEdge = record.edges[i];
+    if (!rawEdge || typeof rawEdge !== "object") {
+      throw new Error(`Edge at index ${i} must be an object.`);
+    }
+    const e = rawEdge as unknown as Record<string, unknown>;
+    const rawSource = typeof e.source === "string" ? e.source.trim() : "";
+    const rawTarget = typeof e.target === "string" ? e.target.trim() : "";
+    if (!seenNodeIds.has(rawSource) || !seenNodeIds.has(rawTarget)) {
+      throw new Error(
+        `Edge at index ${i} references unknown node '${!seenNodeIds.has(rawSource) ? rawSource : rawTarget}'.`
+      );
+    }
+    if (rawSource === rawTarget) {
+      throw new Error(
+        `Edge at index ${i} cannot connect node '${rawSource}' to itself.`
+      );
+    }
+
+    let source = rawSource;
+    let target = rawTarget;
+    if (guidedAllowedPairs && guidedAllowedPairs.size > 0) {
+      const normalized = normalizeGuidedEdgePair(
+        rawSource.toUpperCase(),
+        rawTarget.toUpperCase(),
+        guidedAllowedPairs
+      );
+      if (!normalized) {
+        continue;
+      }
+      source = canonicalIdByUpper.get(normalized.source) ?? rawSource;
+      target = canonicalIdByUpper.get(normalized.target) ?? rawTarget;
+    }
+
+    const ruleApplied =
+      typeof e.ruleApplied === "string" && e.ruleApplied.trim()
+        ? e.ruleApplied.trim().slice(0, 32)
+        : undefined;
+    const key = `${source}->${target}`;
+    const existingIdx = edgeIndexByKey.get(key);
+    if (existingIdx !== undefined) {
+      if (!edges[existingIdx].ruleApplied && ruleApplied) {
+        edges[existingIdx] = { ...edges[existingIdx], ruleApplied };
+      }
+      continue;
+    }
+    edgeIndexByKey.set(key, edges.length);
+    edges.push({
+      source,
+      target,
+      ...(ruleApplied ? { ruleApplied } : {}),
+    });
+  }
 
   validateImportedGraph(nodes, edges);
   const theorem = createSandboxTheorem(nodes, edges);
@@ -914,7 +964,7 @@ export function encodeGuidedEdgesHash(
     .join(",");
 }
 
-/** Decodes guided theorem edges from the URL hash, returning null when the hash omits an edge override. */
+/** Decodes guided theorem edges from the URL hash, normalizing reversed legacy pairs to forward validPairs and returning null when the hash omits or fails an edge override. */
 export function decodeGuidedEdgesHash(
   raw: string | null | undefined,
   theorem: TheoremDefinition
@@ -924,13 +974,20 @@ export function decodeGuidedEdgesHash(
   if (raw === "none") return [];
 
   const validIds = new Set(theorem.nodes.map((n) => n.id));
+  const allowedForwardPairs = new Set(
+    theorem.validPairs.map(([s, t]) => `${s}>${t}`)
+  );
   const result: Edge[] = [];
-  const seen = new Set<string>();
+  const indexByKey = new Map<string, number>();
+  let sawCandidate = false;
   for (const part of raw.split(",")) {
     const trimmed = part.trim();
     if (!trimmed) continue;
+    sawCandidate = true;
     const [pairPart, rulePart] = trimmed.split(":");
-    const [source, target] = (pairPart ?? "").split(">");
+    const [rawSource, rawTarget] = (pairPart ?? "").split(">");
+    const source = rawSource?.trim().toUpperCase();
+    const target = rawTarget?.trim().toUpperCase();
     if (
       !source ||
       !target ||
@@ -940,14 +997,33 @@ export function decodeGuidedEdgesHash(
     ) {
       return null;
     }
-    const key = `${source}>${target}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push({
+    const normalized = normalizeGuidedEdgePair(
       source,
       target,
+      allowedForwardPairs
+    );
+    if (!normalized) {
+      continue;
+    }
+    const existingIdx = indexByKey.get(normalized.key);
+    if (existingIdx !== undefined) {
+      if (!result[existingIdx].ruleApplied && rulePart) {
+        result[existingIdx] = {
+          ...result[existingIdx],
+          ruleApplied: rulePart,
+        };
+      }
+      continue;
+    }
+    indexByKey.set(normalized.key, result.length);
+    result.push({
+      source: normalized.source,
+      target: normalized.target,
       ...(rulePart ? { ruleApplied: rulePart } : {}),
     });
+  }
+  if (sawCandidate && result.length === 0) {
+    return null;
   }
   return result;
 }

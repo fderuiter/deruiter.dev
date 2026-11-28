@@ -392,20 +392,28 @@ describe("getFallacyDiagnosis", () => {
 });
 
 describe("tactic hints and ledger fallbacks", () => {
-  it("walks every hint stage for modus ponens", () => {
+  it("walks every hint stage for modus ponens using forward directed edges", () => {
     expect(getNextTacticHint([]).suggestedSource).toBe("A");
     expect(
       getNextTacticHint([{ source: "A", target: "C" }]).suggestedSource
     ).toBe("B");
+    // Reverse edges must not advance tactic hint stages
+    expect(
+      getNextTacticHint([
+        { source: "C", target: "A" },
+        { source: "C", target: "B" },
+      ])
+    ).toMatchObject({ stepNumber: 1, suggestedSource: "A" });
     const stage2 = getNextTacticHint([
-      { source: "C", target: "A" },
-      { source: "C", target: "B" },
+      { source: "A", target: "C" },
+      { source: "B", target: "C" },
+      { source: "E", target: "C" },
     ]);
     expect(stage2).toMatchObject({ stepNumber: 2, suggestedSource: "C" });
     const stage2b = getNextTacticHint([
       { source: "A", target: "C" },
       { source: "B", target: "C" },
-      { source: "E", target: "C" },
+      { source: "C", target: "E" },
     ]);
     expect(stage2b).toMatchObject({ stepNumber: 2, suggestedSource: "D" });
   });

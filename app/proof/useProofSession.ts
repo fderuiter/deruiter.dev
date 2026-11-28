@@ -198,6 +198,37 @@ export function useProofSession(options: ProofSessionOptions) {
   );
   const [consoleLogs, setConsoleLogs] = useState<TerminalLog[]>([WELCOME_LOG]);
 
+  const hasCommittedFallacyEdge = useMemo(() => {
+    if (!currentFallacy) return false;
+    const sId = currentFallacy.sourceId;
+    const tId = currentFallacy.targetId;
+    if (sId && tId) {
+      return edges.some(
+        (e) =>
+          e.source.toUpperCase() === sId.toUpperCase() &&
+          e.target.toUpperCase() === tId.toUpperCase()
+      );
+    }
+    if (!sId && !tId) {
+      return !theorem.isSandbox && edges.length > 0;
+    }
+    if (tId && !sId) {
+      const targetNode = activeTheorem.nodes.find(
+        (n) => n.id.toUpperCase() === tId.toUpperCase()
+      );
+      const isPremise =
+        targetNode?.type === "premise" ||
+        (!activeTheorem.isSandbox &&
+          ["A", "B", "D"].includes(tId.toUpperCase()));
+      return Boolean(
+        !isPremise &&
+        targetNode &&
+        edges.some((e) => e.target.toUpperCase() === tId.toUpperCase())
+      );
+    }
+    return false;
+  }, [currentFallacy, edges, theorem.isSandbox, activeTheorem]);
+
   const ruleMatches = useMemo(
     () =>
       scanApplicableRules(
@@ -461,6 +492,10 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
+    const ruleDef = INFERENCE_RULES.find(
+      (r) => r.id.toLowerCase() === ruleId.toLowerCase()
+    );
+
     const matchedNodes = nodeIds
       .map((id) =>
         activeTheorem.nodes.find((n) => n.id.toUpperCase() === id.toUpperCase())
@@ -486,6 +521,18 @@ export function useProofSession(options: ProofSessionOptions) {
 
     const canonicalIds =
       matchedNodes.length > 0 ? matchedNodes.map((n) => n.id) : nodeIds;
+
+    if (ruleDef?.arity === 2 && canonicalIds.length === 1) {
+      const loneLabel = matchedNodes[0]?.label
+        ? ` (${matchedNodes[0].label})`
+        : "";
+      const promptMsg = `${ruleDef.name} (${ruleDef.symbol}) requires 2 premises. Select a second node to pair with Node ${canonicalIds[0]}${loneLabel}.`;
+      toast(promptMsg, "info", { announce: false });
+      announce(promptMsg);
+      appendLog("rule-prompt", "info", promptMsg);
+      return;
+    }
+
     const asts = matchedNodes
       .map((n) => n.ast || parseFormula(n.label))
       .filter((ast): ast is NonNullable<typeof ast> => Boolean(ast));
@@ -536,9 +583,6 @@ export function useProofSession(options: ProofSessionOptions) {
       return;
     }
 
-    const ruleDef = INFERENCE_RULES.find(
-      (r) => r.id.toLowerCase() === ruleId.toLowerCase()
-    );
     const ruleSymbol = ruleDef?.symbol ?? ruleId.toUpperCase();
     const ruleDisplayName = ruleDef?.name ?? ruleId.toUpperCase();
 
@@ -1148,15 +1192,33 @@ export function useProofSession(options: ProofSessionOptions) {
   }, [activeTheorem.nodes, onFallacy, playSuccess, toast, announce, appendLog]);
 
   /**
-   * Undoes the step the current diagnosis is about as an undoable mutation,
-   * then clears the diagnosis. The rollback itself is recorded in history,
-   * so 'undo' can reverse it.
+   * Dismisses a rejected fallacy without altering valid proof steps, or undoes
+   * a committed invalid step as an undoable mutation when present in `edges`.
    */
   const handleRollback = () => {
     if (!currentFallacy) return;
 
     const sId = currentFallacy.sourceId;
     const tId = currentFallacy.targetId;
+
+    const hasDirectedOffendingEdge =
+      Boolean(sId && tId) &&
+      edges.some(
+        (e) =>
+          e.source.toUpperCase() === sId!.toUpperCase() &&
+          e.target.toUpperCase() === tId!.toUpperCase()
+      );
+
+    if (sId && tId && !hasDirectedOffendingEdge) {
+      setCurrentFallacy(null);
+      const dismissMsg = `Dismissed rejected move (${sId} → ${tId}) and cleared fallacy diagnosis.`;
+      toast(`✔ ${dismissMsg}`, "info", { announce: false });
+      announce(dismissMsg);
+      play(playAutocomplete);
+      appendLog("rollback", "info", `✔ [ROLLBACK] ${dismissMsg}`);
+      return;
+    }
+
     const withoutPair = (edgeList: Edge[], a: string, b: string) =>
       edgeList.filter((e) => !edgeJoins(e, a, b, true));
 
@@ -1357,6 +1419,7 @@ export function useProofSession(options: ProofSessionOptions) {
     handleRedo,
     selectedNodeIds,
     currentFallacy,
+    hasCommittedFallacyEdge,
     setCurrentFallacy,
     consoleLogs,
     ruleMatches,

@@ -25,6 +25,7 @@ interface ProofLedgerProps {
   currentFallacy: FallacyDiagnosis | null;
   setCurrentFallacy: (fallacy: FallacyDiagnosis | null) => void;
   handleRollback?: () => void;
+  hasCommittedFallacyEdge?: boolean;
 }
 
 export const ProofLedger: React.FC<ProofLedgerProps> = ({
@@ -38,6 +39,7 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
   currentFallacy,
   setCurrentFallacy,
   handleRollback,
+  hasCommittedFallacyEdge = false,
 }) => {
   return (
     <div
@@ -212,6 +214,7 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
                   diagnosis={currentFallacy}
                   onClear={() => setCurrentFallacy(null)}
                   onRollback={handleRollback}
+                  hasCommittedEdge={hasCommittedFallacyEdge}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-8 text-slate-500 gap-2">

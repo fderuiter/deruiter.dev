@@ -1,11 +1,33 @@
 // @vitest-environment jsdom
 import React from "react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { getCompatibleTargets, computeMagneticSnap } from "@/lib/proof";
 import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/proof/ProofWorkspaceClient";
 
 describe("Magnetic Snapping & Drag Guides Suite", () => {
+  beforeAll(async () => {
+    globalThis.Worker = class MockWorker {
+      postMessage = vi.fn();
+      terminate = vi.fn();
+      addEventListener = vi.fn();
+      removeEventListener = vi.fn();
+      onmessage = null;
+      onerror = null;
+    } as unknown as typeof Worker;
+    const { unmount } = render(<ProofWorkspacePage />);
+    await screen.findByRole("button", { name: /^Node A / }, { timeout: 10000 });
+    unmount();
+    cleanup();
+  });
   beforeEach(() => {
     globalThis.Worker = class MockWorker {
       postMessage = vi.fn();

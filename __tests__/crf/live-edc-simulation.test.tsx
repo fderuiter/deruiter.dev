@@ -9,7 +9,12 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { LiveEdcSimulator } from "@/components/crf/Modes/LiveEdcSimulator";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
+import { scaffoldCdashDomain } from "@/lib/crf";
 import { StudyProtocol } from "@/lib/crf/types";
+import {
+  checkRegulatoryWording,
+  findClinicalClaims,
+} from "@/lib/clinical-platform";
 
 describe("Live EDC Simulation Suite", () => {
   let container: HTMLDivElement;
@@ -240,5 +245,279 @@ describe("Live EDC Simulation Suite", () => {
 
     expect(container.textContent).not.toContain("Locked (PI)");
     expect(container.textContent).not.toContain("Signed");
+  });
+
+  it("opens the 21 CFR Part 11 Unlock & Signature Revocation modal on PI unlock, revokes Data Lock, hides Signed, and records justification in auditLog", async () => {
+    await act(async () => {
+      root.render(<LiveEdcSimulator study={ONCOLOGY_RECIST_PRESET} />);
+    });
+
+    const formSelect = container.querySelector(
+      "#edc-crf-form-select"
+    ) as HTMLSelectElement;
+    const vsForm = ONCOLOGY_RECIST_PRESET.forms.find((f) => f.domain === "VS")!;
+    await act(async () => {
+      formSelect.value = vsForm.id;
+      formSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    const hasSignedBadge = () =>
+      Array.from(container.querySelectorAll("span")).some(
+        (s) => s.textContent?.trim() === "Signed"
+      );
+
+    const piRoleBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Principal Investigator"
+    );
+    await act(async () => {
+      piRoleBtn?.click();
+    });
+
+    const lockBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Lock & Sign (PI)")
+    );
+    await act(async () => {
+      lockBtn?.click();
+    });
+
+    expect(container.textContent).toContain("Locked (PI)");
+    expect(hasSignedBadge()).toBe(true);
+    expect(container.textContent).toContain("1 records");
+
+    const unlockBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Unlock Form")
+    );
+    expect(unlockBtn).toBeDefined();
+    await act(async () => {
+      unlockBtn?.click();
+    });
+
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain(
+      "21 CFR Part 11 Unlock & Signature Revocation"
+    );
+    expect(checkRegulatoryWording(dialog?.textContent || "")).toEqual([]);
+    expect(findClinicalClaims(dialog?.textContent || "")).toEqual([]);
+
+    const revokeBtn = Array.from(dialog?.querySelectorAll("button") || []).find(
+      (b) => b.textContent?.includes("Revoke Signature & Unlock")
+    ) as HTMLButtonElement | undefined;
+    expect(revokeBtn).toBeDefined();
+    expect(revokeBtn?.disabled).toBe(true);
+
+    const reasonInput = dialog?.querySelector(
+      "#edc-unlock-justification-reason"
+    ) as HTMLTextAreaElement | null;
+    expect(reasonInput).not.toBeNull();
+
+    const justification =
+      "Amend screening blood pressure after source chart reconciliation";
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        "value"
+      )?.set?.call(reasonInput, justification);
+      reasonInput?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(revokeBtn?.disabled).toBe(false);
+
+    await act(async () => {
+      revokeBtn?.click();
+    });
+
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.textContent).not.toContain("Locked (PI)");
+    expect(hasSignedBadge()).toBe(false);
+    expect(container.textContent).toContain("0 records");
+
+    // Verify justification is recorded in Part 11 Audit Trail
+    const auditTab = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Part 11 Audit Trail")
+    );
+    await act(async () => {
+      auditTab?.click();
+    });
+
+    expect(container.textContent).toContain(justification);
+    expect(container.textContent).toContain("Locked & Signed");
+    expect(container.textContent).toContain("Unlocked");
+  });
+
+  it("lists only scheduled forms plus AE and CM log forms per visit matching Subject Status Matrix", async () => {
+    const cmForm = scaffoldCdashDomain("CM");
+    const studyWithCm: StudyProtocol = {
+      ...ONCOLOGY_RECIST_PRESET,
+      forms: [...ONCOLOGY_RECIST_PRESET.forms, cmForm],
+    };
+
+    await act(async () => {
+      root.render(<LiveEdcSimulator study={studyWithCm} />);
+    });
+
+    const visitSelect = container.querySelector(
+      "#edc-protocol-visit-select"
+    ) as HTMLSelectElement;
+    const formSelect = container.querySelector(
+      "#edc-crf-form-select"
+    ) as HTMLSelectElement;
+    expect(visitSelect).not.toBeNull();
+    expect(formSelect).not.toBeNull();
+
+    // Switch to End of Study / Follow-up visit where DM is not scheduled
+    const lastVisit = studyWithCm.visits.at(-1)!;
+    await act(async () => {
+      visitSelect.value = lastVisit.id;
+      visitSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    const dropdownFormIds = Array.from(formSelect.options).map((o) => o.value);
+    expect(dropdownFormIds).toContain(cmForm.id);
+    expect(
+      dropdownFormIds.some((id) =>
+        studyWithCm.forms.some((f) => f.id === id && f.domain === "AE")
+      )
+    ).toBe(true);
+    if (!lastVisit.assignedFormIds.includes("form_dm_onc")) {
+      expect(dropdownFormIds).not.toContain("form_dm_onc");
+    }
+
+    // Switch to Subject Status Matrix and confirm the last visit cell renders the same domains
+    const matrixTab = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Subject Status Matrix")
+    );
+    await act(async () => {
+      matrixTab?.click();
+    });
+
+    const firstSubjectRow = container.querySelector("tbody tr");
+    const visitCells = firstSubjectRow?.querySelectorAll('td[role="gridcell"]');
+    const lastVisitCell = visitCells?.[studyWithCm.visits.length - 1];
+    const matrixDomains = Array.from(
+      lastVisitCell?.querySelectorAll("button") || []
+    ).map((b) => (b.textContent || "").trim());
+    const dropdownDomains = dropdownFormIds.map(
+      (id) => studyWithCm.forms.find((f) => f.id === id)?.domain || ""
+    );
+    expect(matrixDomains).toEqual(dropdownDomains);
+  });
+
+  it("renders BMI = 24.6 kg/m², omits null-flavor pills on VSDAT and BMI, enforces VSDAT Hard Stop, prints activeVisit.name on save, and uses inline role banners without window.alert", async () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+    await act(async () => {
+      root.render(<LiveEdcSimulator study={ONCOLOGY_RECIST_PRESET} />);
+    });
+
+    const formSelect = container.querySelector(
+      "#edc-crf-form-select"
+    ) as HTMLSelectElement;
+    const vsForm = ONCOLOGY_RECIST_PRESET.forms.find((f) => f.domain === "VS")!;
+
+    await act(async () => {
+      formSelect.value = vsForm.id;
+      formSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    // BMI renders 24.6 with kg/m² unit
+    const bmiBox = container.querySelector("#ecrf-input-vs-bmi");
+    expect(bmiBox?.textContent).toContain("24.6");
+    expect(bmiBox?.textContent).toContain("kg/m²");
+
+    // Neither VSDAT nor BMI displays ND / NA / UNK null-flavor toggle pills
+    const vsdatCard = container
+      .querySelector("#ecrf-input-vs-vsdat")
+      ?.closest("div.p-3");
+    const bmiCard = bmiBox?.closest("div.p-3");
+    expect(
+      Array.from(vsdatCard?.querySelectorAll("button") || []).some((b) =>
+        ["ND", "NA", "UNK"].includes((b.textContent || "").trim())
+      )
+    ).toBe(false);
+    expect(
+      Array.from(bmiCard?.querySelectorAll("button") || []).some((b) =>
+        ["ND", "NA", "UNK"].includes((b.textContent || "").trim())
+      )
+    ).toBe(false);
+
+    // Empty VSDAT blocks Save Form with Hard Stop
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Save Form")
+    );
+    await act(async () => {
+      saveBtn?.click();
+    });
+    expect(container.textContent).toContain("Form submission blocked!");
+    expect(container.textContent).toContain("VSDAT");
+
+    // Populate VSDAT (precision_date: Day, Month, Year) and re-save -> prints activeVisit.name
+    const daySelect = container.querySelector(
+      "#ecrf-input-vs-vsdat-day"
+    ) as HTMLSelectElement | null;
+    const monthSelect = container.querySelector(
+      "#ecrf-input-vs-vsdat-month"
+    ) as HTMLSelectElement | null;
+    const vsdatInput = container.querySelector(
+      "#ecrf-input-vs-vsdat"
+    ) as HTMLInputElement | null;
+
+    if (daySelect && monthSelect && vsdatInput) {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value"
+        )?.set?.call(vsdatInput, "2026");
+        vsdatInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await act(async () => {
+        monthSelect.value = "08";
+        monthSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await act(async () => {
+        daySelect.value = "15";
+        daySelect.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    } else if (vsdatInput) {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value"
+        )?.set?.call(vsdatInput, "2026-08-15");
+        vsdatInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+
+    // Dismiss Part 11 Reason for Change modal if partial date transition opened it
+    const confirmReasonBtn = Array.from(
+      container.querySelectorAll("button")
+    ).find((b) => b.textContent?.includes("Confirm Audit Signature"));
+    if (confirmReasonBtn) {
+      await act(async () => {
+        confirmReasonBtn.click();
+      });
+    }
+
+    await act(async () => {
+      saveBtn?.click();
+    });
+
+    const screenVisitName = ONCOLOGY_RECIST_PRESET.visits[0]!.name;
+    expect(container.textContent).toContain(
+      `Form saved successfully for Subject 001-101 at ${screenVisitName}.`
+    );
+
+    // Switch to Data Manager and CRA Monitor -> inline role banner is displayed, zero window.alert calls
+    const dmRoleBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Data Manager"
+    );
+    await act(async () => {
+      dmRoleBtn?.click();
+    });
+    const banner = container.querySelector(
+      '[data-testid="edc-role-signature-banner"]'
+    );
+    expect(banner?.textContent).toMatch(/Data Manager role is read-only/i);
+    expect(alertSpy).not.toHaveBeenCalled();
   });
 });

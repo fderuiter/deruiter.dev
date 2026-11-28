@@ -3868,4 +3868,61 @@ describe("Proof Studio directed validation, consensus worker, and legacy edge no
       { source: "C", target: "E", ruleApplied: "MP" },
     ]);
   });
+
+  describe("Pure Part 11 EDC simulation reducer & effect-free LiveEdcSimulator", () => {
+    it("eliminates useEffect and window.alert in LiveEdcSimulator and revokes Data Lock signatures on FORM_UNLOCK", () => {
+      const liveEdcSource = fs.readFileSync(
+        path.resolve(__dirname, "../components/crf/Modes/LiveEdcSimulator.tsx"),
+        "utf-8"
+      );
+      expect(liveEdcSource).not.toMatch(/\buseEffect\b/);
+      expect(liveEdcSource).not.toMatch(/\b(?:window\.)?alert\s*\(/);
+
+      const visitId = ONCOLOGY_RECIST_PRESET.visits[0]!.id;
+      const vsForm = ONCOLOGY_RECIST_PRESET.forms.find(
+        (f) => f.domain === "VS"
+      )!;
+      const lockedStudy = StudyProtocolEngine.dispatchSimulationAction(
+        ONCOLOGY_RECIST_PRESET,
+        {
+          type: "LOCK_FORM",
+          subjectId: "001-101",
+          visitId,
+          formId: vsForm.id,
+          role: "Principal Investigator",
+        }
+      );
+      expect(
+        StudyProtocolEngine.getFormSignatureStatus(
+          lockedStudy.simulationState,
+          "001-101",
+          visitId,
+          vsForm.id
+        ).isSigned
+      ).toBe(true);
+
+      const unlockedStudy = StudyProtocolEngine.dispatchSimulationAction(
+        lockedStudy,
+        {
+          type: "UNLOCK_FORM",
+          subjectId: "001-101",
+          visitId,
+          formId: vsForm.id,
+          role: "Principal Investigator",
+          reasonForChange: "Amend vital signs after source chart check",
+        }
+      );
+      const afterUnlock = StudyProtocolEngine.getFormSignatureStatus(
+        unlockedStudy.simulationState,
+        "001-101",
+        visitId,
+        vsForm.id
+      );
+      expect(afterUnlock.isLocked).toBe(false);
+      expect(afterUnlock.isSigned).toBe(false);
+      expect(unlockedStudy.simulationState?.auditLog?.[0]?.actionType).toBe(
+        "FORM_UNLOCK"
+      );
+    });
+  });
 });

@@ -260,7 +260,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
       expect(bmi.required).toBe(false);
       expect(bmi.unit).toBe("kg/m²");
       expect(bmi.calculationFormula).toBe(
-        "weight / ((height/100) * (height/100))"
+        "round(weight / ((height / 100) * (height / 100)), 1)"
       );
 
       expect(varMap.get("SYSBP")?.unit).toBe("mmHg");

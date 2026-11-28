@@ -1,60 +1,55 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  StudyProtocol,
   CRFField,
   EDCQuery,
-  AuditTrailEntry,
-  ElectronicSignature,
-  SubjectFormStatus,
+  EdcSimulationAction,
   EdcSimulationState,
+  EdcUserRole,
+  StudyProtocol,
 } from "@/lib/crf/types";
 import {
-  evaluateRule,
-  resolveFormConditionalState,
-  describeFieldConditionalState,
-  parsePrecisionDate,
-  formatPrecisionDate,
-  isCdiscNullFlavor,
-  validatePrecisionDate,
   CDISC_NULL_FLAVORS,
-  raiseSimulationQuery,
-  answerSimulationQuery,
-  closeSimulationQuery,
-  cancelSimulationQuery,
-  reopenSimulationQuery,
+  DEFAULT_EDC_SUBJECTS,
+  buildSubjectFieldValues,
+  describeFieldConditionalState,
+  evaluateDerivedFormValues,
+  formatPrecisionDate,
   getEdcRoleActorLabel,
+  getEdcRolePermissions,
+  getFormSignatureStatus,
+  getScheduledFormsForVisit,
+  getSubjectFormStatus,
+  isCdiscNullFlavor,
+  parsePrecisionDate,
+  reduceEdcSimulationState,
+  resolveFormConditionalState,
+  seedEdcSimulationState,
+  validateEdcFormSubmission,
 } from "@/lib/crf";
-import { useCrfService } from "@/hooks/useCrfService";
 import { generateId } from "@/lib/utils";
 import { NoPhiNotice } from "../NoPhiNotice";
 import { EdcClinicalDataExchangePanel } from "./EdcClinicalDataExchangePanel";
 import { EdcManualQueryModal } from "./EdcManualQueryModal";
+import { EdcUnlockRevocationModal } from "./EdcUnlockRevocationModal";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import {
-  IconShieldCheck,
-  IconHistory,
-  IconCheck,
-  IconPlus,
-  IconLock,
-  IconLockOpen,
-  IconTable,
-  IconFileText,
-  IconMessageCircleQuestion,
   IconAlertTriangle,
+  IconCheck,
   IconDeviceFloppy,
   IconEyeOff,
+  IconFileText,
+  IconHistory,
+  IconInfoCircle,
+  IconLock,
+  IconLockOpen,
+  IconMessageCircleQuestion,
+  IconPlus,
+  IconShieldCheck,
+  IconTable,
 } from "@tabler/icons-react";
 import { TooltipButton } from "@/components/ui/Tooltip";
-
-function generateAuditId(): string {
-  return generateId("aud_");
-}
-
-function generateSignatureId(): string {
-  return generateId("sig_");
-}
 
 function generateQueryId(): string {
   return generateId("qry_");
@@ -63,189 +58,147 @@ function generateQueryId(): string {
 interface LiveEdcSimulatorProps {
   study: StudyProtocol;
   simulationState?: EdcSimulationState;
+  onDispatchSimulationAction?: (action: EdcSimulationAction) => void;
   onUpdateSimulationState?: (nextState: EdcSimulationState) => void;
 }
 
-type UserRole =
-  | "Site Coordinator"
-  | "Principal Investigator"
-  | "CRA Monitor"
-  | "Data Manager";
 type EdcSubView = "form_entry" | "subject_matrix" | "audit_trail" | "queries";
 
 export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   study,
   simulationState,
+  onDispatchSimulationAction,
   onUpdateSimulationState,
 }) => {
-  const { evaluateFormula } = useCrfService();
   const { announce } = useAnnouncer();
   const [subView, setSubView] = useState<EdcSubView>("form_entry");
   const [subjectId, setSubjectId] = useState("001-101");
   const [newSubjectInput, setNewSubjectInput] = useState("");
   const [isAddingSubject, setIsAddingSubject] = useState(false);
-
-  const initialSimState = simulationState ?? study.simulationState;
-
-  const [availableSubjects, setAvailableSubjects] = useState<string[]>(
-    () =>
-      initialSimState?.availableSubjects ?? ["001-101", "001-102", "001-103"]
-  );
-
   const [activeVisitId, setActiveVisitId] = useState<string>(
     study.visits[0]?.id || ""
   );
   const [activeFormId, setActiveFormId] = useState<string>(
     study.forms[0]?.id || ""
   );
-  const [currentRole, setCurrentRole] = useState<UserRole>("Site Coordinator");
+  const [currentRole, setCurrentRole] =
+    useState<EdcUserRole>("Site Coordinator");
 
-  // Subject Form Values State: Map<subjectId_visitId_fieldId, value>
-  const [formValues, setFormValues] = useState<
-    Record<string, string | number | boolean | null>
-  >(
+  // Uncontrolled fallback state used only when mounted standalone without a parent reducer dispatcher
+  const [uncontrolledEntry, setUncontrolledEntry] = useState<{
+    study: StudyProtocol;
+    state: EdcSimulationState;
+  } | null>(null);
+
+  const activeUncontrolledState =
+    !onDispatchSimulationAction &&
+    simulationState === undefined &&
+    study.simulationState === undefined &&
+    uncontrolledEntry?.study === study
+      ? uncontrolledEntry.state
+      : undefined;
+
+  const rawSimState =
+    simulationState ?? study.simulationState ?? activeUncontrolledState;
+
+  const resolvedSimState = useMemo(
+    () => seedEdcSimulationState(study, rawSimState),
+    [study, rawSimState]
+  );
+
+  const dispatchAction = (action: EdcSimulationAction) => {
+    if (onDispatchSimulationAction) {
+      onDispatchSimulationAction(action);
+      return;
+    }
+    const nextState = reduceEdcSimulationState(study, rawSimState, action);
+    setUncontrolledEntry({ study, state: nextState });
+    onUpdateSimulationState?.(nextState);
+  };
+
+  const availableSubjects = useMemo(
+    () => resolvedSimState.availableSubjects || [...DEFAULT_EDC_SUBJECTS],
+    [resolvedSimState.availableSubjects]
+  );
+
+  const effectiveSubjectId = availableSubjects.includes(subjectId)
+    ? subjectId
+    : availableSubjects[0] || "001-101";
+
+  const effectiveVisit = useMemo(
+    () => study.visits.find((v) => v.id === activeVisitId) || study.visits[0],
+    [study.visits, activeVisitId]
+  );
+  const effectiveVisitId = effectiveVisit?.id || "";
+
+  const scheduledForms = useMemo(
+    () => getScheduledFormsForVisit(study, effectiveVisitId),
+    [study, effectiveVisitId]
+  );
+
+  const activeForm = useMemo(
     () =>
-      initialSimState?.formValues ?? {
-        "001-101_v_screen_f_brthyr": 1982,
-        "001-101_v_screen_f_age": 44,
-        "001-101_v_screen_f_sex": "M",
-        "001-101_v_screen_f_height": 178,
-        "001-101_v_screen_f_weight": 78,
-        "001-101_v_screen_f_sysbp": 132,
-        "001-101_v_screen_f_diabp": 84,
-        "001-101_v_screen_f_pulse": 72,
-        "001-101_v_screen_f_temp": 36.8,
-      }
+      scheduledForms.find((f) => f.id === activeFormId) || scheduledForms[0],
+    [scheduledForms, activeFormId]
   );
+  const effectiveFormId = activeForm?.id || "";
 
-  // CRA SDV Verification State: Map<subjectId_visitId_fieldId, { verified: boolean; timestamp: string }>
-  const [sdvMap, setSdvMap] = useState<
-    Record<string, { verified: boolean; timestamp: string; auditedBy: string }>
-  >(() => initialSimState?.sdvMap ?? {});
-
-  // PI Form Lock State: Map<subjectId_visitId_formId, { locked: boolean; lockedBy: string; timestamp: string }>
-  const [lockedForms, setLockedForms] = useState<
-    Record<string, { locked: boolean; lockedBy: string; timestamp: string }>
-  >(() => initialSimState?.lockedForms ?? {});
-
-  // Queries State
-  const [queries, setQueries] = useState<EDCQuery[]>(
-    () => initialSimState?.queries ?? []
-  );
-
-  // Audit Trail State
-  const [auditLog, setAuditLog] = useState<AuditTrailEntry[]>(
+  const effectiveFormValues = useMemo(
     () =>
-      initialSimState?.auditLog ?? [
-        {
-          id: "aud_init_1",
-          timestamp: "2026-08-15T08:30:00Z",
-          subjectId: "001-101",
-          formId: study.forms[0]?.id || "form_dm",
-          fieldId: "f_brthyr",
-          fieldName: "BRTHYR",
-          previousValue: null,
-          newValue: 1982,
-          changedBy: "Dr. Sarah Jenkins (Site CRC)",
-          userRole: "Site Coordinator",
-          reasonForChange: "Initial baseline data entry from hospital records",
-        },
-      ]
+      evaluateDerivedFormValues(
+        activeForm,
+        effectiveSubjectId,
+        effectiveVisitId,
+        resolvedSimState.formValues || {}
+      ),
+    [
+      activeForm,
+      effectiveSubjectId,
+      effectiveVisitId,
+      resolvedSimState.formValues,
+    ]
   );
 
-  // Signatures State
-  const [signatures, setSignatures] = useState<ElectronicSignature[]>(
-    () => initialSimState?.signatures ?? []
+  const sdvMap = useMemo(
+    () => resolvedSimState.sdvMap || {},
+    [resolvedSimState.sdvMap]
+  );
+  const queries = useMemo(
+    () => resolvedSimState.queries || [],
+    [resolvedSimState.queries]
+  );
+  const auditLog = useMemo(
+    () => resolvedSimState.auditLog || [],
+    [resolvedSimState.auditLog]
   );
 
-  const emittedStatesRef = React.useRef<WeakSet<EdcSimulationState>>(
-    new WeakSet()
+  const signatureStatus = useMemo(
+    () =>
+      getFormSignatureStatus(
+        resolvedSimState,
+        effectiveSubjectId,
+        effectiveVisitId,
+        effectiveFormId
+      ),
+    [resolvedSimState, effectiveSubjectId, effectiveVisitId, effectiveFormId]
   );
-  const hadActiveSimStateRef = React.useRef<boolean>(
-    Boolean(simulationState ?? study.simulationState)
+
+  const rolePermissions = useMemo(
+    () =>
+      getEdcRolePermissions(currentRole, {
+        isLocked: signatureStatus.isLocked,
+      }),
+    [currentRole, signatureStatus.isLocked]
   );
-  const prevStudyRef = React.useRef<StudyProtocol>(study);
-  const activeSimState = simulationState ?? study.simulationState;
 
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    const studyChanged = prevStudyRef.current !== study;
-    prevStudyRef.current = study;
-
-    if (activeSimState) {
-      hadActiveSimStateRef.current = true;
-      if (!emittedStatesRef.current.has(activeSimState)) {
-        if (activeSimState.formValues !== undefined)
-          setFormValues(activeSimState.formValues);
-        if (activeSimState.sdvMap !== undefined)
-          setSdvMap(activeSimState.sdvMap);
-        if (activeSimState.lockedForms !== undefined)
-          setLockedForms(activeSimState.lockedForms);
-        if (activeSimState.queries !== undefined)
-          setQueries(activeSimState.queries);
-        if (activeSimState.auditLog !== undefined)
-          setAuditLog(activeSimState.auditLog);
-        if (activeSimState.signatures !== undefined)
-          setSignatures(activeSimState.signatures);
-        if (activeSimState.availableSubjects !== undefined)
-          setAvailableSubjects(activeSimState.availableSubjects);
-      }
-    } else if (
-      !activeSimState &&
-      (hadActiveSimStateRef.current || studyChanged)
-    ) {
-      // Cleanly reset state if incoming study/props explicitly cleared simulationState
-      hadActiveSimStateRef.current = false;
-      setFormValues({});
-      setSdvMap({});
-      setLockedForms({});
-      setQueries([]);
-      setAuditLog([]);
-      setSignatures([]);
-      setAvailableSubjects(["001-101", "001-102", "001-103"]);
-    }
-  }, [activeSimState, study]);
-
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    if (
-      study.forms.length > 0 &&
-      !study.forms.some((f) => f.id === activeFormId)
-    ) {
-      setActiveFormId(study.forms[0].id);
-    }
-    if (
-      study.visits.length > 0 &&
-      !study.visits.some((v) => v.id === activeVisitId)
-    ) {
-      setActiveVisitId(study.visits[0].id);
-    }
-  }, [study, activeFormId, activeVisitId]);
-
-  useEffect(() => {
-    if (onUpdateSimulationState) {
-      const nextState: EdcSimulationState = {
-        formValues,
-        sdvMap,
-        lockedForms,
-        queries,
-        auditLog,
-        signatures,
-        availableSubjects,
-      };
-      emittedStatesRef.current.add(nextState);
-      onUpdateSimulationState(nextState);
-    }
-  }, [
-    formValues,
-    sdvMap,
-    lockedForms,
-    queries,
-    auditLog,
-    signatures,
-    availableSubjects,
-    onUpdateSimulationState,
-  ]);
+  const currentSimSnapshot = useMemo<EdcSimulationState>(
+    () => ({
+      ...resolvedSimState,
+      availableSubjects,
+      formValues: effectiveFormValues,
+    }),
+    [resolvedSimState, availableSubjects, effectiveFormValues]
+  );
 
   // Reason For Change Modal State
   const [pendingChange, setPendingChange] = useState<{
@@ -256,6 +209,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   const [changeReasonInput, setChangeReasonInput] = useState(
     "Transcription correction against source chart"
   );
+
+  // PI Unlock & Signature Revocation Modal State
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
 
   // Query Response Modal State
   const [activeQueryToAnswer, setActiveQueryToAnswer] =
@@ -268,29 +224,21 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   // Manual Query Modal State
   const [isManualQueryModalOpen, setIsManualQueryModalOpen] = useState(false);
 
-  const isMonitorOrDm =
-    currentRole === "CRA Monitor" || currentRole === "Data Manager";
+  // 3-Tier Missing Data & Validation State
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const [saveStatus, setSaveStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+    hardStops?: string[];
+    autoQueries?: string[];
+  } | null>(null);
 
-  const currentSimSnapshot = useMemo<EdcSimulationState>(
-    () => ({
-      formValues,
-      sdvMap,
-      lockedForms,
-      queries,
-      auditLog,
-      signatures,
-      availableSubjects,
-    }),
-    [
-      formValues,
-      sdvMap,
-      lockedForms,
-      queries,
-      auditLog,
-      signatures,
-      availableSubjects,
-    ]
-  );
+  const clearTransientValidation = () => {
+    setValidationErrors({});
+    setSaveStatus(null);
+  };
 
   const openManualQueryModal = () => {
     setIsManualQueryModalOpen(true);
@@ -305,9 +253,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     severity: EDCQuery["severity"];
     message: string;
   }) => {
-    const nextSim = raiseSimulationQuery(
-      currentSimSnapshot,
-      {
+    dispatchAction({
+      type: "RAISE_QUERY",
+      input: {
         id: generateQueryId(),
         subjectId: submission.subjectId,
         visitId: submission.visitId,
@@ -319,13 +267,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         actor: getEdcRoleActorLabel(currentRole),
         userRole: currentRole,
       },
-      study
-    );
-
-    if (nextSim.availableSubjects)
-      setAvailableSubjects(nextSim.availableSubjects);
-    if (nextSim.queries) setQueries(nextSim.queries);
-    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
+    });
     setIsManualQueryModalOpen(false);
     setSubView("queries");
     announce("Manual discrepancy query raised.", "polite");
@@ -333,14 +275,15 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
   const handleSubmitQueryAnswer = () => {
     if (!activeQueryToAnswer || !queryResponseText.trim()) return;
-    const nextSim = answerSimulationQuery(currentSimSnapshot, {
-      queryId: activeQueryToAnswer.id,
-      response: queryResponseText,
-      actor: getEdcRoleActorLabel(currentRole),
-      userRole: currentRole,
+    dispatchAction({
+      type: "ANSWER_QUERY",
+      input: {
+        queryId: activeQueryToAnswer.id,
+        response: queryResponseText,
+        actor: getEdcRoleActorLabel(currentRole),
+        userRole: currentRole,
+      },
     });
-    if (nextSim.queries) setQueries(nextSim.queries);
-    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
     setActiveQueryToAnswer(null);
     setQueryResponseText("");
     announce("Discrepancy query response recorded.", "polite");
@@ -348,14 +291,15 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
   const handleCloseQuery = (queryId: string) => {
     const note = queryResolutionNotes[queryId];
-    const nextSim = closeSimulationQuery(currentSimSnapshot, {
-      queryId,
-      actor: getEdcRoleActorLabel(currentRole),
-      userRole: currentRole,
-      resolutionReason: note,
+    dispatchAction({
+      type: "CLOSE_QUERY",
+      input: {
+        queryId,
+        actor: getEdcRoleActorLabel(currentRole),
+        userRole: currentRole,
+        resolutionReason: note,
+      },
     });
-    if (nextSim.queries) setQueries(nextSim.queries);
-    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
     setQueryResolutionNotes((prev) => {
       const copy = { ...prev };
       delete copy[queryId];
@@ -366,14 +310,15 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
   const handleCancelQuery = (queryId: string) => {
     const note = queryResolutionNotes[queryId];
-    const nextSim = cancelSimulationQuery(currentSimSnapshot, {
-      queryId,
-      actor: getEdcRoleActorLabel(currentRole),
-      userRole: currentRole,
-      resolutionReason: note,
+    dispatchAction({
+      type: "CANCEL_QUERY",
+      input: {
+        queryId,
+        actor: getEdcRoleActorLabel(currentRole),
+        userRole: currentRole,
+        resolutionReason: note,
+      },
     });
-    if (nextSim.queries) setQueries(nextSim.queries);
-    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
     setQueryResolutionNotes((prev) => {
       const copy = { ...prev };
       delete copy[queryId];
@@ -384,14 +329,15 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
   const handleReopenQuery = (queryId: string) => {
     const note = queryResolutionNotes[queryId];
-    const nextSim = reopenSimulationQuery(currentSimSnapshot, {
-      queryId,
-      actor: getEdcRoleActorLabel(currentRole),
-      userRole: currentRole,
-      reason: note,
+    dispatchAction({
+      type: "REOPEN_QUERY",
+      input: {
+        queryId,
+        actor: getEdcRoleActorLabel(currentRole),
+        userRole: currentRole,
+        reason: note,
+      },
     });
-    if (nextSim.queries) setQueries(nextSim.queries);
-    if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
     setQueryResolutionNotes((prev) => {
       const copy = { ...prev };
       delete copy[queryId];
@@ -404,64 +350,45 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     importedSim: EdcSimulationState,
     source: "odm" | "csv"
   ) => {
-    if (importedSim.availableSubjects) {
-      setAvailableSubjects(importedSim.availableSubjects);
-      if (
-        source === "odm" &&
-        importedSim.availableSubjects.length > 0 &&
-        !importedSim.availableSubjects.includes(subjectId)
-      ) {
-        setSubjectId(importedSim.availableSubjects[0]);
-      }
+    const mergedState: EdcSimulationState = {
+      availableSubjects:
+        importedSim.availableSubjects ?? resolvedSimState.availableSubjects,
+      formValues: importedSim.formValues ?? resolvedSimState.formValues,
+      sdvMap: importedSim.sdvMap ?? resolvedSimState.sdvMap,
+      lockedForms: importedSim.lockedForms ?? resolvedSimState.lockedForms,
+      queries: importedSim.queries ?? resolvedSimState.queries,
+      auditLog: importedSim.auditLog ?? resolvedSimState.auditLog,
+      signatures: importedSim.signatures ?? resolvedSimState.signatures,
+    };
+
+    dispatchAction({
+      type: "REPLACE_SIMULATION_STATE",
+      simulationState: mergedState,
+    });
+
+    if (
+      source === "odm" &&
+      importedSim.availableSubjects &&
+      importedSim.availableSubjects.length > 0 &&
+      !importedSim.availableSubjects.includes(effectiveSubjectId)
+    ) {
+      setSubjectId(importedSim.availableSubjects[0]);
     }
-    if (importedSim.formValues) setFormValues(importedSim.formValues);
-    if (importedSim.auditLog) setAuditLog(importedSim.auditLog);
-    if (importedSim.signatures) setSignatures(importedSim.signatures);
-    if (importedSim.queries) setQueries(importedSim.queries);
-    if (importedSim.lockedForms) setLockedForms(importedSim.lockedForms);
-    if (importedSim.sdvMap) setSdvMap(importedSim.sdvMap);
   };
-
-  // 3-Tier Missing Data & Validation State
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
-  const [saveStatus, setSaveStatus] = useState<{
-    type: "success" | "error";
-    message: string;
-    hardStops?: string[];
-    autoQueries?: string[];
-  } | null>(null);
-
-  const activeForm =
-    study.forms.find((f) => f.id === activeFormId) || study.forms[0];
-  const formLockKey = `${subjectId}_${activeVisitId}_${activeForm?.id || ""}`;
-  const isCurrentFormLocked = lockedForms[formLockKey]?.locked || false;
 
   // Values for the active subject, keyed by both field id and variable name,
   // plus cross-visit keys. Shared by formula evaluation, edit checks and the
   // conditional visibility runtime so all three see identical inputs.
-  const subjectVals = useMemo(() => {
-    const vals: Record<string, string | number | boolean | null | undefined> =
-      {};
-    if (!activeForm) return vals;
-
-    activeForm.sections
-      .flatMap((s) => s.fields)
-      .forEach((f) => {
-        const key = `${subjectId}_${activeVisitId}_${f.id}`;
-        vals[f.id] = formValues[key];
-        vals[f.variableName] = formValues[key];
-      });
-
-    Object.entries(formValues).forEach(([key, val]) => {
-      if (key.startsWith(`${subjectId}_`)) {
-        vals[key.replace(`${subjectId}_`, "")] = val;
-      }
-    });
-
-    return vals;
-  }, [activeForm, formValues, subjectId, activeVisitId]);
+  const subjectVals = useMemo(
+    () =>
+      buildSubjectFieldValues(
+        activeForm,
+        effectiveSubjectId,
+        effectiveVisitId,
+        effectiveFormValues
+      ),
+    [activeForm, effectiveSubjectId, effectiveVisitId, effectiveFormValues]
+  );
 
   /**
    * Conditional show/hide/require state (#670). One resolution per render
@@ -474,101 +401,44 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       activeForm.sections.flatMap((s) => s.fields),
       activeForm.rules || [],
       subjectVals,
-      activeVisitId
+      effectiveVisitId
     );
-  }, [activeForm, subjectVals, activeVisitId]);
+  }, [activeForm, subjectVals, effectiveVisitId]);
 
-  // Evaluate dynamic formulas and edit checks when formValues change
-  useEffect(() => {
-    if (!activeForm) return;
-
-    const fields = activeForm.sections.flatMap((s) => s.fields);
-
-    // 1. Evaluate Calculated Fields
-    fields.forEach((field) => {
-      if (field.dataType === "calculated" && field.calculationFormula) {
-        const evalRes = evaluateFormula({
-          formula: field.calculationFormula,
-          fieldValues: subjectVals,
-          fieldsList: fields,
-        });
-        const calculatedVal = evalRes.success ? evalRes.data.value : null;
-        const key = `${subjectId}_${activeVisitId}_${field.id}`;
-        if (formValues[key] !== calculatedVal) {
-          setFormValues((prev) => ({ ...prev, [key]: calculatedVal }));
-        }
-      }
+  const applyValueChange = (
+    field: CRFField,
+    _oldVal: string | number | boolean | null,
+    newVal: string | number | boolean | null,
+    reason: string
+  ) => {
+    if (!activeForm || !rolePermissions.canEditActiveForm) return;
+    dispatchAction({
+      type: "UPDATE_FIELD_VALUE",
+      subjectId: effectiveSubjectId,
+      visitId: effectiveVisitId,
+      formId: activeForm.id,
+      fieldId: field.id,
+      value: newVal,
+      role: currentRole,
+      reasonForChange: reason,
     });
-
-    // 2. Evaluate Dynamic Edit Check Rules
-    (activeForm.rules || []).forEach((rule) => {
-      const isTriggered = evaluateRule(
-        rule,
-        subjectVals,
-        fields,
-        activeVisitId
-      );
-
-      if (isTriggered && rule.actionType === "raise_query") {
-        setQueries((prevQueries) => {
-          const queryExists = prevQueries.some(
-            (q) =>
-              q.subjectId === subjectId &&
-              q.visitId === activeVisitId &&
-              q.ruleId === rule.id &&
-              q.status !== "Cancelled"
-          );
-
-          if (queryExists) return prevQueries;
-
-          const targetF = fields.find((f) => f.id === rule.targetFieldId);
-          const newQuery: EDCQuery = {
-            id: generateQueryId(),
-            fieldId: rule.targetFieldId,
-            fieldName: targetF?.variableName || "FIELD",
-            ruleId: rule.id,
-            formId: activeForm.id,
-            visitId: activeVisitId,
-            subjectId,
-            status: "Open",
-            severity: rule.querySeverity || "warning",
-            message: rule.queryMessage || `Edit check ${rule.name} failed.`,
-            raisedBy: "CRF Studio Auto-Linter Engine",
-            raisedAt: new Date().toISOString(),
-          };
-          return [...prevQueries, newQuery];
-        });
-      }
-    });
-  }, [
-    formValues,
-    activeForm,
-    activeVisitId,
-    subjectId,
-    evaluateFormula,
-    subjectVals,
-  ]);
+    setPendingChange(null);
+  };
 
   const handleFieldChange = (
     field: CRFField,
     rawValue: string | number | boolean | null
   ) => {
-    if (isCurrentFormLocked && currentRole !== "Principal Investigator") {
-      alert(
-        "This form has been locked by the Principal Investigator. Edits are disabled."
-      );
+    if (!rolePermissions.canEditActiveForm) {
       return;
     }
 
-    const key = `${subjectId}_${activeVisitId}_${field.id}`;
-    const previousVal = formValues[key] ?? null;
+    const key = `${effectiveSubjectId}_${effectiveVisitId}_${field.id}`;
+    const previousVal = effectiveFormValues[key] ?? null;
+    if (previousVal === rawValue) return;
 
     // Prompt for 21 CFR Part 11 Reason for Change if modifying existing non-empty value
-    if (
-      previousVal !== null &&
-      previousVal !== rawValue &&
-      previousVal !== ""
-    ) {
+    if (previousVal !== null && previousVal !== "") {
       setPendingChange({
         field,
         oldVal: previousVal,
@@ -580,328 +450,106 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     applyValueChange(field, previousVal, rawValue, "Initial Entry");
   };
 
-  const applyValueChange = (
-    field: CRFField,
-    oldVal: string | number | boolean | null,
-    newVal: string | number | boolean | null,
-    reason: string
-  ) => {
-    if (!activeForm) return;
-    const key = `${subjectId}_${activeVisitId}_${field.id}`;
-    setFormValues((prev) => ({ ...prev, [key]: newVal }));
-
-    const auditEntry: AuditTrailEntry = {
-      id: generateAuditId(),
-      timestamp: new Date().toISOString(),
-      subjectId,
-      formId: activeForm.id,
-      fieldId: field.id,
-      fieldName: field.variableName,
-      previousValue: oldVal,
-      newValue: newVal,
-      changedBy: getEdcRoleActorLabel(currentRole),
-      userRole: currentRole,
-      reasonForChange: reason,
-    };
-
-    setAuditLog((prev) => [auditEntry, ...prev]);
-    setPendingChange(null);
-  };
-
-  // Toggle Source Data Verification (SDV) for a field
   const handleToggleSdv = (fieldId: string, fieldName: string) => {
-    if (!activeForm) return;
-    const key = `${subjectId}_${activeVisitId}_${fieldId}`;
-    const isAlreadyVerified = sdvMap[key]?.verified || false;
-
-    const newVerified = !isAlreadyVerified;
-    setSdvMap((prev) => ({
-      ...prev,
-      [key]: {
-        verified: newVerified,
-        timestamp: new Date().toISOString(),
-        auditedBy: "CRA Monitor",
-      },
-    }));
-
-    const auditEntry: AuditTrailEntry = {
-      id: generateAuditId(),
-      timestamp: new Date().toISOString(),
-      subjectId,
+    if (!activeForm || !rolePermissions.canToggleSdv) return;
+    dispatchAction({
+      type: "TOGGLE_SDV",
+      subjectId: effectiveSubjectId,
+      visitId: effectiveVisitId,
       formId: activeForm.id,
       fieldId,
       fieldName,
-      previousValue: isAlreadyVerified ? "SDV Verified" : "Unverified",
-      newValue: newVerified ? "SDV Verified" : "Unverified",
-      changedBy: "CRA Monitor",
-      userRole: "CRA Monitor",
-      reasonForChange: newVerified
-        ? "Source Data Verification (SDV) against medical records completed"
-        : "SDV verification revoked",
-    };
-    setAuditLog((prev) => [auditEntry, ...prev]);
+      role: currentRole,
+    });
   };
 
-  // Toggle Form Lock (PI)
-  const handleToggleLockForm = () => {
-    if (!activeForm) return;
-    const key = formLockKey;
-    const currentlyLocked = lockedForms[key]?.locked || false;
-    const newLocked = !currentlyLocked;
+  const handleLockForm = () => {
+    if (!activeForm || !rolePermissions.canLockAndSign) return;
+    dispatchAction({
+      type: "LOCK_FORM",
+      subjectId: effectiveSubjectId,
+      visitId: effectiveVisitId,
+      formId: activeForm.id,
+      role: currentRole,
+    });
+    announce("Form locked and signed by Principal Investigator.", "polite");
+  };
 
-    setLockedForms((prev) => ({
-      ...prev,
-      [key]: {
-        locked: newLocked,
-        lockedBy: "Dr. Sarah Jenkins, M.D. (PI)",
-        timestamp: new Date().toISOString(),
-      },
-    }));
-
-    if (newLocked) {
-      const signature: ElectronicSignature = {
-        id: generateSignatureId(),
-        subjectId,
-        formId: activeForm.id,
-        visitId: activeVisitId,
-        signedBy: "Dr. Sarah Jenkins, M.D. (Investigator)",
-        userRole: "Principal Investigator",
-        timestamp: new Date().toISOString(),
-        meaning: "Data Lock",
-        // A random reference token: nothing is hashed or signed (#3617).
-        digest: generateId("sim_"),
-      };
-      setSignatures((prev) => [...prev, signature]);
-    }
+  const handleConfirmUnlockForm = (reasonForChange: string) => {
+    if (!activeForm || !rolePermissions.canUnlockForm) return;
+    dispatchAction({
+      type: "UNLOCK_FORM",
+      subjectId: effectiveSubjectId,
+      visitId: effectiveVisitId,
+      formId: activeForm.id,
+      role: currentRole,
+      reasonForChange,
+    });
+    setIsUnlockModalOpen(false);
+    announce("Data Lock signature revoked and form unlocked.", "polite");
   };
 
   // 3-Tier Missing Data & Date Validation Engine (Save / Complete Form)
   const handleSaveForm = () => {
     if (!activeForm) return;
 
-    const fields = activeForm.sections.flatMap((s) => s.fields);
-    const newErrors: Record<string, string> = {};
-    const hardStopVars: string[] = [];
-    const autoQueryVars: string[] = [];
-    const newQueriesToRaise: EDCQuery[] = [];
+    const validation = validateEdcFormSubmission(
+      study,
+      activeForm,
+      effectiveSubjectId,
+      effectiveVisitId,
+      effectiveFormValues
+    );
 
-    fields.forEach((field) => {
-      const key = `${subjectId}_${activeVisitId}_${field.id}`;
-      const val = formValues[key];
-      const hasNullFlavor = isCdiscNullFlavor(val);
-      const isEmpty = val === null || val === undefined || val === "";
+    setValidationErrors(validation.errors);
 
-      // A field a conditional rule has taken off screen is never validated
-      // (#670). Requiring an invisible answer would make the form
-      // unsubmittable with no way for the investigator to resolve it. The
-      // captured value is left untouched, not cleared.
-      const fieldState = conditionalState?.fields[field.id];
-      if (fieldState && !fieldState.visible) return;
-
-      // 1. Missing data checks. Requiredness comes from the same resolved
-      // state the control rendered from, so a rule-required field is enforced
-      // exactly when it is shown as required.
-      const isRuleRequired = fieldState?.required ?? field.required;
-      const isHardStop =
-        field.requirementTier === "hard_stop" ||
-        (!field.requirementTier && isRuleRequired);
-      const isAutoQuery = field.requirementTier === "auto_query";
-
-      if (isEmpty && !hasNullFlavor) {
-        if (isHardStop) {
-          newErrors[field.id] =
-            `Mandatory variable '${field.variableName}' is missing (Hard Stop).`;
-          hardStopVars.push(field.variableName);
-        } else if (isAutoQuery) {
-          autoQueryVars.push(field.variableName);
-          const newQuery: EDCQuery = {
-            id: generateQueryId(),
-            fieldId: field.id,
-            fieldName: field.variableName,
-            ruleId: `rule_auto_query_${field.id}`,
-            formId: activeForm.id,
-            visitId: activeVisitId,
-            subjectId,
-            status: "Open",
-            severity: "warning",
-            message: `Auto-Query: Required clinical variable '${field.variableName}' (${field.label}) is missing upon form submission.`,
-            raisedBy: "3-Tier Missing Data Engine",
-            raisedAt: new Date().toISOString(),
-          };
-          newQueriesToRaise.push(newQuery);
-        }
-      }
-
-      // 2. Range checks (#1200). An out-of-range value follows the same tier
-      // as a missing one: Hard Stop blocks the save, anything else saves and
-      // raises a discrepancy query for the site to confirm or correct.
-      if (
-        !isEmpty &&
-        !hasNullFlavor &&
-        (field.dataType === "number" || field.dataType === "integer")
-      ) {
-        const num = Number(val);
-        const belowMin = field.minValue !== undefined && num < field.minValue;
-        const aboveMax = field.maxValue !== undefined && num > field.maxValue;
-        if (Number.isFinite(num) && (belowMin || aboveMax)) {
-          const expected =
-            field.minValue !== undefined && field.maxValue !== undefined
-              ? `between ${field.minValue} and ${field.maxValue}`
-              : field.minValue !== undefined
-                ? `at least ${field.minValue}`
-                : `at most ${field.maxValue}`;
-          const rangeMsg = `${field.variableName} is ${num}; expected ${expected}${field.unit ? ` ${field.unit}` : ""}.`;
-          if (isHardStop) {
-            newErrors[field.id] = `${rangeMsg} Correct it to save (Hard Stop).`;
-            hardStopVars.push(field.variableName);
-          } else {
-            autoQueryVars.push(field.variableName);
-            newQueriesToRaise.push({
-              id: generateQueryId(),
-              fieldId: field.id,
-              fieldName: field.variableName,
-              ruleId: `rule_range_${field.id}`,
-              formId: activeForm.id,
-              visitId: activeVisitId,
-              subjectId,
-              status: "Open",
-              severity: "warning",
-              message: `Range check: ${rangeMsg} Please confirm or correct.`,
-              raisedBy: "Range Check Engine",
-              raisedAt: new Date().toISOString(),
-            });
-          }
-        }
-      }
-
-      // 3. Date validation (Precision dates & future date checks)
-      if (
-        !isEmpty &&
-        !hasNullFlavor &&
-        (field.dataType === "precision_date" ||
-          field.dataType === "date" ||
-          field.dataType === "partial_date")
-      ) {
-        const valRes = validatePrecisionDate(String(val), {
-          allowPartial:
-            field.allowPartial ??
-            (field.dataType === "partial_date" ||
-              field.dataType === "precision_date"),
-          preventFutureDate: field.preventFutureDate,
-          allowNullFlavor: field.allowNullFlavor,
-        });
-        if (!valRes.isValid) {
-          newErrors[field.id] = valRes.error || "Date validation failed.";
-          hardStopVars.push(field.variableName);
-        }
-      }
+    dispatchAction({
+      type: "SAVE_FORM",
+      subjectId: effectiveSubjectId,
+      visitId: effectiveVisitId,
+      formId: activeForm.id,
+      role: currentRole,
     });
 
-    setValidationErrors(newErrors);
-
-    if (newQueriesToRaise.length > 0) {
-      setQueries((prev) => {
-        const existingKeys = new Set(
-          prev.map(
-            (q) => `${q.subjectId}_${q.visitId}_${q.fieldId}_${q.ruleId}`
-          )
-        );
-        const filteredNew = newQueriesToRaise.filter(
-          (q) =>
-            !existingKeys.has(
-              `${q.subjectId}_${q.visitId}_${q.fieldId}_${q.ruleId}`
-            )
-        );
-        return [...prev, ...filteredNew];
-      });
-    }
-
-    if (hardStopVars.length > 0) {
-      const errMsg = `Form submission blocked! ${hardStopVars.length} field(s) failed hard-stop validation.`;
+    if (!validation.isValid) {
+      const errMsg = `Form submission blocked! ${validation.hardStops.length} field(s) failed hard-stop validation.`;
       setSaveStatus({
         type: "error",
         message: errMsg,
-        hardStops: hardStopVars,
+        hardStops: validation.hardStops,
       });
       announce(errMsg, "assertive");
       return;
     }
 
-    const successMsg = `Form saved successfully for Subject ${subjectId} at ${activeVisitId}.${
-      autoQueryVars.length > 0
-        ? ` Registered ${autoQueryVars.length} auto-query ticket(s).`
+    const visitDisplayName = effectiveVisit?.name || effectiveVisitId;
+    const successMsg = `Form saved successfully for Subject ${effectiveSubjectId} at ${visitDisplayName}.${
+      validation.autoQueries.length > 0
+        ? ` Registered ${validation.autoQueries.length} auto-query ticket(s).`
         : ""
     }`;
     setSaveStatus({
       type: "success",
       message: successMsg,
-      autoQueries: autoQueryVars,
+      autoQueries: validation.autoQueries,
     });
     announce(successMsg, "polite");
   };
 
-  const isFormSigned = signatures.some(
-    (s) =>
-      s.subjectId === subjectId &&
-      s.formId === activeForm?.id &&
-      s.visitId === activeVisitId
-  );
-
   const activeFormQueries = queries.filter(
     (q) =>
-      q.subjectId === subjectId &&
-      q.formId === activeForm?.id &&
-      q.visitId === activeVisitId
+      q.subjectId === effectiveSubjectId &&
+      q.formId === effectiveFormId &&
+      q.visitId === effectiveVisitId
   );
 
-  // Compute Subject Form Status Matrix
-  const getSubjectFormStatus = (
-    subjId: string,
-    visitId: string,
-    formId: string
-  ): SubjectFormStatus => {
-    const fKey = `${subjId}_${visitId}_${formId}`;
-    const isLocked = lockedForms[fKey]?.locked || false;
-    const formDef = study.forms.find((f) => f.id === formId);
-    const formFields = formDef ? formDef.sections.flatMap((s) => s.fields) : [];
-
-    let hasValues = false;
-    let sdvCount = 0;
-    formFields.forEach((f) => {
-      const vKey = `${subjId}_${visitId}_${f.id}`;
-      if (
-        formValues[vKey] !== undefined &&
-        formValues[vKey] !== null &&
-        formValues[vKey] !== ""
-      ) {
-        hasValues = true;
-      }
-      if (sdvMap[vKey]?.verified) {
-        sdvCount++;
-      }
-    });
-
-    const openQueriesCount = queries.filter(
-      (q) =>
-        q.subjectId === subjId &&
-        q.visitId === visitId &&
-        q.formId === formId &&
-        q.status === "Open"
-    ).length;
-
-    const isSdvVerified =
-      formFields.length > 0 && sdvCount >= formFields.length;
-
-    return {
-      subjectId: subjId,
-      visitId,
-      formId,
-      isComplete: hasValues,
-      isLocked,
-      isSdvVerified,
-      openQueriesCount,
-    };
-  };
+  const activeSignature =
+    signatureStatus.activeDataLockSignature || signatureStatus.signatures[0];
+  const visitDisplayLabel = effectiveVisit
+    ? effectiveVisit.name.includes("(Day")
+      ? effectiveVisit.name
+      : `${effectiveVisit.name} (Day ${effectiveVisit.targetDay})`
+    : effectiveVisitId;
 
   return (
     <div className="flex-1 flex flex-col h-full studio-surface-subtle p-4 sm:p-6 overflow-y-auto space-y-6">
@@ -935,10 +583,11 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               "Principal Investigator",
               "CRA Monitor",
               "Data Manager",
-            ] as UserRole[]
+            ] as EdcUserRole[]
           ).map((role) => (
             <button
               key={role}
+              type="button"
               onClick={() => setCurrentRole(role)}
               className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
                 currentRole === role
@@ -1008,7 +657,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           </button>
         </div>
 
-        {isMonitorOrDm && (
+        {rolePermissions.canManageQueries && (
           <button
             type="button"
             onClick={openManualQueryModal}
@@ -1047,16 +696,19 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         className="w-full px-2.5 py-1 studio-surface-subtle border studio-border-strong rounded-lg text-xs studio-fg-primary font-mono"
                       />
                       <button
+                        type="button"
                         aria-label="Confirm new subject"
                         onClick={() => {
-                          if (newSubjectInput.trim()) {
-                            setAvailableSubjects([
-                              ...availableSubjects,
-                              newSubjectInput.trim(),
-                            ]);
-                            setSubjectId(newSubjectInput.trim());
+                          const trimmed = newSubjectInput.trim();
+                          if (trimmed) {
+                            dispatchAction({
+                              type: "ENROLL_SUBJECT",
+                              subjectId: trimmed,
+                            });
+                            setSubjectId(trimmed);
                             setIsAddingSubject(false);
                             setNewSubjectInput("");
+                            clearTransientValidation();
                           }
                         }}
                         className="p-1 rounded studio-btn-cyan"
@@ -1068,8 +720,11 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     <div className="flex gap-2">
                       <select
                         id="edc-active-subject-select"
-                        value={subjectId}
-                        onChange={(e) => setSubjectId(e.target.value)}
+                        value={effectiveSubjectId}
+                        onChange={(e) => {
+                          setSubjectId(e.target.value);
+                          clearTransientValidation();
+                        }}
                         className="flex-1 px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
                       >
                         {availableSubjects.map((s) => (
@@ -1100,8 +755,11 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </label>
                   <select
                     id="edc-protocol-visit-select"
-                    value={activeVisitId}
-                    onChange={(e) => setActiveVisitId(e.target.value)}
+                    value={effectiveVisitId}
+                    onChange={(e) => {
+                      setActiveVisitId(e.target.value);
+                      clearTransientValidation();
+                    }}
                     className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
                   >
                     {study.visits.map((v) => (
@@ -1112,7 +770,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </select>
                 </div>
 
-                {/* Form Selector */}
+                {/* Form Selector (Scheduled forms + continuous AE / CM log forms) */}
                 <div>
                   <label
                     htmlFor="edc-crf-form-select"
@@ -1122,11 +780,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </label>
                   <select
                     id="edc-crf-form-select"
-                    value={activeFormId}
-                    onChange={(e) => setActiveFormId(e.target.value)}
+                    value={effectiveFormId}
+                    onChange={(e) => {
+                      setActiveFormId(e.target.value);
+                      clearTransientValidation();
+                    }}
                     className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-strong rounded-xl text-xs studio-fg-primary font-mono studio-focus-input focus:outline-none"
                   >
-                    {study.forms.map((f) => (
+                    {scheduledForms.map((f) => (
                       <option key={f.id} value={f.id}>
                         [{f.domain}] {f.name}
                       </option>
@@ -1135,18 +796,18 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                 </div>
               </div>
 
-              {/* Form Header Card with PI Lock and SDV Actions */}
+              {/* Form Header Card with PI Lock, Unlock Revocation, and Inline Role/Signature Banner */}
               <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-5">
-                <div className="flex items-start justify-between gap-4 border-b studio-border-default pb-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b studio-border-default pb-4">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="px-2 py-0.5 rounded text-xs font-mono font-bold studio-accent-cyan-strong border">
                         {activeForm.domain}
                       </span>
                       <h2 className="text-base font-bold studio-fg-primary font-mono">
                         {activeForm.name}
                       </h2>
-                      {isCurrentFormLocked && (
+                      {signatureStatus.isLocked && (
                         <span className="inline-flex items-center gap-1 font-mono text-[10px] studio-accent-sky px-2 py-0.5 rounded border">
                           <IconLock className="w-3 h-3" />
                           <span>Locked (PI)</span>
@@ -1158,40 +819,39 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <TooltipButton
                       onClick={handleSaveForm}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
+                      disabled={signatureStatus.isLocked}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       tooltip="Save Form Data and run 3-Tier Missing Data Engine"
                     >
                       <IconDeviceFloppy className="w-4 h-4" />
                       <span>Save Form</span>
                     </TooltipButton>
 
-                    {currentRole === "Principal Investigator" && (
-                      <button
-                        onClick={handleToggleLockForm}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all shadow-sm ${
-                          isCurrentFormLocked
-                            ? "studio-surface-muted studio-hover-active studio-fg-primary border studio-border-strong"
-                            : "studio-btn-sky"
-                        }`}
-                      >
-                        {isCurrentFormLocked ? (
-                          <>
-                            <IconLockOpen className="w-4 h-4" />
-                            <span>Unlock Form</span>
-                          </>
-                        ) : (
-                          <>
-                            <IconLock className="w-4 h-4" />
-                            <span>Lock &amp; Sign (PI)</span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    {currentRole === "Principal Investigator" &&
+                      (signatureStatus.isLocked ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsUnlockModalOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all shadow-sm studio-surface-muted studio-hover-active studio-fg-primary border studio-border-strong"
+                        >
+                          <IconLockOpen className="w-4 h-4" />
+                          <span>Unlock Form</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleLockForm}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all shadow-sm studio-btn-sky"
+                        >
+                          <IconLock className="w-4 h-4" />
+                          <span>Lock &amp; Sign (PI)</span>
+                        </button>
+                      ))}
 
-                    {isFormSigned && (
+                    {signatureStatus.isSigned && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-emerald border font-mono text-xs">
                         <IconShieldCheck className="w-4 h-4" />
                         <span>Signed</span>
@@ -1199,6 +859,47 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Inline Role Permission & Electronic Signature Status Banner */}
+                {(rolePermissions.readOnlyBanner ||
+                  signatureStatus.isSigned) && (
+                  <div
+                    data-testid="edc-role-signature-banner"
+                    className={`p-3 rounded-xl border flex flex-col gap-2 text-xs ${
+                      signatureStatus.isLocked
+                        ? "studio-accent-sky"
+                        : signatureStatus.isSigned
+                          ? "studio-accent-emerald"
+                          : "studio-surface-card studio-border-default"
+                    }`}
+                  >
+                    {activeSignature && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 font-mono">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <IconShieldCheck className="w-4 h-4 studio-fg-emerald shrink-0" />
+                          <span className="font-bold studio-fg-primary">
+                            Electronic Signature ({activeSignature.meaning}):
+                          </span>
+                          <span className="studio-fg-secondary truncate">
+                            {activeSignature.signedBy}
+                          </span>
+                        </div>
+                        <span className="text-[11px] studio-fg-muted">
+                          Token:{" "}
+                          <strong className="studio-fg-cyan">
+                            {activeSignature.digest}
+                          </strong>
+                        </span>
+                      </div>
+                    )}
+                    {rolePermissions.readOnlyBanner && (
+                      <div className="flex items-start gap-2 font-sans studio-fg-secondary">
+                        <IconInfoCircle className="w-4 h-4 studio-fg-cyan shrink-0 mt-0.5" />
+                        <span>{rolePermissions.readOnlyBanner}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Save Status Notification Banner */}
                 {saveStatus && (
@@ -1255,14 +956,17 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                           ? describeFieldConditionalState(fieldState)
                           : null;
 
-                        const key = `${subjectId}_${activeVisitId}_${field.id}`;
-                        const currentVal = formValues[key];
+                        const key = `${effectiveSubjectId}_${effectiveVisitId}_${field.id}`;
+                        const currentVal = effectiveFormValues[key];
                         const isSdv = sdvMap[key]?.verified || false;
                         const fieldQueries = activeFormQueries.filter(
                           (q) => q.fieldId === field.id && q.status === "Open"
                         );
                         const fieldError = validationErrors[field.id];
+                        const allowsNullFlavor = Boolean(field.allowNullFlavor);
                         const hasNullFlavor = isCdiscNullFlavor(currentVal);
+                        const isFieldReadOnly =
+                          !rolePermissions.canEditActiveForm;
                         const isBlindedForUser =
                           field.isBlinded &&
                           currentRole !== "Principal Investigator";
@@ -1361,13 +1065,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 {/* CRA SDV Toggle */}
                                 {currentRole === "CRA Monitor" && (
                                   <TooltipButton
+                                    disabled={!rolePermissions.canToggleSdv}
                                     onClick={() =>
                                       handleToggleSdv(
                                         field.id,
                                         field.variableName
                                       )
                                     }
-                                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border ${
+                                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border disabled:opacity-50 ${
                                       isSdv
                                         ? "studio-accent-emerald-strong"
                                         : "studio-surface-card studio-fg-muted studio-border-default studio-hover-fg-primary"
@@ -1378,42 +1083,43 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   </TooltipButton>
                                 )}
 
-                                {/* CDISC Null Flavor Toggle Pills */}
-                                {(field.allowNullFlavor || true) && (
-                                  <div className="flex items-center gap-0.5 studio-surface-card p-0.5 rounded-lg border studio-border-default">
-                                    {(["ND", "NA", "UNK"] as const).map(
-                                      (nf) => {
-                                        const isSelectedNf = currentVal === nf;
-                                        return (
-                                          <TooltipButton
-                                            key={nf}
-                                            type="button"
-                                            onClick={() => {
-                                              if (isSelectedNf) {
-                                                handleFieldChange(field, null);
-                                              } else {
-                                                handleFieldChange(field, nf);
-                                              }
-                                            }}
-                                            disabled={
-                                              isCurrentFormLocked &&
-                                              currentRole !==
-                                                "Principal Investigator"
-                                            }
-                                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border ${
-                                              isSelectedNf
-                                                ? "studio-btn-cyan font-extrabold"
-                                                : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
-                                            }`}
-                                            tooltip={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
-                                          >
-                                            {nf}
-                                          </TooltipButton>
-                                        );
-                                      }
-                                    )}
-                                  </div>
-                                )}
+                                {/* CDISC Null Flavor Toggle Pills (only when field.allowNullFlavor === true) */}
+                                {allowsNullFlavor &&
+                                  field.dataType !== "calculated" && (
+                                    <div className="flex items-center gap-0.5 studio-surface-card p-0.5 rounded-lg border studio-border-default">
+                                      {(["ND", "NA", "UNK"] as const).map(
+                                        (nf) => {
+                                          const isSelectedNf =
+                                            currentVal === nf;
+                                          return (
+                                            <TooltipButton
+                                              key={nf}
+                                              type="button"
+                                              onClick={() => {
+                                                if (isSelectedNf) {
+                                                  handleFieldChange(
+                                                    field,
+                                                    null
+                                                  );
+                                                } else {
+                                                  handleFieldChange(field, nf);
+                                                }
+                                              }}
+                                              disabled={isFieldReadOnly}
+                                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border disabled:opacity-50 ${
+                                                isSelectedNf
+                                                  ? "studio-btn-cyan font-extrabold"
+                                                  : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
+                                              }`}
+                                              tooltip={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}
+                                            >
+                                              {nf}
+                                            </TooltipButton>
+                                          );
+                                        }
+                                      )}
+                                    </div>
+                                  )}
                               </div>
                             </div>
 
@@ -1425,7 +1131,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                   [MASKED PROTOCOL DATA: BLINDED TO SPONSOR]
                                 </span>
                               </div>
-                            ) : hasNullFlavor ? (
+                            ) : allowsNullFlavor && hasNullFlavor ? (
                               <div className="p-2 studio-surface-card border studio-border-cyan rounded-lg studio-fg-cyan font-mono text-xs flex items-center justify-between">
                                 <span className="font-bold">
                                   Null Flavor: {currentVal} (
@@ -1439,11 +1145,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleFieldChange(field, null)}
-                                  disabled={
-                                    isCurrentFormLocked &&
-                                    currentRole !== "Principal Investigator"
-                                  }
-                                  className="text-[10px] studio-fg-muted studio-hover-fg-primary underline font-mono"
+                                  disabled={isFieldReadOnly}
+                                  className="text-[10px] studio-fg-muted studio-hover-fg-primary underline font-mono disabled:opacity-50"
                                 >
                                   Clear Null Flavor
                                 </button>
@@ -1500,11 +1203,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                             );
                                             handleFieldChange(field, newIso);
                                           }}
-                                          disabled={
-                                            isCurrentFormLocked &&
-                                            currentRole !==
-                                              "Principal Investigator"
-                                          }
+                                          disabled={isFieldReadOnly}
                                           className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                         >
                                           <option value="">-- Day --</option>
@@ -1569,11 +1268,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                             );
                                             handleFieldChange(field, newIso);
                                           }}
-                                          disabled={
-                                            isCurrentFormLocked &&
-                                            currentRole !==
-                                              "Principal Investigator"
-                                          }
+                                          disabled={isFieldReadOnly}
                                           className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                         >
                                           <option value="">-- Month --</option>
@@ -1659,11 +1354,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                             );
                                             handleFieldChange(field, newIso);
                                           }}
-                                          disabled={
-                                            isCurrentFormLocked &&
-                                            currentRole !==
-                                              "Principal Investigator"
-                                          }
+                                          disabled={isFieldReadOnly}
                                           className="w-full px-2 py-1 text-xs studio-surface-card border studio-border-strong rounded studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                         />
                                       </div>
@@ -1700,10 +1391,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     onChange={(e) =>
                                       handleFieldChange(field, e.target.value)
                                     }
-                                    disabled={
-                                      isCurrentFormLocked &&
-                                      currentRole !== "Principal Investigator"
-                                    }
+                                    disabled={isFieldReadOnly}
                                     className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
                                     placeholder={
                                       field.placeholder || "Enter value..."
@@ -1725,10 +1413,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     onChange={(e) =>
                                       handleFieldChange(field, e.target.value)
                                     }
-                                    disabled={
-                                      isCurrentFormLocked &&
-                                      currentRole !== "Principal Investigator"
-                                    }
+                                    disabled={isFieldReadOnly}
                                     className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none resize-none disabled:opacity-50"
                                     placeholder={
                                       field.placeholder || "Enter narrative..."
@@ -1755,7 +1440,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                       }
                                       value={
                                         currentVal !== undefined &&
-                                        currentVal !== null
+                                        currentVal !== null &&
+                                        !hasNullFlavor
                                           ? Number(currentVal)
                                           : ""
                                       }
@@ -1767,10 +1453,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                             : parseFloat(e.target.value)
                                         )
                                       }
-                                      disabled={
-                                        isCurrentFormLocked &&
-                                        currentRole !== "Principal Investigator"
-                                      }
+                                      disabled={isFieldReadOnly}
                                       className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none disabled:opacity-50"
                                       placeholder={field.placeholder || "0"}
                                     />
@@ -1798,10 +1481,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     onChange={(e) =>
                                       handleFieldChange(field, e.target.value)
                                     }
-                                    disabled={
-                                      isCurrentFormLocked &&
-                                      currentRole !== "Principal Investigator"
-                                    }
+                                    disabled={isFieldReadOnly}
                                     placeholder={
                                       field.placeholder ||
                                       (field.dataType === "partial_date"
@@ -1849,11 +1529,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                               e.target.value
                                             )
                                           }
-                                          disabled={
-                                            isCurrentFormLocked &&
-                                            currentRole !==
-                                              "Principal Investigator"
-                                          }
+                                          disabled={isFieldReadOnly}
                                           className="studio-fg-cyan focus:ring-0"
                                         />
                                         <span>{opt.label}</span>
@@ -1875,10 +1551,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                     onChange={(e) =>
                                       handleFieldChange(field, e.target.value)
                                     }
-                                    disabled={
-                                      isCurrentFormLocked &&
-                                      currentRole !== "Principal Investigator"
-                                    }
+                                    disabled={isFieldReadOnly}
                                     className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none disabled:opacity-50"
                                   >
                                     <option value="">
@@ -1951,11 +1624,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                                 updated.join(",")
                                               );
                                             }}
-                                            disabled={
-                                              isCurrentFormLocked &&
-                                              currentRole !==
-                                                "Principal Investigator"
-                                            }
+                                            disabled={isFieldReadOnly}
                                             className="studio-fg-cyan rounded studio-border-strong studio-surface-card focus:ring-0"
                                           />
                                           <span>{opt.label}</span>
@@ -2018,8 +1687,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                     {activeForm.domain})
                   </div>
                   <button
+                    type="button"
+                    disabled={signatureStatus.isLocked}
                     onClick={handleSaveForm}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold studio-btn-cyan transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <IconDeviceFloppy className="w-4 h-4" />
                     <span>Save &amp; Validate Form Data</span>
@@ -2108,8 +1779,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                           {subj}
                         </th>
                         {study.visits.map((v) => {
-                          const formsForVisit = study.forms.filter((f) =>
-                            v.assignedFormIds.includes(f.id)
+                          const formsForVisit = getScheduledFormsForVisit(
+                            study,
+                            v.id
                           );
 
                           return (
@@ -2121,6 +1793,8 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                               <div className="flex flex-wrap justify-center gap-1.5">
                                 {formsForVisit.map((form) => {
                                   const status = getSubjectFormStatus(
+                                    study,
+                                    resolvedSimState,
                                     subj,
                                     v.id,
                                     form.id
@@ -2133,6 +1807,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                         setSubjectId(subj);
                                         setActiveVisitId(v.id);
                                         setActiveFormId(form.id);
+                                        clearTransientValidation();
                                         setSubView("form_entry");
                                       }}
                                       className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all border ${
@@ -2193,7 +1868,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   </div>
                 </div>
 
-                {isMonitorOrDm && (
+                {rolePermissions.canManageQueries && (
                   <button
                     type="button"
                     onClick={openManualQueryModal}
@@ -2304,7 +1979,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         )}
 
                       <div className="pt-2 border-t studio-border-default flex flex-wrap items-center justify-between gap-2">
-                        {isMonitorOrDm ? (
+                        {rolePermissions.canManageQueries ? (
                           <input
                             type="text"
                             aria-label={`Resolution note for query ${q.id}`}
@@ -2328,8 +2003,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
                         <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
                           {q.status === "Open" &&
-                            (currentRole === "Site Coordinator" ||
-                              currentRole === "Principal Investigator") && (
+                            rolePermissions.canRespondToQueries && (
                               <button
                                 type="button"
                                 onClick={() => setActiveQueryToAnswer(q)}
@@ -2339,39 +2013,41 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                               </button>
                             )}
 
-                          {q.status === "Open" && isMonitorOrDm && (
-                            <button
-                              type="button"
-                              onClick={() => handleCancelQuery(q.id)}
-                              className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-secondary studio-hover-fg-primary text-xs font-bold"
-                            >
-                              Cancel Query
-                            </button>
-                          )}
+                          {q.status === "Open" &&
+                            rolePermissions.canManageQueries && (
+                              <button
+                                type="button"
+                                onClick={() => handleCancelQuery(q.id)}
+                                className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-secondary studio-hover-fg-primary text-xs font-bold"
+                              >
+                                Cancel Query
+                              </button>
+                            )}
 
-                          {q.status === "Answered" && isMonitorOrDm && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleReopenQuery(q.id)}
-                                className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-primary studio-hover-border text-xs font-bold"
-                              >
-                                Reopen Query
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleCloseQuery(q.id)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs"
-                              >
-                                <IconCheck className="w-3.5 h-3.5" />
-                                <span>Close Query</span>
-                              </button>
-                            </>
-                          )}
+                          {q.status === "Answered" &&
+                            rolePermissions.canManageQueries && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReopenQuery(q.id)}
+                                  className="px-3 py-1.5 rounded-lg studio-surface-muted border studio-border-strong studio-fg-primary studio-hover-border text-xs font-bold"
+                                >
+                                  Reopen Query
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCloseQuery(q.id)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs"
+                                >
+                                  <IconCheck className="w-3.5 h-3.5" />
+                                  <span>Close Query</span>
+                                </button>
+                              </>
+                            )}
 
                           {(q.status === "Closed" ||
                             q.status === "Cancelled") &&
-                            isMonitorOrDm && (
+                            rolePermissions.canManageQueries && (
                               <button
                                 type="button"
                                 onClick={() => handleReopenQuery(q.id)}
@@ -2410,6 +2086,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         Subject
                       </th>
                       <th scope="col" className="p-2.5">
+                        Action
+                      </th>
+                      <th scope="col" className="p-2.5">
                         Variable
                       </th>
                       <th scope="col" className="p-2.5">
@@ -2419,7 +2098,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         New Value
                       </th>
                       <th scope="col" className="p-2.5">
-                        User Role
+                        Actor &amp; Role
                       </th>
                       <th scope="col" className="p-2.5">
                         Justification Reason
@@ -2435,6 +2114,25 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                         <td className="p-2.5 studio-fg-cyan font-bold">
                           {entry.subjectId}
                         </td>
+                        <td className="p-2.5 whitespace-nowrap">
+                          {(() => {
+                            const actionLabel =
+                              entry.actionType || entry.action || "UPDATE";
+                            return (
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded-md border text-[10px] font-bold ${
+                                  actionLabel === "FORM_UNLOCK"
+                                    ? "studio-accent-red"
+                                    : actionLabel === "FORM_LOCK"
+                                      ? "studio-accent-sky"
+                                      : "studio-surface-card studio-border-default studio-fg-secondary"
+                                }`}
+                              >
+                                {actionLabel}
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="p-2.5 studio-fg-primary">
                           {entry.fieldName}
                         </td>
@@ -2445,7 +2143,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                           {String(entry.newValue ?? "—")}
                         </td>
                         <td className="p-2.5 studio-fg-secondary">
-                          {entry.userRole}
+                          <div>{entry.changedBy}</div>
+                          <div className="text-[10px] studio-fg-muted">
+                            {entry.userRole}
+                          </div>
                         </td>
                         <td className="p-2.5 studio-fg-muted font-sans text-xs">
                           {entry.reasonForChange}
@@ -2467,6 +2168,20 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           announce={announce}
         />
       </div>
+
+      {/* MODAL: 21 CFR Part 11 Unlock & Signature Revocation */}
+      {isUnlockModalOpen && activeForm && (
+        <EdcUnlockRevocationModal
+          subjectId={effectiveSubjectId}
+          visitLabel={visitDisplayLabel}
+          formDomain={activeForm.domain}
+          formName={activeForm.name}
+          actorLabel={rolePermissions.actorLabel}
+          revokedSignature={signatureStatus.activeDataLockSignature}
+          onClose={() => setIsUnlockModalOpen(false)}
+          onConfirm={handleConfirmUnlockForm}
+        />
+      )}
 
       {/* MODAL: 21 CFR Part 11 Reason for Change Prompt */}
       {pendingChange && (
@@ -2503,10 +2218,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono studio-fg-muted mb-1">
+              <label
+                htmlFor="edc-reason-for-change-input"
+                className="block text-[10px] font-mono studio-fg-muted mb-1"
+              >
                 Reason for Change Justification:
               </label>
               <textarea
+                id="edc-reason-for-change-input"
                 rows={2}
                 value={changeReasonInput}
                 onChange={(e) => setChangeReasonInput(e.target.value)}
@@ -2516,12 +2235,14 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
             <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setPendingChange(null)}
                 className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-active studio-fg-secondary text-xs font-mono"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() =>
                   applyValueChange(
                     pendingChange.field,
@@ -2560,6 +2281,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
             <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setActiveQueryToAnswer(null)}
                 className="px-3 py-1.5 rounded-lg studio-surface-muted studio-fg-secondary text-xs font-mono"
               >
@@ -2582,9 +2304,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         <EdcManualQueryModal
           study={study}
           availableSubjects={availableSubjects}
-          defaultSubjectId={subjectId}
-          defaultVisitId={activeVisitId}
-          defaultFormId={activeFormId}
+          defaultSubjectId={effectiveSubjectId}
+          defaultVisitId={effectiveVisitId}
+          defaultFormId={effectiveFormId}
           currentRole={currentRole}
           onClose={() => setIsManualQueryModalOpen(false)}
           onSubmit={handleRaiseManualQuery}

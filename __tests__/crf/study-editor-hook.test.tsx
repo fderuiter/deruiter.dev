@@ -862,6 +862,45 @@ describe("useStudyEditor: whole study", () => {
     act(() => current().editor.updateSimulationState(state!));
     expect(current().history.study).toBe(same);
   });
+
+  it("dispatches pure Part 11 simulation actions without pushing onto undo history", () => {
+    const { current } = setup();
+    const visitId = current().history.study.visits[0]!.id;
+    const formId = current().history.study.forms[0]!.id;
+
+    act(() =>
+      current().editor.dispatchSimulationAction({
+        type: "LOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId,
+        role: "Principal Investigator",
+      })
+    );
+
+    expect(current().history.canUndo).toBe(false);
+    expect(current().history.study.simulationState?.signatures).toHaveLength(1);
+    expect(
+      current().history.study.simulationState?.auditLog?.[0]?.actionType
+    ).toBe("FORM_LOCK");
+
+    act(() =>
+      current().editor.dispatchSimulationAction({
+        type: "UNLOCK_FORM",
+        subjectId: "001-101",
+        visitId,
+        formId,
+        role: "Principal Investigator",
+        reasonForChange: "Amend screening record",
+      })
+    );
+
+    expect(current().history.canUndo).toBe(false);
+    expect(current().history.study.simulationState?.signatures).toHaveLength(0);
+    expect(
+      current().history.study.simulationState?.auditLog?.[0]?.actionType
+    ).toBe("FORM_UNLOCK");
+  });
 });
 
 describe("useStudyEditor: a study with no forms", () => {

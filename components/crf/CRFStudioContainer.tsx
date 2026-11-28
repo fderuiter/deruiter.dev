@@ -1418,6 +1418,7 @@ export const CRFStudioContainer: React.FC<CRFStudioContainerProps> = ({
             onImportStudy={(imported) => {
               editor.requestStudyReplacement(imported, "Imported Study");
             }}
+            onUpdateSimulationState={editor.updateSimulationState}
             onOpenExportDocument={() => setIsExportDocModalOpen(true)}
             onOpenBranding={() => setIsBrandingOpen(true)}
             onOpenReviewPackage={() => setIsReviewPackageOpen(true)}

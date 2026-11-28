@@ -19,10 +19,12 @@
  *   is one). SECURITY.md is the one place that reason lives.
  *
  * It reads the registry and writes only into temporary folders, never the
- * checkout. It reports and does not fail: `.github/workflows/overrides-audit.yml`
- * runs it monthly and opens an issue when a pin can go.
+ * checkout. Without `--check`, it reports and does not fail:
+ * `.github/workflows/overrides-audit.yml` runs it monthly and opens an issue
+ * when a pin can go. With `--check`, it exits `1` when any pin is removable
+ * (`no-effect`, `no-new-advisory`) or errored (`error`).
  *
- * Usage: tsx scripts/overrides-audit.ts [--summary <file>] [--json <file>]
+ * Usage: tsx scripts/overrides-audit.ts [--check] [--summary <file>] [--json <file>]
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -321,13 +323,17 @@ export function auditOverrides(root: string): PinResult[] {
   });
 }
 
-function main(argv: readonly string[]): number {
+export function main(
+  argv: readonly string[],
+  runAudit: (root: string) => readonly PinResult[] = auditOverrides
+): number {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const check = argv.includes("--check");
   const option = (name: string) => {
     const at = argv.indexOf(name);
     return at >= 0 ? argv[at + 1] : undefined;
   };
-  const results = auditOverrides(root);
+  const results = runAudit(root);
   const summary = renderSummary(results);
   const summaryFile = option("--summary");
   const jsonFile = option("--json");
@@ -336,6 +342,13 @@ function main(argv: readonly string[]): number {
     fs.writeFileSync(jsonFile, `${JSON.stringify(results, null, 2)}\n`);
   }
   console.log(summary);
+  if (
+    check &&
+    (removable(results).length > 0 ||
+      results.some((result) => result.status === "error"))
+  ) {
+    return 1;
+  }
   return 0;
 }
 

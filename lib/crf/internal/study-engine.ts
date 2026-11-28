@@ -26,6 +26,12 @@ import {
   StudyReviewTarget,
   StudyReviewThread,
   AuditTrailEntry,
+  RaiseEdcQueryInput,
+  AnswerEdcQueryInput,
+  CloseEdcQueryInput,
+  CancelEdcQueryInput,
+  ReopenEdcQueryInput,
+  ExportClinicalCsvOptions,
 } from "../types";
 import {
   saveStudyBaseline,
@@ -54,7 +60,8 @@ import {
 } from "./precision-date";
 import { cloneDeep } from "../../utils";
 import { clamp } from "../../game-utils";
-import { lintForm } from "./ast-evaluator";
+import { evaluateStudyConformance } from "./conformance/engine";
+import type { ConformanceFinding } from "./conformance/types";
 import {
   instantiateSmartBlock,
   instantiateAtomicField,
@@ -79,6 +86,21 @@ import {
   exportUniversalCrfYaml,
   diffUniversalCrfStudies,
 } from "./universal-schema";
+import {
+  raiseSimulationQuery,
+  answerSimulationQuery,
+  closeSimulationQuery,
+  cancelSimulationQuery,
+  reopenSimulationQuery,
+} from "./edc-query-lifecycle";
+import {
+  exportSimulationSubjectsCsv,
+  exportSimulationQueriesCsv,
+  exportSimulationAuditsCsv,
+  importSimulationSubjectsCsv,
+  importSimulationQueriesCsv,
+  importSimulationAuditsCsv,
+} from "./clinical-data-csv";
 
 export interface ValidationIssue {
   form: string;
@@ -3414,68 +3436,23 @@ export class StudyProtocolEngine {
   }
 
   /**
-   * 4-Tier Regulatory & Logic Conformance Validation
+   * 4-Tier Regulatory & Logic Conformance Validation projected from the
+   * declarative AST, formula, SoA, and CDASHIG 2.2 rule packs.
    */
   static validateProtocol(study: StudyProtocol): ProtocolValidationResult {
-    const issues: ValidationIssue[] = [];
-
-    // Tier 1: Variable Name Length & Core CDASH Rules
-    for (const form of study.forms) {
-      for (const sec of form.sections) {
-        for (const fld of sec.fields) {
-          if (fld.variableName.length > 8) {
-            issues.push({
-              form: form.domain,
-              field: fld.variableName,
-              rule: "CDASH-VAR-LEN",
-              message: `Variable '${fld.variableName}' exceeds CDISC 8-character limit (${fld.variableName.length} chars)`,
-              severity: "error",
-            });
-          }
-        }
-      }
-
-      // Tier 2: AST Formula & Edit Check Syntax Linting
-      const formErrors = lintForm(form);
-      for (const err of formErrors) {
-        issues.push({
-          form: form.domain,
-          rule: "AST-LINT",
-          message: err.message,
-          severity: "warning",
-        });
-      }
-    }
-
-    // Tier 3: Schedule of Activities (SoA) Matrix Consistency
-    const formIdsInStudy = new Set(study.forms.map((f) => f.id));
-    const assignedFormIds = new Set(
-      study.visits.flatMap((v) => v.assignedFormIds)
-    );
-
-    for (const form of study.forms) {
-      if (!form.isLogForm && !assignedFormIds.has(form.id)) {
-        issues.push({
-          form: form.domain,
-          rule: "SOA-ORPHAN",
-          message: `Form '${form.name}' (${form.domain}) is not assigned to any visit in the Visit Matrix`,
-          severity: "warning",
-        });
-      }
-    }
-
-    for (const visit of study.visits) {
-      for (const fId of visit.assignedFormIds) {
-        if (!formIdsInStudy.has(fId)) {
-          issues.push({
-            form: "SOA",
-            rule: "SOA-MISSING-FORM",
-            message: `Visit '${visit.name}' references non-existent form ID '${fId}'`,
-            severity: "error",
-          });
-        }
-      }
-    }
+    const result = evaluateStudyConformance(study);
+    const issues: ValidationIssue[] = result.findings
+      .filter(
+        (f): f is ConformanceFinding & { severity: "error" | "warning" } =>
+          f.severity === "error" || f.severity === "warning"
+      )
+      .map((f) => ({
+        form: f.formDomain || f.formName || f.formId,
+        ...(f.variableName ? { field: f.variableName } : {}),
+        rule: f.legacyEngineRule,
+        message: f.message,
+        severity: f.severity,
+      }));
 
     const errors = issues.filter((i) => i.severity === "error");
     const warnings = issues.filter((i) => i.severity === "warning");
@@ -3556,6 +3533,148 @@ export class StudyProtocolEngine {
         error: err instanceof Error ? err.message : String(err),
       };
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EDC Discrepancy Query Lifecycle & Clinical CSV Exchange
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Raises a discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static raiseQuery(
+    study: StudyProtocol,
+    input: RaiseEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = raiseSimulationQuery(
+      next.simulationState,
+      input,
+      next
+    );
+    return next;
+  }
+
+  /**
+   * Answers an open discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static answerQuery(
+    study: StudyProtocol,
+    input: AnswerEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = answerSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Closes an answered or open discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static closeQuery(
+    study: StudyProtocol,
+    input: CloseEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = closeSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Cancels an open discrepancy query in `study.simulationState` and records an `AuditTrailEntry`.
+   */
+  static cancelQuery(
+    study: StudyProtocol,
+    input: CancelEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = cancelSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Reopens an answered, closed, or cancelled discrepancy query in `study.simulationState`
+   * and records an `AuditTrailEntry`.
+   */
+  static reopenQuery(
+    study: StudyProtocol,
+    input: ReopenEdcQueryInput
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = reopenSimulationQuery(next.simulationState, input);
+    return next;
+  }
+
+  /**
+   * Exports simulated subjects and captured values to RFC 4180 CSV.
+   */
+  static exportSubjectsCsv(
+    study: StudyProtocol,
+    options?: ExportClinicalCsvOptions
+  ): string {
+    return exportSimulationSubjectsCsv(study, options);
+  }
+
+  /**
+   * Exports simulated discrepancy queries to RFC 4180 CSV.
+   */
+  static exportQueriesCsv(
+    study: StudyProtocol,
+    options?: ExportClinicalCsvOptions
+  ): string {
+    return exportSimulationQueriesCsv(study, options);
+  }
+
+  /**
+   * Exports simulated EDC audit trail entries to RFC 4180 CSV.
+   */
+  static exportAuditsCsv(
+    study: StudyProtocol,
+    options?: ExportClinicalCsvOptions
+  ): string {
+    return exportSimulationAuditsCsv(study, options);
+  }
+
+  /**
+   * Imports simulated subjects and captured values from RFC 4180 CSV into a cloned `StudyProtocol`.
+   */
+  static importSubjectsCsv(
+    study: StudyProtocol,
+    csvText: string
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = importSimulationSubjectsCsv(
+      csvText,
+      next,
+      next.simulationState
+    );
+    return next;
+  }
+
+  /**
+   * Imports simulated discrepancy queries from RFC 4180 CSV into a cloned `StudyProtocol`.
+   */
+  static importQueriesCsv(
+    study: StudyProtocol,
+    csvText: string
+  ): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = importSimulationQueriesCsv(
+      csvText,
+      next.simulationState
+    );
+    return next;
+  }
+
+  /**
+   * Imports simulated EDC audit entries from RFC 4180 CSV into a cloned `StudyProtocol`.
+   */
+  static importAuditsCsv(study: StudyProtocol, csvText: string): StudyProtocol {
+    const next = cloneDeep(study);
+    next.simulationState = importSimulationAuditsCsv(
+      csvText,
+      next.simulationState
+    );
+    return next;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

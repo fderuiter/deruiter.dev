@@ -68,7 +68,7 @@ import {
 } from "../types";
 import {
   getUniversalCrfSchemaUrl,
-  validateUniversalCrf,
+  isUniversalCrfSchemaUrl,
   EdcSimulationStateSchema,
   StudyProvenanceSchema,
 } from "./universal-schema";
@@ -753,29 +753,31 @@ export function importStudyFromUsdm(
 ): StudyProtocol {
   const parsed: unknown =
     typeof usdmInput === "string" ? JSON.parse(usdmInput) : usdmInput;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("USDM import: root value must be a JSON object.");
+  }
+  const rawRecord = parsed as Record<string, unknown>;
+  if (isUniversalCrfSchemaUrl(rawRecord.$schema)) {
+    throw new Error(
+      "USDM import: Universal CRF JSON documents must be decoded via UniversalJsonCodec, not importStudyFromUsdm."
+    );
+  }
+  const hasUsdmStructure =
+    (rawRecord.study !== null &&
+      typeof rawRecord.study === "object" &&
+      !Array.isArray(rawRecord.study)) ||
+    Array.isArray(rawRecord.studyDesigns) ||
+    typeof rawRecord.usdmVersion === "string";
+  if (!hasUsdmStructure) {
+    throw new Error(
+      "USDM import: JSON payload is missing USDM study, studyDesigns, or usdmVersion structure."
+    );
+  }
   const doc = (
     getUsdmDocumentVersion(parsed) === "4"
-      ? lowerUsdmV4ToLegacy(
-          parsed as Record<string, unknown>,
-          options.selection
-        )
+      ? lowerUsdmV4ToLegacy(rawRecord, options.selection)
       : parsed
   ) as Record<string, unknown> & UsdmDocument;
-
-  // Support direct StudyProtocol JSON fallback if user pasted a Universal CRF JSON
-  if (doc.forms && doc.visits && doc.protocolNumber) {
-    const val = validateUniversalCrf(doc);
-    if (val.success) {
-      const uStudy = val.study!;
-      return {
-        ...uStudy,
-        provenance: {
-          ...(uStudy.provenance || {}),
-          sourceFormat: uStudy.provenance?.sourceFormat || "Universal CRF JSON",
-        },
-      };
-    }
-  }
 
   const studyObj = (doc.study || doc) as UsdmStudy & Record<string, unknown>;
   // A lowered v4 document carries only the selected design; a legacy v3

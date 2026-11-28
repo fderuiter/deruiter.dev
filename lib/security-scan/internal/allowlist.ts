@@ -108,6 +108,10 @@ const SAFE_FILE_VALUES = new Map<string, Set<string>>([
   ],
   ["__tests__/triage-security-issue.test.ts", GHP_FIXTURE_LITERAL],
   ["__tests__/validation.test.ts", GHP_FIXTURE_LITERAL],
+  [
+    "__tests__/vercel-production-preflight.test.ts",
+    new Set(["example-sentinel-E"]),
+  ],
 ]);
 
 /**
@@ -165,6 +169,14 @@ function isRotatedCredential(value: string, file: string): boolean {
 }
 
 const URL_PROTOCOL_REGEX = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+const ASSIGNED_LITERAL_REGEX =
+  /^[A-Za-z_][A-Za-z0-9_-]*\s*[:=](?!\/\/)\s*(?:(['"`])([^\r\n]*)\1|([^\s'"`]+))$/;
+
+function extractAssignedLiteral(value: string): string | null {
+  const match = value.match(ASSIGNED_LITERAL_REGEX);
+  if (!match) return null;
+  return match[2] ?? match[3] ?? null;
+}
 
 /**
  * Whether a detected candidate value is a known-safe fixture/example rather
@@ -172,19 +184,26 @@ const URL_PROTOCOL_REGEX = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
  * found in.
  */
 export function isAllowlistedSecretValue(value: string, file = ""): boolean {
-  if (GLOBAL_SAFE_VALUES.has(value)) return true;
-
   const normalizedFile = file.replaceAll("\\", "/");
-  if (SAFE_FILE_VALUES.get(normalizedFile)?.has(value)) return true;
-  if (isRotatedCredential(value, normalizedFile)) return true;
+  const assignedLiteral = extractAssignedLiteral(value);
+  const candidates =
+    assignedLiteral && assignedLiteral !== value
+      ? [value, assignedLiteral]
+      : [value];
 
-  if (URL_PROTOCOL_REGEX.test(value)) {
-    try {
-      const host = new URL(value).hostname;
-      if (host === "localhost" || host === "127.0.0.1") return true;
-      if (host.endsWith(".example.com")) return true;
-    } catch {
-      // Non-URL detectors continue through the explicit fixture rules above.
+  for (const candidate of candidates) {
+    if (GLOBAL_SAFE_VALUES.has(candidate)) return true;
+    if (SAFE_FILE_VALUES.get(normalizedFile)?.has(candidate)) return true;
+    if (isRotatedCredential(candidate, normalizedFile)) return true;
+
+    if (URL_PROTOCOL_REGEX.test(candidate)) {
+      try {
+        const host = new URL(candidate).hostname;
+        if (host === "localhost" || host === "127.0.0.1") return true;
+        if (host.endsWith(".example.com")) return true;
+      } catch {
+        // Non-URL detectors continue through the explicit fixture rules above.
+      }
     }
   }
 

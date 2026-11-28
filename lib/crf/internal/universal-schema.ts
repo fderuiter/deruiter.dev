@@ -8,6 +8,8 @@ import { z } from "zod";
 import { resolveBaseUrl } from "@/lib/domain";
 import type { StudyProtocol, CRFForm, CRFField } from "../types";
 import { formatPosixCommand } from "./cli-argv";
+import { toCanonicalCrfDocument } from "./codecs/canonical-document";
+import { parseYaml } from "./codecs/yaml-lexer";
 
 const UNIVERSAL_CRF_SCHEMA_PATH = "/schemas/crf/v1/universal-crf.schema.json";
 
@@ -71,8 +73,8 @@ export type UniversalCodelist = z.infer<typeof CodelistDefinitionSchema>;
 
 // 3. CDASH & SDTM Metadata
 export const CdashVariableMetadataSchema = z.object({
-  domain: z.string().max(8).default(""),
-  sdtmVariable: z.string().min(1).max(8),
+  domain: z.string().max(64).default(""),
+  sdtmVariable: z.string().min(1).max(128),
   cdashLabel: z.string().min(1),
   nciConceptId: z.string().optional(),
   codelistId: z.string().optional(),
@@ -256,7 +258,7 @@ export type UniversalBiomedicalConcept = z.infer<
 export const BaseCRFFieldSchema = z.object({
   id: z.string().min(1),
   conceptId: z.string().optional(),
-  variableName: z.string().min(1).max(8),
+  variableName: z.string().min(1).max(128),
   label: z.string().min(1),
   description: z.string().optional(),
   dataType: UniversalClinicalDataTypeSchema,
@@ -310,7 +312,7 @@ export type UniversalCrfSection = z.infer<typeof UniversalCrfSectionSchema>;
 export const UniversalCrfFormSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  domain: z.string().max(8).default(""),
+  domain: z.string().max(64).default(""),
   description: z.string().default(""),
   version: z.string().default("1.0"),
   sections: z.array(UniversalCrfSectionSchema).default([]),
@@ -546,6 +548,9 @@ export const EDCQuerySchema = z.object({
   response: z.string().optional(),
   respondedBy: z.string().optional(),
   respondedAt: z.string().optional(),
+  resolvedBy: z.string().optional(),
+  resolvedAt: z.string().optional(),
+  resolutionReason: z.string().optional(),
 });
 
 export const EdcSimulationStateSchema = z.object({
@@ -632,15 +637,15 @@ export const UniversalCrfProtocolSchema = z.object({
   $schema: z.string().optional(),
   schemaVersion: z.string().default("1.0.0"),
   id: z.string().min(1),
-  protocolNumber: z.string().optional(),
-  protocolId: z.string().optional(),
+  protocolNumber: z.string().min(1).optional(),
+  protocolId: z.string().min(1).optional(),
   studyName: z.string().optional(),
   title: z.string().optional(),
   phase: z.string().default("Phase III"),
   sponsor: z.string().default("Clinical Sponsor"),
   therapeuticArea: z.string().default("General Medicine"),
   version: z.string().default("1.0"),
-  lastModified: z.string().default(() => new Date().toISOString()),
+  lastModified: z.string().default("1970-01-01T00:00:00.000Z"),
   forms: z.array(UniversalCrfFormSchema).default([]),
   visits: z.array(UniversalCrfVisitSchema).default([]),
   codelists: z.array(CodelistDefinitionSchema).default([]),
@@ -718,7 +723,7 @@ export function validateUniversalCrf(
 
 /**
  * Parses raw JSON string or object into a typed StudyProtocol.
- * Throws a descriptive Error on schema violation.
+ * Throws a descriptive Error on schema or canonical invariant violation.
  */
 export function parseUniversalCrf(raw: string | object): StudyProtocol {
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -730,33 +735,116 @@ export function parseUniversalCrf(raw: string | object): StudyProtocol {
       .join(", ");
     throw new Error(`Universal CRF validation failed: ${errorDetails}`);
   }
+  toCanonicalCrfDocument(validation.study!, { mode: "strict" });
   return validation.study!;
 }
 
 /**
- * Serializes a StudyProtocol to Universal CRF JSON string.
+ * Parses a Universal CRF YAML (`.yaml` / `.yml`) document via the pure AST lexer
+ * and validates both schema and `CanonicalCrfDocument` invariants.
+ */
+export function parseUniversalCrfYaml(raw: string): StudyProtocol {
+  if (!raw || typeof raw !== "string" || !raw.trim()) {
+    throw new Error("Universal CRF YAML validation failed: Empty YAML payload");
+  }
+  const parsed = parseYaml(raw);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(
+      "Universal CRF YAML validation failed: Root YAML node must be a mapping object"
+    );
+  }
+  return parseUniversalCrf(parsed as object);
+}
+
+function buildValidatedUniversalPayload(
+  study: StudyProtocol
+): Record<string, unknown> {
+  if (!study || typeof study !== "object" || Array.isArray(study)) {
+    throw new Error(
+      "Universal CRF validation failed: Study protocol must be an object"
+    );
+  }
+
+  const rawRecord = study as unknown as Record<string, unknown>;
+  const hasExplicitEmptyProtoNum =
+    typeof rawRecord.protocolNumber === "string" &&
+    rawRecord.protocolNumber.trim() === "" &&
+    typeof rawRecord.protocolId !== "string";
+
+  if (hasExplicitEmptyProtoNum) {
+    throw new Error(
+      "Universal CRF validation failed: [protocolNumber]: String must contain at least 1 character(s)"
+    );
+  }
+
+  toCanonicalCrfDocument(study, { mode: "strict" });
+
+  const normalizedProtoNum =
+    typeof rawRecord.protocolNumber === "string" &&
+    rawRecord.protocolNumber.trim().length > 0
+      ? rawRecord.protocolNumber
+      : undefined;
+
+  const candidatePayload: Record<string, unknown> = {
+    $schema:
+      typeof rawRecord.$schema === "string" && rawRecord.$schema.trim()
+        ? rawRecord.$schema
+        : getUniversalCrfSchemaUrl(),
+    schemaVersion:
+      typeof rawRecord.schemaVersion === "string" &&
+      rawRecord.schemaVersion.trim()
+        ? rawRecord.schemaVersion
+        : "1.0.0",
+    ...study,
+    ...(normalizedProtoNum !== undefined
+      ? { protocolNumber: normalizedProtoNum }
+      : {}),
+    lastModified:
+      typeof study.lastModified === "string" && study.lastModified.trim()
+        ? study.lastModified
+        : "1970-01-01T00:00:00.000Z",
+  };
+
+  if (normalizedProtoNum === undefined) {
+    delete candidatePayload.protocolNumber;
+  }
+
+  const validation = validateUniversalCrf(candidatePayload);
+  if (!validation.success) {
+    const errorDetails = validation.errors
+      .slice(0, 5)
+      .map((e) => `[${e.path}]: ${e.message}`)
+      .join(", ");
+    throw new Error(`Universal CRF validation failed: ${errorDetails}`);
+  }
+
+  return candidatePayload;
+}
+
+/**
+ * Serializes a StudyProtocol to Universal CRF JSON string after validating
+ * `CanonicalCrfDocument` and `UniversalCrfProtocolSchema` invariants.
  */
 export function exportUniversalCrfJson(
   study: StudyProtocol,
   pretty = true
 ): string {
-  const payload = {
-    $schema: getUniversalCrfSchemaUrl(),
-    schemaVersion: "1.0.0",
-    ...study,
-    lastModified: study.lastModified || new Date().toISOString(),
-  };
+  const payload = buildValidatedUniversalPayload(study);
   return pretty ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
 }
 
 /**
- * Lossless Zero-dependency YAML Serializer for Universal CRF
- * Serializes all study protocol attributes 1:1 without data loss, omitting redundant summary count fields.
+ * Lossless Zero-dependency YAML Serializer for Universal CRF.
+ * Validates `CanonicalCrfDocument` invariants on encode and serializes all study protocol
+ * attributes 1:1 without data loss, omitting redundant summary count fields.
  */
 export function exportUniversalCrfYaml(study: StudyProtocol): string {
   const cleanUndefined = (obj: unknown): unknown => {
-    if (obj === null || obj === undefined) {
+    if (obj === undefined) {
       return undefined;
+    }
+    if (obj === null) {
+      return null;
     }
     if (Array.isArray(obj)) {
       return obj
@@ -785,21 +873,25 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
     return obj;
   };
 
-  const payload = cleanUndefined({
-    $schema:
-      (study as unknown as Record<string, unknown>).$schema ||
-      getUniversalCrfSchemaUrl(),
-    schemaVersion:
-      (study as unknown as Record<string, unknown>).schemaVersion || "1.0.0",
-    ...study,
-    lastModified: study.lastModified || new Date().toISOString(),
-  });
+  const validatedPayload = buildValidatedUniversalPayload(study);
+  const payload = cleanUndefined(validatedPayload);
+
+  const formatYamlKey = (key: string): string => {
+    const isSafeBareKey =
+      /^[A-Za-z0-9_$][A-Za-z0-9_$.-]*$/.test(key) &&
+      !/^(true|false|null|yes|no|on|off)$/i.test(key) &&
+      Number.isNaN(Number(key));
+    return isSafeBareKey ? key : JSON.stringify(key);
+  };
 
   const toYaml = (obj: unknown, indent = 0): string => {
     const pad = "  ".repeat(indent);
     if (obj === null || obj === undefined) return "null";
     if (typeof obj === "string") {
       const needsQuoting =
+        obj.length === 0 ||
+        obj.trim() !== obj ||
+        /[\x00-\x1f\x7f\u0085\u2028\u2029\ufeff\\`~]/.test(obj) ||
         obj.includes("\n") ||
         obj.includes(":") ||
         obj.includes("#") ||
@@ -817,7 +909,8 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
         obj.includes('"') ||
         obj.includes("%") ||
         obj.includes("@") ||
-        obj.trim() === "" ||
+        obj === "---" ||
+        obj === "..." ||
         /^[-?:=]\s/.test(obj) ||
         /^[-?:=]$/.test(obj) ||
         /^(true|false|null|yes|no|on|off)$/i.test(obj) ||
@@ -841,19 +934,22 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
         .join("\n");
     }
     if (typeof obj === "object") {
-      const keys = Object.keys(obj as Record<string, unknown>);
+      const keys = Object.keys(obj as Record<string, unknown>).filter(
+        (k) => k !== "__proto__" && k !== "constructor" && k !== "prototype"
+      );
       if (keys.length === 0) return "{}";
       return keys
         .map((k) => {
+          const formattedKey = formatYamlKey(k);
           const val = (obj as Record<string, unknown>)[k];
           if (
             typeof val === "object" &&
             val !== null &&
             (Array.isArray(val) ? val.length > 0 : Object.keys(val).length > 0)
           ) {
-            return `${pad}${k}:\n${toYaml(val, indent + 1)}`;
+            return `${pad}${formattedKey}:\n${toYaml(val, indent + 1)}`;
           }
-          return `${pad}${k}: ${toYaml(val, indent)}`;
+          return `${pad}${formattedKey}: ${toYaml(val, indent)}`;
         })
         .join("\n");
     }

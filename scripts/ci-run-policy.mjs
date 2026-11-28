@@ -158,8 +158,10 @@ const STRYKER_INPUTS = [
 export const SECURITY_AUDIT_INPUTS = Object.freeze([
   "package.json",
   "package-lock.json",
+  "SECURITY.md",
   "config/security-audit-ignore.json",
   "scripts/security-audit.ts",
+  "scripts/overrides-audit.ts",
   "scripts/triage-security-issue.ts",
   "scripts/ci-run-policy.mjs",
   ".github/workflows/ci.yml",

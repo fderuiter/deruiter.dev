@@ -19,6 +19,29 @@ const config: IConfiguration = require(
 );
 
 const FIXTURE: Record<string, string> = {
+  "package.json": `${JSON.stringify(
+    {
+      name: "depcruise-fixture",
+      private: true,
+      dependencies: {
+        "prod-dep": "^1.0.0",
+      },
+      devDependencies: {
+        "dev-dep": "^1.0.0",
+      },
+    },
+    null,
+    2
+  )}\n`,
+  "node_modules/prod-dep/package.json":
+    '{"name":"prod-dep","version":"1.0.0","main":"index.js"}\n',
+  "node_modules/prod-dep/index.js": "module.exports = 1;\n",
+  "node_modules/dev-dep/package.json":
+    '{"name":"dev-dep","version":"1.0.0","main":"index.js"}\n',
+  "node_modules/dev-dep/index.js": "module.exports = 2;\n",
+  "node_modules/undeclared-pkg/package.json":
+    '{"name":"undeclared-pkg","version":"1.0.0","main":"index.js"}\n',
+  "node_modules/undeclared-pkg/index.js": "module.exports = 3;\n",
   // Two packages, each with a public entry point and a private internal.
   "lib/pkg/index.ts": 'export { impl } from "./internal/impl";\n',
   "lib/pkg/internal/impl.ts": "export const impl = 1;\n",
@@ -62,6 +85,21 @@ const FIXTURE: Record<string, string> = {
     'import { theme } from "../../../components/providers/theme";\nexport const x = theme;\n',
   "lib/randomization/internal/bad-worker.ts":
     'import { w } from "../../../components/randomization/randomization.worker";\nexport const x = w;\n',
+  // Manifest declaration and scope boundary checks.
+  "app/uses-prod.ts": 'import prod from "prod-dep";\nexport const p = prod;\n',
+  "app/uses-dev.ts": 'import dev from "dev-dep";\nexport const d = dev;\n',
+  "app/uses-undeclared.ts":
+    'import u from "undeclared-pkg";\nexport const x = u;\n',
+  "app/uses-missing.ts":
+    'import m from "./missing-local-module";\nexport const x = m;\n',
+  "__tests__/uses-dev.test.ts":
+    'import dev from "dev-dep";\nexport const d = dev;\n',
+  "__tests__/uses-undeclared.test.ts":
+    'import u from "undeclared-pkg";\nexport const x = u;\n',
+  "scripts/uses-dev.ts": 'import dev from "dev-dep";\nexport const d = dev;\n',
+  "config/uses-dev.mjs": 'import dev from "dev-dep";\nexport const d = dev;\n',
+  "config/uses-undeclared.mjs":
+    'import u from "undeclared-pkg";\nexport const x = u;\n',
 };
 
 let fixtureDir = "";
@@ -80,11 +118,18 @@ beforeAll(async () => {
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, source);
   }
-  const result = await cruise(["lib", "app", "components", "__tests__"], {
-    baseDir: fixtureDir,
-    validate: true,
-    ruleSet: { forbidden: config.forbidden },
-  });
+  const result = await cruise(
+    ["lib", "app", "components", "__tests__", "scripts", "config"],
+    {
+      baseDir: fixtureDir,
+      validate: true,
+      doNotFollow: config.options?.doNotFollow,
+      enhancedResolveOptions: config.options?.enhancedResolveOptions,
+      ruleSet: {
+        forbidden: config.forbidden,
+      },
+    }
+  );
   if (typeof result.output === "string") {
     throw new Error("dependency-cruiser returned a report, not a result");
   }
@@ -161,5 +206,36 @@ describe("deep-module boundary rules", () => {
         "randomization-engine-purity"
       );
     }
+  });
+
+  it("rejects undeclared package imports across production, test, and config roots", () => {
+    for (const file of [
+      "app/uses-undeclared.ts",
+      "__tests__/uses-undeclared.test.ts",
+      "config/uses-undeclared.mjs",
+    ]) {
+      expect(violationsFrom(file).map((v) => v.rule)).toContain(
+        "not-to-undeclared-dep"
+      );
+    }
+  });
+
+  it("rejects app/ importing from devDependencies while allowing __tests__, scripts, and config", () => {
+    expect(violationsFrom("app/uses-prod.ts")).toEqual([]);
+    expect(violationsFrom("app/uses-dev.ts").map((v) => v.rule)).toContain(
+      "not-to-undeclared-dep"
+    );
+    expect(violationsFrom("__tests__/uses-dev.test.ts")).toEqual([]);
+    expect(violationsFrom("scripts/uses-dev.ts")).toEqual([]);
+    expect(violationsFrom("config/uses-dev.mjs")).toEqual([]);
+  });
+
+  it("rejects unresolvable module specifiers", () => {
+    expect(violationsFrom("app/uses-missing.ts")).toEqual([
+      {
+        rule: "not-to-unresolvable",
+        to: "./missing-local-module",
+      },
+    ]);
   });
 });

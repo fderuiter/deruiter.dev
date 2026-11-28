@@ -312,12 +312,12 @@ describe("CRF Studio: Multi-Format Exporters Compilation", () => {
   it("serializes precision_date to ODM-XML with partialDate ItemDef", () => {
     const odmXml = serializeStudyToOdmXml(exportStudy);
     expect(odmXml).toContain('DataType="partialDate"');
-    expect(odmXml).toContain('OID="IT.AESTDAT"');
+    expect(odmXml).toContain('OID="IT.form_ae.AESTDAT"');
   });
 
   it("maps precision_date to FHIR Questionnaire Item with type date", () => {
     const fhirBundle = exportStudyToFhirQuestionnaire(exportStudy);
-    expect((fhirBundle as Record<string, unknown>).resourceType).toBe("Bundle");
+    expect(fhirBundle.resourceType).toBe("Bundle");
     const jsonStr = JSON.stringify(fhirBundle);
     expect(jsonStr).toContain('"type":"date"');
     expect(jsonStr).toContain('"linkId":"AESTDAT"');

@@ -446,8 +446,28 @@ interface RedcapFormBuilder {
   rules: EditCheckRule[];
 }
 
+function deterministicCsvHash(rows: string[][]): string {
+  let h = 0x811c9dc5;
+  for (const row of rows) {
+    for (const cell of row) {
+      for (let i = 0; i < cell.length; i++) {
+        h ^= cell.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      h ^= 0x2c;
+      h = Math.imul(h, 0x01000193);
+    }
+  }
+  return (h >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
+}
+
 export function parseRedcapCsvRows(rows: string[][]): StudyProtocol {
   const header = rows[0];
+  if (!isRedcapHeader(header)) {
+    throw new Error(
+      'Invalid REDCap CSV Data Dictionary: Missing required headers ("Variable / Field Name", "Form Name", "Field Type", "Field Label")'
+    );
+  }
 
   const colMap = {
     variable: header.findIndex((h) => {
@@ -798,14 +818,14 @@ export function parseRedcapCsvRows(rows: string[][]): StudyProtocol {
               name: "REDCap Ingestion",
               role: "Data Manager",
             },
-            at: new Date().toISOString(),
+            at: "1970-01-01T00:00:00.000Z",
           },
         ],
       },
     ];
   });
 
-  const protoNum = `REDCAP-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const protoNum = `REDCAP-${deterministicCsvHash(rows)}`;
 
   return {
     id: `study_${protoNum.toLowerCase()}`,
@@ -815,7 +835,7 @@ export function parseRedcapCsvRows(rows: string[][]): StudyProtocol {
     sponsor: "REDCap Ingestion",
     therapeuticArea: "General",
     version: "1.0",
-    lastModified: new Date().toISOString(),
+    lastModified: "1970-01-01T00:00:00.000Z",
     forms,
     visits,
     codelists: Array.from(codelistsMap.values()),
@@ -823,7 +843,6 @@ export function parseRedcapCsvRows(rows: string[][]): StudyProtocol {
     provenance: {
       sourceFormat: "REDCap CSV Data Dictionary",
       sourceVersion: "1.0",
-      importedAt: new Date().toISOString(),
       importedBy: "REDCap Ingestion",
     },
   };

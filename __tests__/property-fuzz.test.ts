@@ -12,12 +12,28 @@ import {
   type ShiftState,
 } from "@/lib/patty-drive-thru";
 import {
+  escapeRfc4180Cell,
   exportStudyToCdiscOdmXml,
   exportStudyToUsdm,
+  formatRfc4180Csv,
   importStudyFromUsdm,
   extractCodelistFromUsdmObject,
   diffUniversalCrfStudies,
   compareStudyToBaseline,
+  parseRfc4180Csv,
+  OdmXml132Codec,
+  UniversalYamlCodec,
+  CodecValidationError,
+  XmlParseError,
+  YamlParseError,
+  MAX_XML_DEPTH,
+  MAX_YAML_NESTING_DEPTH,
+  parseXmlDocument,
+  parseYaml,
+  parseYamlAst,
+  toCanonicalCrfDocument,
+  type CanonicalCrfDocument,
+  type ClinicalDataType,
   type StudyProtocol,
 } from "@/lib/crf";
 import {
@@ -2343,6 +2359,714 @@ describe("study baseline diff properties (#3485)", () => {
         }
       ),
       { seed: PROPERTY_SEED, numRuns: 60 }
+    );
+  });
+});
+
+describe("CRF XML & YAML parser and codec properties (#4154)", () => {
+  const CODEC_PROPERTY_SEED = 4154;
+
+  const CANONICAL_DATA_TYPES: readonly ClinicalDataType[] = [
+    "text",
+    "textarea",
+    "number",
+    "integer",
+    "date",
+    "partial_date",
+    "precision_date",
+    "time",
+    "datetime",
+    "single_select",
+    "multi_select",
+    "radio",
+    "checkbox",
+    "calculated",
+    "vas_scale",
+    "nrs_scale",
+    "repeating_table",
+  ];
+
+  // Trimmed single-line text exercising XML entities, CDATA terminators, and YAML indicators
+  const edgeTokenArbitrary = fc.constantFrom(
+    "Alpha",
+    "Beta & Gamma",
+    "Dose < 10 > 2",
+    "Quote \"A\" & 'B'",
+    "Bracket ]]> end",
+    " ratio: 1:2 #note",
+    "~tilde",
+    "---dash",
+    "...dots",
+    "[flow, item]",
+    "{map: val}",
+    "true",
+    "null",
+    "42.5"
+  );
+
+  const trimmedLabelArbitrary = fc
+    .tuple(
+      edgeTokenArbitrary,
+      fc.stringMatching(/^[A-Za-z0-9 _.,:/<>&"'[\]{}#~()-]{0,20}$/)
+    )
+    .map(([head, tail]) => `${head} ${tail}`.trim())
+    .filter((s) => s.length > 0 && !/version\s/i.test(s));
+
+  const xmlNameArbitrary = fc.stringMatching(/^[A-Za-z_][A-Za-z0-9_.-]{0,10}$/);
+
+  const canonicalCrfDocumentArbitrary: fc.Arbitrary<CanonicalCrfDocument> = fc
+    .record({
+      protoSlug: fc.stringMatching(/^[A-Z]{2,5}-[0-9]{2,4}$/),
+      studyName: trimmedLabelArbitrary,
+      phase: fc.constantFrom<StudyProtocol["phase"]>(
+        "Phase I",
+        "Phase I/II",
+        "Phase II",
+        "Phase III",
+        "Phase IV",
+        "Registry"
+      ),
+      sponsor: trimmedLabelArbitrary,
+      therapeuticArea: trimmedLabelArbitrary,
+      version: fc.constantFrom("1.0", "1.2", "2.0", "3.1-rc1"),
+      lastModified: fc.constantFrom(
+        "2026-01-15T08:30:00Z",
+        "2026-06-01T12:00:00Z",
+        "2026-11-20T19:45:30Z"
+      ),
+      codelistSeeds: fc.array(
+        fc.record({
+          name: trimmedLabelArbitrary,
+          hasNci: fc.boolean(),
+          optionLabels: fc.array(trimmedLabelArbitrary, {
+            minLength: 1,
+            maxLength: 4,
+          }),
+        }),
+        { minLength: 1, maxLength: 3 }
+      ),
+      formSeeds: fc.array(
+        fc.record({
+          domain: fc.constantFrom("DM", "VS", "AE", "LB", "CM", "EG"),
+          name: trimmedLabelArbitrary,
+          description: trimmedLabelArbitrary,
+          isLogForm: fc.boolean(),
+          sectionSeeds: fc.array(
+            fc.record({
+              title: trimmedLabelArbitrary,
+              description: fc.option(trimmedLabelArbitrary, { nil: undefined }),
+              isRepeating: fc.boolean(),
+              fieldSeeds: fc.array(
+                fc.record({
+                  varSuffix: fc.stringMatching(/^[A-Z][A-Z0-9]{1,5}$/),
+                  label: trimmedLabelArbitrary,
+                  dataType: fc.constantFrom(...CANONICAL_DATA_TYPES),
+                  required: fc.boolean(),
+                  columnSpan: fc.constantFrom<12 | 6 | 4 | 3>(12, 6, 4, 3),
+                  unit: fc.option(
+                    fc.constantFrom("mg", "mmHg", "kg/m2", "mmol/L"),
+                    { nil: undefined }
+                  ),
+                  bounds: fc.option(
+                    fc
+                      .tuple(
+                        fc.integer({ min: -50, max: 100 }),
+                        fc.integer({ min: 0, max: 100 })
+                      )
+                      .map(([low, span]) => ({
+                        min: low,
+                        max: low + span,
+                      })),
+                    { nil: undefined }
+                  ),
+                  useCodelist: fc.boolean(),
+                  placeholder: fc.option(trimmedLabelArbitrary, {
+                    nil: undefined,
+                  }),
+                }),
+                { minLength: 1, maxLength: 3 }
+              ),
+            }),
+            { minLength: 1, maxLength: 2 }
+          ),
+          includeRule: fc.boolean(),
+          ruleMessage: trimmedLabelArbitrary,
+        }),
+        { minLength: 1, maxLength: 2 }
+      ),
+      visitSeeds: fc.array(
+        fc.record({
+          name: trimmedLabelArbitrary,
+          visitType: fc.constantFrom<"Scheduled" | "Unscheduled" | "Common">(
+            "Scheduled",
+            "Unscheduled",
+            "Common"
+          ),
+          targetDay: fc.integer({ min: -14, max: 365 }),
+          windowBefore: fc.integer({ min: 0, max: 7 }),
+          windowAfter: fc.integer({ min: 0, max: 7 }),
+          isRepeating: fc.boolean(),
+        }),
+        { minLength: 1, maxLength: 3 }
+      ),
+      conceptPropertyKey: fc.constantFrom(
+        "loinc:code",
+        "unit symbol",
+        "~flag",
+        "plain_key"
+      ),
+      conceptPropertyVal: trimmedLabelArbitrary,
+    })
+    .map((seed) => {
+      const codelists: StudyProtocol["codelists"] = seed.codelistSeeds.map(
+        (cl, clIdx) => ({
+          id: `CL_${clIdx + 1}`,
+          name: cl.name,
+          ...(cl.hasNci ? { nciCodelistCode: `C${66731 + clIdx}` } : {}),
+          isStandard: cl.hasNci,
+          options: cl.optionLabels.map((lbl, optIdx) => ({
+            code: `OPT_${optIdx + 1}`,
+            label: lbl,
+            ...(cl.hasNci
+              ? { nciCode: `C${10000 + clIdx * 10 + optIdx}` }
+              : {}),
+            order: optIdx + 1,
+          })),
+        })
+      );
+
+      const forms: StudyProtocol["forms"] = seed.formSeeds.map(
+        (fSeed, fIdx) => {
+          const formId = `form_${fIdx + 1}`;
+          let fieldCounter = 0;
+          const allFormFieldIds: string[] = [];
+
+          const sections = fSeed.sectionSeeds.map((sSeed, sIdx) => {
+            const fields = sSeed.fieldSeeds.map((fldSeed) => {
+              fieldCounter += 1;
+              const fieldId = `fld_${fIdx + 1}_${fieldCounter}`;
+              allFormFieldIds.push(fieldId);
+              const variableName = `${fSeed.domain}${fldSeed.varSuffix}${fieldCounter}`;
+              const isCalculated = fldSeed.dataType === "calculated";
+              const isSelectLike =
+                fldSeed.dataType === "single_select" ||
+                fldSeed.dataType === "multi_select" ||
+                fldSeed.dataType === "radio" ||
+                fldSeed.dataType === "checkbox";
+              const codelistId =
+                (isSelectLike || fldSeed.useCodelist) &&
+                !isCalculated &&
+                codelists.length > 0
+                  ? codelists[fieldCounter % codelists.length].id
+                  : undefined;
+
+              return {
+                id: fieldId,
+                variableName,
+                label: fldSeed.label,
+                dataType: fldSeed.dataType,
+                columnSpan: fldSeed.columnSpan,
+                required: fldSeed.required,
+                ...(codelistId ? { codelistId } : {}),
+                ...(fldSeed.unit ? { unit: fldSeed.unit } : {}),
+                ...(fldSeed.bounds
+                  ? {
+                      minValue: fldSeed.bounds.min,
+                      maxValue: fldSeed.bounds.max,
+                    }
+                  : {}),
+                ...(isCalculated ? { calculationFormula: "1 + 1" } : {}),
+                ...(fldSeed.placeholder
+                  ? { placeholder: fldSeed.placeholder }
+                  : {}),
+              };
+            });
+
+            return {
+              id: `sec_${fIdx + 1}_${sIdx + 1}`,
+              title: sSeed.title,
+              ...(sSeed.description ? { description: sSeed.description } : {}),
+              isRepeating: sSeed.isRepeating,
+              fields,
+            };
+          });
+
+          const firstFieldId = allFormFieldIds[0];
+          const rules: StudyProtocol["forms"][number]["rules"] =
+            fSeed.includeRule && firstFieldId
+              ? [
+                  {
+                    id: `rule_${fIdx + 1}_1`,
+                    name: `Check ${fIdx + 1}`,
+                    description: fSeed.ruleMessage,
+                    triggerFieldIds: [firstFieldId],
+                    actionType: "raise_query",
+                    targetFieldId: firstFieldId,
+                    conditions: [
+                      {
+                        fieldId: firstFieldId,
+                        operator: "is_not_empty",
+                        value: "",
+                      },
+                    ],
+                    logicalOperator: "AND",
+                    querySeverity: "warning",
+                    queryMessage: fSeed.ruleMessage,
+                  },
+                ]
+              : [];
+
+          return {
+            id: formId,
+            name: fSeed.name,
+            domain: fSeed.domain,
+            description: fSeed.description,
+            version: seed.version,
+            isLogForm: fSeed.isLogForm,
+            sections,
+            rules,
+          };
+        }
+      );
+
+      const allFormIds = forms.map((f) => f.id);
+      const visits: StudyProtocol["visits"] = seed.visitSeeds.map(
+        (vSeed, vIdx) => ({
+          id: `vis_${vIdx + 1}`,
+          oid: `SE.VIS_${vIdx + 1}`,
+          name: vSeed.name,
+          visitType: vSeed.visitType,
+          targetDay: vSeed.targetDay,
+          windowBefore: vSeed.windowBefore,
+          windowAfter: vSeed.windowAfter,
+          assignedFormIds: allFormIds,
+          isRepeating: vSeed.isRepeating,
+        })
+      );
+
+      const study: StudyProtocol = {
+        id: `study_${seed.protoSlug.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
+        protocolNumber: seed.protoSlug,
+        studyName: seed.studyName,
+        phase: seed.phase,
+        sponsor: seed.sponsor,
+        therapeuticArea: seed.therapeuticArea,
+        version: seed.version,
+        lastModified: seed.lastModified,
+        forms,
+        visits,
+        codelists,
+        auditTrail: [],
+        biomedicalConcepts: [
+          {
+            id: "bc_1",
+            name: "Primary Concept",
+            properties: {
+              [seed.conceptPropertyKey]: seed.conceptPropertyVal,
+            },
+          },
+        ],
+      };
+
+      return toCanonicalCrfDocument(study, { mode: "strict" });
+    });
+
+  const adversarialXmlArbitrary = fc.oneof(
+    fc.string({ maxLength: 400 }),
+    malformedXmlStringArbitrary,
+    fc
+      .array(
+        fc.constantFrom(
+          "<",
+          ">",
+          "</",
+          "/>",
+          "<?xml",
+          "?>",
+          "<!--",
+          "-->",
+          "<![CDATA[",
+          "]]>",
+          "<!DOCTYPE",
+          "[",
+          "]",
+          "&lt;",
+          "&bogus;",
+          "&#x110000;",
+          "&#99999999;",
+          'attr="unclosed',
+          "a:b:c='1'",
+          "ODM",
+          "Study"
+        ),
+        { minLength: 1, maxLength: 35 }
+      )
+      .map((tokens) => tokens.join(""))
+  );
+
+  const adversarialYamlArbitrary = fc.oneof(
+    fc.string({ maxLength: 400 }),
+    fc
+      .array(
+        fc.constantFrom(
+          "key: value\n",
+          "  nested: [1, 2, {a: b}]\n",
+          "- item\n",
+          "---\n",
+          "...\n",
+          "\tbad_tab: 1\n",
+          "*alias\n",
+          "&anchor val\n",
+          '"unterminated\n',
+          "'bad'quote'\n",
+          '"\\uZZZZ": 1\n',
+          "dup: 1\ndup: 2\n",
+          "block: |\n  line1\n  line2\n",
+          "folded: >-\n  line1\n",
+          "[[[[1]]]]\n",
+          "{{{{a: 1}}}}\n"
+        ),
+        { minLength: 1, maxLength: 25 }
+      )
+      .map((tokens) => tokens.join(""))
+  );
+
+  it("encode then decode round-trips a generated CanonicalCrfDocument through OdmXml132Codec", () => {
+    fc.assert(
+      fc.property(canonicalCrfDocumentArbitrary, (doc) => {
+        const xml = OdmXml132Codec.encode(doc);
+        expect(OdmXml132Codec.canDecode({ raw: xml })).toBe(true);
+
+        const decoded = OdmXml132Codec.decode(xml);
+
+        expect(decoded.metadata.id).toBe(doc.metadata.id);
+        expect(decoded.metadata.protocolNumber).toBe(
+          doc.metadata.protocolNumber
+        );
+        expect(decoded.metadata.studyName).toBe(doc.metadata.studyName);
+        expect(decoded.metadata.phase).toBe(doc.metadata.phase);
+        expect(decoded.metadata.sponsor).toBe(doc.metadata.sponsor);
+        expect(decoded.metadata.therapeuticArea).toBe(
+          doc.metadata.therapeuticArea
+        );
+        expect(decoded.metadata.version).toBe(doc.metadata.version);
+        expect(decoded.metadata.lastModified).toBe(doc.metadata.lastModified);
+        expect(decoded.metadata.biomedicalConcepts).toEqual(
+          doc.metadata.biomedicalConcepts
+        );
+
+        expect(decoded.forms.order).toEqual(doc.forms.order);
+        expect(decoded.visits).toEqual(doc.visits);
+        expect(decoded.codelists).toEqual(doc.codelists);
+        expect(decoded.fields.order).toEqual(doc.fields.order);
+        expect(decoded.rules.order).toEqual(doc.rules.order);
+
+        for (const key of doc.fields.order) {
+          const expectedField = doc.fields.byId[key].field;
+          const actualField = decoded.fields.byId[key].field;
+          expect(actualField.id).toBe(expectedField.id);
+          expect(actualField.variableName).toBe(expectedField.variableName);
+          expect(actualField.label).toBe(expectedField.label);
+          expect(actualField.dataType).toBe(expectedField.dataType);
+          expect(actualField.required).toBe(expectedField.required);
+          expect(actualField.columnSpan).toBe(expectedField.columnSpan);
+          expect(actualField.codelistId).toBe(expectedField.codelistId);
+          expect(actualField.unit).toBe(expectedField.unit);
+          expect(actualField.minValue).toBe(expectedField.minValue);
+          expect(actualField.maxValue).toBe(expectedField.maxValue);
+          expect(actualField.calculationFormula).toBe(
+            expectedField.calculationFormula
+          );
+          expect(actualField.placeholder).toBe(expectedField.placeholder);
+        }
+
+        // Second pass must be an exact fixed point
+        const reencoded = OdmXml132Codec.encode(decoded);
+        const redecoded = OdmXml132Codec.decode(reencoded);
+        expect(redecoded).toEqual(decoded);
+      }),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 60 }
+    );
+  });
+
+  it("encode then decode round-trips a generated CanonicalCrfDocument through UniversalYamlCodec", () => {
+    fc.assert(
+      fc.property(canonicalCrfDocumentArbitrary, (doc) => {
+        const yaml = UniversalYamlCodec.encode(doc);
+        expect(
+          UniversalYamlCodec.canDecode({
+            raw: yaml,
+            fileName: "study.crf.yaml",
+          })
+        ).toBe(true);
+
+        const decoded = UniversalYamlCodec.decode(yaml);
+
+        expect(decoded.metadata.id).toBe(doc.metadata.id);
+        expect(decoded.metadata.protocolNumber).toBe(
+          doc.metadata.protocolNumber
+        );
+        expect(decoded.metadata.studyName).toBe(doc.metadata.studyName);
+        expect(decoded.metadata.phase).toBe(doc.metadata.phase);
+        expect(decoded.metadata.sponsor).toBe(doc.metadata.sponsor);
+        expect(decoded.metadata.therapeuticArea).toBe(
+          doc.metadata.therapeuticArea
+        );
+        expect(decoded.metadata.version).toBe(doc.metadata.version);
+        expect(decoded.metadata.lastModified).toBe(doc.metadata.lastModified);
+        expect(decoded.metadata.biomedicalConcepts).toEqual(
+          doc.metadata.biomedicalConcepts
+        );
+        expect(decoded.forms).toEqual(doc.forms);
+        expect(decoded.fields).toEqual(doc.fields);
+        expect(decoded.visits).toEqual(doc.visits);
+        expect(decoded.codelists).toEqual(doc.codelists);
+        expect(decoded.rules).toEqual(doc.rules);
+        expect(decoded.indexes).toEqual(doc.indexes);
+
+        const reencoded = UniversalYamlCodec.encode(decoded);
+        const redecoded = UniversalYamlCodec.decode(reencoded);
+        expect(redecoded).toEqual(decoded);
+      }),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 60 }
+    );
+  });
+
+  it("arbitrary XML strings never hang and never throw anything other than typed parse errors", () => {
+    fc.assert(
+      fc.property(adversarialXmlArbitrary, (raw) => {
+        const startXml = performance.now();
+        let parsedXml: ReturnType<typeof parseXmlDocument> | undefined;
+        let xmlErr: unknown;
+        try {
+          parsedXml = parseXmlDocument(raw);
+        } catch (err: unknown) {
+          xmlErr = err;
+        }
+        expect(performance.now() - startXml).toBeLessThan(250);
+        if (xmlErr !== undefined) {
+          expect(xmlErr).toBeInstanceOf(XmlParseError);
+        } else {
+          expect(parsedXml?.root.kind).toBe("element");
+        }
+
+        const startCodec = performance.now();
+        let decodedDoc: CanonicalCrfDocument | undefined;
+        let codecErr: unknown;
+        try {
+          decodedDoc = OdmXml132Codec.decode(raw);
+        } catch (err: unknown) {
+          codecErr = err;
+        }
+        expect(performance.now() - startCodec).toBeLessThan(250);
+        if (codecErr !== undefined) {
+          expect(codecErr).toBeInstanceOf(CodecValidationError);
+        } else {
+          expect(decodedDoc?.irVersion).toBe("1.0.0");
+        }
+      }),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 200 }
+    );
+  });
+
+  it("arbitrary YAML strings never hang and never throw anything other than typed parse errors", () => {
+    fc.assert(
+      fc.property(adversarialYamlArbitrary, (raw) => {
+        const startAst = performance.now();
+        let parsedAst: ReturnType<typeof parseYamlAst> | undefined;
+        let yamlErr: unknown;
+        try {
+          parsedAst = parseYamlAst(raw);
+          parseYaml(raw);
+        } catch (err: unknown) {
+          yamlErr = err;
+        }
+        expect(performance.now() - startAst).toBeLessThan(250);
+        if (yamlErr !== undefined) {
+          expect(yamlErr).toBeInstanceOf(YamlParseError);
+        } else {
+          expect(parsedAst).toBeDefined();
+        }
+
+        const startCodec = performance.now();
+        let decodedDoc: CanonicalCrfDocument | undefined;
+        let codecErr: unknown;
+        try {
+          decodedDoc = UniversalYamlCodec.decode(raw);
+        } catch (err: unknown) {
+          codecErr = err;
+        }
+        expect(performance.now() - startCodec).toBeLessThan(250);
+        if (codecErr !== undefined) {
+          expect(codecErr).toBeInstanceOf(CodecValidationError);
+        } else {
+          expect(decodedDoc?.irVersion).toBe("1.0.0");
+        }
+      }),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 200 }
+    );
+  });
+
+  it("accepts XML nesting up to MAX_XML_DEPTH and rejects deep nesting at MAX_XML_DEPTH", () => {
+    const buildNestedXml = (
+      tags: readonly string[],
+      selfClosingLeaf: boolean
+    ): string => {
+      if (selfClosingLeaf) {
+        const ancestors = tags.slice(0, -1);
+        const leaf = tags[tags.length - 1];
+        const open = ancestors.map((t) => `<${t}>`).join("");
+        const close = [...ancestors]
+          .reverse()
+          .map((t) => `</${t}>`)
+          .join("");
+        return `${open}<${leaf}/>${close}`;
+      }
+      const open = tags.map((t) => `<${t}>`).join("");
+      const close = [...tags]
+        .reverse()
+        .map((t) => `</${t}>`)
+        .join("");
+      return `${open}ok${close}`;
+    };
+
+    fc.assert(
+      fc.property(
+        fc.array(xmlNameArbitrary, {
+          minLength: 1,
+          maxLength: MAX_XML_DEPTH,
+        }),
+        fc.boolean(),
+        (tags, selfClosingLeaf) => {
+          const xml = buildNestedXml(tags, selfClosingLeaf);
+          const parsed = parseXmlDocument(xml);
+          expect(parsed.root.tagName).toBe(tags[0]);
+        }
+      ),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 50 }
+    );
+
+    fc.assert(
+      fc.property(
+        fc.array(xmlNameArbitrary, {
+          minLength: MAX_XML_DEPTH + 1,
+          maxLength: MAX_XML_DEPTH + 24,
+        }),
+        fc.boolean(),
+        (tags, selfClosingLeaf) => {
+          const xml = buildNestedXml(tags, selfClosingLeaf);
+
+          let xmlErr: unknown;
+          try {
+            parseXmlDocument(xml);
+          } catch (err: unknown) {
+            xmlErr = err;
+          }
+          expect(xmlErr).toBeInstanceOf(XmlParseError);
+          expect((xmlErr as Error).message).toMatch(
+            new RegExp(`exceeds ${MAX_XML_DEPTH} levels`)
+          );
+
+          let codecErr: unknown;
+          try {
+            OdmXml132Codec.decode(xml);
+          } catch (err: unknown) {
+            codecErr = err;
+          }
+          expect(codecErr).toBeInstanceOf(CodecValidationError);
+          expect((codecErr as Error).message).toMatch(
+            new RegExp(`exceeds ${MAX_XML_DEPTH} levels`)
+          );
+        }
+      ),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 50 }
+    );
+
+    // Also verify deep YAML block/flow nesting is rejected at MAX_YAML_NESTING_DEPTH
+    fc.assert(
+      fc.property(
+        fc.integer({
+          min: MAX_YAML_NESTING_DEPTH + 2,
+          max: MAX_YAML_NESTING_DEPTH + 20,
+        }),
+        fc.boolean(),
+        (depth, useFlow) => {
+          const deepYaml = useFlow
+            ? `${"[".repeat(depth)}1${"]".repeat(depth)}`
+            : `${"- ".repeat(depth)}1`;
+
+          let yamlErr: unknown;
+          try {
+            parseYamlAst(deepYaml);
+          } catch (err: unknown) {
+            yamlErr = err;
+          }
+          expect(yamlErr).toBeInstanceOf(YamlParseError);
+        }
+      ),
+      { seed: CODEC_PROPERTY_SEED, numRuns: 40 }
+    );
+  });
+});
+
+describe("clinical RFC 4180 CSV formula guard & round-trip bijection (#4147)", () => {
+  const csvCellTokenArb = fc.oneof(
+    fc.string({ maxLength: 32 }),
+    fc
+      .array(
+        fc.constantFrom(
+          "=",
+          "+",
+          "-",
+          "@",
+          "\t",
+          "\r",
+          "\n",
+          "'",
+          '"',
+          ",",
+          "1",
+          ".",
+          "5",
+          "x"
+        ),
+        { maxLength: 16 }
+      )
+      .map((chars) => chars.join(""))
+  );
+
+  it("neutralizes non-numeric leading formula triggers and round-trips arbitrary non-empty rows losslessly", () => {
+    const strictNumericRe = /^-?\d+(\.\d+)?$/;
+    const rawTriggerRe = /^[=+\-@\t\r]/;
+
+    fc.assert(
+      fc.property(
+        fc.array(csvCellTokenArb, { minLength: 1, maxLength: 8 }),
+        (cells) => {
+          for (const cell of cells) {
+            const escaped = escapeRfc4180Cell(cell);
+            const unquoted =
+              escaped.startsWith('"') && escaped.endsWith('"')
+                ? escaped.slice(1, -1).replace(/""/g, '"')
+                : escaped;
+            if (rawTriggerRe.test(cell) && !strictNumericRe.test(cell)) {
+              expect(unquoted.startsWith("'")).toBe(true);
+            }
+            if (strictNumericRe.test(cell)) {
+              expect(unquoted).toBe(cell);
+            }
+          }
+
+          // Ensure at least one non-empty cell in the data row so RFC 4180 blank-line filtering retains the row
+          const row = cells.some((c) => c.length > 0)
+            ? cells
+            : ["non-empty", ...cells.slice(1)];
+          const headers = row.map((_, i) => `COL_${i}`);
+          const serialized = formatRfc4180Csv(headers, [row]);
+          expect(parseRfc4180Csv(serialized)).toEqual([headers, row]);
+        }
+      ),
+      { seed: 4147, numRuns: 200 }
     );
   });
 });

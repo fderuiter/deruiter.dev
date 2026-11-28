@@ -59,8 +59,8 @@ describe("Medical Device IDE Clinical Study Preset (ISO 14155 / FDA 21 CFR 812)"
   it("exports valid CDISC ODM-XML with Device Event and Device In-Use ItemDefs and CodeLists", () => {
     const xml = exportStudyToCdiscOdmXml(DEVICE_CARDIOVASCULAR_IMPLANT_PRESET);
     expect(xml).toContain("<ProtocolName>DEV-2026-VALVE</ProtocolName>");
-    expect(xml).toContain('ItemDef OID="IT.DIUDI"');
-    expect(xml).toContain('ItemDef OID="IT.DEDEFIC"');
+    expect(xml).toContain('ItemDef OID="IT.form_di_dev.DIUDI"');
+    expect(xml).toContain('ItemDef OID="IT.form_de_dev.DEDEFIC"');
     expect(xml).toContain('CodeList OID="CL_DEDEF"');
     expect(xml).toContain('CodeList OID="CL_DUPROC"');
     expect(xml).toContain('CodeList OID="CL_DISTAT"');

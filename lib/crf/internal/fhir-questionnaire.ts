@@ -7,6 +7,9 @@ import {
   CodelistDefinition,
   CodelistOption,
   StudyVisit,
+  FhirQuestionnaire,
+  FhirQuestionnaireItem,
+  FhirBundle,
 } from "../types";
 import {
   CDASH_STANDARD_VARIABLES,
@@ -42,7 +45,7 @@ const MAX_FHIR_ITEM_DEPTH = 32;
 /**
  * Maps ClinicalDataType to FHIR QuestionnaireItemType
  */
-function mapToFhirItemType(type: string): string {
+function mapToFhirItemType(type: string): FhirQuestionnaireItem["type"] {
   switch (type) {
     case "integer":
       return "integer";
@@ -76,13 +79,24 @@ function mapToFhirItemType(type: string): string {
   }
 }
 
+function extractIsoDatePrefix(rawDate: string | undefined): string | undefined {
+  if (!rawDate || typeof rawDate !== "string") return undefined;
+  const trimmed = rawDate.trim();
+  const match = trimmed.match(/^(\d{4}(?:-\d{2}(?:-\d{2})?)?)/);
+  return match ? match[1] : undefined;
+}
+
 /**
- * Converts a CRFForm into an HL7 FHIR R4 Questionnaire Resource
+ * Converts a CRFForm into a typed HL7 FHIR R4 Questionnaire Resource with
+ * deterministic dates and the canonical consultation scheduling link.
  */
 export function exportFormToFhirQuestionnaire(
   form: CRFForm,
   study: StudyProtocol
-): object {
+): FhirQuestionnaire {
+  const deterministicDate = extractIsoDatePrefix(study.lastModified);
+  const scheduleUrl = consultationUrl();
+
   return {
     resourceType: "Questionnaire",
     id: `crf-${form.id.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`,
@@ -97,21 +111,23 @@ export function exportFormToFhirQuestionnaire(
     name: form.name.replace(/[^A-Za-z0-9]/g, ""),
     title: form.name,
     status: "active",
-    date: new Date().toISOString().split("T")[0],
+    ...(deterministicDate ? { date: deterministicDate } : {}),
     publisher: study.sponsor || "Clinical Study Sponsor",
     description: form.description
-      ? `${form.description} • Schedule Consultation: ${consultationUrl()}`
-      : `Schedule Consultation: ${consultationUrl()}`,
+      ? `${form.description} • Schedule Consultation: ${scheduleUrl}`
+      : `Schedule Consultation: ${scheduleUrl}`,
     item: form.sections.map((sec, sIdx) => ({
       linkId: `section-${sIdx + 1}`,
       text: sec.title,
       type: "group",
+      ...(sec.isRepeating ? { repeats: true } : {}),
       item: sec.fields.map((field) => {
-        const itemObj: Record<string, unknown> = {
+        const itemObj: FhirQuestionnaireItem = {
           linkId: field.variableName || field.id,
           text: field.label,
           type: mapToFhirItemType(field.dataType),
           required: !!field.required,
+          ...(field.readOnly ? { readOnly: true } : {}),
         };
 
         if (field.unit) {
@@ -154,9 +170,11 @@ export function exportFormToFhirQuestionnaire(
 }
 
 /**
- * Converts an entire StudyProtocol into an HL7 FHIR Bundle of Questionnaire Resources
+ * Converts an entire StudyProtocol into a typed HL7 FHIR R4 Bundle of Questionnaire Resources.
  */
-export function exportStudyToFhirQuestionnaire(study: StudyProtocol): object {
+export function exportStudyToFhirQuestionnaire(
+  study: StudyProtocol
+): FhirBundle {
   const protoNum = study.protocolNumber || "study";
   return {
     resourceType: "Bundle",
@@ -1076,7 +1094,7 @@ export function importStudyFromFhirQuestionnaire(
 
   const sponsor = firstMeta?.publisher || "Clinical Study Sponsor";
   const version = forms[0]?.version || "1.0";
-  const lastModified = firstMeta?.date || new Date().toISOString();
+  const lastModified = firstMeta?.date || "1970-01-01T00:00:00.000Z";
 
   const visits: StudyVisit[] = [
     {
@@ -1106,7 +1124,6 @@ export function importStudyFromFhirQuestionnaire(
     provenance: {
       sourceFormat: "HL7 FHIR R4 Questionnaire",
       sourceVersion: version,
-      importedAt: new Date().toISOString(),
       importedBy: "Unverified Session",
     },
   };

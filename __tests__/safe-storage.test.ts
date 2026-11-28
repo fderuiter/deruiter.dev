@@ -13,42 +13,14 @@ import {
   safeRawStorage,
   STORAGE_CHANGE_EVENT,
 } from "@/lib/safe-storage";
-
-class MockStorage {
-  private store: Record<string, string> = {};
-
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
+import { MockStorage, resetMockStorage } from "./helpers/storage-mock";
 
 describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
   let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
+    mockStorage = resetMockStorage();
     safeStorage.clearCache();
-
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
   });
 
   afterEach(() => {
@@ -126,6 +98,7 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
     // Mock setItem to throw QuotaExceededError until log_entry_1 is evicted
     let hasEvictedEntry1 = false;
     const originalSetItem = mockStorage.setItem.bind(mockStorage);
+    const originalRemoveItem = mockStorage.removeItem.bind(mockStorage);
 
     vi.spyOn(mockStorage, "setItem").mockImplementation(
       (k: string, v: string) => {
@@ -148,7 +121,7 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
       if (k === "log_entry_1") {
         hasEvictedEntry1 = true;
       }
-      delete (mockStorage as any).store[k];
+      originalRemoveItem(k);
     });
 
     // Attempt to save heavy asset
@@ -267,13 +240,8 @@ describe("safeRawStorage (#1631)", () => {
   let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
+    mockStorage = resetMockStorage();
     safeStorage.clearCache();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
   });
 
   afterEach(() => {

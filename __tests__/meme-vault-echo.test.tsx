@@ -5,6 +5,7 @@
 // the round, and the best streak is stored and celebrated.
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   render,
   screen,
@@ -54,28 +55,6 @@ import { ToastProvider } from "@/hooks/useToast";
 import { MEME_STORAGE_KEYS, SOUNDBOARD_BUTTONS } from "@/lib/meme-data";
 import { safeRemoveItem, safeSetRawItem } from "@/lib/safe-storage";
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
-
 function renderVault() {
   return render(
     <A11yProvider>
@@ -110,7 +89,7 @@ function pressKey(index: number, target: Window | HTMLElement = window) {
 
 describe("Meme Vault Echo (#2049)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     audio.muted = false;
@@ -123,7 +102,6 @@ describe("Meme Vault Echo (#2049)", () => {
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
-    vi.unstubAllGlobals();
   });
 
   it("starts from a plain focusable button, no canvas involved", () => {

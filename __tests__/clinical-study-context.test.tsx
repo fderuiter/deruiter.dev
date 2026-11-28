@@ -16,44 +16,18 @@ import {
   runPipeline,
 } from "@/lib/study-data";
 import { StudyPicker } from "@/components/clinical/StudyPicker";
+import {
+  MockStorage,
+  ThrowingStorage,
+  resetMockStorage,
+} from "./helpers/storage-mock";
 
-class MockStorage implements Storage {
-  private readonly values = new Map<string, string>();
-  get length() {
-    return this.values.size;
-  }
-  clear() {
-    this.values.clear();
-  }
-  getItem(key: string) {
-    return this.values.get(key) ?? null;
-  }
-  key(index: number) {
-    return [...this.values.keys()][index] ?? null;
-  }
-  removeItem(key: string) {
-    this.values.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.values.set(key, value);
-  }
-}
-
-class ThrowingStorage extends MockStorage {
-  override getItem(): string | null {
-    throw new DOMException("blocked", "SecurityError");
-  }
-  override setItem(): void {
-    throw new DOMException("blocked", "SecurityError");
-  }
-}
-
-function useStorage(store: Storage) {
-  vi.spyOn(window, "sessionStorage", "get").mockReturnValue(store);
+function useStorage(store: Storage = new MockStorage()) {
+  resetMockStorage(store, "sessionStorage");
 }
 
 describe("clinical study context (#3157)", () => {
-  beforeEach(() => useStorage(new MockStorage()));
+  beforeEach(() => useStorage());
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();

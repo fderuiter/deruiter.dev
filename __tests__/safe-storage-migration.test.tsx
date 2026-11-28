@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderHook } from "@testing-library/react";
@@ -28,28 +29,6 @@ vi.mock("@/lib/audio/sound-engine", () => {
   return { getSoundEngine: () => engine };
 });
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 /** Replaces window.localStorage with a getter that throws, as Safari and sandboxed iframes do. */
 function blockStorage() {
   Object.defineProperty(window, "localStorage", {
@@ -74,13 +53,8 @@ describe("safeStorage migration (#1129)", () => {
   let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
+    mockStorage = resetMockStorage();
     safeStorage.clearCache();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
   });
 
   afterEach(() => {

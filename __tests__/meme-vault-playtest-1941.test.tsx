@@ -5,6 +5,7 @@
 // React button keeps a real name.
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   render,
   screen,
@@ -57,28 +58,6 @@ import {
   getUnlockedAchievements,
   unlockAchievement,
 } from "@/lib/meme-data";
-
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
 
 function mockMedia(matching: string[]) {
   Object.defineProperty(window, "matchMedia", {
@@ -135,7 +114,7 @@ describe("Meme Vault playtest fixes (#1941)", () => {
   }
 
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     audio.muted = true;
     audio.bypassActive = false;
     audio.bypassReason = null;
@@ -146,7 +125,6 @@ describe("Meme Vault playtest fixes (#1941)", () => {
 
   afterEach(() => {
     cleanup();
-    vi.unstubAllGlobals();
   });
 
   it("says a muted press was silent and keeps Soundboard Maestro locked", () => {

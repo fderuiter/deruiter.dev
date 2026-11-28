@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -10,41 +11,13 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { AudioProvider, useAudio } from "@/components/providers/AudioProvider";
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("Audio Provider Lifecycle and Guardrails Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
   let mockAudioContextInstance: any;
-  let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -115,7 +88,6 @@ describe("Audio Provider Lifecycle and Guardrails Suite", () => {
     }
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    mockStorage.clear();
   });
 
   it("should lazily initialize and then close the AudioContext on unmount", async () => {

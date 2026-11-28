@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
+import { MockStorage } from "./helpers/storage-mock";
 import {
   StudyProtocolEngine,
   generateCdashVariableName,
@@ -10,28 +11,6 @@ import {
 } from "@/lib/crf";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
 import type { StudyProtocol } from "@/lib/crf/types";
-
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length() {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, value);
-  }
-}
 
 describe("CRF Usability Foundation - Slice 1 Suite", () => {
   let baseStudy: StudyProtocol;

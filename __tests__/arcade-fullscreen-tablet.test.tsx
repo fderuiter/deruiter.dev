@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -14,34 +15,6 @@ import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { ClinicalTrialChaos } from "@/components/ClinicalTrialChaos";
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import { QuasiPerfectPuzzler } from "@/components/QuasiPerfectPuzzler/QuasiPerfectPuzzler";
-
-class LocalStorageMock {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = String(value);
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-
-  get length(): number {
-    return Object.keys(this.store).length;
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
   const actual =
@@ -68,15 +41,9 @@ vi.mock("@/hooks/useTelemetry", () => ({
 describe("Arcade Games Fullscreen & Tablet Integration Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
-  let mockStorage: LocalStorageMock;
 
   beforeEach(() => {
-    mockStorage = new LocalStorageMock();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
 
     const mockCtx = {
       save: vi.fn(),

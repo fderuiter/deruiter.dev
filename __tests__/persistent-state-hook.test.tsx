@@ -1,33 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  type MockStorage,
+  ThrowingStorage,
+  resetMockStorage,
+} from "./helpers/storage-mock";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { usePersistentState } from "@/hooks/usePersistentState";
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
 
 describe("usePersistentState Hook", () => {
   let container: HTMLDivElement;
@@ -35,12 +18,7 @@ describe("usePersistentState Hook", () => {
   let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -114,18 +92,7 @@ describe("usePersistentState Hook", () => {
 
   it("handles localStorage read and write exceptions gracefully", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    Object.defineProperty(window, "localStorage", {
-      value: {
-        getItem: () => {
-          throw new Error("Quota/Security error");
-        },
-        setItem: () => {
-          throw new Error("Write blocked");
-        },
-      },
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage(new ThrowingStorage());
 
     await act(async () => {
       root.render(<TestComponent storageKey="err_key" initialVal="fallback" />);

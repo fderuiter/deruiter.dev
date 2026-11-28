@@ -6,6 +6,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { QuotaExceededStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   ARCADE_CORRUPT_SUFFIX,
   createArcadeStore,
@@ -23,28 +24,6 @@ import {
 import { getArcadeProgress, recordRun } from "@/lib/arcade-achievements";
 import { onAppEvent } from "@/lib/event-bus";
 import { safeStorage } from "@/lib/safe-storage";
-
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length() {
-    return this.store.size;
-  }
-  clear() {
-    this.store.clear();
-  }
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-}
 
 const KEY = "arcade_store_test_best";
 let keyCounter = 0;
@@ -72,7 +51,7 @@ function Best({ store }: { store: ArcadeStore<number> }) {
 
 describe("createArcadeStore (#2371)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     safeStorage.clearCache();
   });
 
@@ -211,14 +190,7 @@ describe("createArcadeStore (#2371)", () => {
   });
 
   it("does not throw when storage refuses the write", () => {
-    vi.stubGlobal("localStorage", {
-      ...new MockStorage(),
-      getItem: () => null,
-      setItem: () => {
-        throw new Error("quota");
-      },
-      removeItem: () => {},
-    });
+    resetMockStorage(new QuotaExceededStorage());
     const store = bestStore(freshKey());
     expect(() => store.set(3)).not.toThrow();
   });
@@ -226,7 +198,7 @@ describe("createArcadeStore (#2371)", () => {
 
 describe("Meme Vault on createArcadeStore (#2371)", () => {
   beforeEach(() => {
-    localStorage.clear();
+    resetMockStorage();
     safeStorage.clear();
   });
 
@@ -275,7 +247,7 @@ describe("Meme Vault on createArcadeStore (#2371)", () => {
 
 describe("recordRun (#2371)", () => {
   beforeEach(() => {
-    localStorage.clear();
+    resetMockStorage();
     safeStorage.clear();
   });
 

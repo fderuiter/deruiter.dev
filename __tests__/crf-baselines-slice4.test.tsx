@@ -1,5 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { MockStorage } from "./helpers/storage-mock";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   StudyProtocolEngine,
@@ -18,34 +19,6 @@ import {
 } from "@/lib/crf";
 import { BaselineManagerModal } from "@/components/crf/BaselineManagerModal";
 import type { StudyProtocol, CRFForm } from "@/lib/crf/types";
-
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-
-  get length(): number {
-    return this.store.size;
-  }
-
-  clear(): void {
-    this.store.clear();
-  }
-
-  getItem(key: string): string | null {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-
-  setItem(key: string, value: string): void {
-    this.store.set(key, value);
-  }
-}
 
 describe("CRF Features Track 3 Slice 4: Save Named Baselines & Restore Into New Draft (#672)", () => {
   afterEach(() => {

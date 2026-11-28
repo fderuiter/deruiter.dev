@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -10,34 +11,6 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import * as dungeon from "@/lib/dungeon";
-
-class LocalStorageMock {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = String(value);
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-
-  get length(): number {
-    return Object.keys(this.store).length;
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
 
 const mockPlaySuccess = vi.fn();
 const mockPlayNote = vi.fn();
@@ -68,15 +41,10 @@ vi.mock("@/hooks/useTelemetry", () => ({
 describe("RetroLabyrinth React Component UI Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
-  let mockStorage: LocalStorageMock;
+  let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new LocalStorageMock();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
 
     const mockCtx = {
       save: vi.fn(),

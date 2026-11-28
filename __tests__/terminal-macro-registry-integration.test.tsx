@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -39,41 +40,13 @@ vi.mock("@/components/providers/A11yProvider", () => ({
   }),
 }));
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("Terminal Macro Engine and Dynamic Command Registry Integration", () => {
   let container: HTMLDivElement;
   let root: Root;
-  let mockStorage: MockStorage;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockStorage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     safeStorage.clear();
     writeHashParams({ terminal_cmd: null });
     workspaceCommandRegistry.clearActions();

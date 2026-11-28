@@ -2,7 +2,8 @@
 //
 // #2049: Echo, the Meme Vault's repeat-the-sequence game. The pure engine
 // (seeded sequence, input rules, tempo) and the best-streak storage.
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { QuotaExceededStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   ECHO_PAD_COUNT,
   ECHO_TEMPO,
@@ -22,28 +23,6 @@ import {
   recordEchoStreak,
 } from "@/lib/meme-data";
 import { safeRemoveItem } from "@/lib/safe-storage";
-
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
 
 /** Repeats the round's whole sequence correctly. */
 function repeatAll(round: EchoRound): EchoRound {
@@ -202,13 +181,12 @@ describe("Echo tempo schedule", () => {
 
 describe("Echo best streak", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
   });
 
   afterEach(() => {
     safeRemoveItem(MEME_STORAGE_KEYS.ECHO_BEST);
-    vi.unstubAllGlobals();
   });
 
   it("parses stored values defensively", () => {
@@ -241,14 +219,7 @@ describe("Echo best streak", () => {
   });
 
   it("does not throw when storage refuses writes", () => {
-    vi.stubGlobal("localStorage", {
-      ...new MockStorage(),
-      getItem: () => null,
-      setItem: () => {
-        throw new Error("quota");
-      },
-      removeItem: () => {},
-    });
+    resetMockStorage(new QuotaExceededStorage());
     expect(() => recordEchoStreak(2)).not.toThrow();
   });
 });

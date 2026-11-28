@@ -4,6 +4,7 @@ import path from "node:path";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import { fromAny } from "@total-typescript/shoehorn";
 import {
   advanceToNextLevel,
@@ -148,31 +149,7 @@ vi.mock("@/hooks/useTelemetry", () => ({
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
 
-class MockStorage implements Storage {
-  private store: Record<string, string> = {};
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  clear() {
-    this.store = {};
-  }
-  getItem(key: string) {
-    return Object.prototype.hasOwnProperty.call(this.store, key)
-      ? this.store[key]
-      : null;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-}
-
-let mockStorage = new MockStorage();
+let mockStorage: MockStorage;
 
 describe("Working With Duck Blue Vet Cone asset & mechanics", () => {
   let root: Root | null = null;
@@ -180,11 +157,7 @@ describe("Working With Duck Blue Vet Cone asset & mechanics", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockStorage = new MockStorage();
-    Object.defineProperty(globalThis, "localStorage", {
-      value: mockStorage,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
     sharedMockCtx = makeMockCtx().ctx;
   });
 

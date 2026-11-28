@@ -7,6 +7,7 @@ import { fromPartial } from "@total-typescript/shoehorn";
 // trophy shelf's silhouettes and unlock stamp, and the graphite hero ring.
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   render,
   screen,
@@ -67,28 +68,6 @@ import { MemeVaultClient } from "@/components/arcade/MemeVaultClient";
 import { A11yProvider } from "@/components/providers/A11yProvider";
 import { ToastProvider } from "@/hooks/useToast";
 import { SOUNDBOARD_BUTTONS, unlockAchievement } from "@/lib/meme-data";
-
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
 
 describe("vault geometry", () => {
   it("maps keys 1 to 8 onto the eight pads and nothing else", () => {
@@ -204,7 +183,7 @@ describe("Meme Vault sampler face (#1526)", () => {
   }
 
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     frames = new Map();
     nextFrame = 1;

@@ -2,6 +2,11 @@
 import React, { useEffect } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  type MockStorage,
+  ThrowingStorage,
+  resetMockStorage,
+} from "./helpers/storage-mock";
+import {
   act,
   cleanup,
   fireEvent,
@@ -52,37 +57,9 @@ vi.mock("@/components/FieldManualButton", () => ({
     ),
 }));
 
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
-
-const original = Object.getOwnPropertyDescriptor(window, "localStorage");
 let storage: MockStorage;
 beforeEach(() => {
-  storage = new MockStorage();
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: storage,
-  });
+  storage = resetMockStorage();
   write(arcadeTutorialsSlice, { version: 1, games: {} });
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
@@ -97,7 +74,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
-  if (original) Object.defineProperty(window, "localStorage", original);
 });
 
 /** The table inside a cabinet's tutorial, with the run held for the test. */
@@ -215,17 +191,7 @@ describe("a returning player's guided Blind answer (#3455)", () => {
   });
 
   it("does nothing when storage throws", () => {
-    Object.defineProperty(window, "localStorage", {
-      configurable: true,
-      value: {
-        getItem: () => {
-          throw new Error("blocked");
-        },
-        setItem: () => {
-          throw new Error("blocked");
-        },
-      },
-    });
+    resetMockStorage(new ThrowingStorage());
     expect(() => carryOverTutorialSeen()).not.toThrow();
   });
 });

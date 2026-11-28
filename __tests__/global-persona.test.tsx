@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -60,40 +61,13 @@ vi.mock("@/components/providers/SearchProvider", () => ({
   }),
 }));
 
-class MockStorage {
-  private store: Record<string, string> = {};
-  getItem(key: string) {
-    return this.store[key] ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store[key] = String(value);
-  }
-  removeItem(key: string) {
-    delete this.store[key];
-  }
-  clear() {
-    this.store = {};
-  }
-  get length() {
-    return Object.keys(this.store).length;
-  }
-  key(index: number) {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("Global Persona Perspective Toggle Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
   let mockStorage: MockStorage;
 
   beforeEach(() => {
-    mockStorage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -111,7 +85,6 @@ describe("Global Persona Perspective Toggle Suite", () => {
       root.unmount();
     });
     container.remove();
-    mockStorage.clear();
   });
 
   it("propagates selected persona state with default as 'professional'", async () => {

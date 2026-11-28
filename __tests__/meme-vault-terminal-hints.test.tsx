@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import React from "react";
 import fs from "fs";
 import path from "path";
@@ -32,28 +33,6 @@ vi.mock("@/lib/meme-audio", () => ({
 // terminal" without saying where it is, and the vault's own ASCII studio
 // looked like that terminal but never counted.
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
-
 const TERMINAL_TROPHIES = ["terminal-cowboy", "friday-survivor"] as const;
 
 function renderVault() {
@@ -68,12 +47,11 @@ function renderVault() {
 
 describe("terminal trophy hints (#1652)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
   });
 
   afterEach(() => {
     cleanup();
-    vi.unstubAllGlobals();
   });
 
   it("points both terminal trophies at the case-study terminal and the palette", () => {

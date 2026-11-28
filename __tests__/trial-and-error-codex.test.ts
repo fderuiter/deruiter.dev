@@ -1,5 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  type MockStorage,
+  QuotaExceededStorage,
+  resetMockStorage,
+} from "./helpers/storage-mock";
 import {
   ACT_I,
   ACT_I_CRISES,
@@ -32,29 +37,6 @@ import {
 } from "@/lib/trial-and-error";
 import { CODEX_KEY, updateCodex } from "@/components/trial-and-error/useCodex";
 import { playBlind } from "./utils/trial-and-error-bot";
-
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
 
 /** Act I without its crisis deck, so flows test one thing at a time. */
 const act: Act = { ...ACT_I, crisisDeck: undefined };
@@ -455,13 +437,9 @@ describe("the stored document", () => {
 });
 
 describe("the storage adapter", () => {
-  const original = Object.getOwnPropertyDescriptor(window, "localStorage");
   let storage: MockStorage;
   const useStorage = (value: unknown) =>
-    Object.defineProperty(window, "localStorage", {
-      configurable: true,
-      value,
-    });
+    resetMockStorage({ storage: value as Storage | undefined });
   const discover = (codex: Codex) =>
     recordDiscoveries(
       codex,
@@ -471,11 +449,7 @@ describe("the storage adapter", () => {
     );
 
   beforeEach(() => {
-    storage = new MockStorage();
-    useStorage(storage);
-  });
-  afterEach(() => {
-    if (original) Object.defineProperty(window, "localStorage", original);
+    storage = resetMockStorage();
   });
 
   it("persists discoveries, and writes nothing when nothing is new", () => {
@@ -502,9 +476,7 @@ describe("the storage adapter", () => {
   });
 
   it("swallows a quota error on write", () => {
-    storage.setItem = () => {
-      throw new DOMException("full", "QuotaExceededError");
-    };
+    resetMockStorage(new QuotaExceededStorage());
     expect(() => updateCodex(discover)).not.toThrow();
     expect(updateCodex(discover)).toBe(false);
   });

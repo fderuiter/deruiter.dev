@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
+import { MockStorage } from "../helpers/storage-mock";
 import { fromPartial } from "@total-typescript/shoehorn";
 import {
   FORM_TEMPLATES_CORRUPT_BACKUP_KEY,
@@ -21,19 +22,6 @@ import type {
   CodelistDefinition,
   StudyProtocol,
 } from "@/lib/crf/types";
-
-class MemoryStorage {
-  data = new Map<string, string>();
-  getItem(key: string) {
-    return this.data.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.data.set(key, value);
-  }
-  removeItem(key: string) {
-    this.data.delete(key);
-  }
-}
 
 function field(overrides: Partial<CRFField> = {}): CRFField {
   return {
@@ -109,11 +97,11 @@ function study(overrides: Partial<StudyProtocol> = {}): StudyProtocol {
   });
 }
 
-let storage: MemoryStorage;
+let storage: MockStorage;
 beforeEach(() => {
-  storage = new MemoryStorage();
+  storage = new MockStorage();
 });
-const store = () => fromPartial<Storage>(storage);
+const store = () => storage;
 
 describe("captureFormTemplate", () => {
   it("copies the form, keeps only referenced codelists and drops the lock", () => {

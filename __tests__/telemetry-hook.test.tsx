@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 
 // Configure React 19 act environment
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -8,56 +9,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-class LocalStorageMock {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = String(value);
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-
-  get length(): number {
-    return Object.keys(this.store).length;
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("useTelemetry Hook Integration & Isolation", () => {
   let container: HTMLDivElement;
   let root: Root;
   let useTelemetry: any;
   let fetchMock: any;
-  let mockStorage: LocalStorageMock;
+  let mockStorage: MockStorage;
 
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.resetModules();
 
-    mockStorage = new LocalStorageMock();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(globalThis, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
 
     // Dynamically import to ensure clean isolated module state
     const importedModule = await import("@/hooks/useTelemetry");

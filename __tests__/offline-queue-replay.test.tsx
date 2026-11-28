@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useOfflineQueue";
 import type { ApiClientResponse } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
+import { resetMockStorage } from "./helpers/storage-mock";
 
 const { mockGet, mockPost, mockPut, mockPatch, mockDelete } = vi.hoisted(
   () => ({
@@ -36,26 +37,6 @@ vi.mock("@/lib/api-client", () => ({
     delete: mockDelete,
   },
 }));
-
-class MockStorage {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-}
 
 function response(
   overrides: Partial<ApiClientResponse<unknown>> = {}
@@ -105,19 +86,12 @@ function postedEndpoints(): string[] {
 }
 
 describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
-  let originalLocalStorage: Storage;
-
   beforeEach(async () => {
     vi.useFakeTimers();
     setOnline(false);
     await clearOfflineQueue();
     await clearDLQ();
-    originalLocalStorage = globalThis.localStorage;
-    Object.defineProperty(globalThis, "localStorage", {
-      value: new MockStorage(),
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
     vi.spyOn(logger, "error").mockImplementation(() => ({
       level: "error",
       message: "",
@@ -142,11 +116,6 @@ describe("useOfflineQueue replay, ordering and retry paths (#2532)", () => {
     await vi.advanceTimersByTimeAsync(0);
     vi.useRealTimers();
     vi.restoreAllMocks();
-    Object.defineProperty(globalThis, "localStorage", {
-      value: originalLocalStorage,
-      writable: true,
-      configurable: true,
-    });
   });
 
   describe("replay on reconnect", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { MockStorage } from "../vitest.setup";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import { safeClear } from "@/lib/safe-storage";
 import {
   COURSE_VERSION,
@@ -30,16 +30,11 @@ const satSetup: RaceSetup = raceSetup(
   "any",
   new Date(2026, 9, 14)
 );
-let mockStorage = new MockStorage();
+let mockStorage: MockStorage;
 const storage = (): MockStorage => mockStorage;
 
 beforeEach(() => {
-  mockStorage = new MockStorage();
-  Object.defineProperty(window, "localStorage", {
-    value: mockStorage,
-    writable: true,
-    configurable: true,
-  });
+  mockStorage = resetMockStorage();
   // Through safe storage, so its in-memory copy is cleared too.
   safeClear();
 });

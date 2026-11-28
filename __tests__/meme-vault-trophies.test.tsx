@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import React from "react";
 import {
   render,
@@ -62,28 +63,6 @@ vi.mock("framer-motion", async (importOriginal) => {
   };
 });
 
-class MockStorage {
-  private store = new Map<string, string>();
-  getItem(key: string) {
-    return this.store.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-  clear() {
-    this.store.clear();
-  }
-  key(index: number) {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  get length() {
-    return this.store.size;
-  }
-}
-
 function renderVault() {
   return render(
     <A11yProvider>
@@ -101,7 +80,7 @@ function toasts() {
 
 describe("Meme Vault trophies and chaos button (#1328)", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", new MockStorage());
+    resetMockStorage();
     nav.pathname = "/arcade/meme-vault";
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
   });
@@ -110,7 +89,6 @@ describe("Meme Vault trophies and chaos button (#1328)", () => {
     cleanup();
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
-    vi.unstubAllGlobals();
   });
 
   it("opens chaos mode from the button without awarding the Konami trophy", () => {

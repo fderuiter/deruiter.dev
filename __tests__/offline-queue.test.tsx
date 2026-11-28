@@ -22,27 +22,7 @@ import {
 } from "@/hooks/useOfflineQueue";
 import { openOfflineQueueStore } from "@/lib/offline-queue";
 import { CaseStudyFeedbackSection } from "@/components/CaseStudyFeedbackSection";
-
-// Standard mock storage implementation
-class MockStorage {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] || null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = value;
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-}
+import { resetMockStorage } from "./helpers/storage-mock";
 
 function TestOfflineQueueComponent() {
   const { queue, queueLength, isOnline, enqueue, clear, flush } =
@@ -77,19 +57,11 @@ function TestOfflineQueueComponent() {
 }
 
 describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () => {
-  let originalLocalStorage: Storage;
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     await clearOfflineQueue();
-
-    const mockStorage = new MockStorage();
-    originalLocalStorage = globalThis.localStorage;
-    Object.defineProperty(globalThis, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    resetMockStorage();
 
     fetchMock = vi.fn().mockImplementation(async (url: string) => {
       if (url.includes("/api/case-studies/reactions")) {
@@ -143,11 +115,6 @@ describe("Reusable Offline Queue Hook with Optimistic Feedback Sync Suite", () =
     cleanup();
     await clearOfflineQueue();
     vi.restoreAllMocks();
-    Object.defineProperty(globalThis, "localStorage", {
-      value: originalLocalStorage,
-      writable: true,
-      configurable: true,
-    });
   });
 
   describe("Requirement 1 & Acceptance Criterion 1: Optimistic UI & Offline Queueing", () => {

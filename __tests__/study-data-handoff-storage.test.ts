@@ -6,31 +6,15 @@ import {
   storeStudyHandoff,
   takeStudyHandoff,
 } from "@/components/study-data/handoff-storage";
+import {
+  MockStorage,
+  QuotaExceededStorage,
+  ThrowingStorage,
+  resetMockStorage,
+} from "./helpers/storage-mock";
 
-class MockStorage implements Storage {
-  private readonly items = new Map<string, string>();
-  get length() {
-    return this.items.size;
-  }
-  clear() {
-    this.items.clear();
-  }
-  getItem(key: string) {
-    return this.items.get(key) ?? null;
-  }
-  key(index: number) {
-    return [...this.items.keys()][index] ?? null;
-  }
-  removeItem(key: string) {
-    this.items.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.items.set(key, String(value));
-  }
-}
-
-function useSessionStorage(storage: unknown) {
-  vi.spyOn(window, "sessionStorage", "get").mockReturnValue(storage as Storage);
+function useSessionStorage(storage: Storage | undefined) {
+  resetMockStorage({ target: "sessionStorage", storage });
 }
 
 afterEach(() => {
@@ -107,20 +91,12 @@ describe("study-data handoff storage", () => {
   });
 
   it("reports a study too large for the tab's storage", () => {
-    const storage = new MockStorage();
-    storage.setItem = () => {
-      throw new DOMException("full", "QuotaExceededError");
-    };
-    useSessionStorage(storage);
+    useSessionStorage(new QuotaExceededStorage());
     expect(storeStudyHandoff({})).toBe("too-large");
   });
 
   it("reports a read that throws as unreadable", () => {
-    const storage = new MockStorage();
-    storage.getItem = () => {
-      throw new Error("denied");
-    };
-    useSessionStorage(storage);
+    useSessionStorage(new ThrowingStorage());
     expect(takeStudyHandoff()).toEqual({ status: "unreadable" });
   });
 });

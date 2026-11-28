@@ -5,6 +5,7 @@
 // the shared pause overlay and the P and Escape rule.
 import React, { useState, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   act,
   cleanup,
@@ -55,28 +56,6 @@ vi.mock("@/components/providers/AudioProvider", () => ({
     muted: false,
   }),
 }));
-
-class MockStorage implements Storage {
-  private data = new Map<string, string>();
-  get length() {
-    return this.data.size;
-  }
-  clear() {
-    this.data.clear();
-  }
-  getItem(key: string) {
-    return this.data.get(key) ?? null;
-  }
-  key(index: number) {
-    return [...this.data.keys()][index] ?? null;
-  }
-  removeItem(key: string) {
-    this.data.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.data.set(key, value);
-  }
-}
 
 type Intent =
   { readonly type: "add" } | { readonly type: "set"; readonly count: number };
@@ -248,10 +227,7 @@ describe("cabinet pause service (#2357)", () => {
     announce.mockClear();
     window.history.replaceState(null, "", "/");
     setWindow(1280, 800);
-    Object.defineProperty(globalThis, "localStorage", {
-      configurable: true,
-      value: new MockStorage(),
-    });
+    resetMockStorage();
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 0,
       height: 0,

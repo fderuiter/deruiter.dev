@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import {
   cleanup,
   fireEvent,
@@ -245,42 +246,11 @@ describe("clearing a post-marketing Blind (#2330)", () => {
   });
 });
 
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
-
 describe("the campaign win once the run continues (#2331)", () => {
-  const original = Object.getOwnPropertyDescriptor(window, "localStorage");
   let storage: MockStorage;
   beforeEach(() => {
     window.history.replaceState(null, "", "/");
-    storage = new MockStorage();
-    Object.defineProperty(window, "localStorage", {
-      configurable: true,
-      value: storage,
-    });
-  });
-  afterEach(() => {
-    if (original) Object.defineProperty(window, "localStorage", original);
+    storage = resetMockStorage();
   });
   const history = () => parseCodex(storage.getItem(CODEX_KEY)).codex;
 

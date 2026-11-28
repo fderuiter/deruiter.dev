@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { MockStorage } from "../vitest.setup";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 import { safeClear } from "@/lib/safe-storage";
 import * as safeStorage from "@/lib/safe-storage";
 import { raceSetup, type RaceSetup } from "@/lib/garmin/race";
@@ -24,15 +24,10 @@ import {
 
 const DAY = new Date(2026, 9, 14, 8);
 const SATURDAY: RaceSetup = raceSetup("saturday5k", "any", DAY);
-let mockStorage = new MockStorage();
+let mockStorage: MockStorage;
 
 beforeEach(() => {
-  mockStorage = new MockStorage();
-  Object.defineProperty(window, "localStorage", {
-    value: mockStorage,
-    writable: true,
-    configurable: true,
-  });
+  mockStorage = resetMockStorage();
   safeClear();
 });
 

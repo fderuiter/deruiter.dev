@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetMockStorage } from "./helpers/storage-mock";
 import {
   act,
   cleanup,
@@ -31,40 +32,13 @@ vi.mock("@/lib/clipboard", () => ({
   getActiveHostUrl: () => "https://deruiter.dev",
 }));
 
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
-
-const original = Object.getOwnPropertyDescriptor(window, "localStorage");
 const act1: Act = { ...ACT_I, crisisDeck: undefined };
 
 beforeEach(() => {
   announce.mockClear();
   copyToClipboard.mockReset();
   copyToClipboard.mockResolvedValue(undefined);
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: new MockStorage(),
-  });
+  resetMockStorage();
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -80,7 +54,6 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   window.history.replaceState(null, "", "/");
-  if (original) Object.defineProperty(window, "localStorage", original);
 });
 
 const newRun = () => screen.queryByTestId("new-run");

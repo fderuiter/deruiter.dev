@@ -53,40 +53,8 @@ import { StudioHeader } from "@/components/crf/StudioHeader";
 import { AssetDistributionViewer } from "@/components/laser-loon/AssetDistributionHub";
 
 import { getByTooltip } from "./helpers/tooltip";
-/** The standard in-memory Storage (AGENTS.md §1). */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
+import { ThrowingStorage, resetMockStorage } from "./helpers/storage-mock";
 
-/** A Storage whose every call throws, like a blocked or full store. */
-class ThrowingStorage extends MockStorage {
-  override getItem(): string | null {
-    throw new Error("SecurityError");
-  }
-  override setItem(): void {
-    throw new Error("QuotaExceededError");
-  }
-}
-
-const originalStorage = Object.getOwnPropertyDescriptor(window, "localStorage");
 const originalClipboard = Object.getOwnPropertyDescriptor(
   navigator,
   "clipboard"
@@ -97,10 +65,7 @@ const originalExecCommand = Object.getOwnPropertyDescriptor(
 );
 
 function installStorage(value: Storage | undefined) {
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value,
-  });
+  resetMockStorage({ target: "localStorage", storage: value });
 }
 
 function stubClipboardApi(writeText: (text: string) => Promise<void>) {
@@ -122,15 +87,12 @@ function blockClipboard() {
 beforeEach(() => {
   announce.mockClear();
   push.mockClear();
-  installStorage(new MockStorage());
+  resetMockStorage();
 });
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
-  if (originalStorage) {
-    Object.defineProperty(window, "localStorage", originalStorage);
-  }
   if (originalClipboard) {
     Object.defineProperty(navigator, "clipboard", originalClipboard);
   } else {

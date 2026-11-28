@@ -9,6 +9,11 @@ import {
 } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type MockStorage,
+  QuotaExceededStorage,
+  resetMockStorage,
+} from "./helpers/storage-mock";
 import { ExportImportModal } from "@/components/crf/Modes/ExportImportModal";
 import {
   STUDY_DATA_HANDOFF_KEY,
@@ -30,33 +35,10 @@ import {
 
 const RUN_TIMEOUT = { timeout: 30_000 };
 
-class MockStorage implements Storage {
-  private readonly items = new Map<string, string>();
-  get length() {
-    return this.items.size;
-  }
-  clear() {
-    this.items.clear();
-  }
-  getItem(key: string) {
-    return this.items.get(key) ?? null;
-  }
-  key(index: number) {
-    return [...this.items.keys()][index] ?? null;
-  }
-  removeItem(key: string) {
-    this.items.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.items.set(key, String(value));
-  }
-}
-
 let storage: MockStorage;
 
 beforeEach(() => {
-  storage = new MockStorage();
-  vi.spyOn(window, "sessionStorage", "get").mockReturnValue(storage);
+  storage = resetMockStorage("sessionStorage");
 });
 
 afterEach(() => {
@@ -276,9 +258,7 @@ describe("CRF Studio USDM export handoff", () => {
   });
 
   it("explains when the tab cannot hold the study", async () => {
-    storage.setItem = () => {
-      throw new DOMException("full", "QuotaExceededError");
-    };
+    resetMockStorage(new QuotaExceededStorage(), "sessionStorage");
     render(
       <ExportImportModal
         study={CNS_NEURO_PRESET}

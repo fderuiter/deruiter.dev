@@ -24,6 +24,7 @@ import type {
   EditCheckRule,
   StudyProtocol,
 } from "@/lib/crf";
+import { MockStorage, QuotaExceededStorage } from "../helpers/storage-mock";
 
 /**
  * #678 — save and reuse versioned personal clinical blocks.
@@ -32,30 +33,6 @@ import type {
  * save, reopen the library, insert twice, then customize one copy and prove
  * the others did not move.
  */
-
-/** Minimal in-memory Storage, isolated per test. */
-class MockStorage implements Storage {
-  private store = new Map<string, string>();
-
-  get length(): number {
-    return this.store.size;
-  }
-  clear(): void {
-    this.store.clear();
-  }
-  getItem(key: string): string | null {
-    return this.store.has(key) ? (this.store.get(key) as string) : null;
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null;
-  }
-  removeItem(key: string): void {
-    this.store.delete(key);
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, String(value));
-  }
-}
 
 function field(overrides: Partial<CRFField> & { id: string }): CRFField {
   return {
@@ -261,10 +238,7 @@ describe("[#678] Versioned personal clinical block library", () => {
     });
 
     it("reports a full store as an error instead of throwing", () => {
-      const full = new MockStorage();
-      full.setItem = () => {
-        throw new Error("QuotaExceededError");
-      };
+      const full = new QuotaExceededStorage();
 
       const result = savePersonalLibrary([capture()], full);
       expect(result.status).toBe("error");

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { type MockStorage, resetMockStorage } from "./helpers/storage-mock";
 
 // Configure React 19 act environment
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,54 +17,16 @@ import {
   type UseTelemetryOptions,
 } from "@/hooks/useTelemetry";
 
-class LocalStorageMock {
-  private store: Record<string, string> = {};
-
-  getItem(key: string): string | null {
-    return this.store[key] ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.store[key] = String(value);
-  }
-
-  removeItem(key: string): void {
-    delete this.store[key];
-  }
-
-  clear(): void {
-    this.store = {};
-  }
-
-  get length(): number {
-    return Object.keys(this.store).length;
-  }
-
-  key(index: number): string | null {
-    return Object.keys(this.store)[index] ?? null;
-  }
-}
-
 describe("useTelemetry Hook - Contract & Public Signature Test Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
-  let mockStorage: LocalStorageMock;
+  let mockStorage: MockStorage;
   let fetchMock: any;
 
   beforeEach(() => {
     vi.useFakeTimers();
 
-    mockStorage = new LocalStorageMock();
-    Object.defineProperty(window, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(globalThis, "localStorage", {
-      value: mockStorage,
-      writable: true,
-      configurable: true,
-    });
+    mockStorage = resetMockStorage();
 
     container = document.createElement("div");
     document.body.appendChild(container);

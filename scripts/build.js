@@ -1,6 +1,7 @@
 /* eslint-disable */
 const { spawnSync } = require("child_process");
 const fs = require("fs");
+const path = require("path");
 
 console.log("--- Starting Post-Build Conditional Migration Build Pipeline ---");
 
@@ -74,10 +75,15 @@ function withBuildHeapCap(nodeOptions) {
 
 const {
   captureSourceState,
+  cleanEphemeralSentryTunnel,
   clearBuildProvenance,
   writeBuildProvenance,
 } = require("./build-provenance");
 async function runBuildPipeline() {
+  const buildCwd = process.cwd();
+  const hadSentryTunnelBeforeBuild = fs.existsSync(
+    path.join(buildCwd, "app", "sentry-tunnel")
+  );
   // Build provenance (#1769): note the source state before any phase can
   // rewrite a file, and drop the previous build's record so a build that
   // fails part-way can never be mistaken for a finished one.
@@ -234,8 +240,22 @@ async function runBuildPipeline() {
   }
 
   // 4. Application Compilation Phase (Phase 2)
+  // Under VERCEL=1, @sentry/nextjs writes an untracked app/sentry-tunnel/route.js
+  // during `next build` (assuming Vercel discards the checkout afterwards) and
+  // Next.js emits .next/types/app/sentry-tunnel/route.ts importing it. Clean both
+  // up immediately after `next build` (even on failure) so the checkout stays
+  // clean for writeBuildProvenance() and downstream jobs that download .next/
+  // without app/sentry-tunnel do not fail typecheck with TS2307.
   console.log("\n--- Phase 2: Compiling Frontend Application ---");
-  runStep("npx", ["next", "build", "--webpack"]);
+  const cleanupSentryTunnel = () =>
+    cleanEphemeralSentryTunnel(hadSentryTunnelBeforeBuild, buildCwd);
+  process.once("exit", cleanupSentryTunnel);
+  try {
+    runStep("npx", ["next", "build", "--webpack"]);
+  } finally {
+    process.removeListener("exit", cleanupSentryTunnel);
+    cleanupSentryTunnel();
+  }
 
   // 4.5. Standalone Engine Asset Target Compilation & Budget Validation Phase (Phase 2.5)
   // Runs after `next build` because Next's distDir cleanup removes custom

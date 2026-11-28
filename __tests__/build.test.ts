@@ -2,6 +2,9 @@
 /* eslint-disable */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import child_process from "child_process";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 // Everything the production preflight (scripts/vercel-production-preflight.js)
 // requires, with fake values, so production-path tests reach the steps they
@@ -387,5 +390,93 @@ describe("build.js script execution", () => {
     expect(output).toContain("UPSTASH_REDIS_REST_TOKEN was rejected");
     expect(output).not.toContain("tok-fake");
     errorSpy.mockRestore();
+  });
+
+  it("removes ephemeral app/sentry-tunnel and .next/types/app/sentry-tunnel created during VERCEL=1 next build, even on failure", async () => {
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "build-sentry-tunnel-")
+    );
+    const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tempDir);
+    try {
+      process.env.VERCEL = "1";
+      delete (process.env as any).VERCEL_ENV;
+      process.env.DATABASE_URL =
+        "postgresql://dummy:dummy@127.0.0.1:59999/dummy";
+
+      let sawCleanTreeDuringStandalone = false;
+      spawnSpy.mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === "npx" && args.includes("next") && args.includes("build")) {
+          fs.mkdirSync(path.join(tempDir, "app", "sentry-tunnel"), {
+            recursive: true,
+          });
+          fs.writeFileSync(
+            path.join(tempDir, "app", "sentry-tunnel", "route.js"),
+            "export { POST } from '@sentry/nextjs/tunnel';\n"
+          );
+          fs.mkdirSync(
+            path.join(tempDir, ".next", "types", "app", "sentry-tunnel"),
+            { recursive: true }
+          );
+          fs.writeFileSync(
+            path.join(
+              tempDir,
+              ".next",
+              "types",
+              "app",
+              "sentry-tunnel",
+              "route.ts"
+            ),
+            "import * as entry from '../../../../app/sentry-tunnel/route.js'\n"
+          );
+        }
+        if (
+          cmd === "npx" &&
+          args.includes("scripts/build-standalone-engine.ts")
+        ) {
+          sawCleanTreeDuringStandalone =
+            !fs.existsSync(path.join(tempDir, "app", "sentry-tunnel")) &&
+            !fs.existsSync(
+              path.join(tempDir, ".next", "types", "app", "sentry-tunnel")
+            );
+        }
+        return { status: 0 } as any;
+      });
+
+      await expect(require("../scripts/build.js")).rejects.toThrow(
+        "Process exited with code 0"
+      );
+      expect(sawCleanTreeDuringStandalone).toBe(true);
+
+      // Also cleans up when `next build` exits non-zero after writing the route.
+      delete require.cache[require.resolve("../scripts/build.js")];
+      spawnSpy.mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === "npx" && args.includes("next") && args.includes("build")) {
+          fs.mkdirSync(path.join(tempDir, "app", "sentry-tunnel"), {
+            recursive: true,
+          });
+          fs.mkdirSync(
+            path.join(tempDir, ".next", "types", "app", "sentry-tunnel"),
+            { recursive: true }
+          );
+          return { status: 2 } as any;
+        }
+        return { status: 0 } as any;
+      });
+
+      await expect(require("../scripts/build.js")).rejects.toThrow(
+        "Process exited with code 2"
+      );
+      expect(fs.existsSync(path.join(tempDir, "app", "sentry-tunnel"))).toBe(
+        false
+      );
+      expect(
+        fs.existsSync(
+          path.join(tempDir, ".next", "types", "app", "sentry-tunnel")
+        )
+      ).toBe(false);
+    } finally {
+      cwdSpy.mockRestore();
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

@@ -69,6 +69,31 @@ function clearBuildProvenance(cwd = process.cwd()) {
   }
 }
 
+/**
+ * Removes the ephemeral `app/sentry-tunnel` route and its `.next/types` stub
+ * that `@sentry/nextjs` (`setUpManagedTunnelVercelRoute`) writes into the
+ * checkout during `VERCEL=1` `next build` (assuming Vercel's container is
+ * discarded afterwards). The compiled route in `.next/server/` stays intact,
+ * while the checkout stays clean for `writeBuildProvenance()` and `.next/types`
+ * keeps no dangling import into `app/sentry-tunnel/route.js` for downstream
+ * `bench-gate` or local `typecheck` runs.
+ */
+function cleanEphemeralSentryTunnel(
+  hadSentryTunnelBeforeBuild,
+  cwd = process.cwd()
+) {
+  if (hadSentryTunnelBeforeBuild) return;
+  for (const relPath of [
+    path.join("app", "sentry-tunnel"),
+    path.join(".next", "types", "app", "sentry-tunnel"),
+  ]) {
+    const target = path.join(cwd, relPath);
+    if (fs.existsSync(target)) {
+      fs.rmSync(target, { recursive: true, force: true });
+    }
+  }
+}
+
 /** Writes the record after `next build` succeeded. Never fails the build. */
 function writeBuildProvenance(before, cwd = process.cwd()) {
   if (underTest()) return null;
@@ -107,6 +132,7 @@ module.exports = {
   BUILD_PROVENANCE_FILE,
   GENERATED_BUILD_ARTIFACTS,
   captureSourceState,
+  cleanEphemeralSentryTunnel,
   clearBuildProvenance,
   writeBuildProvenance,
 };

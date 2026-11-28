@@ -15,6 +15,7 @@ import {
   CDASH_STANDARD_VARIABLES,
   STANDARD_CODELISTS,
 } from "./cdisc-cdash-library";
+import { consultationUrl } from "./export-annotations";
 
 /** The NCI Thesaurus code system URI that HL7 terminology assigns. */
 const NCIT_SYSTEM = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl";
@@ -86,14 +87,15 @@ function extractIsoDatePrefix(rawDate: string | undefined): string | undefined {
 }
 
 /**
- * Converts a CRFForm into a typed HL7 FHIR R4 Questionnaire Resource without
- * promotional URLs or wall-clock dates.
+ * Converts a CRFForm into a typed HL7 FHIR R4 Questionnaire Resource with
+ * deterministic dates and the canonical consultation scheduling link.
  */
 export function exportFormToFhirQuestionnaire(
   form: CRFForm,
   study: StudyProtocol
 ): FhirQuestionnaire {
   const deterministicDate = extractIsoDatePrefix(study.lastModified);
+  const scheduleUrl = consultationUrl();
 
   return {
     resourceType: "Questionnaire",
@@ -111,7 +113,9 @@ export function exportFormToFhirQuestionnaire(
     status: "active",
     ...(deterministicDate ? { date: deterministicDate } : {}),
     publisher: study.sponsor || "Clinical Study Sponsor",
-    ...(form.description ? { description: form.description } : {}),
+    description: form.description
+      ? `${form.description} • Schedule Consultation: ${scheduleUrl}`
+      : `Schedule Consultation: ${scheduleUrl}`,
     item: form.sections.map((sec, sIdx) => ({
       linkId: `section-${sIdx + 1}`,
       text: sec.title,

@@ -8,6 +8,7 @@ import {
   StudyVisit,
 } from "../types";
 import { escapeXml } from "../../utils";
+import { consultationUrl } from "./export-annotations";
 
 const VALID_ODM_VISIT_TYPES = new Set<StudyVisit["visitType"]>([
   "Scheduled",
@@ -404,11 +405,14 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
       return { form, formOid, sections: preparedSections };
     });
 
-  const studyDescriptionText = safeStudy.phase
+  const scheduleUrl = consultationUrl();
+  const baseStudyDescription = safeStudy.phase
     ? `Protocol ${protoNum} - ${safeStudy.phase}`
     : `Protocol ${protoNum}`;
+  const studyDescriptionText = `${baseStudyDescription} • Schedule Consultation: ${scheduleUrl}`;
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schedule Consultation: ${scheduleUrl} -->
 <ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"
      xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

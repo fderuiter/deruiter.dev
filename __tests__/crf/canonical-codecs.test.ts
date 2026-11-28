@@ -36,6 +36,7 @@ import {
   STUDY_DRAFT_ENVELOPE_VERSION,
   StudyProtocolEngine,
   evaluateStudyConformance,
+  consultationUrl,
 } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import type {
@@ -666,9 +667,12 @@ describe("CanonicalCrfDocument & Symmetric Format Codecs", () => {
 
     const xmlA = exportStudyToCdiscOdmXml(sharedVarStudy);
     const xmlB = exportStudyToCdiscOdmXml(sharedVarStudy);
-    // Deterministic output without wall-clock timestamps or consultationUrl
+    // Deterministic output without wall-clock timestamps, preserving consultationUrl
     expect(xmlA).toBe(xmlB);
-    expect(xmlA).not.toContain("/schedule");
+    expect(xmlA).toContain(
+      `<!-- Schedule Consultation: ${consultationUrl()} -->`
+    );
+    expect(xmlA).toContain(`Schedule Consultation: ${consultationUrl()}`);
     expect(xmlA).toContain('ItemDef OID="IT.form_scr_vs.WEIGHT"');
     expect(xmlA).toContain('ItemDef OID="IT.form_surg_vs.WEIGHT"');
     expect(xmlA).toContain("<BasicDefinitions>");
@@ -711,6 +715,59 @@ describe("CanonicalCrfDocument & Symmetric Format Codecs", () => {
     expect(reimported.forms[0].rules).toHaveLength(1);
     expect(reimported.forms[0].rules[0].actionType).toBe("raise_query");
 
+    // Pre-PR ODM exports with unscoped legacy IT.<NAME> item OIDs still decode cleanly
+    const legacyUnscopedXml = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Schedule Consultation: ${consultationUrl()} -->
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" ODMVersion="1.3.2" FileType="Snapshot" FileOID="ODM.LEGACY.1" CreationDateTime="2026-08-01T00:00:00Z">
+  <Study OID="STUDY.LEGACY_01">
+    <GlobalVariables>
+      <StudyName>Legacy ODM Study</StudyName>
+      <StudyDescription>Protocol LEGACY-01 - Phase II • Schedule Consultation: ${consultationUrl()}</StudyDescription>
+      <ProtocolName>LEGACY-01</ProtocolName>
+    </GlobalVariables>
+    <MetaDataVersion OID="MDV.1.0" Name="Protocol Definition Version 1.0">
+      <Protocol>
+        <StudyEventRef StudyEventOID="SE.SCR" OrderNumber="1" Mandatory="Yes"/>
+      </Protocol>
+      <StudyEventDef OID="SE.SCR" Name="Screening" Repeating="No" Type="Scheduled">
+        <FormRef FormOID="FORM.form_a" OrderNumber="1" Mandatory="Yes"/>
+        <FormRef FormOID="FORM.form_b" OrderNumber="2" Mandatory="Yes"/>
+      </StudyEventDef>
+      <FormDef OID="FORM.form_a" Name="Screening Vitals" Repeating="No">
+        <ItemGroupRef ItemGroupOID="IG.VS.sec_a" OrderNumber="1" Mandatory="Yes"/>
+      </FormDef>
+      <FormDef OID="FORM.form_b" Name="Follow-Up Vitals" Repeating="No">
+        <ItemGroupRef ItemGroupOID="IG.VS.sec_b" OrderNumber="1" Mandatory="Yes"/>
+      </FormDef>
+      <ItemGroupDef OID="IG.VS.sec_a" Name="Vitals A" Repeating="No">
+        <ItemRef ItemOID="IT.WEIGHT" OrderNumber="1" Mandatory="Yes"/>
+      </ItemGroupDef>
+      <ItemGroupDef OID="IG.VS.sec_b" Name="Vitals B" Repeating="No">
+        <ItemRef ItemOID="IT.WEIGHT" OrderNumber="1" Mandatory="No"/>
+      </ItemGroupDef>
+      <ItemDef OID="IT.WEIGHT" Name="WEIGHT" DataType="float">
+        <Description><TranslatedText xml:lang="en">Body Weight</TranslatedText></Description>
+      </ItemDef>
+    </MetaDataVersion>
+  </Study>
+</ODM>`;
+    const decodedLegacyDoc = OdmXml132Codec.decode(legacyUnscopedXml);
+    expect(decodedLegacyDoc.metadata.phase).toBe("Phase II");
+    expect(decodedLegacyDoc.forms.order).toEqual(["form_a", "form_b"]);
+    const legacyStudy = fromCanonicalCrfDocument(decodedLegacyDoc);
+    expect(legacyStudy.forms[0].sections[0].fields[0]).toMatchObject({
+      variableName: "WEIGHT",
+      label: "Body Weight",
+      dataType: "number",
+      required: true,
+    });
+    expect(legacyStudy.forms[1].sections[0].fields[0]).toMatchObject({
+      variableName: "WEIGHT",
+      label: "Body Weight",
+      dataType: "number",
+      required: false,
+    });
+
     // Reject invalid visitType on ODM decode and encode
     const badVisitTypeXml = xmlA.replace(
       'Type="Scheduled"',
@@ -731,7 +788,7 @@ describe("CanonicalCrfDocument & Symmetric Format Codecs", () => {
     ).toThrow();
   });
 
-  it("exports typed FhirQuestionnaire and FhirBundle models without consultationUrl or wall-clock dates", () => {
+  it("exports typed FhirQuestionnaire and FhirBundle models with consultationUrl and deterministic dates", () => {
     const fixedStudy: StudyProtocol = {
       ...ONCOLOGY_RECIST_PRESET,
       lastModified: "2026-08-15",
@@ -746,11 +803,16 @@ describe("CanonicalCrfDocument & Symmetric Format Codecs", () => {
     expect(singleQuestionnaire.resourceType).toBe("Questionnaire");
     expect(singleQuestionnaire.status).toBe("active");
     expect(singleQuestionnaire.date).toBe("2026-08-15");
+    expect(singleQuestionnaire.description).toContain(
+      `Schedule Consultation: ${consultationUrl()}`
+    );
     expect(studyBundle.resourceType).toBe("Bundle");
     expect(studyBundle.type).toBe("collection");
     expect(studyBundle.entry).toHaveLength(fixedStudy.forms.length);
     expect(JSON.stringify(studyBundle)).toBe(JSON.stringify(studyBundleRepeat));
-    expect(JSON.stringify(studyBundle)).not.toContain("/schedule");
+    expect(JSON.stringify(studyBundle)).toContain(
+      `Schedule Consultation: ${consultationUrl()}`
+    );
 
     const decoded = FhirR4QuestionnaireCodec.decode(
       JSON.stringify(studyBundle)

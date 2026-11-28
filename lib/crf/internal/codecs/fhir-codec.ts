@@ -21,7 +21,7 @@ export interface FhirR4EncodeOptions {
 
 /**
  * Symmetric codec for HL7 FHIR R4 `Questionnaire` and `Bundle` resources.
- * Produces typed `FhirBundle` structures without marketing URLs or wall-clock dates.
+ * Produces typed `FhirBundle` structures without wall-clock timestamps.
  */
 export const FhirR4QuestionnaireCodec: FormatCodec<
   string,

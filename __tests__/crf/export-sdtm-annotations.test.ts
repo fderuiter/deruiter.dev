@@ -45,25 +45,18 @@ describe("[#1203] exports annotate SDTM targets and use absolute links", () => {
     }
   });
 
-  it("links SAS/R scripts to the absolute schedule URL and omits consultationUrl from ODM-XML and FHIR codecs", () => {
-    const scriptOutputs = {
+  it("links downloaded files to the absolute schedule URL", () => {
+    const outputs = {
       sas: exportStudyToSas(study),
       r: exportStudyToR(study),
-    };
-    for (const [name, text] of Object.entries(scriptOutputs)) {
-      expect(SCHEDULE).toMatch(/^https?:\/\//);
-      expect(text, name).toContain(SCHEDULE);
-      expect(text, name).not.toMatch(/Consultation: \/schedule/);
-    }
-
-    const codecOutputs = {
       odm: exportStudyToCdiscOdmXml(study),
       fhir: JSON.stringify(
         exportFormToFhirQuestionnaire(study.forms[0], study)
       ),
     };
-    for (const [name, text] of Object.entries(codecOutputs)) {
-      expect(text, name).not.toContain(SCHEDULE);
+    for (const [name, text] of Object.entries(outputs)) {
+      expect(SCHEDULE).toMatch(/^https?:\/\//);
+      expect(text, name).toContain(SCHEDULE);
       expect(text, name).not.toMatch(/Consultation: \/schedule/);
     }
   });

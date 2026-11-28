@@ -5,7 +5,7 @@ test-results
 playwright-report
 build
 out
-.agents
+.agents/worktrees
 scratch
 tmp
 .scratch

@@ -2,32 +2,25 @@ import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 import type { DiagnosticCheckResult } from "../doctor";
+import { shouldSkipWorkspaceDirectory } from "../workspace-config";
 
-const IGNORED_DIRS = new Set([
-  "node_modules",
-  ".git",
-  ".next",
-  "dist",
-  ".claude",
-  ".stryker-tmp",
-]);
-
-function walkTsFiles(dir: string): string[] {
+function walkTsFiles(root: string, dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   const results: string[] = [];
   const entries = fs
     .readdirSync(dir, { withFileTypes: true })
     .sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!IGNORED_DIRS.has(entry.name)) {
-        results.push(...walkTsFiles(path.join(dir, entry.name)));
+      if (!shouldSkipWorkspaceDirectory(root, fullPath)) {
+        results.push(...walkTsFiles(root, fullPath));
       }
     } else if (
       /\.(?:ts|tsx)$/.test(entry.name) &&
       !entry.name.endsWith(".d.ts")
     ) {
-      results.push(path.join(dir, entry.name));
+      results.push(fullPath);
     }
   }
   return results;
@@ -138,20 +131,26 @@ export function findServiceContractViolations(
       .sort((a, b) => a.name.localeCompare(b.name));
 
     for (const domainEntry of domainEntries) {
-      if (!domainEntry.isDirectory() || IGNORED_DIRS.has(domainEntry.name)) {
+      const domainDir = path.join(servicesDir, domainEntry.name);
+      if (
+        !domainEntry.isDirectory() ||
+        shouldSkipWorkspaceDirectory(root, domainDir)
+      ) {
         continue;
       }
-      const domainDir = path.join(servicesDir, domainEntry.name);
 
       const opEntries = fs
         .readdirSync(domainDir, { withFileTypes: true })
         .sort((a, b) => a.name.localeCompare(b.name));
 
       for (const opEntry of opEntries) {
-        if (!opEntry.isDirectory() || IGNORED_DIRS.has(opEntry.name)) {
+        const opDir = path.join(domainDir, opEntry.name);
+        if (
+          !opEntry.isDirectory() ||
+          shouldSkipWorkspaceDirectory(root, opDir)
+        ) {
           continue;
         }
-        const opDir = path.join(domainDir, opEntry.name);
         const specPath = path.join(opDir, "spec.ts");
         const handlerPath = path.join(opDir, "handler.ts");
         if (!fs.existsSync(specPath)) {
@@ -173,7 +172,7 @@ export function findServiceContractViolations(
       }
     }
 
-    const serviceFiles = walkTsFiles(servicesDir).filter(
+    const serviceFiles = walkTsFiles(root, servicesDir).filter(
       (file) => !file.includes(".test.") && !file.includes(".spec.")
     );
 
@@ -334,7 +333,7 @@ export function findServiceContractViolations(
   const scanRoots = ["app", "components", "hooks", "lib", "scripts"];
   for (const dirName of scanRoots) {
     const targetDir = path.join(root, dirName);
-    for (const file of walkTsFiles(targetDir)) {
+    for (const file of walkTsFiles(root, targetDir)) {
       if (file.includes(".test.") || file.includes(".spec.")) continue;
       const relative = path.relative(root, file);
       const content = fs.readFileSync(file, "utf-8");

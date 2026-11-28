@@ -6,7 +6,7 @@ const {
 
 const GENERATED_ARTIFACTS = new Set(FORMATTING_EXCLUDED_ARTIFACTS);
 
-const CODE_FILE = /\.(?:[cm]?js|jsx|tsx?)$/u;
+const CODE_FILE = /\.(?:[cm]?[jt]s|jsx|tsx)$/u;
 
 function quote(file) {
   return JSON.stringify(file);

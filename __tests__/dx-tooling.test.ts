@@ -25,7 +25,21 @@ import {
 } from "../lib/dx/dead-code";
 import * as bundleGuard from "../lib/dx/bundle-guard";
 import { handleAnalyzeCommand } from "../scripts/dx";
-import { checkWorkspaceIdeConfig } from "../lib/dx/doctor";
+import {
+  checkServiceResultTypes,
+  checkSetStateInEffectCeiling,
+  checkTechnicalGuideSchemaParity,
+  checkWorkspaceIdeConfig,
+  findServiceContractViolations,
+} from "../lib/dx/doctor";
+import {
+  OFFLINE_DEBUG_DATABASE_URL,
+  REQUIRED_TYPESCRIPT_TSDK,
+  REQUIRED_VSCODE_EXTENSIONS,
+  TSC_WATCH_PROBLEM_MATCHER,
+  WORKSPACE_EXCLUDED_PATHS,
+  shouldSkipWorkspaceDirectory,
+} from "../lib/dx/workspace-config";
 
 describe("Developer Experience (DX) Tooling Suite", () => {
   const root = path.resolve(process.cwd());
@@ -751,7 +765,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       return tempDir;
     };
 
-    it("verifies that all .vscode files, .editorconfig, and Prettier configs exist", () => {
+    it("verifies that all .vscode files, .claude/launch.json, .editorconfig, and Prettier configs exist", () => {
       expect(fs.existsSync(path.join(root, ".editorconfig"))).toBe(true);
       expect(fs.existsSync(path.join(root, ".prettierrc"))).toBe(true);
       expect(fs.existsSync(path.join(root, ".prettierignore"))).toBe(true);
@@ -765,6 +779,9 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         true
       );
       expect(fs.existsSync(path.join(root, ".vscode", "tasks.json"))).toBe(
+        true
+      );
+      expect(fs.existsSync(path.join(root, ".claude", "launch.json"))).toBe(
         true
       );
     });
@@ -863,7 +880,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       }
     });
 
-    it("catches missing .prettierignore generated entries and broad .claude ignores", () => {
+    it("catches missing .prettierignore generated entries and broad .claude or .agents ignores", () => {
       const tempDir = createIdeFixture();
       try {
         fs.writeFileSync(
@@ -873,7 +890,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         );
         fs.writeFileSync(
           path.join(tempDir, ".prettierignore"),
-          "node_modules\n.claude\napp/theme.css\npublic/garmin-engine.js\n",
+          "node_modules\n.claude\n.agents\napp/theme.css\npublic/garmin-engine.js\n",
           "utf-8"
         );
 
@@ -881,6 +898,9 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         expect(failed.status).toBe("fail");
         expect(failed.details?.join("\n")).toContain(
           "ignores '.claude' broadly instead of '.claude/worktrees'"
+        );
+        expect(failed.details?.join("\n")).toContain(
+          "ignores '.agents' broadly instead of '.agents/worktrees'"
         );
         expect(failed.details?.join("\n")).toContain("lib/design-manifest.ts");
         expect(failed.details?.join("\n")).toContain(
@@ -898,13 +918,467 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         const fixed = checkWorkspaceIdeConfig(tempDir, true);
         expect(fixed.status).toBe("fixed");
         expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
-        const healedIgnore = fs.readFileSync(
+        const repairedIgnore = fs.readFileSync(
           path.join(tempDir, ".prettierignore"),
           "utf-8"
         );
-        expect(healedIgnore).toContain("public/icon-maskable-512.png");
-        expect(healedIgnore).not.toContain("app/theme.css");
-        expect(healedIgnore).not.toContain("public/garmin-engine.js");
+        expect(repairedIgnore).toContain(".agents/worktrees");
+        expect(repairedIgnore).toContain(".claude/worktrees");
+        expect(repairedIgnore).toContain("public/icon-maskable-512.png");
+        expect(repairedIgnore).not.toMatch(/^\.agents$/m);
+        expect(repairedIgnore).not.toMatch(/^\.claude$/m);
+        expect(repairedIgnore).not.toContain("app/theme.css");
+        expect(repairedIgnore).not.toContain("public/garmin-engine.js");
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it("synthesizes canonical tsdk, [*.md] editorconfig, tasks, and launch configs that pass recheck and preserve custom user keys", () => {
+      const tempDir = createIdeFixture();
+      try {
+        expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
+
+        const generatedSettings = JSON.parse(
+          fs.readFileSync(
+            path.join(tempDir, ".vscode", "settings.json"),
+            "utf-8"
+          )
+        ) as Record<string, unknown>;
+        expect(generatedSettings["typescript.tsdk"]).toBe(
+          REQUIRED_TYPESCRIPT_TSDK
+        );
+        expect(
+          fs.existsSync(
+            path.join(
+              root,
+              String(generatedSettings["typescript.tsdk"]),
+              "tsserver.js"
+            )
+          )
+        ).toBe(true);
+
+        const filesExclude = generatedSettings["files.exclude"] as Record<
+          string,
+          unknown
+        >;
+        const searchExclude = generatedSettings["search.exclude"] as Record<
+          string,
+          unknown
+        >;
+        expect(searchExclude["**/.agents"]).toBeUndefined();
+        for (const excludedPath of WORKSPACE_EXCLUDED_PATHS) {
+          expect(filesExclude[excludedPath]).toBe(true);
+          expect(searchExclude[excludedPath]).toBe(true);
+        }
+
+        const generatedExtensions = JSON.parse(
+          fs.readFileSync(
+            path.join(tempDir, ".vscode", "extensions.json"),
+            "utf-8"
+          )
+        ) as { recommendations: string[] };
+        expect(generatedExtensions.recommendations).toEqual([
+          ...REQUIRED_VSCODE_EXTENSIONS,
+        ]);
+        expect(REQUIRED_VSCODE_EXTENSIONS).toHaveLength(9);
+
+        const generatedEditorConfig = fs.readFileSync(
+          path.join(tempDir, ".editorconfig"),
+          "utf-8"
+        );
+        expect(generatedEditorConfig).toContain("[*.md]");
+        expect(generatedEditorConfig).toContain(
+          "trim_trailing_whitespace = false"
+        );
+
+        const diagRegex = new RegExp(TSC_WATCH_PROBLEM_MATCHER.pattern.regexp);
+        const beginsRegex = new RegExp(
+          TSC_WATCH_PROBLEM_MATCHER.background.beginsPattern.regexp
+        );
+        const endsRegex = new RegExp(
+          TSC_WATCH_PROBLEM_MATCHER.background.endsPattern.regexp
+        );
+        const diagMatch = diagRegex.exec(
+          "[tsc] app/page.tsx(14,9): error TS2322: Type 'string' is not assignable to type 'number'."
+        );
+        expect(diagMatch?.[1]).toBe("app/page.tsx");
+        expect(diagMatch?.[2]).toBe("14");
+        expect(diagMatch?.[3]).toBe("9");
+        expect(diagMatch?.[4]).toBe("error");
+        expect(diagMatch?.[5]).toBe("2322");
+        expect(
+          beginsRegex.test(
+            "[tsc] 01:25:41 PM - Starting compilation in watch mode..."
+          )
+        ).toBe(true);
+        expect(
+          endsRegex.test(
+            "[tsc] 01:25:45 PM - Found 0 errors. Watching for file changes."
+          )
+        ).toBe(true);
+
+        // Mutate settings, extensions, tasks, and launch configs with custom keys + drift
+        fs.writeFileSync(
+          path.join(tempDir, ".vscode", "settings.json"),
+          JSON.stringify(
+            {
+              "editor.formatOnSave": true,
+              "editor.defaultFormatter": "esbenp.prettier-vscode",
+              "editor.rulers": [80],
+              "customUser.flag": "keep-me",
+              "files.exclude": {
+                "**/custom-cache": true,
+                "**/.agents": true,
+              },
+              "search.exclude": {
+                "**/custom-search": true,
+                "**/.agents": true,
+              },
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+        fs.writeFileSync(
+          path.join(tempDir, ".vscode", "extensions.json"),
+          JSON.stringify(
+            {
+              recommendations: ["custom.extension-id"],
+              unwantedRecommendations: ["foo.bar"],
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+        fs.writeFileSync(
+          path.join(tempDir, ".vscode", "tasks.json"),
+          JSON.stringify(
+            {
+              version: "2.0.0",
+              tasks: [
+                {
+                  type: "npm",
+                  script: "dev",
+                  isBackground: true,
+                  problemMatcher: ["$tsc-watch"],
+                  label: "npm: dev",
+                },
+                {
+                  type: "shell",
+                  command: "echo custom",
+                  label: "custom: echo",
+                },
+              ],
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+        fs.writeFileSync(
+          path.join(tempDir, ".vscode", "launch.json"),
+          JSON.stringify(
+            {
+              version: "0.2.0",
+              configurations: [
+                {
+                  name: "Vitest: Debug Current Test File",
+                  type: "node",
+                  request: "launch",
+                  runtimeExecutable: "npx",
+                  runtimeArgs: ["vitest", "run", "${relativeFile}"],
+                },
+                {
+                  name: "Custom Node Tool",
+                  type: "node",
+                  request: "launch",
+                  runtimeExecutable: "npx",
+                  runtimeArgs: ["tsx", "scripts/dx.ts"],
+                },
+              ],
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+        fs.writeFileSync(
+          path.join(tempDir, ".claude", "launch.json"),
+          JSON.stringify(
+            {
+              version: "0.0.1",
+              configurations: [
+                {
+                  name: "portfolio-dev",
+                  runtimeExecutable: "npx",
+                  runtimeArgs: ["next", "dev"],
+                  port: 3000,
+                },
+              ],
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+
+        const drifted = checkWorkspaceIdeConfig(tempDir, false);
+        expect(drifted.status).toBe("fail");
+        expect(drifted.fixable).toBe(true);
+        const driftText = drifted.details?.join("\n") ?? "";
+        expect(driftText).toContain("typescript.tsdk");
+        expect(driftText).toContain("**/.agents");
+        expect(driftText).toContain("$tsc-watch");
+        expect(driftText).toContain("--no-install");
+        expect(driftText).toContain("portfolio-dev");
+
+        expect(checkWorkspaceIdeConfig(tempDir, true).status).toBe("fixed");
+        expect(checkWorkspaceIdeConfig(tempDir, false).status).toBe("pass");
+
+        const repairedSettings = JSON.parse(
+          fs.readFileSync(
+            path.join(tempDir, ".vscode", "settings.json"),
+            "utf-8"
+          )
+        ) as Record<string, unknown>;
+        expect(repairedSettings["customUser.flag"]).toBe("keep-me");
+        expect(repairedSettings["typescript.tsdk"]).toBe(
+          REQUIRED_TYPESCRIPT_TSDK
+        );
+        expect(
+          (repairedSettings["files.exclude"] as Record<string, unknown>)[
+            "**/custom-cache"
+          ]
+        ).toBe(true);
+        expect(
+          (repairedSettings["search.exclude"] as Record<string, unknown>)[
+            "**/custom-search"
+          ]
+        ).toBe(true);
+        expect(
+          (repairedSettings["search.exclude"] as Record<string, unknown>)[
+            "**/.agents"
+          ]
+        ).toBeUndefined();
+
+        const repairedExtensions = JSON.parse(
+          fs.readFileSync(
+            path.join(tempDir, ".vscode", "extensions.json"),
+            "utf-8"
+          )
+        ) as {
+          recommendations: string[];
+          unwantedRecommendations: string[];
+        };
+        expect(repairedExtensions.recommendations).toContain(
+          "custom.extension-id"
+        );
+        expect(repairedExtensions.unwantedRecommendations).toEqual(["foo.bar"]);
+
+        const repairedLaunch = JSON.parse(
+          fs.readFileSync(path.join(tempDir, ".vscode", "launch.json"), "utf-8")
+        ) as {
+          configurations: Array<{
+            name: string;
+            runtimeArgs?: string[];
+            env?: Record<string, string>;
+          }>;
+        };
+        const playwrightCfg = repairedLaunch.configurations.find(
+          (c) => c.name === "Playwright: Debug Synthetic Probes"
+        );
+        expect(playwrightCfg?.runtimeArgs).toContain("--no-install");
+        expect(playwrightCfg?.runtimeArgs).toContain("--project=chromium");
+        expect(playwrightCfg?.env?.DATABASE_URL).toBe(
+          OFFLINE_DEBUG_DATABASE_URL
+        );
+        const customCfg = repairedLaunch.configurations.find(
+          (c) => c.name === "Custom Node Tool"
+        );
+        expect(customCfg?.runtimeArgs).toContain("--no-install");
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it("fails on corrupt JSON in launch/tasks/.claude configs and repairs missing [*.md] rules in .editorconfig", () => {
+      for (const relJson of [
+        path.join(".vscode", "launch.json"),
+        path.join(".vscode", "tasks.json"),
+        path.join(".claude", "launch.json"),
+      ]) {
+        const tempDir = createIdeFixture();
+        try {
+          fs.writeFileSync(path.join(tempDir, relJson), "{ bad json", "utf-8");
+          const result = checkWorkspaceIdeConfig(tempDir, false);
+          expect(result.status).toBe("fail");
+          expect(result.fixable).toBe(false);
+          expect(result.details?.join("\n")).toContain(
+            `${relJson.replace(/\\/g, "/")} is not valid JSON.`
+          );
+        } finally {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+      }
+
+      const editorDir = createIdeFixture();
+      try {
+        fs.writeFileSync(
+          path.join(editorDir, ".editorconfig"),
+          [
+            "root = true",
+            "",
+            "[*]",
+            "indent_style = space",
+            "indent_size = 2",
+            "end_of_line = lf",
+            "charset = utf-8",
+            "trim_trailing_whitespace = true",
+            "insert_final_newline = true",
+            "",
+            "[*.py]",
+            "indent_size = 4",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+
+        const failed = checkWorkspaceIdeConfig(editorDir, false);
+        expect(failed.status).toBe("fail");
+        expect(failed.fixable).toBe(true);
+        expect(failed.details?.join("\n")).toContain("[*.md]");
+
+        expect(checkWorkspaceIdeConfig(editorDir, true).status).toBe("fixed");
+        expect(checkWorkspaceIdeConfig(editorDir, false).status).toBe("pass");
+
+        const repaired = fs.readFileSync(
+          path.join(editorDir, ".editorconfig"),
+          "utf-8"
+        );
+        expect(repaired).toContain("[*.md]");
+        expect(repaired).toContain("trim_trailing_whitespace = false");
+        expect(repaired).toContain("[*.py]");
+      } finally {
+        fs.rmSync(editorDir, { recursive: true, force: true });
+      }
+    });
+
+    it("ignores .agents/worktrees, .claude/worktrees, .stryker-tmp, docs/reference/api, and app/generated/prisma across DX tree walkers", () => {
+      const tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "dx-tree-exclusions-test-")
+      );
+      try {
+        // Seed canonical prisma schema and .env.example so checkTechnicalGuideSchemaParity runs cleanly
+        fs.mkdirSync(path.join(tempDir, "prisma"), { recursive: true });
+        fs.writeFileSync(
+          path.join(tempDir, "prisma", "schema.prisma"),
+          [
+            "model CaseStudy {",
+            "  id   String @id",
+            "  slug String @unique",
+            "}",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+        fs.writeFileSync(
+          path.join(tempDir, ".env.example"),
+          generateEnvExampleContent(),
+          "utf-8"
+        );
+        fs.mkdirSync(path.join(tempDir, "app"), { recursive: true });
+        fs.mkdirSync(path.join(tempDir, "components"), { recursive: true });
+        fs.mkdirSync(path.join(tempDir, "lib", "services"), {
+          recursive: true,
+        });
+
+        const staleModelMarkdown = [
+          "# Generated Doc",
+          "",
+          "```prisma",
+          "model CaseStudy {",
+          "  id String @id",
+          "}",
+          "```",
+          "",
+        ].join("\n");
+
+        const suppressionSource = [
+          "export function IgnoredWidget() {",
+          "  // eslint-disable-next-line react-hooks/set-state-in-effect",
+          "  return null;",
+          "}",
+          "",
+        ].join("\n");
+
+        const badServiceSource = [
+          'import { logger } from "@/lib/logger";',
+          'import { sanitizeError } from "@/lib/error-sanitization";',
+          "export function broken(err: unknown) {",
+          '  logger.error("boom", sanitizeError(err));',
+          '  throw new Error("unhandled");',
+          "}",
+          "",
+        ].join("\n");
+
+        for (const excluded of WORKSPACE_EXCLUDED_PATHS) {
+          const absDir = path.join(tempDir, excluded);
+          fs.mkdirSync(absDir, { recursive: true });
+          expect(shouldSkipWorkspaceDirectory(tempDir, absDir)).toBe(true);
+          fs.writeFileSync(
+            path.join(absDir, "StaleGuide.md"),
+            staleModelMarkdown,
+            "utf-8"
+          );
+          fs.writeFileSync(
+            path.join(absDir, "IgnoredSuppression.tsx"),
+            suppressionSource,
+            "utf-8"
+          );
+          fs.writeFileSync(
+            path.join(absDir, "bad-service.ts"),
+            badServiceSource,
+            "utf-8"
+          );
+        }
+
+        // Also seed nested worktree/stryker folders under scanned roots (components/ and lib/services/)
+        for (const nested of [
+          path.join(tempDir, "components", ".agents", "worktrees", "wt-1"),
+          path.join(tempDir, "components", ".claude", "worktrees", "wt-1"),
+          path.join(tempDir, "components", ".stryker-tmp", "sandbox-1"),
+          path.join(tempDir, "lib", "services", ".agents", "worktrees", "wt-1"),
+          path.join(tempDir, "lib", "services", ".claude", "worktrees", "wt-1"),
+          path.join(tempDir, "lib", "services", ".stryker-tmp", "sandbox-1"),
+        ]) {
+          fs.mkdirSync(nested, { recursive: true });
+          expect(shouldSkipWorkspaceDirectory(tempDir, nested)).toBe(true);
+          fs.writeFileSync(
+            path.join(nested, "IgnoredSuppression.tsx"),
+            suppressionSource,
+            "utf-8"
+          );
+          fs.writeFileSync(
+            path.join(nested, "bad-service.ts"),
+            badServiceSource,
+            "utf-8"
+          );
+        }
+
+        // Tracked skills under .agents/skills are NOT excluded
+        const skillsDir = path.join(tempDir, ".agents", "skills", "tdd");
+        fs.mkdirSync(skillsDir, { recursive: true });
+        expect(shouldSkipWorkspaceDirectory(tempDir, skillsDir)).toBe(false);
+
+        expect(checkTechnicalGuideSchemaParity(tempDir, false).status).toBe(
+          "pass"
+        );
+        expect(checkSetStateInEffectCeiling(tempDir, 0).status).toBe("pass");
+        expect(findServiceContractViolations(tempDir)).toEqual([]);
+        expect(checkServiceResultTypes(tempDir, false).status).toBe("pass");
       } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
       }

@@ -15,6 +15,32 @@ import { checkDeadCode } from "./dead-code";
 import { checkDocumentationIndexParity } from "./doctor/docs";
 import { checkApiRouteWrapper } from "./doctor/api-routes";
 import { checkSetStateInEffectCeiling } from "./doctor/effect-suppressions";
+import {
+  BASELINE_GENERATED_ARTIFACTS,
+  BASELINE_VSCODE_FILES_EXCLUDE,
+  BASELINE_VSCODE_SEARCH_EXCLUDE,
+  BROAD_AGENTS_PRETTIER_IGNORES,
+  BROAD_CLAUDE_PRETTIER_IGNORES,
+  CANONICAL_CLAUDE_LAUNCH,
+  CANONICAL_EDITORCONFIG,
+  CANONICAL_VSCODE_LAUNCH,
+  CANONICAL_VSCODE_TASKS,
+  DEFAULT_PRETTIER_PRINT_WIDTH,
+  DEPRECATED_VSCODE_EXTENSIONS,
+  FORBIDDEN_BROAD_VSCODE_EXCLUDE_KEYS,
+  REQUIRED_EDITORCONFIG_SECTIONS,
+  REQUIRED_PRETTIER_DUPLICATE_TREE_IGNORES,
+  REQUIRED_PRETTIER_GENERATED_NOTICE_IGNORES,
+  REQUIRED_TYPESCRIPT_TSDK,
+  REQUIRED_VSCODE_DEFAULT_FORMATTER,
+  REQUIRED_VSCODE_EXTENSIONS,
+  VSCODE_EXTENSION_ID_PATTERN,
+  WORKSPACE_EXCLUDED_PATHS,
+  buildCanonicalPrettierrc,
+  buildCanonicalVscodeSettings,
+  normalizeWorkspaceRelativePath,
+  shouldSkipWorkspaceDirectory,
+} from "./workspace-config";
 export {
   checkServiceResultTypes,
   findServiceContractViolations,
@@ -42,10 +68,7 @@ import { getEnv } from "../env";
 import { SETUP_PROFILE_IDS } from "./setup/types";
 import { VERIFICATION_LEVELS } from "./setup/verification";
 import { inspectSourceState } from "./source-state";
-import {
-  FORMATTING_EXCLUDED_ARTIFACTS,
-  STALE_REMOVED_ARTIFACTS,
-} from "./generated-artifacts";
+import { STALE_REMOVED_ARTIFACTS } from "./generated-artifacts";
 import { validateVercelConfig } from "./vercel-policy";
 import { FALLBACK_CASE_STUDIES } from "../case-studies-data";
 import { FALLBACK_BLOG_POSTS } from "../fallback-blog-posts";
@@ -159,24 +182,13 @@ export interface DoctorOptions {
 }
 
 /**
- * Second copies of the source tree that no tree walk should enter: agent
- * worktrees under `.claude/` (#863) and Stryker sandboxes (#964).
- */
-const DUPLICATE_TREE_DIRS = [".claude", ".stryker-tmp"];
-
-/**
- * Helper to recursively find files
+ * Helper to recursively find files while skipping workspace-excluded paths.
  */
 function findFiles(
   dir: string,
   pattern: RegExp,
-  ignoreDirs: string[] = [
-    "node_modules",
-    ".git",
-    ".next",
-    "dist",
-    ...DUPLICATE_TREE_DIRS,
-  ]
+  ignoreDirs: readonly string[] = [],
+  root: string = dir
 ): string[] {
   if (!fs.existsSync(dir)) return [];
   const results: string[] = [];
@@ -184,8 +196,8 @@ function findFiles(
   for (const entry of list) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!ignoreDirs.includes(entry.name)) {
-        results.push(...findFiles(fullPath, pattern, ignoreDirs));
+      if (!shouldSkipWorkspaceDirectory(root, fullPath, ignoreDirs)) {
+        results.push(...findFiles(fullPath, pattern, ignoreDirs, root));
       }
     } else if (pattern.test(entry.name)) {
       results.push(fullPath);
@@ -222,7 +234,7 @@ export function checkRouteIndexing(
   }
 
   const paletteContent = fs.readFileSync(paletteFile, "utf-8");
-  const pageFiles = findFiles(appDir, /^page\.tsx?$/);
+  const pageFiles = findFiles(appDir, /^page\.tsx?$/, [], root);
 
   const missingRoutes: { routePath: string; url: string }[] = [];
 
@@ -438,7 +450,7 @@ export function checkPublicRouteRegistryDrift(
   const registeredSet = new Set(registeredPaths);
 
   // Discover all static public page routes under app/
-  const pageFiles = findFiles(appDir, /^page\.(tsx?|jsx?)$/);
+  const pageFiles = findFiles(appDir, /^page\.(tsx?|jsx?)$/, [], root);
   const staticPublicRoutes: string[] = [];
 
   for (const pageFile of pageFiles) {
@@ -655,7 +667,7 @@ export function checkArcadeRegistryParity(root: string): DiagnosticCheckResult {
  */
 export function checkNavbarHierarchy(root: string): DiagnosticCheckResult {
   const appDir = path.join(root, "app");
-  const tsxFiles = findFiles(appDir, /\.tsx$/);
+  const tsxFiles = findFiles(appDir, /\.tsx$/, [], root);
   const violations: string[] = [];
 
   for (const file of tsxFiles) {
@@ -701,7 +713,7 @@ export function checkNavbarHierarchy(root: string): DiagnosticCheckResult {
  */
 export function checkPageTopPadding(root: string): DiagnosticCheckResult {
   const appDir = path.join(root, "app");
-  const pageFiles = findFiles(appDir, /^page\.tsx$/);
+  const pageFiles = findFiles(appDir, /^page\.tsx$/, [], root);
   const warnings: string[] = [];
 
   for (const file of pageFiles) {
@@ -748,7 +760,12 @@ export function checkPageTopPadding(root: string): DiagnosticCheckResult {
  */
 export function checkTestPathResolution(root: string): DiagnosticCheckResult {
   const testsDir = path.join(root, "__tests__");
-  const testFiles = findFiles(testsDir, /\.(test|spec)\.(ts|tsx|js)$/);
+  const testFiles = findFiles(
+    testsDir,
+    /\.(test|spec)\.(ts|tsx|js)$/,
+    [],
+    root
+  );
   const violations: { file: string; line: number; match: string }[] = [];
 
   for (const file of testFiles) {
@@ -812,7 +829,7 @@ export function checkTestPathResolution(root: string): DiagnosticCheckResult {
  */
 export function checkTestFixtureHygiene(root: string): DiagnosticCheckResult {
   const testsDir = path.join(root, "__tests__");
-  const testFiles = findFiles(testsDir, /\.(test|spec)\.(ts|tsx)$/);
+  const testFiles = findFiles(testsDir, /\.(test|spec)\.(ts|tsx)$/, [], root);
   const violations: { file: string; line: number; match: string }[] = [];
 
   for (const file of testFiles) {
@@ -992,7 +1009,7 @@ export function checkMigrationGuard(root: string): DiagnosticCheckResult {
   }
 
   // 2. Check File Integrity
-  const sqlFiles = findFiles(migrationsDir, /\.sql$/);
+  const sqlFiles = findFiles(migrationsDir, /\.sql$/, [], root);
   if (sqlFiles.length === 0) {
     failures.push("No migration SQL files found in prisma/migrations.");
   } else {
@@ -1472,17 +1489,12 @@ export function checkTechnicalGuideSchemaParity(
   const driftDetails: string[] = [];
   const fixesApplied: string[] = [];
 
-  const markdownFiles = findFiles(root, /\.md$/i, [
-    "node_modules",
-    ".git",
-    ".next",
-    "dist",
-    "coverage",
-    "tmp",
-    ".stryker-tmp",
-    ".claude",
-    "app/generated",
-  ]);
+  const markdownFiles = findFiles(
+    root,
+    /\.md$/i,
+    ["coverage", "tmp", "scratch", ".scratch"],
+    root
+  );
 
   for (const filePath of markdownFiles) {
     const relativePath = path.relative(root, filePath).replace(/\\/g, "/");
@@ -2012,7 +2024,7 @@ export function checkOpenApiParity(
   }
 
   // 1. Discover all app/api routes
-  const routeFiles = findFiles(apiDir, /^route\.(ts|js)$/);
+  const routeFiles = findFiles(apiDir, /^route\.(ts|js)$/, [], root);
   const expectedRoutes = routeFiles.map((file) => {
     const rel = path
       .relative(apiDir, path.dirname(file))
@@ -2070,8 +2082,8 @@ export function checkHydrationSafety(root: string): DiagnosticCheckResult {
   const componentsDir = path.join(root, "components");
   const appDir = path.join(root, "app");
   const files = [
-    ...findFiles(componentsDir, /\.tsx$/),
-    ...findFiles(appDir, /\.tsx$/),
+    ...findFiles(componentsDir, /\.tsx$/, [], root),
+    ...findFiles(appDir, /\.tsx$/, [], root),
   ];
 
   const warnings: { file: string; pattern: string }[] = [];
@@ -2254,7 +2266,9 @@ export function checkAccessibilityAuditIntegrity(
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          scanDir(fullPath);
+          if (!shouldSkipWorkspaceDirectory(root, fullPath)) {
+            scanDir(fullPath);
+          }
         } else if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
           const content = fs.readFileSync(fullPath, "utf-8");
           if (
@@ -2519,8 +2533,8 @@ export function checkLayoutTextClippingInvariants(
 
   // Scan components and app files for rogue z-[9999]
   const sourceFiles = [
-    ...findFiles(path.join(root, "components"), /\.(tsx|jsx|ts|js)$/),
-    ...findFiles(path.join(root, "app"), /\.(tsx|jsx|ts|js)$/),
+    ...findFiles(path.join(root, "components"), /\.(tsx|jsx|ts|js)$/, [], root),
+    ...findFiles(path.join(root, "app"), /\.(tsx|jsx|ts|js)$/, [], root),
   ];
 
   for (const file of sourceFiles) {
@@ -2534,7 +2548,7 @@ export function checkLayoutTextClippingInvariants(
   }
 
   // Check that app routes don't create duplicate <main id="main-content">
-  const pageFiles = findFiles(path.join(root, "app"), /^page\.tsx?$/);
+  const pageFiles = findFiles(path.join(root, "app"), /^page\.tsx?$/, [], root);
   for (const pageFile of pageFiles) {
     const content = fs.readFileSync(pageFile, "utf-8");
     const relPath = path.relative(root, pageFile);
@@ -2633,39 +2647,147 @@ export function checkDesignTokens(root: string): DiagnosticCheckResult {
   };
 }
 
-const DEFAULT_PRETTIER_PRINT_WIDTH = 80;
-const REQUIRED_VSCODE_DEFAULT_FORMATTER = "esbenp.prettier-vscode";
-const REQUIRED_VSCODE_EXTENSIONS = [
-  "esbenp.prettier-vscode",
-  "EditorConfig.EditorConfig",
-  "DavidAnson.vscode-markdownlint",
-] as const;
-const DEPRECATED_VSCODE_EXTENSIONS: Readonly<Record<string, string>> = {
-  "davidlday.vscode-markdownlint": "DavidAnson.vscode-markdownlint",
-};
-const VSCODE_EXTENSION_ID_PATTERN = /^[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/;
-
-const BASELINE_GENERATED_ARTIFACTS: readonly string[] =
-  FORMATTING_EXCLUDED_ARTIFACTS;
-
-const REQUIRED_PRETTIER_DUPLICATE_TREE_IGNORES = [
-  ".claude/worktrees",
-  ".stryker-tmp",
-] as const;
-
-const REQUIRED_PRETTIER_GENERATED_NOTICE_IGNORES = [
-  "public/third-party-notices.txt",
-  "lib/oss-credits/internal/credits.generated.json",
-  "lib/oss-credits/internal/registry-facts.generated.json",
-] as const;
-
 function normalizePrettierIgnoreEntry(line: string): string {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith("#")) return "";
-  return trimmed
-    .replace(/\\/g, "/")
-    .replace(/^(?:\.\/|\/)+/, "")
-    .replace(/\/+$/, "");
+  return normalizeWorkspaceRelativePath(trimmed);
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+interface ParsedEditorConfig {
+  preamble: Map<string, string>;
+  sections: Map<string, Map<string, string>>;
+}
+
+function parseEditorConfig(raw: string): ParsedEditorConfig {
+  const preamble = new Map<string, string>();
+  const sections = new Map<string, Map<string, string>>();
+  let currentSection: string | null = null;
+
+  for (const rawLine of raw.split(/\r?\n/)) {
+    const trimmed = rawLine.trim();
+    if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith(";")) {
+      continue;
+    }
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      currentSection = trimmed.slice(1, -1).trim();
+      if (!sections.has(currentSection)) {
+        sections.set(currentSection, new Map());
+      }
+      continue;
+    }
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim().toLowerCase();
+    const val = trimmed.slice(eqIndex + 1).trim();
+    if (!key) continue;
+    if (currentSection === null) {
+      preamble.set(key, val);
+    } else {
+      sections.get(currentSection)!.set(key, val);
+    }
+  }
+
+  return { preamble, sections };
+}
+
+function repairEditorConfigContent(existingContent: string): string {
+  const parsed = parseEditorConfig(existingContent);
+  let output = existingContent.replace(/\r\n/g, "\n");
+
+  if (parsed.preamble.get("root")?.toLowerCase() !== "true") {
+    output = `root = true\n\n${output.trimStart()}`;
+  }
+
+  const reParsed = parseEditorConfig(output);
+  for (const [sectionName, expectedRules] of Object.entries(
+    REQUIRED_EDITORCONFIG_SECTIONS
+  )) {
+    const existingSection = reParsed.sections.get(sectionName);
+    if (!existingSection) {
+      const ruleLines = Object.entries(expectedRules)
+        .map(([k, v]) => `${k} = ${v}`)
+        .join("\n");
+      const trimmedEnd = output.replace(/\s+$/, "");
+      output = `${trimmedEnd}\n\n[${sectionName}]\n${ruleLines}\n`;
+      continue;
+    }
+
+    const missingOrDrifted = Object.entries(expectedRules).filter(
+      ([k, v]) => existingSection.get(k) !== v
+    );
+    if (missingOrDrifted.length === 0) continue;
+
+    const lines = output.split("\n");
+    let inTargetSection = false;
+    let sectionEndIndex = lines.length;
+    const updatedKeys = new Set<string>();
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        const headerName = trimmed.slice(1, -1).trim();
+        if (inTargetSection && headerName !== sectionName) {
+          sectionEndIndex = i;
+          break;
+        }
+        inTargetSection = headerName === sectionName;
+        continue;
+      }
+      if (!inTargetSection) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim().toLowerCase();
+      if (key in expectedRules) {
+        lines[i] = `${key} = ${expectedRules[key]}`;
+        updatedKeys.add(key);
+      }
+    }
+
+    const toInsert = missingOrDrifted
+      .filter(([k]) => !updatedKeys.has(k))
+      .map(([k, v]) => `${k} = ${v}`);
+    if (toInsert.length > 0) {
+      let insertAt = sectionEndIndex;
+      while (insertAt > 0 && lines[insertAt - 1].trim() === "") {
+        insertAt -= 1;
+      }
+      lines.splice(insertAt, 0, ...toInsert);
+    }
+    output = lines.join("\n");
+  }
+
+  return output.endsWith("\n") ? output : `${output}\n`;
+}
+
+function hasValidPrefixedTscProblemMatcher(problemMatcher: unknown): boolean {
+  if (!Array.isArray(problemMatcher) || problemMatcher.length === 0) {
+    return false;
+  }
+  if (problemMatcher.includes("$tsc-watch")) {
+    return false;
+  }
+  return problemMatcher.some((entry) => {
+    if (!isPlainRecord(entry)) return false;
+    const pattern = entry.pattern;
+    const background = entry.background;
+    if (!isPlainRecord(pattern) || !isPlainRecord(background)) return false;
+    const begins = background.beginsPattern;
+    const ends = background.endsPattern;
+    if (!isPlainRecord(begins) || !isPlainRecord(ends)) return false;
+    return (
+      typeof pattern.regexp === "string" &&
+      pattern.regexp.includes("\\[tsc\\]") &&
+      background.activeOnStart === true &&
+      typeof begins.regexp === "string" &&
+      begins.regexp.includes("\\[tsc\\]") &&
+      typeof ends.regexp === "string" &&
+      ends.regexp.includes("\\[tsc\\]")
+    );
+  });
 }
 
 function readLintStagedGeneratedArtifacts(root: string): string[] {
@@ -2716,7 +2838,7 @@ function readExpectedPrettierPrintWidth(root: string): {
 }
 
 /**
- * Check Workspace & IDE Configuration Integrity (`.editorconfig`, `.vscode/`, `.prettierignore`)
+ * Check Workspace & IDE Configuration Integrity (`.editorconfig`, `.vscode/`, `.claude/launch.json`, `.prettierignore`)
  */
 export function checkWorkspaceIdeConfig(
   root: string,
@@ -2742,6 +2864,10 @@ export function checkWorkspaceIdeConfig(
       file: path.join(".vscode", "tasks.json"),
       desc: "VS Code build task runners",
     },
+    {
+      file: path.join(".claude", "launch.json"),
+      desc: "Claude Code preview launch configuration",
+    },
   ];
 
   const violations: string[] = [];
@@ -2751,6 +2877,38 @@ export function checkWorkspaceIdeConfig(
     const full = path.join(root, rf.file);
     if (!fs.existsSync(full)) {
       violations.push(`Missing ${rf.desc} (${rf.file.replace(/\\/g, "/")})`);
+    }
+  }
+
+  const editorConfigPath = path.join(root, ".editorconfig");
+  let editorConfigNeedsUpdate = false;
+  if (fs.existsSync(editorConfigPath)) {
+    const rawEditorConfig = fs.readFileSync(editorConfigPath, "utf-8");
+    const parsedEditorConfig = parseEditorConfig(rawEditorConfig);
+    if (parsedEditorConfig.preamble.get("root")?.toLowerCase() !== "true") {
+      violations.push(".editorconfig: missing top-level 'root = true'.");
+      editorConfigNeedsUpdate = true;
+    }
+    for (const [sectionName, expectedRules] of Object.entries(
+      REQUIRED_EDITORCONFIG_SECTIONS
+    )) {
+      const actualSection = parsedEditorConfig.sections.get(sectionName);
+      if (!actualSection) {
+        violations.push(
+          `.editorconfig: missing '[${sectionName}]' section rules.`
+        );
+        editorConfigNeedsUpdate = true;
+        continue;
+      }
+      for (const [key, expectedVal] of Object.entries(expectedRules)) {
+        const actualVal = actualSection.get(key);
+        if (actualVal !== expectedVal) {
+          violations.push(
+            `.editorconfig: expected '${key} = ${expectedVal}' in '[${sectionName}]', found ${JSON.stringify(actualVal)}.`
+          );
+          editorConfigNeedsUpdate = true;
+        }
+      }
     }
   }
 
@@ -2776,8 +2934,8 @@ export function checkWorkspaceIdeConfig(
   if (fs.existsSync(settingsPath)) {
     try {
       const raw = JSON.parse(fs.readFileSync(settingsPath, "utf-8")) as unknown;
-      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-        parsedSettings = raw as Record<string, unknown>;
+      if (isPlainRecord(raw)) {
+        parsedSettings = raw;
       } else {
         violations.push(".vscode/settings.json must contain a JSON object.");
         canAutoFix = false;
@@ -2815,6 +2973,46 @@ export function checkWorkspaceIdeConfig(
         );
         settingsNeedsUpdate = true;
       }
+
+      const tsdk = parsedSettings["typescript.tsdk"];
+      if (tsdk !== REQUIRED_TYPESCRIPT_TSDK) {
+        violations.push(
+          `.vscode/settings.json: expected 'typescript.tsdk' to be '${REQUIRED_TYPESCRIPT_TSDK}', found ${JSON.stringify(tsdk)}.`
+        );
+        settingsNeedsUpdate = true;
+      }
+
+      for (const excludeKey of ["files.exclude", "search.exclude"] as const) {
+        const excludeVal = parsedSettings[excludeKey];
+        if (!isPlainRecord(excludeVal)) {
+          violations.push(
+            `.vscode/settings.json: expected '${excludeKey}' to be an object.`
+          );
+          settingsNeedsUpdate = true;
+          continue;
+        }
+
+        for (const broadKey of FORBIDDEN_BROAD_VSCODE_EXCLUDE_KEYS) {
+          if (excludeVal[broadKey] === true) {
+            violations.push(
+              `.vscode/settings.json: '${excludeKey}' sets broad ignore '${broadKey}': true instead of scoping to worktrees.`
+            );
+            settingsNeedsUpdate = true;
+          }
+        }
+
+        for (const relExclude of WORKSPACE_EXCLUDED_PATHS) {
+          if (
+            excludeVal[relExclude] !== true &&
+            excludeVal[`**/${relExclude}`] !== true
+          ) {
+            violations.push(
+              `.vscode/settings.json: '${excludeKey}' is missing exclusion '${relExclude}': true.`
+            );
+            settingsNeedsUpdate = true;
+          }
+        }
+      }
     }
   }
 
@@ -2827,8 +3025,8 @@ export function checkWorkspaceIdeConfig(
       const raw = JSON.parse(
         fs.readFileSync(extensionsPath, "utf-8")
       ) as unknown;
-      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-        parsedExtensions = raw as Record<string, unknown>;
+      if (isPlainRecord(raw)) {
+        parsedExtensions = raw;
       } else {
         violations.push(".vscode/extensions.json must contain a JSON object.");
         canAutoFix = false;
@@ -2883,10 +3081,270 @@ export function checkWorkspaceIdeConfig(
     }
   }
 
+  const launchPath = path.join(root, ".vscode", "launch.json");
+  let parsedLaunch: Record<string, unknown> | null = null;
+  let launchNeedsUpdate = false;
+
+  if (fs.existsSync(launchPath)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(launchPath, "utf-8")) as unknown;
+      if (isPlainRecord(raw)) {
+        parsedLaunch = raw;
+      } else {
+        violations.push(".vscode/launch.json must contain a JSON object.");
+        canAutoFix = false;
+      }
+    } catch {
+      violations.push(".vscode/launch.json is not valid JSON.");
+      canAutoFix = false;
+    }
+
+    if (parsedLaunch) {
+      if (parsedLaunch.version !== CANONICAL_VSCODE_LAUNCH.version) {
+        violations.push(
+          `.vscode/launch.json: expected 'version' to be '${CANONICAL_VSCODE_LAUNCH.version}', found ${JSON.stringify(parsedLaunch.version)}.`
+        );
+        launchNeedsUpdate = true;
+      }
+
+      const configs = parsedLaunch.configurations;
+      if (!Array.isArray(configs)) {
+        violations.push(
+          ".vscode/launch.json: expected 'configurations' to be an array."
+        );
+        launchNeedsUpdate = true;
+      } else {
+        const objectConfigs = configs.filter(isPlainRecord);
+        if (objectConfigs.length !== configs.length) {
+          violations.push(
+            ".vscode/launch.json: every entry in 'configurations' must be an object."
+          );
+          launchNeedsUpdate = true;
+        }
+
+        for (const cfg of objectConfigs) {
+          if (cfg.runtimeExecutable === "npx") {
+            const args = Array.isArray(cfg.runtimeArgs) ? cfg.runtimeArgs : [];
+            if (!args.includes("--no-install")) {
+              violations.push(
+                `.vscode/launch.json: npx profile ${JSON.stringify(cfg.name)} must pass '--no-install' in runtimeArgs.`
+              );
+              launchNeedsUpdate = true;
+            }
+          }
+        }
+
+        for (const canonicalCfg of CANONICAL_VSCODE_LAUNCH.configurations) {
+          const actualCfg = objectConfigs.find(
+            (c) => c.name === canonicalCfg.name
+          );
+          if (!actualCfg) {
+            violations.push(
+              `.vscode/launch.json: missing canonical launch profile '${canonicalCfg.name}'.`
+            );
+            launchNeedsUpdate = true;
+            continue;
+          }
+
+          if (
+            actualCfg.type !== canonicalCfg.type ||
+            actualCfg.request !== canonicalCfg.request
+          ) {
+            violations.push(
+              `.vscode/launch.json: profile '${canonicalCfg.name}' must use type '${canonicalCfg.type}' and request '${canonicalCfg.request}'.`
+            );
+            launchNeedsUpdate = true;
+          }
+
+          if (
+            canonicalCfg.command !== undefined &&
+            actualCfg.command !== canonicalCfg.command
+          ) {
+            violations.push(
+              `.vscode/launch.json: profile '${canonicalCfg.name}' must run '${canonicalCfg.command}'.`
+            );
+            launchNeedsUpdate = true;
+          }
+
+          if (
+            canonicalCfg.runtimeExecutable !== undefined &&
+            actualCfg.runtimeExecutable !== canonicalCfg.runtimeExecutable
+          ) {
+            violations.push(
+              `.vscode/launch.json: profile '${canonicalCfg.name}' must set runtimeExecutable '${canonicalCfg.runtimeExecutable}'.`
+            );
+            launchNeedsUpdate = true;
+          }
+
+          if (canonicalCfg.runtimeArgs) {
+            const actualArgs = Array.isArray(actualCfg.runtimeArgs)
+              ? actualCfg.runtimeArgs
+              : [];
+            for (const reqArg of canonicalCfg.runtimeArgs) {
+              if (!actualArgs.includes(reqArg)) {
+                violations.push(
+                  `.vscode/launch.json: profile '${canonicalCfg.name}' is missing runtimeArg '${reqArg}'.`
+                );
+                launchNeedsUpdate = true;
+              }
+            }
+          }
+
+          if (canonicalCfg.env?.DATABASE_URL) {
+            const actualEnv = isPlainRecord(actualCfg.env)
+              ? actualCfg.env
+              : null;
+            const dbUrl = actualEnv?.DATABASE_URL;
+            if (typeof dbUrl !== "string" || dbUrl.trim() === "") {
+              violations.push(
+                `.vscode/launch.json: profile '${canonicalCfg.name}' must set an offline 'env.DATABASE_URL'.`
+              );
+              launchNeedsUpdate = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const tasksPath = path.join(root, ".vscode", "tasks.json");
+  let parsedTasks: Record<string, unknown> | null = null;
+  let tasksNeedsUpdate = false;
+
+  if (fs.existsSync(tasksPath)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(tasksPath, "utf-8")) as unknown;
+      if (isPlainRecord(raw)) {
+        parsedTasks = raw;
+      } else {
+        violations.push(".vscode/tasks.json must contain a JSON object.");
+        canAutoFix = false;
+      }
+    } catch {
+      violations.push(".vscode/tasks.json is not valid JSON.");
+      canAutoFix = false;
+    }
+
+    if (parsedTasks) {
+      if (parsedTasks.version !== CANONICAL_VSCODE_TASKS.version) {
+        violations.push(
+          `.vscode/tasks.json: expected 'version' to be '${CANONICAL_VSCODE_TASKS.version}', found ${JSON.stringify(parsedTasks.version)}.`
+        );
+        tasksNeedsUpdate = true;
+      }
+
+      const taskList = parsedTasks.tasks;
+      if (!Array.isArray(taskList)) {
+        violations.push(".vscode/tasks.json: expected 'tasks' to be an array.");
+        tasksNeedsUpdate = true;
+      } else {
+        const objectTasks = taskList.filter(isPlainRecord);
+        if (objectTasks.length !== taskList.length) {
+          violations.push(
+            ".vscode/tasks.json: every entry in 'tasks' must be an object."
+          );
+          tasksNeedsUpdate = true;
+        }
+
+        for (const canonicalTask of CANONICAL_VSCODE_TASKS.tasks) {
+          const actualTask = objectTasks.find(
+            (t) => t.label === canonicalTask.label
+          );
+          if (!actualTask) {
+            violations.push(
+              `.vscode/tasks.json: missing canonical task '${canonicalTask.label}'.`
+            );
+            tasksNeedsUpdate = true;
+            continue;
+          }
+          if (
+            actualTask.type !== canonicalTask.type ||
+            actualTask.script !== canonicalTask.script
+          ) {
+            violations.push(
+              `.vscode/tasks.json: task '${canonicalTask.label}' must use type '${canonicalTask.type}' and script '${canonicalTask.script}'.`
+            );
+            tasksNeedsUpdate = true;
+          }
+          if (canonicalTask.label === "npm: dev") {
+            if (actualTask.isBackground !== true) {
+              violations.push(
+                ".vscode/tasks.json: task 'npm: dev' must set 'isBackground: true'."
+              );
+              tasksNeedsUpdate = true;
+            }
+            if (!hasValidPrefixedTscProblemMatcher(actualTask.problemMatcher)) {
+              violations.push(
+                ".vscode/tasks.json: task 'npm: dev' must define a custom '[tsc]' background problemMatcher instead of '$tsc-watch'."
+              );
+              tasksNeedsUpdate = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const claudeLaunchPath = path.join(root, ".claude", "launch.json");
+  let parsedClaudeLaunch: Record<string, unknown> | null = null;
+  let claudeLaunchNeedsUpdate = false;
+
+  if (fs.existsSync(claudeLaunchPath)) {
+    try {
+      const raw = JSON.parse(
+        fs.readFileSync(claudeLaunchPath, "utf-8")
+      ) as unknown;
+      if (isPlainRecord(raw)) {
+        parsedClaudeLaunch = raw;
+      } else {
+        violations.push(".claude/launch.json must contain a JSON object.");
+        canAutoFix = false;
+      }
+    } catch {
+      violations.push(".claude/launch.json is not valid JSON.");
+      canAutoFix = false;
+    }
+
+    if (parsedClaudeLaunch) {
+      if (typeof parsedClaudeLaunch.version !== "string") {
+        violations.push(".claude/launch.json: expected a string 'version'.");
+        claudeLaunchNeedsUpdate = true;
+      }
+      const claudeConfigs = parsedClaudeLaunch.configurations;
+      if (!Array.isArray(claudeConfigs)) {
+        violations.push(
+          ".claude/launch.json: expected 'configurations' to be an array."
+        );
+        claudeLaunchNeedsUpdate = true;
+      } else {
+        const devProfile = claudeConfigs
+          .filter(isPlainRecord)
+          .find((c) => c.name === "portfolio-dev");
+        const args = Array.isArray(devProfile?.runtimeArgs)
+          ? devProfile.runtimeArgs
+          : [];
+        const validDevProfile =
+          devProfile !== undefined &&
+          devProfile.runtimeExecutable === "npm" &&
+          args.length === 2 &&
+          args[0] === "run" &&
+          args[1] === "dev" &&
+          devProfile.port === 3000;
+        if (!validDevProfile) {
+          violations.push(
+            ".claude/launch.json: 'portfolio-dev' must run 'npm' with ['run', 'dev'] on port 3000."
+          );
+          claudeLaunchNeedsUpdate = true;
+        }
+      }
+    }
+  }
+
   const prettierIgnorePath = path.join(root, ".prettierignore");
   const missingIgnoreEntries: string[] = [];
   const staleIgnoreEntries: string[] = [];
   let hasBroadClaudeIgnore = false;
+  let hasBroadAgentsIgnore = false;
 
   if (fs.existsSync(prettierIgnorePath)) {
     const rawIgnore = fs.readFileSync(prettierIgnorePath, "utf-8");
@@ -2895,14 +3353,25 @@ export function checkWorkspaceIdeConfig(
     );
 
     if (
-      activeIgnores.has(".claude") ||
-      activeIgnores.has(".claude/*") ||
-      activeIgnores.has(".claude/**")
+      BROAD_CLAUDE_PRETTIER_IGNORES.some((pattern) =>
+        activeIgnores.has(pattern)
+      )
     ) {
       violations.push(
         ".prettierignore: ignores '.claude' broadly instead of '.claude/worktrees', which skips tracked authored files under .claude/."
       );
       hasBroadClaudeIgnore = true;
+    }
+
+    if (
+      BROAD_AGENTS_PRETTIER_IGNORES.some((pattern) =>
+        activeIgnores.has(pattern)
+      )
+    ) {
+      violations.push(
+        ".prettierignore: ignores '.agents' broadly instead of '.agents/worktrees', which skips tracked skill files under .agents/skills/."
+      );
+      hasBroadAgentsIgnore = true;
     }
 
     for (const entry of requiredPrettierIgnores) {
@@ -2929,15 +3398,20 @@ export function checkWorkspaceIdeConfig(
       if (!fs.existsSync(vscodeDir)) {
         fs.mkdirSync(vscodeDir, { recursive: true });
       }
+      const claudeDir = path.join(root, ".claude");
+      if (!fs.existsSync(claudeDir)) {
+        fs.mkdirSync(claudeDir, { recursive: true });
+      }
 
-      const editorConfigPath = path.join(root, ".editorconfig");
       if (!fs.existsSync(editorConfigPath)) {
-        fs.writeFileSync(
-          editorConfigPath,
-          "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\ncharset = utf-8\ntrim_trailing_whitespace = true\ninsert_final_newline = true\n",
-          "utf-8"
-        );
+        fs.writeFileSync(editorConfigPath, CANONICAL_EDITORCONFIG, "utf-8");
         fixesApplied.push("Created .editorconfig");
+      } else if (editorConfigNeedsUpdate) {
+        const repaired = repairEditorConfigContent(
+          fs.readFileSync(editorConfigPath, "utf-8")
+        );
+        fs.writeFileSync(editorConfigPath, repaired, "utf-8");
+        fixesApplied.push("Synchronized .editorconfig rules");
       }
 
       const prettierrcPath = path.join(root, ".prettierrc");
@@ -2945,15 +3419,7 @@ export function checkWorkspaceIdeConfig(
         fs.writeFileSync(
           prettierrcPath,
           `${JSON.stringify(
-            {
-              useTabs: false,
-              tabWidth: 2,
-              printWidth: DEFAULT_PRETTIER_PRINT_WIDTH,
-              singleQuote: false,
-              trailingComma: "es5",
-              semi: true,
-              arrowParens: "always",
-            },
+            buildCanonicalPrettierrc(DEFAULT_PRETTIER_PRINT_WIDTH),
             null,
             2
           )}\n`,
@@ -2963,36 +3429,48 @@ export function checkWorkspaceIdeConfig(
       }
 
       if (!fs.existsSync(prettierIgnorePath)) {
-        fs.writeFileSync(
-          prettierIgnorePath,
-          `${[
+        const initialIgnoreEntries = Array.from(
+          new Set([
             "node_modules",
             ".next",
             "coverage",
+            "app/generated/prisma",
             ...requiredPrettierIgnores,
-          ].join("\n")}\n`,
+          ])
+        );
+        fs.writeFileSync(
+          prettierIgnorePath,
+          `${initialIgnoreEntries.join("\n")}\n`,
           "utf-8"
         );
         fixesApplied.push("Created .prettierignore");
       } else if (
         hasBroadClaudeIgnore ||
+        hasBroadAgentsIgnore ||
         missingIgnoreEntries.length > 0 ||
         staleIgnoreEntries.length > 0
       ) {
         let updatedIgnore = fs.readFileSync(prettierIgnorePath, "utf-8");
         const staleSet = new Set(staleIgnoreEntries);
-        if (hasBroadClaudeIgnore || staleSet.size > 0) {
+        if (hasBroadClaudeIgnore || hasBroadAgentsIgnore || staleSet.size > 0) {
           updatedIgnore = updatedIgnore
             .split(/\r?\n/)
             .filter((line) => !staleSet.has(normalizePrettierIgnoreEntry(line)))
             .map((line) => {
               const norm = normalizePrettierIgnoreEntry(line);
               if (
-                norm === ".claude" ||
-                norm === ".claude/*" ||
-                norm === ".claude/**"
+                (BROAD_CLAUDE_PRETTIER_IGNORES as readonly string[]).includes(
+                  norm
+                )
               ) {
                 return ".claude/worktrees";
+              }
+              if (
+                (BROAD_AGENTS_PRETTIER_IGNORES as readonly string[]).includes(
+                  norm
+                )
+              ) {
+                return ".agents/worktrees";
               }
               return line;
             })
@@ -3021,13 +3499,7 @@ export function checkWorkspaceIdeConfig(
         fs.writeFileSync(
           settingsPath,
           `${JSON.stringify(
-            {
-              "editor.tabSize": 2,
-              "editor.insertSpaces": true,
-              "editor.formatOnSave": true,
-              "editor.defaultFormatter": REQUIRED_VSCODE_DEFAULT_FORMATTER,
-              "editor.rulers": [expectedPrintWidth],
-            },
+            buildCanonicalVscodeSettings(expectedPrintWidth),
             null,
             2
           )}\n`,
@@ -3035,18 +3507,47 @@ export function checkWorkspaceIdeConfig(
         );
         fixesApplied.push("Created .vscode/settings.json");
       } else if (parsedSettings && settingsNeedsUpdate) {
+        const sanitizeExcludeMap = (
+          existing: unknown,
+          baseline: Readonly<Record<string, boolean>>
+        ): Record<string, unknown> => {
+          const nextMap: Record<string, unknown> = isPlainRecord(existing)
+            ? { ...existing }
+            : { ...baseline };
+          for (const broadKey of FORBIDDEN_BROAD_VSCODE_EXCLUDE_KEYS) {
+            delete nextMap[broadKey];
+          }
+          for (const relExclude of WORKSPACE_EXCLUDED_PATHS) {
+            if (nextMap[`**/${relExclude}`] !== true) {
+              nextMap[relExclude] = true;
+            }
+          }
+          return nextMap;
+        };
+
         const nextSettings: Record<string, unknown> = {
           ...parsedSettings,
           "editor.formatOnSave": true,
           "editor.defaultFormatter": REQUIRED_VSCODE_DEFAULT_FORMATTER,
           "editor.rulers": [expectedPrintWidth],
+          "typescript.tsdk": REQUIRED_TYPESCRIPT_TSDK,
+          "files.exclude": sanitizeExcludeMap(
+            parsedSettings["files.exclude"],
+            BASELINE_VSCODE_FILES_EXCLUDE
+          ),
+          "search.exclude": sanitizeExcludeMap(
+            parsedSettings["search.exclude"],
+            BASELINE_VSCODE_SEARCH_EXCLUDE
+          ),
         };
         fs.writeFileSync(
           settingsPath,
           `${JSON.stringify(nextSettings, null, 2)}\n`,
           "utf-8"
         );
-        fixesApplied.push("Aligned .vscode/settings.json formatter and rulers");
+        fixesApplied.push(
+          "Aligned .vscode/settings.json formatter, rulers, tsdk, and excludes"
+        );
       }
 
       if (!fs.existsSync(extensionsPath)) {
@@ -3095,24 +3596,165 @@ export function checkWorkspaceIdeConfig(
         fixesApplied.push("Updated .vscode/extensions.json recommendations");
       }
 
-      const launchPath = path.join(root, ".vscode", "launch.json");
       if (!fs.existsSync(launchPath)) {
         fs.writeFileSync(
           launchPath,
-          `${JSON.stringify({ version: "0.2.0", configurations: [] }, null, 2)}\n`,
+          `${JSON.stringify(CANONICAL_VSCODE_LAUNCH, null, 2)}\n`,
           "utf-8"
         );
         fixesApplied.push("Created .vscode/launch.json");
+      } else if (parsedLaunch && launchNeedsUpdate) {
+        const canonicalByName = new Map(
+          CANONICAL_VSCODE_LAUNCH.configurations.map((c) => [c.name, c])
+        );
+        const existingConfigs = Array.isArray(parsedLaunch.configurations)
+          ? parsedLaunch.configurations.filter(isPlainRecord)
+          : [];
+        const seenNames = new Set<string>();
+        const mergedConfigs: Record<string, unknown>[] = [];
+
+        for (const existing of existingConfigs) {
+          const name = typeof existing.name === "string" ? existing.name : "";
+          const canonical = canonicalByName.get(name);
+          if (canonical) {
+            seenNames.add(name);
+            const mergedEnv = canonical.env
+              ? {
+                  ...(isPlainRecord(existing.env) ? existing.env : {}),
+                  ...canonical.env,
+                }
+              : existing.env;
+            mergedConfigs.push({
+              ...existing,
+              ...canonical,
+              ...(mergedEnv !== undefined ? { env: mergedEnv } : {}),
+            });
+          } else if (existing.runtimeExecutable === "npx") {
+            const args = Array.isArray(existing.runtimeArgs)
+              ? [...existing.runtimeArgs]
+              : [];
+            if (!args.includes("--no-install")) {
+              args.unshift("--no-install");
+            }
+            mergedConfigs.push({ ...existing, runtimeArgs: args });
+          } else {
+            mergedConfigs.push(existing);
+          }
+        }
+
+        for (const canonical of CANONICAL_VSCODE_LAUNCH.configurations) {
+          if (!seenNames.has(canonical.name)) {
+            mergedConfigs.push({ ...canonical });
+          }
+        }
+
+        fs.writeFileSync(
+          launchPath,
+          `${JSON.stringify(
+            {
+              ...parsedLaunch,
+              version: CANONICAL_VSCODE_LAUNCH.version,
+              configurations: mergedConfigs,
+            },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Synchronized .vscode/launch.json debug profiles");
       }
 
-      const tasksPath = path.join(root, ".vscode", "tasks.json");
       if (!fs.existsSync(tasksPath)) {
         fs.writeFileSync(
           tasksPath,
-          `${JSON.stringify({ version: "2.0.0", tasks: [] }, null, 2)}\n`,
+          `${JSON.stringify(CANONICAL_VSCODE_TASKS, null, 2)}\n`,
           "utf-8"
         );
         fixesApplied.push("Created .vscode/tasks.json");
+      } else if (parsedTasks && tasksNeedsUpdate) {
+        const canonicalByLabel = new Map(
+          CANONICAL_VSCODE_TASKS.tasks.map((t) => [t.label, t])
+        );
+        const existingTasks = Array.isArray(parsedTasks.tasks)
+          ? parsedTasks.tasks.filter(isPlainRecord)
+          : [];
+        const seenLabels = new Set<string>();
+        const mergedTasks: Record<string, unknown>[] = [];
+
+        for (const existing of existingTasks) {
+          const label =
+            typeof existing.label === "string" ? existing.label : "";
+          const canonical = canonicalByLabel.get(label);
+          if (canonical) {
+            seenLabels.add(label);
+            mergedTasks.push({ ...existing, ...canonical });
+          } else {
+            mergedTasks.push(existing);
+          }
+        }
+
+        for (const canonical of CANONICAL_VSCODE_TASKS.tasks) {
+          if (!seenLabels.has(canonical.label)) {
+            mergedTasks.push({ ...canonical });
+          }
+        }
+
+        fs.writeFileSync(
+          tasksPath,
+          `${JSON.stringify(
+            {
+              ...parsedTasks,
+              version: CANONICAL_VSCODE_TASKS.version,
+              tasks: mergedTasks,
+            },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Synchronized .vscode/tasks.json task definitions");
+      }
+
+      if (!fs.existsSync(claudeLaunchPath)) {
+        fs.writeFileSync(
+          claudeLaunchPath,
+          `${JSON.stringify(CANONICAL_CLAUDE_LAUNCH, null, 2)}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Created .claude/launch.json");
+      } else if (parsedClaudeLaunch && claudeLaunchNeedsUpdate) {
+        const canonicalDev = CANONICAL_CLAUDE_LAUNCH.configurations[0];
+        const existingConfigs = Array.isArray(parsedClaudeLaunch.configurations)
+          ? parsedClaudeLaunch.configurations.filter(isPlainRecord)
+          : [];
+        let foundDev = false;
+        const mergedClaudeConfigs = existingConfigs.map((cfg) => {
+          if (cfg.name === canonicalDev.name) {
+            foundDev = true;
+            return { ...cfg, ...canonicalDev };
+          }
+          return cfg;
+        });
+        if (!foundDev) {
+          mergedClaudeConfigs.unshift({ ...canonicalDev });
+        }
+        fs.writeFileSync(
+          claudeLaunchPath,
+          `${JSON.stringify(
+            {
+              ...parsedClaudeLaunch,
+              version:
+                typeof parsedClaudeLaunch.version === "string"
+                  ? parsedClaudeLaunch.version
+                  : CANONICAL_CLAUDE_LAUNCH.version,
+              configurations: mergedClaudeConfigs,
+            },
+            null,
+            2
+          )}\n`,
+          "utf-8"
+        );
+        fixesApplied.push("Synchronized .claude/launch.json dev configuration");
       }
 
       return {
@@ -3121,7 +3763,7 @@ export function checkWorkspaceIdeConfig(
         category: "architecture",
         status: "fixed",
         message:
-          "Remediated workspace IDE and formatting configurations (.vscode, .editorconfig, .prettierignore).",
+          "Remediated workspace IDE and formatting configurations (.vscode, .claude/launch.json, .editorconfig, .prettierignore).",
         details: fixesApplied,
         fixedMessage: fixesApplied.join("; "),
       };
@@ -3144,7 +3786,7 @@ export function checkWorkspaceIdeConfig(
     category: "architecture",
     status: "pass",
     message:
-      "All VS Code workspace profiles (.vscode/), .editorconfig, and .prettierignore parity checks are properly configured.",
+      "All VS Code workspace profiles (.vscode/), .claude/launch.json, .editorconfig, and .prettierignore parity checks are properly configured.",
   };
 }
 
@@ -3887,8 +4529,8 @@ export function checkTouchTargetDimensions(
   const componentsDir = path.join(root, "components");
   const appDir = path.join(root, "app");
   const files = [
-    ...findFiles(componentsDir, /\.tsx$/),
-    ...findFiles(appDir, /\.tsx$/),
+    ...findFiles(componentsDir, /\.tsx$/, [], root),
+    ...findFiles(appDir, /\.tsx$/, [], root),
   ];
 
   const violations: { file: string; line: number; match: string }[] = [];
@@ -3991,7 +4633,7 @@ export function checkSectionStructures(
   let fixedCount = 0;
 
   if (fs.existsSync(docsDir)) {
-    const docFiles = findFiles(docsDir, /\.md$/).filter(
+    const docFiles = findFiles(docsDir, /\.md$/, [], root).filter(
       (f) =>
         !f.includes(path.join("docs", "reference")) &&
         !f.includes(path.join("docs", "lib")) &&
@@ -4045,7 +4687,7 @@ export function checkSectionStructures(
   }
 
   if (fs.existsSync(appDir)) {
-    const pageFiles = findFiles(appDir, /^page\.tsx$/);
+    const pageFiles = findFiles(appDir, /^page\.tsx$/, [], root);
     for (const pageFile of pageFiles) {
       const relative = path.relative(root, pageFile);
       if (relative.startsWith(path.join("app", "api"))) continue;
@@ -4205,7 +4847,7 @@ export function checkSessionDeterminism(root: string): DiagnosticCheckResult {
   const id = "architecture-session-determinism";
   const name = "Session Determinism Guard (#2544, ADR 0062)";
   const candidates = ["app", "components", "hooks", "lib"].flatMap((dir) =>
-    findFiles(path.join(root, dir), /\.tsx?$/)
+    findFiles(path.join(root, dir), /\.tsx?$/, [], root)
   );
 
   const violations: string[] = [];

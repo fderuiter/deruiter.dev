@@ -63,7 +63,11 @@ import {
   computeFormHealthMetrics,
   autoFixAllViolations,
   exportStudyToCdiscOdmXml,
+  importStudyFromCdiscOdmXml,
   exportStudyToSas,
+  escapeRfc4180Cell,
+  formatRfc4180Csv,
+  parseRfc4180Csv,
   importStudyFromCsvSpec,
   importFormFromFhirQuestionnaire,
   importStudyFromFhirQuestionnaire,
@@ -3599,6 +3603,78 @@ describe("FHIR Questionnaire item recursion depth bound (#4127)", () => {
     ).toThrow(
       "HL7 FHIR R4 Parsing Error: Questionnaire items are nested more than 32 levels deep."
     );
+  });
+});
+
+describe("ODM-XML zero-DOM parser & single-pass entity boundary (#4147)", () => {
+  it("parses ODM-XML metadata and clinical data without invoking DOMParser or double-unescaping entities", () => {
+    const domParserSpy = vi
+      .spyOn(globalThis, "DOMParser")
+      .mockImplementation(() => {
+        throw new Error("DOMParser must not be invoked during ODM-XML import");
+      });
+
+    try {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" ODMVersion="1.3.2" CreationDateTime="2026-11-27T00:00:00Z">
+  <Study OID="STUDY.ZERO_DOM">
+    <GlobalVariables>
+      <StudyName>Trial &amp;lt;img src=x onerror=alert(1)&amp;gt;</StudyName>
+      <StudyDescription>Zero DOM check</StudyDescription>
+      <ProtocolName>ZERO-DOM-01</ProtocolName>
+    </GlobalVariables>
+    <MetaDataVersion OID="MDV.1" Name="v1">
+      <FormDef OID="FORM.VS" Name="Vital Signs" Repeating="No">
+        <ItemGroupRef ItemGroupOID="IG.VS" OrderNumber="1" Mandatory="Yes"/>
+      </FormDef>
+      <ItemGroupDef OID="IG.VS" Name="Vitals" Repeating="No">
+        <ItemRef ItemOID="IT.VS.NOTE" OrderNumber="1" Mandatory="No"/>
+      </ItemGroupDef>
+      <ItemDef OID="IT.VS.NOTE" Name="NOTE" DataType="text">
+        <Description><TranslatedText xml:lang="en">Clinical Note</TranslatedText></Description>
+      </ItemDef>
+    </MetaDataVersion>
+  </Study>
+  <ClinicalData StudyOID="STUDY.ZERO_DOM" MetaDataVersionOID="MDV.1">
+    <SubjectData SubjectKey="SUBJ-01">
+      <StudyEventData StudyEventOID="SE.UNSCHED">
+        <FormData FormOID="FORM.VS">
+          <ItemGroupData ItemGroupOID="IG.VS">
+            <ItemData ItemOID="IT.VS.NOTE" Value="&lt;script&gt;alert(1)&lt;/script&gt;"/>
+          </ItemGroupData>
+        </FormData>
+      </StudyEventData>
+    </SubjectData>
+  </ClinicalData>
+</ODM>`;
+
+      const study = importStudyFromCdiscOdmXml(xml);
+      expect(domParserSpy).not.toHaveBeenCalled();
+      expect(study.studyName).toBe("Trial &lt;img src=x onerror=alert(1)&gt;");
+      expect(Object.values(study.simulationState?.formValues ?? {})).toContain(
+        "<script>alert(1)</script>"
+      );
+    } finally {
+      domParserSpy.mockRestore();
+    }
+  });
+
+  it("neutralizes CWE-1236 CSV formula triggers and preserves user-typed leading single quotes on round-trip", () => {
+    expect(escapeRfc4180Cell("=1+1")).toBe("'=1+1");
+    expect(escapeRfc4180Cell("@cmd")).toBe("'@cmd");
+    expect(escapeRfc4180Cell("-1.5")).toBe("-1.5");
+    expect(escapeRfc4180Cell(-1.5)).toBe("-1.5");
+    expect(escapeRfc4180Cell(-Infinity)).toBe("'-Infinity");
+    expect(escapeRfc4180Cell("'=x")).toBe("''=x");
+
+    const csv = formatRfc4180Csv(
+      ["col1", "col2", "col3", "col4", "col5", "col6"],
+      [["=1+1", "@cmd", "-1.5", "'=x", "\t=1+1", "\r=1+1"]]
+    );
+    expect(parseRfc4180Csv(csv)).toEqual([
+      ["col1", "col2", "col3", "col4", "col5", "col6"],
+      ["=1+1", "@cmd", "-1.5", "'=x", "\t=1+1", "\r=1+1"],
+    ]);
   });
 });
 

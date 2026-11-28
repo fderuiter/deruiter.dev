@@ -13,14 +13,16 @@ import {
   importStudyFromCdiscOdmXml,
 } from "@/lib/crf";
 import { FieldRenderer } from "@/components/crf/CenterCanvas/FieldRenderer";
+import { LiveEdcSimulator } from "@/components/crf/Modes/LiveEdcSimulator";
+import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
+import type { EdcSimulationState } from "@/lib/crf/types";
 
 /**
- * CodeQL alert 30 (js/xss-through-dom) points at the DOMParser call that
- * reads an uploaded ODM file. The parse is text/xml and the model is built
- * from textContent and getAttribute, so entity-encoded markup in the file
- * decodes to plain strings. These tests follow those strings to the places
- * they surface: the parsed model, the field cards, a parse error, and the
- * ODM export.
+ * CodeQL js/xss-through-dom regression boundary for ODM-XML uploads across
+ * ExportImportModal, ImportDropzone, and LiveEdcSimulator. ODM-XML is parsed by
+ * a pure zero-DOM scanner (`lib/crf/internal/codecs/xml-parser.ts`) with single-pass
+ * entity decoding rather than `DOMParser`, ensuring uploaded XML never enters
+ * an HTML/DOM reinterpretation sink and markup-looking payloads stay plain text.
  */
 const MARKUP = '<img src=x onerror="window.__odmPwned=1">';
 const ENCODED = "&lt;img src=x onerror=&quot;window.__odmPwned=1&quot;&gt;";
@@ -174,5 +176,88 @@ describe("ODM import keeps markup-looking text as text (CodeQL alert 30)", () =>
     expect(caught).toBeInstanceOf(Error);
     expect((caught as Error).message).toMatch(/^CDISC ODM XML Parsing Error: /);
     expect((window as Pwned).__odmPwned).toBeUndefined();
+  });
+
+  it("never calls DOMParser and keeps hostile ClinicalData uploads inert in LiveEdcSimulator", async () => {
+    const domParserSpy = vi
+      .spyOn(globalThis, "DOMParser")
+      .mockImplementation(() => {
+        throw new Error("DOMParser must not be used for ODM-XML import");
+      });
+
+    let updatedSim: EdcSimulationState | undefined;
+    try {
+      const visitId = ONCOLOGY_RECIST_PRESET.visits[0]!.id;
+      const form = ONCOLOGY_RECIST_PRESET.forms[0]!;
+      const section = form.sections[0]!;
+      const field = section.fields[0]!;
+
+      const baseXml = exportStudyToCdiscOdmXml({
+        ...ONCOLOGY_RECIST_PRESET,
+        simulationState: {
+          availableSubjects: [`SUBJ-${MARKUP}`],
+          formValues: {
+            [`SUBJ-${MARKUP}_${visitId}_${field.id}`]: `Note ${MARKUP}`,
+          },
+          queries: [
+            {
+              id: "qry_xss_1",
+              subjectId: `SUBJ-${MARKUP}`,
+              visitId,
+              formId: form.id,
+              fieldId: field.id,
+              fieldName: field.variableName,
+              severity: "warning",
+              status: "Open",
+              message: `Query ${MARKUP}`,
+              raisedBy: "CRA Monitor",
+              raisedAt: "2026-11-14T10:00:00Z",
+            },
+          ],
+          auditLog: [],
+          signatures: [],
+        },
+      });
+
+      await act(async () => {
+        root = createRoot(container);
+        root.render(
+          <LiveEdcSimulator
+            study={ONCOLOGY_RECIST_PRESET}
+            onUpdateSimulationState={(next) => {
+              updatedSim = next;
+            }}
+          />
+        );
+      });
+
+      const fileInput = container.querySelector(
+        'input[aria-label="Import ODM-XML or RFC 4180 CSV file"]'
+      ) as HTMLInputElement;
+      expect(fileInput).not.toBeNull();
+
+      const file = new File([baseXml], "hostile-clinical-data.xml", {
+        type: "application/xml",
+      });
+      Object.defineProperty(fileInput, "files", {
+        value: [file],
+        configurable: true,
+      });
+
+      await act(async () => {
+        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 15));
+      });
+
+      expect(domParserSpy).not.toHaveBeenCalled();
+      expect(updatedSim?.availableSubjects).toContain(`SUBJ-${MARKUP}`);
+      expect(updatedSim?.queries?.[0]?.message).toBe(`Query ${MARKUP}`);
+      expect(
+        container.querySelector("img, script, iframe, svg[onload]")
+      ).toBeNull();
+      expect((window as Pwned).__odmPwned).toBeUndefined();
+    } finally {
+      domParserSpy.mockRestore();
+    }
   });
 });

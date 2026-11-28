@@ -232,6 +232,9 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
       if (stack.length > 0 || rootElement !== null) {
         throw new XmlParseError("Misplaced <!DOCTYPE> declaration");
       }
+      if (pos + 9 >= len || !/\s/.test(src[pos + 9])) {
+        throw new XmlParseError("Malformed <!DOCTYPE> declaration");
+      }
       let depth = 0;
       let inQuote: string | null = null;
       let cursor = pos + 9;

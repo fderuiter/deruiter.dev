@@ -28,6 +28,11 @@ import {
   resolveFieldOptions,
   resolveStudyCodelist,
 } from "./export-common";
+import {
+  extractCapturedFormRows,
+  hasSimulationRecords,
+  parseMultiSelectValue,
+} from "./simulation-records";
 
 /**
  * Sanitizes a string into a valid SAS variable or dataset name.
@@ -508,6 +513,10 @@ function generateSyntheticMockData(
   }
 
   // Format as DATALINES with DSD CSV
+  return formatSasCardsBlock(rows);
+}
+
+function formatSasCardsBlock(rows: string[][]): string {
   let datalinesStr = `  CARDS;\n`;
   rows.forEach((row) => {
     const formattedRow = row
@@ -515,6 +524,9 @@ function generateSyntheticMockData(
         const strVal = String(val ?? "");
         if (
           strVal.includes(",") ||
+          strVal.includes('"') ||
+          strVal.includes("\n") ||
+          strVal.includes("\r") ||
           strVal.includes(" ") ||
           strVal.includes("'")
         ) {
@@ -526,8 +538,61 @@ function generateSyntheticMockData(
     datalinesStr += `${formattedRow}\n`;
   });
   datalinesStr += `;\n`;
-
   return datalinesStr;
+}
+
+function generateLiveSimulationData(
+  form: CRFForm,
+  fieldsWithAttrs: ExpandedSasField[],
+  study: StudyProtocol
+): string {
+  const capturedRows = extractCapturedFormRows(form, study);
+  const rows: string[][] = capturedRows.map((captured) => {
+    const rowValues: string[] = [
+      study.protocolNumber || "STUDY01",
+      (form.domain || "CRF").toUpperCase(),
+      captured.subjectId,
+      captured.visitName,
+      String(captured.visitNum),
+      captured.dtcInit,
+    ];
+
+    fieldsWithAttrs.forEach(({ field, attrs, optionCode }) => {
+      const raw = captured.values[field.id];
+      if (field.dataType === "multi_select" || field.dataType === "checkbox") {
+        if (optionCode) {
+          rowValues.push(
+            raw === null || raw === undefined || raw === ""
+              ? ""
+              : parseMultiSelectValue(String(raw), optionCode)
+          );
+        } else if (raw === true || raw === "true" || raw === "Y") {
+          rowValues.push("Y");
+        } else if (raw === false || raw === "false" || raw === "N") {
+          rowValues.push("N");
+        } else {
+          rowValues.push("");
+        }
+      } else if (attrs.isNumeric) {
+        if (raw === null || raw === undefined || raw === "") {
+          rowValues.push(".");
+        } else {
+          const num = Number(raw);
+          rowValues.push(Number.isFinite(num) ? String(num) : ".");
+        }
+      } else if (raw === null || raw === undefined) {
+        rowValues.push("");
+      } else {
+        rowValues.push(
+          typeof raw === "object" ? JSON.stringify(raw) : String(raw)
+        );
+      }
+    });
+
+    return rowValues;
+  });
+
+  return formatSasCardsBlock(rows);
 }
 
 function renderSasDataStepForForm(
@@ -616,7 +681,9 @@ function renderSasDataStepForForm(
     code += `  /* Ingestion from Delimited Source / EDC Transfer */\n`;
     code += `  INFILE DATALINES DSD DLM=',' TRUNCOVER;\n`;
     code += `  INPUT\n    ${allInputVars.join("\n    ")};\n\n`;
-    code += generateSyntheticMockData(form, fieldsWithAttrs, study, 3);
+    code += hasSimulationRecords(study)
+      ? generateLiveSimulationData(form, fieldsWithAttrs, study)
+      : generateSyntheticMockData(form, fieldsWithAttrs, study, 3);
   }
 
   code += `RUN;\n\n`;

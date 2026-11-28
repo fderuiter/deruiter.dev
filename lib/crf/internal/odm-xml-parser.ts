@@ -1,7 +1,8 @@
 /**
  * CDISC ODM-XML v1.3.2 Deserializer and Parser (ODM v2.0 namespaces are out of scope)
- * Pure, runtime-agnostic XML parser converting CDISC ODM-XML v1.3.2 documents into
- * CRF Studio StudyProtocol models identically in Node.js and browser environments.
+ * Pure, runtime-agnostic XML parser converting CDISC ODM-XML v1.3.2 documents
+ * (including `<AdminData>` and `<ClinicalData>`) into CRF Studio StudyProtocol
+ * models identically in Node.js and browser environments via `./codecs/xml-parser`.
  */
 
 import {
@@ -19,6 +20,9 @@ import {
   AuditTrailEntry,
   ClinicalDataType,
   EditCheckRule,
+  EDCQuery,
+  EdcSimulationState,
+  ElectronicSignature,
 } from "../types";
 import {
   XmlElementNode,
@@ -137,6 +141,45 @@ function extractLocalFieldIdFromItemOid(
     return `fld_${suffix}`;
   }
   return itemOid.replace(/^IT\./, "fld_");
+}
+
+function coerceClinicalItemValue(
+  raw: string,
+  isNull: boolean,
+  field?: CRFField
+): string | number | boolean | null {
+  if (isNull) return null;
+  if (!field) return raw;
+  if (
+    field.dataType === "integer" ||
+    field.dataType === "number" ||
+    field.dataType === "calculated" ||
+    field.dataType === "vas_scale" ||
+    field.dataType === "nrs_scale"
+  ) {
+    if (raw !== "") {
+      const num = Number(raw);
+      if (Number.isFinite(num)) return num;
+    }
+  }
+  if (field.dataType === "checkbox" && (raw === "true" || raw === "false")) {
+    return raw === "true";
+  }
+  return raw;
+}
+
+function normalizeSignatureMeaning(
+  raw: string | undefined
+): ElectronicSignature["meaning"] {
+  if (
+    raw === "Author" ||
+    raw === "Investigator Approval" ||
+    raw === "Data Lock" ||
+    raw === "Monitor Verification"
+  ) {
+    return raw;
+  }
+  return "Investigator Approval";
 }
 
 /**
@@ -460,6 +503,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     const cleanVarName = name || itemOid.replace(/^IT\./, "");
     const fieldId =
       aliases.get("crfs:fieldId") ||
+      aliases.get("crf-studio:fieldId") ||
       extractLocalFieldIdFromItemOid(itemOid, formIdHint);
 
     const hasInlineCustomOptions = Boolean(fieldMeta.hasInlineCustomOptions);
@@ -522,6 +566,9 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
         : {}),
       ...(typeof fieldMeta.helpText === "string"
         ? { helpText: fieldMeta.helpText }
+        : {}),
+      ...(typeof fieldMeta.description === "string"
+        ? { description: fieldMeta.description }
         : {}),
       ...(fieldMeta.defaultValue !== undefined
         ? {
@@ -648,6 +695,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
 
     const cleanSecId =
       igAliases.get("crfs:sectionId") ||
+      igAliases.get("crf-studio:sectionId") ||
       igOid.replace(/^IG\.[^.]+\./, "sec_").replace(/^IG\./, "sec_");
     const repeatMaxStr = igAliases.get("crfs:repeatMax");
     const repeatMax =
@@ -805,6 +853,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
 
     const cleanVisitId =
       seAliases.get("crfs:visitId") ||
+      seAliases.get("crf-studio:visitId") ||
       seOid.replace(/^SE\./, "").toLowerCase() ||
       `vis_${idx + 1}`;
 
@@ -862,7 +911,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     ];
   }
 
-  // Audit Trail
+  // Design-Change Audit Trail (inside MetaDataVersion)
   const auditTrail: AuditTrailEntry[] = [];
   const auditRecordEls = queryElementsByLocalName(metaVerEl, "AuditRecord");
 
@@ -903,6 +952,358 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
       details,
     });
   });
+
+  // AdminData (Users & SignatureDefs)
+  const adminUsers = new Map<
+    string,
+    { displayName: string; userRole?: string }
+  >();
+  const adminSigDefs = new Map<string, string>();
+  const adminDataEls = getDirectChildElements(odmEl, "AdminData");
+
+  adminDataEls.forEach((adminEl) => {
+    getDirectChildElements(adminEl, "User").forEach((userEl) => {
+      const uOid = getXmlAttribute(userEl, "OID");
+      if (!uOid) return;
+      const displayName =
+        getFirstChildText(userEl, "DisplayName") ||
+        getFirstChildText(userEl, "FullName") ||
+        getFirstChildText(userEl, "LoginName") ||
+        uOid;
+      const org = getFirstChildText(userEl, "Organization") || undefined;
+      adminUsers.set(uOid, { displayName, userRole: org });
+    });
+
+    getDirectChildElements(adminEl, "SignatureDef").forEach((sdEl) => {
+      const sdOid = getXmlAttribute(sdEl, "OID");
+      if (!sdOid) return;
+      const meaning =
+        getFirstChildText(sdEl, "Meaning") || "Investigator Approval";
+      adminSigDefs.set(sdOid, meaning);
+    });
+  });
+
+  // ClinicalData -> study.simulationState
+  let parsedSimulationState: EdcSimulationState | undefined;
+  const clinicalDataEls = getDirectChildElements(odmEl, "ClinicalData");
+
+  if (clinicalDataEls.length > 0) {
+    const availableSubjects: string[] = [];
+    const seenSubjects = new Set<string>();
+    const formValues: Record<string, string | number | boolean | null> = {};
+    const auditLog: AuditTrailEntry[] = [];
+    const signatures: ElectronicSignature[] = [];
+    const queries: EDCQuery[] = [];
+    let lockedForms: NonNullable<EdcSimulationState["lockedForms"]> = {};
+    let sdvMap: NonNullable<EdcSimulationState["sdvMap"]> = {};
+
+    const addSubject = (subj?: string) => {
+      const trimmed = subj?.trim();
+      if (trimmed && !seenSubjects.has(trimmed)) {
+        seenSubjects.add(trimmed);
+        availableSubjects.push(trimmed);
+      }
+    };
+
+    const parseSignatureEl = (
+      sigEl: XmlElementNode,
+      idx: number,
+      fallbackCtx?: { subjectId?: string; visitId?: string; formId?: string }
+    ) => {
+      const rawId = getXmlAttribute(sigEl, "ID") || `sig_${idx + 1}`;
+      const userRefEl = queryElementsByLocalName(sigEl, "UserRef")[0];
+      const userOid =
+        (userRefEl && getXmlAttribute(userRefEl, "UserOID")) || "";
+      const sigRefEl = queryElementsByLocalName(sigEl, "SignatureRef")[0];
+      const sigDefOid =
+        (sigRefEl && getXmlAttribute(sigRefEl, "SignatureOID")) || "";
+      const userInfo = adminUsers.get(userOid);
+      const meaning = normalizeSignatureMeaning(
+        adminSigDefs.get(sigDefOid) || sigDefOid || undefined
+      );
+      const ts = getFirstChildText(sigEl, "DateTimeStamp") || creationDateTime;
+      const manifest = getFirstChildText(sigEl, "CryptoBindingManifest");
+
+      const prefix = "urn:crf-studio:simulated-signature:";
+      if (manifest.startsWith(prefix)) {
+        try {
+          const parsed = JSON.parse(
+            manifest.slice(prefix.length)
+          ) as Partial<ElectronicSignature>;
+          const subj = parsed.subjectId || fallbackCtx?.subjectId || "001-101";
+          addSubject(subj);
+          signatures.push({
+            id: parsed.id || rawId,
+            subjectId: subj,
+            visitId:
+              parsed.visitId ||
+              fallbackCtx?.visitId ||
+              visits[0]?.id ||
+              "vis_1",
+            formId:
+              parsed.formId || fallbackCtx?.formId || forms[0]?.id || "form_1",
+            signedBy: userInfo?.displayName || userOid || "Investigator",
+            userRole: userInfo?.userRole || "Principal Investigator",
+            timestamp: ts,
+            meaning,
+            digest: parsed.digest || `sim_${idx + 1}`,
+          });
+          return;
+        } catch {
+          // Fall through to plain ODM signature handling
+        }
+      }
+
+      const subj = fallbackCtx?.subjectId || availableSubjects[0] || "001-101";
+      addSubject(subj);
+      signatures.push({
+        id: rawId,
+        subjectId: subj,
+        visitId: fallbackCtx?.visitId || visits[0]?.id || "vis_1",
+        formId: fallbackCtx?.formId || forms[0]?.id || "form_1",
+        signedBy: userInfo?.displayName || userOid || "Investigator",
+        userRole: userInfo?.userRole || "Principal Investigator",
+        timestamp: ts,
+        meaning,
+        digest: manifest || `sim_${idx + 1}`,
+      });
+    };
+
+    const parseAuditEl = (
+      recEl: XmlElementNode,
+      idx: number,
+      fallbackCtx?: {
+        subjectId?: string;
+        formId?: string;
+        fieldId?: string;
+        fieldName?: string;
+      }
+    ) => {
+      const rawId = getXmlAttribute(recEl, "ID") || `aud_${idx + 1}`;
+      const userRefEl = queryElementsByLocalName(recEl, "UserRef")[0];
+      const userOid =
+        (userRefEl && getXmlAttribute(userRefEl, "UserOID")) || "";
+      const userInfo = adminUsers.get(userOid);
+      const ts = getFirstChildText(recEl, "DateTimeStamp") || creationDateTime;
+      const reason = getFirstChildText(recEl, "ReasonForChange") || undefined;
+      const sourceId = getFirstChildText(recEl, "SourceID");
+
+      const prefix = "urn:crf-studio:audit:";
+      if (sourceId.startsWith(prefix)) {
+        try {
+          const parsed = JSON.parse(
+            sourceId.slice(prefix.length)
+          ) as Partial<AuditTrailEntry>;
+          if (parsed.subjectId) addSubject(parsed.subjectId);
+          auditLog.push({
+            id: parsed.id || rawId,
+            timestamp: ts,
+            changedBy: userInfo?.displayName || userOid || "System",
+            userRole: userInfo?.userRole,
+            subjectId: parsed.subjectId || fallbackCtx?.subjectId,
+            formId: parsed.formId || fallbackCtx?.formId,
+            fieldId: parsed.fieldId || fallbackCtx?.fieldId,
+            fieldName: parsed.fieldName || fallbackCtx?.fieldName,
+            previousValue:
+              parsed.previousValue === undefined ? null : parsed.previousValue,
+            newValue: parsed.newValue === undefined ? null : parsed.newValue,
+            actionType: parsed.actionType,
+            targetId: parsed.targetId,
+            targetType: parsed.targetType,
+            reasonForChange: reason,
+          });
+          return;
+        } catch {
+          // Fall through to plain ODM AuditRecord handling
+        }
+      }
+
+      if (fallbackCtx?.subjectId) addSubject(fallbackCtx.subjectId);
+      auditLog.push({
+        id: rawId,
+        timestamp: ts,
+        changedBy: userInfo?.displayName || userOid || "System",
+        userRole: userInfo?.userRole,
+        subjectId: fallbackCtx?.subjectId,
+        formId: fallbackCtx?.formId,
+        fieldId: fallbackCtx?.fieldId,
+        fieldName: fallbackCtx?.fieldName,
+        previousValue: null,
+        newValue: sourceId || null,
+        reasonForChange: reason,
+      });
+    };
+
+    clinicalDataEls.forEach((cdEl) => {
+      // SubjectData
+      getDirectChildElements(cdEl, "SubjectData").forEach((subjEl) => {
+        const subjectKey = getXmlAttribute(subjEl, "SubjectKey");
+        if (!subjectKey) return;
+        addSubject(subjectKey);
+
+        getDirectChildElements(subjEl, "StudyEventData").forEach((seDataEl) => {
+          const seOid = getXmlAttribute(seDataEl, "StudyEventOID") || "";
+          const visit =
+            visitMap.get(seOid) ||
+            visits.find((v) => v.oid === seOid || v.id === seOid);
+          const visitId =
+            visit?.id ||
+            seOid.replace(/^SE\./, "").toLowerCase() ||
+            visits[0]?.id ||
+            "vis_1";
+
+          getDirectChildElements(seDataEl, "FormData").forEach((fDataEl) => {
+            const fOid = getXmlAttribute(fDataEl, "FormOID") || "";
+            const form =
+              formMap.get(fOid) ||
+              forms.find((f) => `FORM.${f.id}` === fOid || f.id === fOid);
+            const formId = form?.id || fOid.replace(/^FORM\./, "");
+
+            // Support inline FormData <Signature> in external ODM files
+            getDirectChildElements(fDataEl, "Signature").forEach(
+              (inlineSigEl, sIdx) => {
+                parseSignatureEl(inlineSigEl, signatures.length + sIdx, {
+                  subjectId: subjectKey,
+                  visitId,
+                  formId,
+                });
+              }
+            );
+
+            getDirectChildElements(fDataEl, "ItemGroupData").forEach(
+              (igDataEl) => {
+                const igOid = getXmlAttribute(igDataEl, "ItemGroupOID") || "";
+                const secEntry = sectionMap.get(igOid);
+
+                igDataEl.children.forEach((childNode) => {
+                  if (childNode.kind !== "element") return;
+                  const localLower = childNode.localName.toLowerCase();
+                  if (!localLower.startsWith("itemdata")) return;
+                  const itemOid = getXmlAttribute(childNode, "ItemOID");
+                  if (!itemOid) return;
+
+                  const defEntry = itemDefMap.get(itemOid);
+                  const varCandidate =
+                    formId && itemOid.startsWith(`IT.${formId}.`)
+                      ? itemOid.slice(`IT.${formId}.`.length)
+                      : itemOid.replace(/^IT\./, "");
+                  const fieldInSection = secEntry?.section.fields.find(
+                    (f) =>
+                      f.id === defEntry?.field.id ||
+                      f.variableName === varCandidate
+                  );
+                  const fieldInForm = form?.sections
+                    .flatMap((s) => s.fields)
+                    .find(
+                      (f) =>
+                        f.id === defEntry?.field.id ||
+                        f.variableName === varCandidate
+                    );
+                  const matchedField =
+                    fieldInSection || fieldInForm || defEntry?.field;
+                  const fieldId =
+                    matchedField?.id ||
+                    extractLocalFieldIdFromItemOid(itemOid, formId);
+
+                  const isNull = getXmlAttribute(childNode, "IsNull") === "Yes";
+                  const attrVal = getXmlAttribute(childNode, "Value");
+                  const rawVal =
+                    attrVal !== undefined
+                      ? attrVal
+                      : getXmlTextContent(childNode).trim();
+
+                  formValues[`${subjectKey}_${visitId}_${fieldId}`] =
+                    coerceClinicalItemValue(rawVal, isNull, matchedField);
+
+                  // Support inline ItemData <AuditRecord> in external ODM files
+                  getDirectChildElements(childNode, "AuditRecord").forEach(
+                    (inlineAud, aIdx) => {
+                      parseAuditEl(inlineAud, auditLog.length + aIdx, {
+                        subjectId: subjectKey,
+                        formId,
+                        fieldId,
+                        fieldName: matchedField?.variableName || fieldId,
+                      });
+                    }
+                  );
+                });
+              }
+            );
+          });
+        });
+      });
+
+      // AuditRecords container
+      getDirectChildElements(cdEl, "AuditRecords").forEach((arGroup) => {
+        getDirectChildElements(arGroup, "AuditRecord").forEach((recEl, idx) => {
+          parseAuditEl(recEl, idx);
+        });
+      });
+
+      // Signatures container
+      getDirectChildElements(cdEl, "Signatures").forEach((sigGroup) => {
+        getDirectChildElements(sigGroup, "Signature").forEach((sigEl, idx) => {
+          parseSignatureEl(sigEl, idx);
+        });
+      });
+
+      // Annotations container (Queries + Locked/SDV state)
+      getDirectChildElements(cdEl, "Annotations").forEach((annGroup) => {
+        getDirectChildElements(annGroup, "Annotation").forEach((annEl) => {
+          const comment = getFirstChildText(annEl, "Comment");
+          const queryPrefix = "urn:crf-studio:query:";
+          const statePrefix = "urn:crf-studio:state:";
+          if (comment.startsWith(queryPrefix)) {
+            try {
+              const parsedQuery = JSON.parse(
+                comment.slice(queryPrefix.length)
+              ) as EDCQuery;
+              if (parsedQuery && parsedQuery.id) {
+                addSubject(parsedQuery.subjectId);
+                queries.push(parsedQuery);
+              }
+            } catch {
+              // Ignore non-JSON comments
+            }
+          } else if (comment.startsWith(statePrefix)) {
+            try {
+              const parsedState = JSON.parse(
+                comment.slice(statePrefix.length)
+              ) as Pick<EdcSimulationState, "lockedForms" | "sdvMap">;
+              if (
+                parsedState.lockedForms &&
+                typeof parsedState.lockedForms === "object"
+              ) {
+                lockedForms = { ...lockedForms, ...parsedState.lockedForms };
+              }
+              if (
+                parsedState.sdvMap &&
+                typeof parsedState.sdvMap === "object"
+              ) {
+                sdvMap = { ...sdvMap, ...parsedState.sdvMap };
+              }
+            } catch {
+              // Ignore non-JSON state comments
+            }
+          }
+        });
+      });
+    });
+
+    parsedSimulationState = {
+      availableSubjects,
+      formValues,
+      auditLog,
+      signatures,
+      queries,
+      lockedForms,
+      sdvMap,
+    };
+  }
+
+  const effectiveSimulationState =
+    parsedSimulationState ??
+    (studyMeta.simulationState as StudyProtocol["simulationState"]);
 
   return {
     id:
@@ -962,11 +1363,8 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
             studyMeta.testScenarios as StudyProtocol["testScenarios"],
         }
       : {}),
-    ...(studyMeta.simulationState
-      ? {
-          simulationState:
-            studyMeta.simulationState as StudyProtocol["simulationState"],
-        }
+    ...(effectiveSimulationState
+      ? { simulationState: effectiveSimulationState }
       : {}),
     provenance: {
       sourceFormat: "CDISC ODM XML",

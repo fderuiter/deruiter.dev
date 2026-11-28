@@ -273,6 +273,66 @@ describe("LiveEdcSimulator role-based query lifecycle & CSV/ODM UI controls", ()
     await act(async () => {
       raiseBtnDm?.click();
     });
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+    });
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+
+    await act(async () => {
+      raiseBtnDm?.click();
+    });
+    const subjectSelect = container.querySelector(
+      "#manual-query-subject"
+    ) as HTMLSelectElement;
+    if (subjectSelect.options[0]) {
+      await act(async () => {
+        setReactInputValue(subjectSelect, subjectSelect.options[0]!.value);
+      });
+    }
+    const visitSelect = container.querySelector(
+      "#manual-query-visit"
+    ) as HTMLSelectElement;
+    if (visitSelect.options[1]) {
+      await act(async () => {
+        setReactInputValue(visitSelect, visitSelect.options[1]!.value);
+      });
+    }
+    const formSelect = container.querySelector(
+      "#manual-query-form"
+    ) as HTMLSelectElement;
+    if (ONCOLOGY_RECIST_PRESET.forms[1]) {
+      await act(async () => {
+        setReactInputValue(formSelect, ONCOLOGY_RECIST_PRESET.forms[1]!.id);
+      });
+    }
+    const fieldSelect = container.querySelector(
+      "#manual-query-field"
+    ) as HTMLSelectElement;
+    if (fieldSelect.options[1]) {
+      await act(async () => {
+        setReactInputValue(fieldSelect, fieldSelect.options[1]!.value);
+      });
+    }
+    const severitySelect = container.querySelector(
+      "#manual-query-severity"
+    ) as HTMLSelectElement;
+    await act(async () => {
+      setReactInputValue(severitySelect, "error");
+    });
+    const modalCancelBtn = Array.from(
+      container.querySelectorAll("button")
+    ).find((b) => b.textContent?.trim() === "Cancel");
+    await act(async () => {
+      modalCancelBtn?.click();
+    });
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+
+    await act(async () => {
+      raiseBtnDm?.click();
+    });
     const messageTextarea2 = container.querySelector(
       "#manual-query-message"
     ) as HTMLTextAreaElement;
@@ -322,6 +382,63 @@ describe("LiveEdcSimulator role-based query lifecycle & CSV/ODM UI controls", ()
       );
     });
 
+    const exportPrimaryBtn = () =>
+      Array.from(container.querySelectorAll("button")).find((b) =>
+        b.textContent?.includes("Export ")
+      );
+
+    // Export default CDISC ODM-XML first, then SAS and R live scripts
+    await act(async () => {
+      exportPrimaryBtn()?.click();
+    });
+    expect(downloadSpy).toHaveBeenLastCalledWith(
+      expect.stringContaining("<ODM"),
+      expect.stringContaining("-clinical-odm.xml"),
+      { mimeType: "application/xml" }
+    );
+
+    const statTabBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "SAS / R Script"
+    );
+    await act(async () => {
+      statTabBtn?.click();
+    });
+    await act(async () => {
+      exportPrimaryBtn()?.click();
+    });
+    expect(downloadSpy).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.stringContaining("-live.sas"),
+      { mimeType: "text/x-sas" }
+    );
+    const rLangBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "R (tibble)"
+    );
+    await act(async () => {
+      rLangBtn?.click();
+    });
+    await act(async () => {
+      exportPrimaryBtn()?.click();
+    });
+    expect(downloadSpy).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.stringContaining("-live.R"),
+      { mimeType: "text/x-r" }
+    );
+    const sasLangBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "SAS (CARDS;)"
+    );
+    await act(async () => {
+      sasLangBtn?.click();
+    });
+
+    const odmTabBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "CDISC ODM-XML"
+    );
+    await act(async () => {
+      odmTabBtn?.click();
+    });
+
     // Switch exchange panel to RFC 4180 CSV and export Subjects, Queries, Audits
     const csvTabBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.trim() === "RFC 4180 CSV"
@@ -330,11 +447,6 @@ describe("LiveEdcSimulator role-based query lifecycle & CSV/ODM UI controls", ()
     await act(async () => {
       csvTabBtn?.click();
     });
-
-    const exportPrimaryBtn = () =>
-      Array.from(container.querySelectorAll("button")).find((b) =>
-        b.textContent?.includes("Export ")
-      );
 
     await act(async () => {
       exportPrimaryBtn()?.click();

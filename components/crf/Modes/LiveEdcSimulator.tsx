@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import {
   StudyProtocol,
   CRFField,
@@ -10,7 +9,6 @@ import {
   ElectronicSignature,
   SubjectFormStatus,
   EdcSimulationState,
-  ClinicalDataCsvKind,
 } from "@/lib/crf/types";
 import {
   evaluateRule,
@@ -27,20 +25,12 @@ import {
   cancelSimulationQuery,
   reopenSimulationQuery,
   getEdcRoleActorLabel,
-  exportStudyToCdiscOdmXml,
-  importStudyFromCdiscOdmXml,
-  exportStudyToSas,
-  exportStudyToR,
-  exportSimulationSubjectsCsv,
-  exportSimulationQueriesCsv,
-  exportSimulationAuditsCsv,
-  detectClinicalCsvKind,
-  importClinicalCsvIntoSimulationState,
 } from "@/lib/crf";
 import { useCrfService } from "@/hooks/useCrfService";
 import { generateId } from "@/lib/utils";
-import { downloadFile } from "@/lib/download";
 import { NoPhiNotice } from "../NoPhiNotice";
+import { EdcClinicalDataExchangePanel } from "./EdcClinicalDataExchangePanel";
+import { EdcManualQueryModal } from "./EdcManualQueryModal";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import {
   IconShieldCheck,
@@ -55,9 +45,6 @@ import {
   IconAlertTriangle,
   IconDeviceFloppy,
   IconEyeOff,
-  IconDownload,
-  IconUpload,
-  IconX,
 } from "@tabler/icons-react";
 import { TooltipButton } from "@/components/ui/Tooltip";
 
@@ -280,24 +267,6 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
   // Manual Query Modal State
   const [isManualQueryModalOpen, setIsManualQueryModalOpen] = useState(false);
-  const [manualQuerySubjectId, setManualQuerySubjectId] = useState(subjectId);
-  const [manualQueryVisitId, setManualQueryVisitId] = useState(activeVisitId);
-  const [manualQueryFormId, setManualQueryFormId] = useState(activeFormId);
-  const [manualQueryFieldId, setManualQueryFieldId] = useState("");
-  const [manualQuerySeverity, setManualQuerySeverity] =
-    useState<EDCQuery["severity"]>("warning");
-  const [manualQueryMessage, setManualQueryMessage] = useState("");
-
-  // CDISC Clinical Data Exchange Panel State
-  const [exchangeFormat, setExchangeFormat] = useState<"odm" | "stat" | "csv">(
-    "odm"
-  );
-  const [statScriptLang, setStatScriptLang] = useState<"sas" | "r">("sas");
-  const [csvDatasetKind, setCsvDatasetKind] =
-    useState<ClinicalDataCsvKind>("subjects");
-  const [exchangeStatus, setExchangeStatus] = useState<string | null>(null);
-  const [exchangeError, setExchangeError] = useState<string | null>(null);
-  const exchangeFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const isMonitorOrDm =
     currentRole === "CRA Monitor" || currentRole === "Data Manager";
@@ -323,51 +292,30 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     ]
   );
 
-  const manualQueryForm = useMemo(
-    () => study.forms.find((f) => f.id === manualQueryFormId) || study.forms[0],
-    [study.forms, manualQueryFormId]
-  );
-
-  const manualQueryFields = useMemo(
-    () =>
-      manualQueryForm ? manualQueryForm.sections.flatMap((s) => s.fields) : [],
-    [manualQueryForm]
-  );
-
   const openManualQueryModal = () => {
-    const defaultForm =
-      study.forms.find((f) => f.id === activeFormId) || study.forms[0];
-    const defaultFields = defaultForm
-      ? defaultForm.sections.flatMap((s) => s.fields)
-      : [];
-    setManualQuerySubjectId(subjectId || availableSubjects[0] || "001-101");
-    setManualQueryVisitId(activeVisitId || study.visits[0]?.id || "");
-    setManualQueryFormId(defaultForm?.id || "");
-    setManualQueryFieldId(defaultFields[0]?.id || "");
-    setManualQuerySeverity("warning");
-    setManualQueryMessage("");
     setIsManualQueryModalOpen(true);
   };
 
-  const handleRaiseManualQuery = () => {
-    if (!manualQueryMessage.trim()) return;
-    const resolvedFormId = manualQueryForm?.id || activeFormId;
-    const resolvedField =
-      manualQueryFields.find((f) => f.id === manualQueryFieldId) ||
-      manualQueryFields[0];
-    if (!resolvedField) return;
-
+  const handleRaiseManualQuery = (submission: {
+    subjectId: string;
+    visitId: string;
+    formId: string;
+    fieldId: string;
+    fieldName: string;
+    severity: EDCQuery["severity"];
+    message: string;
+  }) => {
     const nextSim = raiseSimulationQuery(
       currentSimSnapshot,
       {
         id: generateQueryId(),
-        subjectId: manualQuerySubjectId || subjectId,
-        visitId: manualQueryVisitId || activeVisitId,
-        formId: resolvedFormId,
-        fieldId: resolvedField.id,
-        fieldName: resolvedField.variableName || resolvedField.label,
-        severity: manualQuerySeverity,
-        message: manualQueryMessage,
+        subjectId: submission.subjectId,
+        visitId: submission.visitId,
+        formId: submission.formId,
+        fieldId: submission.fieldId,
+        fieldName: submission.fieldName,
+        severity: submission.severity,
+        message: submission.message,
         actor: getEdcRoleActorLabel(currentRole),
         userRole: currentRole,
       },
@@ -379,7 +327,6 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     if (nextSim.queries) setQueries(nextSim.queries);
     if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
     setIsManualQueryModalOpen(false);
-    setManualQueryMessage("");
     setSubView("queries");
     announce("Manual discrepancy query raised.", "polite");
   };
@@ -453,121 +400,26 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     announce("Discrepancy query reopened.", "polite");
   };
 
-  const handleExportClinicalData = () => {
-    setExchangeError(null);
-    const studyWithSim: StudyProtocol = {
-      ...study,
-      simulationState: currentSimSnapshot,
-    };
-
-    if (exchangeFormat === "odm") {
-      const xml = exportStudyToCdiscOdmXml(studyWithSim);
-      const filename = `study-${study.protocolNumber}-clinical-odm.xml`;
-      downloadFile(xml, filename, { mimeType: "application/xml" });
-      setExchangeStatus(
-        `Exported ${filename} (ODM v${CLINICAL_STANDARDS_PROFILE.ODM} ClinicalData).`
-      );
-      return;
-    }
-
-    if (exchangeFormat === "stat") {
-      if (statScriptLang === "sas") {
-        const sas = exportStudyToSas(studyWithSim);
-        const filename = `study-${study.protocolNumber}-live.sas`;
-        downloadFile(sas, filename, { mimeType: "text/x-sas" });
-        setExchangeStatus(`Exported ${filename} with live simulation rows.`);
-      } else {
-        const rCode = exportStudyToR(studyWithSim);
-        const filename = `study-${study.protocolNumber}-live.R`;
-        downloadFile(rCode, filename, { mimeType: "text/x-r" });
-        setExchangeStatus(`Exported ${filename} with live simulation rows.`);
-      }
-      return;
-    }
-
-    const csvContent =
-      csvDatasetKind === "subjects"
-        ? exportSimulationSubjectsCsv(studyWithSim)
-        : csvDatasetKind === "queries"
-          ? exportSimulationQueriesCsv(studyWithSim)
-          : exportSimulationAuditsCsv(studyWithSim);
-    const filename = `${study.protocolNumber}-${csvDatasetKind}.csv`;
-    downloadFile(csvContent, filename, { mimeType: "text/csv" });
-    setExchangeStatus(`Exported RFC 4180 ${filename}.`);
-  };
-
-  const handleImportClinicalFile = async (
-    event: React.ChangeEvent<HTMLInputElement>
+  const handleApplyImportedSimulationState = (
+    importedSim: EdcSimulationState,
+    source: "odm" | "csv"
   ) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    setExchangeError(null);
-    setExchangeStatus(null);
-
-    try {
-      const text = await file.text();
-      const trimmed = text.trim();
-      const isXml =
-        file.name.toLowerCase().endsWith(".xml") || trimmed.startsWith("<");
-
-      if (isXml) {
-        const importedStudy = importStudyFromCdiscOdmXml(text);
-        const importedSim = importedStudy.simulationState;
-        if (!importedSim) {
-          setExchangeError(
-            "The selected ODM-XML file contains study metadata only (no ClinicalData block)."
-          );
-          return;
-        }
-        if (importedSim.availableSubjects) {
-          setAvailableSubjects(importedSim.availableSubjects);
-          if (
-            importedSim.availableSubjects.length > 0 &&
-            !importedSim.availableSubjects.includes(subjectId)
-          ) {
-            setSubjectId(importedSim.availableSubjects[0]);
-          }
-        }
-        if (importedSim.formValues) setFormValues(importedSim.formValues);
-        if (importedSim.auditLog) setAuditLog(importedSim.auditLog);
-        if (importedSim.signatures) setSignatures(importedSim.signatures);
-        if (importedSim.queries) setQueries(importedSim.queries);
-        if (importedSim.lockedForms) setLockedForms(importedSim.lockedForms);
-        if (importedSim.sdvMap) setSdvMap(importedSim.sdvMap);
-        setExchangeStatus(
-          `Imported ODM v${CLINICAL_STANDARDS_PROFILE.ODM} ClinicalData (${importedSim.availableSubjects?.length ?? 0} subjects, ${importedSim.auditLog?.length ?? 0} audits, ${importedSim.signatures?.length ?? 0} simulated signatures).`
-        );
-        announce("ODM ClinicalData imported into simulation.", "polite");
-        return;
+    if (importedSim.availableSubjects) {
+      setAvailableSubjects(importedSim.availableSubjects);
+      if (
+        source === "odm" &&
+        importedSim.availableSubjects.length > 0 &&
+        !importedSim.availableSubjects.includes(subjectId)
+      ) {
+        setSubjectId(importedSim.availableSubjects[0]);
       }
-
-      const detected = detectClinicalCsvKind(text) || csvDatasetKind;
-      const { kind, simulationState: nextSim } =
-        importClinicalCsvIntoSimulationState(
-          text,
-          study,
-          currentSimSnapshot,
-          detected
-        );
-      setCsvDatasetKind(kind);
-      if (nextSim.availableSubjects) {
-        setAvailableSubjects(nextSim.availableSubjects);
-      }
-      if (nextSim.formValues) setFormValues(nextSim.formValues);
-      if (nextSim.sdvMap) setSdvMap(nextSim.sdvMap);
-      if (nextSim.lockedForms) setLockedForms(nextSim.lockedForms);
-      if (nextSim.queries) setQueries(nextSim.queries);
-      if (nextSim.auditLog) setAuditLog(nextSim.auditLog);
-      setExchangeStatus(`Imported RFC 4180 ${kind} CSV into simulation.`);
-      announce(`Imported ${kind} CSV into simulation.`, "polite");
-    } catch (err: unknown) {
-      setExchangeError(
-        err instanceof Error
-          ? err.message
-          : "Failed to import ODM-XML or CSV file."
-      );
     }
+    if (importedSim.formValues) setFormValues(importedSim.formValues);
+    if (importedSim.auditLog) setAuditLog(importedSim.auditLog);
+    if (importedSim.signatures) setSignatures(importedSim.signatures);
+    if (importedSim.queries) setQueries(importedSim.queries);
+    if (importedSim.lockedForms) setLockedForms(importedSim.lockedForms);
+    if (importedSim.sdvMap) setSdvMap(importedSim.sdvMap);
   };
 
   // 3-Tier Missing Data & Validation State
@@ -2608,300 +2460,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         </div>
 
         {/* RIGHT SIDEBAR: CDISC CLINICAL DATA EXCHANGE */}
-        <aside
-          aria-label="CDISC Clinical Data Exchange"
-          className="xl:col-span-4 min-w-0 p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h2 className="text-sm font-bold studio-fg-primary font-mono">
-                CDISC Clinical Data Exchange
-              </h2>
-              <p className="text-xs studio-fg-muted font-sans mt-0.5">
-                Bidirectional ODM v{CLINICAL_STANDARDS_PROFILE.ODM}{" "}
-                ClinicalData, live statistical rows, and RFC 4180 CSV datasets.
-              </p>
-            </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold studio-accent-cyan border shrink-0">
-              ODM v{CLINICAL_STANDARDS_PROFILE.ODM}
-            </span>
-          </div>
-
-          {/* Exchange Format Selector */}
-          <div
-            role="group"
-            aria-label="Clinical exchange format"
-            className="grid grid-cols-3 gap-1.5 p-1 rounded-xl studio-surface-card border studio-border-default"
-          >
-            <button
-              type="button"
-              aria-pressed={exchangeFormat === "odm"}
-              onClick={() => {
-                setExchangeFormat("odm");
-                setExchangeError(null);
-              }}
-              className={`px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
-                exchangeFormat === "odm"
-                  ? "studio-btn-cyan font-bold"
-                  : "studio-fg-muted studio-hover-fg-primary"
-              }`}
-            >
-              CDISC ODM-XML
-            </button>
-            <button
-              type="button"
-              aria-pressed={exchangeFormat === "stat"}
-              onClick={() => {
-                setExchangeFormat("stat");
-                setExchangeError(null);
-              }}
-              className={`px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
-                exchangeFormat === "stat"
-                  ? "studio-btn-cyan font-bold"
-                  : "studio-fg-muted studio-hover-fg-primary"
-              }`}
-            >
-              SAS / R Script
-            </button>
-            <button
-              type="button"
-              aria-pressed={exchangeFormat === "csv"}
-              onClick={() => {
-                setExchangeFormat("csv");
-                setExchangeError(null);
-              }}
-              className={`px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
-                exchangeFormat === "csv"
-                  ? "studio-btn-cyan font-bold"
-                  : "studio-fg-muted studio-hover-fg-primary"
-              }`}
-            >
-              RFC 4180 CSV
-            </button>
-          </div>
-
-          {/* Live Simulation State Payload Summary */}
-          <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-2">
-            <div className="text-[10px] font-mono uppercase tracking-wider studio-fg-muted font-bold">
-              Live Simulation State Payload
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
-                <div className="text-[10px] studio-fg-muted truncate">
-                  SubjectData
-                </div>
-                <div className="font-bold studio-fg-cyan">
-                  {availableSubjects.length} subjects
-                </div>
-              </div>
-              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
-                <div className="text-[10px] studio-fg-muted truncate">
-                  AuditRecords
-                </div>
-                <div className="font-bold studio-fg-primary">
-                  {auditLog.length} entries
-                </div>
-              </div>
-              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
-                <div className="text-[10px] studio-fg-muted truncate">
-                  Signatures (sim)
-                </div>
-                <div className="font-bold studio-fg-emerald">
-                  {signatures.length} records
-                </div>
-              </div>
-              <div className="p-2 rounded-lg studio-surface-subtle border studio-border-default min-w-0">
-                <div className="text-[10px] studio-fg-muted truncate">
-                  Annotations
-                </div>
-                <div className="font-bold studio-fg-amber">
-                  {queries.length} queries
-                </div>
-              </div>
-            </div>
-            <p className="text-[10px] studio-fg-muted font-sans leading-relaxed">
-              Simulated signature tokens (not a validated system) serialize into
-              plain ODM v{CLINICAL_STANDARDS_PROFILE.ODM}{" "}
-              <code className="font-mono studio-fg-secondary">
-                &lt;Signatures&gt;
-              </code>{" "}
-              and{" "}
-              <code className="font-mono studio-fg-secondary">
-                &lt;AdminData&gt;
-              </code>
-              .
-            </p>
-          </div>
-
-          {/* Format-Specific Options */}
-          {exchangeFormat === "odm" && (
-            <div className="p-3 rounded-xl studio-surface-card border studio-border-default text-xs studio-fg-muted font-sans space-y-1">
-              <div className="font-mono font-bold studio-fg-primary text-[11px]">
-                ODM v{CLINICAL_STANDARDS_PROFILE.ODM} AdminData + ClinicalData
-              </div>
-              <p className="leading-relaxed">
-                Emits study metadata plus captured subject items, audit trail
-                records, simulated signatures, and discrepancy query
-                annotations.
-              </p>
-            </div>
-          )}
-
-          {exchangeFormat === "stat" && (
-            <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-2.5">
-              <div className="text-[11px] font-mono font-bold studio-fg-primary">
-                Statistical Analysis Script Target
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  aria-pressed={statScriptLang === "sas"}
-                  onClick={() => setStatScriptLang("sas")}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono border transition-all ${
-                    statScriptLang === "sas"
-                      ? "studio-accent-cyan font-bold"
-                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
-                  }`}
-                >
-                  SAS (CARDS;)
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={statScriptLang === "r"}
-                  onClick={() => setStatScriptLang("r")}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono border transition-all ${
-                    statScriptLang === "r"
-                      ? "studio-accent-cyan font-bold"
-                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
-                  }`}
-                >
-                  R (tibble)
-                </button>
-              </div>
-              <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
-                Serializes captured subject values from active simulation rows
-                before falling back to synthetic template data.
-              </p>
-            </div>
-          )}
-
-          {exchangeFormat === "csv" && (
-            <div className="p-3 rounded-xl studio-surface-card border studio-border-default space-y-2.5">
-              <div className="text-[11px] font-mono font-bold studio-fg-primary">
-                RFC 4180 CSV Dataset
-              </div>
-              <div
-                role="group"
-                aria-label="EDC CSV dataset type"
-                className="grid grid-cols-3 gap-1.5"
-              >
-                <button
-                  type="button"
-                  aria-pressed={csvDatasetKind === "subjects"}
-                  onClick={() => setCsvDatasetKind("subjects")}
-                  className={`px-2 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
-                    csvDatasetKind === "subjects"
-                      ? "studio-accent-cyan font-bold"
-                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
-                  }`}
-                >
-                  Subjects CSV
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={csvDatasetKind === "queries"}
-                  onClick={() => setCsvDatasetKind("queries")}
-                  className={`px-2 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
-                    csvDatasetKind === "queries"
-                      ? "studio-accent-cyan font-bold"
-                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
-                  }`}
-                >
-                  Queries CSV
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={csvDatasetKind === "audits"}
-                  onClick={() => setCsvDatasetKind("audits")}
-                  className={`px-2 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
-                    csvDatasetKind === "audits"
-                      ? "studio-accent-cyan font-bold"
-                      : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
-                  }`}
-                >
-                  Audits CSV
-                </button>
-              </div>
-              <p className="text-[11px] studio-fg-muted font-sans leading-relaxed">
-                Quoted CRLF flat files for clinical data review, discrepancy
-                tracking, and audit inspection.
-              </p>
-            </div>
-          )}
-
-          {/* Primary Export Action */}
-          <button
-            type="button"
-            onClick={handleExportClinicalData}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl studio-btn-cyan font-mono font-bold text-xs transition-all"
-          >
-            <IconDownload className="w-4 h-4 shrink-0" />
-            <span>
-              {exchangeFormat === "odm"
-                ? `Export ODM v${CLINICAL_STANDARDS_PROFILE.ODM} + ClinicalData`
-                : exchangeFormat === "stat"
-                  ? statScriptLang === "sas"
-                    ? "Export Live SAS Script"
-                    : "Export Live R Script"
-                  : csvDatasetKind === "subjects"
-                    ? "Export Subjects CSV"
-                    : csvDatasetKind === "queries"
-                      ? "Export Queries CSV"
-                      : "Export Audits CSV"}
-            </span>
-          </button>
-
-          {/* Bidirectional Import Control */}
-          <div className="pt-3 border-t studio-border-default space-y-2">
-            <div className="text-[11px] font-mono font-bold studio-fg-secondary">
-              Restore Simulation State (ODM-XML or CSV)
-            </div>
-            <input
-              ref={exchangeFileInputRef}
-              type="file"
-              aria-label="Import ODM-XML or RFC 4180 CSV file"
-              accept=".xml,.csv,application/xml,text/xml,text/csv"
-              onChange={handleImportClinicalFile}
-              className="sr-only"
-            />
-            <button
-              type="button"
-              onClick={() => exchangeFileInputRef.current?.click()}
-              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl studio-surface-card border studio-border-strong studio-fg-primary studio-hover-border text-xs font-mono font-bold transition-all"
-            >
-              <IconUpload className="w-4 h-4 studio-fg-cyan shrink-0" />
-              <span>Import ODM-XML / RFC 4180 CSV</span>
-            </button>
-          </div>
-
-          {exchangeStatus && (
-            <div
-              role="status"
-              className="p-2.5 rounded-xl studio-accent-emerald border text-xs font-sans"
-            >
-              {exchangeStatus}
-            </div>
-          )}
-
-          {exchangeError && (
-            <div
-              role="alert"
-              className="p-2.5 rounded-xl studio-accent-rose border text-xs font-sans"
-            >
-              {exchangeError}
-            </div>
-          )}
-        </aside>
+        <EdcClinicalDataExchangePanel
+          study={study}
+          currentSimSnapshot={currentSimSnapshot}
+          onApplyImportedSimulationState={handleApplyImportedSimulationState}
+          announce={announce}
+        />
       </div>
 
       {/* MODAL: 21 CFR Part 11 Reason for Change Prompt */}
@@ -3015,191 +2579,16 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
       {/* MODAL: Raise Manual Query */}
       {isManualQueryModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="manual-query-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim backdrop-blur-sm"
-        >
-          <div className="studio-surface-elevated border studio-border-strong rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between gap-2">
-              <h3
-                id="manual-query-dialog-title"
-                className="text-sm font-bold studio-fg-primary font-mono"
-              >
-                Raise Manual Discrepancy Query
-              </h3>
-              <button
-                type="button"
-                aria-label="Close manual query dialog"
-                onClick={() => setIsManualQueryModalOpen(false)}
-                className="p-1 rounded-lg studio-fg-muted studio-hover-fg-primary"
-              >
-                <IconX className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs studio-fg-muted font-sans">
-              Raising manual query as{" "}
-              <span className="font-semibold studio-fg-primary">
-                {currentRole}
-              </span>{" "}
-              · {getEdcRoleActorLabel(currentRole)}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-              <div>
-                <label
-                  htmlFor="manual-query-subject"
-                  className="block text-[10px] studio-fg-muted mb-1"
-                >
-                  Subject ID
-                </label>
-                <select
-                  id="manual-query-subject"
-                  value={manualQuerySubjectId}
-                  onChange={(e) => setManualQuerySubjectId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
-                >
-                  {availableSubjects.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="manual-query-visit"
-                  className="block text-[10px] studio-fg-muted mb-1"
-                >
-                  Visit
-                </label>
-                <select
-                  id="manual-query-visit"
-                  value={manualQueryVisitId}
-                  onChange={(e) => setManualQueryVisitId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
-                >
-                  {study.visits.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="manual-query-form"
-                  className="block text-[10px] studio-fg-muted mb-1"
-                >
-                  CRF Form
-                </label>
-                <select
-                  id="manual-query-form"
-                  value={manualQueryFormId}
-                  onChange={(e) => {
-                    const nextFormId = e.target.value;
-                    setManualQueryFormId(nextFormId);
-                    const nextForm = study.forms.find(
-                      (f) => f.id === nextFormId
-                    );
-                    const firstField = nextForm?.sections.flatMap(
-                      (s) => s.fields
-                    )[0];
-                    setManualQueryFieldId(firstField?.id || "");
-                  }}
-                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
-                >
-                  {study.forms.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.domain})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="manual-query-field"
-                  className="block text-[10px] studio-fg-muted mb-1"
-                >
-                  Target Variable
-                </label>
-                <select
-                  id="manual-query-field"
-                  value={manualQueryFieldId}
-                  onChange={(e) => setManualQueryFieldId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs"
-                >
-                  {manualQueryFields.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.variableName} — {f.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="manual-query-severity"
-                className="block text-[10px] font-mono studio-fg-muted mb-1"
-              >
-                Severity
-              </label>
-              <select
-                id="manual-query-severity"
-                value={manualQuerySeverity}
-                onChange={(e) =>
-                  setManualQuerySeverity(e.target.value as EDCQuery["severity"])
-                }
-                className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-strong studio-fg-primary text-xs font-mono"
-              >
-                <option value="warning">Warning</option>
-                <option value="error">Error</option>
-                <option value="info">Info</option>
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor="manual-query-message"
-                className="block text-[10px] font-mono studio-fg-muted mb-1"
-              >
-                Discrepancy Query Message
-              </label>
-              <textarea
-                id="manual-query-message"
-                rows={3}
-                value={manualQueryMessage}
-                onChange={(e) => setManualQueryMessage(e.target.value)}
-                placeholder="Describe source discrepancy or missing clarification needed from site..."
-                className="w-full px-3 py-2 text-xs studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-sans studio-focus-input focus:outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsManualQueryModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg studio-surface-muted studio-fg-secondary text-xs font-mono"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!manualQueryMessage.trim()}
-                onClick={handleRaiseManualQuery}
-                className="px-3 py-1.5 rounded-lg studio-btn-cyan font-bold text-xs font-mono disabled:opacity-40"
-              >
-                Submit Manual Query
-              </button>
-            </div>
-          </div>
-        </div>
+        <EdcManualQueryModal
+          study={study}
+          availableSubjects={availableSubjects}
+          defaultSubjectId={subjectId}
+          defaultVisitId={activeVisitId}
+          defaultFormId={activeFormId}
+          currentRole={currentRole}
+          onClose={() => setIsManualQueryModalOpen(false)}
+          onSubmit={handleRaiseManualQuery}
+        />
       )}
     </div>
   );

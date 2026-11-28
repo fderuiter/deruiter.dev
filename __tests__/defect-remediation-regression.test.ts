@@ -65,6 +65,9 @@ import {
   exportStudyToCdiscOdmXml,
   importStudyFromCdiscOdmXml,
   exportStudyToSas,
+  escapeRfc4180Cell,
+  formatRfc4180Csv,
+  parseRfc4180Csv,
   importStudyFromCsvSpec,
   importFormFromFhirQuestionnaire,
   importStudyFromFhirQuestionnaire,
@@ -3649,5 +3652,23 @@ describe("ODM-XML zero-DOM parser & single-pass entity boundary (#4147)", () => 
     } finally {
       domParserSpy.mockRestore();
     }
+  });
+
+  it("neutralizes CWE-1236 CSV formula triggers and preserves user-typed leading single quotes on round-trip", () => {
+    expect(escapeRfc4180Cell("=1+1")).toBe("'=1+1");
+    expect(escapeRfc4180Cell("@cmd")).toBe("'@cmd");
+    expect(escapeRfc4180Cell("-1.5")).toBe("-1.5");
+    expect(escapeRfc4180Cell(-1.5)).toBe("-1.5");
+    expect(escapeRfc4180Cell(-Infinity)).toBe("'-Infinity");
+    expect(escapeRfc4180Cell("'=x")).toBe("''=x");
+
+    const csv = formatRfc4180Csv(
+      ["col1", "col2", "col3", "col4", "col5", "col6"],
+      [["=1+1", "@cmd", "-1.5", "'=x", "\t=1+1", "\r=1+1"]]
+    );
+    expect(parseRfc4180Csv(csv)).toEqual([
+      ["col1", "col2", "col3", "col4", "col5", "col6"],
+      ["=1+1", "@cmd", "-1.5", "'=x", "\t=1+1", "\r=1+1"],
+    ]);
   });
 });

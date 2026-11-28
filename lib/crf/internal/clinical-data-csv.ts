@@ -15,13 +15,17 @@ import {
 import { generateEngineId } from "./precision-date";
 
 const CSV_FORMULA_TRIGGER_RE = /^[=+\-@\t\r]/;
+const CSV_QUOTE_ESCAPED_TRIGGER_RE = /^'+[=+\-@\t\r]/;
 const STRICT_NUMERIC_CSV_CELL_RE = /^-?\d+(\.\d+)?$/;
 
 function neutralizeCsvFormulaTrigger(raw: string): string {
+  if (raw.length === 0) {
+    return raw;
+  }
   if (
-    raw.length > 0 &&
-    CSV_FORMULA_TRIGGER_RE.test(raw) &&
-    !STRICT_NUMERIC_CSV_CELL_RE.test(raw)
+    (CSV_FORMULA_TRIGGER_RE.test(raw) &&
+      !STRICT_NUMERIC_CSV_CELL_RE.test(raw)) ||
+    CSV_QUOTE_ESCAPED_TRIGGER_RE.test(raw)
   ) {
     return `'${raw}`;
   }
@@ -29,11 +33,7 @@ function neutralizeCsvFormulaTrigger(raw: string): string {
 }
 
 function stripCsvFormulaPrefix(cell: string): string {
-  if (
-    cell.length >= 2 &&
-    cell[0] === "'" &&
-    CSV_FORMULA_TRIGGER_RE.test(cell[1])
-  ) {
+  if (CSV_QUOTE_ESCAPED_TRIGGER_RE.test(cell)) {
     return cell.slice(1);
   }
   return cell;
@@ -42,7 +42,12 @@ function stripCsvFormulaPrefix(cell: string): string {
 /**
  * Escapes a single cell value according to RFC 4180 and neutralizes leading
  * spreadsheet formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) per OWASP
- * CSV Injection (CWE-1236) guidance while preserving strictly numeric values.
+ * CSV Injection (CWE-1236) guidance. Finite `number` values and strictly
+ * numeric strings matching `/^-?\d+(\.\d+)?$/` (such as `-1.5`) remain
+ * unprefixed, while strings already starting with one or more `'` characters
+ * immediately followed by a trigger (`/^'+[=+\-@\t\r]/`, such as `'=x`) are
+ * prefixed with an additional `'` so `parseRfc4180Csv` round-trips them
+ * identically.
  */
 export function escapeRfc4180Cell(value: unknown): string {
   if (value === null || value === undefined) {
@@ -50,7 +55,9 @@ export function escapeRfc4180Cell(value: unknown): string {
   }
   const raw = typeof value === "object" ? JSON.stringify(value) : String(value);
   const str =
-    typeof value === "number" ? raw : neutralizeCsvFormulaTrigger(raw);
+    typeof value === "number" && Number.isFinite(value)
+      ? raw
+      : neutralizeCsvFormulaTrigger(raw);
   if (/[",\r\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -688,7 +695,8 @@ export function importSimulationQueriesCsv(
       "field_1";
     const fieldName =
       readCol(row, headerIndex, "FIELD_NAME", "FIELDNAME").trim() || fieldId;
-    const message = readCol(row, headerIndex, "MESSAGE").trim();
+    const rawMessage = readCol(row, headerIndex, "MESSAGE");
+    const message = rawMessage.trim() ? rawMessage : "";
     if (!subjectId && !message) continue;
 
     if (subjectId && !seenSubjects.has(subjectId)) {
@@ -713,7 +721,8 @@ export function importSimulationQueriesCsv(
         : "Open";
 
     const ruleId = readCol(row, headerIndex, "RULE_ID", "RULEID").trim();
-    const response = readCol(row, headerIndex, "RESPONSE").trim();
+    const rawResponse = readCol(row, headerIndex, "RESPONSE");
+    const response = rawResponse.trim() ? rawResponse : "";
     const respondedBy = readCol(
       row,
       headerIndex,
@@ -738,12 +747,15 @@ export function importSimulationQueriesCsv(
       "RESOLVED_AT",
       "RESOLVEDAT"
     ).trim();
-    const resolutionReason = readCol(
+    const rawResolutionReason = readCol(
       row,
       headerIndex,
       "RESOLUTION_REASON",
       "RESOLUTIONREASON"
-    ).trim();
+    );
+    const resolutionReason = rawResolutionReason.trim()
+      ? rawResolutionReason
+      : "";
 
     importedQueries.push({
       id,
@@ -866,12 +878,13 @@ export function importSimulationAuditsCsv(
       "NEWVALUETYPE"
     ).trim();
     const userRole = readCol(row, headerIndex, "USER_ROLE", "USERROLE").trim();
-    const reasonForChange = readCol(
+    const rawReasonForChange = readCol(
       row,
       headerIndex,
       "REASON_FOR_CHANGE",
       "REASONFORCHANGE"
-    ).trim();
+    );
+    const reasonForChange = rawReasonForChange.trim() ? rawReasonForChange : "";
     const actionType = readCol(
       row,
       headerIndex,

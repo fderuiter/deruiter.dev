@@ -572,32 +572,87 @@ describe("Bidirectional ODM 1.3.2 ClinicalData, EDC query lifecycle, live SAS/R,
     });
   });
 
-  it("neutralizes CWE-1236 CSV formula triggers on export while leaving negative numbers unchanged and round-tripping on import", () => {
+  it("neutralizes CWE-1236 CSV formula triggers on export while leaving negative numbers unchanged and round-tripping quote-prefixed triggers exactly on import", () => {
     const csv = formatRfc4180Csv(
-      ["eq", "at", "neg_num", "plus", "minus_cmd", "tab_trig", "cr_trig"],
-      [["=1+1", "@cmd", "-1.5", "+SUM(A1:A2)", "-cmd", "\t=1+1", "\r=1+1"]]
+      [
+        "eq",
+        "at",
+        "neg_num",
+        "plus",
+        "minus_cmd",
+        "tab_trig",
+        "cr_trig",
+        "quoted_eq",
+        "double_quoted_at",
+        "quoted_neg",
+        "plain_quote",
+      ],
+      [
+        [
+          "=1+1",
+          "@cmd",
+          "-1.5",
+          "+SUM(A1:A2)",
+          "-cmd",
+          "\t=1+1",
+          "\r=1+1",
+          "'=x",
+          "''@cmd",
+          "'-1.5",
+          "'patient note",
+        ],
+      ]
     );
 
     const rawDataLine = csv.split("\r\n").slice(1).join("\r\n");
     expect(rawDataLine).toContain("'=1+1");
     expect(rawDataLine).toContain("'@cmd");
     expect(rawDataLine).toContain(",-1.5,");
-    expect(rawDataLine).not.toContain("'-1.5");
+    expect(rawDataLine).not.toContain(",'-1.5,");
     expect(rawDataLine).toContain("'+SUM(A1:A2)");
     expect(rawDataLine).toContain("'-cmd");
     expect(rawDataLine).toContain("'\t=1+1");
     expect(rawDataLine).toContain('"\'\r=1+1"');
+    expect(rawDataLine).toContain("''=x");
+    expect(rawDataLine).toContain("'''@cmd");
+    expect(rawDataLine).toContain("''-1.5");
+    expect(rawDataLine).toContain(",'patient note");
 
     expect(parseRfc4180Csv(csv)).toEqual([
-      ["eq", "at", "neg_num", "plus", "minus_cmd", "tab_trig", "cr_trig"],
-      ["=1+1", "@cmd", "-1.5", "+SUM(A1:A2)", "-cmd", "\t=1+1", "\r=1+1"],
+      [
+        "eq",
+        "at",
+        "neg_num",
+        "plus",
+        "minus_cmd",
+        "tab_trig",
+        "cr_trig",
+        "quoted_eq",
+        "double_quoted_at",
+        "quoted_neg",
+        "plain_quote",
+      ],
+      [
+        "=1+1",
+        "@cmd",
+        "-1.5",
+        "+SUM(A1:A2)",
+        "-cmd",
+        "\t=1+1",
+        "\r=1+1",
+        "'=x",
+        "''@cmd",
+        "'-1.5",
+        "'patient note",
+      ],
     ]);
 
     const preset = STUDY_PRESETS[0]!.study;
     const sim = buildPopulatedSimulationState(preset);
     sim.queries![0]!.message = '=HYPERLINK("http://x","click")';
-    sim.queries![0]!.response = "@cmd";
-    sim.auditLog![0]!.reasonForChange = "=1+1";
+    sim.queries![0]!.response = "'=x";
+    sim.queries![0]!.resolutionReason = "\t=1+1";
+    sim.auditLog![0]!.reasonForChange = "\r=1+1";
     const visitId = preset.visits[0]!.id;
     const numField = preset.forms
       .flatMap((f) => f.sections)
@@ -618,8 +673,9 @@ describe("Bidirectional ODM 1.3.2 ClinicalData, EDC query lifecycle, live SAS/R,
       StudyProtocolEngine.exportSubjectsCsv(studyWithFormulas);
 
     expect(queriesCsv).toContain('"\'=HYPERLINK(""http://x"",""click"")"');
-    expect(queriesCsv).toContain("'@cmd");
-    expect(auditsCsv).toContain("'=1+1");
+    expect(queriesCsv).toContain("''=x");
+    expect(queriesCsv).toContain("'\t=1+1");
+    expect(auditsCsv).toContain('"\'\r=1+1"');
     if (numField) {
       expect(subjectsCsv).toContain(",-1.5,number,");
       expect(subjectsCsv).not.toContain("'-1.5");
@@ -631,7 +687,8 @@ describe("Bidirectional ODM 1.3.2 ClinicalData, EDC query lifecycle, live SAS/R,
     );
     expect(roundTrippedQueries.simulationState?.queries?.[0]).toMatchObject({
       message: '=HYPERLINK("http://x","click")',
-      response: "@cmd",
+      response: "'=x",
+      resolutionReason: "\t=1+1",
     });
 
     const roundTrippedAudits = StudyProtocolEngine.importAuditsCsv(
@@ -640,7 +697,7 @@ describe("Bidirectional ODM 1.3.2 ClinicalData, EDC query lifecycle, live SAS/R,
     );
     expect(
       roundTrippedAudits.simulationState?.auditLog?.[0]?.reasonForChange
-    ).toBe("=1+1");
+    ).toBe("\r=1+1");
   });
 
   it("describes simulated ClinicalData in STANDARDS_BOM and passes checkRegulatoryWording and findClinicalClaims with zero findings", () => {
@@ -685,6 +742,8 @@ describe("Bidirectional ODM 1.3.2 ClinicalData, EDC query lifecycle, live SAS/R,
       "lib/crf/internal/export-sas.ts",
       "lib/crf/internal/export-r.ts",
       "components/crf/Modes/ExportImportModal.tsx",
+      "components/crf/Modes/EdcClinicalDataExchangePanel.tsx",
+      "components/crf/Modes/EdcManualQueryModal.tsx",
     ];
 
     for (const relPath of strictRegulatoryFiles) {

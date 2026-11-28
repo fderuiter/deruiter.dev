@@ -517,8 +517,10 @@ describe("CI run policy (#1773)", () => {
     it.each([
       "package.json",
       "package-lock.json",
+      "SECURITY.md",
       "config/security-audit-ignore.json",
       "scripts/security-audit.ts",
+      "scripts/overrides-audit.ts",
       "scripts/triage-security-issue.ts",
       "scripts/ci-run-policy.mjs",
       ".github/workflows/ci.yml",

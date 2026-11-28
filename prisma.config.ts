@@ -1,4 +1,3 @@
-import dotenv from "dotenv";
 import fs from "fs";
 import { defineConfig } from "prisma/config";
 
@@ -9,9 +8,9 @@ const isReplayMode =
 
 if (!isReplayMode) {
   if (fs.existsSync(".env.local")) {
-    dotenv.config({ path: ".env.local" });
-  } else {
-    dotenv.config();
+    process.loadEnvFile(".env.local");
+  } else if (fs.existsSync(".env")) {
+    process.loadEnvFile(".env");
   }
 }
 

@@ -8,7 +8,7 @@
  * 5. Diagnostic dplyr::glimpse() and summary() verification suites
  */
 
-import { standardCitation, STANDARD_CODELISTS } from "@/lib/clinical-standards";
+import { standardCitation } from "@/lib/clinical-standards";
 import {
   StudyProtocol,
   CRFForm,
@@ -17,6 +17,14 @@ import {
   CodelistOption,
 } from "../types";
 import { consultationUrl } from "./export-annotations";
+import {
+  allocateUniqueIdentifier,
+  getFieldOptions,
+  prepareExportContext,
+  type PreparedExportContext,
+  resolveFieldOptions,
+  resolveStudyCodelist,
+} from "./export-common";
 
 /**
  * Sanitizes a string into a valid R variable name.
@@ -39,93 +47,6 @@ export function escapeRString(text: string): string {
   return text.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-/**
- * Retrieves field options from custom options or referenced codelists.
- */
-export function getFieldOptions(
-  field: CRFField,
-  study: StudyProtocol
-): CodelistOption[] {
-  if (field.customOptions && field.customOptions.length > 0) {
-    return field.customOptions;
-  }
-  if (field.codelistId) {
-    const cl =
-      study.codelists?.find((c) => c.id === field.codelistId) ||
-      STANDARD_CODELISTS.find((c) => c.id === field.codelistId);
-    if (cl && cl.options && cl.options.length > 0) {
-      return cl.options;
-    }
-  }
-  if (field.dataType === "checkbox" || field.dataType === "multi_select") {
-    const nyCodelist = STANDARD_CODELISTS.find((c) => c.id === "CL_NY");
-    if (nyCodelist) return nyCodelist.options;
-  }
-  return [];
-}
-
-/**
- * Parses a comma-separated multi-select EDC response string
- * and checks whether a specific option code is selected.
- * Returns 'Y' if selected, 'N' if absent/unselected.
- */
-export function parseMultiSelectValue(
-  edcValue: string | string[] | boolean | null | undefined,
-  optionCode: string
-): "Y" | "N" {
-  if (edcValue === null || edcValue === undefined || edcValue === false)
-    return "N";
-  if (edcValue === true) return "Y";
-  let selectedCodes: string[] = [];
-  if (Array.isArray(edcValue)) {
-    selectedCodes = edcValue.map((s) => String(s).trim().toUpperCase());
-  } else if (typeof edcValue === "string") {
-    const trimmed = edcValue.trim().toUpperCase();
-    if (
-      trimmed === "TRUE" ||
-      trimmed === "1" ||
-      trimmed === "Y" ||
-      trimmed === "YES"
-    ) {
-      const targetUpper = String(optionCode).trim().toUpperCase();
-      if (
-        targetUpper === "Y" ||
-        targetUpper === "1" ||
-        targetUpper === "YES" ||
-        targetUpper === "TRUE"
-      ) {
-        return "Y";
-      }
-    }
-    selectedCodes = trimmed
-      .split(/[,;]/)
-      .map((s) => s.trim().replace(/^['"]+|['"]+$/g, ""))
-      .filter(Boolean);
-  }
-  const targetCode = String(optionCode).trim().toUpperCase();
-  return selectedCodes.includes(targetCode) ? "Y" : "N";
-}
-
-/**
- * Generates a unique R variable name guaranteed not to collide with usedNames and within maxLength.
- */
-function generateUniqueRName(
-  baseName: string,
-  usedNames: Set<string>,
-  maxLength = 32
-): string {
-  let counter = 1;
-  const sanitizedBase = sanitizeRName(baseName, maxLength).toUpperCase();
-  let candidate = sanitizedBase;
-  while (usedNames.has(candidate)) {
-    const suffix = `_${counter}`;
-    const maxPrefixLen = maxLength - suffix.length;
-    candidate = `${sanitizedBase.substring(0, maxPrefixLen)}${suffix}`;
-    counter++;
-  }
-  return candidate;
-}
-
 export interface ExpandedRField {
   field: CRFField;
   varName: string;
@@ -133,40 +54,42 @@ export interface ExpandedRField {
   optLabel?: string;
 }
 
-export function getExpandedRFields(
+function expandRFieldsWithOptions(
   field: CRFField,
-  study: StudyProtocol,
-  usedNames = new Set<string>()
+  options: CodelistOption[],
+  usedNames: Set<string>
 ): ExpandedRField[] {
   if (field.dataType !== "multi_select" && field.dataType !== "checkbox") {
-    let varName = sanitizeRName(field.variableName || field.id).toUpperCase();
-    if (usedNames.has(varName)) {
-      varName = generateUniqueRName(varName, usedNames, 32);
-    }
-    usedNames.add(varName);
+    const varName = allocateUniqueIdentifier(
+      field.variableName || field.id,
+      usedNames,
+      sanitizeRName,
+      32
+    );
     return [{ field, varName }];
   }
 
-  const options = getFieldOptions(field, study);
   const baseVar = sanitizeRName(field.variableName || field.id).toUpperCase();
 
   if (options.length === 0) {
-    let varName = baseVar;
-    if (usedNames.has(varName)) {
-      varName = generateUniqueRName(varName, usedNames, 32);
-    }
-    usedNames.add(varName);
+    const varName = allocateUniqueIdentifier(
+      baseVar,
+      usedNames,
+      sanitizeRName,
+      32
+    );
     return [{ field, varName }];
   }
 
   const result: ExpandedRField[] = [];
   options.forEach((opt) => {
     const rawName = `${baseVar}_${opt.code}`;
-    let subVarName = sanitizeRName(rawName, 32).toUpperCase();
-    if (usedNames.has(subVarName)) {
-      subVarName = generateUniqueRName(rawName, usedNames, 32);
-    }
-    usedNames.add(subVarName);
+    const subVarName = allocateUniqueIdentifier(
+      rawName,
+      usedNames,
+      sanitizeRName,
+      32
+    );
 
     result.push({
       field,
@@ -177,6 +100,18 @@ export function getExpandedRFields(
   });
 
   return result;
+}
+
+export function getExpandedRFields(
+  field: CRFField,
+  study: StudyProtocol,
+  usedNames = new Set<string>()
+): ExpandedRField[] {
+  return expandRFieldsWithOptions(
+    field,
+    getFieldOptions(field, study),
+    usedNames
+  );
 }
 
 /**
@@ -211,48 +146,8 @@ suppressPackageStartupMessages({
 `;
 }
 
-/**
- * Generates Factor definitions for study codelists.
- */
-export function generateRCodelists(
-  study: StudyProtocol,
-  formsToInclude: CRFForm[]
-): string {
-  const referencedCodelistIds = new Set<string>();
-  let hasMultiOrCheckbox = false;
-
-  formsToInclude.forEach((f) => {
-    f.sections.forEach((s) => {
-      s.fields.forEach((fld) => {
-        if (fld.codelistId) referencedCodelistIds.add(fld.codelistId);
-        if (fld.dataType === "multi_select" || fld.dataType === "checkbox") {
-          hasMultiOrCheckbox = true;
-        }
-      });
-    });
-  });
-
-  const userCodelists = study.codelists || [];
-  if (userCodelists.length === 0) {
-    return `# No codelists defined for this study\n\n`;
-  }
-
-  const allAvailableCodelists = [...userCodelists];
-  if (
-    hasMultiOrCheckbox &&
-    !allAvailableCodelists.some((c) => c.id === "CL_NY")
-  ) {
-    const ny = STANDARD_CODELISTS.find((c) => c.id === "CL_NY");
-    if (ny) allAvailableCodelists.push(ny);
-  }
-
-  const relevantCodelists = allAvailableCodelists.filter(
-    (cl) =>
-      referencedCodelistIds.has(cl.id) ||
-      (hasMultiOrCheckbox && cl.id === "CL_NY") ||
-      cl.isStandard
-  );
-
+function renderRCodelists(context: PreparedExportContext): string {
+  const relevantCodelists = context.activeCodelists;
   if (relevantCodelists.length === 0) {
     return `# No codelists defined for this study\n\n`;
   }
@@ -283,6 +178,18 @@ export function generateRCodelists(
 }
 
 /**
+ * Generates Factor definitions for study codelists.
+ */
+export function generateRCodelists(
+  study: StudyProtocol,
+  formsToInclude: CRFForm[]
+): string {
+  return renderRCodelists(
+    prepareExportContext(study, { forms: formsToInclude })
+  );
+}
+
+/**
  * Generates dichotomous Yes/No factor code for expanded sub-variables.
  */
 function getRSubVarSampleCode(
@@ -301,10 +208,10 @@ function getRSubVarSampleCode(
  */
 function getRSampleColumnCode(
   field: CRFField,
-  study: StudyProtocol,
+  context: PreparedExportContext,
   rowCount = 3
 ): string {
-  const codelist = study.codelists?.find((c) => c.id === field.codelistId);
+  const codelist = resolveStudyCodelist(context, field);
   const hasCodelist = !!codelist && codelist.options.length > 0;
   const varName = sanitizeRName(field.variableName || field.id).toUpperCase();
 
@@ -417,14 +324,12 @@ function getRSampleColumnCode(
   }
 }
 
-/**
- * Generates an R tibble construction and variable labeling block for a CRFForm.
- */
-export function generateRDataStepForForm(
+function renderRDataStepForForm(
   form: CRFForm,
-  study: StudyProtocol,
+  context: PreparedExportContext,
   options?: ExportROptions
 ): string {
+  const { study } = context;
   const domain = sanitizeRName(form.domain || form.id, 20);
   const prefix = options?.tibblePrefix || "tbl_";
   const tibbleName = `${prefix}${domain.toLowerCase()}`;
@@ -444,7 +349,11 @@ export function generateRDataStepForForm(
 
   const expandedFields: ExpandedRField[] = [];
   fields.forEach((field) => {
-    const expanded = getExpandedRFields(field, study, usedNames);
+    const expanded = expandRFieldsWithOptions(
+      field,
+      resolveFieldOptions(context, field),
+      usedNames
+    );
     expanded.forEach((item) => expandedFields.push(item));
   });
 
@@ -475,7 +384,7 @@ export function generateRDataStepForForm(
         ? item.field.dataType === "multi_select" ||
           item.field.dataType === "checkbox"
           ? getRSubVarSampleCode(item.optionCode, 3)
-          : getRSampleColumnCode(item.field, study, 3)
+          : getRSampleColumnCode(item.field, context, 3)
         : "character(0)";
       const isLast = fIdx === expandedFields.length - 1;
       code += `  ${item.varName.padEnd(10)} = ${colCode}${isLast ? "" : ",\n"}`;
@@ -549,6 +458,18 @@ export function generateRDataStepForForm(
 }
 
 /**
+ * Generates an R tibble construction and variable labeling block for a CRFForm.
+ */
+export function generateRDataStepForForm(
+  form: CRFForm,
+  study: StudyProtocol,
+  options?: ExportROptions
+): string {
+  const context = prepareExportContext(study, { forms: [form] });
+  return renderRDataStepForForm(form, context, options);
+}
+
+/**
  * Exports a single form as a self-contained R script.
  */
 export function exportFormToR(
@@ -556,9 +477,10 @@ export function exportFormToR(
   study: StudyProtocol,
   options?: ExportROptions
 ): string {
+  const context = prepareExportContext(study, { forms: [form] });
   let output = generateRHeader(study, form.domain || form.id);
-  output += generateRCodelists(study, [form]);
-  output += generateRDataStepForForm(form, study, options);
+  output += renderRCodelists(context);
+  output += renderRDataStepForForm(form, context, options);
   output += `# Schedule Consultation: ${consultationUrl()}\n`;
   return output;
 }
@@ -570,9 +492,8 @@ export function exportStudyToR(
   study: StudyProtocol,
   options?: ExportROptions
 ): string {
-  const formsToExport = options?.selectedFormId
-    ? study.forms.filter((f) => f.id === options.selectedFormId)
-    : study.forms;
+  const context = prepareExportContext(study, options);
+  const formsToExport = context.forms;
 
   if (formsToExport.length === 0) {
     return (
@@ -581,19 +502,14 @@ export function exportStudyToR(
     );
   }
 
-  let output = generateRHeader(
-    study,
-    options?.selectedFormId
-      ? formsToExport[0]?.domain || formsToExport[0]?.id
-      : "suite"
-  );
-  output += generateRCodelists(study, formsToExport);
+  let output = generateRHeader(study, context.headerScope);
+  output += renderRCodelists(context);
 
   formsToExport.forEach((form, idx) => {
     output += `#==============================================================================
 # SECTION ${idx + 1}: ${form.name.toUpperCase()} (DOMAIN: ${(form.domain || form.id).toUpperCase()})
 #==============================================================================\n`;
-    output += generateRDataStepForForm(form, study, options);
+    output += renderRDataStepForForm(form, context, options);
   });
 
   output += `# Schedule Consultation: ${consultationUrl()}\n`;

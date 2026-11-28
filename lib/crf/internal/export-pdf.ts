@@ -4,6 +4,12 @@ import autoTable from "jspdf-autotable";
 import { CRFForm, StudyProtocol, CRFField, ExportPdfOptions } from "../types";
 import { getStudyBranding } from "./branding-defaults";
 import { consultationUrl, sdtmTargetFor } from "./export-annotations";
+import {
+  DEFAULT_DOCUMENT_SELECT_OPTIONS,
+  prepareExportContext,
+  type PreparedExportContext,
+  resolveDocumentFieldOptions,
+} from "./export-common";
 
 /**
  * jspdf-autotable's plugin attaches `lastAutoTable` to the jsPDF instance at
@@ -37,20 +43,19 @@ function hexToRgb(
 /**
  * Formats response mock text for PDF table.
  */
-function formatResponseMock(field: CRFField, study: StudyProtocol): string {
-  const codelist = study.codelists.find((cl) => cl.id === field.codelistId);
+function formatResponseMock(
+  field: CRFField,
+  context: PreparedExportContext
+): string {
+  const resolvedOptions = resolveDocumentFieldOptions(context, field);
 
   if (field.dataType === "radio" || field.dataType === "single_select") {
-    const opts = field.customOptions ||
-      codelist?.options || [
-        { code: "1", label: "Option 1", order: 1 },
-        { code: "2", label: "Option 2", order: 2 },
-      ];
+    const opts = resolvedOptions || DEFAULT_DOCUMENT_SELECT_OPTIONS;
     return opts.map((o) => `( ) ${o.label} [${o.code}]`).join("   ");
   }
 
   if (field.dataType === "multi_select" || field.dataType === "checkbox") {
-    const opts = field.customOptions || codelist?.options;
+    const opts = resolvedOptions;
     if (opts && opts.length > 0) {
       return opts.map((o) => `[ ] ${o.label} [${o.code}]`).join("   ");
     }
@@ -87,41 +92,8 @@ export async function generateStudyPdf(
   study: StudyProtocol,
   options: ExportPdfOptions
 ): Promise<Blob> {
-  let formsToInclude: CRFForm[];
-  if (options.scope === "all") {
-    formsToInclude = study.forms;
-  } else {
-    const selectedFormIds = options.selectedFormIds;
-    if (!selectedFormIds?.length) {
-      const selectionError =
-        options.scope === "single"
-          ? "Cannot export with scope 'single': selectedFormIds must contain a first entry."
-          : "Cannot export with scope 'selected': selectedFormIds must contain at least one entry.";
-      throw new RangeError(selectionError);
-    }
-
-    if (options.scope === "single") {
-      const form = study.forms.find(
-        (candidate) => candidate.id === selectedFormIds[0]
-      );
-      if (!form) {
-        throw new RangeError(
-          "Cannot export with scope 'single': the first selectedFormIds entry must match a study form."
-        );
-      }
-      formsToInclude = [form];
-    } else {
-      const requestedFormIds = new Set(selectedFormIds);
-      formsToInclude = study.forms.filter((form) =>
-        requestedFormIds.has(form.id)
-      );
-      if (formsToInclude.length === 0) {
-        throw new RangeError(
-          "Cannot export with scope 'selected': selectedFormIds must match at least one study form."
-        );
-      }
-    }
-  }
+  const context = prepareExportContext(study, options);
+  const formsToInclude = context.forms;
 
   const branding = options.branding || getStudyBranding(study);
   const isAnnotated = options.mode === "annotated";
@@ -329,7 +301,7 @@ export async function generateStudyPdf(
         const reqStar = field.required ? " *" : "";
         const desc = field.description ? `\n${field.description}` : "";
         const promptCol = `${field.label}${reqStar}\n[${field.variableName} • ${field.dataType}]${desc}`;
-        const valCol = formatResponseMock(field, study);
+        const valCol = formatResponseMock(field, context);
 
         if (isAnnotated) {
           const sdtmTarget = sdtmTargetFor(field, form.domain);
